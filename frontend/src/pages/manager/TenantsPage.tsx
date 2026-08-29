@@ -1,4 +1,3 @@
-import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
@@ -172,7 +171,7 @@ export default function TenantsPage() {
 
       {!loading && tenants.length === 0 && !showForm ? (
         <EmptyState
-          icon={Users}
+          icon="👥"
           title="Aucun locataire pour l'instant"
           description="Ajoutez votre premier locataire (nom, téléphone, email, pièce d'identité) pour pouvoir lui associer un contrat."
           action={{ label: "+ Ajouter un locataire", onClick: openCreate }}
