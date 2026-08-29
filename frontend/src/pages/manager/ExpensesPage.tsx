@@ -10,11 +10,11 @@ function currentYearRange() {
 }
 
 const categoryLabels: Record<ExpenseCategory, { label: string; color: string }> = {
-  MAINTENANCE: { label: "🛠️ Entretien & Travaux", color: "bg-amber-100 text-amber-800" },
-  TAX: { label: "🏛️ Taxe Foncière", color: "bg-red-100 text-red-800" },
-  INSURANCE: { label: "🛡️ Assurance PNO", color: "bg-blue-100 text-blue-800" },
-  SYNDIC: { label: "🏢 Copropriété / Syndic", color: "bg-purple-100 text-purple-800" },
-  OTHER: { label: "📦 Autre Charge", color: "bg-slate-100 text-slate-800" },
+  MAINTENANCE: { label: "🛠️ Entretien & Travaux", color: "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300" },
+  TAX: { label: "🏛️ Taxe Foncière", color: "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300" },
+  INSURANCE: { label: "🛡️ Assurance PNO", color: "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300" },
+  SYNDIC: { label: "🏢 Copropriété / Syndic", color: "bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300" },
+  OTHER: { label: "📦 Autre Charge", color: "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300" },
 };
 
 interface FinancialSummary {
@@ -114,7 +114,7 @@ export default function ExpensesPage() {
       `"${(e.notes || "").replace(/"/g, '""')}"`,
     ]);
 
-    const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+    const csvContent = "﻿" + [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -125,10 +125,10 @@ export default function ExpensesPage() {
   }
 
   /**
-   * Rapport financier complet (revenus + d\u00E9penses + r\u00E9sultat net par bien),
-   * g\u00E9n\u00E9r\u00E9 c\u00F4t\u00E9 serveur sur la p\u00E9riode s\u00E9lectionn\u00E9e. T\u00E9l\u00E9charg\u00E9 via blob (et
+   * Rapport financier complet (revenus + dépenses + résultat net par bien),
+   * généré côté serveur sur la période sélectionnée. Téléchargé via blob (et
    * non un lien direct) car l'authentification passe par un header Bearer,
-   * pas par un cookie \u2014 un lien classique n'enverrait pas le token.
+   * pas par un cookie — un lien classique n'enverrait pas le token.
    */
   async function exportFinancialReport() {
     setExportingReport(true);
@@ -154,15 +154,15 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Dépenses & Rentabilité Réelle</h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Dépenses & Rentabilité Réelle</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Suivi des charges, factures de travaux et calcul automatique du Cash-Flow net
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={exportCSV}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 flex items-center gap-1.5 transition-colors"
+            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 transition-colors"
           >
             <span>📥</span> Export Comptable CSV
           </button>
@@ -198,13 +198,13 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <label className="text-xs font-semibold text-slate-700">Filtrer par bien :</label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Filtrer par bien :</label>
           <select
             value={selectedPropertyId}
             onChange={(e) => setSelectedPropertyId(e.target.value)}
-            className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="">Tous les biens immobiliers</option>
             {properties.map((p) => (
@@ -214,24 +214,24 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-500">{expenses.length} ligne(s) de dépense</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{expenses.length} ligne(s) de dépense</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="text-xs font-semibold text-slate-700">Rapport financier complet (revenus + dépenses) du</label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Rapport financier complet (revenus + dépenses) du</label>
           <input
             type="date"
             value={reportRange.from}
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
-            className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
-          <span className="text-xs text-slate-500">au</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">au</span>
           <input
             type="date"
             value={reportRange.to}
             onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })}
-            className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
         <button
@@ -243,9 +243,9 @@ export default function ExpensesPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">Date</th>
               <th className="px-4 py-3 font-medium">Bien</th>
@@ -256,29 +256,29 @@ export default function ExpensesPage() {
               <th className="px-4 py-3 font-medium text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {expenses.map((exp) => (
-              <tr key={exp.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 text-slate-600 text-xs">
+              <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                   {new Date(exp.expenseDate).toLocaleDateString("fr-FR")}
                 </td>
-                <td className="px-4 py-3 font-medium text-slate-900">{exp.property?.title}</td>
+                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{exp.property?.title}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
-                      categoryLabels[exp.category]?.color || "bg-slate-100 text-slate-700"
+                      categoryLabels[exp.category]?.color || "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                     }`}
                   >
                     {categoryLabels[exp.category]?.label || exp.category}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-800">{exp.title}</td>
-                <td className="px-4 py-3 font-bold text-red-600">-{formatMoney(exp.amount, exp.currency)}</td>
-                <td className="px-4 py-3 text-slate-500 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
+                <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{exp.title}</td>
+                <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400">-{formatMoney(exp.amount, exp.currency)}</td>
+                <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => handleDelete(exp)}
-                    className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline"
                   >
                     Supprimer
                   </button>
@@ -287,7 +287,7 @@ export default function ExpensesPage() {
             ))}
             {expenses.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center text-slate-400 py-8 text-sm">
+                <td colSpan={7} className="text-center text-slate-400 dark:text-slate-500 py-8 text-sm">
                   Aucune dépense enregistrée pour le moment.
                 </td>
               </tr>
@@ -298,22 +298,22 @@ export default function ExpensesPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-900 text-lg">Enregistrer une dépense / facture</h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Enregistrer une dépense / facture</h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Bien concerné *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bien concerné *</label>
                 <select
                   required
                   value={form.propertyId}
                   onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 >
                   <option value="">Sélectionner un bien immobilier</option>
                   {properties.map((p) => (
@@ -326,11 +326,11 @@ export default function ExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Catégorie *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Catégorie *</label>
                   <select
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                   >
                     <option value="MAINTENANCE">🛠️ Entretien & Travaux</option>
                     <option value="TAX">🏛️ Taxe Foncière</option>
@@ -340,30 +340,30 @@ export default function ExpensesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date de la facture</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date de la facture</label>
                   <input
                     type="date"
                     required
                     value={form.expenseDate}
                     onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Intitulé / Fournisseur *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Intitulé / Fournisseur *</label>
                   <input
                     required
                     placeholder="Ex: Remplacement chauffe-eau"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Montant TTC *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Montant TTC *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -371,29 +371,29 @@ export default function ExpensesPage() {
                     placeholder="0.00"
                     value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm font-semibold"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Notes / Détails complémentaires</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Notes / Détails complémentaires</label>
                 <textarea
                   rows={2}
                   placeholder="Artisan plombier, devis n°..."
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
               </div>
 
-              {error && <p className="text-xs text-red-600">{error}</p>}
+              {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2"
+                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-2"
                 >
                   Annuler
                 </button>

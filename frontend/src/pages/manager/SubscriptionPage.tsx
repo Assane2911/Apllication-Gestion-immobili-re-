@@ -85,34 +85,34 @@ export default function SubscriptionPage() {
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Abonnement & Formules SaaS</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Abonnement & Formules SaaS</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Gérez votre formule de gestion immobilière et vos options de facturation.
         </p>
       </div>
 
       {/* Messages */}
       {successMessage && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl flex items-center gap-2">
           <span>🎉</span>
           <span className="text-sm font-medium">{successMessage}</span>
         </div>
       )}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl flex items-center gap-2">
           <span>⚠️</span>
           <span className="text-sm">{error}</span>
         </div>
       )}
 
       {/* État actuel de l'abonnement */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <span className="text-xs uppercase font-semibold text-slate-400 tracking-wider">
+          <span className="text-xs uppercase font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
             Votre statut actuel
           </span>
           <div className="flex items-center gap-3 mt-1">
-            <h2 className="text-xl font-bold text-slate-900">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
               {sub?.status === "ACTIVE"
                 ? `Formule ${sub.plan} Active`
                 : sub?.status === "TRIAL"
@@ -122,10 +122,10 @@ export default function SubscriptionPage() {
             <span
               className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                 sub?.status === "ACTIVE"
-                  ? "bg-emerald-100 text-emerald-800"
+                  ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300"
                   : sub?.isTrialActive
-                  ? "bg-brand-100 text-brand-800"
-                  : "bg-red-100 text-red-800"
+                  ? "bg-brand-100 dark:bg-brand-500/20 text-brand-800 dark:text-brand-300"
+                  : "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300"
               }`}
             >
               {sub?.status === "ACTIVE"
@@ -135,7 +135,7 @@ export default function SubscriptionPage() {
                 : "Expiré"}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             {sub?.isTrialActive && sub.trialEndsAt
               ? `Votre période d'essai se termine le ${new Date(sub.trialEndsAt).toLocaleDateString("fr-FR", {
                   year: "numeric",
@@ -153,10 +153,10 @@ export default function SubscriptionPage() {
         </div>
 
         {sub?.status === "TRIAL" && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center md:text-right">
-            <p className="text-xs text-slate-500">Temps d'évaluation offert</p>
-            <p className="text-2xl font-black text-brand-600">
-              {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600">jours</span>
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center md:text-right">
+            <p className="text-xs text-slate-500 dark:text-slate-400">Temps d'évaluation offert</p>
+            <p className="text-2xl font-black text-brand-600 dark:text-brand-400">
+              {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600 dark:text-slate-400">jours</span>
             </p>
           </div>
         )}
@@ -164,13 +164,13 @@ export default function SubscriptionPage() {
 
       {/* Switch Mensuel / Annuel */}
       <div className="flex flex-col items-center gap-3">
-        <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center border border-slate-200 dark:border-slate-700">
           <button
             onClick={() => setBillingCycle("MONTHLY")}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               billingCycle === "MONTHLY"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
             Facturation Mensuelle
@@ -179,12 +179,12 @@ export default function SubscriptionPage() {
             onClick={() => setBillingCycle("ANNUAL")}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               billingCycle === "ANNUAL"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
             <span>Facturation Annuelle</span>
-            <span className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+            <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
               -20%
             </span>
           </button>
@@ -200,10 +200,10 @@ export default function SubscriptionPage() {
           return (
             <div
               key={plan.id}
-              className={`bg-white rounded-2xl border transition-all relative flex flex-col p-6 shadow-sm ${
+              className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all relative flex flex-col p-6 shadow-sm ${
                 plan.popular
-                  ? "border-brand-500 ring-2 ring-brand-500/20"
-                  : "border-slate-200 hover:border-slate-300"
+                  ? "border-brand-500 dark:border-brand-400 ring-2 ring-brand-500/20"
+                  : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
               }`}
             >
               {plan.popular && (
@@ -213,25 +213,25 @@ export default function SubscriptionPage() {
               )}
 
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
-                <p className="text-xs text-slate-500 mt-1 min-h-[32px]">{plan.description}</p>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{plan.name}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 min-h-[32px]">{plan.description}</p>
               </div>
 
               <div className="mb-6 flex items-baseline gap-1">
-                <span className="text-3xl font-black text-slate-900">{price} €</span>
-                <span className="text-xs text-slate-500 font-medium">/ mois</span>
+                <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{price} €</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">/ mois</span>
                 {billingCycle === "ANNUAL" && (
-                  <span className="text-[11px] text-slate-400 ml-1">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-1">
                     (facturé {plan.annualPrice} € / an)
                   </span>
                 )}
               </div>
 
-              <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 border-t border-slate-100 pt-4">
-                <p className="font-semibold text-slate-900">Inclus dans l'offre :</p>
+              <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <p className="font-semibold text-slate-900 dark:text-slate-100">Inclus dans l'offre :</p>
                 {plan.features.map((feat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span className="text-emerald-500 dark:text-emerald-400 font-bold">✓</span>
                     <span>{feat}</span>
                   </div>
                 ))}
@@ -242,10 +242,10 @@ export default function SubscriptionPage() {
                 disabled={isCurrentPlan}
                 className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm ${
                   isCurrentPlan
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
                     : plan.popular
                     ? "bg-brand-600 hover:bg-brand-700 text-white hover:shadow"
-                    : "bg-slate-900 hover:bg-slate-800 text-white hover:shadow"
+                    : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white hover:shadow"
                 }`}
               >
                 {isCurrentPlan ? "Votre formule actuelle" : `Choisir ${plan.name}`}
@@ -258,11 +258,11 @@ export default function SubscriptionPage() {
       {/* Modal de Souscription / Paiement */}
       {selectedPlan && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="font-bold text-slate-900 text-lg">Souscription à l'offre {selectedPlan.name}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Souscription à l'offre {selectedPlan.name}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Montant à régler :{" "}
                   <strong>
                     {billingCycle === "ANNUAL" ? `${selectedPlan.annualPrice} € / an` : `${selectedPlan.monthlyPrice} € / mois`}
@@ -271,7 +271,7 @@ export default function SubscriptionPage() {
               </div>
               <button
                 onClick={() => setSelectedPlan(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg leading-none"
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-lg leading-none"
               >
                 ✕
               </button>
@@ -279,15 +279,15 @@ export default function SubscriptionPage() {
 
             {/* Choix du moyen de paiement */}
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-slate-700">Moyen de règlement</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Moyen de règlement</label>
               <div className="grid grid-cols-1 gap-2.5">
                 {paymentMethods.map((m) => (
                   <label
                     key={m.key}
                     className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedMethod === m.key
-                        ? "border-brand-500 bg-brand-50/50"
-                        : "border-slate-200 hover:border-slate-300"
+                        ? "border-brand-500 dark:border-brand-400 bg-brand-50/50 dark:bg-brand-500/10"
+                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                     }`}
                   >
                     <input
@@ -299,8 +299,8 @@ export default function SubscriptionPage() {
                       className="mt-0.5"
                     />
                     <div>
-                      <p className="text-xs font-semibold text-slate-900">{m.label}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{m.hint}</p>
+                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{m.label}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{m.hint}</p>
                     </div>
                   </label>
                 ))}
@@ -308,13 +308,13 @@ export default function SubscriptionPage() {
 
               {selectedMethod === "BANK_TRANSFER" && (
                 <div className="pt-2">
-                  <label className="text-xs text-slate-600 block mb-1">Numéro ou référence du virement :</label>
+                  <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">Numéro ou référence du virement :</label>
                   <input
                     type="text"
                     value={bankRef}
                     onChange={(e) => setBankRef(e.target.value)}
                     placeholder="Ex: VIR-2026-08-01"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2"
+                    className="w-full text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2"
                   />
                 </div>
               )}
@@ -325,7 +325,7 @@ export default function SubscriptionPage() {
               <button
                 type="button"
                 onClick={() => setSelectedPlan(null)}
-                className="px-4 py-2 text-xs text-slate-600 hover:text-slate-900"
+                className="px-4 py-2 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               >
                 Annuler
               </button>
@@ -344,12 +344,12 @@ export default function SubscriptionPage() {
 
       {/* Historique des paiements de la plateforme */}
       {history.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-900 text-sm">Historique de vos factures d'abonnement</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Historique de vos factures d'abonnement</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-400 uppercase text-[10px]">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 uppercase text-[10px]">
                   <th className="py-2.5">Date</th>
                   <th className="py-2.5">Plan</th>
                   <th className="py-2.5">Cycle</th>
@@ -358,16 +358,16 @@ export default function SubscriptionPage() {
                   <th className="py-2.5">Statut</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {history.map((h) => (
-                  <tr key={h.id} className="text-slate-700">
+                  <tr key={h.id} className="text-slate-700 dark:text-slate-300">
                     <td className="py-3">{new Date(h.createdAt).toLocaleDateString("fr-FR")}</td>
                     <td className="py-3 font-semibold">{h.plan}</td>
                     <td className="py-3">{h.billingCycle === "ANNUAL" ? "Annuel" : "Mensuel"}</td>
                     <td className="py-3 font-bold">{h.amount} €</td>
                     <td className="py-3">{h.paymentMethod}</td>
                     <td className="py-3">
-                      <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                      <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-bold">
                         {h.status}
                       </span>
                     </td>
