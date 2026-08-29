@@ -183,6 +183,31 @@ export interface NotificationItem {
   createdAt: string;
 }
 
+export type SearchResultType = "tenant" | "property" | "contract" | "invoice";
+
+export interface SearchResultItem {
+  id: string;
+  type: SearchResultType;
+  title: string;
+  subtitle: string;
+  link: string;
+}
+
+export type ActorRole = "MANAGER" | "TENANT";
+
+export interface ActivityLogEntry {
+  id: string;
+  actorId?: string | null;
+  actorRole?: ActorRole | null;
+  actorLabel: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  entityLabel: string;
+  details?: string | null;
+  createdAt: string;
+}
+
 export interface DashboardStats {
   totalProperties: number;
   propertiesByStatus: Record<PropertyStatus, number>;

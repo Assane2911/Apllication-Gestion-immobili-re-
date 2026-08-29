@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, properties, tenants } from "../db/schema";
+import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -42,6 +43,16 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
     .insert(properties)
     .values({ ...body, imageUrl })
     .returning();
+
+  await logActivity({
+    req,
+    action: "property.create",
+    entityType: "property",
+    entityId: property.id,
+    entityLabel: property.title,
+    details: `Bien ajouté : ${property.title} (${property.address})`,
+  });
+
   res.status(201).json(property);
 });
 
@@ -57,6 +68,16 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
     .set({ ...body, ...(imageUrl ? { imageUrl } : {}) })
     .where(eq(properties.id, req.params.id))
     .returning();
+
+  await logActivity({
+    req,
+    action: "property.update",
+    entityType: "property",
+    entityId: property.id,
+    entityLabel: property.title,
+    details: `Bien modifié : ${property.title}`,
+  });
+
   res.json(property);
 });
 
@@ -73,5 +94,15 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
   }
 
   await db.delete(properties).where(eq(properties.id, req.params.id));
+
+  await logActivity({
+    req,
+    action: "property.delete",
+    entityType: "property",
+    entityId: existing.id,
+    entityLabel: existing.title,
+    details: `Bien supprimé : ${existing.title}`,
+  });
+
   res.status(204).send();
 });

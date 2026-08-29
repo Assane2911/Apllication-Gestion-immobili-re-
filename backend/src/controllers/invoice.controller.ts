@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
+import { logActivity } from "../services/activity.service";
 import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
@@ -65,6 +66,21 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
   );
 
+  const [row] = await db
+    .select({ contract: contracts, tenant: tenants, property: properties })
+    .from(contracts)
+    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(contracts.id, updated.contractId));
+  await logActivity({
+    req,
+    action: "invoice.mark_paid",
+    entityType: "invoice",
+    entityId: updated.id,
+    entityLabel: row ? `${row.tenant.firstName} ${row.tenant.lastName} — ${row.property.title}` : "Facture",
+    details: `Facture ${updated.periodMonth}/${updated.periodYear} marquée réglée (${updated.amount} ${updated.currency ?? "EUR"})`,
+  });
+
   res.json(updated);
 });
 
@@ -72,6 +88,16 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
   const [invoice] = await db.select().from(invoices).where(eq(invoices.id, req.params.id));
   if (!invoice) throw new ApiError(404, "Facture introuvable");
   const [updated] = await db.update(invoices).set({ status: "CANCELLED" }).where(eq(invoices.id, req.params.id)).returning();
+
+  await logActivity({
+    req,
+    action: "invoice.cancel",
+    entityType: "invoice",
+    entityId: updated.id,
+    entityLabel: `Facture ${updated.periodMonth}/${updated.periodYear}`,
+    details: `Facture ${updated.periodMonth}/${updated.periodYear} annulée`,
+  });
+
   res.json(updated);
 });
 

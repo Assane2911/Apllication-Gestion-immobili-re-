@@ -4,6 +4,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, issueReports, properties, tenants, users } from "../db/schema";
+import { logActivity } from "../services/activity.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -49,6 +50,16 @@ export const createTenant = asyncHandler(async (req: Request, res: Response) => 
     .insert(tenants)
     .values({ ...body, idDocument })
     .returning();
+
+  await logActivity({
+    req,
+    action: "tenant.create",
+    entityType: "tenant",
+    entityId: tenant.id,
+    entityLabel: `${tenant.firstName} ${tenant.lastName}`,
+    details: `Locataire ajouté : ${tenant.firstName} ${tenant.lastName} (${tenant.email})`,
+  });
+
   res.status(201).json(tenant);
 });
 
@@ -64,6 +75,16 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
     .set({ ...body, ...(idDocument ? { idDocument } : {}) })
     .where(eq(tenants.id, req.params.id))
     .returning();
+
+  await logActivity({
+    req,
+    action: "tenant.update",
+    entityType: "tenant",
+    entityId: tenant.id,
+    entityLabel: `${tenant.firstName} ${tenant.lastName}`,
+    details: `Locataire modifié : ${tenant.firstName} ${tenant.lastName}`,
+  });
+
   res.json(tenant);
 });
 
@@ -77,6 +98,16 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   }
 
   await db.delete(tenants).where(eq(tenants.id, req.params.id));
+
+  await logActivity({
+    req,
+    action: "tenant.delete",
+    entityType: "tenant",
+    entityId: existing.id,
+    entityLabel: `${existing.firstName} ${existing.lastName}`,
+    details: `Locataire supprimé : ${existing.firstName} ${existing.lastName}`,
+  });
+
   res.status(204).send();
 });
 

@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { env } from "./config/env";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import activityLogRoutes from "./routes/activityLog.routes";
 import agencyRoutes from "./routes/agency.routes";
 import authRoutes from "./routes/auth.routes";
 import contractRoutes from "./routes/contract.routes";
@@ -14,6 +15,7 @@ import issueRoutes from "./routes/issue.routes";
 import messageRoutes from "./routes/message.routes";
 import notificationRoutes from "./routes/notification.routes";
 import propertyRoutes from "./routes/property.routes";
+import searchRoutes from "./routes/search.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
 
@@ -43,6 +45,8 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/issues", issueRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/activity-log", activityLogRoutes);
 app.use("/api/cron", cronRoutes);
 
 app.use(notFoundHandler);

@@ -1,8 +1,10 @@
 import { asc, desc, eq, inArray } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
+import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, messages, properties, tenants, users } from "../db/schema";
+import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 export const listConversations = asyncHandler(async (req: Request, res: Response) => {
@@ -137,6 +139,29 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
       isRead: "false",
     })
     .returning();
+
+  // Le locataire reçoit un email quand l'agence (gestionnaire) lui écrit —
+  // ne doit jamais faire échouer l'envoi du message si l'email échoue.
+  if (req.user.role === "MANAGER") {
+    const [row] = await db
+      .select({ tenant: tenants, property: properties })
+      .from(contracts)
+      .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(eq(contracts.id, contractId));
+
+    if (row?.tenant?.email) {
+      const { subject, html } = newMessageFromManagerEmail({
+        tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+        propertyTitle: row.property.title,
+        content,
+        frontendUrl: env.frontendUrl,
+      });
+      sendEmail(row.tenant.email, subject, html).catch((err) =>
+        console.error("[message] Échec de l'envoi de la notification de nouveau message:", err)
+      );
+    }
+  }
 
   res.status(201).json(newMsg);
 });

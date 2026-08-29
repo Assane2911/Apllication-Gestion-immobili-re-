@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { CurrencySelector } from "../context/CurrencyContext";
+import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
 
@@ -13,6 +14,7 @@ const navItems = [
   { to: "/expenses", label: "Dépenses & Rentabilité", icon: "💰" },
   { to: "/messages", label: "Messagerie", icon: "💬" },
   { to: "/issues", label: "Incidents", icon: "🛠️" },
+  { to: "/activity-log", label: "Journal d'activité", icon: "🕒" },
   { to: "/agency", label: "Mon Agence", icon: "🏢" },
   { to: "/subscription", label: "Mon Abonnement", icon: "💎" },
 ];
@@ -70,7 +72,8 @@ export default function ManagerLayout() {
         </div>
       </aside>
       <main className="flex-1 min-w-0 p-6 lg:p-8">
-        <div className="flex justify-end mb-4">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <GlobalSearch />
           <NotificationBell />
         </div>
         <TrialBanner />

@@ -83,6 +83,88 @@ export function contractEndingReminderEmail(params: {
   };
 }
 
+const issueStatusLabels: Record<string, { label: string; color: string; emoji: string }> = {
+  OPEN: { label: "Ouvert", color: "#2563eb", emoji: "📋" },
+  IN_PROGRESS: { label: "En cours de traitement", color: "#d97706", emoji: "🔧" },
+  RESOLVED: { label: "Résolu", color: "#059669", emoji: "✅" },
+  REJECTED: { label: "Rejeté", color: "#dc2626", emoji: "✖️" },
+};
+
+/**
+ * Email envoyé au locataire lorsque le gestionnaire met à jour le statut
+ * d'un incident qu'il a signalé (pris en compte, en cours, résolu, rejeté).
+ */
+export function issueStatusUpdateEmail(params: {
+  tenantName: string;
+  issueTitle: string;
+  propertyTitle: string;
+  status: string;
+  managerNote?: string | null;
+  frontendUrl: string;
+}) {
+  const { tenantName, issueTitle, propertyTitle, status, managerNote, frontendUrl } = params;
+  const meta = issueStatusLabels[status] ?? { label: status, color: "#334155", emoji: "ℹ️" };
+
+  return {
+    subject: `${meta.emoji} Mise à jour de votre signalement — ${issueTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">${meta.emoji} Mise à jour de votre incident signalé</h2>
+        <p>Bonjour ${tenantName},</p>
+        <p>
+          Le statut de votre signalement <strong>« ${issueTitle} »</strong> concernant le logement
+          <strong>${propertyTitle}</strong> a été mis à jour :
+        </p>
+        <div style="display:inline-block; background:${meta.color}1a; color:${meta.color}; font-weight:bold; padding:8px 16px; border-radius:20px; border:1px solid ${meta.color}40; margin: 8px 0 16px 0;">
+          ${meta.label}
+        </div>
+        ${managerNote ? `<p style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; color:#334155;"><strong>Message de votre agence :</strong><br/>${managerNote}</p>` : ""}
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${frontendUrl}/portail/incidents" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Voir mes signalements →
+          </a>
+        </div>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
+/** Email envoyé au locataire lorsqu'il reçoit un nouveau message de son agence. */
+export function newMessageFromManagerEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  content: string;
+  frontendUrl: string;
+}) {
+  const { tenantName, propertyTitle, content, frontendUrl } = params;
+  const preview = content.length > 220 ? `${content.slice(0, 220)}…` : content;
+
+  return {
+    subject: `💬 Nouveau message de votre agence — ${propertyTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">💬 Nouveau message de votre agence</h2>
+        <p>Bonjour ${tenantName},</p>
+        <p>Vous avez reçu un nouveau message concernant le logement <strong>${propertyTitle}</strong> :</p>
+        <p style="background:#f8fafc; border-left:3px solid #2563eb; border-radius:4px; padding:12px 16px; color:#334155; font-style:italic;">
+          « ${preview} »
+        </p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${frontendUrl}/portail/messages" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Répondre au message →
+          </a>
+        </div>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
 /**
  * Template d'email de rappel de loyer envoyé automatiquement au locataire
  * au 1er de chaque mois, rappelant l'échéance à régler au plus tard le 5.
@@ -139,6 +221,61 @@ export function rentDueReminderEmail(params: {
           </p>
         </div>
         <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+          Cet email vous a été envoyé automatiquement par votre agence de gestion immobilière.
+        </div>
+      </div>
+    `,
+  };
+}
+
+/**
+ * Rappel complémentaire envoyé quelques jours AVANT la date d'échéance d'une
+ * facture encore impayée (en plus de l'avis du 1er du mois) — pense-bête de
+ * dernière minute pour réduire les retards de paiement.
+ */
+export function rentDueSoonReminderEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  amount: number;
+  currency: string;
+  periodMonth: number;
+  periodYear: number;
+  daysLeft: number;
+  dueDate: Date;
+  frontendUrl: string;
+}) {
+  const { tenantName, propertyTitle, amount, currency, periodMonth, periodYear, daysLeft, dueDate, frontendUrl } = params;
+  const monthNames = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+  ];
+  const monthName = monthNames[periodMonth - 1] || `${periodMonth}`;
+  const formattedDueDate = dueDate.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+
+  return {
+    subject: `⏰ Rappel : votre loyer de ${monthName} arrive à échéance dans ${daysLeft} jour(s)`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: #92400e; padding: 20px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 18px; font-weight: 700;">⏰ Rappel avant échéance</h1>
+        </div>
+        <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
+          <p>Bonjour <strong>${tenantName}</strong>,</p>
+          <p>
+            Votre loyer de <strong>${monthName} ${periodYear}</strong> pour le logement
+            <strong>${propertyTitle}</strong> n'a pas encore été réglé et arrive à échéance le
+            <strong>${formattedDueDate}</strong> (dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}).
+          </p>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px; margin: 16px 0; text-align: center;">
+            <span style="font-size: 24px; font-weight: 900; color: #92400e;">${amount} ${currency}</span>
+          </div>
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="${frontendUrl}/portail/paiements" style="background: #2563eb; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block;">
+              Régler mon loyer maintenant →
+            </a>
+          </div>
+        </div>
+        <div style="background: #f8fafc; padding: 14px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
           Cet email vous a été envoyé automatiquement par votre agence de gestion immobilière.
         </div>
       </div>

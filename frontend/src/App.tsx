@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import ActivityLogPage from "./pages/manager/ActivityLogPage";
 import AgencySettingsPage from "./pages/manager/AgencySettingsPage";
 import ContractsPage from "./pages/manager/ContractsPage";
 import DashboardPage from "./pages/manager/DashboardPage";
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/issues" element={<IssuesPage />} />
+        <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/agency" element={<AgencySettingsPage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />
       </Route>

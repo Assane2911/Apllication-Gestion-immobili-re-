@@ -3,7 +3,7 @@ import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
-import { contractEndingReminderEmail, rentDueReminderEmail, sendEmail } from "./email.service";
+import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract } from "./invoice.service";
 
 /**
@@ -135,6 +135,72 @@ export async function runRentDueReminders() {
 }
 
 /**
+ * Envoie un rappel complémentaire quelques jours AVANT la date d'échéance
+ * (`env.reminder.rentDueSoonDays`, 3 jours par défaut) pour toute facture
+ * encore impayée (PENDING ou LATE) — en plus de l'avis du 1er du mois.
+ * Idempotent via `dueSoonReminderSentAt` (distinct de `reminderSentAt`).
+ */
+export async function runUpcomingRentDueReminders() {
+  const daysBefore = env.reminder.rentDueSoonDays;
+  const now = new Date();
+  const targetStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 0, 0, 0);
+  const targetEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 23, 59, 59);
+
+  const rows = await db
+    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(
+      and(
+        eq(contracts.status, "ACTIVE"),
+        isNull(invoices.dueSoonReminderSentAt),
+        or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE")),
+        gte(invoices.dueDate, targetStart),
+        lte(invoices.dueDate, targetEnd)
+      )
+    );
+
+  let sent = 0;
+  const details = [];
+
+  for (const row of rows) {
+    const { subject, html } = rentDueSoonReminderEmail({
+      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      propertyTitle: row.property.title,
+      amount: row.invoice.amount,
+      currency: row.invoice.currency || "EUR",
+      periodMonth: row.invoice.periodMonth,
+      periodYear: row.invoice.periodYear,
+      daysLeft: daysBefore,
+      dueDate: new Date(row.invoice.dueDate),
+      frontendUrl: env.frontendUrl,
+    });
+
+    const emailResult = await sendEmail(row.tenant.email, subject, html);
+    await db
+      .update(invoices)
+      .set({ dueSoonReminderSentAt: new Date() })
+      .where(eq(invoices.id, row.invoice.id));
+
+    sent += 1;
+    details.push({
+      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantEmail: row.tenant.email,
+      propertyTitle: row.property.title,
+      amount: row.invoice.amount,
+      simulated: emailResult.simulated,
+    });
+  }
+
+  if (sent > 0) {
+    console.log(`[reminder] ⏰ ${sent} rappel(s) "avant échéance" (J-${daysBefore}) envoyé(s) aux locataires.`);
+  }
+  return { sent, details };
+}
+
+/**
  * Envoie un rappel d'échéance pour une facture spécifique (déclenché manuellement par l'agence).
  */
 export async function sendSingleInvoiceReminder(invoiceId: string) {
@@ -190,6 +256,14 @@ export function scheduleContractEndingReminders() {
   console.log(`[reminder] 📢 Job avis d'échéance du 1er du mois (date limite le 5) planifié avec "${rentDueCron}"`);
   cron.schedule(rentDueCron, () => {
     runRentDueReminders().catch((err) => console.error("[reminder] erreur avis loyer du 1er:", err));
+  });
+
+  // Tâche planifiée automatique : tous les jours à 9h00, rappel complémentaire
+  // quelques jours avant l'échéance pour les factures encore impayées.
+  const rentDueSoonCron = "0 9 * * *";
+  console.log(`[reminder] ⏰ Job rappel "avant échéance" planifié avec "${rentDueSoonCron}"`);
+  cron.schedule(rentDueSoonCron, () => {
+    runUpcomingRentDueReminders().catch((err) => console.error("[reminder] erreur rappel avant échéance:", err));
   });
 }
 

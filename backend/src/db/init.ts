@@ -38,6 +38,7 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_signature_url TEXT`); } catch {}
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_soon_reminder_sent_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`); } catch {}
     try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
 
@@ -186,6 +187,21 @@ export async function initDb() {
         manager_note TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id TEXT PRIMARY KEY,
+        actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        actor_role TEXT,
+        actor_label TEXT NOT NULL,
+        action TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT,
+        entity_label TEXT NOT NULL,
+        details TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
 

@@ -123,6 +123,9 @@ export const invoices = pgTable(
     paymentMethod: paymentMethodEnum("payment_method"),
     paymentRef: text("payment_ref"),
     reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
+    // Rappel distinct envoyé quelques jours AVANT l'échéance (voir reminder.service.ts),
+    // différent du rappel/avis du 1er du mois qui alimente `reminderSentAt`.
+    dueSoonReminderSentAt: timestamp("due_soon_reminder_sent_at", { mode: "date" }),
     ...timestamps,
   },
   (table) => ({
@@ -183,6 +186,20 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   isRead: text("is_read").notNull().default("false"),
   ...timestamps,
+});
+
+// --- Activity Log (Journal d'activité / audit — qui a fait quoi, quand) ---
+export const activityLogs = pgTable("activity_logs", {
+  id: id(),
+  actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
+  actorRole: roleEnum("actor_role"),
+  actorLabel: text("actor_label").notNull(), // ex: email du gestionnaire au moment de l'action
+  action: text("action").notNull(), // ex: "property.create", "contract.renew"
+  entityType: text("entity_type").notNull(), // ex: "property", "tenant", "contract", "invoice", "issue"
+  entityId: text("entity_id"),
+  entityLabel: text("entity_label").notNull(), // libellé lisible, ex: le titre du bien
+  details: text("details"), // description courte lisible en français
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
 // --- Agency Settings (Paramètres & Marque Blanche de l'Agence) ---

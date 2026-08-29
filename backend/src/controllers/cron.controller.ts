@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { env } from "../config/env";
-import { runContractEndingReminders, runRentDueReminders } from "../services/reminder.service";
+import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 /**
@@ -45,6 +45,30 @@ export const triggerRentDueReminders = asyncHandler(async (req: Request, res: Re
   res.json({
     success: true,
     message: `${result.sent} rappel(s) de loyer du 1er du mois envoyé(s)`,
+    remindersSent: result.sent,
+    details: result.details,
+  });
+});
+
+/**
+ * Déclenché par Vercel Cron Jobs une fois par jour pour envoyer le rappel
+ * complémentaire "avant échéance" (J-3 par défaut) aux locataires dont la
+ * facture est encore impayée.
+ */
+export const triggerUpcomingRentDueReminders = asyncHandler(async (req: Request, res: Response) => {
+  if (env.cronSecret) {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${env.cronSecret}`) {
+      throw new ApiError(401, "Non autorisé");
+    }
+  } else {
+    console.warn("[cron] CRON_SECRET non configuré : la route /api/cron/rent-due-soon-reminders n'est pas protégée.");
+  }
+
+  const result = await runUpcomingRentDueReminders();
+  res.json({
+    success: true,
+    message: `${result.sent} rappel(s) "avant échéance" envoyé(s)`,
     remindersSent: result.sent,
     details: result.details,
   });

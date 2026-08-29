@@ -30,6 +30,9 @@ export const env = {
   reminder: {
     daysBefore: parseInt(process.env.CONTRACT_REMINDER_DAYS ?? "14", 10),
     cron: process.env.REMINDER_CRON ?? "0 8 * * *",
+    // Nombre de jours avant l'échéance d'une facture pour envoyer le rappel
+    // complémentaire "dernière minute" au locataire (voir runUpcomingRentDueReminders).
+    rentDueSoonDays: parseInt(process.env.RENT_DUE_SOON_DAYS ?? "3", 10),
   },
 
   // Secret partagé avec Vercel (variable d'env CRON_SECRET sur le projet)

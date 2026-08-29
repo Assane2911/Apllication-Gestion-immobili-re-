@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, invoices, issueReports, properties, tenants } from "../db/schema";
+import { logActivity } from "../services/activity.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -66,6 +67,15 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   await db.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
   await generateInvoicesForContract(contract);
 
+  await logActivity({
+    req,
+    action: "contract.create",
+    entityType: "contract",
+    entityId: contract.id,
+    entityLabel: `${property.title} — ${tenant.firstName} ${tenant.lastName}`,
+    details: `Nouveau contrat créé pour ${tenant.firstName} ${tenant.lastName} sur le bien ${property.title}`,
+  });
+
   res.status(201).json(await withRelations(contract.id));
 });
 
@@ -89,12 +99,23 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     await generateInvoicesForContract(contract);
   }
 
+  const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+  await logActivity({
+    req,
+    action: "contract.update",
+    entityType: "contract",
+    entityId: contract.id,
+    entityLabel: property?.title ?? "Contrat",
+    details: `Contrat modifié pour le bien ${property?.title ?? ""}${body.status ? ` (statut : ${body.status})` : ""}`,
+  });
+
   res.json(contract);
 });
 
 export const deleteContract = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable");
+  const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
 
   await db.delete(invoices).where(eq(invoices.contractId, req.params.id));
   await db.delete(issueReports).where(eq(issueReports.contractId, req.params.id));
@@ -105,6 +126,15 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   if (stillActive === 0) {
     await db.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, existing.propertyId));
   }
+
+  await logActivity({
+    req,
+    action: "contract.delete",
+    entityType: "contract",
+    entityId: existing.id,
+    entityLabel: property?.title ?? "Contrat",
+    details: `Contrat supprimé pour le bien ${property?.title ?? ""}`,
+  });
 
   res.status(204).send();
 });
@@ -171,6 +201,16 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
 
   await db.update(contracts).set({ status: "ENDED" }).where(eq(contracts.id, existing.id));
   await generateInvoicesForContract(newContract);
+
+  const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
+  await logActivity({
+    req,
+    action: "contract.renew",
+    entityType: "contract",
+    entityId: newContract.id,
+    entityLabel: property?.title ?? "Contrat",
+    details: `Contrat renouvelé pour ${months} mois sur le bien ${property?.title ?? ""}`,
+  });
 
   res.status(201).json(await withRelations(newContract.id));
 });

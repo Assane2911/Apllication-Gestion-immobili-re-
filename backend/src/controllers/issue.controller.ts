@@ -1,8 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
+import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, issueReports, properties, tenants } from "../db/schema";
+import { logActivity } from "../services/activity.service";
+import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -42,6 +45,39 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     .set({ status: body.status, managerNote: body.managerNote })
     .where(eq(issueReports.id, req.params.id))
     .returning();
+
+  // Notifie le locataire par email de la mise à jour de son signalement —
+  // ne doit jamais faire échouer la réponse si l'envoi échoue.
+  const [row] = await db
+    .select({ tenant: tenants, contract: contracts, property: properties })
+    .from(contracts)
+    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(contracts.id, updated.contractId));
+
+  if (row?.tenant?.email) {
+    const { subject, html } = issueStatusUpdateEmail({
+      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      issueTitle: updated.title,
+      propertyTitle: row.property.title,
+      status: updated.status,
+      managerNote: updated.managerNote,
+      frontendUrl: env.frontendUrl,
+    });
+    sendEmail(row.tenant.email, subject, html).catch((err) =>
+      console.error("[issue] Échec de l'envoi de la notification de statut:", err)
+    );
+  }
+
+  await logActivity({
+    req,
+    action: "issue.update_status",
+    entityType: "issue",
+    entityId: updated.id,
+    entityLabel: updated.title,
+    details: `Statut de l'incident « ${updated.title} » changé en ${updated.status}`,
+  });
+
   res.json(updated);
 });
 
