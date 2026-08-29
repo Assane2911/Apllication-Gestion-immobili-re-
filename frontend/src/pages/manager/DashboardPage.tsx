@@ -65,7 +65,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
+      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
         <h3 className="font-bold text-base mb-1">Erreur de chargement du tableau de bord</h3>
         <p className="text-sm">{error}</p>
         <button
@@ -82,15 +82,15 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Tableau de bord</h2>
-          <p className="text-sm text-slate-500 mt-1">Chargement des indicateurs clés...</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Tableau de bord</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Chargement des indicateurs clés...</p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
           <Skeleton className="h-5 w-56 mb-4" />
           <Skeleton className="h-[260px] w-full rounded-xl" />
         </div>
@@ -137,13 +137,13 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <span>Tableau de bord</span>
-            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+            <span className="text-xs bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
               <CheckCircle2 size={12} /> Système en direct
             </span>
           </h2>
-          <p className="text-sm text-slate-500 mt-1">Vue d'ensemble et performance de votre parc immobilier</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Vue d'ensemble et performance de votre parc immobilier</p>
         </div>
       </div>
 
@@ -210,21 +210,21 @@ export default function DashboardPage() {
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Graphique Barres Comparatif Revenus vs Dépenses */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 text-base">Revenus vs Dépenses (Derniers mois)</h3>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">Revenus vs Dépenses (Derniers mois)</h3>
           </div>
           {comparisonChartData.length === 0 ? (
-            <p className="text-sm text-slate-400 py-16 text-center">
+            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">
               Pas encore de paiements ou de dépenses enregistrés sur cette période.
             </p>
           ) : (
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={comparisonChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#64748b" }} />
-                  <YAxis tick={{ fontSize: 12, fill: "#64748b" }} />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
+                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
                   <Tooltip
                     formatter={(value: any, name: any) => [
                       formatMoney(Number(value)),
@@ -250,10 +250,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Camembert Statut du parc immobilier */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
-          <h3 className="font-bold text-slate-900 text-base mb-4">Statut du parc immobilier</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">Statut du parc immobilier</h3>
           {donutData.length === 0 ? (
-            <p className="text-sm text-slate-400 py-16 text-center">Aucun bien enregistré pour l'instant.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">Aucun bien enregistré pour l'instant.</p>
           ) : (
             <>
               <div className="h-[200px] w-full">
@@ -284,9 +284,9 @@ export default function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-slate-100">
+              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                 {donutData.map((entry) => (
-                  <div key={entry.status} className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+                  <div key={entry.status} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: statusColors[entry.status] }}
