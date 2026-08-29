@@ -75,9 +75,64 @@ export interface Contract {
   endDate: string;
   status: ContractStatus;
   reminderSentAt?: string | null;
+  signedByManagerAt?: string | null;
+  managerSignatureUrl?: string | null;
+  signedByTenantAt?: string | null;
+  tenantSignatureUrl?: string | null;
   property?: Property;
   tenant?: Tenant;
   invoices?: Invoice[];
+}
+
+export type ExpenseCategory = "MAINTENANCE" | "TAX" | "INSURANCE" | "SYNDIC" | "OTHER";
+
+export interface Expense {
+  id: string;
+  propertyId: string;
+  category: ExpenseCategory;
+  title: string;
+  amount: number;
+  currency: string;
+  expenseDate: string;
+  receiptUrl?: string | null;
+  notes?: string | null;
+  property?: Property;
+  createdAt: string;
+}
+
+export interface Message {
+  id: string;
+  contractId: string;
+  senderId: string;
+  senderRole: Role;
+  content: string;
+  isRead: string;
+  createdAt: string;
+  sender?: {
+    id: string;
+    email: string;
+    role: Role;
+  };
+}
+
+export interface Conversation {
+  contractId: string;
+  property: Property;
+  tenant: Tenant;
+  lastMessage?: Message | null;
+}
+
+export interface AgencySettings {
+  id: string;
+  userId: string;
+  agencyName: string;
+  logoUrl?: string | null;
+  siretOrId?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  legalNotice?: string | null;
+  stampOrSignatureUrl?: string | null;
 }
 
 export type InvoiceStatus = "PENDING" | "PAID" | "LATE" | "CANCELLED";
@@ -126,3 +181,4 @@ export interface DashboardStats {
   lateInvoices: number;
   revenueByMonth: Record<string, number>;
 }
+

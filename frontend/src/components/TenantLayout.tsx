@@ -5,6 +5,7 @@ import { CurrencySelector } from "../context/CurrencyContext";
 const navItems = [
   { to: "/portail", label: "Mon logement", icon: "🏠" },
   { to: "/portail/paiements", label: "Mes loyers", icon: "💳" },
+  { to: "/portail/messages", label: "Messagerie", icon: "💬" },
   { to: "/portail/incidents", label: "Signaler un problème", icon: "📷" },
 ];
 

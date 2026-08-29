@@ -130,3 +130,41 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
   }
   res.json(result);
 });
+
+const signContractSchema = z.object({
+  signatureDataUrl: z.string().min(10, "Signature requise"),
+});
+
+/** Signature électronique du contrat (par le gestionnaire ou le locataire). */
+export const signContract = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  const { id } = req.params;
+  const { signatureDataUrl } = signContractSchema.parse(req.body);
+
+  const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
+  if (!contract) throw new ApiError(404, "Contrat introuvable");
+
+  if (req.user.role === "TENANT") {
+    if (contract.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
+    const [updated] = await db
+      .update(contracts)
+      .set({
+        signedByTenantAt: new Date(),
+        tenantSignatureUrl: signatureDataUrl,
+      })
+      .where(eq(contracts.id, id))
+      .returning();
+    return res.json(await withRelations(updated.id));
+  } else {
+    const [updated] = await db
+      .update(contracts)
+      .set({
+        signedByManagerAt: new Date(),
+        managerSignatureUrl: signatureDataUrl,
+      })
+      .where(eq(contracts.id, id))
+      .returning();
+    return res.json(await withRelations(updated.id));
+  }
+});
+

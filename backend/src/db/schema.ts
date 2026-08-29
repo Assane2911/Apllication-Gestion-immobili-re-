@@ -97,6 +97,11 @@ export const contracts = pgTable("contracts", {
   endDate: timestamp("end_date", { mode: "date" }).notNull(),
   status: contractStatusEnum("status").notNull().default("ACTIVE"),
   reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
+  // Signature électronique
+  signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),
+  managerSignatureUrl: text("manager_signature_url"),
+  signedByTenantAt: timestamp("signed_by_tenant_at", { mode: "date" }),
+  tenantSignatureUrl: text("tenant_signature_url"),
   ...timestamps,
 });
 
@@ -146,9 +151,62 @@ export const issueReports = pgTable("issue_reports", {
   ...timestamps,
 });
 
+// --- Expenses (Dépenses, Travaux, Charges & Taxe foncière) ---
+export const expenseCategoryEnum = pgEnum("expense_category", ["MAINTENANCE", "TAX", "INSURANCE", "SYNDIC", "OTHER"]);
+
+export const expenses = pgTable("expenses", {
+  id: id(),
+  propertyId: text("property_id")
+    .notNull()
+    .references(() => properties.id, { onDelete: "cascade" }),
+  category: text("category").notNull().default("MAINTENANCE"),
+  title: text("title").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  currency: text("currency").notNull().default("EUR"),
+  expenseDate: timestamp("expense_date", { mode: "date" }).notNull().defaultNow(),
+  receiptUrl: text("receipt_url"),
+  notes: text("notes"),
+  ...timestamps,
+});
+
+// --- Messages (Messagerie directe Agence - Locataire) ---
+export const messages = pgTable("messages", {
+  id: id(),
+  contractId: text("contract_id")
+    .notNull()
+    .references(() => contracts.id, { onDelete: "cascade" }),
+  senderId: text("sender_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  senderRole: roleEnum("sender_role").notNull(),
+  content: text("content").notNull(),
+  isRead: text("is_read").notNull().default("false"),
+  ...timestamps,
+});
+
+// --- Agency Settings (Paramètres & Marque Blanche de l'Agence) ---
+export const agencySettings = pgTable("agency_settings", {
+  id: id(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  agencyName: text("agency_name").notNull().default("Agence Immobilière"),
+  logoUrl: text("logo_url"),
+  siretOrId: text("siret_or_id"),
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  legalNotice: text("legal_notice"),
+  stampOrSignatureUrl: text("stamp_or_signature_url"),
+  ...timestamps,
+});
+
 // --- Relations (pour les requêtes imbriquées via db.query.*) ---
-export const usersRelations = relations(users, ({ one }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   tenant: one(tenants, { fields: [users.id], references: [tenants.userId] }),
+  agencySettings: one(agencySettings, { fields: [users.id], references: [agencySettings.userId] }),
+  messages: many(messages),
 }));
 
 export const tenantsRelations = relations(tenants, ({ one, many }) => ({
@@ -159,6 +217,7 @@ export const tenantsRelations = relations(tenants, ({ one, many }) => ({
 
 export const propertiesRelations = relations(properties, ({ many }) => ({
   contracts: many(contracts),
+  expenses: many(expenses),
 }));
 
 export const contractsRelations = relations(contracts, ({ one, many }) => ({
@@ -166,6 +225,7 @@ export const contractsRelations = relations(contracts, ({ one, many }) => ({
   tenant: one(tenants, { fields: [contracts.tenantId], references: [tenants.id] }),
   invoices: many(invoices),
   issues: many(issueReports),
+  messages: many(messages),
 }));
 
 export const invoicesRelations = relations(invoices, ({ one }) => ({
@@ -176,3 +236,17 @@ export const issueReportsRelations = relations(issueReports, ({ one }) => ({
   contract: one(contracts, { fields: [issueReports.contractId], references: [contracts.id] }),
   tenant: one(tenants, { fields: [issueReports.tenantId], references: [tenants.id] }),
 }));
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  property: one(properties, { fields: [expenses.propertyId], references: [properties.id] }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  contract: one(contracts, { fields: [messages.contractId], references: [contracts.id] }),
+  sender: one(users, { fields: [messages.senderId], references: [users.id] }),
+}));
+
+export const agencySettingsRelations = relations(agencySettings, ({ one }) => ({
+  user: one(users, { fields: [agencySettings.userId], references: [users.id] }),
+}));
+

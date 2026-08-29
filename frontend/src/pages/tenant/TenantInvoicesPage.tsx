@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
+import DocumentModal from "../../components/DocumentModal";
 import { useCurrency } from "../../context/CurrencyContext";
 import type { Invoice, PaymentMethod } from "../../types";
 
@@ -20,6 +21,7 @@ export default function TenantInvoicesPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bankRef, setBankRef] = useState("");
+  const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
 
   function load() {
     api.get<Invoice[]>("/invoices/mine").then((res) => setInvoices(res.data));
@@ -43,7 +45,7 @@ export default function TenantInvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-slate-900">Mes loyers</h2>
+      <h2 className="text-2xl font-semibold text-slate-900">Mes loyers & Quittances</h2>
       {message && <p className="text-sm bg-emerald-50 text-emerald-700 rounded-lg px-3 py-2">{message}</p>}
       {error && <p className="text-sm bg-red-50 text-red-700 rounded-lg px-3 py-2">{error}</p>}
 
@@ -58,6 +60,14 @@ export default function TenantInvoicesPage() {
               <div className="flex items-center gap-3">
                 <span className="font-bold text-slate-900">{formatMoney(inv.amount, inv.currency)}</span>
                 <Badge status={inv.status} />
+                {inv.status === "PAID" && (
+                  <button
+                    onClick={() => setActiveReceiptInvoice(inv)}
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                  >
+                    <span>📄</span> Ma Quittance PDF
+                  </button>
+                )}
                 {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
                   <button
                     onClick={() => setPayingId(payingId === inv.id ? null : inv.id)}
@@ -97,6 +107,15 @@ export default function TenantInvoicesPage() {
         ))}
         {invoices.length === 0 && <p className="text-slate-400 text-sm text-center py-8">Aucune facture pour le moment</p>}
       </div>
+
+      {activeReceiptInvoice && (
+        <DocumentModal
+          title={`Quittance de loyer - ${monthNames[activeReceiptInvoice.periodMonth - 1]} ${activeReceiptInvoice.periodYear}`}
+          docUrl={`/documents/receipt/${activeReceiptInvoice.id}`}
+          onClose={() => setActiveReceiptInvoice(null)}
+        />
+      )}
     </div>
   );
 }
+

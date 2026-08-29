@@ -9,7 +9,10 @@ const navItems = [
   { to: "/tenants", label: "Locataires", icon: "👥" },
   { to: "/contracts", label: "Contrats", icon: "📄" },
   { to: "/invoices", label: "Paiements", icon: "💳" },
+  { to: "/expenses", label: "Dépenses & Rentabilité", icon: "💰" },
+  { to: "/messages", label: "Messagerie", icon: "💬" },
   { to: "/issues", label: "Incidents", icon: "🛠️" },
+  { to: "/agency", label: "Mon Agence", icon: "🏢" },
   { to: "/subscription", label: "Mon Abonnement", icon: "💎" },
 ];
 

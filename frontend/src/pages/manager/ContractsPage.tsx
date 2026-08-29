@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
+import DocumentModal from "../../components/DocumentModal";
+import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/CurrencyContext";
 import type { Contract, ContractStatus, Property, Tenant } from "../../types";
 
@@ -19,6 +21,9 @@ export default function ContractsPage() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [signingContract, setSigningContract] = useState<Contract | null>(null);
+  const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
 
   function load() {
     api.get<Contract[]>("/contracts").then((res) => setContracts(res.data));
@@ -69,8 +74,8 @@ export default function ContractsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Contrats de location</h2>
-          <p className="text-sm text-slate-500 mt-1">{contracts.length} contrat(s)</p>
+          <h2 className="text-2xl font-semibold text-slate-900">Contrats de location & Baux</h2>
+          <p className="text-sm text-slate-500 mt-1">{contracts.length} contrat(s) de bail en gestion</p>
         </div>
         <button onClick={() => setShowForm(true)} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
           + Nouveau contrat
@@ -138,32 +143,87 @@ export default function ContractsPage() {
               <th className="px-4 py-3 font-medium">Bien</th>
               <th className="px-4 py-3 font-medium">Locataire</th>
               <th className="px-4 py-3 font-medium">Loyer</th>
-              <th className="px-4 py-3 font-medium">Début</th>
-              <th className="px-4 py-3 font-medium">Fin</th>
+              <th className="px-4 py-3 font-medium">Durée</th>
+              <th className="px-4 py-3 font-medium">Signatures</th>
               <th className="px-4 py-3 font-medium">Statut</th>
-              <th className="px-4 py-3 font-medium"></th>
+              <th className="px-4 py-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {contracts.map((c) => (
-              <tr key={c.id}>
-                <td className="px-4 py-3 text-slate-900">{c.property?.title}</td>
+              <tr key={c.id} className="hover:bg-slate-50/50">
+                <td className="px-4 py-3 text-slate-900 font-medium">{c.property?.title}</td>
                 <td className="px-4 py-3 text-slate-600">{c.tenant?.firstName} {c.tenant?.lastName}</td>
                 <td className="px-4 py-3 text-slate-900 font-semibold">{formatMoney(c.rent, c.currency)}</td>
-                <td className="px-4 py-3 text-slate-600">{formatDate(c.startDate)}</td>
-                <td className="px-4 py-3 text-slate-600">{formatDate(c.endDate)}</td>
+                <td className="px-4 py-3 text-slate-600 text-xs">
+                  {formatDate(c.startDate)} → {formatDate(c.endDate)}
+                </td>
+                <td className="px-4 py-3 text-xs space-y-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-slate-500">Agence :</span>
+                    {c.signedByManagerAt ? (
+                      <span className="text-emerald-700 font-semibold">✅ Signé</span>
+                    ) : (
+                      <button
+                        onClick={() => setSigningContract(c)}
+                        className="text-brand-600 font-semibold hover:underline"
+                      >
+                        ✍️ Signer
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-slate-500">Locataire :</span>
+                    {c.signedByTenantAt ? (
+                      <span className="text-emerald-700 font-semibold">✅ Signé</span>
+                    ) : (
+                      <span className="text-amber-600">⏳ En attente</span>
+                    )}
+                  </div>
+                </td>
                 <td className="px-4 py-3"><Badge status={c.status} /></td>
-                <td className="px-4 py-3 text-right space-x-3 whitespace-nowrap">
+                <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                  <button
+                    onClick={() => setViewingLeaseContract(c)}
+                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>📄</span> Bail PDF
+                  </button>
                   {c.status === "ACTIVE" && (
-                    <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 hover:underline text-xs">Résilier</button>
+                    <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 hover:underline text-xs">
+                      Résilier
+                    </button>
                   )}
-                  <button onClick={() => handleDelete(c)} className="text-red-600 hover:underline text-xs">Supprimer</button>
+                  <button onClick={() => handleDelete(c)} className="text-red-600 hover:underline text-xs">
+                    Supprimer
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {signingContract && (
+        <SignatureModal
+          contractId={signingContract.id}
+          contractTitle={`Bail - ${signingContract.property?.title}`}
+          onSuccess={() => {
+            setSigningContract(null);
+            load();
+          }}
+          onClose={() => setSigningContract(null)}
+        />
+      )}
+
+      {viewingLeaseContract && (
+        <DocumentModal
+          title={`Contrat de Bail - ${viewingLeaseContract.property?.title}`}
+          docUrl={`/documents/lease/${viewingLeaseContract.id}`}
+          onClose={() => setViewingLeaseContract(null)}
+        />
+      )}
     </div>
   );
 }
+

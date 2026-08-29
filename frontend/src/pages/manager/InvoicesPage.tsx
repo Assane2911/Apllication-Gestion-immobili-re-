@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
+import DocumentModal from "../../components/DocumentModal";
 import { useCurrency } from "../../context/CurrencyContext";
 import type { Invoice, InvoiceStatus } from "../../types";
 
@@ -21,6 +22,7 @@ export default function InvoicesPage() {
   const [sendingSingleId, setSendingSingleId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
 
   function load() {
     api.get<Invoice[]>("/invoices").then((res) => setInvoices(res.data));
@@ -80,7 +82,7 @@ export default function InvoicesPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Paiements de loyer</h2>
-          <p className="text-sm text-slate-500 mt-1">Suivi des mensualités et alertes d'échéances locataires</p>
+          <p className="text-sm text-slate-500 mt-1">Suivi des mensualités et quittances officielles en PDF</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <select
@@ -112,7 +114,7 @@ export default function InvoicesPage() {
         <div className="space-y-0.5">
           <p className="font-semibold">Automatisation des alertes mensuelles (Le 1er de chaque mois)</p>
           <p className="text-blue-700">
-            Un email d'avis d'échéance est <strong>automatiquement envoyé à chaque locataire le 1er du mois à 8h00</strong> pour lui rappeler de régler son loyer <strong>au plus tard le 5 du mois</strong>. Vous pouvez également déclencher l'envoi manuellement ci-dessus.
+            Un email d'avis d'échéance est <strong>automatiquement envoyé à chaque locataire le 1er du mois à 8h00</strong> pour lui rappeler de régler son loyer <strong>au plus tard le 5 du mois</strong>.
           </p>
         </div>
       </div>
@@ -167,6 +169,14 @@ export default function InvoicesPage() {
                   <Badge status={inv.status} />
                 </td>
                 <td className="px-4 py-3.5 text-right space-x-2 whitespace-nowrap">
+                  {inv.status === "PAID" && (
+                    <button
+                      onClick={() => setActiveReceiptInvoice(inv)}
+                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors inline-flex items-center gap-1"
+                    >
+                      <span>📄</span> Quittance PDF
+                    </button>
+                  )}
                   {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
                     <>
                       <button
@@ -198,6 +208,15 @@ export default function InvoicesPage() {
           </tbody>
         </table>
       </div>
+
+      {activeReceiptInvoice && (
+        <DocumentModal
+          title={`Quittance de loyer - ${monthNames[activeReceiptInvoice.periodMonth - 1]} ${activeReceiptInvoice.periodYear}`}
+          docUrl={`/documents/receipt/${activeReceiptInvoice.id}`}
+          onClose={() => setActiveReceiptInvoice(null)}
+        />
+      )}
     </div>
   );
 }
+

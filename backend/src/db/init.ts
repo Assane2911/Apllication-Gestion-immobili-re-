@@ -32,8 +32,59 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
     try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
     try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_manager_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS manager_signature_url TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_tenant_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_signature_url TEXT`); } catch {}
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS expenses (
+        id TEXT PRIMARY KEY,
+        property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+        category TEXT NOT NULL DEFAULT 'MAINTENANCE',
+        title TEXT NOT NULL,
+        amount DOUBLE PRECISION NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'EUR',
+        expense_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        receipt_url TEXT,
+        notes TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS messages (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sender_role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        is_read TEXT NOT NULL DEFAULT 'false',
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS agency_settings (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        agency_name TEXT NOT NULL DEFAULT 'Agence Immobilière',
+        logo_url TEXT,
+        siret_or_id TEXT,
+        address TEXT,
+        phone TEXT,
+        email TEXT,
+        legal_notice TEXT,
+        stamp_or_signature_url TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS platform_subscriptions (

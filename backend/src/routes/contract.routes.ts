@@ -5,6 +5,7 @@ import {
   getContract,
   listContracts,
   myContracts,
+  signContract,
   updateContract,
 } from "../controllers/contract.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
@@ -12,6 +13,7 @@ import { authenticate, requireActiveSubscription, requireRole } from "../middlew
 const router = Router();
 
 router.get("/mine", authenticate, requireRole("TENANT"), myContracts);
+router.post("/:id/sign", authenticate, signContract);
 
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 router.get("/", listContracts);
