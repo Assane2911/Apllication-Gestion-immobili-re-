@@ -74,3 +74,67 @@ export function contractEndingReminderEmail(params: {
     `,
   };
 }
+
+/**
+ * Template d'email de rappel de loyer envoyé automatiquement au locataire
+ * au 1er de chaque mois, rappelant l'échéance à régler au plus tard le 5.
+ */
+export function rentDueReminderEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  amount: number;
+  periodMonth: number;
+  periodYear: number;
+  dueDate: Date;
+  frontendUrl: string;
+}) {
+  const { tenantName, propertyTitle, amount, periodMonth, periodYear, frontendUrl } = params;
+  const monthNames = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+  ];
+  const monthName = monthNames[periodMonth - 1] || `${periodMonth}`;
+
+  return {
+    subject: `📢 Échéance de loyer ${monthName} ${periodYear} — Règlement attendu avant le 5`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Avis d'Échéance de Loyer</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${monthName} ${periodYear} • ${propertyTitle}</p>
+        </div>
+        <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
+          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${tenantName}</strong>,</p>
+          <p>
+            Votre avis d'échéance de loyer pour le mois de <strong>${monthName} ${periodYear}</strong> concernant le bien <strong>${propertyTitle}</strong> est désormais émis.
+          </p>
+          
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Montant à régler</span>
+            <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0;">${amount} €</div>
+            <div style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: bold; padding: 6px 14px; border-radius: 20px; border: 1px solid #fde68a;">
+              ⏰ Date limite de règlement : au plus tard le 5 ${monthName} ${periodYear}
+            </div>
+          </div>
+
+          <p style="font-size: 13px; color: #475569;">
+            Conformément à votre bail de location, nous vous remercions de procéder au paiement de votre loyer dans les délais impartis.
+          </p>
+
+          <div style="text-align: center; margin: 28px 0 20px 0;">
+            <a href="${frontendUrl}/portail/paiements" style="background: #2563eb; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+              Régler mon loyer en ligne →
+            </a>
+          </div>
+          <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+            Moyens acceptés : Carte bancaire, Mobile Money (Orange/MTN), virement bancaire.
+          </p>
+        </div>
+        <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+          Cet email vous a été envoyé automatiquement par votre agence de gestion immobilière.
+        </div>
+      </div>
+    `,
+  };
+}
+

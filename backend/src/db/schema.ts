@@ -113,6 +113,7 @@ export const invoices = pgTable(
     paidAt: timestamp("paid_at", { mode: "date" }),
     paymentMethod: paymentMethodEnum("payment_method"),
     paymentRef: text("payment_ref"),
+    reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     ...timestamps,
   },
   (table) => ({

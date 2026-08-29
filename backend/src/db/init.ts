@@ -105,10 +105,13 @@ export async function initDb() {
         paid_at TIMESTAMP,
         payment_method TEXT CHECK (payment_method IN ('STRIPE', 'MOBILE_MONEY', 'BANK_TRANSFER', 'DEMO')),
         payment_ref TEXT,
+        reminder_sent_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
 
     await db.execute(sql`
       CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique

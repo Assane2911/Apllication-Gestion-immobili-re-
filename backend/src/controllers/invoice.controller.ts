@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
 import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
+import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 export const listInvoices = asyncHandler(async (req: Request, res: Response) => {
@@ -114,3 +115,25 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
 
   res.json({ invoice: updated, payment: result });
 });
+
+/** Déclenchement manuel des avis d'échéance du 1er du mois par le gestionnaire. */
+export const sendMonthlyReminders = asyncHandler(async (_req: Request, res: Response) => {
+  const result = await runRentDueReminders();
+  res.json({
+    success: true,
+    message: `${result.sent} avis d'échéance envoyé(s) avec succès aux locataires.`,
+    sent: result.sent,
+    details: result.details,
+  });
+});
+
+/** Envoi d'un rappel individuel pour une facture impayée. */
+export const sendInvoiceReminder = asyncHandler(async (req: Request, res: Response) => {
+  const result = await sendSingleInvoiceReminder(req.params.id);
+  res.json({
+    success: true,
+    message: `Rappel d'échéance envoyé à ${result.tenantName} (${result.tenantEmail}).`,
+    ...result,
+  });
+});
+

@@ -1,6 +1,4 @@
-import { Request, Response } from "express";
-import { env } from "../config/env";
-import { runContractEndingReminders } from "../services/reminder.service";
+import { runContractEndingReminders, runRentDueReminders } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 /**
@@ -26,3 +24,27 @@ export const triggerContractEndingReminders = asyncHandler(async (req: Request, 
   const sent = await runContractEndingReminders();
   res.json({ success: true, remindersSent: sent });
 });
+
+/**
+ * Déclenché par Vercel Cron Jobs le 1er de chaque mois pour envoyer
+ * les alertes d'échéance de loyer aux locataires (délai de règlement : au plus tard le 5).
+ */
+export const triggerRentDueReminders = asyncHandler(async (req: Request, res: Response) => {
+  if (env.cronSecret) {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${env.cronSecret}`) {
+      throw new ApiError(401, "Non autorisé");
+    }
+  } else {
+    console.warn("[cron] CRON_SECRET non configuré : la route /api/cron/rent-due-reminders n'est pas protégée.");
+  }
+
+  const result = await runRentDueReminders();
+  res.json({
+    success: true,
+    message: `${result.sent} rappel(s) de loyer du 1er du mois envoyé(s)`,
+    remindersSent: result.sent,
+    details: result.details,
+  });
+});
+

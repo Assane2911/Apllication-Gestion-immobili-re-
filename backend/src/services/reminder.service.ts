@@ -1,9 +1,10 @@
-import { and, eq, gte, isNull, lte } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, properties, tenants } from "../db/schema";
-import { contractEndingReminderEmail, sendEmail } from "./email.service";
+import { contracts, invoices, properties, tenants } from "../db/schema";
+import { contractEndingReminderEmail, rentDueReminderEmail, sendEmail } from "./email.service";
+import { generateInvoicesForContract } from "./invoice.service";
 
 /**
  * Recherche les contrats ACTIFS dont la date de fin tombe exactement dans
@@ -62,9 +63,133 @@ export async function runContractEndingReminders() {
   return sent;
 }
 
+/**
+ * Envoie automatiquement un avis d'échéance / rappel de loyer à tous les
+ * locataires le 1er de chaque mois pour leur rappeler de régler leur loyer
+ * au plus tard le 5 du mois.
+ */
+export async function runRentDueReminders() {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  // 1. S'assure que les factures du mois en cours sont générées pour tous les contrats actifs
+  const activeContracts = await db.select().from(contracts).where(eq(contracts.status, "ACTIVE"));
+  for (const c of activeContracts) {
+    await generateInvoicesForContract(c);
+  }
+
+  // 2. Recherche toutes les factures impayées du mois courant pour les contrats actifs
+  const rows = await db
+    .select({
+      invoice: invoices,
+      contract: contracts,
+      tenant: tenants,
+      property: properties,
+    })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(
+      and(
+        eq(contracts.status, "ACTIVE"),
+        eq(invoices.periodMonth, currentMonth),
+        eq(invoices.periodYear, currentYear),
+        or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE"))
+      )
+    );
+
+  let sent = 0;
+  const details = [];
+
+  for (const row of rows) {
+    const { subject, html } = rentDueReminderEmail({
+      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      propertyTitle: row.property.title,
+      amount: row.invoice.amount,
+      periodMonth: row.invoice.periodMonth,
+      periodYear: row.invoice.periodYear,
+      dueDate: new Date(row.invoice.dueDate),
+      frontendUrl: env.frontendUrl,
+    });
+
+    const emailResult = await sendEmail(row.tenant.email, subject, html);
+    await db
+      .update(invoices)
+      .set({ reminderSentAt: new Date() })
+      .where(eq(invoices.id, row.invoice.id));
+
+    sent += 1;
+    details.push({
+      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantEmail: row.tenant.email,
+      propertyTitle: row.property.title,
+      amount: row.invoice.amount,
+      simulated: emailResult.simulated,
+    });
+  }
+
+  console.log(`[reminder] 📢 ${sent} avis d'échéance du 1er du mois envoyé(s) aux locataires (échéance au plus tard le 5).`);
+  return { sent, details };
+}
+
+/**
+ * Envoie un rappel d'échéance pour une facture spécifique (déclenché manuellement par l'agence).
+ */
+export async function sendSingleInvoiceReminder(invoiceId: string) {
+  const [row] = await db
+    .select({
+      invoice: invoices,
+      contract: contracts,
+      tenant: tenants,
+      property: properties,
+    })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(invoices.id, invoiceId));
+
+  if (!row) {
+    throw new Error("Facture introuvable");
+  }
+
+  const { subject, html } = rentDueReminderEmail({
+    tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+    propertyTitle: row.property.title,
+    amount: row.invoice.amount,
+    periodMonth: row.invoice.periodMonth,
+    periodYear: row.invoice.periodYear,
+    dueDate: new Date(row.invoice.dueDate),
+    frontendUrl: env.frontendUrl,
+  });
+
+  const emailResult = await sendEmail(row.tenant.email, subject, html);
+  await db
+    .update(invoices)
+    .set({ reminderSentAt: new Date() })
+    .where(eq(invoices.id, row.invoice.id));
+
+  return {
+    success: true,
+    tenantEmail: row.tenant.email,
+    tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+    simulated: emailResult.simulated,
+  };
+}
+
 export function scheduleContractEndingReminders() {
-  console.log(`[reminder] Job planifié avec l'expression cron "${env.reminder.cron}"`);
+  console.log(`[reminder] Job fin de contrat planifié avec "${env.reminder.cron}"`);
   cron.schedule(env.reminder.cron, () => {
-    runContractEndingReminders().catch((err) => console.error("[reminder] erreur:", err));
+    runContractEndingReminders().catch((err) => console.error("[reminder] erreur fin contrat:", err));
+  });
+
+  // Tâche planifiée automatique : le 1er de chaque mois à 8h00 du matin
+  const rentDueCron = "0 8 1 * *";
+  console.log(`[reminder] 📢 Job avis d'échéance du 1er du mois (date limite le 5) planifié avec "${rentDueCron}"`);
+  cron.schedule(rentDueCron, () => {
+    runRentDueReminders().catch((err) => console.error("[reminder] erreur avis loyer du 1er:", err));
   });
 }
+
