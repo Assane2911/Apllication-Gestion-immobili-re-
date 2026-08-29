@@ -24,8 +24,13 @@ export default function ManagerLayout() {
     <div className="min-h-screen flex bg-slate-50">
       <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col shrink-0">
         <div className="px-5 py-6 border-b border-slate-800">
-          <h1 className="text-lg font-semibold">Gestion Immobilière</h1>
-          <p className="text-xs text-slate-400 mt-1">Espace gestionnaire</p>
+          <div className="flex items-center gap-3">
+            <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md" />
+            <div>
+              <h1 className="text-sm font-bold leading-tight">ImmoPlatform Pro</h1>
+              <p className="text-[11px] text-slate-400">Espace gestionnaire</p>
+            </div>
+          </div>
           {sub?.isTrialActive && (
             <div className="mt-2.5 bg-brand-900/60 border border-brand-500/30 rounded-lg px-2.5 py-1 text-[11px] text-brand-200 flex items-center justify-between">
               <span>Essai gratuit</span>
