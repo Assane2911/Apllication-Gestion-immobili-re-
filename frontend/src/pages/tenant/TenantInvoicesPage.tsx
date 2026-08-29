@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
+import { useCurrency } from "../../context/CurrencyContext";
 import type { Invoice, PaymentMethod } from "../../types";
 
 const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
@@ -13,6 +14,7 @@ const methods: { key: PaymentMethod; label: string; hint: string }[] = [
 ];
 
 export default function TenantInvoicesPage() {
+  const { formatMoney } = useCurrency();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export default function TenantInvoicesPage() {
                 <p className="text-xs text-slate-500">Échéance : {new Date(inv.dueDate).toLocaleDateString("fr-FR")}</p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-slate-900">{inv.amount} €</span>
+                <span className="font-bold text-slate-900">{formatMoney(inv.amount, inv.currency)}</span>
                 <Badge status={inv.status} />
                 {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
                   <button

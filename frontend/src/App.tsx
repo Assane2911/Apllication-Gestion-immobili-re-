@@ -3,6 +3,7 @@ import ManagerLayout from "./components/ManagerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { CurrencyProvider } from "./context/CurrencyContext";
 import LoginPage from "./pages/LoginPage";
 import ContractsPage from "./pages/manager/ContractsPage";
 import DashboardPage from "./pages/manager/DashboardPage";
@@ -63,7 +64,9 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <CurrencyProvider>
+          <AppRoutes />
+        </CurrencyProvider>
       </AuthProvider>
     </Router>
   );

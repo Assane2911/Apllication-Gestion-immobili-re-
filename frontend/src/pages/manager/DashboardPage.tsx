@@ -2,13 +2,11 @@ import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, apiErrorMessage } from "../../api/client";
 import StatCard from "../../components/StatCard";
+import { useCurrency } from "../../context/CurrencyContext";
 import type { DashboardStats } from "../../types";
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0 }).format(value) + " €";
-}
-
 export default function DashboardPage() {
+  const { formatMoney } = useCurrency();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +36,7 @@ export default function DashboardPage() {
         <StatCard label="Taux d'occupation" value={`${stats.occupancyRate}%`} accent="green" />
         <StatCard label="Locataires" value={stats.totalTenants} accent="blue" />
         <StatCard label="Contrats actifs" value={stats.activeContracts} accent="blue" />
-        <StatCard label="Revenus du mois" value={formatCurrency(stats.monthlyRevenue)} hint={`Attendu : ${formatCurrency(stats.monthlyExpected)}`} accent="green" />
+        <StatCard label="Revenus du mois" value={formatMoney(stats.monthlyRevenue)} hint={`Attendu : ${formatMoney(stats.monthlyExpected)}`} accent="green" />
         <StatCard label="Factures en retard" value={stats.lateInvoices} accent="red" />
         <StatCard label="Incidents ouverts" value={stats.openIssues} accent="amber" />
         <StatCard
@@ -58,7 +56,7 @@ export default function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              <Tooltip formatter={(value) => formatMoney(Number(value))} />
               <Bar dataKey="revenue" fill="#2563eb" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

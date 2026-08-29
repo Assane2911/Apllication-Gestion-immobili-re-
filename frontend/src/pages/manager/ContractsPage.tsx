@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
+import { useCurrency } from "../../context/CurrencyContext";
 import type { Contract, ContractStatus, Property, Tenant } from "../../types";
 
 const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "" };
@@ -10,6 +11,7 @@ function formatDate(d: string) {
 }
 
 export default function ContractsPage() {
+  const { formatMoney } = useCurrency();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -147,7 +149,7 @@ export default function ContractsPage() {
               <tr key={c.id}>
                 <td className="px-4 py-3 text-slate-900">{c.property?.title}</td>
                 <td className="px-4 py-3 text-slate-600">{c.tenant?.firstName} {c.tenant?.lastName}</td>
-                <td className="px-4 py-3 text-slate-600">{c.rent} €</td>
+                <td className="px-4 py-3 text-slate-900 font-semibold">{formatMoney(c.rent, c.currency)}</td>
                 <td className="px-4 py-3 text-slate-600">{formatDate(c.startDate)}</td>
                 <td className="px-4 py-3 text-slate-600">{formatDate(c.endDate)}</td>
                 <td className="px-4 py-3"><Badge status={c.status} /></td>

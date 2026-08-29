@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
+import { useCurrency } from "../../context/CurrencyContext";
 import type { Contract } from "../../types";
 
 export default function TenantDashboardPage() {
+  const { formatMoney } = useCurrency();
   const [contracts, setContracts] = useState<Contract[]>([]);
 
   useEffect(() => {
@@ -40,11 +42,11 @@ export default function TenantDashboardPage() {
               <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-slate-100">
                 <div>
                   <p className="text-slate-400 text-xs">Loyer mensuel</p>
-                  <p className="font-medium text-slate-900">{c.rent} €</p>
+                  <p className="font-semibold text-slate-900">{formatMoney(c.rent, c.currency)}</p>
                 </div>
                 <div>
                   <p className="text-slate-400 text-xs">Dépôt de garantie</p>
-                  <p className="font-medium text-slate-900">{c.deposit} €</p>
+                  <p className="font-semibold text-slate-900">{formatMoney(c.deposit, c.currency)}</p>
                 </div>
                 <div>
                   <p className="text-slate-400 text-xs">Début du contrat</p>

@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { CurrencySelector } from "../context/CurrencyContext";
 
 const navItems = [
   { to: "/portail", label: "Mon logement", icon: "🏠" },
@@ -13,14 +14,17 @@ export default function TenantLayout() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="font-semibold text-slate-900">Espace locataire</h1>
             <p className="text-xs text-slate-500">{user?.tenantName ?? user?.email}</p>
           </div>
-          <button onClick={logout} className="text-sm text-slate-500 hover:text-slate-800 underline">
-            Se déconnecter
-          </button>
+          <div className="flex items-center gap-3">
+            <CurrencySelector />
+            <button onClick={logout} className="text-xs text-slate-500 hover:text-slate-800 underline">
+              Se déconnecter
+            </button>
+          </div>
         </div>
         <div className="max-w-4xl mx-auto px-4 flex gap-1 pb-2">
           {navItems.map((item) => (

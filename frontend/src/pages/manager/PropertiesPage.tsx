@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
+import { useCurrency } from "../../context/CurrencyContext";
 import type { Property, PropertyStatus } from "../../types";
 
 const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAILABLE" as PropertyStatus, description: "" };
 
 export default function PropertiesPage() {
+  const { formatMoney } = useCurrency();
   const [properties, setProperties] = useState<Property[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Property | null>(null);
@@ -158,7 +160,7 @@ export default function PropertiesPage() {
               <p className="text-xs text-slate-500 mt-1">{p.address}</p>
               <div className="flex justify-between text-sm mt-3">
                 <span className="text-slate-500">{p.surface} m²</span>
-                <span className="font-medium text-slate-900">{p.rent} €/mois</span>
+                <span className="font-semibold text-slate-900">{formatMoney(p.rent, p.currency)} / mois</span>
               </div>
               <div className="flex gap-3 mt-3 text-xs">
                 <button onClick={() => openEdit(p)} className="text-brand-600 hover:underline">

@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { CurrencySelector } from "../context/CurrencyContext";
 import TrialBanner from "./TrialBanner";
 
 const navItems = [
@@ -28,6 +29,12 @@ export default function ManagerLayout() {
               <span className="font-bold text-white">{sub.trialDaysRemaining} j</span>
             </div>
           )}
+          <div className="mt-3 pt-3 border-t border-slate-800">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
+              Monnaie de règlement
+            </label>
+            <CurrencySelector className="w-full" />
+          </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => (

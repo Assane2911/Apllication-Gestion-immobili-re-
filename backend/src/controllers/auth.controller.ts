@@ -85,6 +85,7 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
       id: user.id,
       email: user.email,
       role: user.role,
+      currency: user.currency ?? "EUR",
       subscription,
     },
   });
@@ -119,6 +120,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       id: user.id,
       email: user.email,
       role: user.role,
+      currency: user.currency ?? "EUR",
       tenantId: tenant?.id ?? null,
       tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : null,
       subscription,
@@ -142,7 +144,26 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     id: user.id,
     email: user.email,
     role: user.role,
+    currency: user.currency ?? "EUR",
     tenant: tenant ?? null,
     subscription,
   });
 });
+
+/** Mise à jour de la devise préférée de l'utilisateur. */
+export const updateCurrency = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  const currencySchema = z.object({
+    currency: z.string().min(1).max(10),
+  });
+  const { currency } = currencySchema.parse(req.body);
+
+  const [updated] = await db
+    .update(users)
+    .set({ currency })
+    .where(eq(users.id, req.user.userId))
+    .returning();
+
+  res.json({ success: true, currency: updated.currency });
+});
+

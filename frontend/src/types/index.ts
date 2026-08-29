@@ -29,6 +29,7 @@ export interface AuthUser {
   id: string;
   email: string;
   role: Role;
+  currency?: string;
   tenantId?: string | null;
   tenantName?: string | null;
   subscription?: SubscriptionInfo | null;
@@ -42,6 +43,7 @@ export interface Property {
   address: string;
   surface: number;
   rent: number;
+  currency?: string;
   status: PropertyStatus;
   description?: string | null;
   imageUrl?: string | null;
@@ -68,6 +70,7 @@ export interface Contract {
   tenantId: string;
   rent: number;
   deposit: number;
+  currency?: string;
   startDate: string;
   endDate: string;
   status: ContractStatus;
@@ -86,6 +89,7 @@ export interface Invoice {
   periodMonth: number;
   periodYear: number;
   amount: number;
+  currency?: string;
   dueDate: string;
   status: InvoiceStatus;
   paidAt?: string | null;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
+import { useCurrency } from "../../context/CurrencyContext";
 import type { Invoice, InvoiceStatus } from "../../types";
 
 const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
@@ -13,6 +14,7 @@ const methodLabels: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
+  const { formatMoney } = useCurrency();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filter, setFilter] = useState<InvoiceStatus | "ALL">("ALL");
   const [sendingMonthly, setSendingMonthly] = useState(false);
@@ -153,7 +155,7 @@ export default function InvoicesPage() {
                   <p className="text-[11px] text-slate-400">{inv.contract?.tenant?.email}</p>
                 </td>
                 <td className="px-4 py-3.5 text-slate-600">{inv.contract?.property?.title}</td>
-                <td className="px-4 py-3.5 font-bold text-slate-900">{inv.amount} €</td>
+                <td className="px-4 py-3.5 font-bold text-slate-900">{formatMoney(inv.amount, inv.currency)}</td>
                 <td className="px-4 py-3.5 text-slate-600">
                   <span className="text-xs">{new Date(inv.dueDate).toLocaleDateString("fr-FR")}</span>
                   <span className="block text-[10px] text-amber-700 font-medium">(Limite au 5)</span>

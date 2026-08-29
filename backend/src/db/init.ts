@@ -29,6 +29,10 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_method TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
     try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
 
     await db.execute(sql`
