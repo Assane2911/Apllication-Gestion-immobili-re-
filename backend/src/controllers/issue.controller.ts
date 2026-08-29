@@ -89,3 +89,39 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
     .returning();
   res.status(201).json(issue);
 });
+
+/** Le locataire ou le gestionnaire ajoute une nouvelle photo à un incident déjà signalé. */
+export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.file) throw new ApiError(400, "Une photo est requise");
+
+  const [issue] = await db.select().from(issueReports).where(eq(issueReports.id, req.params.id));
+  if (!issue) throw new ApiError(404, "Signalement introuvable");
+
+  if (req.user.role === "TENANT" && issue.tenantId !== req.user.tenantId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+
+  const newPhotoUrl = await uploadPublicFile(req.file, "issues");
+
+  let existingPhotos: string[] = [];
+  try {
+    if (issue.additionalPhotos) {
+      existingPhotos = JSON.parse(issue.additionalPhotos);
+    }
+  } catch {}
+
+  const updatedPhotos = [...existingPhotos, newPhotoUrl];
+
+  const [updated] = await db
+    .update(issueReports)
+    .set({
+      additionalPhotos: JSON.stringify(updatedPhotos),
+      updatedAt: new Date(),
+    })
+    .where(eq(issueReports.id, req.params.id))
+    .returning();
+
+  res.json(updated);
+});
+

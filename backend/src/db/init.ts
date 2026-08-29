@@ -38,6 +38,7 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_signature_url TEXT`); } catch {}
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`); } catch {}
     try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
 
     await db.execute(sql`

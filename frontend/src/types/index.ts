@@ -162,6 +162,7 @@ export interface IssueReport {
   title: string;
   description: string;
   photoUrl: string;
+  additionalPhotos?: string | null;
   status: IssueStatus;
   managerNote?: string | null;
   createdAt: string;

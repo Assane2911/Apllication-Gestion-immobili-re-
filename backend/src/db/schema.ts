@@ -146,6 +146,7 @@ export const issueReports = pgTable("issue_reports", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   photoUrl: text("photo_url").notNull(),
+  additionalPhotos: text("additional_photos"), // JSON string array of photo URLs
   status: issueStatusEnum("status").notNull().default("OPEN"),
   managerNote: text("manager_note"),
   ...timestamps,
