@@ -12,6 +12,7 @@ import expenseRoutes from "./routes/expense.routes";
 import invoiceRoutes from "./routes/invoice.routes";
 import issueRoutes from "./routes/issue.routes";
 import messageRoutes from "./routes/message.routes";
+import notificationRoutes from "./routes/notification.routes";
 import propertyRoutes from "./routes/property.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
@@ -41,6 +42,7 @@ app.use("/api/agency", agencyRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/issues", issueRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/cron", cronRoutes);
 
 app.use(notFoundHandler);

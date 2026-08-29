@@ -8,8 +8,17 @@ import type { Contract, ContractStatus, Property, Tenant } from "../../types";
 
 const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "" };
 
+// Fenêtre d'affichage du workflow de renouvellement : un contrat actif dont
+// la fin tombe dans ce nombre de jours ou moins propose de renouveler ou non.
+const RENEWAL_WINDOW_DAYS = 14;
+
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("fr-FR");
+}
+
+function daysUntil(d: string) {
+  const diffMs = new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
 export default function ContractsPage() {
@@ -62,6 +71,18 @@ export default function ContractsPage() {
     if (!confirm("Supprimer ce contrat et toutes ses factures associées ?")) return;
     try {
       await api.delete(`/contracts/${c.id}`);
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
+  async function handleRenew(c: Contract) {
+    if (!confirm(`Renouveler ce contrat pour 12 mois de plus (à partir du ${formatDate(String(new Date(new Date(c.endDate).getTime() + 86400000)))}) ?`)) {
+      return;
+    }
+    try {
+      await api.post(`/contracts/${c.id}/renew`, { months: 12 });
       load();
     } catch (err) {
       alert(apiErrorMessage(err));
@@ -150,13 +171,21 @@ export default function ContractsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {contracts.map((c) => (
-              <tr key={c.id} className="hover:bg-slate-50/50">
+            {contracts.map((c) => {
+              const daysLeft = daysUntil(c.endDate);
+              const showRenewal = c.status === "ACTIVE" && daysLeft <= RENEWAL_WINDOW_DAYS;
+              return (
+              <tr key={c.id} className={`hover:bg-slate-50/50 ${showRenewal ? "bg-amber-50/50" : ""}`}>
                 <td className="px-4 py-3 text-slate-900 font-medium">{c.property?.title}</td>
                 <td className="px-4 py-3 text-slate-600">{c.tenant?.firstName} {c.tenant?.lastName}</td>
                 <td className="px-4 py-3 text-slate-900 font-semibold">{formatMoney(c.rent, c.currency)}</td>
                 <td className="px-4 py-3 text-slate-600 text-xs">
                   {formatDate(c.startDate)} → {formatDate(c.endDate)}
+                  {showRenewal && (
+                    <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 font-semibold">
+                      ⏰ {daysLeft <= 0 ? "Échu" : `Fin dans ${daysLeft} j`}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-xs space-y-1">
                   <div className="flex items-center gap-1">
@@ -189,6 +218,19 @@ export default function ContractsPage() {
                   >
                     <span>📄</span> Bail PDF
                   </button>
+                  {showRenewal && (
+                    <>
+                      <button
+                        onClick={() => handleRenew(c)}
+                        className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                      >
+                        🔄 Renouveler (12 mois)
+                      </button>
+                      <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-500 hover:underline text-xs">
+                        Ne pas renouveler
+                      </button>
+                    </>
+                  )}
                   {c.status === "ACTIVE" && (
                     <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 hover:underline text-xs">
                       Résilier
@@ -199,7 +241,8 @@ export default function ContractsPage() {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

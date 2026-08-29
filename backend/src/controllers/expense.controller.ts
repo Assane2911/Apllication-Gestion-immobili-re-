@@ -2,7 +2,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { contracts, expenses, invoices, properties } from "../db/schema";
+import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 const createExpenseSchema = z.object({
@@ -94,4 +94,104 @@ export const getFinancialSummary = asyncHandler(async (_req: Request, res: Respo
     expenseCount: allExpenses.length,
     paidInvoiceCount: paidInvoices.length,
   });
+});
+
+function csvEscape(value: string | number): string {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
+/**
+ * Rapport financier complet (revenus + dépenses + résultat net par bien),
+ * exporté en CSV — utile pour la comptabilité/fiscalité du gestionnaire.
+ * Filtrable sur une période via ?from=YYYY-MM-DD&to=YYYY-MM-DD.
+ */
+export const exportFinancialReport = asyncHandler(async (req: Request, res: Response) => {
+  const { from, to } = req.query as { from?: string; to?: string };
+  const fromDate = from ? new Date(from) : null;
+  const toDate = to ? new Date(`${to}T23:59:59`) : null;
+
+  const paidInvoiceRows = await db
+    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(invoices.status, "PAID"));
+
+  const expenseRows = await db
+    .select({ expense: expenses, property: properties })
+    .from(expenses)
+    .innerJoin(properties, eq(expenses.propertyId, properties.id));
+
+  type PaidInvoiceRow = {
+    invoice: typeof invoices.$inferSelect;
+    contract: typeof contracts.$inferSelect;
+    tenant: typeof tenants.$inferSelect;
+    property: typeof properties.$inferSelect;
+  };
+  type ExpenseRow = { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect };
+
+  const inRange = (d: Date) => (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+
+  const filteredInvoices = (paidInvoiceRows as PaidInvoiceRow[]).filter((r) =>
+    inRange(new Date(r.invoice.paidAt ?? r.invoice.dueDate))
+  );
+  const filteredExpenses = (expenseRows as ExpenseRow[]).filter((r) => inRange(new Date(r.expense.expenseDate)));
+
+  const lines: string[] = [];
+  lines.push(["Type", "Date", "Bien", "Détail", "Description", "Montant", "Devise"].join(";"));
+
+  for (const r of filteredInvoices) {
+    const d = r.invoice.paidAt ?? r.invoice.dueDate;
+    lines.push(
+      [
+        "Revenu",
+        new Date(d).toLocaleDateString("fr-FR"),
+        csvEscape(r.property.title),
+        csvEscape(`${r.tenant.firstName} ${r.tenant.lastName}`),
+        csvEscape(`Loyer ${r.invoice.periodMonth}/${r.invoice.periodYear}`),
+        r.invoice.amount,
+        r.invoice.currency || "EUR",
+      ].join(";")
+    );
+  }
+
+  for (const r of filteredExpenses) {
+    lines.push(
+      [
+        "Dépense",
+        new Date(r.expense.expenseDate).toLocaleDateString("fr-FR"),
+        csvEscape(r.property.title),
+        csvEscape(r.expense.category),
+        csvEscape(r.expense.title),
+        -r.expense.amount,
+        r.expense.currency || "EUR",
+      ].join(";")
+    );
+  }
+
+  lines.push("");
+  lines.push(["--- Résumé par bien ---"].join(";"));
+  lines.push(["Bien", "Revenus", "Dépenses", "Résultat net"].join(";"));
+
+  const byProperty = new Map<string, { title: string; revenue: number; expense: number }>();
+  for (const r of filteredInvoices) {
+    const entry = byProperty.get(r.property.id) ?? { title: r.property.title, revenue: 0, expense: 0 };
+    entry.revenue += r.invoice.amount;
+    byProperty.set(r.property.id, entry);
+  }
+  for (const r of filteredExpenses) {
+    const entry = byProperty.get(r.property.id) ?? { title: r.property.title, revenue: 0, expense: 0 };
+    entry.expense += r.expense.amount;
+    byProperty.set(r.property.id, entry);
+  }
+  for (const entry of byProperty.values()) {
+    lines.push([csvEscape(entry.title), entry.revenue, entry.expense, entry.revenue - entry.expense].join(";"));
+  }
+
+  const csvContent = "﻿" + lines.join("\n");
+  const filename = `rapport-financier-${new Date().toISOString().split("T")[0]}.csv`;
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(csvContent);
 });

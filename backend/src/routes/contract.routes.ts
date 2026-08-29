@@ -5,6 +5,7 @@ import {
   getContract,
   listContracts,
   myContracts,
+  renewContract,
   signContract,
   updateContract,
 } from "../controllers/contract.controller";
@@ -19,6 +20,7 @@ router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 router.get("/", listContracts);
 router.get("/:id", getContract);
 router.post("/", createContract);
+router.post("/:id/renew", renewContract);
 router.put("/:id", updateContract);
 router.delete("/:id", deleteContract);
 

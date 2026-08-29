@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { CurrencySelector } from "../context/CurrencyContext";
+import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
 
 const navItems = [
@@ -69,6 +70,9 @@ export default function ManagerLayout() {
         </div>
       </aside>
       <main className="flex-1 min-w-0 p-6 lg:p-8">
+        <div className="flex justify-end mb-4">
+          <NotificationBell />
+        </div>
         <TrialBanner />
         <Outlet />
       </main>

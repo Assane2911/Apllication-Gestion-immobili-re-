@@ -131,6 +131,50 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
   res.json(result);
 });
 
+const renewContractSchema = z.object({
+  months: z.coerce.number().int().positive().max(60).default(12),
+});
+
+/**
+ * Renouvelle un contrat actif : crée un nouveau contrat pour le même bien et
+ * le même locataire, démarrant au lendemain de la fin de l'ancien, et marque
+ * l'ancien contrat comme ENDED. Le bien reste OCCUPIED puisqu'un contrat actif
+ * le couvre toujours (le nouveau) au moment où l'ancien passe à ENDED.
+ */
+export const renewContract = asyncHandler(async (req: Request, res: Response) => {
+  const { months } = renewContractSchema.parse(req.body ?? {});
+
+  const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
+  if (!existing) throw new ApiError(404, "Contrat introuvable");
+  if (existing.status !== "ACTIVE") {
+    throw new ApiError(409, "Seul un contrat actif peut être renouvelé");
+  }
+
+  const newStart = new Date(existing.endDate);
+  newStart.setDate(newStart.getDate() + 1);
+  const newEnd = new Date(newStart);
+  newEnd.setMonth(newEnd.getMonth() + months);
+
+  const [newContract] = await db
+    .insert(contracts)
+    .values({
+      propertyId: existing.propertyId,
+      tenantId: existing.tenantId,
+      rent: existing.rent,
+      deposit: existing.deposit,
+      currency: existing.currency,
+      startDate: newStart,
+      endDate: newEnd,
+      status: "ACTIVE",
+    })
+    .returning();
+
+  await db.update(contracts).set({ status: "ENDED" }).where(eq(contracts.id, existing.id));
+  await generateInvoicesForContract(newContract);
+
+  res.status(201).json(await withRelations(newContract.id));
+});
+
 const signContractSchema = z.object({
   signatureDataUrl: z.string().min(10, "Signature requise"),
 });

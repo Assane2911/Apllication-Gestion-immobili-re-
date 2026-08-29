@@ -170,6 +170,19 @@ export interface IssueReport {
   contract?: Contract;
 }
 
+export type NotificationType = "message" | "invoice" | "issue" | "contract_ending";
+export type NotificationSeverity = "info" | "warning" | "danger";
+
+export interface NotificationItem {
+  id: string;
+  type: NotificationType;
+  severity: NotificationSeverity;
+  title: string;
+  description: string;
+  link: string;
+  createdAt: string;
+}
+
 export interface DashboardStats {
   totalProperties: number;
   propertiesByStatus: Record<PropertyStatus, number>;
