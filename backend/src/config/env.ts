@@ -15,7 +15,9 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:5173",
 
-  jwtSecret: required("JWT_SECRET", "dev-secret-change-me"),
+  // Pas de valeur par défaut : si JWT_SECRET est absent, l'application doit
+  // refuser de démarrer plutôt que d'utiliser un secret public et prévisible.
+  jwtSecret: required("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
 
   smtp: {
