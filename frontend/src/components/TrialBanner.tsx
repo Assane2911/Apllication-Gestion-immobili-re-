@@ -78,12 +78,12 @@ export default function TrialBanner() {
 
   if (status === "ACTIVE") {
     return (
-      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl mb-6 flex items-center justify-between text-xs">
+      <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-2 rounded-xl mb-6 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>Abonnement <strong>Plan {plan}</strong> actif</span>
         </div>
-        <Link to="/subscription" className="text-emerald-700 hover:underline font-medium">
+        <Link to="/subscription" className="text-emerald-700 dark:text-emerald-400 hover:underline font-medium">
           Gérer mon abonnement
         </Link>
       </div>

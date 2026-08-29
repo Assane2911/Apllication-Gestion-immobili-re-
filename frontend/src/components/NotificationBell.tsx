@@ -56,7 +56,7 @@ export default function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+        className="relative w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
         aria-label="Notifications"
       >
         <Bell size={18} />
@@ -68,15 +68,15 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-lg z-50">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h4 className="font-semibold text-sm text-slate-900">Notifications</h4>
-            <p className="text-xs text-slate-400">{items.length} élément(s) nécessitant votre attention</p>
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">Notifications</h4>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{items.length} élément(s) nécessitant votre attention</p>
           </div>
           {items.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">Tout est à jour 👍</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">Tout est à jour 👍</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {items.map((n) => {
                 const Icon = iconByType[n.type];
                 return (
@@ -84,13 +84,13 @@ export default function NotificationBell() {
                     <Link
                       to={n.link}
                       onClick={() => setOpen(false)}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${severityDot[n.severity]}`} />
-                      <Icon size={16} className="mt-0.5 text-slate-400 shrink-0" />
+                      <Icon size={16} className="mt-0.5 text-slate-400 dark:text-slate-500 shrink-0" />
                       <span className="min-w-0">
-                        <span className="block text-sm text-slate-900 font-medium truncate">{n.title}</span>
-                        <span className="block text-xs text-slate-500 truncate">{n.description}</span>
+                        <span className="block text-sm text-slate-900 dark:text-slate-100 font-medium truncate">{n.title}</span>
+                        <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">{n.description}</span>
                       </span>
                     </Link>
                   </li>

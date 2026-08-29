@@ -219,5 +219,6 @@ export interface DashboardStats {
   openIssues: number;
   lateInvoices: number;
   revenueByMonth: Record<string, number>;
+  expensesByMonth: Record<string, number>;
 }
 

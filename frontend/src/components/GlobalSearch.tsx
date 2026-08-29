@@ -73,7 +73,7 @@ export default function GlobalSearch() {
           }}
           onFocus={() => setOpen(true)}
           placeholder="Rechercher un locataire, un bien, un contrat..."
-          className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-8 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 shadow-sm"
+          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-8 py-2 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 shadow-sm"
         />
         {query && (
           <button
@@ -81,7 +81,7 @@ export default function GlobalSearch() {
               setQuery("");
               setResults([]);
             }}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
             aria-label="Effacer la recherche"
           >
             <X size={14} />
@@ -90,25 +90,25 @@ export default function GlobalSearch() {
       </div>
 
       {open && query.trim().length >= 2 && (
-        <div className="absolute left-0 right-0 mt-2 max-h-96 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-lg z-50">
+        <div className="absolute left-0 right-0 mt-2 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">
           {loading ? (
-            <p className="text-sm text-slate-400 text-center py-6">Recherche...</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">Recherche...</p>
           ) : results.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">Aucun résultat pour « {query} »</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">Aucun résultat pour « {query} »</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {results.map((r) => {
                 const Icon = iconByType[r.type];
                 return (
                   <li key={`${r.type}-${r.id}`}>
                     <button
                       onClick={() => goTo(r)}
-                      className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                      className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
                     >
-                      <Icon size={16} className="mt-0.5 text-brand-600 shrink-0" />
+                      <Icon size={16} className="mt-0.5 text-brand-600 dark:text-brand-400 shrink-0" />
                       <span className="min-w-0">
-                        <span className="block text-sm text-slate-900 font-medium truncate">{r.title}</span>
-                        <span className="block text-xs text-slate-500 truncate">
+                        <span className="block text-sm text-slate-900 dark:text-slate-100 font-medium truncate">{r.title}</span>
+                        <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">
                           {labelByType[r.type]} • {r.subtitle}
                         </span>
                       </span>

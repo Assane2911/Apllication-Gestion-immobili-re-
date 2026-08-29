@@ -11,7 +11,13 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -36,12 +42,20 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-3xl w-full h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+    <div
+      className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-200 ${
+        visible ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      <div
+        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ${
+          visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+        }`}
+      >
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
           <div>
-            <h3 className="font-bold text-slate-900 text-base">{title}</h3>
-            <p className="text-xs text-slate-500">Aperçu officiel certifié & Téléchargement / Impression</p>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Aperçu officiel certifié & Téléchargement / Impression</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -53,16 +67,16 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 p-2 text-lg font-bold"
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 text-lg font-bold"
             >
               ✕
             </button>
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-100 p-4 relative overflow-hidden">
+        <div className="flex-1 bg-slate-100 dark:bg-slate-950 p-4 relative overflow-hidden">
           {loading && (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm">
+            <div className="absolute inset-0 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm">
               Chargement du document officiel...
             </div>
           )}
@@ -76,7 +90,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
               ref={iframeRef}
               srcDoc={htmlContent}
               title={title}
-              className="w-full h-full bg-white rounded-xl shadow border border-slate-200"
+              className="w-full h-full bg-white rounded-xl shadow border border-slate-200 dark:border-slate-700"
             />
           )}
         </div>

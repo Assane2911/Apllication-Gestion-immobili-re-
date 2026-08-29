@@ -1,7 +1,7 @@
 import { and, eq, gte, inArray } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
-import { invoices, issueReports, properties, contracts as contractsTable, tenants } from "../db/schema";
+import { expenses, invoices, issueReports, properties, contracts as contractsTable, tenants } from "../db/schema";
 import { asyncHandler } from "../utils/asyncHandler";
 
 export const getDashboardStats = asyncHandler(async (_req: Request, res: Response) => {
@@ -46,6 +46,15 @@ export const getDashboardStats = asyncHandler(async (_req: Request, res: Respons
     revenueByMonth[key] = (revenueByMonth[key] ?? 0) + inv.amount;
   }
 
+  // Dépenses des 6 derniers mois pour confronter visuellement dépenses vs revenus.
+  const recentExpenses = await db.select().from(expenses).where(gte(expenses.expenseDate, sixMonthsAgo));
+  const expensesByMonth: Record<string, number> = {};
+  for (const exp of recentExpenses) {
+    const d = new Date(exp.expenseDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    expensesByMonth[key] = (expensesByMonth[key] ?? 0) + exp.amount;
+  }
+
   res.json({
     totalProperties,
     propertiesByStatus: statusCounts,
@@ -57,5 +66,6 @@ export const getDashboardStats = asyncHandler(async (_req: Request, res: Respons
     openIssues,
     lateInvoices,
     revenueByMonth,
+    expensesByMonth,
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
-import { TableRowSkeleton } from "../../components/Skeleton";
+import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { Tenant } from "../../types";
 
 const emptyForm = { firstName: "", lastName: "", phone: "", email: "" };
@@ -104,36 +104,36 @@ export default function TenantsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Locataires</h2>
-          <p className="text-sm text-slate-500 mt-1">{tenants.length} locataire(s) enregistré(s)</p>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Locataires</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tenants.length} locataire(s) enregistré(s)</p>
         </div>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
           + Ajouter un locataire
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 mb-4">{editing ? "Modifier le locataire" : "Nouveau locataire"}</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? "Modifier le locataire" : "Nouveau locataire"}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Prénom</label>
-              <input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Prénom</label>
+              <input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Nom</label>
-              <input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nom</label>
+              <input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
-              <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Téléphone</label>
+              <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-              <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+              <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Pièce d'identité (image ou PDF)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pièce d'identité (image ou PDF)</label>
               <input type="file" accept="image/*,application/pdf" onChange={(e) => setIdDocument(e.target.files?.[0] ?? null)} className="w-full text-sm" />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600">{error}</p>}
@@ -141,7 +141,7 @@ export default function TenantsPage() {
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? "Enregistrement..." : "Enregistrer"}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 dark:text-slate-400 px-4 py-2">
                 Annuler
               </button>
             </div>
@@ -150,13 +150,13 @@ export default function TenantsPage() {
       )}
 
       {portalTenant && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 mb-1">Créer l'accès portail pour {portalTenant.firstName} {portalTenant.lastName}</h3>
-          <p className="text-xs text-slate-500 mb-4">Identifiant : {portalTenant.email}</p>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">Créer l'accès portail pour {portalTenant.firstName} {portalTenant.lastName}</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Identifiant : {portalTenant.email}</p>
           <form onSubmit={handleCreatePortal} className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Mot de passe temporaire</label>
-              <input required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mot de passe temporaire</label>
+              <input required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
               Créer l'accès
@@ -165,7 +165,7 @@ export default function TenantsPage() {
               Fermer
             </button>
           </form>
-          {portalMsg && <p className="text-sm mt-2 text-slate-600">{portalMsg}</p>}
+          {portalMsg && <p className="text-sm mt-2 text-slate-600 dark:text-slate-400">{portalMsg}</p>}
         </div>
       )}
 
@@ -177,9 +177,11 @@ export default function TenantsPage() {
           action={{ label: "+ Ajouter un locataire", onClick: openCreate }}
         />
       ) : (
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <>
+      {/* Vue tableau (écrans sm et plus) */}
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">Nom</th>
               <th className="px-4 py-3 font-medium">Téléphone</th>
@@ -189,36 +191,36 @@ export default function TenantsPage() {
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={6} />)
             ) : (
             tenants.map((t) => (
               <tr key={t.id}>
-                <td className="px-4 py-3 font-medium text-slate-900">{t.firstName} {t.lastName}</td>
-                <td className="px-4 py-3 text-slate-600">{t.phone}</td>
-                <td className="px-4 py-3 text-slate-600">{t.email}</td>
+                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{t.firstName} {t.lastName}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{t.phone}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{t.email}</td>
                 <td className="px-4 py-3">
                   {t.idDocument ? (
-                    <button onClick={() => openIdDocument(t)} className="text-brand-600 hover:underline">
+                    <button onClick={() => openIdDocument(t)} className="text-brand-600 dark:text-brand-400 hover:underline">
                       Voir
                     </button>
                   ) : (
-                    <span className="text-slate-300">—</span>
+                    <span className="text-slate-300 dark:text-slate-600">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   {t.userId ? (
-                    <span className="text-emerald-600 text-xs">Activé</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 text-xs">Activé</span>
                   ) : (
-                    <button onClick={() => { setPortalTenant(t); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 hover:underline text-xs">
+                    <button onClick={() => { setPortalTenant(t); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">
                       Créer l'accès
                     </button>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
-                  <button onClick={() => openEdit(t)} className="text-brand-600 hover:underline text-xs">Modifier</button>
-                  <button onClick={() => handleDelete(t)} className="text-red-600 hover:underline text-xs">Supprimer</button>
+                  <button onClick={() => openEdit(t)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">Modifier</button>
+                  <button onClick={() => handleDelete(t)} className="text-red-600 dark:text-red-400 hover:underline text-xs">Supprimer</button>
                 </td>
               </tr>
             ))
@@ -226,6 +228,49 @@ export default function TenantsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Vue cartes empilées (mobile, < sm) */}
+      <div className="sm:hidden space-y-3">
+        {loading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-40" />
+              </div>
+            ))
+          : tenants.map((t) => (
+              <div key={t.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{t.firstName} {t.lastName}</p>
+                  {t.userId ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 text-[11px] font-medium shrink-0">Portail activé</span>
+                  ) : (
+                    <button onClick={() => { setPortalTenant(t); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 dark:text-brand-400 hover:underline text-[11px] font-medium shrink-0">
+                      Créer l'accès
+                    </button>
+                  )}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                  <p>{t.phone}</p>
+                  <p>{t.email}</p>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                  {t.idDocument ? (
+                    <button onClick={() => openIdDocument(t)} className="text-brand-600 dark:text-brand-400 hover:underline">
+                      Voir la pièce d'identité
+                    </button>
+                  ) : (
+                    <span className="text-slate-300 dark:text-slate-600">Pas de pièce d'identité</span>
+                  )}
+                  <div className="space-x-3">
+                    <button onClick={() => openEdit(t)} className="text-brand-600 dark:text-brand-400 hover:underline">Modifier</button>
+                    <button onClick={() => handleDelete(t)} className="text-red-600 dark:text-red-400 hover:underline">Supprimer</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+      </div>
+      </>
       )}
     </div>
   );

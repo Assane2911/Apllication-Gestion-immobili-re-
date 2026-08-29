@@ -14,6 +14,13 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
   const [hasDrawn, setHasDrawn] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Déclenche la transition d'entrée au montage (fondu + léger zoom).
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -106,24 +113,32 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+    <div
+      className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-200 ${
+        visible ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      <div
+        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 transition-all duration-200 ${
+          visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+        }`}
+      >
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">✍️ Signature électronique du bail</h3>
-            <p className="text-xs text-slate-500 mt-0.5">{contractTitle}</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">✍️ Signature électronique du bail</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{contractTitle}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg font-semibold">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-semibold">
             ✕
           </button>
         </div>
 
-        <p className="text-xs text-slate-600 mt-4">
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-4">
           Tracez votre signature au doigt ou à la souris dans le cadre ci-dessous. En validant, vous attestez
           l'exactitude et la signature légale du contrat de bail.
         </p>
 
-        <div className="mt-3 relative border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 overflow-hidden touch-none flex items-center justify-center">
+        <div className="mt-3 relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden touch-none flex items-center justify-center">
           <canvas
             ref={canvasRef}
             width={460}

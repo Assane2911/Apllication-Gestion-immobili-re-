@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import ActivityLogPage from "./pages/manager/ActivityLogPage";
@@ -76,11 +77,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <Router>
-      <AuthProvider>
-        <CurrencyProvider>
-          <AppRoutes />
-        </CurrencyProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <CurrencyProvider>
+            <AppRoutes />
+          </CurrencyProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

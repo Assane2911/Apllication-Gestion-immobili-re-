@@ -1,6 +1,9 @@
+import { Menu, Moon, Sun, X } from "lucide-react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { CurrencySelector } from "../context/CurrencyContext";
+import { useTheme } from "../context/ThemeContext";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
@@ -21,17 +24,49 @@ const navItems = [
 
 export default function ManagerLayout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const sub = user?.subscription;
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col shrink-0">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 z-30 sm:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`fixed sm:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-100 flex flex-col shrink-0 overflow-y-auto transform transition-transform duration-200 ease-in-out ${
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+        } sm:translate-x-0`}
+      >
         <div className="px-5 py-6 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md" />
-            <div>
-              <h1 className="text-sm font-bold leading-tight">ImmoPlatform Pro</h1>
-              <p className="text-[11px] text-slate-400">Espace gestionnaire</p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md" />
+              <div>
+                <h1 className="text-sm font-bold leading-tight">ImmoPlatform Pro</h1>
+                <p className="text-[11px] text-slate-400">Espace gestionnaire</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={toggleTheme}
+                className="shrink-0 w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+                title={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+                aria-label="Basculer le thème clair/sombre"
+              >
+                {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+                aria-label="Fermer le menu"
+              >
+                <X size={15} />
+              </button>
             </div>
           </div>
           {sub?.isTrialActive && (
@@ -47,7 +82,7 @@ export default function ManagerLayout() {
             <CurrencySelector className="w-full" />
           </div>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1" onClick={() => setMobileNavOpen(false)}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -71,8 +106,15 @@ export default function ManagerLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 p-6 lg:p-8">
-        <div className="flex items-center justify-between gap-4 mb-4">
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="sm:hidden shrink-0 w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu size={18} />
+          </button>
           <GlobalSearch />
           <NotificationBell />
         </div>

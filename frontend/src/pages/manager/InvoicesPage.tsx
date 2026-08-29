@@ -81,14 +81,14 @@ export default function InvoicesPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Paiements de loyer</h2>
-          <p className="text-sm text-slate-500 mt-1">Suivi des mensualités et quittances officielles en PDF</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Paiements de loyer</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Suivi des mensualités et quittances officielles en PDF</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as InvoiceStatus | "ALL")}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white shadow-sm"
+            className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 dark:text-slate-100 shadow-sm"
           >
             <option value="ALL">Toutes les factures</option>
             <option value="PENDING">En attente</option>
@@ -109,32 +109,32 @@ export default function InvoicesPage() {
       </div>
 
       {/* Bannière informationnelle sur le rappel automatique du 1er */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900">
+      <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-200">
         <span className="text-base leading-none">⏰</span>
         <div className="space-y-0.5">
           <p className="font-semibold">Automatisation des alertes mensuelles (Le 1er de chaque mois)</p>
-          <p className="text-blue-700">
+          <p className="text-blue-700 dark:text-blue-300">
             Un email d'avis d'échéance est <strong>automatiquement envoyé à chaque locataire le 1er du mois à 8h00</strong> pour lui rappeler de régler son loyer <strong>au plus tard le 5 du mois</strong>.
           </p>
         </div>
       </div>
 
       {feedback && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs font-medium">
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl text-xs font-medium">
           {feedback}
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs">
           {error}
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
+      {/* Vue tableau (écrans sm et plus) */}
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 text-left border-b border-slate-200">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-left border-b border-slate-200 dark:border-slate-800">
             <tr>
               <th className="px-4 py-3 font-medium">Période</th>
               <th className="px-4 py-3 font-medium">Locataire</th>
@@ -146,23 +146,23 @@ export default function InvoicesPage() {
               <th className="px-4 py-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {filtered.map((inv) => (
-              <tr key={inv.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3.5 text-slate-900 font-medium">
+              <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                <td className="px-4 py-3.5 text-slate-900 dark:text-slate-100 font-medium">
                   {monthNames[inv.periodMonth - 1]} {inv.periodYear}
                 </td>
-                <td className="px-4 py-3.5 text-slate-700">
+                <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
                   <p className="font-medium">{inv.contract?.tenant?.firstName} {inv.contract?.tenant?.lastName}</p>
-                  <p className="text-[11px] text-slate-400">{inv.contract?.tenant?.email}</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">{inv.contract?.tenant?.email}</p>
                 </td>
-                <td className="px-4 py-3.5 text-slate-600">{inv.contract?.property?.title}</td>
-                <td className="px-4 py-3.5 font-bold text-slate-900">{formatMoney(inv.amount, inv.currency)}</td>
-                <td className="px-4 py-3.5 text-slate-600">
+                <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">{inv.contract?.property?.title}</td>
+                <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">{formatMoney(inv.amount, inv.currency)}</td>
+                <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
                   <span className="text-xs">{new Date(inv.dueDate).toLocaleDateString("fr-FR")}</span>
-                  <span className="block text-[10px] text-amber-700 font-medium">(Limite au 5)</span>
+                  <span className="block text-[10px] text-amber-700 dark:text-amber-400 font-medium">(Limite au 5)</span>
                 </td>
-                <td className="px-4 py-3.5 text-slate-600 text-xs">
+                <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400 text-xs">
                   {inv.paymentMethod ? methodLabels[inv.paymentMethod] : "—"}
                 </td>
                 <td className="px-4 py-3.5">
@@ -172,7 +172,7 @@ export default function InvoicesPage() {
                   {inv.status === "PAID" && (
                     <button
                       onClick={() => setActiveReceiptInvoice(inv)}
-                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors inline-flex items-center gap-1"
+                      className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 transition-colors inline-flex items-center gap-1"
                     >
                       <span>📄</span> Quittance PDF
                     </button>
@@ -182,14 +182,14 @@ export default function InvoicesPage() {
                       <button
                         onClick={() => handleSendSingleReminder(inv)}
                         disabled={sendingSingleId === inv.id}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
+                        className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
                         title="Envoyer un rappel de paiement par email"
                       >
                         {sendingSingleId === inv.id ? "Envoi..." : "📧 Relancer"}
                       </button>
                       <button
                         onClick={() => markPaid(inv)}
-                        className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 px-2.5 py-1 rounded-lg font-medium transition-colors"
+                        className="text-xs bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium transition-colors"
                       >
                         Marquer réglée
                       </button>
@@ -200,13 +200,75 @@ export default function InvoicesPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
                   Aucune facture pour ce filtre
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Vue cartes empilées (mobile, < sm) */}
+      <div className="sm:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <p className="text-center text-slate-400 dark:text-slate-500 text-sm py-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            Aucune facture pour ce filtre
+          </p>
+        ) : (
+          filtered.map((inv) => (
+            <div key={inv.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                    {monthNames[inv.periodMonth - 1]} {inv.periodYear}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{inv.contract?.property?.title}</p>
+                </div>
+                <Badge status={inv.status} />
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400">
+                <p className="font-medium text-slate-700 dark:text-slate-300">
+                  {inv.contract?.tenant?.firstName} {inv.contract?.tenant?.lastName}
+                </p>
+                <p>{inv.contract?.tenant?.email}</p>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-900 dark:text-slate-100">{formatMoney(inv.amount, inv.currency)}</span>
+                <span className="text-slate-500 dark:text-slate-400">
+                  Échéance : {new Date(inv.dueDate).toLocaleDateString("fr-FR")}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+                {inv.status === "PAID" && (
+                  <button
+                    onClick={() => setActiveReceiptInvoice(inv)}
+                    className="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30"
+                  >
+                    📄 Quittance PDF
+                  </button>
+                )}
+                {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
+                  <>
+                    <button
+                      onClick={() => handleSendSingleReminder(inv)}
+                      disabled={sendingSingleId === inv.id}
+                      className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
+                    >
+                      {sendingSingleId === inv.id ? "Envoi..." : "📧 Relancer"}
+                    </button>
+                    <button
+                      onClick={() => markPaid(inv)}
+                      className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium"
+                    >
+                      Marquer réglée
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {activeReceiptInvoice && (
