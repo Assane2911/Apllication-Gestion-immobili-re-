@@ -1,11 +1,15 @@
+import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../../api/client";
+import EmptyState from "../../components/EmptyState";
+import { TableRowSkeleton } from "../../components/Skeleton";
 import type { Tenant } from "../../types";
 
 const emptyForm = { firstName: "", lastName: "", phone: "", email: "" };
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Tenant | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -17,7 +21,10 @@ export default function TenantsPage() {
   const [portalMsg, setPortalMsg] = useState<string | null>(null);
 
   function load() {
-    api.get<Tenant[]>("/tenants").then((res) => setTenants(res.data));
+    api
+      .get<Tenant[]>("/tenants")
+      .then((res) => setTenants(res.data))
+      .finally(() => setLoading(false));
   }
 
   useEffect(load, []);
@@ -163,6 +170,14 @@ export default function TenantsPage() {
         </div>
       )}
 
+      {!loading && tenants.length === 0 && !showForm ? (
+        <EmptyState
+          icon={Users}
+          title="Aucun locataire pour l'instant"
+          description="Ajoutez votre premier locataire (nom, téléphone, email, pièce d'identité) pour pouvoir lui associer un contrat."
+          action={{ label: "+ Ajouter un locataire", onClick: openCreate }}
+        />
+      ) : (
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-left">
@@ -176,7 +191,10 @@ export default function TenantsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {tenants.map((t) => (
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={6} />)
+            ) : (
+            tenants.map((t) => (
               <tr key={t.id}>
                 <td className="px-4 py-3 font-medium text-slate-900">{t.firstName} {t.lastName}</td>
                 <td className="px-4 py-3 text-slate-600">{t.phone}</td>
@@ -204,10 +222,12 @@ export default function TenantsPage() {
                   <button onClick={() => handleDelete(t)} className="text-red-600 hover:underline text-xs">Supprimer</button>
                 </td>
               </tr>
-            ))}
+            ))
+            )}
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

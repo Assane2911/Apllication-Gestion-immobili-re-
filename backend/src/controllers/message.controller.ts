@@ -102,10 +102,12 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
       property: contract.property,
       tenant: contract.tenant,
     },
-    messages: msgList.map((m) => ({
-      ...m.message,
-      sender: m.sender,
-    })),
+    messages: msgList.map(
+      (m: { message: typeof messages.$inferSelect; sender: { id: string; email: string; role: string } }) => ({
+        ...m.message,
+        sender: m.sender,
+      })
+    ),
   });
 });
 

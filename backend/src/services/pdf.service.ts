@@ -1,3 +1,5 @@
+import PDFDocument from "pdfkit";
+
 export interface ReceiptData {
   receiptNumber: string;
   agency: {
@@ -269,6 +271,223 @@ export function generateReceiptHtml(data: ReceiptData): string {
 </body>
 </html>
   `.trim();
+}
+
+/**
+ * Génère un vrai fichier PDF (buffer binaire) de la quittance de loyer, via
+ * pdfkit — un rendu pur Node.js, sans navigateur headless, donc compatible
+ * avec un environnement serverless comme Vercel. Utilisé pour la pièce
+ * jointe de l'email envoyé automatiquement au locataire dès qu'un paiement
+ * est validé (voir services/receipt.service.ts).
+ */
+export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: "A4", margin: 48 });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const periodLabel = `${monthNames[data.invoice.periodMonth - 1]} ${data.invoice.periodYear}`;
+      const paidDateFormatted = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(
+        new Date(data.invoice.paidAt)
+      );
+
+      const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const brand = "#2563eb";
+      const dark = "#0f172a";
+      const gray = "#64748b";
+
+      // --- En-tête : identité de l'agence + titre du document ---
+      doc.fillColor(dark).font("Helvetica-Bold").fontSize(16).text(data.agency.name, { width: pageWidth * 0.6 });
+      doc.font("Helvetica").fontSize(9).fillColor(gray);
+      if (data.agency.address) doc.text(data.agency.address, { width: pageWidth * 0.6 });
+      if (data.agency.phone) doc.text(`Tél : ${data.agency.phone}`, { width: pageWidth * 0.6 });
+      if (data.agency.email) doc.text(`Email : ${data.agency.email}`, { width: pageWidth * 0.6 });
+      if (data.agency.siretOrId) doc.text(`N° SIRET / NIF : ${data.agency.siretOrId}`, { width: pageWidth * 0.6 });
+      const leftColumnBottomY = doc.y;
+
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(15)
+        .fillColor(brand)
+        .text("QUITTANCE DE LOYER", doc.page.margins.left, doc.page.margins.top, {
+          width: pageWidth,
+          align: "right",
+        });
+      doc
+        .font("Helvetica")
+        .fontSize(9)
+        .fillColor(gray)
+        .text(`Réf : ${data.receiptNumber}`, { width: pageWidth, align: "right" })
+        .text(`Période : ${periodLabel}`, { width: pageWidth, align: "right" });
+
+      // Le bloc de droite (titre + réf) est souvent plus court que la colonne
+      // agence de gauche : on repart du point le plus bas des deux colonnes
+      // pour ne pas faire chevaucher le séparateur sur le texte de gauche.
+      doc.y = Math.max(leftColumnBottomY, doc.y);
+      doc.moveDown(1.5);
+      doc
+        .moveTo(doc.page.margins.left, doc.y)
+        .lineTo(doc.page.margins.left + pageWidth, doc.y)
+        .lineWidth(1.5)
+        .strokeColor(dark)
+        .stroke();
+      doc.moveDown(1);
+
+      // --- Locataire / logement ---
+      const boxTop = doc.y;
+      doc.font("Helvetica-Bold").fontSize(9).fillColor(gray).text("LOCATAIRE", doc.page.margins.left, boxTop, {
+        width: pageWidth / 2 - 10,
+      });
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .fillColor(dark)
+        .text(data.tenant.fullName, { width: pageWidth / 2 - 10 });
+      doc.font("Helvetica").fontSize(9).fillColor(gray).text(data.tenant.email).text(data.tenant.phone);
+
+      const rightColX = doc.page.margins.left + pageWidth / 2 + 10;
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .fillColor(gray)
+        .text("LOGEMENT LOUÉ", rightColX, boxTop, { width: pageWidth / 2 - 10 });
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(11)
+        .fillColor(dark)
+        .text(data.property.title, rightColX, doc.y, { width: pageWidth / 2 - 10 });
+      doc
+        .font("Helvetica")
+        .fontSize(9)
+        .fillColor(gray)
+        .text(data.property.address, rightColX, doc.y, { width: pageWidth / 2 - 10 })
+        .text(`Surface : ${data.property.surface} m²`, rightColX, doc.y, { width: pageWidth / 2 - 10 });
+
+      doc.y = Math.max(doc.y, boxTop + 70);
+      doc.moveDown(1.2);
+
+      // --- Attestation ---
+      const statementY = doc.y;
+      doc.rect(doc.page.margins.left, statementY, pageWidth, 60).fill("#eff6ff");
+      doc
+        .fillColor(dark)
+        .font("Helvetica")
+        .fontSize(10)
+        .text(
+          `Je soussigné, gestionnaire pour le compte du bailleur, certifie avoir reçu de ${data.tenant.fullName} la somme de ${data.invoice.amount} ${data.invoice.currency} au titre du paiement du loyer et des charges pour la période de ${periodLabel}, et lui en donne quittance sous réserve de tous droits.`,
+          doc.page.margins.left + 12,
+          statementY + 10,
+          { width: pageWidth - 24 }
+        );
+      doc.y = statementY + 70;
+      doc.moveDown(1);
+
+      // --- Tableau récapitulatif ---
+      const tableTop = doc.y;
+      const col1 = doc.page.margins.left;
+      const col2 = col1 + pageWidth * 0.4;
+      const col3 = col1 + pageWidth * 0.65;
+      const col4w = pageWidth * 0.35 - 10;
+
+      doc.rect(col1, tableTop, pageWidth, 24).fill(dark);
+      doc
+        .fillColor("#ffffff")
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text("Désignation", col1 + 10, tableTop + 7)
+        .text("Période", col2, tableTop + 7)
+        .text("Moyen de paiement", col3, tableTop + 7)
+        .text("Montant", col1, tableTop + 7, { width: pageWidth - 10, align: "right" });
+
+      const rowTop = tableTop + 24;
+      doc
+        .fillColor(dark)
+        .font("Helvetica")
+        .fontSize(9)
+        .text("Loyer mensuel & charges locatives", col1 + 10, rowTop + 8, { width: col2 - col1 - 20 })
+        .text(periodLabel, col2, rowTop + 8, { width: col3 - col2 - 10 })
+        .text(data.invoice.paymentMethod, col3, rowTop + 8, { width: col4w })
+        .font("Helvetica-Bold")
+        .text(`${data.invoice.amount} ${data.invoice.currency}`, col1, rowTop + 8, {
+          width: pageWidth - 10,
+          align: "right",
+        });
+
+      const totalTop = rowTop + 32;
+      doc
+        .moveTo(col1, totalTop)
+        .lineTo(col1 + pageWidth, totalTop)
+        .lineWidth(1.5)
+        .strokeColor(dark)
+        .stroke();
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(11)
+        .fillColor(dark)
+        .text("TOTAL REÇU :", col1, totalTop + 8, { width: pageWidth - 130, align: "right" })
+        .text(`${data.invoice.amount} ${data.invoice.currency}`, col1, totalTop + 8, {
+          width: pageWidth,
+          align: "right",
+        });
+
+      doc.y = totalTop + 40;
+      doc.moveDown(2);
+
+      // --- Cachet ---
+      const stampTop = doc.y;
+      doc
+        .font("Helvetica")
+        .fontSize(9)
+        .fillColor(gray)
+        .text(`Fait le ${paidDateFormatted}`, col1, stampTop, { width: pageWidth * 0.55 })
+        .text("Règlement validé et enregistré électroniquement.", col1, doc.y, { width: pageWidth * 0.55 });
+
+      const stampX = col1 + pageWidth - 170;
+      doc
+        .roundedRect(stampX, stampTop, 170, 60, 6)
+        .lineWidth(1)
+        .dash(3, { space: 2 })
+        .strokeColor("#059669")
+        .stroke();
+      doc.undash();
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(10)
+        .fillColor("#059669")
+        .text("QUITTANCE VALIDÉE", stampX, stampTop + 16, { width: 170, align: "center" });
+      doc
+        .font("Helvetica")
+        .fontSize(8)
+        .fillColor("#047857")
+        .text(`LE ${paidDateFormatted}`, stampX, stampTop + 34, { width: 170, align: "center" });
+
+      // --- Pied de page légal ---
+      doc
+        .font("Helvetica")
+        .fontSize(8)
+        .fillColor("#94a3b8")
+        .text(
+          data.agency.legalNotice ||
+            "Document émis et certifié conforme par le système de gestion locative immobilière.",
+          doc.page.margins.left,
+          doc.page.height - doc.page.margins.bottom - 40,
+          { width: pageWidth, align: "center" }
+        )
+        .text(
+          "Cette quittance annule tous les reçus qui auraient pu être donnés pour acompte versé sur le présent terme.",
+          doc.page.margins.left,
+          doc.y,
+          { width: pageWidth, align: "center" }
+        );
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 export function generateLeaseHtml(contract: any, agency: any): string {

@@ -25,6 +25,7 @@
     "multer": "^2.2.0",
     "node-cron": "^4.6.0",
     "nodemailer": "^9.0.6",
+    "pdfkit": "^0.20.1",
     "postgres": "^3.4.9",
     "zod": "^3.23.8"
   },
@@ -37,6 +38,7 @@
     "@types/node": "^20.16.5",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.16",
+    "@types/pdfkit": "^0.17.6",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2"

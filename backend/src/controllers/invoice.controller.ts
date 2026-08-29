@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
 import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
+import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -18,11 +19,18 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
 
-  if (contractId) rows = rows.filter((r) => r.invoice.contractId === String(contractId));
-  if (req.query.status) rows = rows.filter((r) => r.invoice.status === String(req.query.status));
+  type InvoiceRow = {
+    invoice: typeof invoices.$inferSelect;
+    contract: typeof contracts.$inferSelect;
+    tenant: typeof tenants.$inferSelect;
+    property: typeof properties.$inferSelect;
+  };
+
+  if (contractId) rows = rows.filter((r: InvoiceRow) => r.invoice.contractId === String(contractId));
+  if (req.query.status) rows = rows.filter((r: InvoiceRow) => r.invoice.status === String(req.query.status));
 
   res.json(
-    rows.map((r) => ({
+    rows.map((r: InvoiceRow) => ({
       ...r.invoice,
       contract: { ...r.contract, tenant: r.tenant, property: r.property },
     }))
@@ -50,6 +58,13 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     })
     .where(eq(invoices.id, req.params.id))
     .returning();
+
+  // Envoi de la quittance PDF par email au locataire — ne doit jamais faire
+  // échouer la réponse si l'email ne part pas (SMTP non configuré, etc.).
+  sendPaymentReceiptEmail(updated.id).catch((err) =>
+    console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
+  );
+
   res.json(updated);
 });
 
@@ -71,7 +86,15 @@ export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(contracts.tenantId, req.user.tenantId))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
 
-  res.json(rows.map((r) => ({ ...r.invoice, contract: { ...r.contract, property: r.property } })));
+  res.json(
+    rows.map(
+      (r: {
+        invoice: typeof invoices.$inferSelect;
+        contract: typeof contracts.$inferSelect;
+        property: typeof properties.$inferSelect;
+      }) => ({ ...r.invoice, contract: { ...r.contract, property: r.property } })
+    )
+  );
 });
 
 const paySchema = z.object({
@@ -113,6 +136,12 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(invoices.id, row.invoice.id))
     .returning();
 
+  if (updated.status === "PAID") {
+    sendPaymentReceiptEmail(updated.id).catch((err) =>
+      console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
+    );
+  }
+
   res.json({ invoice: updated, payment: result });
 });
 
@@ -131,7 +160,6 @@ export const sendMonthlyReminders = asyncHandler(async (_req: Request, res: Resp
 export const sendInvoiceReminder = asyncHandler(async (req: Request, res: Response) => {
   const result = await sendSingleInvoiceReminder(req.params.id);
   res.json({
-    success: true,
     message: `Rappel d'échéance envoyé à ${result.tenantName} (${result.tenantEmail}).`,
     ...result,
   });

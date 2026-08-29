@@ -24,8 +24,8 @@ export const getDashboardStats = asyncHandler(async (_req: Request, res: Respons
     .from(invoices)
     .where(and(eq(invoices.periodMonth, month), eq(invoices.periodYear, year)));
 
-  const monthlyRevenue = monthlyInvoices.filter((i) => i.status === "PAID").reduce((sum, i) => sum + i.amount, 0);
-  const monthlyExpected = monthlyInvoices.reduce((sum, i) => sum + i.amount, 0);
+  const monthlyRevenue = monthlyInvoices.filter((i: typeof invoices.$inferSelect) => i.status === "PAID").reduce((sum: number, i: typeof invoices.$inferSelect) => sum + i.amount, 0);
+  const monthlyExpected = monthlyInvoices.reduce((sum: number, i: typeof invoices.$inferSelect) => sum + i.amount, 0);
   const occupancyRate = totalProperties > 0 ? Math.round((statusCounts.OCCUPIED / totalProperties) * 100) : 0;
 
   const openIssues = (

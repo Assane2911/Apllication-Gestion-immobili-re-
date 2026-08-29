@@ -31,7 +31,7 @@ export const getProperty = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(contracts.propertyId, property.id))
     .orderBy(desc(contracts.createdAt));
 
-  res.json({ ...property, contracts: propertyContracts.map((r) => ({ ...r.contract, tenant: r.tenant })) });
+  res.json({ ...property, contracts: propertyContracts.map((r: { contract: typeof contracts.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({ ...r.contract, tenant: r.tenant })) });
 });
 
 export const createProperty = asyncHandler(async (req: Request, res: Response) => {
@@ -68,7 +68,7 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
     .select()
     .from(contracts)
     .where(eq(contracts.propertyId, req.params.id));
-  if (activeContracts.some((c) => c.status === "ACTIVE")) {
+  if (activeContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
     throw new ApiError(409, "Impossible de supprimer un bien ayant un contrat actif");
   }
 

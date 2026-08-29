@@ -1,6 +1,9 @@
+import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
+import EmptyState from "../../components/EmptyState";
+import { PropertyCardSkeleton } from "../../components/Skeleton";
 import { useCurrency } from "../../context/CurrencyContext";
 import type { Property, PropertyStatus } from "../../types";
 
@@ -9,6 +12,7 @@ const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAI
 export default function PropertiesPage() {
   const { formatMoney } = useCurrency();
   const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Property | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -17,7 +21,10 @@ export default function PropertiesPage() {
   const [saving, setSaving] = useState(false);
 
   function load() {
-    api.get<Property[]>("/properties").then((res) => setProperties(res.data));
+    api
+      .get<Property[]>("/properties")
+      .then((res) => setProperties(res.data))
+      .finally(() => setLoading(false));
   }
 
   useEffect(load, []);
@@ -142,6 +149,20 @@ export default function PropertiesPage() {
         </div>
       )}
 
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <PropertyCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : properties.length === 0 && !showForm ? (
+        <EmptyState
+          icon={Building2}
+          title="Aucun bien pour l'instant"
+          description="Ajoutez votre premier bien immobilier (avec photo, surface et loyer) pour commencer à suivre sa location."
+          action={{ label: "+ Ajouter un bien", onClick: openCreate }}
+        />
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {properties.map((p) => (
           <div key={p.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -174,6 +195,7 @@ export default function PropertiesPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

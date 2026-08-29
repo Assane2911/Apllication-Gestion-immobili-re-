@@ -20,7 +20,7 @@ export async function generateInvoicesForContract(contract: Contract) {
   const created: string[] = [];
 
   const existingInvoices = await db.select().from(invoices).where(eq(invoices.contractId, contract.id));
-  const existingKeys = new Set(existingInvoices.map((i) => `${i.periodMonth}-${i.periodYear}`));
+  const existingKeys = new Set(existingInvoices.map((i: typeof invoices.$inferSelect) => `${i.periodMonth}-${i.periodYear}`));
 
   while (cursor <= cutoff) {
     const periodMonth = cursor.getMonth() + 1;

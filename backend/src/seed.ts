@@ -102,7 +102,7 @@ export async function seedDatabase() {
   const createdContracts = [];
   for (const c of contractsData) {
     const existingRows = await db.select().from(contracts).where(eq(contracts.propertyId, c.propertyId));
-    const existing = existingRows.find((row) => row.tenantId === c.tenantId);
+    const existing = existingRows.find((row: typeof contracts.$inferSelect) => row.tenantId === c.tenantId);
     const [contract] = existing ? [existing] : await db.insert(contracts).values(c).returning();
     createdContracts.push(contract);
     await generateInvoicesForContract(contract);

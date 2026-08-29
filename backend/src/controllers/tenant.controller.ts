@@ -33,7 +33,7 @@ export const getTenant = asyncHandler(async (req: Request, res: Response) => {
 
   res.json({
     ...tenant,
-    contracts: tenantContracts.map((r) => ({ ...r.contract, property: r.property })),
+    contracts: tenantContracts.map((r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({ ...r.contract, property: r.property })),
     issues,
   });
 });
@@ -72,7 +72,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   if (!existing) throw new ApiError(404, "Locataire introuvable");
 
   const tenantContracts = await db.select().from(contracts).where(eq(contracts.tenantId, req.params.id));
-  if (tenantContracts.some((c) => c.status === "ACTIVE")) {
+  if (tenantContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
     throw new ApiError(409, "Impossible de supprimer un locataire ayant un contrat actif");
   }
 

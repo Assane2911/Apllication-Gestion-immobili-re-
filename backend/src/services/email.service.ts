@@ -25,11 +25,18 @@ function getTransporter() {
   return transporter;
 }
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
+export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]) {
   const t = getTransporter();
   if (!t) {
     console.warn(
-      `[email] SMTP non configuré (SMTP_USER/SMTP_APP_PASSWORD manquants) — email simulé vers ${to}: "${subject}"`
+      `[email] SMTP non configuré (SMTP_USER/SMTP_APP_PASSWORD manquants) — email simulé vers ${to}: "${subject}"` +
+        (attachments?.length ? ` (avec ${attachments.length} pièce(s) jointe(s))` : "")
     );
     return { simulated: true };
   }
@@ -39,6 +46,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
       to,
       subject,
       html,
+      attachments,
     });
     return { simulated: false, messageId: info.messageId };
   } catch (err) {

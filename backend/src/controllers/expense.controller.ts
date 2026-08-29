@@ -28,11 +28,11 @@ export const listExpenses = asyncHandler(async (req: Request, res: Response) => 
     .orderBy(desc(expenses.expenseDate));
 
   if (propertyId) {
-    rows = rows.filter((r) => r.expense.propertyId === String(propertyId));
+    rows = rows.filter((r: { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect }) => r.expense.propertyId === String(propertyId));
   }
 
   res.json(
-    rows.map((r) => ({
+    rows.map((r: { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect }) => ({
       ...r.expense,
       property: r.property,
     }))
@@ -72,11 +72,11 @@ export const deleteExpense = asyncHandler(async (req: Request, res: Response) =>
 export const getFinancialSummary = asyncHandler(async (_req: Request, res: Response) => {
   // Total des loyers payés
   const paidInvoices = await db.select().from(invoices).where(eq(invoices.status, "PAID"));
-  const totalRevenue = paidInvoices.reduce((acc, inv) => acc + inv.amount, 0);
+  const totalRevenue = paidInvoices.reduce((acc: number, inv: typeof invoices.$inferSelect) => acc + inv.amount, 0);
 
   // Total des dépenses
   const allExpenses = await db.select().from(expenses);
-  const totalExpenses = allExpenses.reduce((acc, exp) => acc + exp.amount, 0);
+  const totalExpenses = allExpenses.reduce((acc: number, exp: typeof expenses.$inferSelect) => acc + exp.amount, 0);
 
   // Ventilation par catégorie
   const expensesByCategory: Record<string, number> = {};

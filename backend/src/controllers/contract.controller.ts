@@ -40,7 +40,7 @@ export const listContracts = asyncHandler(async (_req: Request, res: Response) =
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .orderBy(desc(contracts.createdAt));
 
-  res.json(rows.map((r) => ({ ...r.contract, property: r.property, tenant: r.tenant })));
+  res.json(rows.map((r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({ ...r.contract, property: r.property, tenant: r.tenant })));
 });
 
 export const getContract = asyncHandler(async (req: Request, res: Response) => {
@@ -79,7 +79,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
 
   if (body.status === "ENDED" || body.status === "TERMINATED") {
     const propertyContracts = await db.select().from(contracts).where(eq(contracts.propertyId, contract.propertyId));
-    const stillActive = propertyContracts.filter((c) => c.status === "ACTIVE").length;
+    const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
     if (stillActive === 0) {
       await db.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, contract.propertyId));
     }
@@ -101,7 +101,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   await db.delete(contracts).where(eq(contracts.id, req.params.id));
 
   const propertyContracts = await db.select().from(contracts).where(eq(contracts.propertyId, existing.propertyId));
-  const stillActive = propertyContracts.filter((c) => c.status === "ACTIVE").length;
+  const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
   if (stillActive === 0) {
     await db.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, existing.propertyId));
   }

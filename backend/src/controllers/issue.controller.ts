@@ -16,10 +16,10 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .orderBy(desc(issueReports.createdAt));
 
-  if (req.query.status) rows = rows.filter((r) => r.issue.status === String(req.query.status));
+  if (req.query.status) rows = rows.filter((r: { issue: typeof issueReports.$inferSelect; tenant: typeof tenants.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => r.issue.status === String(req.query.status));
 
   res.json(
-    rows.map((r) => ({
+    rows.map((r: { issue: typeof issueReports.$inferSelect; tenant: typeof tenants.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
       ...r.issue,
       tenant: r.tenant,
       contract: { ...r.contract, property: r.property },
@@ -56,7 +56,7 @@ export const myIssues = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(issueReports.tenantId, req.user.tenantId))
     .orderBy(desc(issueReports.createdAt));
 
-  res.json(rows.map((r) => ({ ...r.issue, contract: { ...r.contract, property: r.property } })));
+  res.json(rows.map((r: { issue: typeof issueReports.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({ ...r.issue, contract: { ...r.contract, property: r.property } })));
 });
 
 const createIssueSchema = z.object({
