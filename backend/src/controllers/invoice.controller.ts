@@ -18,6 +18,7 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(properties.managerId, req.user!.userId))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
 
   type InvoiceRow = {
@@ -44,10 +45,20 @@ const markPaidSchema = z.object({
   paymentRef: z.string().optional(),
 });
 
+async function assertInvoiceOwnership(invoiceId: string, managerId: string) {
+  const [row] = await db
+    .select({ invoice: invoices, property: properties })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(invoices.id, invoiceId));
+  if (!row || row.property.managerId !== managerId) throw new ApiError(404, "Facture introuvable");
+  return row.invoice;
+}
+
 export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) => {
   const body = markPaidSchema.parse(req.body);
-  const [invoice] = await db.select().from(invoices).where(eq(invoices.id, req.params.id));
-  if (!invoice) throw new ApiError(404, "Facture introuvable");
+  const invoice = await assertInvoiceOwnership(req.params.id, req.user!.userId);
 
   const [updated] = await db
     .update(invoices)
@@ -74,6 +85,7 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     .where(eq(contracts.id, updated.contractId));
   await logActivity({
     req,
+    managerId: req.user!.userId,
     action: "invoice.mark_paid",
     entityType: "invoice",
     entityId: updated.id,
@@ -85,12 +97,12 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
 });
 
 export const cancelInvoice = asyncHandler(async (req: Request, res: Response) => {
-  const [invoice] = await db.select().from(invoices).where(eq(invoices.id, req.params.id));
-  if (!invoice) throw new ApiError(404, "Facture introuvable");
+  await assertInvoiceOwnership(req.params.id, req.user!.userId);
   const [updated] = await db.update(invoices).set({ status: "CANCELLED" }).where(eq(invoices.id, req.params.id)).returning();
 
   await logActivity({
     req,
+    managerId: req.user!.userId,
     action: "invoice.cancel",
     entityType: "invoice",
     entityId: updated.id,
@@ -172,8 +184,8 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /** Déclenchement manuel des avis d'échéance du 1er du mois par le gestionnaire. */
-export const sendMonthlyReminders = asyncHandler(async (_req: Request, res: Response) => {
-  const result = await runRentDueReminders();
+export const sendMonthlyReminders = asyncHandler(async (req: Request, res: Response) => {
+  const result = await runRentDueReminders(req.user!.userId);
   res.json({
     success: true,
     message: `${result.sent} avis d'échéance envoyé(s) avec succès aux locataires.`,
@@ -184,7 +196,7 @@ export const sendMonthlyReminders = asyncHandler(async (_req: Request, res: Resp
 
 /** Envoi d'un rappel individuel pour une facture impayée. */
 export const sendInvoiceReminder = asyncHandler(async (req: Request, res: Response) => {
-  const result = await sendSingleInvoiceReminder(req.params.id);
+  const result = await sendSingleInvoiceReminder(req.params.id, req.user!.userId);
   res.json({
     message: `Rappel d'échéance envoyé à ${result.tenantName} (${result.tenantEmail}).`,
     ...result,

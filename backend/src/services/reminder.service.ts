@@ -1,8 +1,9 @@
-import { and, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
+import { SQL, and, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
+import { ApiError } from "../utils/asyncHandler";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract } from "./invoice.service";
 
@@ -64,11 +65,16 @@ export async function runContractEndingReminders() {
 }
 
 /**
- * Envoie automatiquement un avis d'échéance / rappel de loyer à tous les
- * locataires le 1er de chaque mois pour leur rappeler de régler leur loyer
- * au plus tard le 5 du mois.
+ * Envoie automatiquement un avis d'échéance / rappel de loyer aux locataires
+ * le 1er de chaque mois pour leur rappeler de régler leur loyer au plus tard
+ * le 5 du mois.
+ *
+ * `managerId` : quand fourni (déclenchement manuel par un gestionnaire depuis
+ * son tableau de bord), restreint l'envoi aux seuls locataires de ce
+ * gestionnaire. Laissé vide pour le job planifié (cron), qui couvre toute
+ * la plateforme.
  */
-export async function runRentDueReminders() {
+export async function runRentDueReminders(managerId?: string) {
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
@@ -80,6 +86,15 @@ export async function runRentDueReminders() {
   }
 
   // 2. Recherche toutes les factures impayées du mois courant pour les contrats actifs
+  //    (scopées au gestionnaire appelant si managerId est fourni)
+  const conditions: SQL[] = [
+    eq(contracts.status, "ACTIVE"),
+    eq(invoices.periodMonth, currentMonth),
+    eq(invoices.periodYear, currentYear),
+    or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE"))!,
+  ];
+  if (managerId) conditions.push(eq(properties.managerId, managerId));
+
   const rows = await db
     .select({
       invoice: invoices,
@@ -91,14 +106,7 @@ export async function runRentDueReminders() {
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(
-      and(
-        eq(contracts.status, "ACTIVE"),
-        eq(invoices.periodMonth, currentMonth),
-        eq(invoices.periodYear, currentYear),
-        or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE"))
-      )
-    );
+    .where(and(...conditions));
 
   let sent = 0;
   const details = [];
@@ -202,8 +210,10 @@ export async function runUpcomingRentDueReminders() {
 
 /**
  * Envoie un rappel d'échéance pour une facture spécifique (déclenché manuellement par l'agence).
+ * `managerId` : le gestionnaire à l'origine de l'appel — doit être le propriétaire
+ * du bien concerné, sinon la facture est traitée comme introuvable.
  */
-export async function sendSingleInvoiceReminder(invoiceId: string) {
+export async function sendSingleInvoiceReminder(invoiceId: string, managerId: string) {
   const [row] = await db
     .select({
       invoice: invoices,
@@ -217,8 +227,8 @@ export async function sendSingleInvoiceReminder(invoiceId: string) {
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(invoices.id, invoiceId));
 
-  if (!row) {
-    throw new Error("Facture introuvable");
+  if (!row || row.property.managerId !== managerId) {
+    throw new ApiError(404, "Facture introuvable");
   }
 
   const { subject, html } = rentDueReminderEmail({

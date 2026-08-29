@@ -56,6 +56,10 @@ export const platformSubscriptions = pgTable("platform_subscriptions", {
 // --- Properties (biens immobiliers) ---
 export const properties = pgTable("properties", {
   id: id(),
+  // Gestionnaire propriétaire du bien — isole les données d'une agence à l'autre.
+  managerId: text("manager_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   address: text("address").notNull(),
   surface: doublePrecision("surface").notNull(),
@@ -68,18 +72,32 @@ export const properties = pgTable("properties", {
 });
 
 // --- Tenants (locataires) ---
-export const tenants = pgTable("tenants", {
-  id: id(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  phone: text("phone").notNull(),
-  email: text("email").notNull().unique(),
-  // Chemin (storage path) du document d'identité dans le bucket privé Supabase Storage,
-  // jamais une URL publique — voir storage.service.ts pour la génération d'URL signée.
-  idDocument: text("id_document"),
-  userId: text("user_id").unique().references(() => users.id, { onDelete: "set null" }),
-  ...timestamps,
-});
+export const tenants = pgTable(
+  "tenants",
+  {
+    id: id(),
+    // Gestionnaire qui a créé la fiche locataire — isole les données d'une agence à l'autre.
+    managerId: text("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    phone: text("phone").notNull(),
+    // Unique par agence uniquement (et non globalement) : deux gestionnaires
+    // différents doivent pouvoir chacun enregistrer un locataire partageant
+    // le même email sans se bloquer ni se révéler mutuellement l'existence
+    // de leurs fiches (voir contrainte composite ci-dessous).
+    email: text("email").notNull(),
+    // Chemin (storage path) du document d'identité dans le bucket privé Supabase Storage,
+    // jamais une URL publique — voir storage.service.ts pour la génération d'URL signée.
+    idDocument: text("id_document"),
+    userId: text("user_id").unique().references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (table) => ({
+    managerEmailUnique: uniqueIndex("tenants_manager_email_unique").on(table.managerId, table.email),
+  })
+);
 
 // --- Contracts (contrats de location) ---
 export const contracts = pgTable("contracts", {
@@ -191,6 +209,12 @@ export const messages = pgTable("messages", {
 // --- Activity Log (Journal d'activité / audit — qui a fait quoi, quand) ---
 export const activityLogs = pgTable("activity_logs", {
   id: id(),
+  // Gestionnaire "propriétaire" du journal — nécessaire car actorId peut être
+  // un locataire (ex: signalement d'incident) : on doit quand même savoir
+  // quelle agence doit voir cette entrée dans son journal d'activité.
+  managerId: text("manager_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
   actorRole: roleEnum("actor_role"),
   actorLabel: text("actor_label").notNull(), // ex: email du gestionnaire au moment de l'action
@@ -225,15 +249,19 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   tenant: one(tenants, { fields: [users.id], references: [tenants.userId] }),
   agencySettings: one(agencySettings, { fields: [users.id], references: [agencySettings.userId] }),
   messages: many(messages),
+  managedProperties: many(properties),
+  managedTenants: many(tenants),
 }));
 
 export const tenantsRelations = relations(tenants, ({ one, many }) => ({
   user: one(users, { fields: [tenants.userId], references: [users.id] }),
+  manager: one(users, { fields: [tenants.managerId], references: [users.id] }),
   contracts: many(contracts),
   issues: many(issueReports),
 }));
 
-export const propertiesRelations = relations(properties, ({ many }) => ({
+export const propertiesRelations = relations(properties, ({ one, many }) => ({
+  manager: one(users, { fields: [properties.managerId], references: [users.id] }),
   contracts: many(contracts),
   expenses: many(expenses),
 }));

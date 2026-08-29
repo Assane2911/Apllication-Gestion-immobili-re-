@@ -5,6 +5,10 @@ import { activityLogs, users } from "../db/schema";
 
 export interface LogActivityParams {
   req?: Request;
+  // Gestionnaire (agence) à qui appartient cette entrée de journal. Obligatoire :
+  // l'acteur (params.req.user) peut être un locataire, donc on ne peut pas
+  // déduire l'agence propriétaire à partir du seul acteur.
+  managerId: string;
   action: string;
   entityType: string;
   entityId?: string | null;
@@ -27,6 +31,7 @@ export async function logActivity(params: LogActivityParams) {
     }
 
     await db.insert(activityLogs).values({
+      managerId: params.managerId,
       actorId: params.req?.user?.userId ?? null,
       actorRole: params.req?.user?.role ?? null,
       actorLabel,

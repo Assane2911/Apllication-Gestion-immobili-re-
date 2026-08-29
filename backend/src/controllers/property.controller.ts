@@ -16,14 +16,18 @@ const propertySchema = z.object({
   description: z.string().optional(),
 });
 
-export const listProperties = asyncHandler(async (_req: Request, res: Response) => {
-  const rows = await db.select().from(properties).orderBy(desc(properties.createdAt));
+export const listProperties = asyncHandler(async (req: Request, res: Response) => {
+  const rows = await db
+    .select()
+    .from(properties)
+    .where(eq(properties.managerId, req.user!.userId))
+    .orderBy(desc(properties.createdAt));
   res.json(rows);
 });
 
 export const getProperty = asyncHandler(async (req: Request, res: Response) => {
   const [property] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  if (!property) throw new ApiError(404, "Bien introuvable");
+  if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
 
   const propertyContracts = await db
     .select({ contract: contracts, tenant: tenants })
@@ -41,11 +45,12 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
 
   const [property] = await db
     .insert(properties)
-    .values({ ...body, imageUrl })
+    .values({ ...body, imageUrl, managerId: req.user!.userId })
     .returning();
 
   await logActivity({
     req,
+    managerId: property.managerId,
     action: "property.create",
     entityType: "property",
     entityId: property.id,
@@ -61,7 +66,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
   const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Bien introuvable");
+  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
 
   const [property] = await db
     .update(properties)
@@ -71,6 +76,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
 
   await logActivity({
     req,
+    managerId: property.managerId,
     action: "property.update",
     entityType: "property",
     entityId: property.id,
@@ -83,7 +89,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
 
 export const deleteProperty = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Bien introuvable");
+  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
 
   const activeContracts = await db
     .select()
@@ -97,6 +103,7 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
 
   await logActivity({
     req,
+    managerId: existing.managerId,
     action: "property.delete",
     entityType: "property",
     entityId: existing.id,

@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -15,14 +15,18 @@ const tenantSchema = z.object({
   email: z.string().email(),
 });
 
-export const listTenants = asyncHandler(async (_req: Request, res: Response) => {
-  const rows = await db.select().from(tenants).orderBy(desc(tenants.createdAt));
+export const listTenants = asyncHandler(async (req: Request, res: Response) => {
+  const rows = await db
+    .select()
+    .from(tenants)
+    .where(eq(tenants.managerId, req.user!.userId))
+    .orderBy(desc(tenants.createdAt));
   res.json(rows);
 });
 
 export const getTenant = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!tenant) throw new ApiError(404, "Locataire introuvable");
+  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
   const tenantContracts = await db
     .select({ contract: contracts, property: properties })
@@ -43,16 +47,20 @@ export const createTenant = asyncHandler(async (req: Request, res: Response) => 
   const body = tenantSchema.parse(req.body);
   const idDocument = req.file ? await uploadPrivateFile(req.file, "tenants") : undefined;
 
-  const [existing] = await db.select().from(tenants).where(eq(tenants.email, body.email));
+  const [existing] = await db
+    .select()
+    .from(tenants)
+    .where(and(eq(tenants.managerId, req.user!.userId), eq(tenants.email, body.email)));
   if (existing) throw new ApiError(409, "Un locataire avec cet email existe déjà");
 
   const [tenant] = await db
     .insert(tenants)
-    .values({ ...body, idDocument })
+    .values({ ...body, idDocument, managerId: req.user!.userId })
     .returning();
 
   await logActivity({
     req,
+    managerId: tenant.managerId,
     action: "tenant.create",
     entityType: "tenant",
     entityId: tenant.id,
@@ -68,7 +76,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
   const idDocument = req.file ? await uploadPrivateFile(req.file, "tenants") : undefined;
 
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Locataire introuvable");
+  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
   const [tenant] = await db
     .update(tenants)
@@ -78,6 +86,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
 
   await logActivity({
     req,
+    managerId: tenant.managerId,
     action: "tenant.update",
     entityType: "tenant",
     entityId: tenant.id,
@@ -90,7 +99,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
 
 export const deleteTenant = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Locataire introuvable");
+  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
   const tenantContracts = await db.select().from(contracts).where(eq(contracts.tenantId, req.params.id));
   if (tenantContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
@@ -101,6 +110,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
 
   await logActivity({
     req,
+    managerId: existing.managerId,
     action: "tenant.delete",
     entityType: "tenant",
     entityId: existing.id,
@@ -114,7 +124,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
 /** Génère une URL signée temporaire pour consulter la pièce d'identité d'un locataire (bucket privé). */
 export const getTenantIdDocumentUrl = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!tenant) throw new ApiError(404, "Locataire introuvable");
+  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
   if (!tenant.idDocument) throw new ApiError(404, "Aucune pièce d'identité enregistrée pour ce locataire");
 
   const url = await getSignedUrl(tenant.idDocument);
@@ -129,7 +139,7 @@ const createPortalAccountSchema = z.object({
 export const createTenantPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const body = createPortalAccountSchema.parse(req.body);
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!tenant) throw new ApiError(404, "Locataire introuvable");
+  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, tenant.email));
   if (existingUser) throw new ApiError(409, "Un compte existe déjà pour cet email");

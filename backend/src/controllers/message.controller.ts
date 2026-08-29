@@ -33,6 +33,7 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
       .from(contracts)
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+      .where(eq(properties.managerId, req.user.userId))
       .orderBy(desc(contracts.createdAt));
   }
 
@@ -75,6 +76,9 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
   if (req.user.role === "TENANT" && contract.contract.tenantId !== req.user.tenantId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+  if (req.user.role === "MANAGER" && contract.property.managerId !== req.user.userId) {
     throw new ApiError(403, "Accès refusé");
   }
 
@@ -122,10 +126,18 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   const { contractId } = req.params;
   const { content } = sendMessageSchema.parse(req.body);
 
-  const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  const [row] = await db
+    .select({ contract: contracts, property: properties })
+    .from(contracts)
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(contracts.id, contractId));
+  if (!row) throw new ApiError(404, "Contrat introuvable");
+  const { contract } = row;
 
   if (req.user.role === "TENANT" && contract.tenantId !== req.user.tenantId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+  if (req.user.role === "MANAGER" && row.property.managerId !== req.user.userId) {
     throw new ApiError(403, "Accès refusé");
   }
 

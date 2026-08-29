@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -25,6 +25,7 @@ export const listExpenses = asyncHandler(async (req: Request, res: Response) => 
     })
     .from(expenses)
     .innerJoin(properties, eq(expenses.propertyId, properties.id))
+    .where(eq(properties.managerId, req.user!.userId))
     .orderBy(desc(expenses.expenseDate));
 
   if (propertyId) {
@@ -43,7 +44,7 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
   const body = createExpenseSchema.parse(req.body);
 
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
-  if (!prop) throw new ApiError(404, "Bien introuvable");
+  if (!prop || prop.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
 
   const [expense] = await db
     .insert(expenses)
@@ -62,20 +63,37 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const deleteExpense = asyncHandler(async (req: Request, res: Response) => {
-  const [existing] = await db.select().from(expenses).where(eq(expenses.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Dépense introuvable");
+  const [row] = await db
+    .select({ expense: expenses, property: properties })
+    .from(expenses)
+    .innerJoin(properties, eq(expenses.propertyId, properties.id))
+    .where(eq(expenses.id, req.params.id));
+  if (!row || row.property.managerId !== req.user!.userId) throw new ApiError(404, "Dépense introuvable");
 
   await db.delete(expenses).where(eq(expenses.id, req.params.id));
   res.json({ success: true, message: "Dépense supprimée" });
 });
 
-export const getFinancialSummary = asyncHandler(async (_req: Request, res: Response) => {
-  // Total des loyers payés
-  const paidInvoices = await db.select().from(invoices).where(eq(invoices.status, "PAID"));
+export const getFinancialSummary = asyncHandler(async (req: Request, res: Response) => {
+  const managerId = req.user!.userId;
+
+  // Total des loyers payés (scopé aux biens du gestionnaire connecté)
+  const paidInvoiceRows = await db
+    .select({ invoice: invoices })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(and(eq(invoices.status, "PAID"), eq(properties.managerId, managerId)));
+  const paidInvoices = paidInvoiceRows.map((r: { invoice: typeof invoices.$inferSelect }) => r.invoice);
   const totalRevenue = paidInvoices.reduce((acc: number, inv: typeof invoices.$inferSelect) => acc + inv.amount, 0);
 
-  // Total des dépenses
-  const allExpenses = await db.select().from(expenses);
+  // Total des dépenses (scopé aux biens du gestionnaire connecté)
+  const expenseRows = await db
+    .select({ expense: expenses })
+    .from(expenses)
+    .innerJoin(properties, eq(expenses.propertyId, properties.id))
+    .where(eq(properties.managerId, managerId));
+  const allExpenses = expenseRows.map((r: { expense: typeof expenses.$inferSelect }) => r.expense);
   const totalExpenses = allExpenses.reduce((acc: number, exp: typeof expenses.$inferSelect) => acc + exp.amount, 0);
 
   // Ventilation par catégorie
@@ -106,6 +124,7 @@ function csvEscape(value: string | number): string {
  * Filtrable sur une période via ?from=YYYY-MM-DD&to=YYYY-MM-DD.
  */
 export const exportFinancialReport = asyncHandler(async (req: Request, res: Response) => {
+  const managerId = req.user!.userId;
   const { from, to } = req.query as { from?: string; to?: string };
   const fromDate = from ? new Date(from) : null;
   const toDate = to ? new Date(`${to}T23:59:59`) : null;
@@ -116,12 +135,13 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(invoices.status, "PAID"));
+    .where(and(eq(invoices.status, "PAID"), eq(properties.managerId, managerId)));
 
   const expenseRows = await db
     .select({ expense: expenses, property: properties })
     .from(expenses)
-    .innerJoin(properties, eq(expenses.propertyId, properties.id));
+    .innerJoin(properties, eq(expenses.propertyId, properties.id))
+    .where(eq(properties.managerId, managerId));
 
   type PaidInvoiceRow = {
     invoice: typeof invoices.$inferSelect;

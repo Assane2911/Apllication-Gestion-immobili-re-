@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { contracts, invoices, issueReports, messages, properties, tenants } from "../db/schema";
@@ -53,7 +53,8 @@ type ContractRow = {
  * échéance). Calculé à la volée à partir de l'état actuel des données plutôt
  * que stocké dans une table dédiée — plus simple et toujours à jour.
  */
-export const getNotifications = asyncHandler(async (_req: Request, res: Response) => {
+export const getNotifications = asyncHandler(async (req: Request, res: Response) => {
+  const managerId = req.user!.userId;
   const notifications: NotificationItem[] = [];
 
   // --- Messages non lus envoyés par les locataires ---
@@ -63,7 +64,7 @@ export const getNotifications = asyncHandler(async (_req: Request, res: Response
     .innerJoin(contracts, eq(messages.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(messages.senderRole, "TENANT"))) as MessageRow[];
+    .where(and(eq(messages.senderRole, "TENANT"), eq(properties.managerId, managerId)))) as MessageRow[];
 
   const unreadByContract = new Map<
     string,
@@ -105,7 +106,7 @@ export const getNotifications = asyncHandler(async (_req: Request, res: Response
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(invoices.status, "LATE"))) as InvoiceRow[];
+    .where(and(eq(invoices.status, "LATE"), eq(properties.managerId, managerId)))) as InvoiceRow[];
 
   for (const r of lateInvoiceRows) {
     notifications.push({
@@ -126,7 +127,7 @@ export const getNotifications = asyncHandler(async (_req: Request, res: Response
     .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(issueReports.status, "OPEN"))) as IssueRow[];
+    .where(and(eq(issueReports.status, "OPEN"), eq(properties.managerId, managerId)))) as IssueRow[];
 
   for (const r of openIssueRows) {
     notifications.push({
@@ -150,7 +151,7 @@ export const getNotifications = asyncHandler(async (_req: Request, res: Response
     .from(contracts)
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(contracts.status, "ACTIVE"))) as ContractRow[];
+    .where(and(eq(contracts.status, "ACTIVE"), eq(properties.managerId, managerId)))) as ContractRow[];
 
   for (const r of activeContractRows) {
     const endDate = new Date(r.contract.endDate);

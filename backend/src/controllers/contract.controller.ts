@@ -33,12 +33,13 @@ async function withRelations(contractId: string) {
   return { ...row.contract, property: row.property, tenant: row.tenant, invoices: contractInvoices };
 }
 
-export const listContracts = asyncHandler(async (_req: Request, res: Response) => {
+export const listContracts = asyncHandler(async (req: Request, res: Response) => {
   const rows = await db
     .select({ contract: contracts, property: properties, tenant: tenants })
     .from(contracts)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .where(eq(properties.managerId, req.user!.userId))
     .orderBy(desc(contracts.createdAt));
 
   res.json(rows.map((r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({ ...r.contract, property: r.property, tenant: r.tenant })));
@@ -46,7 +47,7 @@ export const listContracts = asyncHandler(async (_req: Request, res: Response) =
 
 export const getContract = asyncHandler(async (req: Request, res: Response) => {
   const full = await withRelations(req.params.id);
-  if (!full) throw new ApiError(404, "Contrat introuvable");
+  if (!full || full.property.managerId !== req.user!.userId) throw new ApiError(404, "Contrat introuvable");
   res.json(full);
 });
 
@@ -59,8 +60,8 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
 
   const [property] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
-  if (!property) throw new ApiError(404, "Bien introuvable");
-  if (!tenant) throw new ApiError(404, "Locataire introuvable");
+  if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
   const [contract] = await db.insert(contracts).values(body).returning();
 
@@ -69,6 +70,7 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
 
   await logActivity({
     req,
+    managerId: property.managerId,
     action: "contract.create",
     entityType: "contract",
     entityId: contract.id,
@@ -84,6 +86,10 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
 
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable");
+  const [existingProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
+  if (!existingProperty || existingProperty.managerId !== req.user!.userId) {
+    throw new ApiError(404, "Contrat introuvable");
+  }
 
   const [contract] = await db.update(contracts).set(body).where(eq(contracts.id, req.params.id)).returning();
 
@@ -102,6 +108,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
   await logActivity({
     req,
+    managerId: req.user!.userId,
     action: "contract.update",
     entityType: "contract",
     entityId: contract.id,
@@ -116,6 +123,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable");
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
+  if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Contrat introuvable");
 
   await db.delete(invoices).where(eq(invoices.contractId, req.params.id));
   await db.delete(issueReports).where(eq(issueReports.contractId, req.params.id));
@@ -129,6 +137,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
 
   await logActivity({
     req,
+    managerId: property.managerId,
     action: "contract.delete",
     entityType: "contract",
     entityId: existing.id,
@@ -176,6 +185,10 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
 
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable");
+  const [ownerProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
+  if (!ownerProperty || ownerProperty.managerId !== req.user!.userId) {
+    throw new ApiError(404, "Contrat introuvable");
+  }
   if (existing.status !== "ACTIVE") {
     throw new ApiError(409, "Seul un contrat actif peut être renouvelé");
   }
@@ -205,6 +218,7 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
   await logActivity({
     req,
+    managerId: ownerProperty.managerId,
     action: "contract.renew",
     entityType: "contract",
     entityId: newContract.id,
@@ -240,6 +254,8 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       .returning();
     return res.json(await withRelations(updated.id));
   } else {
+    const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+    if (!property || property.managerId !== req.user.userId) throw new ApiError(403, "Accès refusé");
     const [updated] = await db
       .update(contracts)
       .set({

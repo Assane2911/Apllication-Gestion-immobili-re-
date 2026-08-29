@@ -12,14 +12,14 @@ import { asyncHandler } from "../utils/asyncHandler";
 export const listActivityLogs = asyncHandler(async (req: Request, res: Response) => {
   const { entityType, entityId } = req.query as { entityType?: string; entityId?: string };
 
-  const conditions = [];
+  const conditions = [eq(activityLogs.managerId, req.user!.userId)];
   if (entityType) conditions.push(eq(activityLogs.entityType, entityType));
   if (entityId) conditions.push(eq(activityLogs.entityId, entityId));
 
   const rows = await db
     .select()
     .from(activityLogs)
-    .where(conditions.length ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(desc(activityLogs.createdAt))
     .limit(200);
 

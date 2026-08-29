@@ -17,6 +17,7 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
     .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(properties.managerId, req.user!.userId))
     .orderBy(desc(issueReports.createdAt));
 
   if (req.query.status) rows = rows.filter((r: { issue: typeof issueReports.$inferSelect; tenant: typeof tenants.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => r.issue.status === String(req.query.status));
@@ -37,8 +38,15 @@ const updateIssueSchema = z.object({
 
 export const updateIssueStatus = asyncHandler(async (req: Request, res: Response) => {
   const body = updateIssueSchema.parse(req.body);
-  const [issue] = await db.select().from(issueReports).where(eq(issueReports.id, req.params.id));
-  if (!issue) throw new ApiError(404, "Signalement introuvable");
+  const [owned] = await db
+    .select({ issue: issueReports, property: properties })
+    .from(issueReports)
+    .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(issueReports.id, req.params.id));
+  if (!owned || owned.property.managerId !== req.user!.userId) {
+    throw new ApiError(404, "Signalement introuvable");
+  }
 
   const [updated] = await db
     .update(issueReports)
@@ -71,6 +79,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
 
   await logActivity({
     req,
+    managerId: owned.property.managerId,
     action: "issue.update_status",
     entityType: "issue",
     entityId: updated.id,
@@ -131,10 +140,19 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
   if (!req.user) throw new ApiError(401, "Authentification requise");
   if (!req.file) throw new ApiError(400, "Une photo est requise");
 
-  const [issue] = await db.select().from(issueReports).where(eq(issueReports.id, req.params.id));
-  if (!issue) throw new ApiError(404, "Signalement introuvable");
+  const [row] = await db
+    .select({ issue: issueReports, property: properties })
+    .from(issueReports)
+    .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(eq(issueReports.id, req.params.id));
+  if (!row) throw new ApiError(404, "Signalement introuvable");
+  const { issue } = row;
 
   if (req.user.role === "TENANT" && issue.tenantId !== req.user.tenantId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+  if (req.user.role === "MANAGER" && row.property.managerId !== req.user.userId) {
     throw new ApiError(403, "Accès refusé");
   }
 

@@ -1,4 +1,4 @@
-import { eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
@@ -18,6 +18,7 @@ export interface SearchResultItem {
  * catégorie, triés par pertinence simple (correspondance directe en tête).
  */
 export const globalSearch = asyncHandler(async (req: Request, res: Response) => {
+  const managerId = req.user!.userId;
   const q = String(req.query.q ?? "").trim();
   if (q.length < 2) {
     return res.json({ query: q, results: [] });
@@ -28,19 +29,29 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
     db
       .select()
       .from(tenants)
-      .where(or(ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern), ilike(tenants.email, pattern), ilike(tenants.phone, pattern)))
+      .where(
+        and(
+          eq(tenants.managerId, managerId),
+          or(ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern), ilike(tenants.email, pattern), ilike(tenants.phone, pattern))
+        )
+      )
       .limit(5),
     db
       .select()
       .from(properties)
-      .where(or(ilike(properties.title, pattern), ilike(properties.address, pattern)))
+      .where(and(eq(properties.managerId, managerId), or(ilike(properties.title, pattern), ilike(properties.address, pattern))))
       .limit(5),
     db
       .select({ contract: contracts, property: properties, tenant: tenants })
       .from(contracts)
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
-      .where(or(ilike(properties.title, pattern), ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern)))
+      .where(
+        and(
+          eq(properties.managerId, managerId),
+          or(ilike(properties.title, pattern), ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern))
+        )
+      )
       .limit(5),
     db
       .select({ invoice: invoices, contract: contracts, property: properties, tenant: tenants })
@@ -48,7 +59,12 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
-      .where(or(ilike(properties.title, pattern), ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern)))
+      .where(
+        and(
+          eq(properties.managerId, managerId),
+          or(ilike(properties.title, pattern), ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern))
+        )
+      )
       .limit(5),
   ]);
 
