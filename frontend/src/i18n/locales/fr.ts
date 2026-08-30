@@ -94,6 +94,8 @@ const fr = {
       receipts: "Quittances & Signature",
       pricing: "Tarifs",
       currencies: "Multi-Devises",
+      security: "Sécurité",
+      faq: "FAQ",
       goToSpace: "Accéder à mon espace →",
       login: "Se connecter",
       trial: "Essai 15j gratuit →",
@@ -120,6 +122,119 @@ const fr = {
         title: "Alertes Automatiques du 1er du Mois",
         desc: "Rappels programmés au 1er de chaque mois rappelant l'échéance de paiement au plus tard le 5 avec lien de règlement sécurisé.",
       },
+      dashboard: {
+        title: "Tableau de Bord & Statistiques en Temps Réel",
+        desc: "Suivez en un coup d'œil votre taux d'occupation, vos revenus encaissés, vos impayés et l'état de votre parc immobilier grâce à des graphiques clairs et actualisés en direct.",
+      },
+      expenses: {
+        title: "Suivi des Dépenses & Rentabilité Nette",
+        desc: "Enregistrez vos frais d'entretien, taxes et charges, et visualisez automatiquement votre flux de trésorerie réel — revenus moins dépenses — mois après mois.",
+      },
+      tenantPortal: {
+        title: "Portail Locataire Dédié",
+        desc: "Vos locataires paient leur loyer, consultent leurs quittances, signalent un incident avec photo et vous écrivent directement, sans appel ni papier.",
+      },
+      security: {
+        title: "Sécurité & Conformité RGPD",
+        desc: "Isolation stricte des données entre agences, mots de passe chiffrés, connexions sécurisées et hébergement en France — conforme au RGPD dès la conception.",
+      },
+      multiCurrency: {
+        title: "Multi-Devises",
+        desc: "Affichez et encaissez vos loyers dans la devise de votre choix, adaptée à votre marché et à celui de vos locataires.",
+      },
+      multiLanguage: {
+        title: "Interface Multilingue",
+        desc: "Français, anglais, portugais et espagnol : chaque utilisateur choisit sa langue d'affichage en un clic, sans configuration.",
+      },
+    },
+    featuresSection: {
+      title: "Tout ce qu'il faut pour gérer vos locations sereinement",
+      subtitle: "Une seule plateforme, du bail à l'encaissement, pour les indépendants comme pour les agences.",
+    },
+    extras: [
+      "💬 Messagerie intégrée",
+      "🔍 Recherche globale instantanée",
+      "🕒 Journal d'activité complet",
+      "📊 Export comptable CSV",
+      "🏢 Marque blanche pour votre agence",
+      "🌙 Mode sombre",
+    ],
+    productTour: {
+      title: "Découvrez la plateforme en images",
+      subtitle: "Une interface pensée pour aller vite, aussi bien pour vous que pour vos locataires.",
+      dashboard: {
+        title: "Tableau de bord clair et actionnable",
+        desc: "Revenus, occupation, impayés et incidents : toutes vos priorités du jour, réunies sur un seul écran.",
+      },
+      contracts: {
+        title: "Des baux signés en quelques clics",
+        desc: "Génération du contrat, signature tactile du locataire, archivage automatique — sans imprimante ni scanner.",
+      },
+      expenses: {
+        title: "Une rentabilité toujours à jour",
+        desc: "Chaque dépense enregistrée recalcule instantanément votre flux de trésorerie net, bien par bien.",
+      },
+      tenant: {
+        title: "Une expérience locataire fluide",
+        desc: "Paiement en ligne, historique des quittances et messagerie directe : vos locataires ne vous appellent plus pour un oui ou un non.",
+      },
+    },
+    forWho: {
+      title: "Conçu pour tous les profils de gestion locative",
+      subtitle: "Que vous gériez un studio ou plusieurs centaines de lots, une formule est faite pour vous.",
+      independent: {
+        title: "Propriétaire indépendant",
+        desc: "Gérez vos quelques biens en toute simplicité : quittances automatiques, rappels de paiement et portail locataire, sans complexité inutile.",
+      },
+      agency: {
+        title: "Agence immobilière",
+        desc: "Signature électronique, suivi de rentabilité et marque blanche pour présenter une image professionnelle à vos clients propriétaires et locataires.",
+      },
+      enterprise: {
+        title: "Gestionnaire de grand portefeuille",
+        desc: "Multi-utilisateurs, export comptable automatisé et support prioritaire pour piloter des centaines de biens sans perdre en visibilité.",
+      },
+    },
+    trust: {
+      title: "Vos données, protégées sérieusement",
+      subtitle: "La sécurité n'est pas une option ajoutée après coup : elle fait partie de l'architecture du service.",
+      items: [
+        "Hébergement des données en France (Paris), sur une infrastructure dédiée.",
+        "Isolation stricte des données entre agences : aucun gestionnaire ne peut voir les biens, locataires ou paiements d'un autre.",
+        "Mots de passe chiffrés et connexions intégralement sécurisées en HTTPS.",
+        "Politique de confidentialité conforme au RGPD, consultable à tout moment.",
+      ],
+      linkLabel: "Consulter notre politique de confidentialité →",
+    },
+    faq: {
+      title: "Questions fréquentes",
+      items: [
+        {
+          q: "Combien de temps pour commencer ?",
+          a: "Quelques minutes : créez votre compte, ajoutez votre premier bien et profitez immédiatement de 15 jours d'essai gratuit, sans carte bancaire requise.",
+        },
+        {
+          q: "Mes données sont-elles en sécurité ?",
+          a: "Oui : vos données sont hébergées en France, chiffrées et strictement isolées des autres agences utilisant la plateforme. Voir notre politique de confidentialité pour le détail.",
+        },
+        {
+          q: "Quels moyens de paiement mes locataires peuvent-ils utiliser ?",
+          a: "Carte bancaire (Stripe), mobile money et carte bancaire via PayDunya (Orange Money, Wave, Free Money, MTN...) pour l'Afrique francophone, ou virement bancaire classique.",
+        },
+        {
+          q: "Puis-je annuler mon abonnement à tout moment ?",
+          a: "Oui, sans engagement. Vous pouvez résilier depuis votre espace gestionnaire à tout moment ; l'accès reste actif jusqu'à la fin de la période déjà payée.",
+        },
+        {
+          q: "Le service fonctionne-t-il en dehors de la France ?",
+          a: "Oui : devise d'affichage personnalisable, interface en 4 langues et moyens de paiement adaptés à l'Afrique francophone comme à l'international.",
+        },
+      ],
+    },
+    finalCta: {
+      title: "Prêt à moderniser votre gestion locative ?",
+      subtitle: "Rejoignez les gestionnaires qui ont déjà simplifié leurs quittances, leurs relances et leur suivi financier.",
+      cta: "Démarrer mon essai gratuit de 15 jours →",
     },
     pricing: {
       title: "Des formules simples et transparentes",

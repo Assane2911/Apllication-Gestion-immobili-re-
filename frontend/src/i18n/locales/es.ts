@@ -96,6 +96,8 @@ const es: TranslationSchema = {
       receipts: "Recibos y Firma",
       pricing: "Precios",
       currencies: "Multi-Divisas",
+      security: "Seguridad",
+      faq: "Preguntas frecuentes",
       goToSpace: "Ir a mi espacio →",
       login: "Iniciar sesión",
       trial: "Prueba gratis 15 días →",
@@ -122,6 +124,119 @@ const es: TranslationSchema = {
         title: "Alertas Automáticas el Día 1 de Cada Mes",
         desc: "Recordatorios programados el día 1 de cada mes que avisan del vencimiento del pago como máximo el día 5, con enlace de pago seguro.",
       },
+      dashboard: {
+        title: "Panel de Control y Estadísticas en Tiempo Real",
+        desc: "Consulta de un vistazo tu tasa de ocupación, tus ingresos cobrados, tus facturas atrasadas y el estado de tu cartera, con gráficos claros y actualizados en directo.",
+      },
+      expenses: {
+        title: "Seguimiento de Gastos y Rentabilidad Neta",
+        desc: "Registra tus gastos de mantenimiento, impuestos y cargas, y visualiza automáticamente tu flujo de caja real — ingresos menos gastos — mes a mes.",
+      },
+      tenantPortal: {
+        title: "Portal del Inquilino Dedicado",
+        desc: "Tus inquilinos pagan su alquiler, consultan sus recibos, reportan una incidencia con foto y te escriben directamente, sin llamadas ni papeleo.",
+      },
+      security: {
+        title: "Seguridad y Cumplimiento RGPD",
+        desc: "Aislamiento estricto de los datos entre agencias, contraseñas cifradas, conexiones seguras y alojamiento en Francia — conforme al RGPD desde el diseño.",
+      },
+      multiCurrency: {
+        title: "Multi-Divisas",
+        desc: "Muestra y cobra tus alquileres en la divisa que elijas, adaptada a tu mercado y al de tus inquilinos.",
+      },
+      multiLanguage: {
+        title: "Interfaz Multilingüe",
+        desc: "Francés, inglés, portugués y español: cada usuario elige su idioma de visualización con un clic, sin ninguna configuración.",
+      },
+    },
+    featuresSection: {
+      title: "Todo lo necesario para gestionar tus alquileres con tranquilidad",
+      subtitle: "Una sola plataforma, desde el contrato hasta el cobro, tanto para independientes como para agencias.",
+    },
+    extras: [
+      "💬 Mensajería integrada",
+      "🔍 Búsqueda global instantánea",
+      "🕒 Registro de actividad completo",
+      "📊 Exportación contable CSV",
+      "🏢 Marca blanca para tu agencia",
+      "🌙 Modo oscuro",
+    ],
+    productTour: {
+      title: "Descubre la plataforma en imágenes",
+      subtitle: "Una interfaz pensada para ser rápida, tanto para ti como para tus inquilinos.",
+      dashboard: {
+        title: "Un panel de control claro y accionable",
+        desc: "Ingresos, ocupación, facturas atrasadas e incidencias: todas tus prioridades del día, reunidas en una sola pantalla.",
+      },
+      contracts: {
+        title: "Contratos firmados en unos pocos clics",
+        desc: "Generación del contrato, firma táctil del inquilino, archivo automático — sin impresora ni escáner.",
+      },
+      expenses: {
+        title: "Una rentabilidad siempre actualizada",
+        desc: "Cada gasto registrado recalcula al instante tu flujo de caja neto, propiedad por propiedad.",
+      },
+      tenant: {
+        title: "Una experiencia fluida para el inquilino",
+        desc: "Pago en línea, historial de recibos y mensajería directa: tus inquilinos ya no te llaman por cualquier motivo.",
+      },
+    },
+    forWho: {
+      title: "Diseñado para todos los perfiles de gestión de alquileres",
+      subtitle: "Ya gestiones un estudio o varios cientos de propiedades, hay un plan hecho para ti.",
+      independent: {
+        title: "Propietario independiente",
+        desc: "Gestiona tus pocas propiedades con toda sencillez: recibos automáticos, recordatorios de pago y portal del inquilino, sin complejidad innecesaria.",
+      },
+      agency: {
+        title: "Agencia inmobiliaria",
+        desc: "Firma electrónica, seguimiento de rentabilidad y marca blanca para presentar una imagen profesional a tus clientes propietarios e inquilinos.",
+      },
+      enterprise: {
+        title: "Gestor de gran cartera",
+        desc: "Multiusuario, exportación contable automatizada y soporte prioritario para gestionar cientos de propiedades sin perder visibilidad.",
+      },
+    },
+    trust: {
+      title: "Tus datos, protegidos en serio",
+      subtitle: "La seguridad no es una opción añadida después: forma parte de la arquitectura del servicio.",
+      items: [
+        "Datos alojados en Francia (París), en una infraestructura dedicada.",
+        "Aislamiento estricto de los datos entre agencias: ningún gestor puede ver las propiedades, inquilinos o pagos de otra agencia.",
+        "Contraseñas cifradas y conexiones totalmente seguras mediante HTTPS.",
+        "Política de privacidad conforme al RGPD, disponible para consultar en cualquier momento.",
+      ],
+      linkLabel: "Consultar nuestra política de privacidad →",
+    },
+    faq: {
+      title: "Preguntas frecuentes",
+      items: [
+        {
+          q: "¿Cuánto tiempo se tarda en empezar?",
+          a: "Solo unos minutos: crea tu cuenta, añade tu primera propiedad y disfruta de inmediato de 15 días de prueba gratuita, sin necesidad de tarjeta bancaria.",
+        },
+        {
+          q: "¿Mis datos están seguros?",
+          a: "Sí: tus datos están alojados en Francia, cifrados y estrictamente aislados de las demás agencias que usan la plataforma. Consulta nuestra política de privacidad para más detalles.",
+        },
+        {
+          q: "¿Qué métodos de pago pueden usar mis inquilinos?",
+          a: "Tarjeta bancaria (Stripe), mobile money y tarjeta vía PayDunya (Orange Money, Wave, Free Money, MTN...) para África francófona, o transferencia bancaria tradicional.",
+        },
+        {
+          q: "¿Puedo cancelar mi suscripción en cualquier momento?",
+          a: "Sí, sin compromiso. Puedes cancelar desde tu espacio de gestión en cualquier momento; el acceso permanece activo hasta el final del período ya pagado.",
+        },
+        {
+          q: "¿El servicio funciona fuera de Francia?",
+          a: "Sí: divisa de visualización personalizable, interfaz en 4 idiomas y métodos de pago adaptados tanto a África francófona como al ámbito internacional.",
+        },
+      ],
+    },
+    finalCta: {
+      title: "¿Listo para modernizar tu gestión de alquileres?",
+      subtitle: "Únete a los gestores que ya han simplificado sus recibos, recordatorios y seguimiento financiero.",
+      cta: "Comenzar mi prueba gratuita de 15 días →",
     },
     pricing: {
       title: "Planes simples y transparentes",

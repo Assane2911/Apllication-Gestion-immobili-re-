@@ -96,6 +96,8 @@ const en: TranslationSchema = {
       receipts: "Receipts & Signature",
       pricing: "Pricing",
       currencies: "Multi-Currency",
+      security: "Security",
+      faq: "FAQ",
       goToSpace: "Go to my dashboard →",
       login: "Sign in",
       trial: "Free 15-day trial →",
@@ -122,6 +124,119 @@ const en: TranslationSchema = {
         title: "Automatic Alerts on the 1st of the Month",
         desc: "Reminders scheduled on the 1st of each month, noting the payment deadline of the 5th, with a secure payment link.",
       },
+      dashboard: {
+        title: "Real-Time Dashboard & Statistics",
+        desc: "See your occupancy rate, collected revenue, unpaid invoices and property status at a glance, with clear, live-updated charts.",
+      },
+      expenses: {
+        title: "Expense Tracking & Net Profitability",
+        desc: "Log your maintenance costs, taxes and charges, and automatically see your real cash flow — revenue minus expenses — month after month.",
+      },
+      tenantPortal: {
+        title: "Dedicated Tenant Portal",
+        desc: "Your tenants pay their rent, view their receipts, report an issue with a photo, and message you directly — no phone calls, no paperwork.",
+      },
+      security: {
+        title: "Security & GDPR Compliance",
+        desc: "Strict data isolation between agencies, encrypted passwords, secure connections and hosting in France — built with GDPR in mind from day one.",
+      },
+      multiCurrency: {
+        title: "Multi-Currency",
+        desc: "Display and collect rent in the currency of your choice, matched to your market and your tenants'.",
+      },
+      multiLanguage: {
+        title: "Multilingual Interface",
+        desc: "French, English, Portuguese and Spanish: every user picks their display language in one click, with no setup required.",
+      },
+    },
+    featuresSection: {
+      title: "Everything you need to manage your rentals with peace of mind",
+      subtitle: "One single platform, from lease to payment collection, for independent landlords and agencies alike.",
+    },
+    extras: [
+      "💬 Built-in messaging",
+      "🔍 Instant global search",
+      "🕒 Full activity log",
+      "📊 CSV accounting export",
+      "🏢 White label for your agency",
+      "🌙 Dark mode",
+    ],
+    productTour: {
+      title: "See the platform in action",
+      subtitle: "An interface built for speed, for you and for your tenants alike.",
+      dashboard: {
+        title: "A clear, actionable dashboard",
+        desc: "Revenue, occupancy, unpaid invoices and issues: all of today's priorities, brought together on a single screen.",
+      },
+      contracts: {
+        title: "Leases signed in a few clicks",
+        desc: "Contract generation, touch signature from the tenant, automatic archiving — no printer, no scanner.",
+      },
+      expenses: {
+        title: "Profitability that's always up to date",
+        desc: "Every expense you log instantly recalculates your net cash flow, property by property.",
+      },
+      tenant: {
+        title: "A smooth tenant experience",
+        desc: "Online payment, receipt history and direct messaging: your tenants no longer need to call you for every little thing.",
+      },
+    },
+    forWho: {
+      title: "Built for every kind of rental management",
+      subtitle: "Whether you manage a single studio or several hundred units, there's a plan for you.",
+      independent: {
+        title: "Independent landlord",
+        desc: "Manage your few properties with ease: automatic receipts, payment reminders and a tenant portal, without unnecessary complexity.",
+      },
+      agency: {
+        title: "Real estate agency",
+        desc: "Electronic signature, profitability tracking and white labeling to present a professional image to your landlord and tenant clients.",
+      },
+      enterprise: {
+        title: "Large portfolio manager",
+        desc: "Multiple users, automated accounting export and priority support to run hundreds of properties without losing visibility.",
+      },
+    },
+    trust: {
+      title: "Your data, seriously protected",
+      subtitle: "Security isn't an afterthought — it's part of the service's architecture.",
+      items: [
+        "Data hosted in France (Paris), on dedicated infrastructure.",
+        "Strict data isolation between agencies: no manager can see another agency's properties, tenants or payments.",
+        "Encrypted passwords and fully secured HTTPS connections.",
+        "A GDPR-compliant privacy policy, available to read at any time.",
+      ],
+      linkLabel: "Read our privacy policy →",
+    },
+    faq: {
+      title: "Frequently asked questions",
+      items: [
+        {
+          q: "How long does it take to get started?",
+          a: "Just a few minutes: create your account, add your first property and immediately enjoy a 15-day free trial, no credit card required.",
+        },
+        {
+          q: "Is my data secure?",
+          a: "Yes: your data is hosted in France, encrypted and strictly isolated from other agencies using the platform. See our privacy policy for details.",
+        },
+        {
+          q: "What payment methods can my tenants use?",
+          a: "Credit card (Stripe), mobile money and card via PayDunya (Orange Money, Wave, Free Money, MTN...) for French-speaking Africa, or a standard bank transfer.",
+        },
+        {
+          q: "Can I cancel my subscription at any time?",
+          a: "Yes, with no commitment. You can cancel from your manager dashboard at any time; access remains active until the end of the period already paid for.",
+        },
+        {
+          q: "Does the service work outside of France?",
+          a: "Yes: a customizable display currency, a 4-language interface, and payment methods suited to both French-speaking Africa and international use.",
+        },
+      ],
+    },
+    finalCta: {
+      title: "Ready to modernize your rental management?",
+      subtitle: "Join the managers who've already simplified their receipts, reminders and financial tracking.",
+      cta: "Start my free 15-day trial →",
     },
     pricing: {
       title: "Simple, transparent plans",
