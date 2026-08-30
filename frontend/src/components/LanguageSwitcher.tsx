@@ -7,9 +7,9 @@ interface LanguageSwitcherProps {
   variant?: "dark" | "light";
 }
 
-/** Sélecteur de langue (Français / English / Português / العربية), persisté en
- * localStorage par i18next-browser-languagedetector. Change aussi le sens de
- * lecture du document (RTL pour l'arabe) via i18n/index.ts. */
+/** Sélecteur de langue (Français / English / Português / Español), persisté en
+ * localStorage par i18next-browser-languagedetector. Applique aussi le sens
+ * de lecture du document (LTR pour toutes ces langues) via i18n/index.ts. */
 export default function LanguageSwitcher({ className = "", variant = "dark" }: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation();
 
