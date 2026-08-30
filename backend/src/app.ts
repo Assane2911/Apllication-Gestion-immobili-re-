@@ -52,3 +52,14 @@ app.use("/api/cron", cronRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// Vercel détecte automatiquement ce fichier (src/app.ts) comme point d'entrée
+// Express, car c'est le seul fichier candidat (parmi app/index/server.ts à la
+// racine ou dans src/) qui importe directement le package "express" — voir
+// https://vercel.com/docs/frameworks/backend/express. Vercel exige que ce
+// fichier exporte l'application par défaut pour l'envelopper en fonction
+// serverless : sans cet export, chaque requête échoue avec
+// FUNCTION_INVOCATION_FAILED (c'est la cause du 500 rencontré après le premier
+// déploiement). L'export nommé ci-dessus reste utilisé par src/index.ts pour
+// le mode développement local (app.listen).
+export default app;
+
