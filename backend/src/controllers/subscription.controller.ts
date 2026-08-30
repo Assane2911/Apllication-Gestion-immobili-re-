@@ -36,7 +36,7 @@ export const SUBSCRIPTION_PLANS = [
       "Suivi des incidents avec photos",
       "Alertes de fin de bail & renouvellement",
       "Rappels automatiques multi-canaux",
-      "Paiements en ligne & Mobile Money",
+      "Paiements en ligne & PayDunya (Orange Money, Wave...)",
       "Support prioritaire 7j/7",
     ],
   },
@@ -89,7 +89,7 @@ export const getStatus = asyncHandler(async (req: Request, res: Response) => {
 const subscribeSchema = z.object({
   plan: z.enum(["STARTER", "PRO", "ENTERPRISE"]),
   billingCycle: z.enum(["MONTHLY", "ANNUAL"]).default("MONTHLY"),
-  paymentMethod: z.enum(["STRIPE", "MOBILE_MONEY", "BANK_TRANSFER", "DEMO"]),
+  paymentMethod: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]),
   bankReference: z.string().optional(),
 });
 
@@ -116,6 +116,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
     invoiceId: paymentReferenceId,
     payerEmail: user.email,
     bankReference: body.bankReference,
+    returnPath: "/subscription",
   });
 
   const now = new Date();

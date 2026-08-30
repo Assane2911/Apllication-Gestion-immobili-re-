@@ -18,7 +18,7 @@ interface SubscriptionHistoryRecord {
 
 const paymentMethods: { key: PaymentMethod; label: string; hint: string }[] = [
   { key: "STRIPE", label: "💳 Carte bancaire", hint: "Paiement sécurisé par carte via Stripe" },
-  { key: "MOBILE_MONEY", label: "📱 Mobile Money", hint: "Orange Money / MTN Mobile Money" },
+  { key: "PAYDUNYA", label: "🌍 PayDunya", hint: "Orange Money, Wave, Free Money, MTN, carte bancaire..." },
   { key: "BANK_TRANSFER", label: "🏦 Virement bancaire", hint: "Validation sous 24h par virement" },
   { key: "DEMO", label: "🧪 Mode démo", hint: "Activation immédiate pour tests et validation" },
 ];
@@ -67,6 +67,15 @@ export default function SubscriptionPage() {
         paymentMethod: selectedMethod,
         bankReference: selectedMethod === "BANK_TRANSFER" ? bankRef : undefined,
       });
+
+      // PayDunya (et Stripe une fois branché) redirigent vers une page de
+      // paiement hébergée plutôt que de confirmer immédiatement — voir
+      // payment.service.ts. La confirmation définitive arrive plus tard via
+      // le webhook IPN.
+      if (data.payment?.status === "REQUIRES_ACTION" && data.payment?.redirectUrl) {
+        window.location.href = data.payment.redirectUrl;
+        return;
+      }
 
       setSuccessMessage(data.message);
       setSelectedPlan(null);

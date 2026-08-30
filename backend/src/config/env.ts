@@ -15,6 +15,19 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:5173",
 
+  // URL publique de CE backend, nécessaire pour construire le callback_url
+  // (webhook IPN) que l'on transmet aux prestataires de paiement externes
+  // (PayDunya, etc.) — ils ne peuvent pas appeler "localhost". En
+  // production sur Vercel, VERCEL_PROJECT_PRODUCTION_URL est injecté
+  // automatiquement ; sinon on utilise PUBLIC_BACKEND_URL si fourni.
+  // "||" et non "??" : PUBLIC_BACKEND_URL="" (vide) dans .env.example doit
+  // aussi retomber sur la valeur par défaut, pas rester une chaîne vide.
+  publicBackendUrl:
+    process.env.PUBLIC_BACKEND_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : `http://localhost:${process.env.PORT ?? "4000"}`),
+
   // Pas de valeur par défaut : si JWT_SECRET est absent, l'application doit
   // refuser de démarrer plutôt que d'utiliser un secret public et prévisible.
   jwtSecret: required("JWT_SECRET"),
@@ -50,10 +63,19 @@ export const env = {
     demoMode: (process.env.PAYMENTS_DEMO_MODE ?? "true") === "true",
     stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
-    mobileMoney: {
-      baseUrl: process.env.MOBILE_MONEY_API_BASE_URL ?? "",
-      apiKey: process.env.MOBILE_MONEY_API_KEY ?? "",
-      apiSecret: process.env.MOBILE_MONEY_API_SECRET ?? "",
+    // PayDunya (https://paydunya.com) : agrégateur de paiement ouest-africain
+    // (Orange Money, Wave, Free Money, MTN Money, cartes bancaires...). Tant
+    // que masterKey/privateKey/token ne sont pas renseignés (ou que
+    // PAYMENTS_DEMO_MODE=true), le paiement retombe sur une simulation — voir
+    // payment.service.ts.
+    paydunya: {
+      masterKey: process.env.PAYDUNYA_MASTER_KEY ?? "",
+      privateKey: process.env.PAYDUNYA_PRIVATE_KEY ?? "",
+      publicKey: process.env.PAYDUNYA_PUBLIC_KEY ?? "",
+      token: process.env.PAYDUNYA_TOKEN ?? "",
+      // "test" utilise le bac à sable PayDunya (sandbox-api), "live" la prod.
+      mode: (process.env.PAYDUNYA_MODE ?? "test") as "test" | "live",
+      storeName: process.env.PAYDUNYA_STORE_NAME ?? "ImmoPlatform Pro",
     },
   },
 };

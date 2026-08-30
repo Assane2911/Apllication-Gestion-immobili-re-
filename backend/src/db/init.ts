@@ -17,7 +17,7 @@ export async function initDb() {
         subscription_plan TEXT NOT NULL DEFAULT 'PRO' CHECK (subscription_plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
         trial_ends_at TIMESTAMP,
         subscription_ends_at TIMESTAMP,
-        subscription_payment_method TEXT CHECK (subscription_payment_method IN ('STRIPE', 'MOBILE_MONEY', 'BANK_TRANSFER', 'DEMO')),
+        subscription_payment_method TEXT CHECK (subscription_payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO')),
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -160,7 +160,7 @@ export async function initDb() {
         due_date TIMESTAMP NOT NULL,
         status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'LATE', 'CANCELLED')),
         paid_at TIMESTAMP,
-        payment_method TEXT CHECK (payment_method IN ('STRIPE', 'MOBILE_MONEY', 'BANK_TRANSFER', 'DEMO')),
+        payment_method TEXT CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO')),
         payment_ref TEXT,
         reminder_sent_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

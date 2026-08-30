@@ -9,7 +9,7 @@ const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août",
 
 const methods: { key: PaymentMethod; label: string; hint: string }[] = [
   { key: "STRIPE", label: "💳 Carte bancaire", hint: "Paiement sécurisé par Stripe" },
-  { key: "MOBILE_MONEY", label: "📱 Mobile Money", hint: "Orange Money / MTN Money" },
+  { key: "PAYDUNYA", label: "🌍 PayDunya", hint: "Orange Money, Wave, Free Money, MTN, carte bancaire..." },
   { key: "BANK_TRANSFER", label: "🏦 Virement bancaire", hint: "Déclarez votre virement, validation par le gestionnaire" },
   { key: "DEMO", label: "🧪 Mode démo", hint: "Paiement simulé, confirmation immédiate" },
 ];
@@ -34,6 +34,16 @@ export default function TenantInvoicesPage() {
     setMessage(null);
     try {
       const { data } = await api.post(`/invoices/${invoiceId}/pay`, { method, bankReference: bankRef || undefined });
+
+      // PayDunya (et Stripe une fois branché) redirigent vers une page de
+      // paiement hébergée plutôt que de confirmer immédiatement — voir
+      // payment.service.ts. La confirmation définitive (statut PAID) arrive
+      // plus tard via le webhook IPN, une fois le paiement réellement effectué.
+      if (data.payment?.status === "REQUIRES_ACTION" && data.payment?.redirectUrl) {
+        window.location.href = data.payment.redirectUrl;
+        return;
+      }
+
       setMessage(data.payment.message);
       setPayingId(null);
       setBankRef("");

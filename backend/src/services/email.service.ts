@@ -217,7 +217,7 @@ export function rentDueReminderEmail(params: {
             </a>
           </div>
           <p style="font-size: 12px; color: #94a3b8; text-align: center;">
-            Moyens acceptés : Carte bancaire, Mobile Money (Orange/MTN), virement bancaire.
+            Moyens acceptés : Carte bancaire, PayDunya (Orange Money, Wave, MTN...), virement bancaire.
           </p>
         </div>
         <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">

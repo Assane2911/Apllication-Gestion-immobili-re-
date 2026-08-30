@@ -41,7 +41,7 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
 
 /** Le gestionnaire marque manuellement une facture comme réglée (ex: espèces). */
 const markPaidSchema = z.object({
-  paymentMethod: z.enum(["STRIPE", "MOBILE_MONEY", "BANK_TRANSFER", "DEMO"]).default("BANK_TRANSFER"),
+  paymentMethod: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]).default("BANK_TRANSFER"),
   paymentRef: z.string().optional(),
 });
 
@@ -136,7 +136,7 @@ export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const paySchema = z.object({
-  method: z.enum(["STRIPE", "MOBILE_MONEY", "BANK_TRANSFER", "DEMO"]),
+  method: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]),
   bankReference: z.string().optional(),
 });
 
@@ -162,6 +162,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     invoiceId: row.invoice.id,
     payerEmail: row.tenant.email,
     bankReference: body.bankReference,
+    returnPath: "/portail/paiements",
   });
 
   const [updated] = await db

@@ -136,7 +136,7 @@ export interface AgencySettings {
 }
 
 export type InvoiceStatus = "PENDING" | "PAID" | "LATE" | "CANCELLED";
-export type PaymentMethod = "STRIPE" | "MOBILE_MONEY" | "BANK_TRANSFER" | "DEMO";
+export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO";
 
 export interface Invoice {
   id: string;

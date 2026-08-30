@@ -9,7 +9,7 @@ const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août",
 
 const methodLabels: Record<string, string> = {
   STRIPE: "Carte (Stripe)",
-  MOBILE_MONEY: "Mobile Money",
+  PAYDUNYA: "PayDunya",
   BANK_TRANSFER: "Virement",
   DEMO: "Démo",
 };

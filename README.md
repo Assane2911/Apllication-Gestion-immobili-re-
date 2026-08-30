@@ -23,7 +23,7 @@ Application complète de gestion immobilière : tableau de bord, biens, locatair
 ### Portail locataire
 
 - Consultation du logement loué et du contrat en cours.
-- **Paiement des loyers en ligne** avec choix du moyen de paiement : carte bancaire (Stripe), Mobile Money (Orange Money / MTN Money), virement bancaire déclaré (validé ensuite par le gestionnaire), ou mode démo (paiement simulé, pratique pour tester).
+- **Paiement des loyers en ligne** avec choix du moyen de paiement : carte bancaire (Stripe), PayDunya (Orange Money, Wave, Free Money, MTN...), virement bancaire déclaré (validé ensuite par le gestionnaire), ou mode démo (paiement simulé, pratique pour tester).
 - **Signalement d'un problème** avec photo (prise directement depuis l'appareil sur mobile) et description ; le gestionnaire voit le signalement avec la photo dans son espace.
 
 ## Démarrage rapide (développement local)
@@ -86,9 +86,9 @@ Tant que `SMTP_USER`/`SMTP_APP_PASSWORD` ne sont pas renseignés, les emails son
 Le module de paiement (`backend/src/services/payment.service.ts`) est conçu pour être branché facilement sur de vrais prestataires :
 
 - **Stripe** : renseignez `STRIPE_SECRET_KEY` (et `STRIPE_WEBHOOK_SECRET` pour les webhooks), puis complétez `initiateStripePayment` avec le SDK `stripe` (créer une Checkout Session).
-- **Mobile Money** (Orange Money / MTN MoMo) : renseignez `MOBILE_MONEY_API_BASE_URL` / `MOBILE_MONEY_API_KEY` / `MOBILE_MONEY_API_SECRET` fournis par le prestataire choisi, puis complétez `initiateMobileMoneyPayment`.
+- **PayDunya** (Orange Money, Wave, Free Money, MTN, carte bancaire — agrégateur ouest-africain, https://paydunya.com) : créez un compte gratuit, récupérez vos clés dans **Compte → Clés API**, renseignez `PAYDUNYA_MASTER_KEY` / `PAYDUNYA_PRIVATE_KEY` / `PAYDUNYA_PUBLIC_KEY` / `PAYDUNYA_TOKEN`, et passez `PAYDUNYA_MODE=live` une fois prêt (par défaut `test` = bac à sable, aucun vrai paiement). Le locataire ou le gestionnaire est redirigé vers une page de paiement hébergée par PayDunya ; la confirmation revient ensuite via le webhook `POST /api/payments/paydunya/ipn` (`backend/src/controllers/paydunya.controller.ts`), authentifié par un hash SHA-512 de la master key — assurez-vous que `PUBLIC_BACKEND_URL` (ou `VERCEL_PROJECT_PRODUCTION_URL` sur Vercel) pointe bien vers une URL publique joignable par PayDunya.
 - **Virement bancaire** : le locataire déclare une référence de virement ; le gestionnaire valide manuellement dans l'onglet "Paiements" ("Marquer réglée").
-- **Mode démo** (`PAYMENTS_DEMO_MODE=true` par défaut) : tant qu'aucune clé Stripe/Mobile Money n'est configurée, les paiements sont simulés et confirmés instantanément — pratique pour tester tout le flux avant de brancher un vrai prestataire.
+- **Mode démo** (`PAYMENTS_DEMO_MODE=true` par défaut) : tant qu'aucune clé Stripe/PayDunya n'est configurée, les paiements sont simulés et confirmés instantanément — pratique pour tester tout le flux avant de brancher un vrai prestataire.
 
 ### Base de données et fichiers (Supabase)
 
