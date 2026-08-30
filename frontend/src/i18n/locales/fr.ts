@@ -85,6 +85,23 @@ const fr = {
       submitting: "Connexion...",
       demoManager: "Compte gestionnaire démo : gestionnaire@demo.com / Demo1234!",
       demoTenant: "Compte locataire démo : amine.silva@demo.com / Demo1234!",
+      backToHome: "← Retour à l'accueil",
+      showPassword: "Afficher le mot de passe",
+      hidePassword: "Masquer le mot de passe",
+      tryDemoTitle: "Ou essayez sans créer de compte",
+      tryDemoManagerLabel: "Compte démo Gestionnaire",
+      tryDemoTenantLabel: "Compte démo Locataire",
+      panel: {
+        title: "La gestion locative, enfin simple.",
+        subtitle: "Quittances automatiques, signature électronique et paiements en ligne — tout au même endroit.",
+        highlights: [
+          "Quittances PDF certifiées générées automatiquement",
+          "Signature électronique des baux en quelques clics",
+          "Paiements en ligne sécurisés (carte, mobile money, virement)",
+          "Interface disponible en français, anglais, portugais et espagnol",
+        ],
+        trialNote: "15 jours d'essai gratuit, sans carte bancaire.",
+      },
     },
   },
 

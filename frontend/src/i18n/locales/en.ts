@@ -87,6 +87,23 @@ const en: TranslationSchema = {
       submitting: "Signing in...",
       demoManager: "Demo manager account: gestionnaire@demo.com / Demo1234!",
       demoTenant: "Demo tenant account: amine.silva@demo.com / Demo1234!",
+      backToHome: "← Back to home",
+      showPassword: "Show password",
+      hidePassword: "Hide password",
+      tryDemoTitle: "Or try it without creating an account",
+      tryDemoManagerLabel: "Manager demo account",
+      tryDemoTenantLabel: "Tenant demo account",
+      panel: {
+        title: "Rental management, finally made simple.",
+        subtitle: "Automatic receipts, electronic signature and online payments — all in one place.",
+        highlights: [
+          "Certified PDF receipts generated automatically",
+          "Electronic lease signature in a few clicks",
+          "Secure online payments (card, mobile money, bank transfer)",
+          "Interface available in French, English, Portuguese and Spanish",
+        ],
+        trialNote: "15-day free trial, no credit card required.",
+      },
     },
   },
 

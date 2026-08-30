@@ -87,6 +87,23 @@ const es: TranslationSchema = {
       submitting: "Conectando...",
       demoManager: "Cuenta gestor demo: gestionnaire@demo.com / Demo1234!",
       demoTenant: "Cuenta inquilino demo: amine.silva@demo.com / Demo1234!",
+      backToHome: "← Volver al inicio",
+      showPassword: "Mostrar la contraseña",
+      hidePassword: "Ocultar la contraseña",
+      tryDemoTitle: "O pruébalo sin crear una cuenta",
+      tryDemoManagerLabel: "Cuenta demo Gestor",
+      tryDemoTenantLabel: "Cuenta demo Inquilino",
+      panel: {
+        title: "La gestión de alquileres, por fin sencilla.",
+        subtitle: "Recibos automáticos, firma electrónica y pagos en línea — todo en un solo lugar.",
+        highlights: [
+          "Recibos en PDF certificados generados automáticamente",
+          "Firma electrónica de los contratos en unos pocos clics",
+          "Pagos en línea seguros (tarjeta, mobile money, transferencia)",
+          "Interfaz disponible en francés, inglés, portugués y español",
+        ],
+        trialNote: "15 días de prueba gratuita, sin tarjeta bancaria.",
+      },
     },
   },
 
