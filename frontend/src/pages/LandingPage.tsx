@@ -145,7 +145,7 @@ export default function LandingPage() {
             <div>
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Starter</span>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">19€</span>
+                <span className="text-4xl font-extrabold text-white">9€</span>
                 <span className="text-slate-400 text-xs">/ mois</span>
               </div>
               <p className="text-xs text-slate-400 mt-2">Idéal pour les bailleurs indépendants.</p>
@@ -172,7 +172,7 @@ export default function LandingPage() {
             <div>
               <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Pro Agence</span>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">49€</span>
+                <span className="text-4xl font-extrabold text-white">25€</span>
                 <span className="text-slate-400 text-xs">/ mois</span>
               </div>
               <p className="text-xs text-slate-400 mt-2">Pour agences et gestionnaires en croissance.</p>
@@ -197,7 +197,7 @@ export default function LandingPage() {
             <div>
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Entreprise</span>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">99€</span>
+                <span className="text-4xl font-extrabold text-white">49€</span>
                 <span className="text-slate-400 text-xs">/ mois</span>
               </div>
               <p className="text-xs text-slate-400 mt-2">Pour cabinets de gestion et grands parcs.</p>

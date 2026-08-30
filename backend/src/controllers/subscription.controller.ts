@@ -12,8 +12,8 @@ export const SUBSCRIPTION_PLANS = [
     id: "STARTER",
     name: "Starter",
     description: "Idéal pour les propriétaires indépendants et petites locations.",
-    monthlyPrice: 19,
-    annualPrice: 180, // ~15€/mois
+    monthlyPrice: 9,
+    annualPrice: 86, // ~7€/mois
     maxProperties: 5,
     features: [
       "Jusqu'à 5 biens immobiliers",
@@ -28,8 +28,8 @@ export const SUBSCRIPTION_PLANS = [
     name: "Professionnel",
     popular: true,
     description: "Pour les gestionnaires et agences en pleine croissance.",
-    monthlyPrice: 49,
-    annualPrice: 468, // ~39€/mois
+    monthlyPrice: 25,
+    annualPrice: 240, // ~20€/mois
     maxProperties: "Illimité",
     features: [
       "Nombre de biens illimité",
@@ -44,8 +44,8 @@ export const SUBSCRIPTION_PLANS = [
     id: "ENTERPRISE",
     name: "Agence & Multi-Comptes",
     description: "Pour les cabinets de gestion immobilière et syndics.",
-    monthlyPrice: 99,
-    annualPrice: 948, // ~79€/mois
+    monthlyPrice: 49,
+    annualPrice: 470, // ~39€/mois
     maxProperties: "Illimité",
     features: [
       "Tout ce qui est inclus dans Pro",
