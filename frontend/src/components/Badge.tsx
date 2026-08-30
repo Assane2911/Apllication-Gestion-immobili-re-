@@ -32,24 +32,11 @@ const dotStyles: Record<string, string> = {
   REJECTED: "bg-slate-400",
 };
 
-const labels: Record<string, string> = {
-  AVAILABLE: "Disponible",
-  OCCUPIED: "Occupé",
-  MAINTENANCE: "Maintenance",
-  ACTIVE: "Actif",
-  ENDED: "Terminé",
-  TERMINATED: "Résilié",
-  PENDING: "En attente",
-  PAID: "Réglée",
-  LATE: "En retard",
-  CANCELLED: "Annulée",
-  OPEN: "Ouvert",
-  IN_PROGRESS: "En cours",
-  RESOLVED: "Résolu",
-  REJECTED: "Rejeté",
-};
+import { useTranslation } from "react-i18next";
 
 export default function Badge({ status }: { status: string }) {
+  const { t } = useTranslation();
+  const label = t(`common.status.${status}`, { defaultValue: status });
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -57,7 +44,7 @@ export default function Badge({ status }: { status: string }) {
       }`}
     >
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotStyles[status] ?? "bg-slate-400"}`} />
-      {labels[status] ?? status}
+      {label}
     </span>
   );
 }

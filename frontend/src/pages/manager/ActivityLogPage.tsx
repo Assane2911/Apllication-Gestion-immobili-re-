@@ -1,18 +1,12 @@
 import { Building2, Clock, FileText, Receipt, Wrench, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { TableRowSkeleton } from "../../components/Skeleton";
 import type { ActivityLogEntry } from "../../types";
 
-const entityTypeOptions: { value: string; label: string }[] = [
-  { value: "ALL", label: "Toutes les catégories" },
-  { value: "property", label: "Biens" },
-  { value: "tenant", label: "Locataires" },
-  { value: "contract", label: "Contrats" },
-  { value: "invoice", label: "Factures" },
-  { value: "issue", label: "Incidents" },
-];
+const entityTypes = ["ALL", "property", "tenant", "contract", "invoice", "issue"] as const;
 
 const iconByEntityType: Record<string, typeof Building2> = {
   property: Building2,
@@ -22,20 +16,21 @@ const iconByEntityType: Record<string, typeof Building2> = {
   issue: Wrench,
 };
 
-function formatDateTime(d: string) {
-  return new Date(d).toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default function ActivityLogPage() {
+  const { t, i18n } = useTranslation();
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [entityType, setEntityType] = useState("ALL");
+
+  function formatDateTime(d: string) {
+    return new Date(d).toLocaleString(i18n.language, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
   function load(type: string) {
     setLoading(true);
@@ -53,9 +48,9 @@ export default function ActivityLogPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Journal d'activité</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.activityLog.title")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Historique des actions effectuées sur vos biens, locataires, contrats et paiements
+            {t("manager.activityLog.subtitle")}
           </p>
         </div>
         <select
@@ -63,9 +58,9 @@ export default function ActivityLogPage() {
           onChange={(e) => setEntityType(e.target.value)}
           className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
         >
-          {entityTypeOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
+          {entityTypes.map((opt) => (
+            <option key={opt} value={opt}>
+              {t(`manager.activityLog.filters.${opt === "ALL" ? "all" : opt}`)}
             </option>
           ))}
         </select>
@@ -75,10 +70,10 @@ export default function ActivityLogPage() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">Quand</th>
-              <th className="px-4 py-3 font-medium">Qui</th>
-              <th className="px-4 py-3 font-medium">Catégorie</th>
-              <th className="px-4 py-3 font-medium">Détail</th>
+              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.when")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.who")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.category")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.detail")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -110,8 +105,8 @@ export default function ActivityLogPage() {
         {!loading && logs.length === 0 && (
           <EmptyState
             icon={Clock}
-            title="Aucune activité pour l'instant"
-            description="Chaque action (ajout d'un bien, renouvellement de contrat, paiement validé...) apparaîtra ici avec la date et l'auteur."
+            title={t("manager.activityLog.emptyTitle")}
+            description={t("manager.activityLog.emptyDesc")}
           />
         )}
       </div>

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
 import type { Contract, IssueReport } from "../../types";
 
 export default function TenantIssuesPage() {
+  const { t, i18n } = useTranslation();
   const [issues, setIssues] = useState<IssueReport[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [contractId, setContractId] = useState("");
@@ -47,7 +49,7 @@ export default function TenantIssuesPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!photo) {
-      setError("Merci de prendre ou joindre une photo du problème");
+      setError(t("tenant.issues.errorPhotoRequired"));
       return;
     }
     setSaving(true);
@@ -105,19 +107,19 @@ export default function TenantIssuesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Signaler un incident avec photos</h2>
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("tenant.issues.title")}</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Photographiez l'incident pour transmettre immédiatement les images à l'agence
+          {t("tenant.issues.subtitle")}
         </p>
       </div>
 
       {/* Formulaire de signalement */}
       <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
-        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">Nouveau signalement</h3>
+        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("tenant.issues.newReport")}</h3>
 
         {contracts.length > 1 && (
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Logement concerné</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("tenant.issues.concernedHome")}</label>
             <select
               value={contractId}
               onChange={(e) => setContractId(e.target.value)}
@@ -133,24 +135,24 @@ export default function TenantIssuesPage() {
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Titre de l'incident *</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("tenant.issues.issueTitle")}</label>
           <input
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex : Fuite d'eau sous le lavabo, serrure bloquée..."
+            placeholder={t("tenant.issues.issueTitlePlaceholder")}
             className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3.5 py-2 text-sm focus:ring-2 focus:ring-brand-500"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Description détaillée *</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("tenant.issues.description")}</label>
           <textarea
             required
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            placeholder="Expliquez ce qui s'est passé, l'urgence et la localisation précise dans le logement..."
+            placeholder={t("tenant.issues.descriptionPlaceholder")}
             className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3.5 py-2 text-sm focus:ring-2 focus:ring-brand-500"
           />
         </div>
@@ -158,7 +160,7 @@ export default function TenantIssuesPage() {
         {/* Zone de prise de photo */}
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
           <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-2">
-            📷 Photographier l'incident (Requis)
+            {t("tenant.issues.photoLabel")}
           </label>
           <div className="flex items-center gap-3 flex-wrap">
             <input
@@ -170,7 +172,7 @@ export default function TenantIssuesPage() {
               className="text-xs text-slate-700 dark:text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white hover:file:bg-brand-700 cursor-pointer"
             />
             <span className="text-[11px] text-slate-500 dark:text-slate-400">
-              💡 Sur smartphone, votre appareil photo s'ouvre directement pour capturer l'incident.
+              {t("tenant.issues.photoHint")}
             </span>
           </div>
 
@@ -178,12 +180,12 @@ export default function TenantIssuesPage() {
             <div className="mt-3 relative inline-block">
               <img
                 src={preview}
-                alt="Aperçu photo"
+                alt={t("tenant.issues.photoReady")}
                 className="h-44 rounded-xl object-cover border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer"
                 onClick={() => setLightbox(preview)}
               />
               <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm">
-                Photo prête à l'envoi
+                {t("tenant.issues.photoReady")}
               </span>
             </div>
           )}
@@ -196,13 +198,13 @@ export default function TenantIssuesPage() {
           disabled={saving || !contractId}
           className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-5 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
         >
-          {saving ? "Envoi du signalement..." : "📤 Transmettre le signalement à l'agence"}
+          {saving ? t("tenant.issues.submitting") : t("tenant.issues.submit")}
         </button>
       </form>
 
       {/* Historique des signalements */}
       <div>
-        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-lg mb-3">Mes signalements & Photos</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-lg mb-3">{t("tenant.issues.historyTitle")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {issues.map((issue) => {
             const allPhotos = getAllPhotos(issue);
@@ -220,11 +222,11 @@ export default function TenantIssuesPage() {
                         >
                           <img
                             src={fileUrl(url) ?? undefined}
-                            alt={`Photo incident ${idx + 1}`}
+                            alt={t("tenant.issues.photoAlt", { index: idx + 1 })}
                             className="w-full h-full object-cover hover:scale-105 transition-transform"
                           />
                           <span className="absolute top-2 left-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
-                            Photo {idx + 1}/{allPhotos.length}
+                            {idx + 1}/{allPhotos.length}
                           </span>
                         </div>
                       ))}
@@ -240,14 +242,16 @@ export default function TenantIssuesPage() {
 
                     {issue.managerNote && (
                       <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-3 text-xs text-blue-900 dark:text-blue-300 mt-2">
-                        <strong className="block mb-0.5 font-semibold">Réponse de l'agence :</strong>
+                        <strong className="block mb-0.5 font-semibold">{t("tenant.issues.managerResponse")}</strong>
                         {issue.managerNote}
                       </div>
                     )}
 
                     <p className="text-[11px] text-slate-400 dark:text-slate-500 pt-1">
-                      Signalé le {new Date(issue.createdAt).toLocaleDateString("fr-FR")} à{" "}
-                      {new Date(issue.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                      {t("tenant.issues.reportedOn", {
+                        date: new Date(issue.createdAt).toLocaleDateString(i18n.language),
+                        time: new Date(issue.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" }),
+                      })}
                     </p>
                   </div>
                 </div>
@@ -256,7 +260,7 @@ export default function TenantIssuesPage() {
                 <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
                   {addingPhotoToId === issue.id ? (
                     <div className="space-y-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Prendre une photo supplémentaire :</p>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{t("tenant.issues.addPhotoTitle")}</p>
                       <input
                         ref={extraFileInputRef}
                         type="file"
@@ -266,7 +270,7 @@ export default function TenantIssuesPage() {
                         className="text-xs text-slate-700 dark:text-slate-300 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-900 file:text-white cursor-pointer"
                       />
                       {extraPreview && (
-                        <img src={extraPreview} alt="Aperçu" className="h-28 rounded-lg object-cover" />
+                        <img src={extraPreview} alt={t("tenant.issues.photoReady")} className="h-28 rounded-lg object-cover" />
                       )}
                       <div className="flex gap-2 justify-end">
                         <button
@@ -278,7 +282,7 @@ export default function TenantIssuesPage() {
                           }}
                           className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-1"
                         >
-                          Annuler
+                          {t("common.actions.cancel")}
                         </button>
                         <button
                           type="button"
@@ -286,7 +290,7 @@ export default function TenantIssuesPage() {
                           disabled={savingExtra || !extraPhoto}
                           className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm"
                         >
-                          {savingExtra ? "Envoi..." : "Valider l'ajout de photo"}
+                          {savingExtra ? t("tenant.issues.addingPhoto") : t("tenant.issues.validateAddPhoto")}
                         </button>
                       </div>
                     </div>
@@ -295,7 +299,7 @@ export default function TenantIssuesPage() {
                       onClick={() => setAddingPhotoToId(issue.id)}
                       className="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-semibold py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5"
                     >
-                      <span>📷</span> Ajouter une photo à cet incident
+                      <span>📷</span> {t("tenant.issues.addPhoto")}
                     </button>
                   )}
                 </div>
@@ -304,7 +308,7 @@ export default function TenantIssuesPage() {
           })}
           {issues.length === 0 && (
             <p className="text-slate-400 dark:text-slate-500 text-sm col-span-2 text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-              Aucun incident signalé. Tous vos équipements sont opérationnels !
+              {t("tenant.issues.noIssues")}
             </p>
           )}
         </div>
@@ -316,7 +320,7 @@ export default function TenantIssuesPage() {
           onClick={() => setLightbox(null)}
           className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 cursor-zoom-out backdrop-blur-sm"
         >
-          <img src={lightbox} alt="Photo agrandie" className="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl border border-slate-700" />
+          <img src={lightbox} alt={t("tenant.issues.enlargedPhotoAlt")} className="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl border border-slate-700" />
         </div>
       )}
     </div>

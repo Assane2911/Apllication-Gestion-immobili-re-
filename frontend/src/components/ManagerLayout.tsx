@@ -1,28 +1,31 @@
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/ThemeContext";
 import GlobalSearch from "./GlobalSearch";
+import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
 
 const navItems = [
-  { to: "/", label: "Tableau de bord", icon: "📊" },
-  { to: "/properties", label: "Biens", icon: "🏠" },
-  { to: "/tenants", label: "Locataires", icon: "👥" },
-  { to: "/contracts", label: "Contrats", icon: "📄" },
-  { to: "/invoices", label: "Paiements", icon: "💳" },
-  { to: "/expenses", label: "Dépenses & Rentabilité", icon: "💰" },
-  { to: "/messages", label: "Messagerie", icon: "💬" },
-  { to: "/issues", label: "Incidents", icon: "🛠️" },
-  { to: "/activity-log", label: "Journal d'activité", icon: "🕒" },
-  { to: "/agency", label: "Mon Agence", icon: "🏢" },
-  { to: "/subscription", label: "Mon Abonnement", icon: "💎" },
-];
+  { to: "/", key: "dashboard", icon: "📊" },
+  { to: "/properties", key: "properties", icon: "🏠" },
+  { to: "/tenants", key: "tenants", icon: "👥" },
+  { to: "/contracts", key: "contracts", icon: "📄" },
+  { to: "/invoices", key: "invoices", icon: "💳" },
+  { to: "/expenses", key: "expenses", icon: "💰" },
+  { to: "/messages", key: "messages", icon: "💬" },
+  { to: "/issues", key: "issues", icon: "🛠️" },
+  { to: "/activity-log", key: "activityLog", icon: "🕒" },
+  { to: "/agency", key: "agency", icon: "🏢" },
+  { to: "/subscription", key: "subscription", icon: "💎" },
+] as const;
 
 export default function ManagerLayout() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const sub = user?.subscription;
@@ -47,23 +50,23 @@ export default function ManagerLayout() {
             <div className="flex items-center gap-3">
               <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md" />
               <div>
-                <h1 className="text-sm font-bold leading-tight">ImmoPlatform Pro</h1>
-                <p className="text-[11px] text-slate-400">Espace gestionnaire</p>
+                <h1 className="text-sm font-bold leading-tight">{t("common.appName")}</h1>
+                <p className="text-[11px] text-slate-400">{t("components.managerLayout.subtitle")}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={toggleTheme}
                 className="shrink-0 w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-                title={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
-                aria-label="Basculer le thème clair/sombre"
+                title={theme === "dark" ? t("common.theme.toLight") : t("common.theme.toDark")}
+                aria-label={t("common.theme.toggleAria")}
               >
                 {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
               </button>
               <button
                 onClick={() => setMobileNavOpen(false)}
                 className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-                aria-label="Fermer le menu"
+                aria-label={t("components.managerLayout.closeMenuAria")}
               >
                 <X size={15} />
               </button>
@@ -71,15 +74,18 @@ export default function ManagerLayout() {
           </div>
           {sub?.isTrialActive && (
             <div className="mt-2.5 bg-brand-900/60 border border-brand-500/30 rounded-lg px-2.5 py-1 text-[11px] text-brand-200 flex items-center justify-between">
-              <span>Essai gratuit</span>
+              <span>{t("components.managerLayout.trialFree")}</span>
               <span className="font-bold text-white">{sub.trialDaysRemaining} j</span>
             </div>
           )}
           <div className="mt-3 pt-3 border-t border-slate-800">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
-              Monnaie de règlement
+              {t("nav.currencyLabel")}
             </label>
             <CurrencySelector className="w-full" />
+          </div>
+          <div className="mt-2">
+            <LanguageSwitcher className="w-full [&>select]:w-full" />
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1" onClick={() => setMobileNavOpen(false)}>
@@ -95,14 +101,14 @@ export default function ManagerLayout() {
               }
             >
               <span>{item.icon}</span>
-              <span>{item.label}</span>
+              <span>{t(`nav.manager.${item.key}`)}</span>
             </NavLink>
           ))}
         </nav>
         <div className="px-4 py-4 border-t border-slate-800 text-sm">
           <p className="text-slate-300 truncate">{user?.email}</p>
           <button onClick={logout} className="mt-2 text-xs text-slate-400 hover:text-white underline">
-            Se déconnecter
+            {t("nav.logout")}
           </button>
         </div>
       </aside>
@@ -111,7 +117,7 @@ export default function ManagerLayout() {
           <button
             onClick={() => setMobileNavOpen(true)}
             className="sm:hidden shrink-0 w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300"
-            aria-label="Ouvrir le menu"
+            aria-label={t("components.managerLayout.openMenuAria")}
           >
             <Menu size={18} />
           </button>

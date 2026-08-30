@@ -1,5 +1,6 @@
 import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
@@ -10,6 +11,7 @@ import type { Property, PropertyStatus } from "../../types";
 const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAILABLE" as PropertyStatus, description: "" };
 
 export default function PropertiesPage() {
+  const { t } = useTranslation();
   const { formatMoney } = useCurrency();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function PropertiesPage() {
   }
 
   async function handleDelete(p: Property) {
-    if (!confirm(`Supprimer le bien "${p.title}" ?`)) return;
+    if (!confirm(t("manager.properties.confirmDelete", { title: p.title }))) return;
     try {
       await api.delete(`/properties/${p.id}`);
       load();
@@ -92,57 +94,57 @@ export default function PropertiesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Biens immobiliers</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{properties.length} bien(s) enregistré(s)</p>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.properties.title")}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.properties.count", { count: properties.length })}</p>
         </div>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
-          + Ajouter un bien
+          {t("manager.properties.addBtn")}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? "Modifier le bien" : "Nouveau bien"}</h3>
+          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.properties.formTitleEdit") : t("manager.properties.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Titre</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.title")}</label>
               <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Adresse</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.address")}</label>
               <input required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Surface (m²)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.surface")}</label>
               <input required type="number" step="0.1" value={form.surface} onChange={(e) => setForm({ ...form, surface: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Loyer mensuel</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.rent")}</label>
               <input required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Statut</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.status")}</label>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as PropertyStatus })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
-                <option value="AVAILABLE">Disponible</option>
-                <option value="OCCUPIED">Occupé</option>
-                <option value="MAINTENANCE">Maintenance</option>
+                <option value="AVAILABLE">{t("common.status.AVAILABLE")}</option>
+                <option value="OCCUPIED">{t("common.status.OCCUPIED")}</option>
+                <option value="MAINTENANCE">{t("common.status.MAINTENANCE")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.image")}</label>
               <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.description")}</label>
               <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" rows={3} />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                {saving ? "Enregistrement..." : "Enregistrer"}
+                {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
               <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 dark:text-slate-400 px-4 py-2">
-                Annuler
+                {t("common.actions.cancel")}
               </button>
             </div>
           </form>
@@ -158,9 +160,9 @@ export default function PropertiesPage() {
       ) : properties.length === 0 && !showForm ? (
         <EmptyState
           icon={Building2}
-          title="Aucun bien pour l'instant"
-          description="Ajoutez votre premier bien immobilier (avec photo, surface et loyer) pour commencer à suivre sa location."
-          action={{ label: "+ Ajouter un bien", onClick: openCreate }}
+          title={t("manager.properties.emptyTitle")}
+          description={t("manager.properties.emptyDesc")}
+          action={{ label: t("manager.properties.addBtn"), onClick: openCreate }}
         />
       ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -181,14 +183,14 @@ export default function PropertiesPage() {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{p.address}</p>
               <div className="flex justify-between text-sm mt-3">
                 <span className="text-slate-500 dark:text-slate-400">{p.surface} m²</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(p.rent, p.currency)} / mois</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(p.rent, p.currency)} {t("manager.properties.perMonth")}</span>
               </div>
               <div className="flex gap-3 mt-3 text-xs">
                 <button onClick={() => openEdit(p)} className="text-brand-600 dark:text-brand-400 hover:underline">
-                  Modifier
+                  {t("common.actions.edit")}
                 </button>
                 <button onClick={() => handleDelete(p)} className="text-red-600 dark:text-red-400 hover:underline">
-                  Supprimer
+                  {t("common.actions.delete")}
                 </button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
@@ -22,6 +23,7 @@ function daysUntil(d: string) {
 }
 
 export default function ContractsPage() {
+  const { t } = useTranslation();
   const { formatMoney } = useCurrency();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -68,7 +70,7 @@ export default function ContractsPage() {
   }
 
   async function handleDelete(c: Contract) {
-    if (!confirm("Supprimer ce contrat et toutes ses factures associées ?")) return;
+    if (!confirm(t("manager.contracts.confirmDelete"))) return;
     try {
       await api.delete(`/contracts/${c.id}`);
       load();
@@ -78,7 +80,13 @@ export default function ContractsPage() {
   }
 
   async function handleRenew(c: Contract) {
-    if (!confirm(`Renouveler ce contrat pour 12 mois de plus (à partir du ${formatDate(String(new Date(new Date(c.endDate).getTime() + 86400000)))}) ?`)) {
+    if (
+      !confirm(
+        t("manager.contracts.confirmRenew", {
+          date: formatDate(String(new Date(new Date(c.endDate).getTime() + 86400000))),
+        })
+      )
+    ) {
       return;
     }
     try {
@@ -95,62 +103,62 @@ export default function ContractsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Contrats de location & Baux</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{contracts.length} contrat(s) de bail en gestion</p>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.contracts.title")}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <button onClick={() => setShowForm(true)} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
-          + Nouveau contrat
+          {t("manager.contracts.addBtn")}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">Nouveau contrat</h3>
+          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{t("manager.contracts.formTitle")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Bien</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.property")}</label>
               <select required value={form.propertyId} onChange={(e) => {
                 const prop = properties.find((p) => p.id === e.target.value);
                 setForm({ ...form, propertyId: e.target.value, rent: prop ? String(prop.rent) : form.rent, deposit: prop ? String(prop.rent * 2) : form.deposit });
               }} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
-                <option value="">Sélectionner un bien</option>
+                <option value="">{t("manager.contracts.fields.selectProperty")}</option>
                 {availableProperties.map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Locataire</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.tenant")}</label>
               <select required value={form.tenantId} onChange={(e) => setForm({ ...form, tenantId: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
-                <option value="">Sélectionner un locataire</option>
-                {tenants.map((t) => (
-                  <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>
+                <option value="">{t("manager.contracts.fields.selectTenant")}</option>
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>{tenant.firstName} {tenant.lastName}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Loyer mensuel</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.rent")}</label>
               <input required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Dépôt de garantie</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.deposit")}</label>
               <input required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Date de début</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.startDate")}</label>
               <input required type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Date de fin</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
               <input required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                {saving ? "Enregistrement..." : "Créer le contrat"}
+                {saving ? t("common.actions.saving") : t("manager.contracts.create")}
               </button>
               <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 dark:text-slate-400 px-4 py-2">
-                Annuler
+                {t("common.actions.cancel")}
               </button>
             </div>
           </form>
@@ -162,13 +170,13 @@ export default function ContractsPage() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">Bien</th>
-              <th className="px-4 py-3 font-medium">Locataire</th>
-              <th className="px-4 py-3 font-medium">Loyer</th>
-              <th className="px-4 py-3 font-medium">Durée</th>
-              <th className="px-4 py-3 font-medium">Signatures</th>
-              <th className="px-4 py-3 font-medium">Statut</th>
-              <th className="px-4 py-3 font-medium text-right">Actions</th>
+              <th className="px-4 py-3 font-medium">{t("manager.contracts.table.property")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.contracts.table.tenant")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.contracts.table.rent")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.contracts.table.duration")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.contracts.table.signatures")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.contracts.table.status")}</th>
+              <th className="px-4 py-3 font-medium text-right">{t("manager.contracts.table.actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -184,30 +192,30 @@ export default function ContractsPage() {
                   {formatDate(c.startDate)} → {formatDate(c.endDate)}
                   {showRenewal && (
                     <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold">
-                      ⏰ {daysLeft <= 0 ? "Échu" : `Fin dans ${daysLeft} j`}
+                      ⏰ {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                     </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-xs space-y-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Agence :</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.contracts.agency")}</span>
                     {c.signedByManagerAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ Signé</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
                     ) : (
                       <button
                         onClick={() => setSigningContract(c)}
                         className="text-brand-600 dark:text-brand-400 font-semibold hover:underline"
                       >
-                        ✍️ Signer
+                        ✍️ {t("manager.contracts.sign")}
                       </button>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Locataire :</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.contracts.tenantLabel")}</span>
                     {c.signedByTenantAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ Signé</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
                     ) : (
-                      <span className="text-amber-600 dark:text-amber-400">⏳ En attente</span>
+                      <span className="text-amber-600 dark:text-amber-400">⏳ {t("manager.contracts.pendingSignature")}</span>
                     )}
                   </div>
                 </td>
@@ -217,7 +225,7 @@ export default function ContractsPage() {
                     onClick={() => setViewingLeaseContract(c)}
                     className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                   >
-                    <span>📄</span> Bail PDF
+                    <span>📄</span> {t("manager.contracts.leasePdf")}
                   </button>
                   {showRenewal && (
                     <>
@@ -225,20 +233,20 @@ export default function ContractsPage() {
                         onClick={() => handleRenew(c)}
                         className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                       >
-                        🔄 Renouveler (12 mois)
+                        🔄 {t("manager.contracts.renew")}
                       </button>
                       <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
-                        Ne pas renouveler
+                        {t("manager.contracts.doNotRenew")}
                       </button>
                     </>
                   )}
                   {c.status === "ACTIVE" && (
                     <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
-                      Résilier
+                      {t("manager.contracts.terminate")}
                     </button>
                   )}
                   <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
-                    Supprimer
+                    {t("common.actions.delete")}
                   </button>
                 </td>
               </tr>
@@ -273,24 +281,24 @@ export default function ContractsPage() {
               </div>
               {showRenewal && (
                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                  ⏰ {daysLeft <= 0 ? "Échu" : `Fin dans ${daysLeft} j`}
+                  ⏰ {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                 </p>
               )}
               <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
                 <span>
-                  Agence : {c.signedByManagerAt ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ Signé</span>
+                  {t("manager.contracts.agency")} {c.signedByManagerAt ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
                   ) : (
                     <button onClick={() => setSigningContract(c)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline">
-                      ✍️ Signer
+                      ✍️ {t("manager.contracts.sign")}
                     </button>
                   )}
                 </span>
                 <span>
-                  Locataire : {c.signedByTenantAt ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ Signé</span>
+                  {t("manager.contracts.tenantLabel")} {c.signedByTenantAt ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
                   ) : (
-                    <span className="text-amber-600 dark:text-amber-400">⏳ En attente</span>
+                    <span className="text-amber-600 dark:text-amber-400">⏳ {t("manager.contracts.pendingSignature")}</span>
                   )}
                 </span>
               </div>
@@ -299,7 +307,7 @@ export default function ContractsPage() {
                   onClick={() => setViewingLeaseContract(c)}
                   className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                 >
-                  <span>📄</span> Bail PDF
+                  <span>📄</span> {t("manager.contracts.leasePdf")}
                 </button>
                 {showRenewal && (
                   <>
@@ -307,20 +315,20 @@ export default function ContractsPage() {
                       onClick={() => handleRenew(c)}
                       className="text-xs bg-emerald-600 text-white font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                     >
-                      🔄 Renouveler
+                      🔄 {t("manager.contracts.renewShort")}
                     </button>
                     <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
-                      Ne pas renouveler
+                      {t("manager.contracts.doNotRenew")}
                     </button>
                   </>
                 )}
                 {c.status === "ACTIVE" && (
                   <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
-                    Résilier
+                    {t("manager.contracts.terminate")}
                   </button>
                 )}
                 <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
-                  Supprimer
+                  {t("common.actions.delete")}
                 </button>
               </div>
             </div>
@@ -331,7 +339,7 @@ export default function ContractsPage() {
       {signingContract && (
         <SignatureModal
           contractId={signingContract.id}
-          contractTitle={`Bail - ${signingContract.property?.title}`}
+          contractTitle={t("manager.contracts.leaseTitle", { property: signingContract.property?.title })}
           onSuccess={() => {
             setSigningContract(null);
             load();
@@ -342,7 +350,7 @@ export default function ContractsPage() {
 
       {viewingLeaseContract && (
         <DocumentModal
-          title={`Contrat de Bail - ${viewingLeaseContract.property?.title}`}
+          title={t("manager.contracts.leaseDocTitle", { property: viewingLeaseContract.property?.title })}
           docUrl={`/documents/lease/${viewingLeaseContract.id}`}
           onClose={() => setViewingLeaseContract(null)}
         />

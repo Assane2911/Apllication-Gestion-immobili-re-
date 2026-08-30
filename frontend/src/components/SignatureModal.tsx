@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 
 interface SignatureModalProps {
@@ -9,6 +10,7 @@ interface SignatureModalProps {
 }
 
 export default function SignatureModal({ contractId, contractTitle, onSuccess, onClose }: SignatureModalProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
@@ -92,7 +94,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
 
   async function handleSaveSignature() {
     if (!hasDrawn) {
-      setError("Veuillez apposer votre signature sur le cadre avant de valider.");
+      setError(t("components.signatureModal.errorRequired"));
       return;
     }
 
@@ -125,7 +127,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">✍️ Signature électronique du bail</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.signatureModal.title")}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{contractTitle}</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-semibold">
@@ -134,8 +136,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
         </div>
 
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-4">
-          Tracez votre signature au doigt ou à la souris dans le cadre ci-dessous. En validant, vous attestez
-          l'exactitude et la signature légale du contrat de bail.
+          {t("components.signatureModal.instructions")}
         </p>
 
         <div className="mt-3 relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden touch-none flex items-center justify-center">
@@ -154,7 +155,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
           />
           {!hasDrawn && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 text-sm font-medium">
-              Signez ici
+              {t("components.signatureModal.signHere")}
             </div>
           )}
         </div>
@@ -167,7 +168,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
             onClick={clearCanvas}
             className="text-xs text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-lg font-medium transition-colors"
           >
-            Effacer
+            {t("components.signatureModal.clear")}
           </button>
 
           <div className="flex gap-2">
@@ -176,7 +177,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
               onClick={onClose}
               className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2"
             >
-              Annuler
+              {t("common.actions.cancel")}
             </button>
             <button
               type="button"
@@ -184,7 +185,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
               disabled={saving}
               className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
             >
-              {saving ? "Validation..." : "Valider ma signature"}
+              {saving ? t("components.signatureModal.validating") : t("components.signatureModal.validate")}
             </button>
           </div>
         </div>

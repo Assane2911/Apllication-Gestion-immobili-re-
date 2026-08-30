@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import type { Conversation, Message } from "../../types";
 
 export default function MessagesPage() {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
@@ -63,16 +65,16 @@ export default function MessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Messagerie & Échanges</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Discussions directes avec vos locataires par contrat</p>
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.messages.title")}</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.messages.subtitle")}</p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-[680px] flex">
         {/* Liste des conversations */}
         <div className="w-80 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-950/40">
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200">Discussions en cours</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500">{conversations.length} conversation(s)</p>
+            <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200">{t("manager.messages.ongoingDiscussions")}</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{t("manager.messages.conversationCount", { count: conversations.length })}</p>
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
             {conversations.map((c) => (
@@ -95,13 +97,13 @@ export default function MessagesPage() {
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{c.property?.title}</p>
                   <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-1">
-                    {c.lastMessage ? c.lastMessage.content : "Aucun message pour le moment"}
+                    {c.lastMessage ? c.lastMessage.content : t("manager.messages.noMessageYet")}
                   </p>
                 </div>
               </button>
             ))}
             {conversations.length === 0 && (
-              <p className="text-xs text-slate-400 dark:text-slate-500 p-6 text-center">Aucun contrat ou locataire actif.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 p-6 text-center">{t("manager.messages.noActiveContracts")}</p>
             )}
           </div>
         </div>
@@ -128,7 +130,7 @@ export default function MessagesPage() {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30 dark:bg-slate-950/20">
                 {loadingMessages && (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">Chargement des messages...</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">{t("manager.messages.loadingMessages")}</p>
                 )}
                 {messages.map((m) => {
                   const isMe = m.senderRole === "MANAGER";
@@ -136,8 +138,8 @@ export default function MessagesPage() {
                     <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          {isMe ? "Vous (Agence)" : `${activeDetails.tenant?.firstName} (Locataire)`} •{" "}
-                          {new Date(m.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                          {isMe ? t("manager.messages.you") : t("manager.messages.tenantParen", { name: activeDetails.tenant?.firstName })} •{" "}
+                          {new Date(m.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                       <div
@@ -154,7 +156,7 @@ export default function MessagesPage() {
                 })}
                 {!loadingMessages && messages.length === 0 && (
                   <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-12">
-                    💬 Aucun message dans ce fil. Commencez la conversation avec votre locataire ci-dessous.
+                    {t("manager.messages.noMessagesInThread")}
                   </p>
                 )}
               </div>
@@ -163,7 +165,7 @@ export default function MessagesPage() {
               <form onSubmit={handleSend} className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
                 <input
                   type="text"
-                  placeholder="Écrivez votre message..."
+                  placeholder={t("manager.messages.writeMessage")}
                   value={newText}
                   onChange={(e) => setNewText(e.target.value)}
                   className="flex-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -173,13 +175,13 @@ export default function MessagesPage() {
                   disabled={sending || !newText.trim()}
                   className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-semibold px-5 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
                 >
-                  {sending ? "..." : "Envoyer"}
+                  {sending ? t("manager.messages.sending") : t("manager.messages.send")}
                 </button>
               </form>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
-              Sélectionnez une discussion à gauche pour commencer à échanger.
+              {t("manager.messages.selectDiscussion")}
             </div>
           )}
         </div>

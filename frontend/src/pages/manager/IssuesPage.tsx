@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
 import type { IssueReport, IssueStatus } from "../../types";
@@ -6,6 +7,7 @@ import type { IssueReport, IssueStatus } from "../../types";
 const statusOptions: IssueStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"];
 
 export default function IssuesPage() {
+  const { t, i18n } = useTranslation();
   const [issues, setIssues] = useState<IssueReport[]>([]);
   const [filter, setFilter] = useState<IssueStatus | "ALL">("ALL");
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -48,9 +50,9 @@ export default function IssuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Signalements d'incidents & Photos</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.issues.title")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Inspection visuelle des incidents photographiés par les locataires
+            {t("manager.issues.subtitle")}
           </p>
         </div>
         <select
@@ -58,10 +60,10 @@ export default function IssuesPage() {
           onChange={(e) => setFilter(e.target.value as IssueStatus | "ALL")}
           className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
         >
-          <option value="ALL">Tous les statuts</option>
+          <option value="ALL">{t("manager.issues.allStatuses")}</option>
           {statusOptions.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {t(`common.status.${s}`)}
             </option>
           ))}
         </select>
@@ -83,11 +85,11 @@ export default function IssuesPage() {
                     >
                       <img
                         src={fileUrl(url) ?? undefined}
-                        alt={`Photo incident ${idx + 1}`}
+                        alt={t("manager.issues.photoAlt", { index: idx + 1 })}
                         className="w-full h-full object-cover hover:scale-105 transition-transform"
                       />
                       <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm">
-                        Photo {idx + 1}/{allPhotos.length}
+                        {t("manager.issues.photoCount", { current: idx + 1, total: allPhotos.length })}
                       </span>
                     </div>
                   ))}
@@ -109,20 +111,20 @@ export default function IssuesPage() {
                       • {issue.tenant?.phone}
                     </div>
                     <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                      {new Date(issue.createdAt).toLocaleDateString("fr-FR")}
+                      {new Date(issue.createdAt).toLocaleDateString(i18n.language)}
                     </span>
                   </div>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Bien concerné : <span className="text-slate-800 dark:text-slate-200">{issue.contract?.property?.title}</span>
+                    {t("manager.issues.concernedProperty")} <span className="text-slate-800 dark:text-slate-200">{issue.contract?.property?.title}</span>
                   </p>
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                      Note de traitement / Réponse au locataire :
+                      {t("manager.issues.responseLabel")}
                     </label>
                     <textarea
-                      placeholder="Ex: Plombier mandaté, intervention prévue mardi à 14h..."
+                      placeholder={t("manager.issues.responsePlaceholder")}
                       defaultValue={issue.managerNote ?? ""}
                       onChange={(e) => setNotes((n) => ({ ...n, [issue.id]: e.target.value }))}
                       className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500"
@@ -134,7 +136,7 @@ export default function IssuesPage() {
 
               {/* Boutons de changement de statut */}
               <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Changer le statut :</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("manager.issues.changeStatus")}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {statusOptions.map((s) => (
                     <button
@@ -158,7 +160,7 @@ export default function IssuesPage() {
 
         {filtered.length === 0 && (
           <p className="text-slate-400 dark:text-slate-500 text-sm col-span-2 text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-            Aucun incident pour ce filtre
+            {t("manager.issues.noIssuesForFilter")}
           </p>
         )}
       </div>
@@ -170,7 +172,7 @@ export default function IssuesPage() {
         >
           <img
             src={lightbox}
-            alt="Photo agrandie"
+            alt={t("manager.issues.enlargedPhotoAlt")}
             className="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl border border-slate-700"
           />
         </div>

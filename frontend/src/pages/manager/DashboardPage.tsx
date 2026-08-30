@@ -10,6 +10,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Bar,
   BarChart,
@@ -35,17 +36,18 @@ const statusColors: Record<PropertyStatus, string> = {
   MAINTENANCE: "#f59e0b",
 };
 
-const statusLabels: Record<PropertyStatus, string> = {
-  AVAILABLE: "Disponible",
-  OCCUPIED: "Occupé",
-  MAINTENANCE: "Maintenance",
-};
-
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { formatMoney } = useCurrency();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const statusLabels: Record<PropertyStatus, string> = {
+    AVAILABLE: t("common.status.AVAILABLE"),
+    OCCUPIED: t("common.status.OCCUPIED"),
+    MAINTENANCE: t("common.status.MAINTENANCE"),
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -66,13 +68,13 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
-        <h3 className="font-bold text-base mb-1">Erreur de chargement du tableau de bord</h3>
+        <h3 className="font-bold text-base mb-1">{t("manager.dashboard.errorTitle")}</h3>
         <p className="text-sm">{error}</p>
         <button
           onClick={() => window.location.reload()}
           className="mt-4 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-xl"
         >
-          Réessayer
+          {t("common.actions.retry")}
         </button>
       </div>
     );
@@ -82,8 +84,8 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Tableau de bord</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Chargement des indicateurs clés...</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.dashboard.title")}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.dashboard.loadingHint")}</p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -120,7 +122,7 @@ export default function DashboardPage() {
         }))
       : [
           {
-            month: "Mois en cours",
+            month: t("manager.dashboard.charts.currentMonth"),
             revenue: Number(stats.monthlyRevenue ?? 0),
             expense: 0,
           },
@@ -138,12 +140,12 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <span>Tableau de bord</span>
+            <span>{t("manager.dashboard.title")}</span>
             <span className="text-xs bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-              <CheckCircle2 size={12} /> Système en direct
+              <CheckCircle2 size={12} /> {t("manager.dashboard.liveSystem")}
             </span>
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Vue d'ensemble et performance de votre parc immobilier</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.dashboard.overviewSubtitle")}</p>
         </div>
       </div>
 
@@ -151,58 +153,58 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Building2}
-          label="Biens immobiliers"
+          label={t("manager.dashboard.stats.properties")}
           value={stats.totalProperties ?? 0}
-          hint={`${propertiesByStatus.AVAILABLE ?? 0} disponible(s)`}
+          hint={t("manager.dashboard.stats.propertiesHint", { count: propertiesByStatus.AVAILABLE ?? 0 })}
           accent="blue"
         />
         <StatCard
           icon={Gauge}
-          label="Taux d'occupation"
+          label={t("manager.dashboard.stats.occupancy")}
           value={`${stats.occupancyRate ?? 0}%`}
-          hint={`${propertiesByStatus.OCCUPIED ?? 0} logement(s) loué(s)`}
+          hint={t("manager.dashboard.stats.occupancyHint", { count: propertiesByStatus.OCCUPIED ?? 0 })}
           accent="green"
         />
         <StatCard
           icon={Users}
-          label="Locataires actifs"
+          label={t("manager.dashboard.stats.tenants")}
           value={stats.totalTenants ?? 0}
-          hint="Enregistrés dans l'agence"
+          hint={t("manager.dashboard.stats.tenantsHint")}
           accent="blue"
         />
         <StatCard
           icon={FileText}
-          label="Contrats de bail actifs"
+          label={t("manager.dashboard.stats.contracts")}
           value={stats.activeContracts ?? 0}
-          hint="Baux en cours de validité"
+          hint={t("manager.dashboard.stats.contractsHint")}
           accent="blue"
         />
         <StatCard
           icon={Wallet}
-          label="Revenus encaissés (mois)"
+          label={t("manager.dashboard.stats.revenue")}
           value={formatMoney(stats.monthlyRevenue ?? 0)}
-          hint={`Loyer attendu : ${formatMoney(stats.monthlyExpected ?? 0)}`}
+          hint={t("manager.dashboard.stats.revenueHint", { amount: formatMoney(stats.monthlyExpected ?? 0) })}
           accent="green"
         />
         <StatCard
           icon={AlertTriangle}
-          label="Factures en retard"
+          label={t("manager.dashboard.stats.lateInvoices")}
           value={stats.lateInvoices ?? 0}
-          hint={stats.lateInvoices > 0 ? "Avis de relance à envoyer" : "Aucun impayé"}
+          hint={stats.lateInvoices > 0 ? t("manager.dashboard.stats.lateInvoicesHintYes") : t("manager.dashboard.stats.lateInvoicesHintNo")}
           accent={stats.lateInvoices > 0 ? "red" : "green"}
         />
         <StatCard
           icon={Wrench}
-          label="Incidents ouverts"
+          label={t("manager.dashboard.stats.openIssues")}
           value={stats.openIssues ?? 0}
-          hint={stats.openIssues > 0 ? "Interventions requises" : "Tous les biens OK"}
+          hint={stats.openIssues > 0 ? t("manager.dashboard.stats.openIssuesHintYes") : t("manager.dashboard.stats.openIssuesHintNo")}
           accent={stats.openIssues > 0 ? "amber" : "green"}
         />
         <StatCard
           icon={TrendingUp}
-          label="Biens en maintenance"
+          label={t("manager.dashboard.stats.maintenance")}
           value={propertiesByStatus.MAINTENANCE ?? 0}
-          hint="Travaux & réfection"
+          hint={t("manager.dashboard.stats.maintenanceHint")}
           accent="amber"
         />
       </div>
@@ -212,11 +214,11 @@ export default function DashboardPage() {
         {/* Graphique Barres Comparatif Revenus vs Dépenses */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">Revenus vs Dépenses (Derniers mois)</h3>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("manager.dashboard.charts.revenueVsExpenses")}</h3>
           </div>
           {comparisonChartData.length === 0 ? (
             <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">
-              Pas encore de paiements ou de dépenses enregistrés sur cette période.
+              {t("manager.dashboard.charts.noRevenueData")}
             </p>
           ) : (
             <div className="h-[280px] w-full">
@@ -228,7 +230,7 @@ export default function DashboardPage() {
                   <Tooltip
                     formatter={(value: any, name: any) => [
                       formatMoney(Number(value)),
-                      name === "revenue" ? "Revenus encaissés" : "Dépenses & Travaux",
+                      name === "revenue" ? t("manager.dashboard.charts.tooltipRevenue") : t("manager.dashboard.charts.tooltipExpense"),
                     ]}
                     contentStyle={{
                       borderRadius: "12px",
@@ -238,7 +240,7 @@ export default function DashboardPage() {
                     }}
                   />
                   <Legend
-                    formatter={(value) => (value === "revenue" ? "Revenus" : "Dépenses")}
+                    formatter={(value) => (value === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense"))}
                     wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
                   />
                   <Bar dataKey="revenue" name="revenue" fill="#2563eb" radius={[6, 6, 0, 0]} />
@@ -251,9 +253,9 @@ export default function DashboardPage() {
 
         {/* Camembert Statut du parc immobilier */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">Statut du parc immobilier</h3>
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("manager.dashboard.charts.statusChart")}</h3>
           {donutData.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">Aucun bien enregistré pour l'instant.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">{t("manager.dashboard.charts.noProperties")}</p>
           ) : (
             <>
               <div className="h-[200px] w-full">
@@ -273,7 +275,7 @@ export default function DashboardPage() {
                     </Pie>
                     <Tooltip
                       formatter={(value: any, _name: any, item: any) => [
-                        `${value} bien(s)`,
+                        t("manager.dashboard.charts.propertiesCount", { count: value }),
                         statusLabels[item.payload.status as PropertyStatus],
                       ]}
                       contentStyle={{

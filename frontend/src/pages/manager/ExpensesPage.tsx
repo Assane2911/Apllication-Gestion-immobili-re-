@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/CurrencyContext";
@@ -9,12 +10,12 @@ function currentYearRange() {
   return { from: `${year}-01-01`, to: `${year}-12-31` };
 }
 
-const categoryLabels: Record<ExpenseCategory, { label: string; color: string }> = {
-  MAINTENANCE: { label: "🛠️ Entretien & Travaux", color: "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300" },
-  TAX: { label: "🏛️ Taxe Foncière", color: "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300" },
-  INSURANCE: { label: "🛡️ Assurance PNO", color: "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300" },
-  SYNDIC: { label: "🏢 Copropriété / Syndic", color: "bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300" },
-  OTHER: { label: "📦 Autre Charge", color: "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300" },
+const categoryColors: Record<ExpenseCategory, string> = {
+  MAINTENANCE: "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300",
+  TAX: "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300",
+  INSURANCE: "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300",
+  SYNDIC: "bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300",
+  OTHER: "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300",
 };
 
 interface FinancialSummary {
@@ -27,6 +28,7 @@ interface FinancialSummary {
 }
 
 export default function ExpensesPage() {
+  const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -37,6 +39,14 @@ export default function ExpensesPage() {
   const [error, setError] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState(currentYearRange());
   const [exportingReport, setExportingReport] = useState(false);
+
+  const categoryLabels: Record<ExpenseCategory, string> = {
+    MAINTENANCE: t("manager.expenses.categories.MAINTENANCE"),
+    TAX: t("manager.expenses.categories.TAX"),
+    INSURANCE: t("manager.expenses.categories.INSURANCE"),
+    SYNDIC: t("manager.expenses.categories.SYNDIC"),
+    OTHER: t("manager.expenses.categories.OTHER"),
+  };
 
   const [form, setForm] = useState({
     propertyId: "",
@@ -88,7 +98,7 @@ export default function ExpensesPage() {
   }
 
   async function handleDelete(exp: Expense) {
-    if (!confirm(`Supprimer la dépense "${exp.title}" (${formatMoney(exp.amount, exp.currency)}) ?`)) return;
+    if (!confirm(t("manager.expenses.confirmDelete", { title: exp.title, amount: formatMoney(exp.amount, exp.currency) }))) return;
     try {
       await api.delete(`/expenses/${exp.id}`);
       loadData();
@@ -99,15 +109,23 @@ export default function ExpensesPage() {
 
   function exportCSV() {
     if (expenses.length === 0) {
-      alert("Aucune dépense à exporter.");
+      alert(t("manager.expenses.noExpensesToExport"));
       return;
     }
 
-    const headers = ["Date", "Bien", "Catégorie", "Intitulé", "Montant", "Devise", "Notes"];
+    const headers = [
+      t("manager.expenses.csvHeaders.date"),
+      t("manager.expenses.csvHeaders.property"),
+      t("manager.expenses.csvHeaders.category"),
+      t("manager.expenses.csvHeaders.title"),
+      t("manager.expenses.csvHeaders.amount"),
+      t("manager.expenses.csvHeaders.currency"),
+      t("manager.expenses.csvHeaders.notes"),
+    ];
     const rows = expenses.map((e) => [
-      new Date(e.expenseDate).toLocaleDateString("fr-FR"),
+      new Date(e.expenseDate).toLocaleDateString(i18n.language),
       `"${e.property?.title || ""}"`,
-      `"${categoryLabels[e.category]?.label || e.category}"`,
+      `"${categoryLabels[e.category] || e.category}"`,
       `"${e.title.replace(/"/g, '""')}"`,
       e.amount,
       e.currency,
@@ -154,9 +172,9 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Dépenses & Rentabilité Réelle</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.expenses.title")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Suivi des charges, factures de travaux et calcul automatique du Cash-Flow net
+            {t("manager.expenses.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -164,13 +182,13 @@ export default function ExpensesPage() {
             onClick={exportCSV}
             className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 transition-colors"
           >
-            <span>📥</span> Export Comptable CSV
+            <span>📥</span> {t("manager.expenses.exportCsv")}
           </button>
           <button
             onClick={() => setShowModal(true)}
             className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors"
           >
-            + Enregistrer une dépense
+            {t("manager.expenses.addExpense")}
           </button>
         </div>
       </div>
@@ -178,21 +196,21 @@ export default function ExpensesPage() {
       {summary && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
-            label="Loyers Encaissés"
+            label={t("manager.expenses.stats.revenueCollected")}
             value={formatMoney(summary.totalRevenue)}
-            hint={`${summary.paidInvoiceCount} quittance(s) réglée(s)`}
+            hint={t("manager.expenses.stats.revenueHint", { count: summary.paidInvoiceCount })}
             accent="green"
           />
           <StatCard
-            label="Total Dépenses & Travaux"
+            label={t("manager.expenses.stats.totalExpenses")}
             value={formatMoney(summary.totalExpenses)}
-            hint={`${summary.expenseCount} facture(s) enregistrée(s)`}
+            hint={t("manager.expenses.stats.expensesHint", { count: summary.expenseCount })}
             accent="red"
           />
           <StatCard
-            label="Cash-Flow Net Réel"
+            label={t("manager.expenses.stats.netCashFlow")}
             value={formatMoney(summary.netCashFlow)}
-            hint={summary.netCashFlow >= 0 ? "Bénéfice net positif" : "Déficit temporaire"}
+            hint={summary.netCashFlow >= 0 ? t("manager.expenses.stats.netCashFlowPositive") : t("manager.expenses.stats.netCashFlowNegative")}
             accent={summary.netCashFlow >= 0 ? "green" : "red"}
           />
         </div>
@@ -200,13 +218,13 @@ export default function ExpensesPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Filtrer par bien :</label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.filterByProperty")}</label>
           <select
             value={selectedPropertyId}
             onChange={(e) => setSelectedPropertyId(e.target.value)}
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
-            <option value="">Tous les biens immobiliers</option>
+            <option value="">{t("manager.expenses.allProperties")}</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.title}
@@ -214,19 +232,19 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{expenses.length} ligne(s) de dépense</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.expenses.expenseLines", { count: expenses.length })}</p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Rapport financier complet (revenus + dépenses) du</label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.fullReportLabel")}</label>
           <input
             type="date"
             value={reportRange.from}
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
-          <span className="text-xs text-slate-500 dark:text-slate-400">au</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t("manager.expenses.to")}</span>
           <input
             type="date"
             value={reportRange.to}
@@ -239,7 +257,7 @@ export default function ExpensesPage() {
           disabled={exportingReport}
           className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
         >
-          <span>📊</span> {exportingReport ? "Génération..." : "Générer le rapport (CSV)"}
+          <span>📊</span> {exportingReport ? t("manager.expenses.generatingReport") : t("manager.expenses.generateReport")}
         </button>
       </div>
 
@@ -247,29 +265,29 @@ export default function ExpensesPage() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">Date</th>
-              <th className="px-4 py-3 font-medium">Bien</th>
-              <th className="px-4 py-3 font-medium">Catégorie</th>
-              <th className="px-4 py-3 font-medium">Intitulé</th>
-              <th className="px-4 py-3 font-medium">Montant</th>
-              <th className="px-4 py-3 font-medium">Notes</th>
-              <th className="px-4 py-3 font-medium text-right">Action</th>
+              <th className="px-4 py-3 font-medium">{t("manager.expenses.table.date")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.expenses.table.property")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.expenses.table.category")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.expenses.table.title")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.expenses.table.amount")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.expenses.table.notes")}</th>
+              <th className="px-4 py-3 font-medium text-right">{t("manager.expenses.table.action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {expenses.map((exp) => (
               <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
-                  {new Date(exp.expenseDate).toLocaleDateString("fr-FR")}
+                  {new Date(exp.expenseDate).toLocaleDateString(i18n.language)}
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{exp.property?.title}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
-                      categoryLabels[exp.category]?.color || "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                      categoryColors[exp.category] || "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                     }`}
                   >
-                    {categoryLabels[exp.category]?.label || exp.category}
+                    {categoryLabels[exp.category] || exp.category}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{exp.title}</td>
@@ -280,7 +298,7 @@ export default function ExpensesPage() {
                     onClick={() => handleDelete(exp)}
                     className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline"
                   >
-                    Supprimer
+                    {t("common.actions.delete")}
                   </button>
                 </td>
               </tr>
@@ -288,7 +306,7 @@ export default function ExpensesPage() {
             {expenses.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center text-slate-400 dark:text-slate-500 py-8 text-sm">
-                  Aucune dépense enregistrée pour le moment.
+                  {t("manager.expenses.noExpenses")}
                 </td>
               </tr>
             )}
@@ -300,7 +318,7 @@ export default function ExpensesPage() {
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Enregistrer une dépense / facture</h3>
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.expenses.modalTitle")}</h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
                 ✕
               </button>
@@ -308,14 +326,14 @@ export default function ExpensesPage() {
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bien concerné *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.property")}</label>
                 <select
                   required
                   value={form.propertyId}
                   onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 >
-                  <option value="">Sélectionner un bien immobilier</option>
+                  <option value="">{t("manager.expenses.fields.selectProperty")}</option>
                   {properties.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.title} ({p.address})
@@ -326,21 +344,21 @@ export default function ExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Catégorie *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.category")}</label>
                   <select
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                   >
-                    <option value="MAINTENANCE">🛠️ Entretien & Travaux</option>
-                    <option value="TAX">🏛️ Taxe Foncière</option>
-                    <option value="INSURANCE">🛡️ Assurance PNO</option>
-                    <option value="SYNDIC">🏢 Copropriété / Syndic</option>
-                    <option value="OTHER">📦 Autre charge</option>
+                    <option value="MAINTENANCE">{t("manager.expenses.categoriesShort.MAINTENANCE")}</option>
+                    <option value="TAX">{t("manager.expenses.categoriesShort.TAX")}</option>
+                    <option value="INSURANCE">{t("manager.expenses.categoriesShort.INSURANCE")}</option>
+                    <option value="SYNDIC">{t("manager.expenses.categoriesShort.SYNDIC")}</option>
+                    <option value="OTHER">{t("manager.expenses.categoriesShort.OTHER")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date de la facture</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.invoiceDate")}</label>
                   <input
                     type="date"
                     required
@@ -353,17 +371,17 @@ export default function ExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Intitulé / Fournisseur *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.titleSupplier")}</label>
                   <input
                     required
-                    placeholder="Ex: Remplacement chauffe-eau"
+                    placeholder={t("manager.expenses.fields.titlePlaceholder")}
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Montant TTC *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.amount")}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -377,10 +395,10 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Notes / Détails complémentaires</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.notes")}</label>
                 <textarea
                   rows={2}
-                  placeholder="Artisan plombier, devis n°..."
+                  placeholder={t("manager.expenses.fields.notesPlaceholder")}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
@@ -395,14 +413,14 @@ export default function ExpensesPage() {
                   onClick={() => setShowModal(false)}
                   className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-2"
                 >
-                  Annuler
+                  {t("common.actions.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
                   className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm"
                 >
-                  {saving ? "Enregistrement..." : "Enregistrer la dépense"}
+                  {saving ? t("common.actions.saving") : t("manager.expenses.saveExpense")}
                 </button>
               </div>
             </form>

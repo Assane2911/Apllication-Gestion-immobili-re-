@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
@@ -16,14 +17,8 @@ interface SubscriptionHistoryRecord {
   createdAt: string;
 }
 
-const paymentMethods: { key: PaymentMethod; label: string; hint: string }[] = [
-  { key: "STRIPE", label: "💳 Carte bancaire", hint: "Paiement sécurisé par carte via Stripe" },
-  { key: "PAYDUNYA", label: "🌍 PayDunya", hint: "Orange Money, Wave, Free Money, MTN, carte bancaire..." },
-  { key: "BANK_TRANSFER", label: "🏦 Virement bancaire", hint: "Validation sous 24h par virement" },
-  { key: "DEMO", label: "🧪 Mode démo", hint: "Activation immédiate pour tests et validation" },
-];
-
 export default function SubscriptionPage() {
+  const { t, i18n } = useTranslation();
   const { user, refreshUser } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlanDetail[]>([]);
   const [history, setHistory] = useState<SubscriptionHistoryRecord[]>([]);
@@ -35,6 +30,13 @@ export default function SubscriptionPage() {
   const [subscribing, setSubscribing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const paymentMethods: { key: PaymentMethod; label: string; hint: string }[] = [
+    { key: "STRIPE", label: t("manager.subscription.paymentMethods.STRIPE.label"), hint: t("manager.subscription.paymentMethods.STRIPE.hint") },
+    { key: "PAYDUNYA", label: t("manager.subscription.paymentMethods.PAYDUNYA.label"), hint: t("manager.subscription.paymentMethods.PAYDUNYA.hint") },
+    { key: "BANK_TRANSFER", label: t("manager.subscription.paymentMethods.BANK_TRANSFER.label"), hint: t("manager.subscription.paymentMethods.BANK_TRANSFER.hint") },
+    { key: "DEMO", label: t("manager.subscription.paymentMethods.DEMO.label"), hint: t("manager.subscription.paymentMethods.DEMO.hint") },
+  ];
 
   function loadData() {
     setLoading(true);
@@ -94,9 +96,9 @@ export default function SubscriptionPage() {
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Abonnement & Formules SaaS</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.subscription.title")}</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Gérez votre formule de gestion immobilière et vos options de facturation.
+          {t("manager.subscription.subtitle")}
         </p>
       </div>
 
@@ -118,15 +120,15 @@ export default function SubscriptionPage() {
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <span className="text-xs uppercase font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
-            Votre statut actuel
+            {t("manager.subscription.currentStatus")}
           </span>
           <div className="flex items-center gap-3 mt-1">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
               {sub?.status === "ACTIVE"
-                ? `Formule ${sub.plan} Active`
+                ? t("manager.subscription.planActive", { plan: sub.plan })
                 : sub?.status === "TRIAL"
-                ? "Période d'essai gratuit (15 jours)"
-                : "Abonnement Expiré"}
+                ? t("manager.subscription.trialStatus")
+                : t("manager.subscription.expiredStatus")}
             </h2>
             <span
               className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
@@ -138,34 +140,38 @@ export default function SubscriptionPage() {
               }`}
             >
               {sub?.status === "ACTIVE"
-                ? "Payé"
+                ? t("manager.subscription.paid")
                 : sub?.isTrialActive
-                ? `Essai : ${sub.trialDaysRemaining} j restant(s)`
-                : "Expiré"}
+                ? t("manager.subscription.trialRemaining", { count: sub.trialDaysRemaining })
+                : t("manager.subscription.expired")}
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             {sub?.isTrialActive && sub.trialEndsAt
-              ? `Votre période d'essai se termine le ${new Date(sub.trialEndsAt).toLocaleDateString("fr-FR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}.`
+              ? t("manager.subscription.trialEndsAt", {
+                  date: new Date(sub.trialEndsAt).toLocaleDateString(i18n.language, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }),
+                })
               : sub?.subscriptionEndsAt
-              ? `Prochaine échéance le ${new Date(sub.subscriptionEndsAt).toLocaleDateString("fr-FR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}.`
-              : "Choisissez une formule ci-dessous pour débloquer ou maintenir vos accès."}
+              ? t("manager.subscription.nextDueDate", {
+                  date: new Date(sub.subscriptionEndsAt).toLocaleDateString(i18n.language, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }),
+                })
+              : t("manager.subscription.choosePlanPrompt")}
           </p>
         </div>
 
         {sub?.status === "TRIAL" && (
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center md:text-right">
-            <p className="text-xs text-slate-500 dark:text-slate-400">Temps d'évaluation offert</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.subscription.evaluationTime")}</p>
             <p className="text-2xl font-black text-brand-600 dark:text-brand-400">
-              {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600 dark:text-slate-400">jours</span>
+              {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{t("manager.subscription.days")}</span>
             </p>
           </div>
         )}
@@ -182,7 +188,7 @@ export default function SubscriptionPage() {
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
-            Facturation Mensuelle
+            {t("manager.subscription.monthlyBilling")}
           </button>
           <button
             onClick={() => setBillingCycle("ANNUAL")}
@@ -192,7 +198,7 @@ export default function SubscriptionPage() {
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
-            <span>Facturation Annuelle</span>
+            <span>{t("manager.subscription.annualBilling")}</span>
             <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
               -20%
             </span>
@@ -217,7 +223,7 @@ export default function SubscriptionPage() {
             >
               {plan.popular && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
-                  Le plus populaire
+                  {t("manager.subscription.mostPopular")}
                 </span>
               )}
 
@@ -228,16 +234,16 @@ export default function SubscriptionPage() {
 
               <div className="mb-6 flex items-baseline gap-1">
                 <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{price} €</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">/ mois</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t("manager.subscription.perMonth")}</span>
                 {billingCycle === "ANNUAL" && (
                   <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-1">
-                    (facturé {plan.annualPrice} € / an)
+                    {t("manager.subscription.billedAnnually", { amount: plan.annualPrice })}
                   </span>
                 )}
               </div>
 
               <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-4">
-                <p className="font-semibold text-slate-900 dark:text-slate-100">Inclus dans l'offre :</p>
+                <p className="font-semibold text-slate-900 dark:text-slate-100">{t("manager.subscription.includedInPlan")}</p>
                 {plan.features.map((feat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
                     <span className="text-emerald-500 dark:text-emerald-400 font-bold">✓</span>
@@ -257,7 +263,7 @@ export default function SubscriptionPage() {
                     : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white hover:shadow"
                 }`}
               >
-                {isCurrentPlan ? "Votre formule actuelle" : `Choisir ${plan.name}`}
+                {isCurrentPlan ? t("manager.subscription.currentPlanBtn") : t("manager.subscription.choosePlanBtn", { plan: plan.name })}
               </button>
             </div>
           );
@@ -270,11 +276,13 @@ export default function SubscriptionPage() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Souscription à l'offre {selectedPlan.name}</h3>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: selectedPlan.name })}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Montant à régler :{" "}
+                  {t("manager.subscription.amountToPay")}{" "}
                   <strong>
-                    {billingCycle === "ANNUAL" ? `${selectedPlan.annualPrice} € / an` : `${selectedPlan.monthlyPrice} € / mois`}
+                    {billingCycle === "ANNUAL"
+                      ? `${selectedPlan.annualPrice} ${t("manager.subscription.perYearShort")}`
+                      : `${selectedPlan.monthlyPrice} ${t("manager.subscription.perMonthShort")}`}
                   </strong>
                 </p>
               </div>
@@ -288,7 +296,7 @@ export default function SubscriptionPage() {
 
             {/* Choix du moyen de paiement */}
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Moyen de règlement</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.subscription.paymentMethodLabel")}</label>
               <div className="grid grid-cols-1 gap-2.5">
                 {paymentMethods.map((m) => (
                   <label
@@ -317,12 +325,12 @@ export default function SubscriptionPage() {
 
               {selectedMethod === "BANK_TRANSFER" && (
                 <div className="pt-2">
-                  <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">Numéro ou référence du virement :</label>
+                  <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">{t("manager.subscription.bankRefLabel")}</label>
                   <input
                     type="text"
                     value={bankRef}
                     onChange={(e) => setBankRef(e.target.value)}
-                    placeholder="Ex: VIR-2026-08-01"
+                    placeholder={t("manager.subscription.bankRefPlaceholder")}
                     className="w-full text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2"
                   />
                 </div>
@@ -336,7 +344,7 @@ export default function SubscriptionPage() {
                 onClick={() => setSelectedPlan(null)}
                 className="px-4 py-2 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               >
-                Annuler
+                {t("common.actions.cancel")}
               </button>
               <button
                 type="button"
@@ -344,7 +352,7 @@ export default function SubscriptionPage() {
                 disabled={subscribing}
                 className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50"
               >
-                {subscribing ? "Traitement en cours..." : "Confirmer et Activer l'Abonnement"}
+                {subscribing ? t("manager.subscription.processing") : t("manager.subscription.confirmAndActivate")}
               </button>
             </div>
           </div>
@@ -354,25 +362,25 @@ export default function SubscriptionPage() {
       {/* Historique des paiements de la plateforme */}
       {history.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Historique de vos factures d'abonnement</h3>
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("manager.subscription.historyTitle")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 uppercase text-[10px]">
-                  <th className="py-2.5">Date</th>
-                  <th className="py-2.5">Plan</th>
-                  <th className="py-2.5">Cycle</th>
-                  <th className="py-2.5">Montant</th>
-                  <th className="py-2.5">Méthode</th>
-                  <th className="py-2.5">Statut</th>
+                  <th className="py-2.5">{t("manager.subscription.historyTable.date")}</th>
+                  <th className="py-2.5">{t("manager.subscription.historyTable.plan")}</th>
+                  <th className="py-2.5">{t("manager.subscription.historyTable.cycle")}</th>
+                  <th className="py-2.5">{t("manager.subscription.historyTable.amount")}</th>
+                  <th className="py-2.5">{t("manager.subscription.historyTable.method")}</th>
+                  <th className="py-2.5">{t("manager.subscription.historyTable.status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {history.map((h) => (
                   <tr key={h.id} className="text-slate-700 dark:text-slate-300">
-                    <td className="py-3">{new Date(h.createdAt).toLocaleDateString("fr-FR")}</td>
+                    <td className="py-3">{new Date(h.createdAt).toLocaleDateString(i18n.language)}</td>
                     <td className="py-3 font-semibold">{h.plan}</td>
-                    <td className="py-3">{h.billingCycle === "ANNUAL" ? "Annuel" : "Mensuel"}</td>
+                    <td className="py-3">{h.billingCycle === "ANNUAL" ? t("manager.subscription.annual") : t("manager.subscription.monthly")}</td>
                     <td className="py-3 font-bold">{h.amount} €</td>
                     <td className="py-3">{h.paymentMethod}</td>
                     <td className="py-3">

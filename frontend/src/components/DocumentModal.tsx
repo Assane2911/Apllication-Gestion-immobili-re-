@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 
 interface DocumentModalProps {
@@ -8,6 +9,7 @@ interface DocumentModalProps {
 }
 
 export default function DocumentModal({ title, docUrl, onClose }: DocumentModalProps) {
+  const { t } = useTranslation();
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Aperçu officiel certifié & Téléchargement / Impression</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t("components.documentModal.subtitle")}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -63,7 +65,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
               disabled={!htmlContent}
               className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
-              <span>🖨️</span> Imprimer / Enregistrer PDF
+              <span>🖨️</span> {t("components.documentModal.print")}
             </button>
             <button
               onClick={onClose}
@@ -77,7 +79,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
         <div className="flex-1 bg-slate-100 dark:bg-slate-950 p-4 relative overflow-hidden">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm">
-              Chargement du document officiel...
+              {t("components.documentModal.loading")}
             </div>
           )}
           {error && (
