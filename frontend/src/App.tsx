@@ -6,6 +6,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import LandingPage from "./pages/LandingPage";
+import CGUPage from "./pages/legal/CGUPage";
+import MentionsLegalesPage from "./pages/legal/MentionsLegalesPage";
+import PolitiqueConfidentialitePage from "./pages/legal/PolitiqueConfidentialitePage";
 import LoginPage from "./pages/LoginPage";
 import ActivityLogPage from "./pages/manager/ActivityLogPage";
 import AgencySettingsPage from "./pages/manager/AgencySettingsPage";
@@ -35,6 +38,9 @@ function AppRoutes() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/landing" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
+      <Route path="/cgu" element={<CGUPage />} />
+      <Route path="/confidentialite" element={<PolitiqueConfidentialitePage />} />
 
       <Route
         element={
