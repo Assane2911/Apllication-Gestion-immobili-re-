@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import Reveal, { useInView } from "../components/Reveal";
 import { useAuth } from "../context/AuthContext";
 
 const FEATURE_CARDS = [
@@ -18,16 +19,23 @@ const FEATURE_CARDS = [
 
 /** Petite maquette illustrative du tableau de bord (pas une vraie capture d'écran). */
 function DashboardMockup() {
+  const [ref, inView] = useInView<HTMLDivElement>();
   const bars = [40, 65, 50, 80, 60, 95];
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full">
+    <div ref={ref} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full">
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[
           { v: "94%", c: "text-emerald-400" },
           { v: "12", c: "text-brand-400" },
           { v: "2", c: "text-rose-400" },
         ].map((s, i) => (
-          <div key={i} className="bg-slate-950/60 rounded-xl p-2.5 text-center">
+          <div
+            key={i}
+            className={`bg-slate-950/60 rounded-xl p-2.5 text-center transition-all duration-500 motion-reduce:transition-none ${
+              inView ? "opacity-100 scale-100" : "opacity-0 scale-90"
+            }`}
+            style={{ transitionDelay: inView ? `${i * 100}ms` : "0ms" }}
+          >
             <div className={`text-lg font-extrabold ${s.c}`}>{s.v}</div>
           </div>
         ))}
@@ -36,8 +44,8 @@ function DashboardMockup() {
         {bars.map((h, i) => (
           <div
             key={i}
-            className="flex-1 rounded-t-md bg-gradient-to-t from-brand-600 to-indigo-400"
-            style={{ height: `${h}%` }}
+            className="flex-1 rounded-t-md bg-gradient-to-t from-brand-600 to-indigo-400 transition-all duration-700 ease-out motion-reduce:transition-none"
+            style={{ height: inView ? `${h}%` : "4%", transitionDelay: `${i * 80}ms` }}
           />
         ))}
       </div>
@@ -45,10 +53,11 @@ function DashboardMockup() {
   );
 }
 
-/** Maquette illustrative d'un contrat signé électroniquement. */
+/** Maquette illustrative d'un contrat signé électroniquement (la signature se trace à l'écran). */
 function ContractMockup() {
+  const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full flex flex-col justify-between">
+    <div ref={ref} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full flex flex-col justify-between">
       <div className="space-y-2">
         <div className="h-2.5 w-2/3 bg-slate-700 rounded-full" />
         <div className="h-2 w-full bg-slate-800 rounded-full" />
@@ -56,16 +65,25 @@ function ContractMockup() {
         <div className="h-2 w-4/6 bg-slate-800 rounded-full" />
       </div>
       <div className="mt-4 border-t border-slate-800 pt-4 flex items-center justify-between">
-        <svg width="90" height="32" viewBox="0 0 90 32" className="text-indigo-400">
+        <svg width="90" height="32" viewBox="0 0 90 32" className="text-indigo-400 overflow-visible">
           <path
             d="M2 24 C 10 6, 16 6, 22 18 S 34 30, 40 14 S 52 4, 58 20 S 70 28, 76 10 S 84 4, 88 16"
             fill="none"
             stroke="currentColor"
             strokeWidth="2.5"
             strokeLinecap="round"
+            strokeDasharray={160}
+            strokeDashoffset={inView ? 0 : 160}
+            style={{ transition: "stroke-dashoffset 1.1s ease-out 0.2s" }}
+            className="motion-reduce:transition-none"
           />
         </svg>
-        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+        <span
+          className={`text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full transition-all duration-500 motion-reduce:transition-none ${
+            inView ? "opacity-100 scale-100" : "opacity-0 scale-75"
+          }`}
+          style={{ transitionDelay: "1.1s" }}
+        >
           ✓ Signé
         </span>
       </div>
@@ -75,8 +93,9 @@ function ContractMockup() {
 
 /** Maquette illustrative du suivi de rentabilité (revenus vs dépenses). */
 function ExpensesMockup() {
+  const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full flex flex-col justify-between">
+    <div ref={ref} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full flex flex-col justify-between">
       <div className="flex items-end gap-3 h-24">
         {[
           { r: 55, e: 20 },
@@ -85,8 +104,14 @@ function ExpensesMockup() {
           { r: 85, e: 22 },
         ].map((m, i) => (
           <div key={i} className="flex-1 flex items-end gap-0.5 h-full">
-            <div className="flex-1 rounded-t-md bg-emerald-500/70" style={{ height: `${m.r}%` }} />
-            <div className="flex-1 rounded-t-md bg-rose-500/60" style={{ height: `${m.e}%` }} />
+            <div
+              className="flex-1 rounded-t-md bg-emerald-500/70 transition-all duration-700 ease-out motion-reduce:transition-none"
+              style={{ height: inView ? `${m.r}%` : "4%", transitionDelay: `${i * 90}ms` }}
+            />
+            <div
+              className="flex-1 rounded-t-md bg-rose-500/60 transition-all duration-700 ease-out motion-reduce:transition-none"
+              style={{ height: inView ? `${m.e}%` : "4%", transitionDelay: `${i * 90 + 40}ms` }}
+            />
           </div>
         ))}
       </div>
@@ -100,17 +125,30 @@ function ExpensesMockup() {
 
 /** Maquette illustrative du portail locataire (mobile). */
 function TenantMockup() {
+  const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full flex flex-col gap-3">
+    <div ref={ref} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-full flex flex-col gap-3">
       <div className="bg-slate-950/60 rounded-xl p-3 flex items-center justify-between">
         <span className="text-[11px] text-slate-400">Loyer de septembre</span>
-        <span className="text-[10px] font-bold text-white bg-brand-600 px-2.5 py-1 rounded-full">Payer</span>
+        <span className="text-[10px] font-bold text-white bg-brand-600 px-2.5 py-1 rounded-full animate-pulse">
+          Payer
+        </span>
       </div>
       <div className="flex-1 flex flex-col gap-2 justify-end">
-        <div className="self-start max-w-[75%] bg-slate-800 text-slate-200 text-[10px] px-3 py-2 rounded-2xl rounded-bl-sm">
+        <div
+          className={`self-start max-w-[75%] bg-slate-800 text-slate-200 text-[10px] px-3 py-2 rounded-2xl rounded-bl-sm transition-all duration-500 motion-reduce:transition-none ${
+            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+          }`}
+          style={{ transitionDelay: "150ms" }}
+        >
           Bonjour, le chauffe-eau fait du bruit 🙈
         </div>
-        <div className="self-end max-w-[75%] bg-brand-600 text-white text-[10px] px-3 py-2 rounded-2xl rounded-br-sm">
+        <div
+          className={`self-end max-w-[75%] bg-brand-600 text-white text-[10px] px-3 py-2 rounded-2xl rounded-br-sm transition-all duration-500 motion-reduce:transition-none ${
+            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+          }`}
+          style={{ transitionDelay: "550ms" }}
+        >
           Merci, j'envoie un plombier demain !
         </div>
       </div>
@@ -136,28 +174,28 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/app-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow" />
+            <img src="/app-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow transition-transform duration-300 hover:rotate-6 hover:scale-105" />
             <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
               {t("common.appName")}
             </span>
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-300">
-            <a href="#features" className="hover:text-white transition-colors">
-              {t("landing.nav.features")}
-            </a>
-            <a href="#pdf" className="hover:text-white transition-colors">
-              {t("landing.nav.receipts")}
-            </a>
-            <a href="#pricing" className="hover:text-white transition-colors">
-              {t("landing.nav.pricing")}
-            </a>
-            <a href="#trust" className="hover:text-white transition-colors">
-              {t("landing.nav.security")}
-            </a>
-            <a href="#faq" className="hover:text-white transition-colors">
-              {t("landing.nav.faq")}
-            </a>
+            {[
+              { href: "#features", label: t("landing.nav.features") },
+              { href: "#pdf", label: t("landing.nav.receipts") },
+              { href: "#pricing", label: t("landing.nav.pricing") },
+              { href: "#trust", label: t("landing.nav.security") },
+              { href: "#faq", label: t("landing.nav.faq") },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="relative hover:text-white transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-brand-400 after:transition-all after:duration-300 hover:after:w-full"
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
 
           <div className="flex items-center gap-3">
@@ -191,181 +229,217 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-44 md:pb-32 px-6 max-w-7xl mx-auto text-center overflow-hidden">
-        <div className="inline-flex items-center gap-2 bg-brand-950/80 border border-brand-500/30 rounded-full px-4 py-1.5 text-xs text-brand-300 font-medium mb-8 shadow-inner">
-          <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
-          {t("landing.badge")}
+        {/* Formes décoratives flottantes en arrière-plan */}
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-24 left-1/4 w-72 h-72 bg-brand-600/20 rounded-full blur-3xl animate-float-slow" />
+          <div className="absolute top-10 right-1/4 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl animate-float-delay" />
+          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl animate-float" />
         </div>
 
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
-          {t("landing.hero.titleLine1")} <br />
-          <span className="bg-gradient-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent italic">
-            {t("landing.hero.titleLine2")}
-          </span>
-        </h1>
+        <Reveal>
+          <div className="inline-flex items-center gap-2 bg-brand-950/80 border border-brand-500/30 rounded-full px-4 py-1.5 text-xs text-brand-300 font-medium mb-8 shadow-inner">
+            <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
+            {t("landing.badge")}
+          </div>
+        </Reveal>
 
-        <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          {t("landing.hero.subtitle")}
-        </p>
+        <Reveal delay={80}>
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
+            {t("landing.hero.titleLine1")} <br />
+            <span className="bg-[length:200%_auto] bg-gradient-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent italic animate-gradient-x">
+              {t("landing.hero.titleLine2")}
+            </span>
+          </h1>
+        </Reveal>
 
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            to="/login"
-            className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-brand-600/30 transition-all hover:scale-105"
-          >
-            {t("landing.hero.ctaTrial")}
-          </Link>
-          <Link
-            to="/login"
-            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-all"
-          >
-            {t("landing.hero.ctaDemo")}
-          </Link>
-        </div>
+        <Reveal delay={160}>
+          <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            {t("landing.hero.subtitle")}
+          </p>
+        </Reveal>
+
+        <Reveal delay={240}>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/login"
+              className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-brand-600/30 transition-all hover:scale-105"
+            >
+              {t("landing.hero.ctaTrial")}
+            </Link>
+            <Link
+              to="/login"
+              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-all hover:scale-105"
+            >
+              {t("landing.hero.ctaDemo")}
+            </Link>
+          </div>
+        </Reveal>
       </section>
 
       {/* Features Section */}
       <section id="features" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-800/80">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <Reveal className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-3xl font-extrabold text-white">{t("landing.featuresSection.title")}</h2>
           <p className="text-sm text-slate-400 mt-3">{t("landing.featuresSection.subtitle")}</p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          {FEATURE_CARDS.map((card) => (
-            <div
-              key={card.key}
-              className="bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-sm hover:border-slate-700 transition-colors"
-            >
-              <div className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center text-2xl mb-4`}>
-                {card.icon}
+          {FEATURE_CARDS.map((card, i) => (
+            <Reveal key={card.key} delay={(i % 3) * 100} className="group">
+              <div className="h-full bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-sm hover:border-slate-700 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
+                <div
+                  className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center text-2xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
+                >
+                  {card.icon}
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">{t(`landing.features.${card.key}.title`)}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{t(`landing.features.${card.key}.desc`)}</p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">{t(`landing.features.${card.key}.title`)}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">{t(`landing.features.${card.key}.desc`)}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-2.5">
+        <Reveal delay={200} className="mt-8 flex flex-wrap justify-center gap-2.5">
           {extras.map((extra, i) => (
             <span
               key={i}
-              className="text-xs font-medium text-slate-300 bg-slate-900/60 border border-slate-800 px-3.5 py-2 rounded-full"
+              className="text-xs font-medium text-slate-300 bg-slate-900/60 border border-slate-800 px-3.5 py-2 rounded-full hover:border-brand-500/50 hover:text-white transition-colors"
+              style={{ transitionDelay: `${i * 40}ms` }}
             >
               {extra}
             </span>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Product Tour Section */}
       <section id="pdf" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-800/80">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <Reveal className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-3xl font-extrabold text-white">{t("landing.productTour.title")}</h2>
           <p className="text-sm text-slate-400 mt-3">{t("landing.productTour.subtitle")}</p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6">
-            <div className="h-40 mb-5">
-              <DashboardMockup />
+          <Reveal delay={0}>
+            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 hover:border-slate-700 transition-colors">
+              <div className="h-40 mb-5">
+                <DashboardMockup />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.dashboard.title")}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.dashboard.desc")}</p>
             </div>
-            <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.dashboard.title")}</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.dashboard.desc")}</p>
-          </div>
+          </Reveal>
 
-          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6">
-            <div className="h-40 mb-5">
-              <ContractMockup />
+          <Reveal delay={100}>
+            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 hover:border-slate-700 transition-colors">
+              <div className="h-40 mb-5">
+                <ContractMockup />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.contracts.title")}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.contracts.desc")}</p>
             </div>
-            <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.contracts.title")}</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.contracts.desc")}</p>
-          </div>
+          </Reveal>
 
-          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6">
-            <div className="h-40 mb-5">
-              <ExpensesMockup />
+          <Reveal delay={0}>
+            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 hover:border-slate-700 transition-colors">
+              <div className="h-40 mb-5">
+                <ExpensesMockup />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.expenses.title")}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.expenses.desc")}</p>
             </div>
-            <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.expenses.title")}</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.expenses.desc")}</p>
-          </div>
+          </Reveal>
 
-          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6">
-            <div className="h-40 mb-5">
-              <TenantMockup />
+          <Reveal delay={100}>
+            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 hover:border-slate-700 transition-colors">
+              <div className="h-40 mb-5">
+                <TenantMockup />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.tenant.title")}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.tenant.desc")}</p>
             </div>
-            <h3 className="text-base font-bold text-white mb-1.5">{t("landing.productTour.tenant.title")}</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">{t("landing.productTour.tenant.desc")}</p>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* For Who Section */}
       <section className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-800/80">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <Reveal className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-3xl font-extrabold text-white">{t("landing.forWho.title")}</h2>
           <p className="text-sm text-slate-400 mt-3">{t("landing.forWho.subtitle")}</p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(["independent", "agency", "enterprise"] as const).map((key) => (
-            <div key={key} className="bg-slate-900/60 border border-slate-800 p-6 rounded-3xl">
-              <h3 className="text-base font-bold text-white mb-2">{t(`landing.forWho.${key}.title`)}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">{t(`landing.forWho.${key}.desc`)}</p>
-            </div>
+          {(["independent", "agency", "enterprise"] as const).map((key, i) => (
+            <Reveal key={key} delay={i * 100}>
+              <div className="h-full bg-slate-900/60 border border-slate-800 p-6 rounded-3xl hover:-translate-y-1.5 hover:border-slate-700 transition-all duration-300">
+                <h3 className="text-base font-bold text-white mb-2">{t(`landing.forWho.${key}.title`)}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{t(`landing.forWho.${key}.desc`)}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* Trust / Security Section */}
       <section id="trust" className="py-24 px-6 max-w-4xl mx-auto border-t border-slate-800/80">
-        <div className="text-center mb-12">
+        <Reveal className="text-center mb-12">
           <h2 className="text-3xl font-extrabold text-white">{t("landing.trust.title")}</h2>
           <p className="text-sm text-slate-400 mt-3">{t("landing.trust.subtitle")}</p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {trustItems.map((item, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed"
-            >
-              <span className="text-emerald-400 shrink-0">✓</span>
-              <span>{item}</span>
-            </div>
+            <Reveal key={i} delay={i * 80}>
+              <div className="flex items-start gap-3 bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed hover:border-emerald-500/30 transition-colors">
+                <span className="text-emerald-400 shrink-0">✓</span>
+                <span>{item}</span>
+              </div>
+            </Reveal>
           ))}
         </div>
 
-        <div className="text-center mt-8">
+        <Reveal delay={200} className="text-center mt-8">
           <Link to="/confidentialite" className="text-xs font-semibold text-brand-400 hover:text-brand-300">
             {t("landing.trust.linkLabel")}
           </Link>
-        </div>
+        </Reveal>
       </section>
 
       {/* FAQ Section */}
       <section id="faq" className="py-24 px-6 max-w-3xl mx-auto border-t border-slate-800/80">
-        <div className="text-center mb-12">
+        <Reveal className="text-center mb-12">
           <h2 className="text-3xl font-extrabold text-white">{t("landing.faq.title")}</h2>
-        </div>
+        </Reveal>
 
         <div className="space-y-3">
           {faqItems.map((item, i) => {
             const isOpen = openFaq === i;
             return (
-              <div key={i} className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between gap-4 text-left px-5 py-4"
-                >
-                  <span className="text-sm font-semibold text-white">{item.q}</span>
-                  <span className={`text-slate-500 transition-transform shrink-0 ${isOpen ? "rotate-45" : ""}`}>
-                    +
-                  </span>
-                </button>
-                {isOpen && (
-                  <p className="px-5 pb-4 text-xs text-slate-400 leading-relaxed">{item.a}</p>
-                )}
-              </div>
+              <Reveal key={i} delay={i * 60}>
+                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-colors">
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between gap-4 text-left px-5 py-4"
+                  >
+                    <span className="text-sm font-semibold text-white">{item.q}</span>
+                    <span
+                      className={`text-slate-500 transition-transform duration-300 shrink-0 ${isOpen ? "rotate-45" : ""}`}
+                    >
+                      +
+                    </span>
+                  </button>
+                  <div
+                    className={`grid transition-all duration-300 ease-in-out motion-reduce:transition-none ${
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <p className="px-5 pb-4 text-xs text-slate-400 leading-relaxed">{item.a}</p>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
             );
           })}
         </div>
@@ -373,102 +447,113 @@ export default function LandingPage() {
 
       {/* Pricing Section */}
       <section id="pricing" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-800/80">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <Reveal className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-3xl font-extrabold text-white">{t("landing.pricing.title")}</h2>
           <p className="text-sm text-slate-400 mt-3">
             {t("landing.pricing.subtitle")}
           </p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Starter */}
-          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t("landing.pricing.starter.name")}</span>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">9€</span>
-                <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
+          <Reveal delay={0}>
+            <div className="h-full bg-slate-900/40 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-700 transition-all duration-300">
+              <div>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t("landing.pricing.starter.name")}</span>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold text-white">9€</span>
+                  <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.starter.desc")}</p>
+                <ul className="mt-6 space-y-3 text-xs text-slate-300">
+                  {starterFeatures.map((feat, i) => (
+                    <li key={i}>✓ {feat}</li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.starter.desc")}</p>
-              <ul className="mt-6 space-y-3 text-xs text-slate-300">
-                {starterFeatures.map((feat, i) => (
-                  <li key={i}>✓ {feat}</li>
-                ))}
-              </ul>
+              <Link
+                to="/login"
+                className="mt-8 w-full block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors"
+              >
+                {t("landing.pricing.starter.cta")}
+              </Link>
             </div>
-            <Link
-              to="/login"
-              className="mt-8 w-full block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors"
-            >
-              {t("landing.pricing.starter.cta")}
-            </Link>
-          </div>
+          </Reveal>
 
           {/* Pro */}
-          <div className="bg-gradient-to-b from-brand-950/80 to-slate-900 border-2 border-brand-500 rounded-3xl p-8 flex flex-col justify-between relative shadow-2xl shadow-brand-900/40">
-            <span className="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] uppercase font-extrabold px-3 py-0.5 rounded-full tracking-wider">
-              {t("landing.pricing.pro.badge")}
-            </span>
-            <div>
-              <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">{t("landing.pricing.pro.name")}</span>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">25€</span>
-                <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
+          <Reveal delay={100}>
+            <div className="h-full bg-gradient-to-b from-brand-950/80 to-slate-900 border-2 border-brand-500 rounded-3xl p-8 flex flex-col justify-between relative shadow-2xl shadow-brand-900/40 hover:-translate-y-2 transition-all duration-300">
+              <span className="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] uppercase font-extrabold px-3 py-0.5 rounded-full tracking-wider animate-pulse">
+                {t("landing.pricing.pro.badge")}
+              </span>
+              <div>
+                <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">{t("landing.pricing.pro.name")}</span>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold text-white">25€</span>
+                  <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.pro.desc")}</p>
+                <ul className="mt-6 space-y-3 text-xs text-slate-200">
+                  {proFeatures.map((feat, i) => (
+                    <li key={i}>✓ {feat}</li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.pro.desc")}</p>
-              <ul className="mt-6 space-y-3 text-xs text-slate-200">
-                {proFeatures.map((feat, i) => (
-                  <li key={i}>✓ {feat}</li>
-                ))}
-              </ul>
+              <Link
+                to="/login"
+                className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-lg shadow-brand-600/30"
+              >
+                {t("landing.pricing.pro.cta")}
+              </Link>
             </div>
-            <Link
-              to="/login"
-              className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-lg shadow-brand-600/30"
-            >
-              {t("landing.pricing.pro.cta")}
-            </Link>
-          </div>
+          </Reveal>
 
           {/* Enterprise */}
-          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t("landing.pricing.enterprise.name")}</span>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">49€</span>
-                <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
+          <Reveal delay={200}>
+            <div className="h-full bg-slate-900/40 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-700 transition-all duration-300">
+              <div>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t("landing.pricing.enterprise.name")}</span>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold text-white">49€</span>
+                  <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.enterprise.desc")}</p>
+                <ul className="mt-6 space-y-3 text-xs text-slate-300">
+                  {enterpriseFeatures.map((feat, i) => (
+                    <li key={i}>✓ {feat}</li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.enterprise.desc")}</p>
-              <ul className="mt-6 space-y-3 text-xs text-slate-300">
-                {enterpriseFeatures.map((feat, i) => (
-                  <li key={i}>✓ {feat}</li>
-                ))}
-              </ul>
+              <Link
+                to="/login"
+                className="mt-8 w-full block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors"
+              >
+                {t("landing.pricing.enterprise.cta")}
+              </Link>
             </div>
-            <Link
-              to="/login"
-              className="mt-8 w-full block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors"
-            >
-              {t("landing.pricing.enterprise.cta")}
-            </Link>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Final CTA Banner */}
       <section className="px-6 max-w-7xl mx-auto pb-24">
-        <div className="bg-gradient-to-br from-brand-600 to-indigo-700 rounded-3xl px-8 py-16 text-center shadow-2xl shadow-brand-900/40">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white max-w-xl mx-auto">
-            {t("landing.finalCta.title")}
-          </h2>
-          <p className="text-sm text-brand-100 mt-4 max-w-lg mx-auto">{t("landing.finalCta.subtitle")}</p>
-          <Link
-            to="/login"
-            className="mt-8 inline-block bg-white hover:bg-slate-100 text-brand-700 font-bold text-sm px-8 py-3.5 rounded-xl shadow-xl transition-all hover:scale-105"
-          >
-            {t("landing.finalCta.cta")}
-          </Link>
-        </div>
+        <Reveal>
+          <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 to-indigo-700 rounded-3xl px-8 py-16 text-center shadow-2xl shadow-brand-900/40">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="absolute inset-y-0 -left-1/2 w-1/3 bg-white/10 animate-shine" />
+            </div>
+            <h2 className="relative text-2xl sm:text-3xl font-extrabold text-white max-w-xl mx-auto">
+              {t("landing.finalCta.title")}
+            </h2>
+            <p className="relative text-sm text-brand-100 mt-4 max-w-lg mx-auto">{t("landing.finalCta.subtitle")}</p>
+            <Link
+              to="/login"
+              className="relative mt-8 inline-block bg-white hover:bg-slate-100 text-brand-700 font-bold text-sm px-8 py-3.5 rounded-xl shadow-xl transition-all hover:scale-105"
+            >
+              {t("landing.finalCta.cta")}
+            </Link>
+          </div>
+        </Reveal>
       </section>
 
       {/* Footer */}
