@@ -17,6 +17,51 @@ const FEATURE_CARDS = [
   { key: "multiLanguage", icon: "🗣️", color: "bg-fuchsia-600/20 text-fuchsia-400" },
 ] as const;
 
+const COMPARE_ROWS = [
+  {
+    icon: "📢",
+    title: "Avis d'échéance & Relances de loyer",
+    description: "Anticipation des paiements et réduction des impayés",
+    traditional: "Oublis fréquents, appels gênants, messages WhatsApp éparpillés, retards de paiement réguliers.",
+    immoplatform: "Alerte automatique chaque 1er du mois avec échéance stricte au 5. Factures instantanées avec statut en direct.",
+  },
+  {
+    icon: "📄",
+    title: "Quittances de loyer certifiées",
+    description: "Génération et délivrance légale aux locataires",
+    traditional: "Création manuelle sur Word/Excel, conversion PDF fastidieuse, envois par email souvent oubliés.",
+    immoplatform: "Génération automatique en 1 clic au format officiel certifié avec cachet agence, QR/numéro unique et mentions légales.",
+  },
+  {
+    icon: "✍️",
+    title: "Signature des contrats de bail",
+    description: "Validation juridique et conclusion des baux",
+    traditional: "Impression papier, paraphage page par page, déplacements physiques obligatoires, baux égarés.",
+    immoplatform: "Signature tactile électronique (ordinateur, tablette, mobile) avec horodatage certifié en 2 minutes.",
+  },
+  {
+    icon: "📷",
+    title: "Signalement des pannes & Incidents",
+    description: "Suivi des réparations et de la maintenance",
+    traditional: "Appels téléphoniques d'urgence, descriptions vagues, photos non datées, historique inexistant.",
+    immoplatform: "Prise de photo directe par le locataire, galerie haute résolution pour l'agence et suivi d'intervention en temps réel.",
+  },
+  {
+    icon: "💰",
+    title: "Suivi des dépenses & Cash-Flow Net",
+    description: "Calcul de rentabilité réelle et comptabilité",
+    traditional: "Factures d'artisans dispersées, calculs manuels de fin d'année, aucune visibilité sur le rendement net.",
+    immoplatform: "Enregistrement des dépenses par catégorie, calcul automatique du Cash-Flow net et export comptable CSV en 1 clic.",
+  },
+  {
+    icon: "🏢",
+    title: "Image de marque & Multi-devises",
+    description: "Professionnalisme et dimension internationale",
+    traditional: "Documents neutres ou non professionnels, conversion manuelle sujette aux erreurs de change.",
+    immoplatform: "Marque blanche agence (logo, SIRET, en-tête) et prise en charge multi-devises intégrale (EUR, USD, FCFA, STN, etc.).",
+  },
+];
+
 /** Petite maquette illustrative du tableau de bord (pas une vraie capture d'écran). */
 function DashboardMockup() {
   const [ref, inView] = useInView<HTMLDivElement>();
@@ -184,6 +229,7 @@ export default function LandingPage() {
             {[
               { href: "#features", label: t("landing.nav.features") },
               { href: "#pdf", label: t("landing.nav.receipts") },
+              { href: "#compare", label: t("landing.nav.compare", "Comparatif") },
               { href: "#pricing", label: t("landing.nav.pricing") },
               { href: "#trust", label: t("landing.nav.security") },
               { href: "#faq", label: t("landing.nav.faq") },
@@ -379,6 +425,113 @@ export default function LandingPage() {
             </Reveal>
           ))}
         </div>
+      </section>
+
+      {/* Comparison Section: Gestion Traditionnelle vs ImmoPlatform Pro */}
+      <section id="compare" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-800/80">
+        <Reveal className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/30 rounded-full px-4 py-1.5 text-xs text-emerald-300 font-semibold mb-4 shadow-inner">
+            <span>⚖️ Comparatif & Valeur Ajoutée</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
+            Gestion Traditionnelle vs{" "}
+            <span className="bg-gradient-to-r from-brand-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
+              ImmoPlatform Pro
+            </span>
+          </h2>
+          <p className="text-sm text-slate-400 mt-3 leading-relaxed">
+            Découvrez pourquoi les agences et propriétaires modernes abandonnent les tableurs Excel, les échanges WhatsApp éparpillés et la paperasse pour une gestion locative 100% automatisée.
+          </p>
+
+          {/* Badges ROI */}
+          <div className="mt-8 grid grid-cols-3 gap-3 max-w-lg mx-auto">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center hover:border-emerald-500/40 transition-colors">
+              <span className="block text-xl sm:text-2xl font-black text-emerald-400">-85%</span>
+              <span className="text-[11px] text-slate-400">Temps administratif</span>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center hover:border-brand-500/40 transition-colors">
+              <span className="block text-xl sm:text-2xl font-black text-brand-400">0</span>
+              <span className="text-[11px] text-slate-400">Loyer impayé oublié</span>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center hover:border-purple-500/40 transition-colors">
+              <span className="block text-xl sm:text-2xl font-black text-purple-400">100%</span>
+              <span className="text-[11px] text-slate-400">Baux & quittances certifiés</span>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Tableau comparatif */}
+        <Reveal delay={120}>
+          <div className="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+            {/* En-tête du tableau */}
+            <div className="grid grid-cols-1 md:grid-cols-12 border-b border-slate-800 bg-slate-900/90 text-sm font-bold">
+              <div className="md:col-span-4 p-5 text-slate-400 uppercase tracking-wider text-xs flex items-center">
+                Fonctionnalité & Processus
+              </div>
+              <div className="md:col-span-4 p-5 bg-rose-950/20 text-rose-300 border-t md:border-t-0 md:border-l border-slate-800 flex items-center gap-2">
+                <span className="text-base">❌</span>
+                <span>Gestion Traditionnelle (Excel / Papier)</span>
+              </div>
+              <div className="md:col-span-4 p-5 bg-emerald-950/30 text-emerald-300 border-t md:border-t-0 md:border-l border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">✨</span>
+                  <span>ImmoPlatform Pro</span>
+                </div>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-semibold">
+                  Recommandé
+                </span>
+              </div>
+            </div>
+
+            {/* Lignes du comparatif */}
+            <div className="divide-y divide-slate-800/80">
+              {COMPARE_ROWS.map((row, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-1 md:grid-cols-12 hover:bg-slate-800/30 transition-colors duration-200"
+                >
+                  {/* Nom du critère */}
+                  <div className="md:col-span-4 p-5 flex items-start gap-3">
+                    <span className="text-xl shrink-0 mt-0.5">{row.icon}</span>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{row.title}</h4>
+                      <p className="text-xs text-slate-400 mt-0.5">{row.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Gestion traditionnelle */}
+                  <div className="md:col-span-4 p-5 bg-rose-950/10 border-t md:border-t-0 md:border-l border-slate-800/80 flex items-start gap-2.5">
+                    <span className="text-rose-400 shrink-0 font-bold text-sm">✕</span>
+                    <span className="text-xs text-slate-300 leading-relaxed">{row.traditional}</span>
+                  </div>
+
+                  {/* ImmoPlatform Pro */}
+                  <div className="md:col-span-4 p-5 bg-emerald-950/15 border-t md:border-t-0 md:border-l border-slate-800/80 flex items-start gap-2.5">
+                    <span className="text-emerald-400 shrink-0 font-bold text-sm">✓</span>
+                    <span className="text-xs text-emerald-200/90 font-medium leading-relaxed">
+                      {row.immoplatform}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+
+        {/* CTA sous le comparatif */}
+        <Reveal delay={200} className="mt-12 text-center">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-slate-900/80 border border-slate-800 p-4 sm:px-8 rounded-2xl shadow-lg">
+            <span className="text-xs text-slate-300 font-medium">
+              Prêt à moderniser la gestion de votre parc immobilier dès aujourd'hui ?
+            </span>
+            <Link
+              to="/login"
+              className="bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105"
+            >
+              Démarrer 15 jours d'essai gratuit →
+            </Link>
+          </div>
+        </Reveal>
       </section>
 
       {/* Trust / Security Section */}
