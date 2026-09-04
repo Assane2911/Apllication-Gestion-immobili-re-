@@ -33,6 +33,12 @@ export const users = pgTable("users", {
   trialEndsAt: timestamp("trial_ends_at", { mode: "date" }),
   subscriptionEndsAt: timestamp("subscription_ends_at", { mode: "date" }),
   subscriptionPaymentMethod: paymentMethodEnum("subscription_payment_method"),
+  // Réinitialisation de mot de passe : on ne stocke jamais le token en clair,
+  // seulement son empreinte SHA-256 (comme un token à usage unique classique,
+  // distinct du hash bcrypt du mot de passe lui-même). expiresAt limite sa
+  // validité à 1h — voir auth.controller.ts (forgotPassword / resetPassword).
+  resetPasswordTokenHash: text("reset_password_token_hash"),
+  resetPasswordExpiresAt: timestamp("reset_password_expires_at", { mode: "date" }),
   ...timestamps,
 });
 

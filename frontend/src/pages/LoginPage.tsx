@@ -191,6 +191,11 @@ export default function LoginPage() {
                   <EyeIcon off={showPassword} />
                 </button>
               </div>
+              <div className="mt-1.5 text-right">
+                <Link to="/mot-de-passe-oublie" className="text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors">
+                  {t("auth.login.forgotPasswordLink")}
+                </Link>
+              </div>
             </div>
 
             {error && (

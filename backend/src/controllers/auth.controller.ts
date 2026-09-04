@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import jwt, { SignOptions } from "jsonwebtoken";
@@ -6,7 +7,15 @@ import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { tenants, users } from "../db/schema";
+import { passwordResetEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+
+// Durée de validité du lien de réinitialisation de mot de passe.
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
+
+function hashResetToken(rawToken: string): string {
+  return crypto.createHash("sha256").update(rawToken).digest("hex");
+}
 
 const registerManagerSchema = z.object({
   email: z.string().email(),
@@ -148,6 +157,68 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     tenant: tenant ?? null,
     subscription,
   });
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+/**
+ * Demande de réinitialisation de mot de passe. Répond TOUJOURS avec le même
+ * message générique, que l'email existe ou non en base — pour ne jamais
+ * révéler à un tiers si une adresse est inscrite sur la plateforme.
+ */
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  const body = forgotPasswordSchema.parse(req.body);
+
+  const [user] = await db.select().from(users).where(eq(users.email, body.email));
+
+  if (user) {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const resetPasswordTokenHash = hashResetToken(rawToken);
+    const resetPasswordExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+    await db
+      .update(users)
+      .set({ resetPasswordTokenHash, resetPasswordExpiresAt })
+      .where(eq(users.id, user.id));
+
+    const resetUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
+    const { subject, html } = passwordResetEmail({ resetUrl });
+    sendEmail(user.email, subject, html).catch((err) =>
+      console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err)
+    );
+  }
+
+  res.json({
+    message: "Si un compte existe avec cet email, un lien de réinitialisation vient de lui être envoyé.",
+  });
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+});
+
+/** Applique le nouveau mot de passe si le token reçu est valide et non expiré. */
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const body = resetPasswordSchema.parse(req.body);
+  const resetPasswordTokenHash = hashResetToken(body.token);
+
+  const [user] = await db.select().from(users).where(eq(users.resetPasswordTokenHash, resetPasswordTokenHash));
+
+  if (!user || !user.resetPasswordExpiresAt || user.resetPasswordExpiresAt < new Date()) {
+    throw new ApiError(400, "Ce lien de réinitialisation est invalide ou a expiré");
+  }
+
+  const passwordHash = await bcrypt.hash(body.password, 10);
+
+  await db
+    .update(users)
+    .set({ passwordHash, resetPasswordTokenHash: null, resetPasswordExpiresAt: null })
+    .where(eq(users.id, user.id));
+
+  res.json({ message: "Mot de passe mis à jour avec succès" });
 });
 
 /** Mise à jour de la devise préférée de l'utilisateur. */

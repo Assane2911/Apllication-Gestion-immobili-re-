@@ -5,11 +5,13 @@ import TenantLayout from "./components/TenantLayout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import LandingPage from "./pages/LandingPage";
 import CGUPage from "./pages/legal/CGUPage";
 import MentionsLegalesPage from "./pages/legal/MentionsLegalesPage";
 import PolitiqueConfidentialitePage from "./pages/legal/PolitiqueConfidentialitePage";
 import LoginPage from "./pages/LoginPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ActivityLogPage from "./pages/manager/ActivityLogPage";
 import AgencySettingsPage from "./pages/manager/AgencySettingsPage";
 import ContractsPage from "./pages/manager/ContractsPage";
@@ -38,6 +40,8 @@ function AppRoutes() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/landing" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+      <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
       <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
       <Route path="/cgu" element={<CGUPage />} />
       <Route path="/confidentialite" element={<PolitiqueConfidentialitePage />} />

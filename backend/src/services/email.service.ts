@@ -55,6 +55,41 @@ export async function sendEmail(to: string, subject: string, html: string, attac
   }
 }
 
+/**
+ * Email envoyé lors d'une demande de réinitialisation de mot de passe
+ * (page "Mot de passe oublié"). Le lien contient un token à usage unique,
+ * valable 1 heure — voir auth.controller.ts (forgotPassword / resetPassword).
+ */
+export function passwordResetEmail(params: { resetUrl: string }) {
+  const { resetUrl } = params;
+  return {
+    subject: "🔒 Réinitialisation de votre mot de passe",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">🔒 Réinitialisation de votre mot de passe</h2>
+        <p>Bonjour,</p>
+        <p>
+          Vous avez demandé la réinitialisation du mot de passe de votre compte.
+          Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
+          Ce lien est valable <strong>1 heure</strong>.
+        </p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${resetUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Réinitialiser mon mot de passe →
+          </a>
+        </div>
+        <p style="color:#6b7280; font-size:12px;">
+          Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email sans risque :
+          votre mot de passe actuel reste inchangé.
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
 export function contractEndingReminderEmail(params: {
   tenantName: string;
   propertyTitle: string;
