@@ -39,6 +39,13 @@ export const users = pgTable("users", {
   // validité à 1h — voir auth.controller.ts (forgotPassword / resetPassword).
   resetPasswordTokenHash: text("reset_password_token_hash"),
   resetPasswordExpiresAt: timestamp("reset_password_expires_at", { mode: "date" }),
+  // Confirmation d'adresse email à l'inscription : le compte reste bloqué à
+  // la connexion tant qu'emailVerifiedAt est vide. Même logique de token à
+  // usage unique (empreinte SHA-256 uniquement) que pour resetPassword —
+  // voir auth.controller.ts (registerManager / verifyEmail / resendVerification).
+  emailVerifiedAt: timestamp("email_verified_at", { mode: "date" }),
+  emailVerificationTokenHash: text("email_verification_token_hash"),
+  emailVerificationExpiresAt: timestamp("email_verification_expires_at", { mode: "date" }),
   ...timestamps,
 });
 

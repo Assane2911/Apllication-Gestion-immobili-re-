@@ -90,6 +90,41 @@ export function passwordResetEmail(params: { resetUrl: string }) {
   };
 }
 
+/**
+ * Email envoyé à l'inscription pour confirmer la propriété de l'adresse
+ * email avant d'activer le compte. Le lien contient un token à usage unique,
+ * valable 24 heures — voir auth.controller.ts (registerManager / verifyEmail).
+ */
+export function emailVerificationEmail(params: { verifyUrl: string }) {
+  const { verifyUrl } = params;
+  return {
+    subject: "✅ Confirme ton adresse email",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">✅ Confirme ton adresse email</h2>
+        <p>Bonjour,</p>
+        <p>
+          Merci de ton inscription ! Il ne reste qu'une étape avant de pouvoir
+          te connecter : confirme ton adresse email en cliquant sur le bouton
+          ci-dessous. Ce lien est valable <strong>24 heures</strong>.
+        </p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${verifyUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Confirmer mon email →
+          </a>
+        </div>
+        <p style="color:#6b7280; font-size:12px;">
+          Si tu n'es pas à l'origine de cette inscription, tu peux ignorer cet email sans risque :
+          aucun compte ne sera activé sans confirmation.
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
 export function contractEndingReminderEmail(params: {
   tenantName: string;
   propertyTitle: string;

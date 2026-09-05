@@ -10,7 +10,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
   console.error(err);
 
   if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({ error: err.message });
+    return res.status(err.statusCode).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
   }
 
   if (err instanceof Error) {

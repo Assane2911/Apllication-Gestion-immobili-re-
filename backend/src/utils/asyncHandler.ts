@@ -14,8 +14,10 @@ export function asyncHandler(fn: Handler) {
 
 export class ApiError extends Error {
   statusCode: number;
-  constructor(statusCode: number, message: string) {
+  code?: string;
+  constructor(statusCode: number, message: string, code?: string) {
     super(message);
     this.statusCode = statusCode;
+    this.code = code;
   }
 }

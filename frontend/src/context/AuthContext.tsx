@@ -7,7 +7,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
-  register: (email: string, password: string) => Promise<AuthUser>;
+  register: (email: string, password: string) => Promise<{ pendingVerification: boolean; email: string }>;
+  verifyEmail: (token: string) => Promise<AuthUser>;
   logout: () => void;
   refreshUser: () => Promise<AuthUser | null>;
 }
@@ -63,6 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/register", { email, password });
+      return data as { pendingVerification: boolean; email: string };
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyEmail(token: string) {
+    setLoading(true);
+    try {
+      const { data } = await api.post("/auth/verify-email", { token });
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       setUser(data.user);
@@ -79,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyEmail, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -90,4 +101,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth doit être utilisé dans un AuthProvider");
   return ctx;
 }
-

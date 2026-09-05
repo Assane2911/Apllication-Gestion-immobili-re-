@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
@@ -52,7 +52,6 @@ function CheckIcon() {
 export default function RegisterPage() {
   const { t } = useTranslation();
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,6 +59,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const highlights = t("auth.register.panel.highlights", { returnObjects: true }) as string[];
 
@@ -78,8 +78,8 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const user = await register(email, password);
-      navigate(user.role === "MANAGER" ? "/" : "/portail");
+      await register(email, password);
+      setSent(true);
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
@@ -143,108 +143,126 @@ export default function RegisterPage() {
             <span className="font-bold text-lg tracking-tight text-white">{t("common.appName")}</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-white text-center">{t("auth.register.title")}</h2>
-          <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.register.subtitle")}</p>
-
-          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.email")}</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                  <MailIcon />
-                </span>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  placeholder={t("auth.register.emailPlaceholder")}
-                />
+          {sent ? (
+            <div className="text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
+                <MailIcon />
               </div>
+              <h2 className="text-xl font-bold text-white">{t("auth.register.sentTitle")}</h2>
+              <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.register.sentSubtitle")}</p>
+              <Link
+                to="/login"
+                className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
+              >
+                {t("auth.register.loginLink")}
+              </Link>
             </div>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-white text-center">{t("auth.register.title")}</h2>
+              <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.register.subtitle")}</p>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.password")}</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                  <LockIcon />
-                </span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  placeholder={t("auth.register.passwordPlaceholder")}
-                />
+              <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.email")}</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <MailIcon />
+                    </span>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      placeholder={t("auth.register.emailPlaceholder")}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.password")}</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <LockIcon />
+                    </span>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      placeholder={t("auth.register.passwordPlaceholder")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      <EyeIcon off={showPassword} />
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    {t("auth.register.confirmPassword")}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <LockIcon />
+                    </span>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      placeholder={t("auth.register.passwordPlaceholder")}
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
                 <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
                 >
-                  <EyeIcon off={showPassword} />
+                  {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                  {loading ? t("auth.register.submitting") : t("auth.register.submit")}
                 </button>
-              </div>
-              <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
-            </div>
+              </form>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                {t("auth.register.confirmPassword")}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                  <LockIcon />
-                </span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  minLength={8}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  placeholder={t("auth.register.passwordPlaceholder")}
-                />
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                {error}
+              <p className="mt-5 text-[11px] text-slate-500 text-center leading-relaxed">
+                {t("auth.register.legalPrefix")}{" "}
+                <Link to="/cgu" className="text-brand-400 hover:text-brand-300 transition-colors">
+                  {t("auth.register.legalTerms")}
+                </Link>{" "}
+                {t("auth.register.legalAnd")}{" "}
+                <Link to="/confidentialite" className="text-brand-400 hover:text-brand-300 transition-colors">
+                  {t("auth.register.legalPrivacy")}
+                </Link>
+                {t("auth.register.legalSuffix")}
               </p>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-            >
-              {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-              {loading ? t("auth.register.submitting") : t("auth.register.submit")}
-            </button>
-          </form>
-
-          <p className="mt-5 text-[11px] text-slate-500 text-center leading-relaxed">
-            {t("auth.register.legalPrefix")}{" "}
-            <Link to="/cgu" className="text-brand-400 hover:text-brand-300 transition-colors">
-              {t("auth.register.legalTerms")}
-            </Link>{" "}
-            {t("auth.register.legalAnd")}{" "}
-            <Link to="/confidentialite" className="text-brand-400 hover:text-brand-300 transition-colors">
-              {t("auth.register.legalPrivacy")}
-            </Link>
-            {t("auth.register.legalSuffix")}
-          </p>
-
-          <p className="mt-6 text-center text-xs text-slate-500">
-            {t("auth.register.alreadyHaveAccount")}{" "}
-            <Link to="/login" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
-              {t("auth.register.loginLink")}
-            </Link>
-          </p>
+              <p className="mt-6 text-center text-xs text-slate-500">
+                {t("auth.register.alreadyHaveAccount")}{" "}
+                <Link to="/login" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
+                  {t("auth.register.loginLink")}
+                </Link>
+              </p>
+            </>
+          )}
         </Reveal>
       </div>
     </div>

@@ -44,3 +44,10 @@ export function apiErrorMessage(err: unknown): string {
   }
   return "Une erreur inattendue est survenue";
 }
+
+export function apiErrorCode(err: unknown): string | undefined {
+  if (axios.isAxiosError(err)) {
+    return err.response?.data?.code;
+  }
+  return undefined;
+}

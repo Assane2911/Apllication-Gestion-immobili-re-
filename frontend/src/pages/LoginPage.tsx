@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import { apiErrorMessage } from "../api/client";
+import { api, apiErrorCode, apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import { useAuth } from "../context/AuthContext";
@@ -63,19 +63,37 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<"form" | "manager" | "tenant" | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   const highlights = t("auth.login.panel.highlights", { returnObjects: true }) as string[];
 
   async function doLogin(loginEmail: string, loginPassword: string, source: "form" | "manager" | "tenant") {
     setError(null);
+    setUnverifiedEmail(null);
+    setResendState("idle");
     setLoading(source);
     try {
       const user = await login(loginEmail, loginPassword);
       navigate(user.role === "MANAGER" ? "/" : "/portail");
     } catch (err) {
       setError(apiErrorMessage(err));
+      if (apiErrorCode(err) === "EMAIL_NOT_VERIFIED") {
+        setUnverifiedEmail(loginEmail);
+      }
     } finally {
       setLoading(null);
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!unverifiedEmail) return;
+    setResendState("sending");
+    try {
+      await api.post("/auth/resend-verification", { email: unverifiedEmail });
+      setResendState("sent");
+    } catch {
+      setResendState("idle");
     }
   }
 
@@ -202,6 +220,21 @@ export default function LoginPage() {
               <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                 {error}
               </p>
+            )}
+
+            {unverifiedEmail && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendState !== "idle"}
+                className="w-full text-xs font-medium text-brand-400 hover:text-brand-300 disabled:opacity-60 transition-colors text-center"
+              >
+                {resendState === "sending"
+                  ? t("auth.login.resendVerificationSending")
+                  : resendState === "sent"
+                  ? t("auth.login.resendVerificationSent")
+                  : t("auth.login.resendVerificationButton")}
+              </button>
             )}
 
             <button

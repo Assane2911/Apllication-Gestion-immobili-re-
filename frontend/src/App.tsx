@@ -13,6 +13,7 @@ import PolitiqueConfidentialitePage from "./pages/legal/PolitiqueConfidentialite
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import ActivityLogPage from "./pages/manager/ActivityLogPage";
 import AgencySettingsPage from "./pages/manager/AgencySettingsPage";
 import ContractsPage from "./pages/manager/ContractsPage";
@@ -44,6 +45,7 @@ function AppRoutes() {
       <Route path="/inscription" element={<RegisterPage />} />
       <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
       <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+      <Route path="/verifier-email" element={<VerifyEmailPage />} />
       <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
       <Route path="/cgu" element={<CGUPage />} />
       <Route path="/confidentialite" element={<PolitiqueConfidentialitePage />} />
