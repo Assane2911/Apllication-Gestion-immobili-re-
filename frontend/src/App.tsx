@@ -11,6 +11,7 @@ import CGUPage from "./pages/legal/CGUPage";
 import MentionsLegalesPage from "./pages/legal/MentionsLegalesPage";
 import PolitiqueConfidentialitePage from "./pages/legal/PolitiqueConfidentialitePage";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ActivityLogPage from "./pages/manager/ActivityLogPage";
 import AgencySettingsPage from "./pages/manager/AgencySettingsPage";
@@ -40,6 +41,7 @@ function AppRoutes() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/landing" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/inscription" element={<RegisterPage />} />
       <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
       <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
       <Route path="/mentions-legales" element={<MentionsLegalesPage />} />

@@ -6,11 +6,6 @@ import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import { useAuth } from "../context/AuthContext";
 
-const DEMO_ACCOUNTS = {
-  manager: { email: "gestionnaire@demo.com", password: "Demo1234!" },
-  tenant: { email: "amine.silva@demo.com", password: "Demo1234!" },
-} as const;
-
 function MailIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -54,41 +49,42 @@ function CheckIcon() {
   );
 }
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<"form" | "manager" | "tenant" | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const highlights = t("auth.login.panel.highlights", { returnObjects: true }) as string[];
+  const highlights = t("auth.register.panel.highlights", { returnObjects: true }) as string[];
 
-  async function doLogin(loginEmail: string, loginPassword: string, source: "form" | "manager" | "tenant") {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setError(null);
-    setLoading(source);
+
+    if (password !== confirmPassword) {
+      setError(t("auth.register.mismatchError"));
+      return;
+    }
+    if (password.length < 8) {
+      setError(t("auth.register.tooShortError"));
+      return;
+    }
+
+    setLoading(true);
     try {
-      const user = await login(loginEmail, loginPassword);
+      const user = await register(email, password);
       navigate(user.role === "MANAGER" ? "/" : "/portail");
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
-      setLoading(null);
+      setLoading(false);
     }
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    doLogin(email, password, "form");
-  }
-
-  function tryDemo(role: "manager" | "tenant") {
-    const account = DEMO_ACCOUNTS[role];
-    setEmail(account.email);
-    setPassword(account.password);
-    doLogin(account.email, account.password, role);
   }
 
   return (
@@ -107,9 +103,9 @@ export default function LoginPage() {
 
         <Reveal delay={100} className="relative max-w-md">
           <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight">
-            {t("auth.login.panel.title")}
+            {t("auth.register.panel.title")}
           </h1>
-          <p className="mt-4 text-sm text-slate-400 leading-relaxed">{t("auth.login.panel.subtitle")}</p>
+          <p className="mt-4 text-sm text-slate-400 leading-relaxed">{t("auth.register.panel.subtitle")}</p>
 
           <ul className="mt-8 space-y-3.5">
             {highlights.map((item, i) => (
@@ -125,7 +121,7 @@ export default function LoginPage() {
 
         <Reveal delay={200} className="relative inline-flex items-center gap-2 text-xs text-brand-300 bg-brand-950/60 border border-brand-500/20 rounded-full px-4 py-2 w-fit">
           <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
-          {t("auth.login.panel.trialNote")}
+          {t("auth.register.panel.trialNote")}
         </Reveal>
       </div>
 
@@ -136,7 +132,7 @@ export default function LoginPage() {
             to="/landing"
             className="text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
           >
-            {t("auth.login.backToHome")}
+            {t("auth.register.backToHome")}
           </Link>
           <LanguageSwitcher />
         </div>
@@ -147,12 +143,12 @@ export default function LoginPage() {
             <span className="font-bold text-lg tracking-tight text-white">{t("common.appName")}</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-white text-center">{t("auth.login.title")}</h2>
-          <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.login.subtitle")}</p>
+          <h2 className="text-2xl font-bold text-white text-center">{t("auth.register.title")}</h2>
+          <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.register.subtitle")}</p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.email")}</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.email")}</label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                   <MailIcon />
@@ -163,13 +159,13 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  placeholder={t("auth.login.emailPlaceholder")}
+                  placeholder={t("auth.register.emailPlaceholder")}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.password")}</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.password")}</label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                   <LockIcon />
@@ -177,10 +173,11 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  placeholder={t("auth.login.passwordPlaceholder")}
+                  placeholder={t("auth.register.passwordPlaceholder")}
                 />
                 <button
                   type="button"
@@ -191,10 +188,26 @@ export default function LoginPage() {
                   <EyeIcon off={showPassword} />
                 </button>
               </div>
-              <div className="mt-1.5 text-right">
-                <Link to="/mot-de-passe-oublie" className="text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors">
-                  {t("auth.login.forgotPasswordLink")}
-                </Link>
+              <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                {t("auth.register.confirmPassword")}
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                  <LockIcon />
+                </span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={8}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                  placeholder={t("auth.register.passwordPlaceholder")}
+                />
               </div>
             </div>
 
@@ -206,59 +219,32 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading !== null}
+              disabled={loading}
               className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
             >
-              {loading === "form" && (
-                <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              )}
-              {loading === "form" ? t("auth.login.submitting") : t("auth.login.submit")}
+              {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+              {loading ? t("auth.register.submitting") : t("auth.register.submit")}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-slate-500">
-            {t("auth.login.noAccountText")}{" "}
-            <Link to="/inscription" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
-              {t("auth.login.registerLink")}
+          <p className="mt-5 text-[11px] text-slate-500 text-center leading-relaxed">
+            {t("auth.register.legalPrefix")}{" "}
+            <Link to="/cgu" className="text-brand-400 hover:text-brand-300 transition-colors">
+              {t("auth.register.legalTerms")}
+            </Link>{" "}
+            {t("auth.register.legalAnd")}{" "}
+            <Link to="/confidentialite" className="text-brand-400 hover:text-brand-300 transition-colors">
+              {t("auth.register.legalPrivacy")}
             </Link>
+            {t("auth.register.legalSuffix")}
           </p>
 
-          <div className="mt-8">
-            <div className="flex items-center gap-3 text-[11px] text-slate-600 uppercase tracking-wider">
-              <span className="h-px flex-1 bg-slate-800" />
-              {t("auth.login.tryDemoTitle")}
-              <span className="h-px flex-1 bg-slate-800" />
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => tryDemo("manager")}
-                disabled={loading !== null}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 hover:border-slate-600 disabled:opacity-60 px-3 py-3 text-xs font-medium text-slate-300 transition-all"
-              >
-                {loading === "manager" ? (
-                  <span className="w-4 h-4 border-2 border-slate-500 border-t-brand-400 rounded-full animate-spin" />
-                ) : (
-                  <span className="text-lg">🏢</span>
-                )}
-                {t("auth.login.tryDemoManagerLabel")}
-              </button>
-              <button
-                type="button"
-                onClick={() => tryDemo("tenant")}
-                disabled={loading !== null}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 hover:border-slate-600 disabled:opacity-60 px-3 py-3 text-xs font-medium text-slate-300 transition-all"
-              >
-                {loading === "tenant" ? (
-                  <span className="w-4 h-4 border-2 border-slate-500 border-t-brand-400 rounded-full animate-spin" />
-                ) : (
-                  <span className="text-lg">🏠</span>
-                )}
-                {t("auth.login.tryDemoTenantLabel")}
-              </button>
-            </div>
-          </div>
+          <p className="mt-6 text-center text-xs text-slate-500">
+            {t("auth.register.alreadyHaveAccount")}{" "}
+            <Link to="/login" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
+              {t("auth.register.loginLink")}
+            </Link>
+          </p>
         </Reveal>
       </div>
     </div>

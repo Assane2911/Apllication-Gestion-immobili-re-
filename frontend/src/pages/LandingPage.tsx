@@ -262,7 +262,7 @@ export default function LandingPage() {
                   {t("landing.nav.login")}
                 </Link>
                 <Link
-                  to="/login"
+                  to="/inscription"
                   className="bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
                 >
                   {t("landing.nav.trial")}
@@ -307,7 +307,7 @@ export default function LandingPage() {
         <Reveal delay={240}>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              to="/login"
+              to="/inscription"
               className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-brand-600/30 transition-all hover:scale-105"
             >
               {t("landing.hero.ctaTrial")}
@@ -525,7 +525,7 @@ export default function LandingPage() {
               Prêt à moderniser la gestion de votre parc immobilier dès aujourd'hui ?
             </span>
             <Link
-              to="/login"
+              to="/inscription"
               className="bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105"
             >
               Démarrer 15 jours d'essai gratuit →
@@ -625,7 +625,7 @@ export default function LandingPage() {
                 </ul>
               </div>
               <Link
-                to="/login"
+                to="/inscription"
                 className="mt-8 w-full block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors"
               >
                 {t("landing.pricing.starter.cta")}
@@ -653,7 +653,7 @@ export default function LandingPage() {
                 </ul>
               </div>
               <Link
-                to="/login"
+                to="/inscription"
                 className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-lg shadow-brand-600/30"
               >
                 {t("landing.pricing.pro.cta")}
@@ -678,7 +678,7 @@ export default function LandingPage() {
                 </ul>
               </div>
               <Link
-                to="/login"
+                to="/inscription"
                 className="mt-8 w-full block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors"
               >
                 {t("landing.pricing.enterprise.cta")}
@@ -700,7 +700,7 @@ export default function LandingPage() {
             </h2>
             <p className="relative text-sm text-brand-100 mt-4 max-w-lg mx-auto">{t("landing.finalCta.subtitle")}</p>
             <Link
-              to="/login"
+              to="/inscription"
               className="relative mt-8 inline-block bg-white hover:bg-slate-100 text-brand-700 font-bold text-sm px-8 py-3.5 rounded-xl shadow-xl transition-all hover:scale-105"
             >
               {t("landing.finalCta.cta")}
