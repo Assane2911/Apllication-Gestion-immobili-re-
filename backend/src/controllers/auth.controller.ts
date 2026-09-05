@@ -100,9 +100,11 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
 
   const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
   const { subject, html } = emailVerificationEmail({ verifyUrl });
-  sendEmail(user.email, subject, html).catch((err) =>
-    console.error("[auth] Échec de l'envoi de l'email de confirmation:", err)
-  );
+  try {
+    await sendEmail(user.email, subject, html);
+  } catch (err) {
+    console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
+  }
 
   res.status(201).json({
     pendingVerification: true,
@@ -232,9 +234,11 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
 
     const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
     const { subject, html } = emailVerificationEmail({ verifyUrl });
-    sendEmail(user.email, subject, html).catch((err) =>
-      console.error("[auth] Échec de l'envoi de l'email de confirmation:", err)
-    );
+    try {
+      await sendEmail(user.email, subject, html);
+    } catch (err) {
+      console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
+    }
   }
 
   res.json({
@@ -290,9 +294,11 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
 
     const resetUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
     const { subject, html } = passwordResetEmail({ resetUrl });
-    sendEmail(user.email, subject, html).catch((err) =>
-      console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err)
-    );
+    try {
+      await sendEmail(user.email, subject, html);
+    } catch (err) {
+      console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err);
+    }
   }
 
   res.json({
