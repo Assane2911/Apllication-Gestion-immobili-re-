@@ -82,7 +82,7 @@ export default function ManagerLayout() {
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
               {t("nav.currencyLabel")}
             </label>
-            <CurrencySelector className="w-full" />
+            <CurrencySelector className="w-full [&>select]:w-full" />
           </div>
           <div className="mt-2">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
