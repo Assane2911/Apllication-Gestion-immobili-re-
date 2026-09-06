@@ -108,12 +108,12 @@ const pt: TranslationSchema = {
           "Pagamentos online seguros (cartão, mobile money, transferência)",
           "Interface disponível em francês, inglês, português e espanhol",
         ],
-        trialNote: "15 dias de teste grátis, sem cartão bancário.",
+        trialNote: "10 dias de teste grátis, sem cartão bancário.",
       },
     },
     register: {
       title: "Criar uma conta",
-      subtitle: "15 dias de teste grátis, sem cartão bancário.",
+      subtitle: "10 dias de teste grátis, sem cartão bancário.",
       email: "Email",
       emailPlaceholder: "voce@exemplo.com",
       password: "Palavra-passe",
@@ -143,7 +143,7 @@ const pt: TranslationSchema = {
           "Pagamentos online seguros (cartão, mobile money, transferência)",
           "Interface disponível em francês, inglês, português e espanhol",
         ],
-        trialNote: "15 dias de teste grátis, sem cartão bancário.",
+        trialNote: "10 dias de teste grátis, sem cartão bancário.",
       },
     },
     forgotPassword: {
@@ -192,15 +192,15 @@ const pt: TranslationSchema = {
       faq: "FAQ",
       goToSpace: "Aceder à minha área →",
       login: "Iniciar sessão",
-      trial: "Teste grátis de 15 dias →",
+      trial: "Teste grátis de 10 dias →",
     },
-    badge: "Nova Versão 2.0 • 15 dias de teste grátis, sem compromisso",
+    badge: "Nova Versão 2.0 • 10 dias de teste grátis, sem compromisso",
     hero: {
       titleLine1: "A gestão de arrendamento,",
       titleLine2: "reinventada & automatizada.",
       subtitle:
         "Gere os seus recibos de renda em PDF certificado, faça assinar os contratos online, envie lembretes automáticos no dia 1 de cada mês e acompanhe a sua rentabilidade líquida em tempo real.",
-      ctaTrial: "Iniciar o teste grátis de 15 dias →",
+      ctaTrial: "Iniciar o teste grátis de 10 dias →",
       ctaDemo: "Experimentar o modo demonstração",
     },
     features: {
@@ -305,7 +305,7 @@ const pt: TranslationSchema = {
       items: [
         {
           q: "Quanto tempo demora a começar?",
-          a: "Apenas alguns minutos: crie a sua conta, adicione o seu primeiro imóvel e aproveite imediatamente 15 dias de teste grátis, sem necessidade de cartão bancário.",
+          a: "Apenas alguns minutos: crie a sua conta, adicione o seu primeiro imóvel e aproveite imediatamente 10 dias de teste grátis, sem necessidade de cartão bancário.",
         },
         {
           q: "Os meus dados estão seguros?",
@@ -328,11 +328,11 @@ const pt: TranslationSchema = {
     finalCta: {
       title: "Pronto para modernizar a sua gestão de arrendamento?",
       subtitle: "Junte-se aos gestores que já simplificaram os seus recibos, lembretes e acompanhamento financeiro.",
-      cta: "Iniciar o meu teste grátis de 15 dias →",
+      cta: "Iniciar o meu teste grátis de 10 dias →",
     },
     pricing: {
       title: "Planos simples e transparentes",
-      subtitle: "Todos os planos incluem 15 dias de teste grátis, sem necessidade de cartão bancário.",
+      subtitle: "Todos os planos incluem 10 dias de teste grátis, sem necessidade de cartão bancário.",
       perMonth: "/ mês",
       starter: {
         name: "Starter",
@@ -343,7 +343,7 @@ const pt: TranslationSchema = {
           "Lembretes automáticos no dia 1 do mês",
           "Portal do inquilino incluído",
         ],
-        cta: "Iniciar o teste de 15 dias",
+        cta: "Iniciar o teste de 10 dias",
       },
       pro: {
         name: "Pro Agência",
@@ -356,7 +356,7 @@ const pt: TranslationSchema = {
           "🏢 Marca branca (logótipo & cabeçalho da agência)",
           "💬 Mensagens diretas integradas",
         ],
-        cta: "Iniciar o teste grátis de 15 dias",
+        cta: "Iniciar o teste grátis de 10 dias",
       },
       enterprise: {
         name: "Empresa",
@@ -367,7 +367,7 @@ const pt: TranslationSchema = {
           "Múltiplos utilizadores & gestores",
           "Exportação contabilística automatizada",
         ],
-        cta: "Iniciar o teste de 15 dias",
+        cta: "Iniciar o teste de 10 dias",
       },
     },
     footer: {
@@ -413,9 +413,9 @@ const pt: TranslationSchema = {
     trialBanner: {
       expiredTitle: "Período de teste expirado",
       expiredDesc:
-        "O seu período de teste de 15 dias terminou. Subscreva um plano para continuar a usar a aplicação.",
+        "O seu período de teste de 10 dias terminou. Subscreva um plano para continuar a usar a aplicação.",
       unlockCta: "Desbloquear a minha conta →",
-      trialBadge: "Modo de Teste de 15 Dias",
+      trialBadge: "Modo de Teste de 10 Dias",
       lastDay: "Último dia do seu teste!",
       oneDayLeft: "Resta-lhe 1 dia de teste",
       daysLeft: "Restam-lhe {{count}} dias de teste grátis",
@@ -747,7 +747,7 @@ const pt: TranslationSchema = {
       subtitle: "Gira o seu plano de gestão imobiliária e as suas opções de faturação.",
       currentStatus: "O seu estado atual",
       planActive: "Plano {{plan}} Ativo",
-      trialStatus: "Período de teste grátis (15 dias)",
+      trialStatus: "Período de teste grátis (10 dias)",
       expiredStatus: "Assinatura Expirada",
       paid: "Pago",
       trialRemaining: "Teste: restam {{count}} dia(s)",

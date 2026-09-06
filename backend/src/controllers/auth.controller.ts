@@ -67,7 +67,7 @@ export function computeSubscriptionInfo(user: typeof users.$inferSelect) {
 }
 
 /**
- * Inscription du gestionnaire (compte administrateur de l'application avec 15 jours d'essai).
+ * Inscription du gestionnaire (compte administrateur de l'application avec 10 jours d'essai).
  * Le compte est créé immédiatement mais reste bloqué à la connexion tant que
  * l'adresse email n'a pas été confirmée via le lien envoyé par email.
  */
@@ -78,7 +78,7 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
   if (existing) throw new ApiError(409, "Un compte existe déjà avec cet email");
 
   const passwordHash = await bcrypt.hash(body.password, 10);
-  const trialEndsAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 jours d'essai
+  const trialEndsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 jours d'essai
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const emailVerificationTokenHash = hashToken(rawToken);

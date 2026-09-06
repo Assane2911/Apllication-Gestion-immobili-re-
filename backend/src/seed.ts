@@ -12,7 +12,7 @@ export async function seedDatabase() {
   const tenantPassword = "Demo1234!";
 
   let [existingManager] = await db.select().from(users).where(eq(users.email, managerEmail));
-  const trialEndsAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 jours d'essai gratuit
+  const trialEndsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 jours d'essai gratuit
 
   if (!existingManager) {
     const [created] = await db
@@ -27,7 +27,7 @@ export async function seedDatabase() {
       })
       .returning();
     existingManager = created;
-    console.log(`👤 Compte gestionnaire créé: ${managerEmail} / ${managerPassword} (Essai: 15 jours)`);
+    console.log(`👤 Compte gestionnaire créé: ${managerEmail} / ${managerPassword} (Essai: 10 jours)`);
   } else {
     await db
       .update(users)

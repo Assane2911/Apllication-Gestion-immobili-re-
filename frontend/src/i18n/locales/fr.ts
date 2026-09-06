@@ -106,12 +106,12 @@ const fr = {
           "Paiements en ligne sécurisés (carte, mobile money, virement)",
           "Interface disponible en français, anglais, portugais et espagnol",
         ],
-        trialNote: "15 jours d'essai gratuit, sans carte bancaire.",
+        trialNote: "10 jours d'essai gratuit, sans carte bancaire.",
       },
     },
     register: {
       title: "Créer un compte",
-      subtitle: "15 jours d'essai gratuit, sans carte bancaire.",
+      subtitle: "10 jours d'essai gratuit, sans carte bancaire.",
       email: "Email",
       emailPlaceholder: "vous@exemple.com",
       password: "Mot de passe",
@@ -141,7 +141,7 @@ const fr = {
           "Paiements en ligne sécurisés (carte, mobile money, virement)",
           "Interface disponible en français, anglais, portugais et espagnol",
         ],
-        trialNote: "15 jours d'essai gratuit, sans carte bancaire.",
+        trialNote: "10 jours d'essai gratuit, sans carte bancaire.",
       },
     },
     forgotPassword: {
@@ -190,15 +190,15 @@ const fr = {
       faq: "FAQ",
       goToSpace: "Accéder à mon espace →",
       login: "Se connecter",
-      trial: "Essai 15j gratuit →",
+      trial: "Essai 10j gratuit →",
     },
-    badge: "Nouvelle Version 2.0 • 15 jours d'essai gratuit offert sans engagement",
+    badge: "Nouvelle Version 2.0 • 10 jours d'essai gratuit offert sans engagement",
     hero: {
       titleLine1: "La gestion locative",
       titleLine2: "réinventée & automatisée.",
       subtitle:
         "Générez vos quittances en PDF certifié, faites signer vos baux en ligne, envoyez vos relances automatiques du 1er du mois et suivez votre rentabilité nette en temps réel.",
-      ctaTrial: "Démarrer l'essai 15 jours gratuit →",
+      ctaTrial: "Démarrer l'essai 10 jours gratuit →",
       ctaDemo: "Tester en mode démo",
     },
     features: {
@@ -303,7 +303,7 @@ const fr = {
       items: [
         {
           q: "Combien de temps pour commencer ?",
-          a: "Quelques minutes : créez votre compte, ajoutez votre premier bien et profitez immédiatement de 15 jours d'essai gratuit, sans carte bancaire requise.",
+          a: "Quelques minutes : créez votre compte, ajoutez votre premier bien et profitez immédiatement de 10 jours d'essai gratuit, sans carte bancaire requise.",
         },
         {
           q: "Mes données sont-elles en sécurité ?",
@@ -326,11 +326,11 @@ const fr = {
     finalCta: {
       title: "Prêt à moderniser votre gestion locative ?",
       subtitle: "Rejoignez les gestionnaires qui ont déjà simplifié leurs quittances, leurs relances et leur suivi financier.",
-      cta: "Démarrer mon essai gratuit de 15 jours →",
+      cta: "Démarrer mon essai gratuit de 10 jours →",
     },
     pricing: {
       title: "Des formules simples et transparentes",
-      subtitle: "Toutes les formules incluent 15 jours d'essai gratuit sans carte bancaire requise.",
+      subtitle: "Toutes les formules incluent 10 jours d'essai gratuit sans carte bancaire requise.",
       perMonth: "/ mois",
       starter: {
         name: "Starter",
@@ -341,7 +341,7 @@ const fr = {
           "Rappels automatiques du 1er du mois",
           "Portail locataire inclus",
         ],
-        cta: "Démarrer l'essai 15j",
+        cta: "Démarrer l'essai 10j",
       },
       pro: {
         name: "Pro Agence",
@@ -354,7 +354,7 @@ const fr = {
           "🏢 Marque blanche (Logo & En-tête agence)",
           "💬 Messagerie directe intégrée",
         ],
-        cta: "Démarrer l'essai 15j gratuit",
+        cta: "Démarrer l'essai 10j gratuit",
       },
       enterprise: {
         name: "Entreprise",
@@ -365,7 +365,7 @@ const fr = {
           "Multi-utilisateurs & gestionnaires",
           "Export comptable automatisé",
         ],
-        cta: "Démarrer l'essai 15j",
+        cta: "Démarrer l'essai 10j",
       },
     },
     footer: {
@@ -411,9 +411,9 @@ const fr = {
     trialBanner: {
       expiredTitle: "Période d'essai expirée",
       expiredDesc:
-        "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à une formule pour continuer à utiliser l'application.",
+        "Votre période d'essai de 10 jours est terminée. Veuillez souscrire à une formule pour continuer à utiliser l'application.",
       unlockCta: "Débloquer mon compte →",
-      trialBadge: "Mode Essai 15 Jours",
+      trialBadge: "Mode Essai 10 Jours",
       lastDay: "Dernier jour d'essai !",
       oneDayLeft: "Il vous reste 1 jour d'essai",
       daysLeft: "Il vous reste {{count}} jours d'essai gratuit",
@@ -747,7 +747,7 @@ const fr = {
       subtitle: "Gérez votre formule de gestion immobilière et vos options de facturation.",
       currentStatus: "Votre statut actuel",
       planActive: "Formule {{plan}} Active",
-      trialStatus: "Période d'essai gratuit (15 jours)",
+      trialStatus: "Période d'essai gratuit (10 jours)",
       expiredStatus: "Abonnement Expiré",
       paid: "Payé",
       trialRemaining: "Essai : {{count}} j restant(s)",

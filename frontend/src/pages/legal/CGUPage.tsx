@@ -56,7 +56,7 @@ export default function CGUPage() {
           ]}
         />
         <p>
-          Chaque nouvelle inscription bénéficie d'une période d'essai gratuite de 15 jours, sans engagement et
+          Chaque nouvelle inscription bénéficie d'une période d'essai gratuite de 10 jours, sans engagement et
           sans carte bancaire requise, donnant accès à l'ensemble des fonctionnalités de la formule Pro. À
           l'issue de cette période, l'accès au Service est suspendu jusqu'à la souscription d'une formule
           payante.

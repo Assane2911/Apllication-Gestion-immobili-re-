@@ -27,7 +27,7 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: roleEnum("role").notNull(),
   currency: text("currency").notNull().default("EUR"),
-  // SaaS & Période d'essai (15 jours offerts à l'inscription pour les gestionnaires)
+  // SaaS & Période d'essai (10 jours offerts à l'inscription pour les gestionnaires)
   subscriptionStatus: subscriptionStatusEnum("subscription_status").notNull().default("TRIAL"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").notNull().default("PRO"),
   trialEndsAt: timestamp("trial_ends_at", { mode: "date" }),

@@ -47,7 +47,7 @@ export function requireRole(...roles: Array<AuthPayload["role"]>) {
 }
 
 /**
- * Middleware qui vérifie qu'un gestionnaire dispose d'une période d'essai valide (15 jours)
+ * Middleware qui vérifie qu'un gestionnaire dispose d'une période d'essai valide (10 jours)
  * ou d'un abonnement payant actif. Si expiré, bloque l'accès aux opérations de gestion.
  */
 export async function requireActiveSubscription(req: Request, _res: Response, next: NextFunction) {
@@ -77,7 +77,7 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
     return next(
       new ApiError(
         402,
-        "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à un abonnement pour continuer."
+        "Votre période d'essai de 10 jours est terminée. Veuillez souscrire à un abonnement pour continuer."
       )
     );
   }

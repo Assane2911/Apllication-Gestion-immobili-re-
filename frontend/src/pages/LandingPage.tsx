@@ -528,7 +528,7 @@ export default function LandingPage() {
               to="/inscription"
               className="bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105"
             >
-              Démarrer 15 jours d'essai gratuit →
+              Démarrer 10 jours d'essai gratuit →
             </Link>
           </div>
         </Reveal>
