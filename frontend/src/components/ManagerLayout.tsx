@@ -41,7 +41,7 @@ export default function ManagerLayout() {
         />
       )}
       <aside
-        className={`fixed sm:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-100 flex flex-col shrink-0 transform transition-transform duration-200 ease-in-out ${
+        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-screen bg-slate-900 text-slate-100 flex flex-col shrink-0 transform transition-transform duration-200 ease-in-out ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         } sm:translate-x-0`}
       >
