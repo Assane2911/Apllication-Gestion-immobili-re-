@@ -85,6 +85,9 @@ export default function ManagerLayout() {
             <CurrencySelector className="w-full" />
           </div>
           <div className="mt-2">
+            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
+              {t("common.language.label")}
+            </label>
             <LanguageSwitcher className="w-full [&>select]:w-full" />
           </div>
         </div>
