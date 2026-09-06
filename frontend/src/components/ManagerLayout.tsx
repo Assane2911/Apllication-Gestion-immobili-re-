@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
@@ -108,9 +108,18 @@ export default function ManagerLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="shrink-0 px-4 py-4 border-t border-slate-800 text-sm">
-          <p className="text-slate-300 truncate">{user?.email}</p>
-          <button onClick={logout} className="mt-2 text-xs text-slate-400 hover:text-white underline">
+        <div className="shrink-0 px-4 py-4 border-t border-slate-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-md shadow-brand-900/40">
+              {(user?.email?.[0] || "?").toUpperCase()}
+            </div>
+            <p className="text-sm text-slate-200 font-medium truncate min-w-0">{user?.email}</p>
+          </div>
+          <button
+            onClick={logout}
+            className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 bg-slate-800/60 border border-slate-700 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40 transition-colors"
+          >
+            <LogOut size={14} />
             {t("nav.logout")}
           </button>
         </div>
