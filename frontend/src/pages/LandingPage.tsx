@@ -642,7 +642,7 @@ export default function LandingPage() {
               <div>
                 <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">{t("landing.pricing.pro.name")}</span>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-white">25€</span>
+                  <span className="text-4xl font-extrabold text-white">29€</span>
                   <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.pro.desc")}</p>

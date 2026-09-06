@@ -28,8 +28,8 @@ export const SUBSCRIPTION_PLANS = [
     name: "Professionnel",
     popular: true,
     description: "Pour les gestionnaires et agences en pleine croissance.",
-    monthlyPrice: 25,
-    annualPrice: 240, // ~20€/mois
+    monthlyPrice: 29,
+    annualPrice: 278, // ~23€/mois
     maxProperties: "Illimité",
     features: [
       "Nombre de biens illimité",
