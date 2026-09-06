@@ -14,7 +14,12 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   // de la reponse, avant que Sentry ait fini d'envoyer l'evenement en tache
   // de fond (meme cause que le bug d'email non "awaite" corrige plus tot).
   // On attend explicitement la fin de l'envoi (2s max) avant de repondre.
-  await Sentry.flush(2000).catch(() => {});
+  // TEMPORAIRE (diagnostic) : on log le resultat pour savoir si l'envoi a
+  // reellement abouti (true) ou a expire sans reponse du serveur Sentry
+  // (false), ce qui distinguerait un souci reseau/egress d'un souci de
+  // configuration SDK. A retirer une fois le probleme identifie.
+  const flushed = await Sentry.flush(5000).catch(() => false);
+  console.log(`[sentry] flush() a renvoye: ${flushed}`);
 
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });

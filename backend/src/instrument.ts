@@ -12,6 +12,16 @@ import { env } from "./config/env";
 console.log(
   `[sentry] SENTRY_DSN ${env.sentryDsn ? "presente (longueur " + env.sentryDsn.length + ")" : "absente"}`
 );
+// TEMPORAIRE (diagnostic) : affiche uniquement l'hote du DSN (ex:
+// o123456.ingest.de.sentry.io), jamais la cle, pour verifier qu'il pointe
+// vers la bonne region/le bon projet Sentry.
+if (env.sentryDsn) {
+  try {
+    console.log(`[sentry] DSN host: ${new URL(env.sentryDsn).host}`);
+  } catch {
+    console.log("[sentry] DSN present mais impossible a parser comme URL");
+  }
+}
 
 if (env.sentryDsn) {
   Sentry.init({
