@@ -41,11 +41,11 @@ export default function ManagerLayout() {
         />
       )}
       <aside
-        className={`fixed sm:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-100 flex flex-col shrink-0 overflow-y-auto transform transition-transform duration-200 ease-in-out ${
+        className={`fixed sm:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-100 flex flex-col shrink-0 transform transition-transform duration-200 ease-in-out ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         } sm:translate-x-0`}
       >
-        <div className="px-5 py-6 border-b border-slate-800">
+        <div className="shrink-0 px-5 py-6 border-b border-slate-800">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md" />
@@ -91,7 +91,7 @@ export default function ManagerLayout() {
             <LanguageSwitcher className="w-full [&>select]:w-full" />
           </div>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1" onClick={() => setMobileNavOpen(false)}>
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-1" onClick={() => setMobileNavOpen(false)}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -108,7 +108,7 @@ export default function ManagerLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="px-4 py-4 border-t border-slate-800 text-sm">
+        <div className="shrink-0 px-4 py-4 border-t border-slate-800 text-sm">
           <p className="text-slate-300 truncate">{user?.email}</p>
           <button onClick={logout} className="mt-2 text-xs text-slate-400 hover:text-white underline">
             {t("nav.logout")}
