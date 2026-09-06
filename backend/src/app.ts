@@ -1,3 +1,5 @@
+import "./instrument";
+import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
 import { env } from "./config/env";
@@ -52,6 +54,12 @@ app.use("/api/cron", cronRoutes);
 app.use("/api/payments/paydunya", paydunyaRoutes);
 
 app.use(notFoundHandler);
+
+// Capture les erreurs non gerees par les routes et les envoie a Sentry, tout
+// en laissant errorHandler ci-dessous produire la reponse JSON habituelle
+// (Sentry.setupExpressErrorHandler appelle next(err) en interne).
+Sentry.setupExpressErrorHandler(app);
+
 app.use(errorHandler);
 
 // Vercel détecte automatiquement ce fichier (src/app.ts) comme point d'entrée

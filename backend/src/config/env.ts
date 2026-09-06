@@ -13,6 +13,10 @@ function required(name: string, fallback?: string): string {
 export const env = {
   port: parseInt(process.env.PORT ?? "4000", 10),
   nodeEnv: process.env.NODE_ENV ?? "development",
+
+  // Sentry (suivi d'erreurs) : DSN vide => Sentry.init() ne fait rien
+  // (voir instrument.ts), donc aucune config requise en local/dev.
+  sentryDsn: process.env.SENTRY_DSN ?? "",
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:5173",
 
   // URL publique de CE backend, nécessaire pour construire le callback_url
