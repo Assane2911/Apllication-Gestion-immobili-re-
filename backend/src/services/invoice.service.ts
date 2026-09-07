@@ -1,5 +1,5 @@
 import { and, eq, lt } from "drizzle-orm";
-import { db } from "../db/client";
+import { db, DbClient } from "../db/client";
 import { contracts, invoices } from "../db/schema";
 
 type Contract = typeof contracts.$inferSelect;
@@ -10,7 +10,7 @@ type Contract = typeof contracts.$inferSelect;
  * elle est déjà passée). Idempotent grâce à l'index unique
  * (contractId, mois, année) — sûr à appeler plusieurs fois.
  */
-export async function generateInvoicesForContract(contract: Contract, dbClient: any = db) {
+export async function generateInvoicesForContract(contract: Contract, dbClient: DbClient = db) {
   const start = new Date(contract.startDate);
   const end = new Date(contract.endDate);
   const today = new Date();

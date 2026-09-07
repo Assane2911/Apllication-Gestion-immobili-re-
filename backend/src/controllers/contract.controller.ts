@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { contracts, invoices, issueReports, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
@@ -66,7 +66,7 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   // Ces trois écritures doivent rester cohérentes entre elles : si l'une
   // échoue, on ne veut ni contrat orphelin, ni bien marqué occupé sans
   // contrat, ni contrat actif sans aucune facture générée.
-  const contract = await db.transaction(async (tx: any) => {
+  const contract = await db.transaction(async (tx: Transaction) => {
     const [created] = await tx.insert(contracts).values(body).returning();
     await tx.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
     await generateInvoicesForContract(created, tx);
@@ -147,7 +147,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   // Suppression en cascade + mise à jour du statut du bien : tout ou rien,
   // pour ne jamais laisser un contrat supprimé avec un bien resté OCCUPIED
   // (ou l'inverse) si une étape échoue en cours de route.
-  await db.transaction(async (tx: any) => {
+  await db.transaction(async (tx: Transaction) => {
     await tx.delete(invoices).where(eq(invoices.contractId, req.params.id));
     await tx.delete(issueReports).where(eq(issueReports.contractId, req.params.id));
     await tx.delete(contracts).where(eq(contracts.id, req.params.id));
@@ -225,7 +225,7 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   // Le nouveau contrat, la clôture de l'ancien et la génération des factures
   // doivent réussir ensemble : sans transaction, un échec en cours de route
   // pouvait laisser DEUX contrats ACTIFS simultanément sur le même bien.
-  const newContract = await db.transaction(async (tx: any) => {
+  const newContract = await db.transaction(async (tx: Transaction) => {
     const [created] = await tx
       .insert(contracts)
       .values({

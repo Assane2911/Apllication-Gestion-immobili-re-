@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { and, desc, eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { contracts, issueReports, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
@@ -149,7 +149,7 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
   // Les deux écritures doivent réussir ensemble : sans transaction, un échec
   // de la seconde laissait un compte de connexion valide mais jamais relié
   // à aucun locataire (userId manquant sur tenants).
-  const user = await db.transaction(async (tx: any) => {
+  const user = await db.transaction(async (tx: Transaction) => {
     const [created] = await tx
       .insert(users)
       .values({ email: tenant.email, passwordHash, role: "TENANT" })

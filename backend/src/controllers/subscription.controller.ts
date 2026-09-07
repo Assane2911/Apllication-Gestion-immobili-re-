@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
 import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -130,7 +130,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   // Active l'abonnement ET enregistre l'historique de facturation ensemble :
   // sans transaction, un échec du second insert laissait un abonnement actif
   // sans aucune trace d'audit/facturation correspondante.
-  const { updatedUser, subscriptionRecord } = await db.transaction(async (tx: any) => {
+  const { updatedUser, subscriptionRecord } = await db.transaction(async (tx: Transaction) => {
     const [updatedUser] = await tx
       .update(users)
       .set({
