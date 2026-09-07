@@ -63,10 +63,15 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
   if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
-  const [contract] = await db.insert(contracts).values(body).returning();
-
-  await db.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
-  await generateInvoicesForContract(contract);
+  // Ces trois écritures doivent rester cohérentes entre elles : si l'une
+  // échoue, on ne veut ni contrat orphelin, ni bien marqué occupé sans
+  // contrat, ni contrat actif sans aucune facture générée.
+  const contract = await db.transaction(async (tx: any) => {
+    const [created] = await tx.insert(contracts).values(body).returning();
+    await tx.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
+    await generateInvoicesForContract(created, tx);
+    return created;
+  });
 
   await logActivity({
     req,
@@ -139,15 +144,20 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
   if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Contrat introuvable");
 
-  await db.delete(invoices).where(eq(invoices.contractId, req.params.id));
-  await db.delete(issueReports).where(eq(issueReports.contractId, req.params.id));
-  await db.delete(contracts).where(eq(contracts.id, req.params.id));
+  // Suppression en cascade + mise à jour du statut du bien : tout ou rien,
+  // pour ne jamais laisser un contrat supprimé avec un bien resté OCCUPIED
+  // (ou l'inverse) si une étape échoue en cours de route.
+  await db.transaction(async (tx: any) => {
+    await tx.delete(invoices).where(eq(invoices.contractId, req.params.id));
+    await tx.delete(issueReports).where(eq(issueReports.contractId, req.params.id));
+    await tx.delete(contracts).where(eq(contracts.id, req.params.id));
 
-  const propertyContracts = await db.select().from(contracts).where(eq(contracts.propertyId, existing.propertyId));
-  const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
-  if (stillActive === 0) {
-    await db.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, existing.propertyId));
-  }
+    const propertyContracts = await tx.select().from(contracts).where(eq(contracts.propertyId, existing.propertyId));
+    const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
+    if (stillActive === 0) {
+      await tx.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, existing.propertyId));
+    }
+  });
 
   await logActivity({
     req,
@@ -212,22 +222,28 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   const newEnd = new Date(newStart);
   newEnd.setMonth(newEnd.getMonth() + months);
 
-  const [newContract] = await db
-    .insert(contracts)
-    .values({
-      propertyId: existing.propertyId,
-      tenantId: existing.tenantId,
-      rent: existing.rent,
-      deposit: existing.deposit,
-      currency: existing.currency,
-      startDate: newStart,
-      endDate: newEnd,
-      status: "ACTIVE",
-    })
-    .returning();
+  // Le nouveau contrat, la clôture de l'ancien et la génération des factures
+  // doivent réussir ensemble : sans transaction, un échec en cours de route
+  // pouvait laisser DEUX contrats ACTIFS simultanément sur le même bien.
+  const newContract = await db.transaction(async (tx: any) => {
+    const [created] = await tx
+      .insert(contracts)
+      .values({
+        propertyId: existing.propertyId,
+        tenantId: existing.tenantId,
+        rent: existing.rent,
+        deposit: existing.deposit,
+        currency: existing.currency,
+        startDate: newStart,
+        endDate: newEnd,
+        status: "ACTIVE",
+      })
+      .returning();
 
-  await db.update(contracts).set({ status: "ENDED" }).where(eq(contracts.id, existing.id));
-  await generateInvoicesForContract(newContract);
+    await tx.update(contracts).set({ status: "ENDED" }).where(eq(contracts.id, existing.id));
+    await generateInvoicesForContract(created, tx);
+    return created;
+  });
 
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
   await logActivity({

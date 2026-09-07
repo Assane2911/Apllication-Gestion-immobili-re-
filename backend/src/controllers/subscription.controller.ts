@@ -127,33 +127,38 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
     endDate.setMonth(endDate.getMonth() + 1);
   }
 
-  // Active l'abonnement pour le gestionnaire
-  const [updatedUser] = await db
-    .update(users)
-    .set({
-      subscriptionStatus: "ACTIVE",
-      subscriptionPlan: body.plan,
-      subscriptionEndsAt: endDate,
-      subscriptionPaymentMethod: body.paymentMethod,
-    })
-    .where(eq(users.id, user.id))
-    .returning();
+  // Active l'abonnement ET enregistre l'historique de facturation ensemble :
+  // sans transaction, un échec du second insert laissait un abonnement actif
+  // sans aucune trace d'audit/facturation correspondante.
+  const { updatedUser, subscriptionRecord } = await db.transaction(async (tx: any) => {
+    const [updatedUser] = await tx
+      .update(users)
+      .set({
+        subscriptionStatus: "ACTIVE",
+        subscriptionPlan: body.plan,
+        subscriptionEndsAt: endDate,
+        subscriptionPaymentMethod: body.paymentMethod,
+      })
+      .where(eq(users.id, user.id))
+      .returning();
 
-  // Enregistre l'historique de facturation de la plateforme
-  const [subscriptionRecord] = await db
-    .insert(platformSubscriptions)
-    .values({
-      userId: user.id,
-      plan: body.plan,
-      amount,
-      billingCycle: body.billingCycle,
-      status: paymentResult.status === "PAID" ? "PAID" : "PENDING",
-      paymentMethod: body.paymentMethod,
-      paymentRef: paymentResult.reference,
-      startDate: now,
-      endDate,
-    })
-    .returning();
+    const [subscriptionRecord] = await tx
+      .insert(platformSubscriptions)
+      .values({
+        userId: user.id,
+        plan: body.plan,
+        amount,
+        billingCycle: body.billingCycle,
+        status: paymentResult.status === "PAID" ? "PAID" : "PENDING",
+        paymentMethod: body.paymentMethod,
+        paymentRef: paymentResult.reference,
+        startDate: now,
+        endDate,
+      })
+      .returning();
+
+    return { updatedUser, subscriptionRecord };
+  });
 
   const subscriptionInfo = computeSubscriptionInfo(updatedUser);
 

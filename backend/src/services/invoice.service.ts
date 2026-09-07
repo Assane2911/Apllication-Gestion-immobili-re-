@@ -10,7 +10,7 @@ type Contract = typeof contracts.$inferSelect;
  * elle est déjà passée). Idempotent grâce à l'index unique
  * (contractId, mois, année) — sûr à appeler plusieurs fois.
  */
-export async function generateInvoicesForContract(contract: Contract) {
+export async function generateInvoicesForContract(contract: Contract, dbClient: any = db) {
   const start = new Date(contract.startDate);
   const end = new Date(contract.endDate);
   const today = new Date();
@@ -19,7 +19,7 @@ export async function generateInvoicesForContract(contract: Contract) {
   const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
   const created: string[] = [];
 
-  const existingInvoices = await db.select().from(invoices).where(eq(invoices.contractId, contract.id));
+  const existingInvoices = await dbClient.select().from(invoices).where(eq(invoices.contractId, contract.id));
   const existingKeys = new Set(existingInvoices.map((i: typeof invoices.$inferSelect) => `${i.periodMonth}-${i.periodYear}`));
 
   while (cursor <= cutoff) {
@@ -28,7 +28,7 @@ export async function generateInvoicesForContract(contract: Contract) {
     const dueDate = new Date(periodYear, periodMonth - 1, start.getDate() || 1);
 
     if (!existingKeys.has(`${periodMonth}-${periodYear}`)) {
-      const [invoice] = await db
+      const [invoice] = await dbClient
         .insert(invoices)
         .values({
           contractId: contract.id,

@@ -145,12 +145,18 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
   if (existingUser) throw new ApiError(409, "Un compte existe déjà pour cet email");
 
   const passwordHash = await bcrypt.hash(body.password, 10);
-  const [user] = await db
-    .insert(users)
-    .values({ email: tenant.email, passwordHash, role: "TENANT" })
-    .returning();
 
-  await db.update(tenants).set({ userId: user.id }).where(eq(tenants.id, tenant.id));
+  // Les deux écritures doivent réussir ensemble : sans transaction, un échec
+  // de la seconde laissait un compte de connexion valide mais jamais relié
+  // à aucun locataire (userId manquant sur tenants).
+  const user = await db.transaction(async (tx: any) => {
+    const [created] = await tx
+      .insert(users)
+      .values({ email: tenant.email, passwordHash, role: "TENANT" })
+      .returning();
+    await tx.update(tenants).set({ userId: created.id }).where(eq(tenants.id, tenant.id));
+    return created;
+  });
 
   res.status(201).json({ message: "Accès portail créé", userId: user.id, email: user.email });
 });
