@@ -47,6 +47,12 @@ const en: TranslationSchema = {
       label: "Language",
       selectAria: "Change language",
     },
+    pagination: {
+      previous: "Previous",
+      next: "Next",
+      pageOf: "Page {{page}} of {{totalPages}}",
+      totalItems: "{{count}} total",
+    },
   },
 
   nav: {

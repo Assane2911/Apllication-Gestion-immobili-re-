@@ -47,6 +47,12 @@ const pt: TranslationSchema = {
       label: "Idioma",
       selectAria: "Mudar de idioma",
     },
+    pagination: {
+      previous: "Anterior",
+      next: "Próximo",
+      pageOf: "Página {{page}} de {{totalPages}}",
+      totalItems: "{{count}} no total",
+    },
   },
 
   nav: {

@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/CurrencyContext";
-import type { Expense, ExpenseCategory, Property } from "../../types";
+import type { Expense, ExpenseCategory, PaginatedResponse, Property } from "../../types";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
   return { from: `${year}-01-01`, to: `${year}-12-31` };
 }
+
+const PAGE_SIZE = 20;
+// Pour le filtre "par bien" : on ne le pagine pas comme la liste principale,
+// on demande juste large.
+const DROPDOWN_PAGE_SIZE = 100;
 
 const categoryColors: Record<ExpenseCategory, string> = {
   MAINTENANCE: "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300",
@@ -40,6 +46,9 @@ export default function ExpensesPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState(currentYearRange());
   const [exportingReport, setExportingReport] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const categoryLabels: Record<ExpenseCategory, string> = {
     MAINTENANCE: t("manager.expenses.categories.MAINTENANCE"),
@@ -60,16 +69,18 @@ export default function ExpensesPage() {
 
   function loadData() {
     Promise.all([
-      api.get<Property[]>("/properties"),
+      api.get<PaginatedResponse<Property>>("/properties", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
       api.get<FinancialSummary>("/expenses/summary"),
-      api.get<Expense[]>("/expenses", {
-        params: selectedPropertyId ? { propertyId: selectedPropertyId } : {},
+      api.get<PaginatedResponse<Expense>>("/expenses", {
+        params: { page, pageSize: PAGE_SIZE, ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {}) },
       }),
     ])
       .then(([propertiesRes, summaryRes, expensesRes]) => {
-        setProperties(propertiesRes.data);
+        setProperties(propertiesRes.data.items);
         setSummary(summaryRes.data);
-        setExpenses(expensesRes.data);
+        setExpenses(expensesRes.data.items);
+        setTotal(expensesRes.data.total);
+        setTotalPages(expensesRes.data.totalPages);
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)));
@@ -77,7 +88,12 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     loadData();
-  }, [selectedPropertyId]);
+  }, [selectedPropertyId, page]);
+
+  function handlePropertyFilterChange(value: string) {
+    setSelectedPropertyId(value);
+    setPage(1);
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -238,7 +254,7 @@ export default function ExpensesPage() {
           <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.filterByProperty")}</label>
           <select
             value={selectedPropertyId}
-            onChange={(e) => setSelectedPropertyId(e.target.value)}
+            onChange={(e) => handlePropertyFilterChange(e.target.value)}
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="">{t("manager.expenses.allProperties")}</option>
@@ -249,7 +265,7 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.expenses.expenseLines", { count: expenses.length })}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.expenses.expenseLines", { count: total })}</p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
@@ -330,6 +346,8 @@ export default function ExpensesPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">

@@ -45,6 +45,12 @@ const fr = {
       label: "Langue",
       selectAria: "Changer de langue",
     },
+    pagination: {
+      previous: "Précédent",
+      next: "Suivant",
+      pageOf: "Page {{page}} sur {{totalPages}}",
+      totalItems: "{{count}} au total",
+    },
   },
 
   nav: {

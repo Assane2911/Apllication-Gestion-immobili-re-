@@ -3,12 +3,15 @@ import { Trans, useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
+import Pagination from "../../components/Pagination";
 import { useCurrency } from "../../context/CurrencyContext";
-import type { Invoice, InvoiceStatus } from "../../types";
+import type { Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "short" }).format(new Date(2000, monthIndex1to12 - 1, 1));
 }
+
+const PAGE_SIZE = 20;
 
 export default function InvoicesPage() {
   const { t, i18n } = useTranslation();
@@ -20,6 +23,9 @@ export default function InvoicesPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const methodLabels: Record<string, string> = {
     STRIPE: t("common.paymentMethods.STRIPE"),
@@ -30,12 +36,23 @@ export default function InvoicesPage() {
 
   function load() {
     api
-      .get<Invoice[]>("/invoices")
-      .then((res) => setInvoices(res.data))
+      .get<PaginatedResponse<Invoice>>("/invoices", {
+        params: { page, pageSize: PAGE_SIZE, ...(filter !== "ALL" ? { status: filter } : {}) },
+      })
+      .then((res) => {
+        setInvoices(res.data.items);
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+      })
       .catch((err) => setError(apiErrorMessage(err)));
   }
 
-  useEffect(load, []);
+  useEffect(load, [page, filter]);
+
+  function handleFilterChange(value: InvoiceStatus | "ALL") {
+    setFilter(value);
+    setPage(1);
+  }
 
   async function markPaid(inv: Invoice) {
     try {
@@ -81,8 +98,6 @@ export default function InvoicesPage() {
     }
   }
 
-  const filtered = filter === "ALL" ? invoices : invoices.filter((i) => i.status === filter);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -94,7 +109,7 @@ export default function InvoicesPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <select
             value={filter}
-            onChange={(e) => setFilter(e.target.value as InvoiceStatus | "ALL")}
+            onChange={(e) => handleFilterChange(e.target.value as InvoiceStatus | "ALL")}
             className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 dark:text-slate-100 shadow-sm"
           >
             <option value="ALL">{t("manager.invoices.filterAll")}</option>
@@ -154,7 +169,7 @@ export default function InvoicesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {filtered.map((inv) => (
+            {invoices.map((inv) => (
               <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                 <td className="px-4 py-3.5 text-slate-900 dark:text-slate-100 font-medium">
                   {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
@@ -205,7 +220,7 @@ export default function InvoicesPage() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {invoices.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
                   {t("manager.invoices.noInvoicesForFilter")}
@@ -218,12 +233,12 @@ export default function InvoicesPage() {
 
       {/* Vue cartes empilées (mobile, < sm) */}
       <div className="sm:hidden space-y-3">
-        {filtered.length === 0 ? (
+        {invoices.length === 0 ? (
           <p className="text-center text-slate-400 dark:text-slate-500 text-sm py-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
             {t("manager.invoices.noInvoicesForFilter")}
           </p>
         ) : (
-          filtered.map((inv) => (
+          invoices.map((inv) => (
             <div key={inv.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -277,6 +292,8 @@ export default function InvoicesPage() {
           ))
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {activeReceiptInvoice && (
         <DocumentModal

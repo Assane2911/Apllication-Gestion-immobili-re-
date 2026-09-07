@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
+import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
-import type { Tenant } from "../../types";
+import type { PaginatedResponse, Tenant } from "../../types";
 
 const emptyForm = { firstName: "", lastName: "", phone: "", email: "" };
+const PAGE_SIZE = 20;
 
 export default function TenantsPage() {
   const { t } = useTranslation();
@@ -21,19 +23,24 @@ export default function TenantsPage() {
   const [portalTenant, setPortalTenant] = useState<Tenant | null>(null);
   const [portalPassword, setPortalPassword] = useState("");
   const [portalMsg, setPortalMsg] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   function load() {
     api
-      .get<Tenant[]>("/tenants")
+      .get<PaginatedResponse<Tenant>>("/tenants", { params: { page, pageSize: PAGE_SIZE } })
       .then((res) => {
-        setTenants(res.data);
+        setTenants(res.data.items);
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []);
+  useEffect(load, [page]);
 
   function openCreate() {
     setEditing(null);
@@ -288,6 +295,8 @@ export default function TenantsPage() {
               </div>
             ))}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
       </>
       )}
     </div>

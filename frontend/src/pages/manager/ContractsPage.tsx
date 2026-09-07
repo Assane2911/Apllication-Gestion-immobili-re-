@@ -3,15 +3,20 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
+import Pagination from "../../components/Pagination";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/CurrencyContext";
-import type { Contract, ContractStatus, Property, Tenant } from "../../types";
+import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 
 const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "" };
 
 // Fenêtre d'affichage du workflow de renouvellement : un contrat actif dont
 // la fin tombe dans ce nombre de jours ou moins propose de renouveler ou non.
 const RENEWAL_WINDOW_DAYS = 14;
+const PAGE_SIZE = 20;
+// Pour les listes déroulantes (bien/locataire) du formulaire de création : on
+// ne les paginé pas comme la liste principale, on demande juste large.
+const DROPDOWN_PAGE_SIZE = 100;
 
 function formatDate(d: string, locale: string) {
   return new Date(d).toLocaleDateString(locale);
@@ -36,23 +41,28 @@ export default function ContractsPage() {
 
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   function load() {
     Promise.all([
-      api.get<Contract[]>("/contracts"),
-      api.get<Property[]>("/properties"),
-      api.get<Tenant[]>("/tenants"),
+      api.get<PaginatedResponse<Contract>>("/contracts", { params: { page, pageSize: PAGE_SIZE } }),
+      api.get<PaginatedResponse<Property>>("/properties", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
+      api.get<PaginatedResponse<Tenant>>("/tenants", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
     ])
       .then(([contractsRes, propertiesRes, tenantsRes]) => {
-        setContracts(contractsRes.data);
-        setProperties(propertiesRes.data);
-        setTenants(tenantsRes.data);
+        setContracts(contractsRes.data.items);
+        setTotal(contractsRes.data.total);
+        setTotalPages(contractsRes.data.totalPages);
+        setProperties(propertiesRes.data.items);
+        setTenants(tenantsRes.data.items);
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)));
   }
 
-  useEffect(load, []);
+  useEffect(load, [page]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -354,6 +364,8 @@ export default function ContractsPage() {
           );
         })}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {signingContract && (
         <SignatureModal

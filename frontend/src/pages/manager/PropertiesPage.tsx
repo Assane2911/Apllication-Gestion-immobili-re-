@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
+import Pagination from "../../components/Pagination";
 import { PropertyCardSkeleton } from "../../components/Skeleton";
 import { useCurrency } from "../../context/CurrencyContext";
-import type { Property, PropertyStatus } from "../../types";
+import type { PaginatedResponse, Property, PropertyStatus } from "../../types";
 
 const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAILABLE" as PropertyStatus, description: "" };
+const PAGE_SIZE = 20;
 
 export default function PropertiesPage() {
   const { t } = useTranslation();
@@ -22,19 +24,24 @@ export default function PropertiesPage() {
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   function load() {
     api
-      .get<Property[]>("/properties")
+      .get<PaginatedResponse<Property>>("/properties", { params: { page, pageSize: PAGE_SIZE } })
       .then((res) => {
-        setProperties(res.data);
+        setProperties(res.data.items);
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []);
+  useEffect(load, [page]);
 
   function openCreate() {
     setEditing(null);
@@ -212,6 +219,8 @@ export default function PropertiesPage() {
         ))}
       </div>
       )}
+
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
     </div>
   );
 }

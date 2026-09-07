@@ -222,3 +222,10 @@ export interface DashboardStats {
   expensesByMonth: Record<string, number>;
 }
 
+export interface PaginatedResponse<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}

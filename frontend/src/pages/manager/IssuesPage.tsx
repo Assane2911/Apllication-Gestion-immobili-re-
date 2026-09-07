@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
-import type { IssueReport, IssueStatus } from "../../types";
+import Pagination from "../../components/Pagination";
+import type { IssueReport, IssueStatus, PaginatedResponse } from "../../types";
 
 const statusOptions: IssueStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"];
+const PAGE_SIZE = 20;
 
 export default function IssuesPage() {
   const { t, i18n } = useTranslation();
@@ -13,18 +15,30 @@ export default function IssuesPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   function load() {
     api
-      .get<IssueReport[]>("/issues")
+      .get<PaginatedResponse<IssueReport>>("/issues", {
+        params: { page, pageSize: PAGE_SIZE, ...(filter !== "ALL" ? { status: filter } : {}) },
+      })
       .then((res) => {
-        setIssues(res.data);
+        setIssues(res.data.items);
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)));
   }
 
-  useEffect(load, []);
+  useEffect(load, [page, filter]);
+
+  function handleFilterChange(value: IssueStatus | "ALL") {
+    setFilter(value);
+    setPage(1);
+  }
 
   async function updateStatus(issue: IssueReport, status: IssueStatus) {
     try {
@@ -51,8 +65,6 @@ export default function IssuesPage() {
     return list;
   }
 
-  const filtered = filter === "ALL" ? issues : issues.filter((i) => i.status === filter);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -64,7 +76,7 @@ export default function IssuesPage() {
         </div>
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value as IssueStatus | "ALL")}
+          onChange={(e) => handleFilterChange(e.target.value as IssueStatus | "ALL")}
           className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
         >
           <option value="ALL">{t("manager.issues.allStatuses")}</option>
@@ -86,7 +98,7 @@ export default function IssuesPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filtered.map((issue) => {
+        {issues.map((issue) => {
           const allPhotos = getAllPhotos(issue);
           return (
             <div key={issue.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
@@ -174,12 +186,14 @@ export default function IssuesPage() {
           );
         })}
 
-        {filtered.length === 0 && (
+        {issues.length === 0 && (
           <p className="text-slate-400 dark:text-slate-500 text-sm col-span-2 text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
             {t("manager.issues.noIssuesForFilter")}
           </p>
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {lightbox && (
         <div
