@@ -7,22 +7,6 @@ import { env } from "./config/env";
 // DSN vide (par défaut si SENTRY_DSN n'est pas configuré sur Vercel) : Sentry
 // reste totalement inactif, aucune donnée n'est envoyée nulle part. Ça permet
 // de ne rien casser en local/dev tant que la variable n'est pas renseignée.
-// TEMPORAIRE (diagnostic) : confirme dans les logs Vercel que la variable
-// est bien lue, sans jamais afficher sa valeur complete.
-console.log(
-  `[sentry] SENTRY_DSN ${env.sentryDsn ? "presente (longueur " + env.sentryDsn.length + ")" : "absente"}`
-);
-// TEMPORAIRE (diagnostic) : affiche uniquement l'hote du DSN (ex:
-// o123456.ingest.de.sentry.io), jamais la cle, pour verifier qu'il pointe
-// vers la bonne region/le bon projet Sentry.
-if (env.sentryDsn) {
-  try {
-    console.log(`[sentry] DSN host: ${new URL(env.sentryDsn).host}`);
-  } catch {
-    console.log("[sentry] DSN present mais impossible a parser comme URL");
-  }
-}
-
 if (env.sentryDsn) {
   Sentry.init({
     dsn: env.sentryDsn,
@@ -31,9 +15,5 @@ if (env.sentryDsn) {
     // suffisant pour repérer les lenteurs sans consommer tout le quota gratuit.
     tracesSampleRate: 0.1,
     sendDefaultPii: false,
-    // TEMPORAIRE (diagnostic) : fait apparaitre dans les logs Vercel toute
-    // erreur interne du SDK (ex: DSN invalide), sinon celle-ci resterait
-    // totalement silencieuse. A retirer une fois la verification terminee.
-    debug: true,
   });
 }

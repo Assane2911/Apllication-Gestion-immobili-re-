@@ -53,12 +53,6 @@ app.use("/api/activity-log", activityLogRoutes);
 app.use("/api/cron", cronRoutes);
 app.use("/api/payments/paydunya", paydunyaRoutes);
 
-// TEMPORAIRE : route de test pour verifier que Sentry capture bien les
-// erreurs en production. A retirer juste apres verification.
-app.get("/api/_temp_sentry_test", () => {
-  throw new Error("Test Sentry ImmoPlatform Pro - verification manuelle");
-});
-
 app.use(notFoundHandler);
 
 // Capture les erreurs non gerees par les routes et les envoie a Sentry, tout
