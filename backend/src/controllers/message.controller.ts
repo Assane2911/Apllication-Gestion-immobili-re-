@@ -169,7 +169,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
         content,
         frontendUrl: env.frontendUrl,
       });
-      sendEmail(row.tenant.email, subject, html).catch((err) =>
+      await sendEmail(row.tenant.email, subject, html).catch((err) =>
         console.error("[message] Échec de l'envoi de la notification de nouveau message:", err)
       );
     }

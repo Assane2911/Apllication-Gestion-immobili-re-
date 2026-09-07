@@ -73,7 +73,7 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
 
   // Envoi de la quittance PDF par email au locataire — ne doit jamais faire
   // échouer la réponse si l'email ne part pas (SMTP non configuré, etc.).
-  sendPaymentReceiptEmail(updated.id).catch((err) =>
+  await sendPaymentReceiptEmail(updated.id).catch((err) =>
     console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
   );
 
@@ -176,7 +176,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     .returning();
 
   if (updated.status === "PAID") {
-    sendPaymentReceiptEmail(updated.id).catch((err) =>
+    await sendPaymentReceiptEmail(updated.id).catch((err) =>
       console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
     );
   }

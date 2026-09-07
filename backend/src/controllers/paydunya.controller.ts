@@ -74,7 +74,7 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
       .where(eq(invoices.paymentRef, paydunyaToken))
       .returning();
     if (updated) {
-      sendPaymentReceiptEmail(updated.id).catch((err) =>
+      await sendPaymentReceiptEmail(updated.id).catch((err) =>
         console.error("[paydunya] Échec de l'envoi de la quittance après confirmation IPN:", err)
       );
     } else {

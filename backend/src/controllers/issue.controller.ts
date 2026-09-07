@@ -72,7 +72,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
       managerNote: updated.managerNote,
       frontendUrl: env.frontendUrl,
     });
-    sendEmail(row.tenant.email, subject, html).catch((err) =>
+    await sendEmail(row.tenant.email, subject, html).catch((err) =>
       console.error("[issue] Échec de l'envoi de la notification de statut:", err)
     );
   }
