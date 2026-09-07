@@ -14,7 +14,7 @@ export async function initDb() {
         password_hash TEXT NOT NULL,
         role TEXT NOT NULL CHECK (role IN ('MANAGER', 'TENANT')),
         subscription_status TEXT NOT NULL DEFAULT 'TRIAL' CHECK (subscription_status IN ('TRIAL', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
-        subscription_plan TEXT NOT NULL DEFAULT 'PRO' CHECK (subscription_plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
+        subscription_plan TEXT NOT NULL DEFAULT 'STARTER' CHECK (subscription_plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
         trial_ends_at TIMESTAMP,
         subscription_ends_at TIMESTAMP,
         subscription_payment_method TEXT CHECK (subscription_payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO')),
@@ -25,7 +25,7 @@ export async function initDb() {
 
     // Ensure columns exist on existing databases
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'TRIAL'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'PRO'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'STARTER'`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_method TEXT`); } catch {}

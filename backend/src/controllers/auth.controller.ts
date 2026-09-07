@@ -91,7 +91,11 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
       passwordHash,
       role: "MANAGER",
       subscriptionStatus: "TRIAL",
-      subscriptionPlan: "PRO",
+      // Le nouveau compte n'a choisi aucun plan : on demarre sur le plan de
+      // base (STARTER), pas sur "PRO" (bug precedent qui attribuait le plan
+      // le plus cher a tout le monde des l'inscription, avant meme qu'un
+      // choix ou un paiement ait eu lieu).
+      subscriptionPlan: "STARTER",
       trialEndsAt,
       emailVerificationTokenHash,
       emailVerificationExpiresAt,
