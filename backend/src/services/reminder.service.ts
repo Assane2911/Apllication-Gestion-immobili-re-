@@ -5,7 +5,7 @@ import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
-import { generateInvoicesForContract } from "./invoice.service";
+import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 
 /**
  * Recherche les contrats ACTIFS dont la date de fin tombe exactement dans
@@ -149,6 +149,15 @@ export async function runRentDueReminders(managerId?: string) {
  * Idempotent via `dueSoonReminderSentAt` (distinct de `reminderSentAt`).
  */
 export async function runUpcomingRentDueReminders() {
+  // Repasse d'abord en LATE les factures PENDING dont l'échéance est déjà
+  // dépassée — sans cet appel (auparavant jamais déclenché nulle part),
+  // une facture en retard ne changeait jamais de statut automatiquement et
+  // le compteur d'impayés du tableau de bord sous-estimait la réalité.
+  const overdueCount = await markOverdueInvoices();
+  if (overdueCount > 0) {
+    console.log(`[reminder] ${overdueCount} facture(s) passée(s) en retard (LATE).`);
+  }
+
   const daysBefore = env.reminder.rentDueSoonDays;
   const now = new Date();
   const targetStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 0, 0, 0);

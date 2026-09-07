@@ -4,6 +4,29 @@ import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueRemi
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 /**
+ * Vérifie l'autorisation d'un appel aux routes cron. Si CRON_SECRET est
+ * configuré, on exige `Authorization: Bearer <secret>` (c'est ce que Vercel
+ * Cron Jobs envoie automatiquement). Si CRON_SECRET n'est PAS configuré :
+ * on bloque en production (fail-closed — un oubli de configuration ne doit
+ * jamais laisser une route capable d'envoyer des emails en masse ouverte à
+ * n'importe qui), et on se contente d'un avertissement en développement
+ * local pour ne pas gêner les tests.
+ */
+function assertCronAuthorized(req: Request) {
+  if (env.cronSecret) {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${env.cronSecret}`) {
+      throw new ApiError(401, "Non autorisé");
+    }
+    return;
+  }
+  if (env.nodeEnv === "production") {
+    throw new ApiError(500, "CRON_SECRET non configuré : route désactivée par sécurité.");
+  }
+  console.warn("[cron] CRON_SECRET non configuré (développement) : route non protégée.");
+}
+
+/**
  * Déclenché par Vercel Cron Jobs (voir vercel.json) une fois par jour.
  * Vercel envoie automatiquement `Authorization: Bearer <CRON_SECRET>` quand
  * la variable d'environnement CRON_SECRET est configurée sur le projet —
@@ -14,14 +37,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
  * index.ts) — cette route sert uniquement au déploiement serverless.
  */
 export const triggerContractEndingReminders = asyncHandler(async (req: Request, res: Response) => {
-  if (env.cronSecret) {
-    const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${env.cronSecret}`) {
-      throw new ApiError(401, "Non autorisé");
-    }
-  } else {
-    console.warn("[cron] CRON_SECRET non configuré : la route /api/cron/contract-reminders n'est pas protégée.");
-  }
+  assertCronAuthorized(req);
 
   const sent = await runContractEndingReminders();
   res.json({ success: true, remindersSent: sent });
@@ -32,14 +48,7 @@ export const triggerContractEndingReminders = asyncHandler(async (req: Request, 
  * les alertes d'échéance de loyer aux locataires (délai de règlement : au plus tard le 5).
  */
 export const triggerRentDueReminders = asyncHandler(async (req: Request, res: Response) => {
-  if (env.cronSecret) {
-    const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${env.cronSecret}`) {
-      throw new ApiError(401, "Non autorisé");
-    }
-  } else {
-    console.warn("[cron] CRON_SECRET non configuré : la route /api/cron/rent-due-reminders n'est pas protégée.");
-  }
+  assertCronAuthorized(req);
 
   const result = await runRentDueReminders();
   res.json({
@@ -56,14 +65,7 @@ export const triggerRentDueReminders = asyncHandler(async (req: Request, res: Re
  * facture est encore impayée.
  */
 export const triggerUpcomingRentDueReminders = asyncHandler(async (req: Request, res: Response) => {
-  if (env.cronSecret) {
-    const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${env.cronSecret}`) {
-      throw new ApiError(401, "Non autorisé");
-    }
-  } else {
-    console.warn("[cron] CRON_SECRET non configuré : la route /api/cron/rent-due-soon-reminders n'est pas protégée.");
-  }
+  assertCronAuthorized(req);
 
   const result = await runUpcomingRentDueReminders();
   res.json({

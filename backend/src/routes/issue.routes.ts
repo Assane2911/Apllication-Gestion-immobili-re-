@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { addPhotoToIssue, createIssue, listIssues, myIssues, updateIssueStatus } from "../controllers/issue.controller";
-import { authenticate, requireRole } from "../middleware/auth";
+import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
 import { uploadIssuePhoto } from "../middleware/upload";
 
 const router = Router();
@@ -11,7 +11,7 @@ router.post("/", authenticate, requireRole("TENANT"), uploadIssuePhoto.single("p
 router.post("/:id/photo", authenticate, uploadIssuePhoto.single("photo"), addPhotoToIssue);
 
 // Gestionnaire
-router.get("/", authenticate, requireRole("MANAGER"), listIssues);
-router.put("/:id/status", authenticate, requireRole("MANAGER"), updateIssueStatus);
+router.get("/", authenticate, requireRole("MANAGER"), requireActiveSubscription, listIssues);
+router.put("/:id/status", authenticate, requireRole("MANAGER"), requireActiveSubscription, updateIssueStatus);
 
 export default router;
