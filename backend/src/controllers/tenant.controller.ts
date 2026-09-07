@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, issueReports, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
@@ -16,12 +17,21 @@ const tenantSchema = z.object({
 });
 
 export const listTenants = asyncHandler(async (req: Request, res: Response) => {
-  const rows = await db
-    .select()
-    .from(tenants)
-    .where(eq(tenants.managerId, req.user!.userId))
-    .orderBy(desc(tenants.createdAt));
-  res.json(rows);
+  const pagination = parsePagination(req);
+  const whereClause = eq(tenants.managerId, req.user!.userId);
+
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select()
+      .from(tenants)
+      .where(whereClause)
+      .orderBy(desc(tenants.createdAt))
+      .limit(pagination.pageSize)
+      .offset(pagination.offset),
+    db.select({ count: sql<number>`count(*)::int` }).from(tenants).where(whereClause),
+  ]);
+
+  res.json(buildPaginatedResult(rows, count, pagination));
 });
 
 export const getTenant = asyncHandler(async (req: Request, res: Response) => {

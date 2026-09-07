@@ -1,7 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
+import { invoiceStatusEnum } from "../db/schema";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, invoices, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
@@ -9,17 +11,18 @@ import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
-export const listInvoices = asyncHandler(async (req: Request, res: Response) => {
-  const { contractId } = req.query;
+function isInvoiceStatus(value: unknown): value is (typeof invoiceStatusEnum.enumValues)[number] {
+  return typeof value === "string" && (invoiceStatusEnum.enumValues as readonly string[]).includes(value);
+}
 
-  let rows = await db
-    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
-    .from(invoices)
-    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
-    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
-    .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(properties.managerId, req.user!.userId))
-    .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
+export const listInvoices = asyncHandler(async (req: Request, res: Response) => {
+  const pagination = parsePagination(req);
+  const { contractId, status } = req.query;
+
+  const conditions = [eq(properties.managerId, req.user!.userId)];
+  if (contractId) conditions.push(eq(invoices.contractId, String(contractId)));
+  if (isInvoiceStatus(status)) conditions.push(eq(invoices.status, status));
+  const whereClause = and(...conditions);
 
   type InvoiceRow = {
     invoice: typeof invoices.$inferSelect;
@@ -28,14 +31,34 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
     property: typeof properties.$inferSelect;
   };
 
-  if (contractId) rows = rows.filter((r: InvoiceRow) => r.invoice.contractId === String(contractId));
-  if (req.query.status) rows = rows.filter((r: InvoiceRow) => r.invoice.status === String(req.query.status));
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+      .from(invoices)
+      .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+      .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(whereClause)
+      .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth))
+      .limit(pagination.pageSize)
+      .offset(pagination.offset),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(invoices)
+      .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(whereClause),
+  ]);
 
   res.json(
-    rows.map((r: InvoiceRow) => ({
-      ...r.invoice,
-      contract: { ...r.contract, tenant: r.tenant, property: r.property },
-    }))
+    buildPaginatedResult(
+      rows.map((r: InvoiceRow) => ({
+        ...r.invoice,
+        contract: { ...r.contract, tenant: r.tenant, property: r.property },
+      })),
+      count,
+      pagination
+    )
   );
 });
 

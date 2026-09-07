@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -6,6 +6,7 @@ import { contracts, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 const propertySchema = z.object({
   title: z.string().min(2),
@@ -17,12 +18,21 @@ const propertySchema = z.object({
 });
 
 export const listProperties = asyncHandler(async (req: Request, res: Response) => {
-  const rows = await db
-    .select()
-    .from(properties)
-    .where(eq(properties.managerId, req.user!.userId))
-    .orderBy(desc(properties.createdAt));
-  res.json(rows);
+  const pagination = parsePagination(req);
+  const whereClause = eq(properties.managerId, req.user!.userId);
+
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select()
+      .from(properties)
+      .where(whereClause)
+      .orderBy(desc(properties.createdAt))
+      .limit(pagination.pageSize)
+      .offset(pagination.offset),
+    db.select({ count: sql<number>`count(*)::int` }).from(properties).where(whereClause),
+  ]);
+
+  res.json(buildPaginatedResult(rows, count, pagination));
 });
 
 export const getProperty = asyncHandler(async (req: Request, res: Response) => {

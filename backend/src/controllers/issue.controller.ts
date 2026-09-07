@@ -1,33 +1,63 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, issueReports, properties, tenants } from "../db/schema";
+import { contracts, issueReports, issueStatusEnum, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+
+function isIssueStatus(value: unknown): value is (typeof issueStatusEnum.enumValues)[number] {
+  return typeof value === "string" && (issueStatusEnum.enumValues as readonly string[]).includes(value);
+}
 
 /** Le gestionnaire voit tous les signalements (avec photo) de tous les locataires. */
 export const listIssues = asyncHandler(async (req: Request, res: Response) => {
-  let rows = await db
-    .select({ issue: issueReports, tenant: tenants, contract: contracts, property: properties })
-    .from(issueReports)
-    .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
-    .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
-    .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(properties.managerId, req.user!.userId))
-    .orderBy(desc(issueReports.createdAt));
+  const pagination = parsePagination(req);
 
-  if (req.query.status) rows = rows.filter((r: { issue: typeof issueReports.$inferSelect; tenant: typeof tenants.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => r.issue.status === String(req.query.status));
+  const conditions = [eq(properties.managerId, req.user!.userId)];
+  if (isIssueStatus(req.query.status)) conditions.push(eq(issueReports.status, req.query.status));
+  const whereClause = and(...conditions);
+
+  type IssueRow = {
+    issue: typeof issueReports.$inferSelect;
+    tenant: typeof tenants.$inferSelect;
+    contract: typeof contracts.$inferSelect;
+    property: typeof properties.$inferSelect;
+  };
+
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select({ issue: issueReports, tenant: tenants, contract: contracts, property: properties })
+      .from(issueReports)
+      .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
+      .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(whereClause)
+      .orderBy(desc(issueReports.createdAt))
+      .limit(pagination.pageSize)
+      .offset(pagination.offset),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(issueReports)
+      .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(whereClause),
+  ]);
 
   res.json(
-    rows.map((r: { issue: typeof issueReports.$inferSelect; tenant: typeof tenants.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
-      ...r.issue,
-      tenant: r.tenant,
-      contract: { ...r.contract, property: r.property },
-    }))
+    buildPaginatedResult(
+      rows.map((r: IssueRow) => ({
+        ...r.issue,
+        tenant: r.tenant,
+        contract: { ...r.contract, property: r.property },
+      })),
+      count,
+      pagination
+    )
   );
 });
 

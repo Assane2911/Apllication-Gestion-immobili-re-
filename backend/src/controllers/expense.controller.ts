@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -16,27 +17,37 @@ const createExpenseSchema = z.object({
 });
 
 export const listExpenses = asyncHandler(async (req: Request, res: Response) => {
+  const pagination = parsePagination(req);
   const { propertyId } = req.query;
 
-  let rows = await db
-    .select({
-      expense: expenses,
-      property: properties,
-    })
-    .from(expenses)
-    .innerJoin(properties, eq(expenses.propertyId, properties.id))
-    .where(eq(properties.managerId, req.user!.userId))
-    .orderBy(desc(expenses.expenseDate));
+  const conditions = [eq(properties.managerId, req.user!.userId)];
+  if (propertyId) conditions.push(eq(expenses.propertyId, String(propertyId)));
+  const whereClause = and(...conditions);
 
-  if (propertyId) {
-    rows = rows.filter((r: { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect }) => r.expense.propertyId === String(propertyId));
-  }
+  type ExpenseRow = { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect };
+
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select({ expense: expenses, property: properties })
+      .from(expenses)
+      .innerJoin(properties, eq(expenses.propertyId, properties.id))
+      .where(whereClause)
+      .orderBy(desc(expenses.expenseDate))
+      .limit(pagination.pageSize)
+      .offset(pagination.offset),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(expenses)
+      .innerJoin(properties, eq(expenses.propertyId, properties.id))
+      .where(whereClause),
+  ]);
 
   res.json(
-    rows.map((r: { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect }) => ({
-      ...r.expense,
-      property: r.property,
-    }))
+    buildPaginatedResult(
+      rows.map((r: ExpenseRow) => ({ ...r.expense, property: r.property })),
+      count,
+      pagination
+    )
   );
 });
 

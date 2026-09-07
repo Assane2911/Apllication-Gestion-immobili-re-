@@ -1,7 +1,8 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, invoices, issueReports, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
@@ -34,15 +35,37 @@ async function withRelations(contractId: string) {
 }
 
 export const listContracts = asyncHandler(async (req: Request, res: Response) => {
-  const rows = await db
-    .select({ contract: contracts, property: properties, tenant: tenants })
-    .from(contracts)
-    .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
-    .where(eq(properties.managerId, req.user!.userId))
-    .orderBy(desc(contracts.createdAt));
+  const pagination = parsePagination(req);
+  const whereClause = eq(properties.managerId, req.user!.userId);
 
-  res.json(rows.map((r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({ ...r.contract, property: r.property, tenant: r.tenant })));
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select({ contract: contracts, property: properties, tenant: tenants })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+      .where(whereClause)
+      .orderBy(desc(contracts.createdAt))
+      .limit(pagination.pageSize)
+      .offset(pagination.offset),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(whereClause),
+  ]);
+
+  res.json(
+    buildPaginatedResult(
+      rows.map((r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
+        ...r.contract,
+        property: r.property,
+        tenant: r.tenant,
+      })),
+      count,
+      pagination
+    )
+  );
 });
 
 export const getContract = asyncHandler(async (req: Request, res: Response) => {
