@@ -14,14 +14,19 @@ export default function MessagesPage() {
   const [newText, setNewText] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function loadConversations() {
-    api.get<Conversation[]>("/messages/conversations").then((res) => {
-      setConversations(res.data);
-      if (!selectedContractId && res.data.length > 0) {
-        setSelectedContractId(res.data[0].contractId);
-      }
-    });
+    api
+      .get<Conversation[]>("/messages/conversations")
+      .then((res) => {
+        setConversations(res.data);
+        if (!selectedContractId && res.data.length > 0) {
+          setSelectedContractId(res.data[0].contractId);
+        }
+        setError(null);
+      })
+      .catch((err) => setError(apiErrorMessage(err)));
   }
 
   useEffect(() => {
@@ -37,6 +42,7 @@ export default function MessagesPage() {
         setMessages(res.data.messages);
         setActiveDetails(res.data.contract);
       })
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoadingMessages(false));
   }, [selectedContractId]);
 
@@ -68,6 +74,15 @@ export default function MessagesPage() {
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.messages.title")}</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.messages.subtitle")}</p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <button onClick={loadConversations} className="underline font-semibold shrink-0 whitespace-nowrap">
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-[680px] flex">
         {/* Liste des conversations */}

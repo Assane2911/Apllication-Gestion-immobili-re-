@@ -22,28 +22,38 @@ export default function TenantIssuesPage() {
   const [extraPhoto, setExtraPhoto] = useState<File | null>(null);
   const [extraPreview, setExtraPreview] = useState<string | null>(null);
   const [savingExtra, setSavingExtra] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const extraFileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
-    api.get<IssueReport[]>("/issues/mine").then((res) => setIssues(res.data));
-    api.get<Contract[]>("/contracts/mine").then((res) => {
-      setContracts(res.data);
-      if (res.data[0]) setContractId(res.data[0].id);
-    });
+    Promise.all([api.get<IssueReport[]>("/issues/mine"), api.get<Contract[]>("/contracts/mine")])
+      .then(([issuesRes, contractsRes]) => {
+        setIssues(issuesRes.data);
+        setContracts(contractsRes.data);
+        if (contractsRes.data[0]) setContractId(contractsRes.data[0].id);
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(apiErrorMessage(err)));
   }
 
   useEffect(load, []);
 
   function handlePhoto(file: File | null) {
     setPhoto(file);
-    setPreview(file ? URL.createObjectURL(file) : null);
+    setPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
   }
 
   function handleExtraPhoto(file: File | null) {
     setExtraPhoto(file);
-    setExtraPreview(file ? URL.createObjectURL(file) : null);
+    setExtraPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -112,6 +122,15 @@ export default function TenantIssuesPage() {
           {t("tenant.issues.subtitle")}
         </p>
       </div>
+
+      {loadError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      )}
 
       {/* Formulaire de signalement */}
       <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">

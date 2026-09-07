@@ -11,7 +11,7 @@ import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
 
 const navItems = [
-  { to: "/", key: "dashboard", icon: "📊" },
+  { to: "/dashboard", key: "dashboard", icon: "📊" },
   { to: "/properties", key: "properties", icon: "🏠" },
   { to: "/tenants", key: "tenants", icon: "👥" },
   { to: "/contracts", key: "contracts", icon: "📄" },
@@ -96,7 +96,7 @@ export default function ManagerLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === "/"}
+              end={item.to === "/dashboard"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                   isActive ? "bg-brand-600 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"

@@ -12,9 +12,16 @@ export default function IssuesPage() {
   const [filter, setFilter] = useState<IssueStatus | "ALL">("ALL");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   function load() {
-    api.get<IssueReport[]>("/issues").then((res) => setIssues(res.data));
+    api
+      .get<IssueReport[]>("/issues")
+      .then((res) => {
+        setIssues(res.data);
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(apiErrorMessage(err)));
   }
 
   useEffect(load, []);
@@ -68,6 +75,15 @@ export default function IssuesPage() {
           ))}
         </select>
       </div>
+
+      {loadError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filtered.map((issue) => {

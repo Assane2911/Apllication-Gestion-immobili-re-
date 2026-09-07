@@ -29,7 +29,10 @@ export default function InvoicesPage() {
   };
 
   function load() {
-    api.get<Invoice[]>("/invoices").then((res) => setInvoices(res.data));
+    api
+      .get<Invoice[]>("/invoices")
+      .then((res) => setInvoices(res.data))
+      .catch((err) => setError(apiErrorMessage(err)));
   }
 
   useEffect(load, []);

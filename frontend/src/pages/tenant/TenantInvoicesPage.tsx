@@ -28,7 +28,10 @@ export default function TenantInvoicesPage() {
   ];
 
   function load() {
-    api.get<Invoice[]>("/invoices/mine").then((res) => setInvoices(res.data));
+    api
+      .get<Invoice[]>("/invoices/mine")
+      .then((res) => setInvoices(res.data))
+      .catch((err) => setError(apiErrorMessage(err)));
   }
 
   useEffect(load, []);

@@ -14,6 +14,7 @@ export default function TenantMessagesPage() {
   const [newText, setNewText] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   function loadConversations() {
     api
@@ -23,7 +24,9 @@ export default function TenantMessagesPage() {
         if (res.data.length > 0 && !selectedContractId) {
           setSelectedContractId(res.data[0].contractId);
         }
+        setError(null);
       })
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -33,10 +36,13 @@ export default function TenantMessagesPage() {
 
   useEffect(() => {
     if (!selectedContractId) return;
-    api.get(`/messages/${selectedContractId}`).then((res) => {
-      setMessages(res.data.messages);
-      setActiveContract(res.data.contract);
-    });
+    api
+      .get(`/messages/${selectedContractId}`)
+      .then((res) => {
+        setMessages(res.data.messages);
+        setActiveContract(res.data.contract);
+      })
+      .catch((err) => setError(apiErrorMessage(err)));
   }, [selectedContractId]);
 
   async function handleSend(e: React.FormEvent) {
@@ -62,6 +68,20 @@ export default function TenantMessagesPage() {
 
   if (loading) {
     return <p className="text-slate-500 dark:text-slate-400 text-sm">{t("tenant.messages.loading")}</p>;
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
+        <p className="text-sm">{error}</p>
+        <button
+          onClick={loadConversations}
+          className="mt-4 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-xl"
+        >
+          {t("common.actions.retry")}
+        </button>
+      </div>
+    );
   }
 
   if (conversations.length === 0) {

@@ -37,6 +37,7 @@ export default function ExpensesPage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState(currentYearRange());
   const [exportingReport, setExportingReport] = useState(false);
 
@@ -58,13 +59,20 @@ export default function ExpensesPage() {
   });
 
   function loadData() {
-    api.get<Property[]>("/properties").then((res) => setProperties(res.data));
-    api.get<FinancialSummary>("/expenses/summary").then((res) => setSummary(res.data));
-    api
-      .get<Expense[]>("/expenses", {
+    Promise.all([
+      api.get<Property[]>("/properties"),
+      api.get<FinancialSummary>("/expenses/summary"),
+      api.get<Expense[]>("/expenses", {
         params: selectedPropertyId ? { propertyId: selectedPropertyId } : {},
+      }),
+    ])
+      .then(([propertiesRes, summaryRes, expensesRes]) => {
+        setProperties(propertiesRes.data);
+        setSummary(summaryRes.data);
+        setExpenses(expensesRes.data);
+        setLoadError(null);
       })
-      .then((res) => setExpenses(res.data));
+      .catch((err) => setLoadError(apiErrorMessage(err)));
   }
 
   useEffect(() => {
@@ -192,6 +200,15 @@ export default function ExpensesPage() {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button onClick={loadData} className="underline font-semibold shrink-0 whitespace-nowrap">
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      )}
 
       {summary && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -20,12 +20,17 @@ export default function PropertiesPage() {
   const [form, setForm] = useState(emptyForm);
   const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function load() {
     api
       .get<Property[]>("/properties")
-      .then((res) => setProperties(res.data))
+      .then((res) => {
+        setProperties(res.data);
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -101,6 +106,15 @@ export default function PropertiesPage() {
           {t("manager.properties.addBtn")}
         </button>
       </div>
+
+      {loadError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">

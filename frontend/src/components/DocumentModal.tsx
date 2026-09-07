@@ -92,6 +92,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
               ref={iframeRef}
               srcDoc={htmlContent}
               title={title}
+              sandbox=""
               className="w-full h-full bg-white rounded-xl shadow border border-slate-200 dark:border-slate-700"
             />
           )}

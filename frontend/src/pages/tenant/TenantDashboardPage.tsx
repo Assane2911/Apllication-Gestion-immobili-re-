@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, fileUrl } from "../../api/client";
+import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import SignatureModal from "../../components/SignatureModal";
@@ -14,14 +14,35 @@ export default function TenantDashboardPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function load() {
-    api.get<Contract[]>("/contracts/mine").then((res) => setContracts(res.data));
+    api
+      .get<Contract[]>("/contracts/mine")
+      .then((res) => {
+        setContracts(res.data);
+        setError(null);
+      })
+      .catch((err) => setError(apiErrorMessage(err)));
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  if (error) {
+    return (
+      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
+        <p className="text-sm">{error}</p>
+        <button
+          onClick={load}
+          className="mt-4 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-xl"
+        >
+          {t("common.actions.retry")}
+        </button>
+      </div>
+    );
+  }
 
   if (contracts.length === 0) {
     return <p className="text-slate-500 dark:text-slate-400 text-sm">{t("tenant.dashboard.noContract")}</p>;

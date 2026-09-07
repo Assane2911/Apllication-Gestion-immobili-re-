@@ -13,8 +13,8 @@ const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDa
 // la fin tombe dans ce nombre de jours ou moins propose de renouveler ou non.
 const RENEWAL_WINDOW_DAYS = 14;
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR");
+function formatDate(d: string, locale: string) {
+  return new Date(d).toLocaleDateString(locale);
 }
 
 function daysUntil(d: string) {
@@ -23,7 +23,7 @@ function daysUntil(d: string) {
 }
 
 export default function ContractsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -31,15 +31,25 @@ export default function ContractsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
 
   function load() {
-    api.get<Contract[]>("/contracts").then((res) => setContracts(res.data));
-    api.get<Property[]>("/properties").then((res) => setProperties(res.data));
-    api.get<Tenant[]>("/tenants").then((res) => setTenants(res.data));
+    Promise.all([
+      api.get<Contract[]>("/contracts"),
+      api.get<Property[]>("/properties"),
+      api.get<Tenant[]>("/tenants"),
+    ])
+      .then(([contractsRes, propertiesRes, tenantsRes]) => {
+        setContracts(contractsRes.data);
+        setProperties(propertiesRes.data);
+        setTenants(tenantsRes.data);
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(apiErrorMessage(err)));
   }
 
   useEffect(load, []);
@@ -83,7 +93,7 @@ export default function ContractsPage() {
     if (
       !confirm(
         t("manager.contracts.confirmRenew", {
-          date: formatDate(String(new Date(new Date(c.endDate).getTime() + 86400000))),
+          date: formatDate(String(new Date(new Date(c.endDate).getTime() + 86400000)), i18n.language),
         })
       )
     ) {
@@ -110,6 +120,15 @@ export default function ContractsPage() {
           {t("manager.contracts.addBtn")}
         </button>
       </div>
+
+      {loadError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
@@ -189,7 +208,7 @@ export default function ContractsPage() {
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{c.tenant?.firstName} {c.tenant?.lastName}</td>
                 <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">{formatMoney(c.rent, c.currency)}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
-                  {formatDate(c.startDate)} → {formatDate(c.endDate)}
+                  {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
                   {showRenewal && (
                     <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold">
                       ⏰ {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
@@ -277,7 +296,7 @@ export default function ContractsPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(c.rent, c.currency)}</span>
-                <span className="text-slate-500 dark:text-slate-400">{formatDate(c.startDate)} → {formatDate(c.endDate)}</span>
+                <span className="text-slate-500 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
               </div>
               {showRenewal && (
                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
