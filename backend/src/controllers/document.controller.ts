@@ -21,6 +21,14 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
   }
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+
+  // Sécurité gestionnaire : la facture doit appartenir à l'un de ses biens
+  // (sans ce contrôle, n'importe quel gestionnaire pouvait récupérer la
+  // quittance d'une autre agence en devinant/récupérant l'ID de la facture).
+  if (req.user.role === "MANAGER" && property?.managerId !== req.user.userId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
 
   // Récupérer les paramètres d'agence
@@ -74,6 +82,14 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   }
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+
+  // Sécurité gestionnaire : le contrat doit appartenir à l'un de ses biens
+  // (même faille que ci-dessus pour les quittances : sans ce contrôle,
+  // n'importe quel gestionnaire pouvait récupérer le bail d'une autre agence).
+  if (req.user.role === "MANAGER" && property?.managerId !== req.user.userId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
   const [agency] = await db.select().from(agencySettings);
 

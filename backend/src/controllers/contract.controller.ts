@@ -91,6 +91,20 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     throw new ApiError(404, "Contrat introuvable");
   }
 
+  // Si la requête change le bien ou le locataire du contrat, revalider que
+  // ces NOUVEAUX identifiants appartiennent bien au gestionnaire connecté —
+  // sans ce contrôle, un gestionnaire pouvait rattacher le contrat d'un
+  // locataire au bien d'un AUTRE gestionnaire, qui le récupérait alors dans
+  // son propre compte (le contrat, sa facturation et sa signature compris).
+  if (body.propertyId && body.propertyId !== existing.propertyId) {
+    const [newProperty] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
+    if (!newProperty || newProperty.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+  }
+  if (body.tenantId && body.tenantId !== existing.tenantId) {
+    const [newTenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
+    if (!newTenant || newTenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+  }
+
   const [contract] = await db.update(contracts).set(body).where(eq(contracts.id, req.params.id)).returning();
 
   if (body.status === "ENDED" || body.status === "TERMINATED") {
