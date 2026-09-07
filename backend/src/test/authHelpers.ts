@@ -2,7 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
-import { properties, tenants, users } from "../db/schema";
+import { contracts, invoices, properties, tenants, users } from "../db/schema";
 
 /** Crée un gestionnaire (email déjà vérifié, essai en cours) directement en base de test. */
 export async function createManager(overrides: Partial<typeof users.$inferInsert> = {}) {
@@ -67,3 +67,44 @@ export function tokenFor(user: { id: string; role: "MANAGER" | "TENANT" }, tenan
 export function authHeader(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
+
+/** Crée un contrat de location entre un bien et un locataire donnés. */
+export async function createContract(
+  propertyId: string,
+  tenantId: string,
+  overrides: Partial<typeof contracts.$inferInsert> = {}
+) {
+  const [contract] = await testDb
+    .insert(contracts)
+    .values({
+      propertyId,
+      tenantId,
+      rent: 500,
+      deposit: 1000,
+      startDate: new Date(2026, 0, 1),
+      endDate: new Date(2027, 0, 1),
+      ...overrides,
+    })
+    .returning();
+  return contract;
+}
+
+/** Crée directement une facture pour un contrat donné (sans passer par generateInvoicesForContract). */
+export async function createInvoice(
+  contractId: string,
+  overrides: Partial<typeof invoices.$inferInsert> = {}
+) {
+  const [invoice] = await testDb
+    .insert(invoices)
+    .values({
+      contractId,
+      periodMonth: 6,
+      periodYear: 2026,
+      amount: 500,
+      dueDate: new Date(2026, 5, 20),
+      ...overrides,
+    })
+    .returning();
+  return invoice;
+}
+

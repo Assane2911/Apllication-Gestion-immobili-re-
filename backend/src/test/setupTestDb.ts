@@ -78,6 +78,15 @@ process.env.SMTP_USER = "";
 process.env.SMTP_APP_PASSWORD = "";
 process.env.SENTRY_DSN = "";
 
+// Idem pour les moyens de paiement : même si le vrai .env venait à contenir
+// de vraies clés Stripe/PayDunya un jour, on force le mode démo et on vide les
+// clés en test — aucun test ne doit jamais appeler une vraie API de paiement.
+process.env.PAYMENTS_DEMO_MODE = "true";
+process.env.STRIPE_SECRET_KEY = "";
+process.env.PAYDUNYA_MASTER_KEY = "";
+process.env.PAYDUNYA_PRIVATE_KEY = "";
+process.env.PAYDUNYA_TOKEN = "";
+
 const TABLES = [
   "users",
   "platform_subscriptions",
