@@ -21,7 +21,11 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   }
 
   if (err instanceof Error) {
-    return res.status(500).json({ error: err.message });
+    // On ne renvoie jamais le message brut d'une erreur inattendue au client
+    // (il peut contenir des details internes : nom de colonne, contrainte
+    // SQL, chemin de fichier...). Le message complet est deja logge
+    // ci-dessus via console.error(err) pour le debogage.
+    return res.status(500).json({ error: "Erreur interne du serveur" });
   }
 
   return res.status(500).json({ error: "Erreur interne du serveur" });
