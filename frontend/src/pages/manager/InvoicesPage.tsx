@@ -4,7 +4,7 @@ import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
-import { useCurrency } from "../../context/CurrencyContext";
+import { useCurrency } from "../../context/currency";
 import type { Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
 
 function monthLabel(locale: string, monthIndex1to12: number) {

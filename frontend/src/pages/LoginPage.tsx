@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, apiErrorCode, apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 
 const DEMO_ACCOUNTS = {
   manager: { email: "gestionnaire@demo.com", password: "Demo1234!" },

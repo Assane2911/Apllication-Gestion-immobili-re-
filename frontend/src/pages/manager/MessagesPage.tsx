@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import type { Conversation, Message } from "../../types";
 
 export default function MessagesPage() {
@@ -29,8 +29,12 @@ export default function MessagesPage() {
       .catch((err) => setError(apiErrorMessage(err)));
   }
 
+  // loadConversations lit selectedContractId via une closure fraîche à chaque appel (bouton
+  // "réessayer", envoi de message inclus) ; l'ajouter aux deps de l'effet ci-dessous redéclencherait
+  // un rechargement à chaque sélection de conversation, alors qu'il ne doit tourner qu'au montage.
   useEffect(() => {
     loadConversations();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

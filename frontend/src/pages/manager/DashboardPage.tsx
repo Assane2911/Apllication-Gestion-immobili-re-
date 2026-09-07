@@ -27,7 +27,7 @@ import {
 import { api, apiErrorMessage } from "../../api/client";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
-import { useCurrency } from "../../context/CurrencyContext";
+import { useCurrency } from "../../context/currency";
 import type { DashboardStats, PropertyStatus } from "../../types";
 
 const statusColors: Record<PropertyStatus, string> = {

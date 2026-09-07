@@ -1,6 +1,6 @@
 import { Trans, useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 
 export default function TrialBanner() {
   const { t } = useTranslation();

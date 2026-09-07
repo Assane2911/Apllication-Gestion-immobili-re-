@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../components/LanguageSwitcher";
-import Reveal, { useInView } from "../components/Reveal";
-import { useAuth } from "../context/AuthContext";
+import Reveal from "../components/Reveal";
+import { useInView } from "../hooks/useInView";
+import { useAuth } from "../context/auth";
 
 const FEATURE_CARDS = [
   { key: "receipts", icon: "📄", color: "bg-brand-600/20 text-brand-400" },

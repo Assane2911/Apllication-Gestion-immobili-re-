@@ -6,7 +6,7 @@ import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { PropertyCardSkeleton } from "../../components/Skeleton";
-import { useCurrency } from "../../context/CurrencyContext";
+import { useCurrency } from "../../context/currency";
 import type { PaginatedResponse, Property, PropertyStatus } from "../../types";
 
 const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAILABLE" as PropertyStatus, description: "" };

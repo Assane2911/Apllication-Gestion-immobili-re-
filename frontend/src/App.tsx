@@ -2,7 +2,8 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import ManagerLayout from "./components/ManagerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./context/auth";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";

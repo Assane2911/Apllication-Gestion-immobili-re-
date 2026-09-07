@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
 
 interface SubscriptionHistoryRecord {

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
-import { useCurrency } from "../../context/CurrencyContext";
+import { useCurrency } from "../../context/currency";
 import type { Expense, ExpenseCategory, PaginatedResponse, Property } from "../../types";
 
 function currentYearRange() {
@@ -67,7 +67,7 @@ export default function ExpensesPage() {
     notes: "",
   });
 
-  function loadData() {
+  const loadData = useCallback(() => {
     Promise.all([
       api.get<PaginatedResponse<Property>>("/properties", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
       api.get<FinancialSummary>("/expenses/summary"),
@@ -84,11 +84,11 @@ export default function ExpensesPage() {
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)));
-  }
+  }, [page, selectedPropertyId]);
 
   useEffect(() => {
     loadData();
-  }, [selectedPropertyId, page]);
+  }, [loadData]);
 
   function handlePropertyFilterChange(value: string) {
     setSelectedPropertyId(value);

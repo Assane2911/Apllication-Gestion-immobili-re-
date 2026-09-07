@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 
 function MailIcon() {
   return (

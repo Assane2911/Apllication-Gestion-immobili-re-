@@ -1,50 +1,25 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "../api/client";
-import { useAuth } from "./AuthContext";
-
-export interface CurrencyConfig {
-  code: string;
-  symbol: string;
-  name: string;
-  flag: string;
-  symbolPosition: "before" | "after";
-}
-
-export const CURRENCIES: Record<string, CurrencyConfig> = {
-  EUR: { code: "EUR", symbol: "€", name: "Euro", flag: "🇪🇺", symbolPosition: "after" },
-  USD: { code: "USD", symbol: "$", name: "Dollar US", flag: "🇺🇸", symbolPosition: "before" },
-  XOF: { code: "XOF", symbol: "FCFA", name: "Franc CFA (UEMOA)", flag: "🌍", symbolPosition: "after" },
-  XAF: { code: "XAF", symbol: "FCFA", name: "Franc CFA (CEMAC)", flag: "🌍", symbolPosition: "after" },
-  STN: { code: "STN", symbol: "Db", name: "Dobra (São Tomé)", flag: "🇸🇹", symbolPosition: "after" },
-  GBP: { code: "GBP", symbol: "£", name: "Livre Sterling", flag: "🇬🇧", symbolPosition: "before" },
-  CAD: { code: "CAD", symbol: "$CA", name: "Dollar Canadien", flag: "🇨🇦", symbolPosition: "before" },
-  CHF: { code: "CHF", symbol: "CHF", name: "Franc Suisse", flag: "🇨🇭", symbolPosition: "after" },
-  MAD: { code: "MAD", symbol: "DH", name: "Dirham Marocain", flag: "🇲🇦", symbolPosition: "after" },
-};
-
-interface CurrencyContextValue {
-  currency: string;
-  currentCurrencyConfig: CurrencyConfig;
-  setCurrency: (code: string) => Promise<void>;
-  formatMoney: (amount: number | null | undefined, overrideCurrency?: string | null) => string;
-  availableCurrencies: CurrencyConfig[];
-}
-
-const CurrencyContext = createContext<CurrencyContextValue | undefined>(undefined);
+import { useAuth } from "./auth";
+import { CURRENCIES, CurrencyContext, useCurrency } from "./currency";
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [currency, setCurrencyState] = useState<string>(() => {
     return localStorage.getItem("app_currency") || user?.currency || "EUR";
   });
-
-  useEffect(() => {
+  // Synchronise la devise locale sur celle du profil dès qu'elle change (ex. après
+  // connexion, une fois `user` chargé) — ajustement pendant le rendu plutôt que
+  // dans un effet, cf. https://react.dev/learn/you-might-not-need-an-effect
+  const [prevUserCurrency, setPrevUserCurrency] = useState(user?.currency);
+  if (user?.currency !== prevUserCurrency) {
+    setPrevUserCurrency(user?.currency);
     if (user?.currency && user.currency !== currency) {
       setCurrencyState(user.currency);
       localStorage.setItem("app_currency", user.currency);
     }
-  }, [user?.currency]);
+  }
 
   async function setCurrency(code: string) {
     if (!CURRENCIES[code]) return;
@@ -95,12 +70,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       {children}
     </CurrencyContext.Provider>
   );
-}
-
-export function useCurrency() {
-  const ctx = useContext(CurrencyContext);
-  if (!ctx) throw new Error("useCurrency doit être utilisé dans un CurrencyProvider");
-  return ctx;
 }
 
 /** Composant Sélecteur de Devise élégant pour la barre de navigation */

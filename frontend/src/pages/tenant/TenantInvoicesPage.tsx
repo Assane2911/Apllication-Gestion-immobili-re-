@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
-import { useCurrency } from "../../context/CurrencyContext";
+import { useCurrency } from "../../context/currency";
 import type { Invoice, PaymentMethod } from "../../types";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
@@ -47,7 +47,7 @@ export default function TenantInvoicesPage() {
       // payment.service.ts. La confirmation définitive (statut PAID) arrive
       // plus tard via le webhook IPN, une fois le paiement réellement effectué.
       if (data.payment?.status === "REQUIRES_ACTION" && data.payment?.redirectUrl) {
-        window.location.href = data.payment.redirectUrl;
+        window.location.assign(data.payment.redirectUrl);
         return;
       }
 

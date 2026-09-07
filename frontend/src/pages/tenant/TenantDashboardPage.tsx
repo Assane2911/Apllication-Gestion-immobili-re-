@@ -5,7 +5,7 @@ import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import SignatureModal from "../../components/SignatureModal";
-import { useCurrency } from "../../context/CurrencyContext";
+import { useCurrency } from "../../context/currency";
 import type { Contract } from "../../types";
 
 export default function TenantDashboardPage() {

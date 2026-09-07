@@ -5,7 +5,7 @@ import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
 import SignatureModal from "../../components/SignatureModal";
-import { useCurrency } from "../../context/CurrencyContext";
+import { useCurrency } from "../../context/currency";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 
 const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "" };

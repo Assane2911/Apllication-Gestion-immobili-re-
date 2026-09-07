@@ -1,9 +1,9 @@
 import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 import { CurrencySelector } from "../context/CurrencyContext";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/theme";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const navItems = [
