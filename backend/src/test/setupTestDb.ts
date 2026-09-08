@@ -83,7 +83,14 @@ process.env.SENTRY_DSN = "";
 // clés en test — aucun test ne doit jamais appeler une vraie API de paiement.
 process.env.PAYMENTS_DEMO_MODE = "true";
 process.env.STRIPE_SECRET_KEY = "";
-process.env.PAYDUNYA_MASTER_KEY = "";
+// PAYDUNYA_MASTER_KEY reste à une valeur FIXE connue des tests (plutôt que
+// vidée) : le webhook IPN public (paydunya.controller.ts) vérifie un hash
+// SHA-512 de cette clé, et paydunya.controller.test.ts a besoin de pouvoir
+// reproduire ce hash pour tester la vérification de signature. Ça ne
+// change rien à la sécurité réelle : initiatePaydunyaPayment (paiement
+// sortant) reste en simulation tant que PAYDUNYA_PRIVATE_KEY/TOKEN sont
+// vides et que PAYMENTS_DEMO_MODE=true (voir services/payment.service.ts).
+process.env.PAYDUNYA_MASTER_KEY = "test-paydunya-master-key-do-not-use-in-production";
 process.env.PAYDUNYA_PRIVATE_KEY = "";
 process.env.PAYDUNYA_TOKEN = "";
 
