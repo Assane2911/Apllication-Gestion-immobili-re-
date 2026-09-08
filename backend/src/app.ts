@@ -24,7 +24,24 @@ import tenantRoutes from "./routes/tenant.routes";
 
 export const app = express();
 
-app.use(cors({ origin: env.frontendUrl, credentials: true }));
+// En plus du site web (env.frontendUrl), on autorise les origines des
+// builds mobiles Capacitor : "https://localhost" (Android, androidScheme:
+// "https") et "capacitor://localhost" (iOS, scheme par défaut). Sans
+// origine (ex: appel serveur à serveur, cron) on laisse passer.
+const allowedOrigins = [env.frontendUrl, "https://localhost", "capacitor://localhost"];
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Non autorisé par CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
