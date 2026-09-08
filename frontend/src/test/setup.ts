@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest";
+import "../i18n"; // initialise i18next une fois pour tous les tests (pages/composants traduits)
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 
