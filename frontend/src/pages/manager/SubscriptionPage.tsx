@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Capacitor } from "@capacitor/core";
 import { api, apiErrorMessage } from "../../api/client";
 import { useAuth } from "../../context/auth";
 import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
@@ -30,6 +31,7 @@ export default function SubscriptionPage() {
   const [subscribing, setSubscribing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isNativeApp = Capacitor.isNativePlatform();
 
   const paymentMethods: { key: PaymentMethod; label: string; hint: string }[] = [
     { key: "STRIPE", label: t("manager.subscription.paymentMethods.STRIPE.label"), hint: t("manager.subscription.paymentMethods.STRIPE.hint") },
@@ -206,7 +208,8 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* Grille des Plans */}
+      {/* Grille des Plans (masquée sur build mobile native : la souscription se fait sur le web) */}
+      {!isNativeApp && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
           const isCurrentPlan = sub?.plan === plan.id && sub?.status === "ACTIVE";
@@ -269,9 +272,16 @@ export default function SubscriptionPage() {
           );
         })}
       </div>
+      )}
+
+      {isNativeApp && sub?.status !== "ACTIVE" && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
+          Pour souscrire ou changer d'offre, connectez-vous depuis le site web sur ordinateur ou votre navigateur mobile — l'app se contente d'afficher votre abonnement en cours.
+        </div>
+      )}
 
       {/* Modal de Souscription / Paiement */}
-      {selectedPlan && (
+      {!isNativeApp && selectedPlan && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">

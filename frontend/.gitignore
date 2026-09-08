@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor: URL de prod spécifique à l'environnement, non versionnée
+.env.production
