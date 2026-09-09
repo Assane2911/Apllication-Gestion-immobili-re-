@@ -58,13 +58,19 @@ async function initiateStripePayment(amount: number, reference: string, payerEma
   // pour créer une Checkout Session, puis retourner son URL.
   // const stripe = new Stripe(env.payments.stripeSecretKey);
   // const session = await stripe.checkout.sessions.create({ ... amount, customer_email: payerEmail ... });
-  return {
-    method: "STRIPE",
-    status: "REQUIRES_ACTION",
-    reference: `stripe_${reference}`,
-    redirectUrl: "#stripe-checkout-a-brancher",
-    message: `Redirection vers Stripe Checkout pour ${amount} (${payerEmail}).`,
-  };
+  //
+  // Cette intégration réelle n'est pas encore écrite. Tant que ce sera le cas,
+  // on préfère échouer clairement ici plutôt que renvoyer une fausse
+  // redirection ("#stripe-checkout-a-brancher") qui laissait silencieusement
+  // le payeur bloqué avec une facture qu'il ne pourrait jamais régler par ce
+  // biais — un STRIPE_SECRET_KEY configuré sans que ce code soit fini aurait
+  // provoqué exactement ce cas. Le moyen de paiement est aussi masqué côté
+  // frontend (voir SubscriptionPage.tsx / TenantInvoicesPage.tsx) tant que ce
+  // n'est pas prêt.
+  throw new ApiError(
+    503,
+    "Le paiement par carte (Stripe) n'est pas encore disponible. Merci d'utiliser un autre moyen de paiement."
+  );
 }
 
 /**

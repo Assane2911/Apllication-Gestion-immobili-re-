@@ -25,7 +25,7 @@ export default function SubscriptionPage() {
   const [history, setHistory] = useState<SubscriptionHistoryRecord[]>([]);
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanDetail | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("STRIPE");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("PAYDUNYA");
   const [bankRef, setBankRef] = useState("");
   const [, setLoading] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
@@ -33,8 +33,11 @@ export default function SubscriptionPage() {
   const [error, setError] = useState<string | null>(null);
   const isNativeApp = Capacitor.isNativePlatform();
 
+  // STRIPE est volontairement masqué : l'intégration réelle (Checkout Session
+  // + webhook) n'est pas encore écrite (voir payment.service.ts) — l'afficher
+  // exposerait un moyen de paiement qui échoue silencieusement dès qu'une
+  // vraie clé Stripe serait configurée.
   const paymentMethods: { key: PaymentMethod; label: string; hint: string }[] = [
-    { key: "STRIPE", label: t("manager.subscription.paymentMethods.STRIPE.label"), hint: t("manager.subscription.paymentMethods.STRIPE.hint") },
     { key: "PAYDUNYA", label: t("manager.subscription.paymentMethods.PAYDUNYA.label"), hint: t("manager.subscription.paymentMethods.PAYDUNYA.hint") },
     { key: "BANK_TRANSFER", label: t("manager.subscription.paymentMethods.BANK_TRANSFER.label"), hint: t("manager.subscription.paymentMethods.BANK_TRANSFER.hint") },
     { key: "DEMO", label: t("manager.subscription.paymentMethods.DEMO.label"), hint: t("manager.subscription.paymentMethods.DEMO.hint") },

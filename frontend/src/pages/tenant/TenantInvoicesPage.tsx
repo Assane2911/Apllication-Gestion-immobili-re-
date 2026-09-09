@@ -20,8 +20,11 @@ export default function TenantInvoicesPage() {
   const [bankRef, setBankRef] = useState("");
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
 
+  // STRIPE est volontairement masqué : l'intégration réelle (Checkout Session
+  // + webhook) n'est pas encore écrite (voir payment.service.ts) — l'afficher
+  // exposerait un moyen de paiement qui échoue silencieusement dès qu'une
+  // vraie clé Stripe serait configurée.
   const methods: { key: PaymentMethod; label: string; hint: string }[] = [
-    { key: "STRIPE", label: t("tenant.invoices.methods.STRIPE.label"), hint: t("tenant.invoices.methods.STRIPE.hint") },
     { key: "PAYDUNYA", label: t("tenant.invoices.methods.PAYDUNYA.label"), hint: t("tenant.invoices.methods.PAYDUNYA.hint") },
     { key: "BANK_TRANSFER", label: t("tenant.invoices.methods.BANK_TRANSFER.label"), hint: t("tenant.invoices.methods.BANK_TRANSFER.hint") },
     { key: "DEMO", label: t("tenant.invoices.methods.DEMO.label"), hint: t("tenant.invoices.methods.DEMO.hint") },

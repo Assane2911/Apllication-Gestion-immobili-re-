@@ -127,8 +127,7 @@ describe("SubscriptionPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
 
     await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
-    // DEMO est sélectionné par défaut (premier moyen coché == STRIPE en réalité,
-    // donc on choisit explicitement DEMO).
+    // PAYDUNYA est sélectionné par défaut, donc on choisit explicitement DEMO.
     await user.click(screen.getByRole("radio", { name: /Mode démo/ }));
     await user.click(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" }));
 
