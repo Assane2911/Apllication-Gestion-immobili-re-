@@ -214,12 +214,16 @@ export interface DashboardStats {
   totalTenants: number;
   activeContracts: number;
   occupancyRate: number;
-  monthlyRevenue: number;
-  monthlyExpected: number;
+  // Regroupé par devise (code devise -> montant) : la plateforme est
+  // multi-devises (EUR/XOF/...), additionner à travers des devises
+  // différentes produirait un nombre sans signification.
+  monthlyRevenueByCurrency: Record<string, number>;
+  monthlyExpectedByCurrency: Record<string, number>;
   openIssues: number;
   lateInvoices: number;
-  revenueByMonth: Record<string, number>;
-  expensesByMonth: Record<string, number>;
+  // Mois (YYYY-MM) -> devise -> montant, même raison.
+  revenueByMonth: Record<string, Record<string, number>>;
+  expensesByMonth: Record<string, Record<string, number>>;
 }
 
 export interface PaginatedResponse<T> {

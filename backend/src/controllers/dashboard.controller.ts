@@ -38,8 +38,20 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     (i: typeof invoices.$inferSelect) => i.periodMonth === month && i.periodYear === year
   );
 
-  const monthlyRevenue = monthlyInvoices.filter((i: typeof invoices.$inferSelect) => i.status === "PAID").reduce((sum: number, i: typeof invoices.$inferSelect) => sum + i.amount, 0);
-  const monthlyExpected = monthlyInvoices.reduce((sum: number, i: typeof invoices.$inferSelect) => sum + i.amount, 0);
+  // Plateforme multi-devises (EUR/XOF/...) : une simple somme de invoice.amount
+  // à travers des factures de devises différentes produirait un nombre sans
+  // signification (ex: 100 EUR + 50 000 XOF = "50 100", affiché avec le
+  // symbole de la devise préférée du gestionnaire, comme si c'était homogène).
+  // On regroupe donc chaque total par devise plutôt que de les additionner.
+  const monthlyRevenueByCurrency: Record<string, number> = {};
+  const monthlyExpectedByCurrency: Record<string, number> = {};
+  for (const inv of monthlyInvoices) {
+    const currency = inv.currency || "EUR";
+    monthlyExpectedByCurrency[currency] = (monthlyExpectedByCurrency[currency] ?? 0) + inv.amount;
+    if (inv.status === "PAID") {
+      monthlyRevenueByCurrency[currency] = (monthlyRevenueByCurrency[currency] ?? 0) + inv.amount;
+    }
+  }
   const occupancyRate = totalProperties > 0 ? Math.round((statusCounts.OCCUPIED / totalProperties) * 100) : 0;
 
   const openIssues =
@@ -59,10 +71,14 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     (i: typeof invoices.$inferSelect) => i.status === "PAID" && i.paidAt && new Date(i.paidAt) >= sixMonthsAgo
   );
 
-  const revenueByMonth: Record<string, number> = {};
+  // Même principe que ci-dessus : regroupé par devise (mois -> devise -> montant)
+  // plutôt que sommé à travers des devises différentes.
+  const revenueByMonth: Record<string, Record<string, number>> = {};
   for (const inv of recentPaidInvoices) {
     const key = `${inv.periodYear}-${String(inv.periodMonth).padStart(2, "0")}`;
-    revenueByMonth[key] = (revenueByMonth[key] ?? 0) + inv.amount;
+    const currency = inv.currency || "EUR";
+    revenueByMonth[key] = revenueByMonth[key] ?? {};
+    revenueByMonth[key][currency] = (revenueByMonth[key][currency] ?? 0) + inv.amount;
   }
 
   // Dépenses des 6 derniers mois pour confronter visuellement dépenses vs revenus.
@@ -73,11 +89,13 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
           .from(expenses)
           .where(and(gte(expenses.expenseDate, sixMonthsAgo), inArray(expenses.propertyId, propertyIds)))
       : [];
-  const expensesByMonth: Record<string, number> = {};
+  const expensesByMonth: Record<string, Record<string, number>> = {};
   for (const exp of recentExpenses) {
     const d = new Date(exp.expenseDate);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    expensesByMonth[key] = (expensesByMonth[key] ?? 0) + exp.amount;
+    const currency = exp.currency || "EUR";
+    expensesByMonth[key] = expensesByMonth[key] ?? {};
+    expensesByMonth[key][currency] = (expensesByMonth[key][currency] ?? 0) + exp.amount;
   }
 
   res.json({
@@ -86,8 +104,8 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     totalTenants,
     activeContracts,
     occupancyRate,
-    monthlyRevenue,
-    monthlyExpected,
+    monthlyRevenueByCurrency,
+    monthlyExpectedByCurrency,
     openIssues,
     lateInvoices,
     revenueByMonth,

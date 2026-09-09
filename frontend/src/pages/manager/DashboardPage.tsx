@@ -9,7 +9,7 @@ import {
   Wallet,
   Wrench,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bar,
@@ -35,6 +35,21 @@ const statusColors: Record<PropertyStatus, string> = {
   OCCUPIED: "#2563eb",
   MAINTENANCE: "#f59e0b",
 };
+
+// Une couleur par devise pour le graphique revenus/dépenses (cas le plus
+// courant : une seule devise, donc une seule paire de couleurs utilisée).
+const REVENUE_COLORS = ["#2563eb", "#0891b2", "#7c3aed", "#be185d"];
+const EXPENSE_COLORS = ["#f59e0b", "#ea580c", "#65a30d", "#a16207"];
+
+/** Formate un total groupé par devise (ex: {EUR: 150, XOF: 50000}) en chaîne lisible ("150 € + 50 000 FCFA"). */
+function formatByCurrency(
+  byCurrency: Record<string, number> | undefined,
+  formatMoney: (amount: number | null | undefined, overrideCurrency?: string | null) => string
+): string {
+  const entries = Object.entries(byCurrency ?? {});
+  if (entries.length === 0) return formatMoney(0);
+  return entries.map(([currency, amount]) => formatMoney(amount, currency)).join(" + ");
+}
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -113,20 +128,44 @@ export default function DashboardPage() {
     new Set([...Object.keys(revenueByMonth), ...Object.keys(expensesByMonth)])
   ).sort((a, b) => a.localeCompare(b));
 
+  // Plateforme multi-devises : chaque mois est { devise -> montant } côté API
+  // (voir dashboard.controller.ts) plutôt qu'un seul nombre déjà additionné à
+  // travers des devises différentes. On trace donc une paire de barres par
+  // devise réellement présente dans les données — une seule dans le cas
+  // courant d'un gestionnaire mono-devise, le graphique est alors identique
+  // à avant.
+  const monthlyCurrencies =
+    allMonths.length > 0
+      ? Array.from(
+          new Set([
+            ...allMonths.flatMap((m) => Object.keys(revenueByMonth[m] ?? {})),
+            ...allMonths.flatMap((m) => Object.keys(expensesByMonth[m] ?? {})),
+          ])
+        ).sort()
+      : Object.keys(stats.monthlyRevenueByCurrency ?? {});
+
   const comparisonChartData =
     allMonths.length > 0
-      ? allMonths.map((month) => ({
-          month,
-          revenue: Number(revenueByMonth[month] ?? 0),
-          expense: Number(expensesByMonth[month] ?? 0),
-        }))
-      : [
-          {
-            month: t("manager.dashboard.charts.currentMonth"),
-            revenue: Number(stats.monthlyRevenue ?? 0),
-            expense: 0,
-          },
-        ];
+      ? allMonths.map((month) => {
+          const row: Record<string, string | number> = { month };
+          for (const currency of monthlyCurrencies) {
+            row[`revenue_${currency}`] = Number(revenueByMonth[month]?.[currency] ?? 0);
+            row[`expense_${currency}`] = Number(expensesByMonth[month]?.[currency] ?? 0);
+          }
+          return row;
+        })
+      : monthlyCurrencies.length > 0
+        ? [
+            monthlyCurrencies.reduce(
+              (row, currency) => ({
+                ...row,
+                [`revenue_${currency}`]: Number(stats.monthlyRevenueByCurrency?.[currency] ?? 0),
+                [`expense_${currency}`]: 0,
+              }),
+              { month: t("manager.dashboard.charts.currentMonth") } as Record<string, string | number>
+            ),
+          ]
+        : [];
 
   const donutData = (Object.keys(statusLabels) as PropertyStatus[])
     .map((status) => ({
@@ -182,8 +221,8 @@ export default function DashboardPage() {
         <StatCard
           icon={Wallet}
           label={t("manager.dashboard.stats.revenue")}
-          value={formatMoney(stats.monthlyRevenue ?? 0)}
-          hint={t("manager.dashboard.stats.revenueHint", { amount: formatMoney(stats.monthlyExpected ?? 0) })}
+          value={formatByCurrency(stats.monthlyRevenueByCurrency, formatMoney)}
+          hint={t("manager.dashboard.stats.revenueHint", { amount: formatByCurrency(stats.monthlyExpectedByCurrency, formatMoney) })}
           accent="green"
         />
         <StatCard
@@ -228,10 +267,14 @@ export default function DashboardPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
                   <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
                   <Tooltip
-                    formatter={(value: any, name: any) => [
-                      formatMoney(Number(value)),
-                      name === "revenue" ? t("manager.dashboard.charts.tooltipRevenue") : t("manager.dashboard.charts.tooltipExpense"),
-                    ]}
+                    formatter={(value: any, name: any) => {
+                      const [kind, currency] = String(name).split("_");
+                      const label = kind === "revenue" ? t("manager.dashboard.charts.tooltipRevenue") : t("manager.dashboard.charts.tooltipExpense");
+                      return [
+                        formatMoney(Number(value), currency),
+                        monthlyCurrencies.length > 1 ? `${label} (${currency})` : label,
+                      ];
+                    }}
                     contentStyle={{
                       borderRadius: "12px",
                       fontSize: "12px",
@@ -240,11 +283,29 @@ export default function DashboardPage() {
                     }}
                   />
                   <Legend
-                    formatter={(value) => (value === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense"))}
+                    formatter={(value) => {
+                      const [kind, currency] = String(value).split("_");
+                      const label = kind === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense");
+                      return monthlyCurrencies.length > 1 ? `${label} (${currency})` : label;
+                    }}
                     wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
                   />
-                  <Bar dataKey="revenue" name="revenue" fill="#2563eb" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="expense" name="expense" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+                  {monthlyCurrencies.map((currency, idx) => (
+                    <Fragment key={currency}>
+                      <Bar
+                        dataKey={`revenue_${currency}`}
+                        name={`revenue_${currency}`}
+                        fill={REVENUE_COLORS[idx % REVENUE_COLORS.length]}
+                        radius={[6, 6, 0, 0]}
+                      />
+                      <Bar
+                        dataKey={`expense_${currency}`}
+                        name={`expense_${currency}`}
+                        fill={EXPENSE_COLORS[idx % EXPENSE_COLORS.length]}
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </Fragment>
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             </div>
