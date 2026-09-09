@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Capacitor } from "@capacitor/core";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import type { AuthUser, SubscriptionInfo, SubscriptionPlanDetail } from "../../types";
@@ -11,7 +12,20 @@ vi.mock("../../api/client", async () => {
   return { ...actual, api: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } };
 });
 
+// Sans ce mock, Capacitor.isNativePlatform() tourne avec son implémentation
+// web réelle (toujours `false` sous jsdom) : la branche mobile ajoutée pour
+// la conformité App Store/Play Store (grille de plans masquée, message de
+// repli) n'était alors exercée par AUCUN test. Défaut à `false` (web) pour
+// que tous les tests existants continuent d'exercer la branche web sans
+// changement ; les tests dédiés ci-dessous le passent à `true`.
+vi.mock("@capacitor/core", () => ({
+  Capacitor: {
+    isNativePlatform: vi.fn(() => false),
+  },
+}));
+
 const mockedApi = vi.mocked(api, { deep: true });
+const mockedIsNativePlatform = vi.mocked(Capacitor.isNativePlatform);
 
 function plan(overrides: Partial<SubscriptionPlanDetail> = {}): SubscriptionPlanDetail {
   return {
@@ -70,6 +84,7 @@ describe("SubscriptionPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();
+    mockedIsNativePlatform.mockReturnValue(false);
   });
 
   it("affiche le statut d'essai et les formules disponibles", async () => {
@@ -240,5 +255,41 @@ describe("SubscriptionPage", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
+  });
+
+  it("sur mobile natif (Capacitor), masque la grille de plans et affiche le message de repli", async () => {
+    mockedIsNativePlatform.mockReturnValue(true);
+    seedUser(authUser()); // TRIAL par défaut, donc pas encore "ACTIVE"
+    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
+    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Essai : 7 j restant(s)")).toBeInTheDocument());
+    expect(screen.queryByText("Starter")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pro")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Choisir/ })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Pour souscrire ou changer d'offre, connectez-vous depuis le site web/)
+    ).toBeInTheDocument();
+  });
+
+  it("sur mobile natif (Capacitor) avec un abonnement déjà actif, n'affiche ni grille ni message de repli", async () => {
+    mockedIsNativePlatform.mockReturnValue(true);
+    seedUser(
+      authUser({
+        subscription: subscription({ status: "ACTIVE", plan: "PRO", isTrialActive: false, isSubscriptionActive: true, subscriptionEndsAt: "2026-10-01T00:00:00.000Z" }),
+      })
+    );
+    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
+    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+    expect(screen.queryByText("Starter")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Pour souscrire ou changer d'offre, connectez-vous depuis le site web/)
+    ).not.toBeInTheDocument();
   });
 });
