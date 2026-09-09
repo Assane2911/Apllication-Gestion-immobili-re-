@@ -24,3 +24,6 @@ backend/drizzle/
 # Base de données locale temporaire
 backend/data/
 
+
+# Config locale d'un outil AI tiers (non liee au projet)
+.snapshots/
