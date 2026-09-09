@@ -10,7 +10,7 @@ import { sendPaymentReceiptEmail } from "../services/receipt.service";
 interface PaydunyaIpnPayload {
   status?: string;
   hash?: string;
-  invoice?: { token?: string };
+  invoice?: { token?: string; total_amount?: string | number };
   custom_data?: { reference?: string };
 }
 
@@ -58,32 +58,62 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
     return res.json({ success: true });
   }
 
+  // Le hash prouve seulement que l'appelant est bien PayDunya, jamais que le
+  // montant réellement réglé correspond à la facture/l'abonnement visé — une
+  // IPN authentique mais liée à un paiement partiel/incorrect soldait quand
+  // même l'intégralité de la facture. On compare donc systématiquement
+  // invoice.total_amount (montant réellement confirmé par PayDunya) au
+  // montant attendu en base avant toute mise à jour de statut.
+  const paidAmount = data.invoice?.total_amount !== undefined ? Number(data.invoice.total_amount) : NaN;
+
   if (ourReference.startsWith("sub_")) {
-    const [record] = await db
-      .update(platformSubscriptions)
-      .set({ status: "PAID" })
-      .where(eq(platformSubscriptions.paymentRef, paydunyaToken))
-      .returning();
-    if (!record) {
+    const [subscriptionRow] = await db
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.paymentRef, paydunyaToken));
+
+    if (!subscriptionRow) {
       console.warn(`[paydunya] Abonnement introuvable pour le token ${paydunyaToken}`);
-    }
-  } else {
-    const [updated] = await db
-      .update(invoices)
-      .set({ status: "PAID", paidAt: new Date() })
-      .where(eq(invoices.paymentRef, paydunyaToken))
-      .returning();
-    if (updated) {
-      await sendPaymentReceiptEmail(updated.id).catch((err) =>
-        console.error("[paydunya] Échec de l'envoi de la quittance après confirmation IPN:", err)
+    } else if (!amountMatches(paidAmount, subscriptionRow.amount)) {
+      console.warn(
+        `[paydunya] IPN rejetée pour l'abonnement ${subscriptionRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${subscriptionRow.amount}).`
       );
     } else {
+      await db
+        .update(platformSubscriptions)
+        .set({ status: "PAID" })
+        .where(eq(platformSubscriptions.id, subscriptionRow.id));
+    }
+  } else {
+    const [invoiceRow] = await db.select().from(invoices).where(eq(invoices.paymentRef, paydunyaToken));
+
+    if (!invoiceRow) {
       console.warn(`[paydunya] Facture introuvable pour le token ${paydunyaToken}`);
+    } else if (!amountMatches(paidAmount, invoiceRow.amount)) {
+      console.warn(
+        `[paydunya] IPN rejetée pour la facture ${invoiceRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${invoiceRow.amount}).`
+      );
+    } else {
+      const [updated] = await db
+        .update(invoices)
+        .set({ status: "PAID", paidAt: new Date() })
+        .where(eq(invoices.id, invoiceRow.id))
+        .returning();
+      if (updated) {
+        await sendPaymentReceiptEmail(updated.id).catch((err) =>
+          console.error("[paydunya] Échec de l'envoi de la quittance après confirmation IPN:", err)
+        );
+      }
     }
   }
 
   res.json({ success: true });
 });
+
+/** Tolère un léger écart d'arrondi (montants en `doublePrecision`). */
+function amountMatches(paidAmount: number, expectedAmount: number): boolean {
+  return Number.isFinite(paidAmount) && Math.abs(paidAmount - expectedAmount) < 0.01;
+}
 
 function isAuthentic(receivedHash: unknown): boolean {
   if (typeof receivedHash !== "string" || !receivedHash) return false;
