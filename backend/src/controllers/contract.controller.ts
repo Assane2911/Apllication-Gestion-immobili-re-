@@ -282,8 +282,15 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   res.status(201).json(await withRelations(newContract.id));
 });
 
+// Une signature électronique est une image (canvas de signature côté
+// frontend) encodée en data URL — jamais du HTML/texte libre. Un simple
+// min(10) laissait passer n'importe quelle chaîne, y compris un payload XSS
+// réinjecté tel quel dans l'attribut src du bail (voir pdf.service.ts) ;
+// on impose désormais le format attendu.
 const signContractSchema = z.object({
-  signatureDataUrl: z.string().min(10, "Signature requise"),
+  signatureDataUrl: z
+    .string()
+    .regex(/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+={0,2}$/, "Signature invalide"),
 });
 
 /** Signature électronique du contrat (par le gestionnaire ou le locataire). */

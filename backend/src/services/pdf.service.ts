@@ -1,5 +1,23 @@
 import PDFDocument from "pdfkit";
 
+/**
+ * Échappe les caractères HTML spéciaux avant interpolation dans les templates
+ * de documents (quittance, bail) ci-dessous. Ces templates sont servis tels
+ * quels en `text/html` (voir document.controller.ts) : sans échappement, un
+ * champ contrôlé par le locataire ou le gestionnaire (nom, adresse, mention
+ * légale, signature...) peut casser hors de son attribut/balise et injecter
+ * du script exécuté dans le navigateur de l'autre partie (XSS stockée).
+ */
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export interface ReceiptData {
   receiptNumber: string;
   agency: {
@@ -59,7 +77,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Quittance de Loyer - N° ${data.receiptNumber}</title>
+  <title>Quittance de Loyer - N° ${escapeHtml(data.receiptNumber)}</title>
   <style>
     @page { size: A4; margin: 20mm; }
     body {
@@ -188,17 +206,17 @@ export function generateReceiptHtml(data: ReceiptData): string {
 <body>
   <div class="header">
     <div>
-      <h1 class="agency-title">${data.agency.name}</h1>
+      <h1 class="agency-title">${escapeHtml(data.agency.name)}</h1>
       <div class="agency-info">
-        ${data.agency.address ? `<p style="margin:2px 0;">${data.agency.address}</p>` : ""}
-        ${data.agency.phone ? `<p style="margin:2px 0;">Tél : ${data.agency.phone}</p>` : ""}
-        ${data.agency.email ? `<p style="margin:2px 0;">Email : ${data.agency.email}</p>` : ""}
-        ${data.agency.siretOrId ? `<p style="margin:2px 0;">N° SIRET / NIF : ${data.agency.siretOrId}</p>` : ""}
+        ${data.agency.address ? `<p style="margin:2px 0;">${escapeHtml(data.agency.address)}</p>` : ""}
+        ${data.agency.phone ? `<p style="margin:2px 0;">Tél : ${escapeHtml(data.agency.phone)}</p>` : ""}
+        ${data.agency.email ? `<p style="margin:2px 0;">Email : ${escapeHtml(data.agency.email)}</p>` : ""}
+        ${data.agency.siretOrId ? `<p style="margin:2px 0;">N° SIRET / NIF : ${escapeHtml(data.agency.siretOrId)}</p>` : ""}
       </div>
     </div>
     <div class="doc-badge">
       <h2 class="doc-title">QUITTANCE DE LOYER</h2>
-      <div class="doc-ref">RÉF : ${data.receiptNumber}</div>
+      <div class="doc-ref">RÉF : ${escapeHtml(data.receiptNumber)}</div>
       <div style="font-size:12px; margin-top:4px; color:#475569;">Période : <strong>${periodLabel}</strong></div>
     </div>
   </div>
@@ -206,22 +224,22 @@ export function generateReceiptHtml(data: ReceiptData): string {
   <div class="tenant-box">
     <div>
       <div style="font-size:11px; text-transform:uppercase; color:#64748b; font-weight:600;">Locataire</div>
-      <div style="font-size:15px; font-weight:700; color:#0f172a; margin-top:2px;">${data.tenant.fullName}</div>
+      <div style="font-size:15px; font-weight:700; color:#0f172a; margin-top:2px;">${escapeHtml(data.tenant.fullName)}</div>
       <div class="tenant-info" style="margin-top:4px;">
-        <div>${data.tenant.email}</div>
-        <div>${data.tenant.phone}</div>
+        <div>${escapeHtml(data.tenant.email)}</div>
+        <div>${escapeHtml(data.tenant.phone)}</div>
       </div>
     </div>
     <div>
       <div style="font-size:11px; text-transform:uppercase; color:#64748b; font-weight:600;">Logement Loué</div>
-      <div style="font-size:14px; font-weight:600; color:#0f172a; margin-top:2px;">${data.property.title}</div>
-      <div class="tenant-info" style="margin-top:2px;">${data.property.address}</div>
+      <div style="font-size:14px; font-weight:600; color:#0f172a; margin-top:2px;">${escapeHtml(data.property.title)}</div>
+      <div class="tenant-info" style="margin-top:2px;">${escapeHtml(data.property.address)}</div>
       <div class="tenant-info">Surface : ${data.property.surface} m²</div>
     </div>
   </div>
 
   <div class="main-statement">
-    Je soussigné, gestionnaire pour le compte du bailleur, certifie avoir reçu de <strong>${data.tenant.fullName}</strong>
+    Je soussigné, gestionnaire pour le compte du bailleur, certifie avoir reçu de <strong>${escapeHtml(data.tenant.fullName)}</strong>
     la somme de <strong>${data.invoice.amount} ${data.invoice.currency}</strong> au titre du paiement du loyer et des charges pour la période du mois de <strong>${periodLabel}</strong>, et lui en donne quittance sous réserve de tous droits.
   </div>
 
@@ -238,7 +256,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
       <tr>
         <td>Loyer mensuel & charges locatives</td>
         <td>${periodLabel}</td>
-        <td>${data.invoice.paymentMethod}</td>
+        <td>${escapeHtml(data.invoice.paymentMethod)}</td>
         <td style="text-align:right; font-weight:600;">${data.invoice.amount} ${data.invoice.currency}</td>
       </tr>
       <tr class="total-row">
@@ -265,7 +283,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
   </div>
 
   <div class="footer-legal">
-    ${data.agency.legalNotice || "Document émis et certifié conforme par le système de gestion locative immobilière."}
+    ${escapeHtml(data.agency.legalNotice) || "Document émis et certifié conforme par le système de gestion locative immobilière."}
     <br>Cette quittance annule tous les reçus qui auraient pu être donnés pour acompte versé sur le présent terme.
   </div>
 </body>
@@ -499,7 +517,7 @@ export function generateLeaseHtml(contract: any, agency: any): string {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Contrat de Bail - ${contract.property?.title}</title>
+  <title>Contrat de Bail - ${escapeHtml(contract.property?.title)}</title>
   <style>
     @page { size: A4; margin: 20mm; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; line-height: 1.6; padding: 24px; }
@@ -519,16 +537,16 @@ export function generateLeaseHtml(contract: any, agency: any): string {
   <div class="section">
     <div class="section-title">1. Les Parties</div>
     <div class="box">
-      <strong>Le Bailleur / Mandataire :</strong> ${agency.agencyName || "L'Agence"} (${agency.address || ""})<br>
-      <strong>Le Locataire :</strong> ${contract.tenant?.firstName} ${contract.tenant?.lastName} (Email : ${contract.tenant?.email}, Tél : ${contract.tenant?.phone})
+      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"} (${escapeHtml(agency.address)})<br>
+      <strong>Le Locataire :</strong> ${escapeHtml(contract.tenant?.firstName)} ${escapeHtml(contract.tenant?.lastName)} (Email : ${escapeHtml(contract.tenant?.email)}, Tél : ${escapeHtml(contract.tenant?.phone)})
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">2. Objet du Contrat & Désignation des Lieux</div>
     <div class="box">
-      <strong>Bien loué :</strong> ${contract.property?.title}<br>
-      <strong>Adresse :</strong> ${contract.property?.address}<br>
+      <strong>Bien loué :</strong> ${escapeHtml(contract.property?.title)}<br>
+      <strong>Adresse :</strong> ${escapeHtml(contract.property?.address)}<br>
       <strong>Surface habitable :</strong> ${contract.property?.surface} m²
     </div>
   </div>
@@ -547,7 +565,7 @@ export function generateLeaseHtml(contract: any, agency: any): string {
       <strong>Pour le Bailleur / Gestionnaire :</strong>
       ${contract.signedByManagerAt ? `
         <div style="color:#059669; font-size:11px; margin-top:4px;">Signé électroniquement le ${new Date(contract.signedByManagerAt).toLocaleDateString("fr-FR")}</div>
-        ${contract.managerSignatureUrl ? `<img src="${contract.managerSignatureUrl}" class="sig-img" alt="Signature Gestionnaire" />` : ""}
+        ${contract.managerSignatureUrl ? `<img src="${escapeHtml(contract.managerSignatureUrl)}" class="sig-img" alt="Signature Gestionnaire" />` : ""}
       ` : `<div style="color:#94a3b8; margin-top:20px;">En attente de signature</div>`}
     </div>
 
@@ -555,7 +573,7 @@ export function generateLeaseHtml(contract: any, agency: any): string {
       <strong>Le Locataire :</strong>
       ${contract.signedByTenantAt ? `
         <div style="color:#059669; font-size:11px; margin-top:4px;">Signé électroniquement le ${new Date(contract.signedByTenantAt).toLocaleDateString("fr-FR")}</div>
-        ${contract.tenantSignatureUrl ? `<img src="${contract.tenantSignatureUrl}" class="sig-img" alt="Signature Locataire" />` : ""}
+        ${contract.tenantSignatureUrl ? `<img src="${escapeHtml(contract.tenantSignatureUrl)}" class="sig-img" alt="Signature Locataire" />` : ""}
       ` : `<div style="color:#94a3b8; margin-top:20px;">En attente de signature</div>`}
     </div>
   </div>
