@@ -17,12 +17,13 @@ function ipnBody(overrides: {
   hash?: string;
   token?: string;
   reference?: string;
+  totalAmount?: number | string;
 }) {
   return {
     data: JSON.stringify({
       status: overrides.status ?? "completed",
       hash: overrides.hash ?? VALID_HASH,
-      invoice: { token: overrides.token ?? "pd_token_default" },
+      invoice: { token: overrides.token ?? "pd_token_default", total_amount: overrides.totalAmount },
       custom_data: { reference: overrides.reference ?? "" },
     }),
   };
@@ -42,7 +43,7 @@ describe("POST /api/payments/paydunya/ipn", () => {
 
     const res = await request(app)
       .post("/api/payments/paydunya/ipn")
-      .send(ipnBody({ token: "pd_token_abc123", reference: invoice.id }));
+      .send(ipnBody({ token: "pd_token_abc123", reference: invoice.id, totalAmount: invoice.amount }));
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -70,7 +71,7 @@ describe("POST /api/payments/paydunya/ipn", () => {
 
     const res = await request(app)
       .post("/api/payments/paydunya/ipn")
-      .send(ipnBody({ token: "pd_token_sub456", reference: `sub_${manager.id}_123456` }));
+      .send(ipnBody({ token: "pd_token_sub456", reference: `sub_${manager.id}_123456`, totalAmount: subscription.amount }));
 
     expect(res.status).toBe(200);
 
@@ -120,6 +121,29 @@ describe("POST /api/payments/paydunya/ipn", () => {
     expect(res.status).toBe(200);
     const [stillPending] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
     expect(stillPending.status).toBe("PENDING");
+  });
+
+  it("rejette la confirmation si le montant réellement réglé ne correspond pas au montant attendu (paiement partiel/incorrect)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, {
+      status: "PENDING",
+      paymentMethod: "PAYDUNYA",
+      paymentRef: "pd_token_montant_incorrect",
+      amount: 500,
+    });
+
+    const res = await request(app)
+      .post("/api/payments/paydunya/ipn")
+      .send(ipnBody({ token: "pd_token_montant_incorrect", reference: invoice.id, totalAmount: 100 }));
+
+    expect(res.status).toBe(200);
+
+    const [stillPending] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(stillPending.status).toBe("PENDING");
+    expect(stillPending.paidAt).toBeNull();
   });
 
   it("renvoie 400 si le corps ne contient aucun champ 'data' exploitable", async () => {
