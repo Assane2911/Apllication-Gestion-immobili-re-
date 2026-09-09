@@ -127,20 +127,33 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
     endDate.setMonth(endDate.getMonth() + 1);
   }
 
+  // N'active RÉELLEMENT l'abonnement (droits d'accès) que si le paiement est
+  // confirmé (status "PAID" — cas DEMO, simulation sans clé configurée, ou
+  // futur webhook PayDunya synchrone). Un virement déclaré (BANK_TRANSFER,
+  // toujours "PENDING_VALIDATION") ou un paiement encore en attente d'action
+  // (Stripe/PayDunya réels, "REQUIRES_ACTION") ne doit jamais accorder l'accès
+  // tant qu'aucune confirmation réelle n'est arrivée — sans quoi n'importe quel
+  // compte peut s'auto-déclarer un abonnement gratuit. On enregistre malgré
+  // tout l'historique (statut PENDING) pour traçabilité et validation
+  // ultérieure, mais sans jamais toucher aux droits d'accès de l'utilisateur.
+  const isConfirmed = paymentResult.status === "PAID";
+
   // Active l'abonnement ET enregistre l'historique de facturation ensemble :
   // sans transaction, un échec du second insert laissait un abonnement actif
   // sans aucune trace d'audit/facturation correspondante.
   const { updatedUser, subscriptionRecord } = await db.transaction(async (tx: Transaction) => {
-    const [updatedUser] = await tx
-      .update(users)
-      .set({
-        subscriptionStatus: "ACTIVE",
-        subscriptionPlan: body.plan,
-        subscriptionEndsAt: endDate,
-        subscriptionPaymentMethod: body.paymentMethod,
-      })
-      .where(eq(users.id, user.id))
-      .returning();
+    const [updatedUser] = isConfirmed
+      ? await tx
+          .update(users)
+          .set({
+            subscriptionStatus: "ACTIVE",
+            subscriptionPlan: body.plan,
+            subscriptionEndsAt: endDate,
+            subscriptionPaymentMethod: body.paymentMethod,
+          })
+          .where(eq(users.id, user.id))
+          .returning()
+      : await tx.select().from(users).where(eq(users.id, user.id));
 
     const [subscriptionRecord] = await tx
       .insert(platformSubscriptions)
@@ -149,7 +162,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
         plan: body.plan,
         amount,
         billingCycle: body.billingCycle,
-        status: paymentResult.status === "PAID" ? "PAID" : "PENDING",
+        status: isConfirmed ? "PAID" : "PENDING",
         paymentMethod: body.paymentMethod,
         paymentRef: paymentResult.reference,
         startDate: now,
@@ -163,8 +176,10 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   const subscriptionInfo = computeSubscriptionInfo(updatedUser);
 
   res.status(200).json({
-    success: true,
-    message: `Votre abonnement au plan ${planDef.name} a été activé avec succès !`,
+    success: isConfirmed,
+    message: isConfirmed
+      ? `Votre abonnement au plan ${planDef.name} a été activé avec succès !`
+      : `Paiement enregistré, en attente de confirmation. Votre abonnement au plan ${planDef.name} sera activé dès que le paiement sera validé.`,
     subscription: subscriptionInfo,
     payment: paymentResult,
     record: subscriptionRecord,
