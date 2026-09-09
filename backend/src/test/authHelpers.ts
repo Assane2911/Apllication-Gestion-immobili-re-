@@ -25,6 +25,24 @@ export async function createManager(overrides: Partial<typeof users.$inferInsert
   return user;
 }
 
+/** Crée un administrateur de la plateforme directement en base de test. */
+export async function createAdmin(overrides: Partial<typeof users.$inferInsert> = {}) {
+  const id = overrides.id ?? createId();
+  const passwordHash = await bcrypt.hash("Password123!", 10);
+  const [user] = await testDb
+    .insert(users)
+    .values({
+      id,
+      email: `admin-${id}@test.local`,
+      passwordHash,
+      role: "ADMIN" as const,
+      emailVerifiedAt: new Date(),
+      ...overrides,
+    })
+    .returning();
+  return user;
+}
+
 /** Crée un bien pour un gestionnaire donné. */
 export async function createProperty(managerId: string, overrides: Partial<typeof properties.$inferInsert> = {}) {
   const [property] = await testDb
@@ -60,7 +78,7 @@ export async function createTenant(managerId: string, overrides: Partial<typeof 
 }
 
 /** Émet un JWT valide pour les tests, avec le même secret que l'app en mode test. */
-export function tokenFor(user: { id: string; role: "MANAGER" | "TENANT" }, tenantId: string | null = null) {
+export function tokenFor(user: { id: string; role: "MANAGER" | "TENANT" | "ADMIN" }, tenantId: string | null = null) {
   return jwt.sign({ userId: user.id, role: user.role, tenantId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
 }
 

@@ -439,6 +439,9 @@ const pt: TranslationSchema = {
     tenantLayout: {
       title: "Área do inquilino",
     },
+    adminLayout: {
+      title: "Administração da plataforma",
+    },
   },
 
   manager: {
@@ -876,6 +879,27 @@ const pt: TranslationSchema = {
       writeMessage: "Escreva a sua mensagem...",
       send: "Enviar",
       sending: "...",
+    },
+  },
+  admin: {
+    subscriptions: {
+      title: "Transferências bancárias pendentes",
+      subtitle: "Assinaturas SaaS pagas por transferência bancária, aguardando confirmação manual",
+      emptyTitle: "Nenhuma transferência pendente",
+      emptyDescription: "Todas as assinaturas pagas por transferência bancária foram confirmadas.",
+      table: {
+        manager: "Gestor",
+        plan: "Plano",
+        cycle: "Ciclo",
+        amount: "Valor",
+        reference: "Referência",
+        since: "Desde",
+      },
+      annual: "Anual",
+      monthly: "Mensal",
+      confirmButton: "Confirmar pagamento",
+      confirming: "A confirmar...",
+      confirmPrompt: "Confirmar a receção da transferência de {{amount}} € de {{email}}? Isto ativará imediatamente a assinatura.",
     },
   },
 };

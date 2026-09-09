@@ -439,6 +439,9 @@ const es: TranslationSchema = {
     tenantLayout: {
       title: "Espacio inquilino",
     },
+    adminLayout: {
+      title: "Administración de la plataforma",
+    },
   },
 
   manager: {
@@ -878,6 +881,27 @@ const es: TranslationSchema = {
       writeMessage: "Escribe tu mensaje...",
       send: "Enviar",
       sending: "...",
+    },
+  },
+  admin: {
+    subscriptions: {
+      title: "Transferencias bancarias pendientes",
+      subtitle: "Suscripciones SaaS pagadas por transferencia bancaria, a la espera de confirmación manual",
+      emptyTitle: "No hay transferencias pendientes",
+      emptyDescription: "Todas las suscripciones pagadas por transferencia bancaria han sido confirmadas.",
+      table: {
+        manager: "Gestor",
+        plan: "Plan",
+        cycle: "Ciclo",
+        amount: "Importe",
+        reference: "Referencia",
+        since: "Desde el",
+      },
+      annual: "Anual",
+      monthly: "Mensual",
+      confirmButton: "Confirmar el pago",
+      confirming: "Confirmando...",
+      confirmPrompt: "¿Confirmar la recepción de la transferencia de {{amount}} € de {{email}}? Esto activará inmediatamente su suscripción.",
     },
   },
 };

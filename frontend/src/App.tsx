@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import AdminLayout from "./components/AdminLayout";
 import ManagerLayout from "./components/ManagerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
@@ -7,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/auth";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { homePathForRole } from "./utils/roleHome";
 
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -32,6 +34,7 @@ const TenantDashboardPage = lazy(() => import("./pages/tenant/TenantDashboardPag
 const TenantInvoicesPage = lazy(() => import("./pages/tenant/TenantInvoicesPage"));
 const TenantIssuesPage = lazy(() => import("./pages/tenant/TenantIssuesPage"));
 const TenantMessagesPage = lazy(() => import("./pages/tenant/TenantMessagesPage"));
+const AdminSubscriptionsPage = lazy(() => import("./pages/admin/AdminSubscriptionsPage"));
 
 /** Indicateur de chargement affiché pendant le téléchargement du chunk d'une page (React.lazy). */
 function PageLoader() {
@@ -45,7 +48,7 @@ function PageLoader() {
 function HomeRedirect() {
   const { user } = useAuth();
   if (!user) return <LandingPage />;
-  return <Navigate to={user.role === "MANAGER" ? "/dashboard" : "/portail"} replace />;
+  return <Navigate to={homePathForRole(user.role)} replace />;
 }
 
 function AppRoutes() {
@@ -94,6 +97,16 @@ function AppRoutes() {
           <Route path="/portail/paiements" element={<TenantInvoicesPage />} />
           <Route path="/portail/messages" element={<TenantMessagesPage />} />
           <Route path="/portail/incidents" element={<TenantIssuesPage />} />
+        </Route>
+
+        <Route
+          element={
+            <ProtectedRoute role="ADMIN">
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/admin" element={<AdminSubscriptionsPage />} />
         </Route>
 
         <Route path="*" element={<HomeRedirect />} />

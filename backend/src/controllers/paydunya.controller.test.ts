@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { invoices, platformSubscriptions } from "../db/schema";
+import { invoices, platformSubscriptions, users } from "../db/schema";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -53,8 +53,8 @@ describe("POST /api/payments/paydunya/ipn", () => {
     expect(updated.paidAt).not.toBeNull();
   });
 
-  it("confirme le paiement d'un abonnement SaaS quand la référence commence par 'sub_'", async () => {
-    const manager = await createManager();
+  it("confirme le paiement d'un abonnement SaaS quand la référence commence par 'sub_' : historique ET accès du compte activés", async () => {
+    const manager = await createManager({ subscriptionStatus: "EXPIRED" });
     const [subscription] = await testDb
       .insert(platformSubscriptions)
       .values({
@@ -80,6 +80,14 @@ describe("POST /api/payments/paydunya/ipn", () => {
       .from(platformSubscriptions)
       .where(eq(platformSubscriptions.id, subscription.id));
     expect(updated.status).toBe("PAID");
+
+    // L'historique de paiement ne suffit pas : l'accès du compte doit aussi
+    // être réellement débloqué (régression corrigée par
+    // subscriptionActivation.service.ts, voir son commentaire).
+    const [updatedManager] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(updatedManager.subscriptionStatus).toBe("ACTIVE");
+    expect(updatedManager.subscriptionPlan).toBe("STARTER");
+    expect(updatedManager.subscriptionEndsAt).not.toBeNull();
   });
 
   it("rejette une notification dont le hash de signature est invalide", async () => {

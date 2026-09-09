@@ -5,6 +5,7 @@ import { api, apiErrorCode, apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import { useAuth } from "../context/auth";
+import { homePathForRole } from "../utils/roleHome";
 
 const DEMO_ACCOUNTS = {
   manager: { email: "gestionnaire@demo.com", password: "Demo1234!" },
@@ -75,7 +76,7 @@ export default function LoginPage() {
     setLoading(source);
     try {
       const user = await login(loginEmail, loginPassword);
-      navigate(user.role === "MANAGER" ? "/" : "/portail");
+      navigate(homePathForRole(user.role));
     } catch (err) {
       setError(apiErrorMessage(err));
       if (apiErrorCode(err) === "EMAIL_NOT_VERIFIED") {

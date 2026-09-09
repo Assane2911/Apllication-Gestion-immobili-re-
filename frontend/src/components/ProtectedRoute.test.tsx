@@ -22,7 +22,7 @@ function authValue(user: AuthUser | null): AuthContextValue {
   };
 }
 
-function renderProtected(user: AuthUser | null, role: "MANAGER" | "TENANT", initialPath = "/prive") {
+function renderProtected(user: AuthUser | null, role: "MANAGER" | "TENANT" | "ADMIN", initialPath = "/prive") {
   return render(
     <AuthContext.Provider value={authValue(user)}>
       <MemoryRouter initialEntries={[initialPath]}>
@@ -36,9 +36,10 @@ function renderProtected(user: AuthUser | null, role: "MANAGER" | "TENANT", init
             }
           />
           <Route path="/login" element={<div>Page de connexion</div>} />
-          <Route path="/" element={<div>Accueil gestionnaire</div>} />
+          <Route path="/dashboard" element={<div>Accueil gestionnaire</div>} />
           <Route path="/portail" element={<div>Portail locataire</div>} />
           <Route path="/subscription" element={<div>Page abonnement</div>} />
+          <Route path="/admin" element={<div>Espace admin</div>} />
         </Routes>
       </MemoryRouter>
     </AuthContext.Provider>
@@ -57,6 +58,12 @@ const managerActif: AuthUser = {
     isSubscriptionActive: false,
     isExpired: false,
   },
+};
+
+const adminActif: AuthUser = {
+  id: "a1",
+  email: "admin@immoplatformpro.com",
+  role: "ADMIN",
 };
 
 describe("ProtectedRoute", () => {
@@ -79,6 +86,21 @@ describe("ProtectedRoute", () => {
   it("redirige un gestionnaire qui tente d'accéder à une page réservée aux locataires", () => {
     renderProtected(managerActif, "TENANT");
     expect(screen.getByText("Accueil gestionnaire")).toBeInTheDocument();
+  });
+
+  it("laisse passer un administrateur connecté sur l'espace admin", () => {
+    renderProtected(adminActif, "ADMIN");
+    expect(screen.getByText("Contenu protégé")).toBeInTheDocument();
+  });
+
+  it("redirige un gestionnaire qui tente d'accéder à l'espace admin", () => {
+    renderProtected(managerActif, "ADMIN");
+    expect(screen.getByText("Accueil gestionnaire")).toBeInTheDocument();
+  });
+
+  it("redirige un administrateur qui tente d'accéder à une page réservée aux gestionnaires", () => {
+    renderProtected(adminActif, "MANAGER");
+    expect(screen.getByText("Espace admin")).toBeInTheDocument();
   });
 
   it("bloque un gestionnaire dont l'abonnement a expiré (paywall)", () => {

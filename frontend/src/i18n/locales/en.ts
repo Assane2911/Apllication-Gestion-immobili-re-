@@ -439,6 +439,9 @@ const en: TranslationSchema = {
     tenantLayout: {
       title: "Tenant area",
     },
+    adminLayout: {
+      title: "Platform Administration",
+    },
   },
 
   manager: {
@@ -876,6 +879,27 @@ const en: TranslationSchema = {
       writeMessage: "Write your message...",
       send: "Send",
       sending: "...",
+    },
+  },
+  admin: {
+    subscriptions: {
+      title: "Pending Bank Transfers",
+      subtitle: "SaaS subscriptions paid by bank transfer, awaiting manual confirmation",
+      emptyTitle: "No pending transfers",
+      emptyDescription: "All bank transfer subscriptions have been confirmed.",
+      table: {
+        manager: "Manager",
+        plan: "Plan",
+        cycle: "Cycle",
+        amount: "Amount",
+        reference: "Reference",
+        since: "Since",
+      },
+      annual: "Annual",
+      monthly: "Monthly",
+      confirmButton: "Confirm payment",
+      confirming: "Confirming...",
+      confirmPrompt: "Confirm receipt of the {{amount}} € transfer from {{email}}? This will immediately activate their subscription.",
     },
   },
 };

@@ -30,7 +30,7 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-function signToken(payload: { userId: string; role: "MANAGER" | "TENANT"; tenantId?: string | null }) {
+function signToken(payload: { userId: string; role: "MANAGER" | "TENANT" | "ADMIN"; tenantId?: string | null }) {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
 }
 
@@ -142,7 +142,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   const token = signToken({
     userId: user.id,
-    role: user.role as "MANAGER" | "TENANT",
+    role: user.role as "MANAGER" | "TENANT" | "ADMIN",
     tenantId: tenant?.id ?? null,
   });
 

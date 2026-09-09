@@ -5,7 +5,7 @@ import { ApiError } from "../utils/asyncHandler";
 
 export interface AuthPayload {
   userId: string;
-  role: "MANAGER" | "TENANT";
+  role: "MANAGER" | "TENANT" | "ADMIN";
   tenantId?: string | null;
 }
 

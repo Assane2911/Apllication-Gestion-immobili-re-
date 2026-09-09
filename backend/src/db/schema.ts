@@ -11,7 +11,7 @@ const timestamps = {
     .$onUpdate(() => new Date()),
 };
 
-export const roleEnum = pgEnum("role", ["MANAGER", "TENANT"]);
+export const roleEnum = pgEnum("role", ["MANAGER", "TENANT", "ADMIN"]);
 export const propertyStatusEnum = pgEnum("property_status", ["AVAILABLE", "OCCUPIED", "MAINTENANCE"]);
 export const contractStatusEnum = pgEnum("contract_status", ["ACTIVE", "ENDED", "TERMINATED"]);
 export const invoiceStatusEnum = pgEnum("invoice_status", ["PENDING", "PAID", "LATE", "CANCELLED"]);

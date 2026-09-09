@@ -6,6 +6,7 @@ import { invoices, platformSubscriptions } from "../db/schema";
 import { env } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
+import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
 
 interface PaydunyaIpnPayload {
   status?: string;
@@ -79,10 +80,13 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
         `[paydunya] IPN rejetée pour l'abonnement ${subscriptionRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${subscriptionRow.amount}).`
       );
     } else {
-      await db
-        .update(platformSubscriptions)
-        .set({ status: "PAID" })
-        .where(eq(platformSubscriptions.id, subscriptionRow.id));
+      // Marque l'historique de paiement PAID ET active réellement l'accès du
+      // compte (subscriptionStatus/plan/endsAt) — voir subscriptionActivation.service.ts.
+      // Avant ce correctif, seul l'historique était mis à jour : un paiement
+      // PayDunya confirmé ne débloquait jamais vraiment l'abonnement du
+      // gestionnaire, qui restait bloqué sur son statut précédent (essai
+      // expiré, etc.) malgré un paiement réellement reçu.
+      await activateSubscriptionRecord(subscriptionRow.id);
     }
   } else {
     const [invoiceRow] = await db.select().from(invoices).where(eq(invoices.paymentRef, paydunyaToken));

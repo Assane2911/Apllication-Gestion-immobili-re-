@@ -437,6 +437,9 @@ const fr = {
     tenantLayout: {
       title: "Espace locataire",
     },
+    adminLayout: {
+      title: "Administration de la plateforme",
+    },
   },
 
   manager: {
@@ -876,6 +879,27 @@ const fr = {
       writeMessage: "Écrivez votre message...",
       send: "Envoyer",
       sending: "...",
+    },
+  },
+  admin: {
+    subscriptions: {
+      title: "Virements bancaires en attente",
+      subtitle: "Abonnements SaaS payés par virement, en attente de confirmation manuelle",
+      emptyTitle: "Aucun virement en attente",
+      emptyDescription: "Tous les abonnements payés par virement bancaire ont été confirmés.",
+      table: {
+        manager: "Gestionnaire",
+        plan: "Formule",
+        cycle: "Cycle",
+        amount: "Montant",
+        reference: "Référence",
+        since: "Depuis le",
+      },
+      annual: "Annuel",
+      monthly: "Mensuel",
+      confirmButton: "Confirmer le paiement",
+      confirming: "Confirmation...",
+      confirmPrompt: "Confirmer la réception du virement de {{amount}} € de {{email}} ? Cette action activera immédiatement son abonnement.",
     },
   },
 };

@@ -5,6 +5,7 @@ import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import { useInView } from "../hooks/useInView";
 import { useAuth } from "../context/auth";
+import { homePathForRole } from "../utils/roleHome";
 
 const FEATURE_CARDS = [
   { key: "receipts", icon: "📄", color: "bg-brand-600/20 text-brand-400" },
@@ -249,7 +250,7 @@ export default function LandingPage() {
             <LanguageSwitcher />
             {user ? (
               <Link
-                to={user.role === "MANAGER" ? "/" : "/portail"}
+                to={homePathForRole(user.role)}
                 className="bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
               >
                 {t("landing.nav.goToSpace")}

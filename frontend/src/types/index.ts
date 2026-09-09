@@ -1,4 +1,4 @@
-export type Role = "MANAGER" | "TENANT";
+export type Role = "MANAGER" | "TENANT" | "ADMIN";
 
 export type SubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED";
 export type SubscriptionPlan = "STARTER" | "PRO" | "ENTERPRISE";
