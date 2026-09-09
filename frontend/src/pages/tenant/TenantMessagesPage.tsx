@@ -1,74 +1,21 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
-import { useAuth } from "../../context/auth";
-import type { Conversation, Message } from "../../types";
+import { useConversationThread } from "../../hooks/useConversationThread";
 
 export default function TenantMessagesPage() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [activeContract, setActiveContract] = useState<any>(null);
-  const [newText, setNewText] = useState("");
-  const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  function loadConversations() {
-    api
-      .get<Conversation[]>("/messages/conversations")
-      .then((res) => {
-        setConversations(res.data);
-        if (res.data.length > 0 && !selectedContractId) {
-          setSelectedContractId(res.data[0].contractId);
-        }
-        setError(null);
-      })
-      .catch((err) => setError(apiErrorMessage(err)))
-      .finally(() => setLoading(false));
-  }
-
-  // loadConversations lit selectedContractId via une closure fraîche à chaque appel (bouton
-  // "réessayer" inclus) ; l'ajouter aux deps de l'effet ci-dessous redéclencherait un
-  // rechargement à chaque sélection de conversation, alors qu'il ne doit tourner qu'au montage.
-  useEffect(() => {
-    loadConversations();
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!selectedContractId) return;
-    api
-      .get(`/messages/${selectedContractId}`)
-      .then((res) => {
-        setMessages(res.data.messages);
-        setActiveContract(res.data.contract);
-      })
-      .catch((err) => setError(apiErrorMessage(err)));
-  }, [selectedContractId]);
-
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newText.trim() || !selectedContractId) return;
-    setSending(true);
-    try {
-      const res = await api.post(`/messages/${selectedContractId}`, { content: newText.trim() });
-      setMessages((prev) => [
-        ...prev,
-        {
-          ...res.data,
-          sender: { id: user?.id || "", email: user?.email || "", role: "TENANT" },
-        },
-      ]);
-      setNewText("");
-    } catch (err) {
-      alert(apiErrorMessage(err));
-    } finally {
-      setSending(false);
-    }
-  }
+  const {
+    conversations,
+    messages,
+    activeContract,
+    newText,
+    setNewText,
+    sending,
+    loading,
+    loadingMessages,
+    error,
+    loadConversations,
+    handleSend,
+  } = useConversationThread("TENANT");
 
   if (loading) {
     return <p className="text-slate-500 dark:text-slate-400 text-sm">{t("tenant.messages.loading")}</p>;
@@ -120,6 +67,9 @@ export default function TenantMessagesPage() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30 dark:bg-slate-950/20">
+          {loadingMessages && (
+            <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">{t("tenant.messages.loadingMessages")}</p>
+          )}
           {messages.map((m) => {
             const isMe = m.senderRole === "TENANT";
             return (
@@ -140,7 +90,7 @@ export default function TenantMessagesPage() {
               </div>
             );
           })}
-          {messages.length === 0 && (
+          {!loadingMessages && messages.length === 0 && (
             <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-12">
               {t("tenant.messages.noMessagesYet")}
             </p>

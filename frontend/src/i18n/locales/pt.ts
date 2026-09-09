@@ -864,6 +864,7 @@ const pt: TranslationSchema = {
       title: "Trocas com o Meu Gestor",
       subtitle: "Converse diretamente com a sua agência / senhorio",
       loading: "A carregar as mensagens...",
+      loadingMessages: "A carregar as mensagens desta conversa...",
       noActiveContract: "Nenhum contrato de arrendamento ativo associado para trocar mensagens.",
       headerTitle: "Agência & Gestor",
       housing: "Habitação: {{property}}",

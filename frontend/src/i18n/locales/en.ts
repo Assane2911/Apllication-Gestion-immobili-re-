@@ -864,6 +864,7 @@ const en: TranslationSchema = {
       title: "Conversation with My Manager",
       subtitle: "Chat directly with your agency / landlord",
       loading: "Loading messages...",
+      loadingMessages: "Loading messages for this conversation...",
       noActiveContract: "No active lease contract associated to exchange messages.",
       headerTitle: "Agency & Manager",
       housing: "Home: {{property}}",

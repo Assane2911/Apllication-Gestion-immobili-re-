@@ -864,6 +864,7 @@ const fr = {
       title: "Échanges avec mon gestionnaire",
       subtitle: "Discutez directement avec votre agence / bailleur",
       loading: "Chargement de la messagerie...",
+      loadingMessages: "Chargement des messages...",
       noActiveContract: "Aucun contrat de location actif associé pour échanger des messages.",
       headerTitle: "Agence & Gestionnaire",
       housing: "Logement : {{property}}",

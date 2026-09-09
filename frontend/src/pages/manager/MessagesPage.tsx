@@ -1,76 +1,22 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
-import { useAuth } from "../../context/auth";
-import type { Conversation, Message } from "../../types";
+import { useConversationThread } from "../../hooks/useConversationThread";
 
 export default function MessagesPage() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [activeDetails, setActiveDetails] = useState<any>(null);
-  const [newText, setNewText] = useState("");
-  const [sending, setSending] = useState(false);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  function loadConversations() {
-    api
-      .get<Conversation[]>("/messages/conversations")
-      .then((res) => {
-        setConversations(res.data);
-        if (!selectedContractId && res.data.length > 0) {
-          setSelectedContractId(res.data[0].contractId);
-        }
-        setError(null);
-      })
-      .catch((err) => setError(apiErrorMessage(err)));
-  }
-
-  // loadConversations lit selectedContractId via une closure fraîche à chaque appel (bouton
-  // "réessayer", envoi de message inclus) ; l'ajouter aux deps de l'effet ci-dessous redéclencherait
-  // un rechargement à chaque sélection de conversation, alors qu'il ne doit tourner qu'au montage.
-  useEffect(() => {
-    loadConversations();
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!selectedContractId) return;
-    setLoadingMessages(true);
-    api
-      .get(`/messages/${selectedContractId}`)
-      .then((res) => {
-        setMessages(res.data.messages);
-        setActiveDetails(res.data.contract);
-      })
-      .catch((err) => setError(apiErrorMessage(err)))
-      .finally(() => setLoadingMessages(false));
-  }, [selectedContractId]);
-
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newText.trim() || !selectedContractId) return;
-    setSending(true);
-    try {
-      const res = await api.post(`/messages/${selectedContractId}`, { content: newText.trim() });
-      setMessages((prev) => [
-        ...prev,
-        {
-          ...res.data,
-          sender: { id: user?.id || "", email: user?.email || "", role: "MANAGER" },
-        },
-      ]);
-      setNewText("");
-      loadConversations();
-    } catch (err) {
-      alert(apiErrorMessage(err));
-    } finally {
-      setSending(false);
-    }
-  }
+  const {
+    conversations,
+    selectedContractId,
+    setSelectedContractId,
+    messages,
+    activeContract: activeDetails,
+    newText,
+    setNewText,
+    sending,
+    loadingMessages,
+    error,
+    loadConversations,
+    handleSend,
+  } = useConversationThread("MANAGER", { refreshOnSend: true });
 
   return (
     <div className="space-y-6">

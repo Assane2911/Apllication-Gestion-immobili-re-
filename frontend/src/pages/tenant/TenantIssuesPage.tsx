@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
+import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport } from "../../types";
+import { getAllIssuePhotos } from "../../utils/issuePhotos";
 
 export default function TenantIssuesPage() {
   const { t, i18n } = useTranslation();
@@ -99,19 +101,6 @@ export default function TenantIssuesPage() {
     } finally {
       setSavingExtra(false);
     }
-  }
-
-  function getAllPhotos(issue: IssueReport): string[] {
-    const list = [issue.photoUrl];
-    if (issue.additionalPhotos) {
-      try {
-        const extra = JSON.parse(issue.additionalPhotos);
-        if (Array.isArray(extra)) {
-          list.push(...extra);
-        }
-      } catch {}
-    }
-    return list;
   }
 
   return (
@@ -226,7 +215,7 @@ export default function TenantIssuesPage() {
         <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-lg mb-3">{t("tenant.issues.historyTitle")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {issues.map((issue) => {
-            const allPhotos = getAllPhotos(issue);
+            const allPhotos = getAllIssuePhotos(issue);
             return (
               <div key={issue.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
                 <div>
@@ -334,14 +323,7 @@ export default function TenantIssuesPage() {
       </div>
 
       {/* Lightbox / Zoom Agrandisseur */}
-      {lightbox && (
-        <div
-          onClick={() => setLightbox(null)}
-          className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 cursor-zoom-out backdrop-blur-sm"
-        >
-          <img src={lightbox} alt={t("tenant.issues.enlargedPhotoAlt")} className="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl border border-slate-700" />
-        </div>
-      )}
+      <PhotoLightbox src={lightbox} alt={t("tenant.issues.enlargedPhotoAlt")} onClose={() => setLightbox(null)} />
     </div>
   );
 }
