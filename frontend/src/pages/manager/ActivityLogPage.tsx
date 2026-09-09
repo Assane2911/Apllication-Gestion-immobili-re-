@@ -63,6 +63,7 @@ export default function ActivityLogPage() {
           </p>
         </div>
         <select
+          aria-label={t("manager.activityLog.filterByType")}
           value={entityType}
           onChange={(e) => setEntityType(e.target.value)}
           className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"

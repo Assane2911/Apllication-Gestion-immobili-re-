@@ -101,6 +101,7 @@ export default function TenantMessagesPage() {
         <form onSubmit={handleSend} className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
           <input
             type="text"
+            aria-label={t("tenant.messages.writeMessage")}
             placeholder={t("tenant.messages.writeMessage")}
             value={newText}
             onChange={(e) => setNewText(e.target.value)}

@@ -171,12 +171,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.email")}</label>
+              <label htmlFor="login-email" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.email")}</label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                   <MailIcon />
                 </span>
                 <input
+                  id="login-email"
                   type="email"
                   required
                   value={email}
@@ -188,12 +189,13 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.password")}</label>
+              <label htmlFor="login-password" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.password")}</label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                   <LockIcon />
                 </span>
                 <input
+                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}

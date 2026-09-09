@@ -107,6 +107,7 @@ export default function TenantInvoicesPage() {
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.hint}</p>
                     {m.key === "BANK_TRANSFER" && (
                       <input
+                        aria-label={t("tenant.invoices.bankRefPlaceholder")}
                         placeholder={t("tenant.invoices.bankRefPlaceholder")}
                         value={bankRef}
                         onChange={(e) => setBankRef(e.target.value)}

@@ -145,8 +145,8 @@ export default function ContractsPage() {
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{t("manager.contracts.formTitle")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.property")}</label>
-              <select required value={form.propertyId} onChange={(e) => {
+              <label htmlFor="contract-property" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.property")}</label>
+              <select id="contract-property" required value={form.propertyId} onChange={(e) => {
                 const prop = properties.find((p) => p.id === e.target.value);
                 setForm({ ...form, propertyId: e.target.value, rent: prop ? String(prop.rent) : form.rent, deposit: prop ? String(prop.rent * 2) : form.deposit });
               }} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
@@ -157,8 +157,8 @@ export default function ContractsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.tenant")}</label>
-              <select required value={form.tenantId} onChange={(e) => setForm({ ...form, tenantId: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="contract-tenant" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.tenant")}</label>
+              <select id="contract-tenant" required value={form.tenantId} onChange={(e) => setForm({ ...form, tenantId: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
                 <option value="">{t("manager.contracts.fields.selectTenant")}</option>
                 {tenants.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>{tenant.firstName} {tenant.lastName}</option>
@@ -166,20 +166,20 @@ export default function ContractsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.rent")}</label>
-              <input required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-rent" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.rent")}</label>
+              <input id="contract-rent" required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.deposit")}</label>
-              <input required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-deposit" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.deposit")}</label>
+              <input id="contract-deposit" required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.startDate")}</label>
-              <input required type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-startDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.startDate")}</label>
+              <input id="contract-startDate" required type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
-              <input required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
+              <input id="contract-endDate" required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">

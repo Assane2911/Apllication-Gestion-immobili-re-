@@ -108,6 +108,7 @@ export default function InvoicesPage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <select
+            aria-label={t("manager.invoices.filterByStatus")}
             value={filter}
             onChange={(e) => handleFilterChange(e.target.value as InvoiceStatus | "ALL")}
             className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 dark:text-slate-100 shadow-sm"

@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                <label htmlFor="reset-password-new" className="block text-xs font-medium text-slate-400 mb-1.5">
                   {t("auth.resetPassword.newPassword")}
                 </label>
                 <div className="relative">
@@ -119,6 +119,7 @@ export default function ResetPasswordPage() {
                     <LockIcon />
                   </span>
                   <input
+                    id="reset-password-new"
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
@@ -138,7 +139,7 @@ export default function ResetPasswordPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                <label htmlFor="reset-password-confirm" className="block text-xs font-medium text-slate-400 mb-1.5">
                   {t("auth.resetPassword.confirmPassword")}
                 </label>
                 <div className="relative">
@@ -146,6 +147,7 @@ export default function ResetPasswordPage() {
                     <LockIcon />
                   </span>
                   <input
+                    id="reset-password-confirm"
                     type={showPassword ? "text" : "password"}
                     required
                     value={confirmPassword}

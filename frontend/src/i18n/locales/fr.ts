@@ -584,6 +584,7 @@ const fr = {
       title: "Paiements de loyer",
       subtitle: "Suivi des mensualités et quittances officielles en PDF",
       filterAll: "Toutes les factures",
+      filterByStatus: "Filtrer par statut",
       sendMonthlyAlerts: "Envoyer alertes du 1er du mois",
       sendingMonthly: "Envoi en cours...",
       confirmSendMonthly:
@@ -668,6 +669,8 @@ const fr = {
         amount: "Montant TTC *",
         notes: "Notes / Détails complémentaires",
         notesPlaceholder: "Artisan plombier, devis n°...",
+        reportDateFrom: "Date de début du rapport",
+        reportDateTo: "Date de fin du rapport",
       },
       saveExpense: "Enregistrer la dépense",
       csvHeaders: {
@@ -700,6 +703,7 @@ const fr = {
       title: "Signalements d'incidents & Photos",
       subtitle: "Inspection visuelle des incidents photographiés par les locataires",
       allStatuses: "Tous les statuts",
+      filterByStatus: "Filtrer par statut",
       photoCount: "Photo {{current}}/{{total}}",
       responseLabel: "Note de traitement / Réponse au locataire :",
       responsePlaceholder: "Ex: Plombier mandaté, intervention prévue mardi à 14h...",
@@ -712,6 +716,7 @@ const fr = {
     activityLog: {
       title: "Journal d'activité",
       subtitle: "Historique des actions effectuées sur vos biens, locataires, contrats et paiements",
+      filterByType: "Filtrer par catégorie",
       filters: {
         all: "Toutes les catégories",
         property: "Biens",

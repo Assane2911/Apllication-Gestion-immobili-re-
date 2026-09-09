@@ -338,8 +338,9 @@ export default function SubscriptionPage() {
 
               {selectedMethod === "BANK_TRANSFER" && (
                 <div className="pt-2">
-                  <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">{t("manager.subscription.bankRefLabel")}</label>
+                  <label htmlFor="subscription-bank-ref" className="text-xs text-slate-600 dark:text-slate-400 block mb-1">{t("manager.subscription.bankRefLabel")}</label>
                   <input
+                    id="subscription-bank-ref"
                     type="text"
                     value={bankRef}
                     onChange={(e) => setBankRef(e.target.value)}

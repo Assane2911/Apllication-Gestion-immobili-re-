@@ -128,36 +128,36 @@ export default function PropertiesPage() {
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.properties.formTitleEdit") : t("manager.properties.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.title")}</label>
-              <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="property-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.title")}</label>
+              <input id="property-title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.address")}</label>
-              <input required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="property-address" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.address")}</label>
+              <input id="property-address" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.surface")}</label>
-              <input required type="number" step="0.1" value={form.surface} onChange={(e) => setForm({ ...form, surface: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="property-surface" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.surface")}</label>
+              <input id="property-surface" required type="number" step="0.1" value={form.surface} onChange={(e) => setForm({ ...form, surface: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.rent")}</label>
-              <input required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="property-rent" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.rent")}</label>
+              <input id="property-rent" required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.status")}</label>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as PropertyStatus })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="property-status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.status")}</label>
+              <select id="property-status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as PropertyStatus })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
                 <option value="AVAILABLE">{t("common.status.AVAILABLE")}</option>
                 <option value="OCCUPIED">{t("common.status.OCCUPIED")}</option>
                 <option value="MAINTENANCE">{t("common.status.MAINTENANCE")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.image")}</label>
-              <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
+              <label htmlFor="property-image" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.image")}</label>
+              <input id="property-image" type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.description")}</label>
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" rows={3} />
+              <label htmlFor="property-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.description")}</label>
+              <textarea id="property-description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" rows={3} />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">

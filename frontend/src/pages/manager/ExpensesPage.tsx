@@ -251,8 +251,9 @@ export default function ExpensesPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.filterByProperty")}</label>
+          <label htmlFor="expense-property-filter" className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.filterByProperty")}</label>
           <select
+            id="expense-property-filter"
             value={selectedPropertyId}
             onChange={(e) => handlePropertyFilterChange(e.target.value)}
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -273,6 +274,7 @@ export default function ExpensesPage() {
           <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.fullReportLabel")}</label>
           <input
             type="date"
+            aria-label={t("manager.expenses.fields.reportDateFrom")}
             value={reportRange.from}
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -280,6 +282,7 @@ export default function ExpensesPage() {
           <span className="text-xs text-slate-500 dark:text-slate-400">{t("manager.expenses.to")}</span>
           <input
             type="date"
+            aria-label={t("manager.expenses.fields.reportDateTo")}
             value={reportRange.to}
             onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })}
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -361,8 +364,9 @@ export default function ExpensesPage() {
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.property")}</label>
+                <label htmlFor="expense-modal-property" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.property")}</label>
                 <select
+                  id="expense-modal-property"
                   required
                   value={form.propertyId}
                   onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
@@ -379,8 +383,9 @@ export default function ExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.category")}</label>
+                  <label htmlFor="expense-modal-category" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.category")}</label>
                   <select
+                    id="expense-modal-category"
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
@@ -393,8 +398,9 @@ export default function ExpensesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.invoiceDate")}</label>
+                  <label htmlFor="expense-modal-date" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.invoiceDate")}</label>
                   <input
+                    id="expense-modal-date"
                     type="date"
                     required
                     value={form.expenseDate}
@@ -406,8 +412,9 @@ export default function ExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.titleSupplier")}</label>
+                  <label htmlFor="expense-modal-title" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.titleSupplier")}</label>
                   <input
+                    id="expense-modal-title"
                     required
                     placeholder={t("manager.expenses.fields.titlePlaceholder")}
                     value={form.title}
@@ -416,8 +423,9 @@ export default function ExpensesPage() {
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.amount")}</label>
+                  <label htmlFor="expense-modal-amount" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.amount")}</label>
                   <input
+                    id="expense-modal-amount"
                     type="number"
                     step="0.01"
                     required
@@ -430,8 +438,9 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.notes")}</label>
+                <label htmlFor="expense-modal-notes" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.notes")}</label>
                 <textarea
+                  id="expense-modal-notes"
                   rows={2}
                   placeholder={t("manager.expenses.fields.notesPlaceholder")}
                   value={form.notes}

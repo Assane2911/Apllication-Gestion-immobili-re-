@@ -586,6 +586,7 @@ const es: TranslationSchema = {
       title: "Pagos de alquiler",
       subtitle: "Seguimiento de las mensualidades y recibos oficiales en PDF",
       filterAll: "Todas las facturas",
+      filterByStatus: "Filtrar por estado",
       sendMonthlyAlerts: "Enviar alertas del día 1 de cada mes",
       sendingMonthly: "Enviando...",
       confirmSendMonthly:
@@ -670,6 +671,8 @@ const es: TranslationSchema = {
         amount: "Importe total *",
         notes: "Notas / Detalles adicionales",
         notesPlaceholder: "Fontanero, presupuesto n.º...",
+        reportDateFrom: "Fecha de inicio del informe",
+        reportDateTo: "Fecha de fin del informe",
       },
       saveExpense: "Guardar el gasto",
       csvHeaders: {
@@ -702,6 +705,7 @@ const es: TranslationSchema = {
       title: "Reportes de incidencias y Fotos",
       subtitle: "Inspección visual de las incidencias fotografiadas por los inquilinos",
       allStatuses: "Todos los estados",
+      filterByStatus: "Filtrar por estado",
       photoCount: "Foto {{current}}/{{total}}",
       responseLabel: "Nota de seguimiento / Respuesta al inquilino:",
       responsePlaceholder: "Ej: Fontanero contratado, intervención prevista el martes a las 14h...",
@@ -714,6 +718,7 @@ const es: TranslationSchema = {
     activityLog: {
       title: "Registro de actividad",
       subtitle: "Historial de acciones realizadas sobre tus propiedades, inquilinos, contratos y pagos",
+      filterByType: "Filtrar por categoría",
       filters: {
         all: "Todas las categorías",
         property: "Propiedades",

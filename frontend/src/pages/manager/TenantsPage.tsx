@@ -140,24 +140,24 @@ export default function TenantsPage() {
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.tenants.formTitleEdit") : t("manager.tenants.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.firstName")}</label>
-              <input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.firstName")}</label>
+              <input id="tenant-firstName" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.lastName")}</label>
-              <input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.lastName")}</label>
+              <input id="tenant-lastName" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.phone")}</label>
-              <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.phone")}</label>
+              <input id="tenant-phone" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.email")}</label>
-              <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.email")}</label>
+              <input id="tenant-email" required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.idDocument")}</label>
-              <input type="file" accept="image/*,application/pdf" onChange={(e) => setIdDocument(e.target.files?.[0] ?? null)} className="w-full text-sm" />
+              <label htmlFor="tenant-idDocument" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.idDocument")}</label>
+              <input id="tenant-idDocument" type="file" accept="image/*,application/pdf" onChange={(e) => setIdDocument(e.target.files?.[0] ?? null)} className="w-full text-sm" />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
@@ -180,8 +180,8 @@ export default function TenantsPage() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{t("manager.tenants.loginId", { email: portalTenant.email })}</p>
           <form onSubmit={handleCreatePortal} className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.tempPassword")}</label>
-              <input required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-tempPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.tempPassword")}</label>
+              <input id="tenant-tempPassword" required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
               {t("manager.tenants.createAccess")}

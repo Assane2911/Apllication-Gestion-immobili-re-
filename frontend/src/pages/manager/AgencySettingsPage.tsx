@@ -72,10 +72,11 @@ export default function AgencySettingsPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-agencyName" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("manager.agencySettings.fields.agencyName")}
               </label>
               <input
+                id="agency-agencyName"
                 required
                 value={form.agencyName}
                 onChange={(e) => setForm({ ...form, agencyName: e.target.value })}
@@ -85,10 +86,11 @@ export default function AgencySettingsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-siretOrId" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("manager.agencySettings.fields.siretOrId")}
               </label>
               <input
+                id="agency-siretOrId"
                 value={form.siretOrId}
                 onChange={(e) => setForm({ ...form, siretOrId: e.target.value })}
                 placeholder={t("manager.agencySettings.fields.siretOrIdPlaceholder")}
@@ -99,10 +101,11 @@ export default function AgencySettingsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-email" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("manager.agencySettings.fields.email")}
               </label>
               <input
+                id="agency-email"
                 type="email"
                 required
                 value={form.email}
@@ -113,10 +116,11 @@ export default function AgencySettingsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-phone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("manager.agencySettings.fields.phone")}
               </label>
               <input
+                id="agency-phone"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder={t("manager.agencySettings.fields.phonePlaceholder")}
@@ -126,10 +130,11 @@ export default function AgencySettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="agency-address" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               {t("manager.agencySettings.fields.address")}
             </label>
             <input
+              id="agency-address"
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder={t("manager.agencySettings.fields.addressPlaceholder")}
@@ -138,10 +143,11 @@ export default function AgencySettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="agency-legalNotice" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               {t("manager.agencySettings.fields.legalNotice")}
             </label>
             <textarea
+              id="agency-legalNotice"
               rows={3}
               value={form.legalNotice}
               onChange={(e) => setForm({ ...form, legalNotice: e.target.value })}

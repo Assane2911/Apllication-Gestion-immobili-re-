@@ -64,6 +64,7 @@ export default function IssuesPage() {
           </p>
         </div>
         <select
+          aria-label={t("manager.issues.filterByStatus")}
           value={filter}
           onChange={(e) => handleFilterChange(e.target.value as IssueStatus | "ALL")}
           className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
@@ -137,10 +138,11 @@ export default function IssuesPage() {
                   </p>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                    <label htmlFor={`issue-response-${issue.id}`} className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                       {t("manager.issues.responseLabel")}
                     </label>
                     <textarea
+                      id={`issue-response-${issue.id}`}
                       placeholder={t("manager.issues.responsePlaceholder")}
                       defaultValue={issue.managerNote ?? ""}
                       onChange={(e) => setNotes((n) => ({ ...n, [issue.id]: e.target.value }))}

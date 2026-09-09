@@ -584,6 +584,7 @@ const en: TranslationSchema = {
       title: "Rent Payments",
       subtitle: "Track monthly payments and official PDF receipts",
       filterAll: "All invoices",
+      filterByStatus: "Filter by status",
       sendMonthlyAlerts: "Send 1st-of-month alerts",
       sendingMonthly: "Sending...",
       confirmSendMonthly:
@@ -668,6 +669,8 @@ const en: TranslationSchema = {
         amount: "Amount incl. tax *",
         notes: "Notes / Additional details",
         notesPlaceholder: "Plumber, quote no...",
+        reportDateFrom: "Report start date",
+        reportDateTo: "Report end date",
       },
       saveExpense: "Save expense",
       csvHeaders: {
@@ -700,6 +703,7 @@ const en: TranslationSchema = {
       title: "Issue Reports & Photos",
       subtitle: "Visual inspection of issues photographed by tenants",
       allStatuses: "All statuses",
+      filterByStatus: "Filter by status",
       photoCount: "Photo {{current}}/{{total}}",
       responseLabel: "Handling note / Response to tenant:",
       responsePlaceholder: "E.g.: Plumber assigned, intervention scheduled Tuesday at 2pm...",
@@ -712,6 +716,7 @@ const en: TranslationSchema = {
     activityLog: {
       title: "Activity Log",
       subtitle: "History of actions performed on your properties, tenants, contracts and payments",
+      filterByType: "Filter by category",
       filters: {
         all: "All categories",
         property: "Properties",

@@ -164,12 +164,13 @@ export default function RegisterPage() {
 
               <form onSubmit={handleSubmit} className="mt-8 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.email")}</label>
+                  <label htmlFor="register-email" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.email")}</label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                       <MailIcon />
                     </span>
                     <input
+                      id="register-email"
                       type="email"
                       required
                       value={email}
@@ -181,12 +182,13 @@ export default function RegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.password")}</label>
+                  <label htmlFor="register-password" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.password")}</label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                       <LockIcon />
                     </span>
                     <input
+                      id="register-password"
                       type={showPassword ? "text" : "password"}
                       required
                       minLength={8}
@@ -208,7 +210,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  <label htmlFor="register-confirm-password" className="block text-xs font-medium text-slate-400 mb-1.5">
                     {t("auth.register.confirmPassword")}
                   </label>
                   <div className="relative">
@@ -216,6 +218,7 @@ export default function RegisterPage() {
                       <LockIcon />
                     </span>
                     <input
+                      id="register-confirm-password"
                       type={showPassword ? "text" : "password"}
                       required
                       minLength={8}

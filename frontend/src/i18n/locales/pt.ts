@@ -584,6 +584,7 @@ const pt: TranslationSchema = {
       title: "Pagamentos de Renda",
       subtitle: "Acompanhamento das mensalidades e recibos oficiais em PDF",
       filterAll: "Todas as faturas",
+      filterByStatus: "Filtrar por estado",
       sendMonthlyAlerts: "Enviar alertas do dia 1 do mês",
       sendingMonthly: "A enviar...",
       confirmSendMonthly:
@@ -668,6 +669,8 @@ const pt: TranslationSchema = {
         amount: "Montante com impostos *",
         notes: "Notas / Detalhes adicionais",
         notesPlaceholder: "Canalizador, orçamento n.º...",
+        reportDateFrom: "Data de início do relatório",
+        reportDateTo: "Data de fim do relatório",
       },
       saveExpense: "Guardar a despesa",
       csvHeaders: {
@@ -700,6 +703,7 @@ const pt: TranslationSchema = {
       title: "Relatos de Incidentes & Fotos",
       subtitle: "Inspeção visual dos incidentes fotografados pelos inquilinos",
       allStatuses: "Todos os estados",
+      filterByStatus: "Filtrar por estado",
       photoCount: "Foto {{current}}/{{total}}",
       responseLabel: "Nota de tratamento / Resposta ao inquilino:",
       responsePlaceholder: "Ex.: Canalizador contratado, intervenção prevista para terça-feira às 14h...",
@@ -712,6 +716,7 @@ const pt: TranslationSchema = {
     activityLog: {
       title: "Registo de Atividade",
       subtitle: "Histórico das ações efetuadas nos seus imóveis, inquilinos, contratos e pagamentos",
+      filterByType: "Filtrar por categoria",
       filters: {
         all: "Todas as categorias",
         property: "Imóveis",
