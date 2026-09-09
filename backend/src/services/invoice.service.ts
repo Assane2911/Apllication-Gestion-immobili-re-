@@ -25,7 +25,16 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
   while (cursor <= cutoff) {
     const periodMonth = cursor.getMonth() + 1;
     const periodYear = cursor.getFullYear();
-    const dueDate = new Date(periodYear, periodMonth - 1, start.getDate() || 1);
+    // new Date(year, month, day) déborde silencieusement sur le mois suivant
+    // quand `day` dépasse le nombre de jours du mois visé (ex: un bail
+    // démarrant le 31 janvier produisait une échéance "Février" au 3 mars).
+    // On plafonne donc le jour souhaité au dernier jour réel du mois de la
+    // période — new Date(year, month, 0) donne le dernier jour du mois
+    // (month - 1) puisque le jour 0 recule d'un jour depuis le 1er du mois
+    // suivant.
+    const desiredDay = start.getDate() || 1;
+    const lastDayOfPeriodMonth = new Date(periodYear, periodMonth, 0).getDate();
+    const dueDate = new Date(periodYear, periodMonth - 1, Math.min(desiredDay, lastDayOfPeriodMonth));
 
     if (!existingKeys.has(`${periodMonth}-${periodYear}`)) {
       const [invoice] = await dbClient
