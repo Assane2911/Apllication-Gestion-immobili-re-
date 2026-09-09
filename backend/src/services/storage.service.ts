@@ -9,11 +9,14 @@ function uniqueObjectPath(folder: string, originalName: string) {
 }
 
 /**
- * Upload un fichier vers le bucket PUBLIC de Supabase Storage (images de
- * biens, photos d'incidents) et retourne son URL publique, directement
- * utilisable côté frontend.
+ * Upload un fichier vers le bucket PUBLIC de Supabase Storage (uniquement les
+ * images de biens, peu sensibles) et retourne son URL publique, directement
+ * utilisable côté frontend. Les photos d'incidents, elles, passent par
+ * `uploadPrivateFile` ci-dessous : elles peuvent montrer l'intérieur du
+ * logement d'un locataire et ne doivent pas être devinables/accessibles sans
+ * autorisation (voir issue.controller.ts).
  */
-export async function uploadPublicFile(file: Express.Multer.File, folder: "properties" | "issues") {
+export async function uploadPublicFile(file: Express.Multer.File, folder: "properties") {
   const objectPath = uniqueObjectPath(folder, file.originalname);
 
   const { error } = await supabaseAdmin.storage
@@ -30,11 +33,11 @@ export async function uploadPublicFile(file: Express.Multer.File, folder: "prope
 
 /**
  * Upload un fichier vers le bucket PRIVÉ de Supabase Storage (pièces
- * d'identité des locataires) et retourne le chemin de stockage — PAS une
- * URL — à conserver en base. Utilisez `getSignedUrl` pour générer un lien
- * d'accès temporaire à la demande.
+ * d'identité des locataires, photos d'incidents) et retourne le chemin de
+ * stockage — PAS une URL — à conserver en base. Utilisez `getSignedUrl` pour
+ * générer un lien d'accès temporaire à la demande.
  */
-export async function uploadPrivateFile(file: Express.Multer.File, folder: "tenants") {
+export async function uploadPrivateFile(file: Express.Multer.File, folder: "tenants" | "issues") {
   const objectPath = uniqueObjectPath(folder, file.originalname);
 
   const { error } = await supabaseAdmin.storage

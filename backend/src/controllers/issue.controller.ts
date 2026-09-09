@@ -6,12 +6,45 @@ import { db } from "../db/client";
 import { contracts, issueReports, issueStatusEnum, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
-import { uploadPublicFile } from "../services/storage.service";
+import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 function isIssueStatus(value: unknown): value is (typeof issueStatusEnum.enumValues)[number] {
   return typeof value === "string" && (issueStatusEnum.enumValues as readonly string[]).includes(value);
+}
+
+/**
+ * Remplace un chemin d'objet du bucket privé par une URL signée temporaire.
+ * Compatibilité ascendante : les photos uploadées AVANT ce correctif sont
+ * déjà des URLs publiques complètes (ancien bucket public-uploads) — on les
+ * laisse telles quelles plutôt que de les casser, `getSignedUrl` n'ayant de
+ * sens que pour un chemin d'objet du bucket privé.
+ */
+async function resolvePhotoUrl(value: string | null | undefined): Promise<string | null | undefined> {
+  if (!value) return value;
+  if (/^https?:\/\//i.test(value)) return value;
+  return getSignedUrl(value);
+}
+
+/** Signe `photoUrl` et chaque entrée de `additionalPhotos` (JSON stringifié) avant de renvoyer un incident au client. */
+async function withSignedPhotos<T extends { photoUrl: string; additionalPhotos?: string | null }>(
+  issue: T
+): Promise<T> {
+  const photoUrl = (await resolvePhotoUrl(issue.photoUrl)) as string;
+
+  let additionalPhotos = issue.additionalPhotos ?? null;
+  if (additionalPhotos) {
+    try {
+      const paths: string[] = JSON.parse(additionalPhotos);
+      const signed = await Promise.all(paths.map((p) => resolvePhotoUrl(p)));
+      additionalPhotos = JSON.stringify(signed);
+    } catch {
+      // Champ illisible : on le laisse tel quel plutôt que de faire échouer la réponse.
+    }
+  }
+
+  return { ...issue, photoUrl, additionalPhotos };
 }
 
 /** Le gestionnaire voit tous les signalements (avec photo) de tous les locataires. */
@@ -48,17 +81,15 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
       .where(whereClause),
   ]);
 
-  res.json(
-    buildPaginatedResult(
-      rows.map((r: IssueRow) => ({
-        ...r.issue,
-        tenant: r.tenant,
-        contract: { ...r.contract, property: r.property },
-      })),
-      count,
-      pagination
-    )
+  const signedIssues = await Promise.all(
+    rows.map(async (r: IssueRow) => ({
+      ...(await withSignedPhotos(r.issue)),
+      tenant: r.tenant,
+      contract: { ...r.contract, property: r.property },
+    }))
   );
+
+  res.json(buildPaginatedResult(signedIssues, count, pagination));
 });
 
 const updateIssueSchema = z.object({
@@ -117,7 +148,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     details: `Statut de l'incident « ${updated.title} » changé en ${updated.status}`,
   });
 
-  res.json(updated);
+  res.json(await withSignedPhotos(updated));
 });
 
 /** Signalements du locataire connecté (portail locataire). */
@@ -131,7 +162,13 @@ export const myIssues = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(issueReports.tenantId, req.user.tenantId))
     .orderBy(desc(issueReports.createdAt));
 
-  res.json(rows.map((r: { issue: typeof issueReports.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({ ...r.issue, contract: { ...r.contract, property: r.property } })));
+  const signed = await Promise.all(
+    rows.map(async (r: { issue: typeof issueReports.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
+      ...(await withSignedPhotos(r.issue)),
+      contract: { ...r.contract, property: r.property },
+    }))
+  );
+  res.json(signed);
 });
 
 const createIssueSchema = z.object({
@@ -150,7 +187,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
   if (!contract) throw new ApiError(404, "Contrat introuvable");
   if (contract.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
 
-  const photoUrl = await uploadPublicFile(req.file, "issues");
+  const photoUrl = await uploadPrivateFile(req.file, "issues");
 
   const [issue] = await db
     .insert(issueReports)
@@ -162,7 +199,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
       photoUrl,
     })
     .returning();
-  res.status(201).json(issue);
+  res.status(201).json(await withSignedPhotos(issue));
 });
 
 /** Le locataire ou le gestionnaire ajoute une nouvelle photo à un incident déjà signalé. */
@@ -186,7 +223,7 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
     throw new ApiError(403, "Accès refusé");
   }
 
-  const newPhotoUrl = await uploadPublicFile(req.file, "issues");
+  const newPhotoUrl = await uploadPrivateFile(req.file, "issues");
 
   let existingPhotos: string[] = [];
   try {
@@ -206,6 +243,6 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
     .where(eq(issueReports.id, req.params.id))
     .returning();
 
-  res.json(updated);
+  res.json(await withSignedPhotos(updated));
 });
 
