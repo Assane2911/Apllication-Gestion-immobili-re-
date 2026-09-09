@@ -94,6 +94,12 @@ process.env.PAYDUNYA_MASTER_KEY = "test-paydunya-master-key-do-not-use-in-produc
 process.env.PAYDUNYA_PRIVATE_KEY = "";
 process.env.PAYDUNYA_TOKEN = "";
 
+// cron.controller.ts refuse toute requête sans CRON_SECRET configuré
+// (fail-closed en production). On fixe une valeur de test connue pour que
+// cron.controller.test.ts puisse simuler l'appel authentifié de Vercel Cron
+// (`Authorization: Bearer <CRON_SECRET>`) sans dépendre d'un vrai .env.
+process.env.CRON_SECRET = "test-cron-secret-do-not-use-in-production";
+
 const TABLES = [
   "users",
   "platform_subscriptions",
