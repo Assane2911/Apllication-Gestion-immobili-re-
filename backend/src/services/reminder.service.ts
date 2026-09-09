@@ -87,11 +87,19 @@ export async function runRentDueReminders(managerId?: string) {
 
   // 2. Recherche toutes les factures impayées du mois courant pour les contrats actifs
   //    (scopées au gestionnaire appelant si managerId est fourni)
+  //
+  // isNull(reminderSentAt) est indispensable : sans lui, un second
+  // déclenchement le même jour (cron + clic manuel du gestionnaire depuis
+  // son tableau de bord, ou double invocation du cron) renvoyait l'avis à
+  // TOUS les locataires impayés une deuxième fois — les deux autres rappels
+  // de ce fichier (fin de contrat, avant échéance) vérifient déjà chacun
+  // leur propre champ d'idempotence, celui-ci ne le faisait pas.
   const conditions: SQL[] = [
     eq(contracts.status, "ACTIVE"),
     eq(invoices.periodMonth, currentMonth),
     eq(invoices.periodYear, currentYear),
     or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE"))!,
+    isNull(invoices.reminderSentAt),
   ];
   if (managerId) conditions.push(eq(properties.managerId, managerId));
 
