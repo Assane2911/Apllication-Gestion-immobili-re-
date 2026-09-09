@@ -20,7 +20,17 @@ function assertCronAuthorized(req: Request) {
     }
     return;
   }
-  if (env.nodeEnv === "production") {
+
+  // Fail-closed par défaut : on n'autorise l'absence de CRON_SECRET QUE si on
+  // est sûr d'être en développement local. env.nodeEnv retombe silencieusement
+  // sur "development" si NODE_ENV n'est pas défini (voir config/env.ts) — un
+  // simple `=== "production"` restait donc vulnérable si NODE_ENV venait à
+  // manquer sur Vercel. `VERCEL === "1"` est positionné automatiquement par
+  // la plateforme sur CHAQUE déploiement, quel que soit NODE_ENV : on l'utilise
+  // en complément pour ne jamais se fier au seul NODE_ENV en production
+  // serverless.
+  const isConfidentlyLocalDev = env.nodeEnv === "development" && process.env.VERCEL !== "1";
+  if (!isConfidentlyLocalDev) {
     throw new ApiError(500, "CRON_SECRET non configuré : route désactivée par sécurité.");
   }
   console.warn("[cron] CRON_SECRET non configuré (développement) : route non protégée.");
