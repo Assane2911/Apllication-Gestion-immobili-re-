@@ -44,6 +44,29 @@ export const triggerContractEndingReminders = asyncHandler(async (req: Request, 
 });
 
 /**
+ * Combine en un seul appel les deux tâches planifiées QUOTIDIENNES (rappel de
+ * fin de contrat + rappel "avant échéance"/passage en retard) afin de tenir
+ * dans la limite de 2 cron jobs par projet du plan Vercel Hobby — voir
+ * vercel.json, qui ne déclare que cette route (quotidienne) et
+ * /rent-due-reminders (mensuelle) plutôt que les 3 routes séparément.
+ * Chaque route individuelle reste disponible ci-dessous pour un
+ * déclenchement manuel/ponctuel.
+ */
+export const triggerDailyReminders = asyncHandler(async (req: Request, res: Response) => {
+  assertCronAuthorized(req);
+
+  const contractEndingRemindersSent = await runContractEndingReminders();
+  const upcoming = await runUpcomingRentDueReminders();
+
+  res.json({
+    success: true,
+    contractEndingRemindersSent,
+    upcomingRentDueRemindersSent: upcoming.sent,
+    details: upcoming.details,
+  });
+});
+
+/**
  * Déclenché par Vercel Cron Jobs le 1er de chaque mois pour envoyer
  * les alertes d'échéance de loyer aux locataires (délai de règlement : au plus tard le 5).
  */
