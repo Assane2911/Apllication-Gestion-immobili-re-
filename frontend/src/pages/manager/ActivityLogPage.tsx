@@ -1,7 +1,7 @@
 import { Building2, Clock, FileText, Receipt, Wrench, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api } from "../../api/client";
+import { api, apiErrorMessage } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { TableRowSkeleton } from "../../components/Skeleton";
 import type { ActivityLogEntry } from "../../types";
@@ -21,6 +21,7 @@ export default function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [entityType, setEntityType] = useState("ALL");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   function formatDateTime(d: string) {
     return new Date(d).toLocaleString(i18n.language, {
@@ -38,7 +39,15 @@ export default function ActivityLogPage() {
       .get<ActivityLogEntry[]>("/activity-log", {
         params: type !== "ALL" ? { entityType: type } : {},
       })
-      .then((res) => setLogs(res.data))
+      .then((res) => {
+        setLogs(res.data);
+        setLoadError(null);
+      })
+      // Sans ce .catch(), un échec réseau laissait logs à [] : l'utilisateur
+      // voyait juste "aucune activité" sans savoir que le chargement avait
+      // échoué (seule page manager dans ce cas — voir IssuesPage.tsx pour le
+      // même schéma bandeau d'erreur + retry appliqué ici).
+      .catch((err) => setLoadError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -65,6 +74,15 @@ export default function ActivityLogPage() {
           ))}
         </select>
       </div>
+
+      {loadError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button onClick={() => load(entityType)} className="underline font-semibold shrink-0 whitespace-nowrap">
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
@@ -102,7 +120,7 @@ export default function ActivityLogPage() {
           </tbody>
         </table>
 
-        {!loading && logs.length === 0 && (
+        {!loading && !loadError && logs.length === 0 && (
           <EmptyState
             icon={Clock}
             title={t("manager.activityLog.emptyTitle")}
