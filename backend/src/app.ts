@@ -2,6 +2,7 @@ import "./instrument";
 import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
+import helmet from "helmet";
 import { env } from "./config/env";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import activityLogRoutes from "./routes/activityLog.routes";
@@ -24,6 +25,16 @@ import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
 
 export const app = express();
+
+// En-têtes de sécurité HTTP standards (anti-sniffing MIME, anti-clickjacking,
+// HSTS, suppression de "X-Powered-By"...). La Content-Security-Policy par
+// défaut de helmet est désactivée : les quittances et baux générés par
+// /api/documents (voir document.controller.ts + pdf.service.ts) sont du HTML
+// brut avec des styles en ligne, qu'une CSP par défaut ('self' uniquement)
+// bloquerait. Une CSP adaptée à ces documents pourra être ajoutée plus tard
+// si besoin — en attendant, toutes les autres protections de helmet
+// s'appliquent normalement.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // En plus du site web (env.frontendUrl), on autorise les origines des
 // builds mobiles Capacitor : "https://localhost" (Android, androidScheme:
