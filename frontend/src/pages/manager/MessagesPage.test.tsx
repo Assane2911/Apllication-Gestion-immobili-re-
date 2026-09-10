@@ -59,7 +59,10 @@ describe("MessagesPage (gestionnaire)", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Bonjour, j'ai une question sur mon loyer.")).toBeInTheDocument());
-    expect(screen.getByText("Awa Diallo")).toBeInTheDocument();
+    // "Awa Diallo" apparaît deux fois : dans la liste des conversations à
+    // gauche et dans l'en-tête du fil sélectionné à droite (sélection
+    // automatique de la première conversation).
+    expect(screen.getAllByText("Awa Diallo").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("1 conversation(s)")).toBeInTheDocument();
   });
 
