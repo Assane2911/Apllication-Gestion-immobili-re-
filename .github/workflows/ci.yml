@@ -1,0 +1,88 @@
+name: CI
+
+# Jusqu'ici, le seul contrôle automatique du projet était le build Vercel,
+# c'est-à-dire APRÈS le push et en production : c'est ainsi qu'une simple
+# variable inutilisée (TS6133) a fait échouer un déploiement. Ce workflow
+# rejoue les mêmes vérifications sur chaque push, en quelques minutes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Un push qui en suit un autre de près annule le run précédent, devenu inutile.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — types et tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Installer les dépendances
+        working-directory: backend
+        run: npm ci
+
+      - name: Vérifier les types
+        working-directory: backend
+        run: npx tsc --noEmit -p tsconfig.json
+
+      # Aucun secret n'est nécessaire : la suite tourne sur une base PGlite en
+      # mémoire et neutralise elle-même SMTP, Sentry, Supabase et les clés de
+      # paiement (voir src/test/setupTestDb.ts). Elle ne peut donc en aucun cas
+      # toucher la vraie base ni envoyer d'email réel.
+      - name: Lancer les tests
+        working-directory: backend
+        run: npm test
+
+  frontend:
+    name: Frontend — build et tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Installer les dépendances
+        working-directory: frontend
+        run: npm ci
+
+      # `tsc -b` et non `tsc --noEmit -p tsconfig.json` : le tsconfig.json du
+      # frontend est un fichier "solution" ("files": [], seulement des
+      # "references"). Le compiler directement ne vérifie AUCUN fichier et
+      # renvoie toujours un succès. Seul le mode build suit les références et
+      # applique les options de tsconfig.app.json (dont noUnusedLocals), donc
+      # reproduit exactement ce que fait Vercel via `npm run build`.
+      - name: Vérifier les types (comme le build Vercel)
+        working-directory: frontend
+        run: npx tsc -b
+
+      - name: Lancer les tests
+        working-directory: frontend
+        run: npm test
+
+      # Le build complet en dernier : si une erreur doit survenir, autant que ce
+      # soit le typage ou un test qui la nomme précisément, plutôt qu'un échec
+      # de bundling plus difficile à lire.
+      - name: Construire l'application
+        working-directory: frontend
+        run: npm run build
+
+      # `npm run lint` (oxlint) n'est volontairement pas encore branché ici :
+      # il n'a pas pu être vérifié avant l'ajout de ce workflow, et une CI qui
+      # échoue dès son premier run pour une raison sans rapport avec le code
+      # apprend surtout à ignorer la CI. À ajouter en une ligne le jour où
+      # `npm run lint` passe en local.
