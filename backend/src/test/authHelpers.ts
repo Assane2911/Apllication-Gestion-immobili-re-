@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
 import { contracts, invoices, properties, tenants, users } from "../db/schema";
@@ -126,3 +127,27 @@ export async function createInvoice(
   return invoice;
 }
 
+/**
+ * Crée un compte utilisateur "portail" (role TENANT) et le lie à la fiche
+ * locataire donnée (tenants.userId). Nécessaire pour tout flux de test qui
+ * insère une ligne référençant réellement users.id — ex: messages.senderId
+ * (contrainte de clé étrangère) — contrairement à un simple GET ou à une
+ * fiche locataire "hors-ligne" (sans compte portail), où un identifiant
+ * fictif dans le JWT de test suffit.
+ */
+export async function createTenantPortalUser(tenant: { id: string }) {
+  const id = createId();
+  const passwordHash = await bcrypt.hash("Password123!", 10);
+  const [user] = await testDb
+    .insert(users)
+    .values({
+      id,
+      email: `tenant-portal-${id}@test.local`,
+      passwordHash,
+      role: "TENANT" as const,
+      emailVerifiedAt: new Date(),
+    })
+    .returning();
+  await testDb.update(tenants).set({ userId: user.id }).where(eq(tenants.id, tenant.id));
+  return user;
+}

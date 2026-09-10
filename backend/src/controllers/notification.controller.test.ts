@@ -9,6 +9,7 @@ import {
   createManager,
   createProperty,
   createTenant,
+  createTenantPortalUser,
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -42,10 +43,11 @@ describe("GET /api/notifications", () => {
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
     const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
 
     await request(app)
       .post(`/api/messages/${contract.id}`)
-      .set(tenantToken(tenant.id))
+      .set(tenantToken(tenant.id, portalUser.id))
       .send({ content: "Bonjour, une question" });
 
     const res = await request(app).get("/api/notifications").set(authHeader(tokenFor(manager)));

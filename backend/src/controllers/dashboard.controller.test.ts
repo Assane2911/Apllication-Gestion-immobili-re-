@@ -60,19 +60,26 @@ describe("GET /api/dashboard/stats", () => {
 
   it("regroupe les revenus du mois en cours par devise plutôt que de les additionner", async () => {
     const manager = await createManager();
-    const property = await createProperty(manager.id);
-    const tenant = await createTenant(manager.id);
-    const contract = await createContract(property.id, tenant.id);
+    // Deux contrats distincts sont necessaires ici : la contrainte unique
+    // (contract_id, period_month, period_year) sur "invoices" interdit deux
+    // factures du meme mois pour un meme contrat, meme dans des devises
+    // differentes.
+    const propertyEur = await createProperty(manager.id);
+    const tenantEur = await createTenant(manager.id);
+    const contractEur = await createContract(propertyEur.id, tenantEur.id);
+    const propertyXof = await createProperty(manager.id);
+    const tenantXof = await createTenant(manager.id);
+    const contractXof = await createContract(propertyXof.id, tenantXof.id);
     const now = new Date();
 
-    await createInvoice(contract.id, {
+    await createInvoice(contractEur.id, {
       periodMonth: now.getMonth() + 1,
       periodYear: now.getFullYear(),
       amount: 500,
       currency: "EUR",
       status: "PAID",
     });
-    await createInvoice(contract.id, {
+    await createInvoice(contractXof.id, {
       periodMonth: now.getMonth() + 1,
       periodYear: now.getFullYear(),
       amount: 250000,

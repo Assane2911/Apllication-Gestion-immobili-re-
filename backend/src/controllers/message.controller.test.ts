@@ -7,6 +7,7 @@ import {
   createManager,
   createProperty,
   createTenant,
+  createTenantPortalUser,
   tokenFor,
 } from "../test/authHelpers";
 
@@ -25,10 +26,11 @@ describe("GET /api/messages/conversations", () => {
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
     const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
 
     await request(app)
       .post(`/api/messages/${contract.id}`)
-      .set(tenantToken(tenant.id))
+      .set(tenantToken(tenant.id, portalUser.id))
       .send({ content: "Bonjour, j'ai une question" });
 
     const res = await request(app).get("/api/messages/conversations").set(authHeader(tokenFor(manager)));
@@ -106,10 +108,11 @@ describe("GET /api/messages/:contractId", () => {
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
     const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
 
     await request(app)
       .post(`/api/messages/${contract.id}`)
-      .set(tenantToken(tenant.id))
+      .set(tenantToken(tenant.id, portalUser.id))
       .send({ content: "Premier message" });
     await request(app)
       .post(`/api/messages/${contract.id}`)
@@ -151,10 +154,11 @@ describe("POST /api/messages/:contractId", () => {
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
     const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
 
     const res = await request(app)
       .post(`/api/messages/${contract.id}`)
-      .set(tenantToken(tenant.id))
+      .set(tenantToken(tenant.id, portalUser.id))
       .send({ content: "Bonjour" });
 
     expect(res.status).toBe(201);
