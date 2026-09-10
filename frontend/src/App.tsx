@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import AdminLayout from "./components/AdminLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 import ManagerLayout from "./components/ManagerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
@@ -119,14 +120,16 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <Router>
-      <ThemeProvider>
-        <AuthProvider>
-          <CurrencyProvider>
-            <AppRoutes />
-          </CurrencyProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <ThemeProvider>
+          <AuthProvider>
+            <CurrencyProvider>
+              <AppRoutes />
+            </CurrencyProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
