@@ -13,6 +13,11 @@ build/
 npm-debug.log*
 *.log
 
+# Sorties des campagnes de tests lancees en local
+# (npm test > ..\test-output.txt) : utiles sur le moment pour relire le
+# detail d'un run, mais propres a une machine et sans interet dans l'historique.
+test-output*.txt
+
 # Éditeurs / OS
 .DS_Store
 .vscode/
