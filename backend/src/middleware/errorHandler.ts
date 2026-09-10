@@ -1,7 +1,9 @@
 import * as Sentry from "@sentry/node";
 import { NextFunction, Request, Response } from "express";
+import multer from "multer";
 import { ZodError } from "zod";
 import { ApiError } from "../utils/asyncHandler";
+import { MAX_UPLOAD_SIZE_MB } from "./upload";
 
 export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ error: `Route introuvable: ${req.method} ${req.path}` });
@@ -22,6 +24,19 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
       error: `Requête invalide : données manquantes ou incorrectes${suffix}.`,
       code: "VALIDATION_ERROR",
     });
+  }
+
+  // Même raisonnement que pour ZodError : un fichier trop volumineux ou en
+  // trop est une erreur du client, pas une panne du serveur. Sans cette
+  // branche, chaque tentative d'upload refusée renvoyait un 500 opaque
+  // ("Erreur interne du serveur") — le client ne pouvait pas savoir quoi
+  // corriger — et remontait à Sentry comme un défaut applicatif.
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? `Fichier trop volumineux (${MAX_UPLOAD_SIZE_MB} Mo maximum).`
+        : "Envoi de fichier invalide.";
+    return res.status(400).json({ error: message, code: err.code });
   }
 
   console.error(err);
