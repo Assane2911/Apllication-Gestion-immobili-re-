@@ -150,10 +150,38 @@ describe("errorHandler", () => {
     vi.mocked(Sentry.flush).mockRejectedValue(new Error("Sentry injoignable"));
     const res = fakeRes();
 
-    await errorHandler(new ApiError(404, "Bien introuvable"), fakeReq, res, noop);
+    await errorHandler(new ApiError(503, "Service de paiement indisponible"), fakeReq, res, noop);
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ error: "Bien introuvable" });
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.json).toHaveBeenCalledWith({ error: "Service de paiement indisponible" });
+  });
+
+  it("ne journalise ni n'attend Sentry pour une erreur métier attendue (4xx)", async () => {
+    // Un 401 sur chaque requête non authentifiée, un 404 sur chaque ressource
+    // absente : ce sont des réponses normales de l'API. Les journaliser comme
+    // des pannes noyait les vraies erreurs dans les logs de production, et
+    // attendre un flush Sentry qui n'a rien à envoyer (le prédicat
+    // shouldReportToSentry les écarte) ralentissait la réponse pour rien.
+    const res = fakeRes();
+
+    await errorHandler(new ApiError(401, "Authentification requise"), fakeReq, res, noop);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: "Authentification requise" });
+    expect(console.error).not.toHaveBeenCalled();
+    expect(vi.mocked(Sentry.flush)).not.toHaveBeenCalled();
+  });
+
+  it("journalise et attend Sentry pour une ApiError serveur (5xx)", async () => {
+    // À l'inverse, un 5xx explicite signale bien un défaut de l'application :
+    // il doit rester tracé et remonté.
+    const res = fakeRes();
+
+    await errorHandler(new ApiError(500, "Échec de la génération du document"), fakeReq, res, noop);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(console.error).toHaveBeenCalled();
+    expect(vi.mocked(Sentry.flush)).toHaveBeenCalledWith(2000);
   });
 
   it("ne notifie pas Sentry pour une simple erreur de validation", async () => {

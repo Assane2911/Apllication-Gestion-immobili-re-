@@ -38,11 +38,9 @@ function postIssueWith(contractId: string, token: Record<string, string>) {
 
 describe("filtre d'upload", () => {
   beforeEach(() => {
-    // Évite de polluer la sortie des tests avec les erreurs journalisées.
-    // Note : un refus de type de fichier remonte en ApiError et suit donc le
-    // chemin habituel de toute erreur métier (journalisée par errorHandler),
-    // alors qu'un dépassement de taille est une MulterError, traitée plus tôt
-    // et sans journalisation — voir l'assertion du test de taille ci-dessous.
+    // Sert à vérifier qu'un refus d'upload n'est jamais journalisé comme une
+    // panne serveur : type interdit (ApiError 400) comme dépassement de taille
+    // (MulterError) sont des erreurs du client.
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
@@ -78,6 +76,8 @@ describe("filtre d'upload", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("Type de fichier non autorisé");
+    // Un refus attendu n'est pas une panne : ni trace d'erreur, ni remontée.
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   it("refuse un fichier texte déguisé en pièce jointe", async () => {
