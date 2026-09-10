@@ -887,6 +887,42 @@ const en: TranslationSchema = {
     },
   },
   admin: {
+    nav: {
+      dashboard: "Dashboard",
+      transfers: "Bank transfers",
+    },
+    dashboard: {
+      title: "Dashboard",
+      subtitle: "Platform overview, across all managers",
+      errorTitle: "Unable to load the dashboard",
+      stats: {
+        managers: "Managers",
+        managersHint: "{{trial}} on trial · {{expired}} without access",
+        subscriptionActive: "Active paid subscriptions",
+        subscriptionActiveHint: "Out of {{total}} manager(s) total",
+        mrr: "Monthly recurring revenue",
+        mrrHint: "{{count}} paid subscription(s)",
+        properties: "Managed properties",
+        propertiesHint: "Across all agencies",
+        tenants: "Tenants",
+        tenantsHint: "Across all agencies",
+        activeContracts: "Active contracts",
+        activeContractsHint: "Across all agencies",
+      },
+      mrrByPlan: {
+        title: "MRR by plan",
+        empty: "No active paid subscription yet.",
+      },
+      trialsEndingSoon: {
+        title: "Trials ending soon",
+        subtitle: "Follow up before their free trial ends (7 days or less)",
+        empty: "No trial ends in the next 7 days.",
+        manager: "Manager",
+        noAgencyName: "No agency name set",
+        daysLeft: "{{count}} day(s) left",
+        lastDay: "Last day",
+      },
+    },
     subscriptions: {
       title: "Pending Bank Transfers",
       subtitle: "SaaS subscriptions paid by bank transfer, awaiting manual confirmation",

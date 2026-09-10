@@ -887,6 +887,42 @@ const pt: TranslationSchema = {
     },
   },
   admin: {
+    nav: {
+      dashboard: "Painel",
+      transfers: "Transferências bancárias",
+    },
+    dashboard: {
+      title: "Painel de controlo",
+      subtitle: "Visão geral da plataforma, todos os gestores incluídos",
+      errorTitle: "Não foi possível carregar o painel",
+      stats: {
+        managers: "Gestores",
+        managersHint: "{{trial}} em teste · {{expired}} sem acesso",
+        subscriptionActive: "Assinaturas pagas ativas",
+        subscriptionActiveHint: "De {{total}} gestor(es) no total",
+        mrr: "Receita recorrente mensal",
+        mrrHint: "{{count}} assinatura(s) paga(s)",
+        properties: "Imóveis geridos",
+        propertiesHint: "Em todas as agências",
+        tenants: "Inquilinos",
+        tenantsHint: "Em todas as agências",
+        activeContracts: "Contratos ativos",
+        activeContractsHint: "Em todas as agências",
+      },
+      mrrByPlan: {
+        title: "MRR por plano",
+        empty: "Nenhuma assinatura paga ativa por enquanto.",
+      },
+      trialsEndingSoon: {
+        title: "Testes a terminar em breve",
+        subtitle: "A contactar antes do fim do teste gratuito (7 dias ou menos)",
+        empty: "Nenhum teste termina nos próximos 7 dias.",
+        manager: "Gestor",
+        noAgencyName: "Sem nome de agência definido",
+        daysLeft: "{{count}} dia(s) restante(s)",
+        lastDay: "Último dia",
+      },
+    },
     subscriptions: {
       title: "Transferências bancárias pendentes",
       subtitle: "Assinaturas SaaS pagas por transferência bancária, aguardando confirmação manual",

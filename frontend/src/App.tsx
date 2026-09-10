@@ -34,6 +34,7 @@ const TenantDashboardPage = lazy(() => import("./pages/tenant/TenantDashboardPag
 const TenantInvoicesPage = lazy(() => import("./pages/tenant/TenantInvoicesPage"));
 const TenantIssuesPage = lazy(() => import("./pages/tenant/TenantIssuesPage"));
 const TenantMessagesPage = lazy(() => import("./pages/tenant/TenantMessagesPage"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminSubscriptionsPage = lazy(() => import("./pages/admin/AdminSubscriptionsPage"));
 
 /** Indicateur de chargement affiché pendant le téléchargement du chunk d'une page (React.lazy). */
@@ -106,7 +107,8 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         >
-          <Route path="/admin" element={<AdminSubscriptionsPage />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route path="/admin/virements" element={<AdminSubscriptionsPage />} />
         </Route>
 
         <Route path="*" element={<HomeRedirect />} />

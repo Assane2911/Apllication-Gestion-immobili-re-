@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
-import { contracts, invoices, properties, tenants, users } from "../db/schema";
+import { contracts, invoices, platformSubscriptions, properties, tenants, users } from "../db/schema";
 
 /** Crée un gestionnaire (email déjà vérifié, essai en cours) directement en base de test. */
 export async function createManager(overrides: Partial<typeof users.$inferInsert> = {}) {
@@ -125,6 +125,34 @@ export async function createInvoice(
     })
     .returning();
   return invoice;
+}
+
+/**
+ * Crée un enregistrement d'historique de facturation SaaS (platform_subscriptions)
+ * directement en base de test — utilisé par les tests du tableau de bord admin
+ * pour simuler un paiement confirmé (calcul du MRR) sans passer par le flux de
+ * paiement complet (initiatePayment).
+ */
+export async function createPlatformSubscription(
+  userId: string,
+  overrides: Partial<typeof platformSubscriptions.$inferInsert> = {}
+) {
+  const now = new Date();
+  const [record] = await testDb
+    .insert(platformSubscriptions)
+    .values({
+      userId,
+      plan: "STARTER",
+      amount: 9,
+      billingCycle: "MONTHLY",
+      status: "PAID",
+      paymentMethod: "DEMO",
+      startDate: now,
+      endDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+      ...overrides,
+    })
+    .returning();
+  return record;
 }
 
 /**

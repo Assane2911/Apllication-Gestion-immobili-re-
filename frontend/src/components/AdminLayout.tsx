@@ -1,15 +1,16 @@
 import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Outlet } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { useTheme } from "../context/theme";
 import LanguageSwitcher from "./LanguageSwitcher";
 
-/**
- * Layout minimal pour l'espace administration de la plateforme (distinct du
- * gestionnaire/locataire) : pas de barre de navigation à onglets, une seule
- * page pour l'instant (validation des virements bancaires en attente).
- */
+const navItems = [
+  { to: "/admin", key: "dashboard", icon: "📊" },
+  { to: "/admin/virements", key: "transfers", icon: "🏦" },
+] as const;
+
+/** Layout de l'espace administration de la plateforme (distinct du gestionnaire/locataire). */
 export default function AdminLayout() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -18,7 +19,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="font-semibold text-slate-900 dark:text-slate-100">{t("components.adminLayout.title")}</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
@@ -38,8 +39,26 @@ export default function AdminLayout() {
             </button>
           </div>
         </div>
+        <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-2">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-lg text-sm ${
+                  isActive
+                    ? "bg-brand-600 text-white"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`
+              }
+            >
+              {item.icon} {t(`admin.nav.${item.key}`)}
+            </NavLink>
+          ))}
+        </div>
       </header>
-      <main className="max-w-4xl mx-auto px-4 py-6">
+      <main className="max-w-5xl mx-auto px-4 py-6">
         <Outlet />
       </main>
     </div>

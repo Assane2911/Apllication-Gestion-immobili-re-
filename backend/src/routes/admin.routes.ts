@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { confirmBankTransfer, listPendingBankTransfers } from "../controllers/admin.controller";
+import { confirmBankTransfer, getPlatformDashboardStats, listPendingBankTransfers } from "../controllers/admin.controller";
 import { authenticate, requireRole } from "../middleware/auth";
 
 const router = Router();
@@ -8,6 +8,7 @@ const router = Router();
 // publique ne mène à ce rôle, il est attribué manuellement en base.
 router.use(authenticate, requireRole("ADMIN"));
 
+router.get("/dashboard/stats", getPlatformDashboardStats);
 router.get("/subscriptions/pending-bank-transfers", listPendingBankTransfers);
 router.post("/subscriptions/:id/confirm-bank-transfer", confirmBankTransfer);
 

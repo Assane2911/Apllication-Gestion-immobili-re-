@@ -887,6 +887,42 @@ const fr = {
     },
   },
   admin: {
+    nav: {
+      dashboard: "Tableau de bord",
+      transfers: "Virements bancaires",
+    },
+    dashboard: {
+      title: "Tableau de bord",
+      subtitle: "Vue d'ensemble de la plateforme, tous gestionnaires confondus",
+      errorTitle: "Impossible de charger le tableau de bord",
+      stats: {
+        managers: "Gestionnaires",
+        managersHint: "{{trial}} en essai · {{expired}} sans accès",
+        subscriptionActive: "Abonnements payants actifs",
+        subscriptionActiveHint: "Sur {{total}} gestionnaire(s) au total",
+        mrr: "Revenu récurrent mensuel",
+        mrrHint: "{{count}} abonnement(s) payant(s)",
+        properties: "Biens gérés",
+        propertiesHint: "Toutes agences confondues",
+        tenants: "Locataires",
+        tenantsHint: "Toutes agences confondues",
+        activeContracts: "Contrats actifs",
+        activeContractsHint: "Toutes agences confondues",
+      },
+      mrrByPlan: {
+        title: "MRR par formule",
+        empty: "Aucun abonnement payant actif pour le moment.",
+      },
+      trialsEndingSoon: {
+        title: "Essais se terminant bientôt",
+        subtitle: "À relancer avant la fin de leur essai gratuit (7 jours ou moins)",
+        empty: "Aucun essai ne se termine dans les 7 prochains jours.",
+        manager: "Gestionnaire",
+        noAgencyName: "Agence sans nom renseigné",
+        daysLeft: "{{count}} jour(s) restant(s)",
+        lastDay: "Dernier jour",
+      },
+    },
     subscriptions: {
       title: "Virements bancaires en attente",
       subtitle: "Abonnements SaaS payés par virement, en attente de confirmation manuelle",

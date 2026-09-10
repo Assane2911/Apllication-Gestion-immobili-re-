@@ -226,6 +226,32 @@ export interface DashboardStats {
   expensesByMonth: Record<string, Record<string, number>>;
 }
 
+export interface AdminDashboardStats {
+  managers: {
+    total: number;
+    trialActive: number;
+    subscriptionActive: number;
+    expired: number;
+  };
+  trialsEndingSoon: {
+    userId: string;
+    email: string;
+    agencyName: string | null;
+    trialEndsAt: string | null;
+    daysRemaining: number;
+  }[];
+  mrr: {
+    total: number;
+    byPlan: Record<string, number>;
+    contributors: number;
+  };
+  usage: {
+    totalProperties: number;
+    totalTenants: number;
+    activeContracts: number;
+  };
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   page: number;
