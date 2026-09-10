@@ -240,7 +240,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
 
   <div class="main-statement">
     Je soussigné, gestionnaire pour le compte du bailleur, certifie avoir reçu de <strong>${escapeHtml(data.tenant.fullName)}</strong>
-    la somme de <strong>${data.invoice.amount} ${data.invoice.currency}</strong> au titre du paiement du loyer et des charges pour la période du mois de <strong>${periodLabel}</strong>, et lui en donne quittance sous réserve de tous droits.
+    la somme de <strong>${data.invoice.amount} ${escapeHtml(data.invoice.currency)}</strong> au titre du paiement du loyer et des charges pour la période du mois de <strong>${periodLabel}</strong>, et lui en donne quittance sous réserve de tous droits.
   </div>
 
   <table>
@@ -257,11 +257,11 @@ export function generateReceiptHtml(data: ReceiptData): string {
         <td>Loyer mensuel & charges locatives</td>
         <td>${periodLabel}</td>
         <td>${escapeHtml(data.invoice.paymentMethod)}</td>
-        <td style="text-align:right; font-weight:600;">${data.invoice.amount} ${data.invoice.currency}</td>
+        <td style="text-align:right; font-weight:600;">${data.invoice.amount} ${escapeHtml(data.invoice.currency)}</td>
       </tr>
       <tr class="total-row">
         <td colspan="3" style="text-align:right;">TOTAL REÇU :</td>
-        <td style="text-align:right;">${data.invoice.amount} ${data.invoice.currency}</td>
+        <td style="text-align:right;">${data.invoice.amount} ${escapeHtml(data.invoice.currency)}</td>
       </tr>
     </tbody>
   </table>
@@ -555,8 +555,8 @@ export function generateLeaseHtml(contract: any, agency: any): string {
     <div class="section-title">3. Durée & Conditions Financières</div>
     <div class="box">
       <strong>Date de prise d'effet :</strong> ${startDate} | <strong>Date de fin :</strong> ${endDate}<br>
-      <strong>Loyer mensuel :</strong> ${contract.rent} ${contract.currency || "EUR"} (payable mensuellement avant le 5)<br>
-      <strong>Dépôt de garantie :</strong> ${contract.deposit} ${contract.currency || "EUR"}
+      <strong>Loyer mensuel :</strong> ${contract.rent} ${escapeHtml(contract.currency) || "EUR"} (payable mensuellement avant le 5)<br>
+      <strong>Dépôt de garantie :</strong> ${contract.deposit} ${escapeHtml(contract.currency) || "EUR"}
     </div>
   </div>
 
