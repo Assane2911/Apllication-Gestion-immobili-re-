@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# Vérifie le typage AVANT d'envoyer les commits.
+#
+# Pourquoi seulement le typage : c'est ce qui casse les déploiements Vercel
+# (une variable inutilisée, TS6133, a suffi à faire échouer une mise en
+# production). Les tests, eux, tournent dans la CI GitHub Actions : les rejouer
+# ici ajouterait plusieurs minutes à chaque push, ce qui pousserait vite à
+# utiliser --no-verify par réflexe — et un garde-fou qu'on contourne par
+# habitude ne protège plus de rien.
+#
+# Pour la même raison, seule la partie réellement modifiée est vérifiée : un
+# push qui ne touche que le backend ne paie pas la vérification du frontend.
+#
+# Activation (une seule fois par clone) :
+#     git config core.hooksPath .githooks
+#
+# Pour passer outre ponctuellement :
+#     git push --no-verify
+
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+# Fichiers modifiés par rapport à la branche distante suivie. Si elle n'existe
+# pas encore (première publication d'une branche) ou si la comparaison échoue,
+# on préfère tout vérifier plutôt que de laisser passer quelque chose.
+if modifications=$(git diff --name-only "@{u}...HEAD" 2>/dev/null); then
+  :
+else
+  modifications="__INDETERMINE__"
+fi
+
+verifier_backend=0
+verifier_frontend=0
+
+if [ "$modifications" = "__INDETERMINE__" ]; then
+  verifier_backend=1
+  verifier_frontend=1
+else
+  if printf '%s\n' "$modifications" | grep -q '^backend/'; then
+    verifier_backend=1
+  fi
+  if printf '%s\n' "$modifications" | grep -q '^frontend/'; then
+    verifier_frontend=1
+  fi
+fi
+
+verifier() {
+  dossier="$1"
+  description="$2"
+  shift 2
+
+  if [ ! -d "$dossier/node_modules" ]; then
+    echo "[pre-push] $dossier : dépendances absentes, vérification ignorée."
+    return 0
+  fi
+
+  echo "[pre-push] $description..."
+  (cd "$dossier" && "$@")
+}
+
+if [ "$verifier_backend" = "0" ] && [ "$verifier_frontend" = "0" ]; then
+  echo "[pre-push] Aucun code applicatif modifié — rien à vérifier."
+  exit 0
+fi
+
+if [ "$verifier_backend" = "1" ]; then
+  verifier backend "Types du backend" npx tsc --noEmit -p tsconfig.json
+fi
+
+# `tsc -b` et NON `tsc --noEmit -p tsconfig.json` : le tsconfig.json du
+# frontend est un fichier "solution" ("files": [], que des "references"). Le
+# compiler directement ne vérifie aucun fichier et renvoie toujours un succès.
+# Seul le mode build suit les références et applique noUnusedLocals — c'est
+# exactement ce que fait Vercel via `npm run build`.
+if [ "$verifier_frontend" = "1" ]; then
+  verifier frontend "Types du frontend (comme le build Vercel)" npx tsc -b
+fi
+
+echo "[pre-push] Typage correct — envoi en cours."
