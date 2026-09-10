@@ -39,6 +39,17 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
     return res.status(400).json({ error: message, code: err.code });
   }
 
+  // Erreur métier attendue (401 non authentifié, 402 abonnement expiré, 404
+  // introuvable...) : c'est une réponse normale de l'API, pas une panne.
+  // Sentry ne la capture pas non plus (voir shouldReportToSentry dans
+  // instrument.ts), donc ni la trace d'erreur ni l'attente du flush n'ont lieu
+  // d'être ici : elles ne faisaient que polluer les journaux de production à
+  // chaque requête non authentifiée ou introuvable, et ajouter une attente
+  // inutile sur le chemin de réponse.
+  if (err instanceof ApiError && err.statusCode < 500) {
+    return res.status(err.statusCode).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
+  }
+
   console.error(err);
 
   // Sur Vercel (serverless), l'execution peut s'arreter juste apres l'envoi
