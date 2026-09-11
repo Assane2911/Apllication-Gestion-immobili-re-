@@ -81,8 +81,9 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      # `npm run lint` (oxlint) n'est volontairement pas encore branché ici :
-      # il n'a pas pu être vérifié avant l'ajout de ce workflow, et une CI qui
-      # échoue dès son premier run pour une raison sans rapport avec le code
-      # apprend surtout à ignorer la CI. À ajouter en une ligne le jour où
-      # `npm run lint` passe en local.
+      # Le linter en dernier, volontairement : une remarque de style ne doit
+      # jamais masquer une erreur de compilation ou un test casse, qui sont
+      # autrement plus urgents a voir.
+      - name: Analyser le code (oxlint)
+        working-directory: frontend
+        run: npm run lint
