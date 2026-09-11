@@ -79,7 +79,25 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByText("Authentification requise")).toBeInTheDocument());
   });
 
-  it("paiement en mode démo : envoie la bonne requête, affiche la confirmation et recharge la liste", async () => {
+  it("n'expose plus le mode démo comme moyen de paiement", async () => {
+    // Régression : « Mode démo » soldait la facture sans qu'aucun loyer ne
+    // soit versé, et déclenchait l'envoi d'une quittance — un document à
+    // valeur légale attestant d'un paiement qui n'a pas eu lieu. Le serveur le
+    // refuse désormais (voir payment.service.ts) ; il ne doit pas non plus
+    // réapparaître ici.
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: [invoice({ status: "PENDING" })] });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Payer" }));
+
+    expect(screen.queryByText("🧪 Mode démo")).not.toBeInTheDocument();
+    // Les moyens légitimes restent proposés.
+    expect(screen.getByText("🌍 PayDunya")).toBeInTheDocument();
+  });
+
+  it("paiement en ligne : envoie la bonne requête, affiche la confirmation et recharge la liste", async () => {
     const user = userEvent.setup();
     mockedApi.get
       .mockResolvedValueOnce({ data: [invoice({ status: "PENDING" })] })
@@ -87,7 +105,7 @@ describe("TenantInvoicesPage", () => {
     mockedApi.post.mockResolvedValueOnce({
       data: {
         invoice: invoice({ status: "PAID" }),
-        payment: { method: "DEMO", status: "PAID", message: "Paiement démo de 500 confirmé instantanément." },
+        payment: { method: "PAYDUNYA", status: "PAID", message: "Paiement de 500 confirmé." },
       },
     });
 
@@ -95,14 +113,12 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
 
     await user.click(screen.getByRole("button", { name: "Payer" }));
-    const demoCard = screen.getByText("🧪 Mode démo").closest("div")!;
-    await user.click(within(demoCard).getByRole("button", { name: "Choisir ce moyen" }));
+    const paydunyaCard = screen.getByText("🌍 PayDunya").closest("div")!;
+    await user.click(within(paydunyaCard).getByRole("button", { name: "Choisir ce moyen" }));
 
-    await waitFor(() =>
-      expect(screen.getByText("Paiement démo de 500 confirmé instantanément.")).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText("Paiement de 500 confirmé.")).toBeInTheDocument());
     expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/pay", {
-      method: "DEMO",
+      method: "PAYDUNYA",
       bankReference: undefined,
     });
     expect(mockedApi.get).toHaveBeenCalledTimes(2); // chargement initial + rechargement après paiement

@@ -129,7 +129,28 @@ describe("SubscriptionPage", () => {
     expect(screen.getByText("(facturé 180 € / an)")).toBeInTheDocument();
   });
 
-  it("souscription en mode démo : envoie la requête, affiche la confirmation et recharge", async () => {
+  it("n'expose plus le mode démo comme moyen de paiement", async () => {
+    // Régression : « Mode démo » activait un abonnement payant complet,
+    // instantanément et sans contrepartie — un bouton « contourner
+    // l'abonnement » offert à tout gestionnaire dont l'essai venait d'expirer.
+    // Le serveur le refuse désormais (voir payment.service.ts) ; il ne doit
+    // pas non plus réapparaître ici.
+    const user = userEvent.setup();
+    seedUser(authUser());
+    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
+    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+
+    expect(screen.queryByRole("radio", { name: /Mode démo/ })).not.toBeInTheDocument();
+    // Les moyens légitimes restent proposés.
+    expect(screen.getByRole("radio", { name: /PayDunya/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Virement bancaire/ })).toBeInTheDocument();
+  });
+
+  it("souscription : envoie la requête, affiche la confirmation et recharge", async () => {
     const user = userEvent.setup();
     seedUser(authUser());
     mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
@@ -142,15 +163,14 @@ describe("SubscriptionPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
 
     await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
-    // PAYDUNYA est sélectionné par défaut, donc on choisit explicitement DEMO.
-    await user.click(screen.getByRole("radio", { name: /Mode démo/ }));
+    // PAYDUNYA est sélectionné par défaut : aucun clic supplémentaire requis.
     await user.click(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" }));
 
     await waitFor(() =>
       expect(mockedApi.post).toHaveBeenCalledWith("/subscription/subscribe", {
         plan: "STARTER",
         billingCycle: "MONTHLY",
-        paymentMethod: "DEMO",
+        paymentMethod: "PAYDUNYA",
         bankReference: undefined,
       })
     );
