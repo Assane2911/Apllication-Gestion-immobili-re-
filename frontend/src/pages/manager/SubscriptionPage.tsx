@@ -37,10 +37,16 @@ export default function SubscriptionPage() {
   // + webhook) n'est pas encore écrite (voir payment.service.ts) — l'afficher
   // exposerait un moyen de paiement qui échoue silencieusement dès qu'une
   // vraie clé Stripe serait configurée.
+  //
+  // DEMO l'est aussi, et pour une raison plus grave : il activait un
+  // abonnement payant complet, instantanément et sans contrepartie. Le
+  // proposer ici revenait à offrir un bouton « contourner l'abonnement » à
+  // tout gestionnaire dont l'essai venait d'expirer. Le serveur le refuse
+  // désormais hors mode démo explicite (voir payment.service.ts) ; on le
+  // retire aussi de l'interface pour ne pas exposer un choix voué à échouer.
   const paymentMethods: { key: PaymentMethod; label: string; hint: string }[] = [
     { key: "PAYDUNYA", label: t("manager.subscription.paymentMethods.PAYDUNYA.label"), hint: t("manager.subscription.paymentMethods.PAYDUNYA.hint") },
     { key: "BANK_TRANSFER", label: t("manager.subscription.paymentMethods.BANK_TRANSFER.label"), hint: t("manager.subscription.paymentMethods.BANK_TRANSFER.hint") },
-    { key: "DEMO", label: t("manager.subscription.paymentMethods.DEMO.label"), hint: t("manager.subscription.paymentMethods.DEMO.hint") },
   ];
 
   function loadData() {

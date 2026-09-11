@@ -38,6 +38,50 @@ describe("initiatePayment", () => {
     expect(result.method).toBe("DEMO");
   });
 
+  it("DEMO : est refusé (400) hors mode démo explicite", async () => {
+    // Regression : "DEMO" confirme un paiement instantanement, sans
+    // contrepartie. Il etait propose dans l'interface ET accepte par l'API,
+    // ce qui permettait a un gestionnaire d'activer un abonnement payant
+    // gratuitement, et a un locataire de solder son loyer sans le regler.
+    // Masquer le bouton ne suffisait pas : l'API restait appelable
+    // directement. Le refus vit donc dans initiatePayment, point de passage
+    // unique des deux flux.
+    env.payments.demoMode = false;
+
+    await expect(
+      initiatePayment({ method: "DEMO", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" })
+    ).rejects.toThrow(ApiError);
+
+    try {
+      await initiatePayment({ method: "DEMO", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" });
+    } catch (err) {
+      expect((err as ApiError).statusCode).toBe(400);
+    }
+  });
+
+  it("PAYDUNYA : n'est plus simulé hors mode démo dès que les clés sont configurées", async () => {
+    // Le drapeau demoMode ne concerne pas que la methode DEMO : il
+    // court-circuitait aussi PayDunya, qui renvoyait un PAID sans encaissement.
+    // Hors mode demo avec des cles configurees, l'appel reel doit avoir lieu.
+    env.payments.demoMode = false;
+    env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk" };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ response_code: "00", response_text: "https://paydunya.test/abc", token: "tok" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await initiatePayment({
+      method: "PAYDUNYA",
+      amount: 25000,
+      invoiceId: "inv-2",
+      payerEmail: "a@test.local",
+    });
+
+    expect(fetchMock).toHaveBeenCalled();
+    expect(result.status).toBe("REQUIRES_ACTION");
+  });
+
   it("BANK_TRANSFER : renvoie toujours PENDING_VALIDATION, jamais un accès immédiat", async () => {
     const result = await initiatePayment({
       method: "BANK_TRANSFER",

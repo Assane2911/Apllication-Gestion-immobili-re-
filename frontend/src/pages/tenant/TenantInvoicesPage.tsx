@@ -24,10 +24,15 @@ export default function TenantInvoicesPage() {
   // + webhook) n'est pas encore écrite (voir payment.service.ts) — l'afficher
   // exposerait un moyen de paiement qui échoue silencieusement dès qu'une
   // vraie clé Stripe serait configurée.
+  //
+  // DEMO l'est aussi, et pour une raison plus grave : il soldait la facture
+  // instantanément sans qu'aucun loyer ne soit versé, et déclenchait l'envoi
+  // d'une quittance — un document à valeur légale attestant d'un paiement qui
+  // n'a pas eu lieu. Le serveur le refuse désormais hors mode démo explicite
+  // (voir payment.service.ts).
   const methods: { key: PaymentMethod; label: string; hint: string }[] = [
     { key: "PAYDUNYA", label: t("tenant.invoices.methods.PAYDUNYA.label"), hint: t("tenant.invoices.methods.PAYDUNYA.hint") },
     { key: "BANK_TRANSFER", label: t("tenant.invoices.methods.BANK_TRANSFER.label"), hint: t("tenant.invoices.methods.BANK_TRANSFER.hint") },
-    { key: "DEMO", label: t("tenant.invoices.methods.DEMO.label"), hint: t("tenant.invoices.methods.DEMO.hint") },
   ];
 
   function load() {

@@ -64,7 +64,19 @@ export const env = {
   enableInternalCron: (process.env.ENABLE_INTERNAL_CRON ?? "true") === "true",
 
   payments: {
-    demoMode: (process.env.PAYMENTS_DEMO_MODE ?? "true") === "true",
+    // Fail-closed, comme pour CRON_SECRET (voir cron.controller.ts) : en
+    // production, le mode démo doit être demandé EXPLICITEMENT.
+    //
+    // Ce drapeau ne se contente pas d'activer le moyen de paiement "DEMO" : il
+    // court-circuite aussi Stripe et PayDunya, qui renvoient alors un paiement
+    // simulé au statut PAID (voir payment.service.ts). Un défaut à "true"
+    // rendait donc toute la barrière payante décorative dès que la variable
+    // n'était pas renseignée sur l'hébergeur — un abonnement pouvait être
+    // activé sans qu'un centime ne soit encaissé, quel que soit le moyen
+    // choisi. On ne conserve ce défaut permissif qu'en local/dev.
+    demoMode:
+      (process.env.PAYMENTS_DEMO_MODE ??
+        (process.env.NODE_ENV === "production" || process.env.VERCEL ? "false" : "true")) === "true",
     stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
     // PayDunya (https://paydunya.com) : agrégateur de paiement ouest-africain

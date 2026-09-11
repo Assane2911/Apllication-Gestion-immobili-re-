@@ -46,6 +46,13 @@ export async function initiatePayment(params: {
       return initiateBankTransferDeclaration(amount, reference, bankReference);
     case "DEMO":
     default:
+      // Verrou serveur : "DEMO" confirme un paiement instantanément, sans
+      // contrepartie. Le masquer dans l'interface ne suffit pas — n'importe
+      // qui peut appeler l'API directement et s'offrir un abonnement, ou
+      // solder un loyer sans le régler. Hors mode démo explicite, on refuse.
+      if (!env.payments.demoMode) {
+        throw new ApiError(400, "Le mode démo n'est pas disponible sur cette plateforme.");
+      }
       return initiateDemoPayment(amount, reference);
   }
 }
