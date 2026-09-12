@@ -245,8 +245,17 @@ export interface AdminDashboardStats {
     daysRemaining: number;
   }[];
   mrr: {
-    total: number;
-    byPlan: Record<string, number>;
+    /**
+     * Un bloc par devise facturée, jamais un total unique : les formules sont
+     * tarifées séparément dans chaque devise et aucun taux de change n'est
+     * appliqué, donc additionner FCFA et euros ne voudrait rien dire.
+     */
+    byCurrency: {
+      currency: string;
+      total: number;
+      byPlan: Record<string, number>;
+      contributors: number;
+    }[];
     contributors: number;
   };
   usage: {

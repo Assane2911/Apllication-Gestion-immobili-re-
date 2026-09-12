@@ -951,7 +951,7 @@ const fr = {
       monthly: "Mensuel",
       confirmButton: "Confirmer le paiement",
       confirming: "Confirmation...",
-      confirmPrompt: "Confirmer la réception du virement de {{amount}} € de {{email}} ? Cette action activera immédiatement son abonnement.",
+      confirmPrompt: "Confirmer la réception du virement de {{amount}} de {{email}} ? Cette action activera immédiatement son abonnement.",
     },
   },
 };

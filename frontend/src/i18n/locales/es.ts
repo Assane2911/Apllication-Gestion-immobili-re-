@@ -953,7 +953,7 @@ const es: TranslationSchema = {
       monthly: "Mensual",
       confirmButton: "Confirmar el pago",
       confirming: "Confirmando...",
-      confirmPrompt: "¿Confirmar la recepción de la transferencia de {{amount}} € de {{email}}? Esto activará inmediatamente su suscripción.",
+      confirmPrompt: "¿Confirmar la recepción de la transferencia de {{amount}} de {{email}}? Esto activará inmediatamente su suscripción.",
     },
   },
 };

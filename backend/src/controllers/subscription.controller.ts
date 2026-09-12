@@ -230,6 +230,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
         userId: user.id,
         plan: body.plan,
         amount,
+        currency,
         billingCycle: body.billingCycle,
         status: isConfirmed ? "PAID" : "PENDING",
         paymentMethod: body.paymentMethod,

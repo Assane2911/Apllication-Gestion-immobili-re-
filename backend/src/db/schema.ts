@@ -57,6 +57,12 @@ export const platformSubscriptions = pgTable("platform_subscriptions", {
     .references(() => users.id, { onDelete: "cascade" }),
   plan: subscriptionPlanEnum("plan").notNull(),
   amount: doublePrecision("amount").notNull(),
+  // Un montant sans devise n'est pas un montant : les tarifs existent en
+  // plusieurs devises (voir TARIFS dans subscription.controller.ts), et sans
+  // cette colonne l'historique comme l'écran d'administration affichaient des
+  // euros par défaut, y compris pour un abonnement réglé en FCFA. Les lignes
+  // antérieures sont bien en euros, d'où ce défaut.
+  currency: text("currency").notNull().default("EUR"),
   billingCycle: text("billing_cycle").notNull().default("MONTHLY"), // "MONTHLY" | "ANNUAL"
   status: text("status").notNull().default("PAID"),
   paymentMethod: paymentMethodEnum("payment_method").notNull(),

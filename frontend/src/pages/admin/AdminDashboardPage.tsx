@@ -7,12 +7,18 @@ import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import type { AdminDashboardStats } from "../../types";
 
-/** Les abonnements SaaS de la plateforme sont toujours facturés en euros
- * (voir SUBSCRIPTION_PLANS côté backend) — on formate donc le MRR avec un
- * format numérique fixe (comme formatMoney dans CurrencyContext), indépendant
- * de la langue d'affichage de l'admin. */
-function formatEuros(amount: number): string {
-  return `${new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount)} €`;
+/**
+ * Les abonnements ne sont plus « toujours facturés en euros » : chaque formule
+ * a un tarif propre par devise (voir TARIFS côté backend), et un gestionnaire
+ * réglant en FCFA produit des lignes en FCFA. Le format numérique reste fixe,
+ * indépendant de la langue d'affichage de l'admin, mais le symbole suit la
+ * devise de la ligne.
+ */
+const SYMBOLES: Record<string, string> = { EUR: "€", XOF: "FCFA", XAF: "FCFA", USD: "$", GBP: "£" };
+
+function formatMontant(amount: number, currency: string): string {
+  const nombre = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
+  return `${nombre} ${SYMBOLES[currency] ?? currency}`;
 }
 
 const PLAN_ORDER = ["STARTER", "PRO", "ENTERPRISE"] as const;
@@ -67,7 +73,10 @@ export default function AdminDashboardPage() {
   }
 
   const { managers, trialsEndingSoon, mrr, usage } = stats;
-  const maxPlanMrr = Math.max(1, ...PLAN_ORDER.map((plan) => mrr.byPlan[plan] ?? 0));
+  // La devise principale (la plus contributive) donne la vignette de tête ; les
+  // autres sont listées dessous, sans jamais être additionnées à la première.
+  const deviseCle = mrr.byCurrency[0] ?? null;
+  const autresDevises = mrr.byCurrency.slice(1);
 
   return (
     <div className="space-y-6">
@@ -94,8 +103,12 @@ export default function AdminDashboardPage() {
         <StatCard
           icon={Wallet}
           label={t("admin.dashboard.stats.mrr")}
-          value={formatEuros(mrr.total)}
-          hint={t("admin.dashboard.stats.mrrHint", { count: mrr.contributors })}
+          value={deviseCle ? formatMontant(deviseCle.total, deviseCle.currency) : "—"}
+          hint={
+            autresDevises.length > 0
+              ? autresDevises.map((d) => formatMontant(d.total, d.currency)).join(" · ")
+              : t("admin.dashboard.stats.mrrHint", { count: mrr.contributors })
+          }
           accent="green"
         />
         <StatCard
@@ -127,24 +140,39 @@ export default function AdminDashboardPage() {
           {mrr.contributors === 0 ? (
             <p className="text-sm text-slate-400 dark:text-slate-500 py-10 text-center">{t("admin.dashboard.mrrByPlan.empty")}</p>
           ) : (
-            <div className="space-y-4">
-              {PLAN_ORDER.map((plan) => {
-                const amount = mrr.byPlan[plan] ?? 0;
-                const widthPct = Math.round((amount / maxPlanMrr) * 100);
+            <div className="space-y-6">
+              {mrr.byCurrency.map((bloc) => {
+                // Les barres sont mises à l'échelle DANS chaque devise : une
+                // barre FCFA et une barre euro ne sont pas comparables, et une
+                // échelle commune ferait croire le contraire.
+                const maxPlan = Math.max(1, ...PLAN_ORDER.map((plan) => bloc.byPlan[plan] ?? 0));
                 return (
-                  <div key={plan}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">{plan}</span>
-                      <span className="text-slate-500 dark:text-slate-400 font-mono tabular-nums">
-                        {formatEuros(amount)}
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-brand-600"
-                        style={{ width: amount > 0 ? `${Math.max(widthPct, 4)}%` : "0%" }}
-                      />
-                    </div>
+                  <div key={bloc.currency} className="space-y-4">
+                    {mrr.byCurrency.length > 1 && (
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        {bloc.currency}
+                      </p>
+                    )}
+                    {PLAN_ORDER.map((plan) => {
+                      const amount = bloc.byPlan[plan] ?? 0;
+                      const widthPct = Math.round((amount / maxPlan) * 100);
+                      return (
+                        <div key={plan}>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">{plan}</span>
+                            <span className="text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+                              {formatMontant(amount, bloc.currency)}
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-brand-600"
+                              style={{ width: amount > 0 ? `${Math.max(widthPct, 4)}%` : "0%" }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}

@@ -21,6 +21,7 @@ export const listPendingBankTransfers = asyncHandler(async (_req: Request, res: 
       managerEmail: users.email,
       plan: platformSubscriptions.plan,
       amount: platformSubscriptions.amount,
+      currency: platformSubscriptions.currency,
       billingCycle: platformSubscriptions.billingCycle,
       paymentRef: platformSubscriptions.paymentRef,
       startDate: platformSubscriptions.startDate,
@@ -132,12 +133,22 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
     }
   }
 
-  const mrrByPlan: Record<string, number> = { STARTER: 0, PRO: 0, ENTERPRISE: 0 };
-  let mrrTotal = 0;
+  // Le MRR est ventilé PAR DEVISE, et non additionné en un seul nombre : les
+  // formules sont tarifées séparément dans chaque devise, sans taux de change
+  // (voir TARIFS dans subscription.controller.ts). Additionner 15 000 FCFA et
+  // 29 EUR produirait « 15 029 », un chiffre qui ne veut rien dire et sur
+  // lequel on prendrait pourtant des décisions.
+  const parDevise = new Map<string, { total: number; byPlan: Record<string, number>; contributors: number }>();
   for (const record of latestPaidByUser.values()) {
     const monthly = record.billingCycle === "ANNUAL" ? record.amount / 12 : record.amount;
-    mrrByPlan[record.plan] = (mrrByPlan[record.plan] ?? 0) + monthly;
-    mrrTotal += monthly;
+    const devise = record.currency || "EUR";
+    if (!parDevise.has(devise)) {
+      parDevise.set(devise, { total: 0, byPlan: { STARTER: 0, PRO: 0, ENTERPRISE: 0 }, contributors: 0 });
+    }
+    const bloc = parDevise.get(devise)!;
+    bloc.total += monthly;
+    bloc.byPlan[record.plan] = (bloc.byPlan[record.plan] ?? 0) + monthly;
+    bloc.contributors += 1;
   }
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -159,12 +170,20 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
       agencyName: agencyNameByUserId.get(t.userId) ?? null,
     })),
     mrr: {
-      total: round2(mrrTotal),
-      byPlan: {
-        STARTER: round2(mrrByPlan.STARTER ?? 0),
-        PRO: round2(mrrByPlan.PRO ?? 0),
-        ENTERPRISE: round2(mrrByPlan.ENTERPRISE ?? 0),
-      },
+      // Une entrée par devise réellement facturée, triée par montant
+      // décroissant pour que la devise principale vienne en tête.
+      byCurrency: [...parDevise.entries()]
+        .map(([currency, bloc]) => ({
+          currency,
+          total: round2(bloc.total),
+          byPlan: {
+            STARTER: round2(bloc.byPlan.STARTER ?? 0),
+            PRO: round2(bloc.byPlan.PRO ?? 0),
+            ENTERPRISE: round2(bloc.byPlan.ENTERPRISE ?? 0),
+          },
+          contributors: bloc.contributors,
+        }))
+        .sort((a, b) => b.total - a.total),
       contributors: latestPaidByUser.size,
     },
     usage: {

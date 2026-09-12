@@ -228,10 +228,13 @@ describe("GET /api/admin/dashboard/stats", () => {
       .set(authHeader(tokenFor(admin)));
 
     expect(res.status).toBe(200);
-    expect(res.body.mrr.byPlan.PRO).toBe(29);
-    expect(res.body.mrr.byPlan.ENTERPRISE).toBe(39.17);
-    expect(res.body.mrr.total).toBe(68.17);
     expect(res.body.mrr.contributors).toBe(2);
+    expect(res.body.mrr.byCurrency).toHaveLength(1);
+    const eurMrr = res.body.mrr.byCurrency[0];
+    expect(eurMrr.currency).toBe("EUR");
+    expect(eurMrr.byPlan.PRO).toBe(29);
+    expect(eurMrr.byPlan.ENTERPRISE).toBe(39.17);
+    expect(eurMrr.total).toBe(68.17);
   });
 
   it("compte le volume global d'usage (biens, locataires, contrats actifs) tous gestionnaires confondus", async () => {

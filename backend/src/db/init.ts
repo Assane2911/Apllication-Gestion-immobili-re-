@@ -24,6 +24,7 @@ export async function initDb() {
     `);
 
     // Ensure columns exist on existing databases
+    try { await db.execute(sql`ALTER TABLE platform_subscriptions ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'TRIAL'`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'STARTER'`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`); } catch {}
@@ -125,6 +126,7 @@ export async function initDb() {
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         plan TEXT NOT NULL CHECK (plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
         amount DOUBLE PRECISION NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'EUR',
         billing_cycle TEXT NOT NULL DEFAULT 'MONTHLY',
         status TEXT NOT NULL DEFAULT 'PAID',
         payment_method TEXT NOT NULL,

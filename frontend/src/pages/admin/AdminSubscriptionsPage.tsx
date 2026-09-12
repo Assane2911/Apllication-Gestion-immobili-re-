@@ -2,6 +2,7 @@ import { Landmark } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import { useCurrency } from "../../context/currency";
 import EmptyState from "../../components/EmptyState";
 
 interface PendingBankTransfer {
@@ -10,6 +11,7 @@ interface PendingBankTransfer {
   managerEmail: string;
   plan: string;
   amount: number;
+  currency: string;
   billingCycle: string;
   paymentRef: string | null;
   startDate: string;
@@ -19,6 +21,9 @@ interface PendingBankTransfer {
 
 export default function AdminSubscriptionsPage() {
   const { t, i18n } = useTranslation();
+  // Chaque ligne porte sa propre devise : le montant d'un abonnement réglé en
+  // FCFA ne doit pas s'afficher en euros au moment où l'admin valide le virement.
+  const { formatMoney } = useCurrency();
   const [rows, setRows] = useState<PendingBankTransfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -36,7 +41,7 @@ export default function AdminSubscriptionsPage() {
   useEffect(load, []);
 
   async function confirm(row: PendingBankTransfer) {
-    if (!window.confirm(t("admin.subscriptions.confirmPrompt", { email: row.managerEmail, amount: row.amount }))) {
+    if (!window.confirm(t("admin.subscriptions.confirmPrompt", { email: row.managerEmail, amount: formatMoney(row.amount, row.currency) }))) {
       return;
     }
     setConfirmingId(row.id);
@@ -97,7 +102,7 @@ export default function AdminSubscriptionsPage() {
                     <td className="py-3">
                       {row.billingCycle === "ANNUAL" ? t("admin.subscriptions.annual") : t("admin.subscriptions.monthly")}
                     </td>
-                    <td className="py-3 font-bold">{row.amount} €</td>
+                    <td className="py-3 font-bold">{formatMoney(row.amount, row.currency)}</td>
                     <td className="py-3 text-slate-500 dark:text-slate-400">{row.paymentRef || "—"}</td>
                     <td className="py-3">{new Date(row.createdAt).toLocaleDateString(i18n.language)}</td>
                     <td className="py-3 text-right">
