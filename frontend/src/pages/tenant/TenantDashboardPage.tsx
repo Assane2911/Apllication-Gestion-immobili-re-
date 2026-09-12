@@ -192,12 +192,24 @@ export default function TenantDashboardPage() {
 
                   {c.scannedContractUrl && (
                     <button
-                      onClick={() =>
-                        setViewingScannedContract({
-                          title: t("tenant.dashboard.leaseDocTitle", { property: c.property?.title }),
-                          url: c.scannedContractUrl!,
-                        })
-                      }
+                      onClick={async () => {
+                        if (c.scannedContractUrl && /^https?:\/\//i.test(c.scannedContractUrl)) {
+                          setViewingScannedContract({
+                            title: t("tenant.dashboard.leaseDocTitle", { property: c.property?.title }),
+                            url: c.scannedContractUrl,
+                          });
+                          return;
+                        }
+                        try {
+                          const res = await api.get<{ url: string }>(`/documents/lease-scan/${c.id}`);
+                          setViewingScannedContract({
+                            title: t("tenant.dashboard.leaseDocTitle", { property: c.property?.title }),
+                            url: res.data.url,
+                          });
+                        } catch (err) {
+                          alert(apiErrorMessage(err));
+                        }
+                      }}
                       className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-500/30 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
                     >
                       <FileCheck size={14} />

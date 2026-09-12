@@ -8,6 +8,7 @@ import { contracts, issueReports, properties, tenants, users } from "../db/schem
 import { logActivity } from "../services/activity.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { resolveScannedUrl } from "./contract.controller";
 
 const tenantSchema = z.object({
   firstName: z.string().min(1),
@@ -46,9 +47,17 @@ export const getTenant = asyncHandler(async (req: Request, res: Response) => {
 
   const issues = await db.select().from(issueReports).where(eq(issueReports.tenantId, tenant.id));
 
+  const contractsWithScans = await Promise.all(
+    tenantContracts.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
+      ...r.contract,
+      scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
+      property: r.property,
+    }))
+  );
+
   res.json({
     ...tenant,
-    contracts: tenantContracts.map((r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({ ...r.contract, property: r.property })),
+    contracts: contractsWithScans,
     issues,
   });
 });
