@@ -17,7 +17,12 @@ function stats(overrides: Record<string, unknown> = {}) {
     trialsEndingSoon: [
       { userId: "mgr-1", email: "agence-port@test.local", agencyName: "Agence du Port", trialEndsAt: "2026-09-12T00:00:00.000Z", daysRemaining: 2 },
     ],
-    mrr: { total: 68.17, byPlan: { STARTER: 0, PRO: 29, ENTERPRISE: 39.17 }, contributors: 2 },
+    // Le MRR est ventilé par devise depuis que les formules sont tarifées
+    // séparément en euros et en FCFA : additionner les deux ne voudrait rien dire.
+    mrr: {
+      byCurrency: [{ currency: "EUR", total: 68.17, byPlan: { STARTER: 0, PRO: 29, ENTERPRISE: 39.17 }, contributors: 2 }],
+      contributors: 2,
+    },
     usage: { totalProperties: 34, totalTenants: 28, activeContracts: 19 },
     ...overrides,
   };

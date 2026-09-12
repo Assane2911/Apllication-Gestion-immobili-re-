@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import AdminSubscriptionsPage from "./AdminSubscriptionsPage";
+import { AuthProvider } from "../../context/AuthContext";
+import { CurrencyProvider } from "../../context/CurrencyContext";
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
@@ -38,7 +40,13 @@ describe("AdminSubscriptionsPage", () => {
   it("affiche les virements en attente avec les informations du gestionnaire", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [pendingTransfer()] });
 
-    render(<AdminSubscriptionsPage />);
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
 
     await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
     expect(screen.getByText("PRO")).toBeInTheDocument();
@@ -49,7 +57,13 @@ describe("AdminSubscriptionsPage", () => {
   it("affiche un message quand aucun virement n'est en attente", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [] });
 
-    render(<AdminSubscriptionsPage />);
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
 
     await waitFor(() => expect(screen.getByText("Aucun virement en attente")).toBeInTheDocument());
   });
@@ -60,7 +74,13 @@ describe("AdminSubscriptionsPage", () => {
       isAxiosError: true,
     });
 
-    render(<AdminSubscriptionsPage />);
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
 
@@ -74,7 +94,13 @@ describe("AdminSubscriptionsPage", () => {
     mockedApi.get.mockResolvedValueOnce({ data: [pendingTransfer()] });
     mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
 
-    render(<AdminSubscriptionsPage />);
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
 
     await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
 
@@ -90,7 +116,13 @@ describe("AdminSubscriptionsPage", () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
     mockedApi.get.mockResolvedValueOnce({ data: [pendingTransfer()] });
 
-    render(<AdminSubscriptionsPage />);
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
 
     await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
 
@@ -109,7 +141,13 @@ describe("AdminSubscriptionsPage", () => {
       isAxiosError: true,
     });
 
-    render(<AdminSubscriptionsPage />);
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
 
     await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
 

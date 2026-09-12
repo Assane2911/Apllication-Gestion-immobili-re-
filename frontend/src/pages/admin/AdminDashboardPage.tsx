@@ -75,8 +75,12 @@ export default function AdminDashboardPage() {
   const { managers, trialsEndingSoon, mrr, usage } = stats;
   // La devise principale (la plus contributive) donne la vignette de tête ; les
   // autres sont listées dessous, sans jamais être additionnées à la première.
-  const deviseCle = mrr.byCurrency[0] ?? null;
-  const autresDevises = mrr.byCurrency.slice(1);
+  // `?? []` n'est pas de la superstition : pendant un déploiement, un frontend
+  // encore en cache peut recevoir l'ancienne charge utile (ou l'inverse). Une
+  // page d'administration doit alors afficher « — », pas un écran blanc.
+  const blocsDevises = mrr.byCurrency ?? [];
+  const deviseCle = blocsDevises[0] ?? null;
+  const autresDevises = blocsDevises.slice(1);
 
   return (
     <div className="space-y-6">
@@ -141,14 +145,14 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-slate-400 dark:text-slate-500 py-10 text-center">{t("admin.dashboard.mrrByPlan.empty")}</p>
           ) : (
             <div className="space-y-6">
-              {mrr.byCurrency.map((bloc) => {
+              {blocsDevises.map((bloc) => {
                 // Les barres sont mises à l'échelle DANS chaque devise : une
                 // barre FCFA et une barre euro ne sont pas comparables, et une
                 // échelle commune ferait croire le contraire.
                 const maxPlan = Math.max(1, ...PLAN_ORDER.map((plan) => bloc.byPlan[plan] ?? 0));
                 return (
                   <div key={bloc.currency} className="space-y-4">
-                    {mrr.byCurrency.length > 1 && (
+                    {blocsDevises.length > 1 && (
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {bloc.currency}
                       </p>
