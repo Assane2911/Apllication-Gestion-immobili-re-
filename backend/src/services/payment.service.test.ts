@@ -135,18 +135,79 @@ describe("initiatePayment", () => {
     }
   });
 
-  it("PAYDUNYA : retombe sur une simulation confirmée tant que les clés ne sont pas configurées", async () => {
-    env.payments.demoMode = false; // même hors mode démo...
-    env.payments.paydunya.masterKey = ""; // ...sans clé, on simule toujours
+  // Ce test affirmait exactement le contraire : « retombe sur une simulation
+  // confirmée tant que les clés ne sont pas configurées », clés vidées et
+  // demoMode à false, avec expect(result.status).toBe("PAID"). Il verrouillait
+  // donc le défaut le plus coûteux du service — une clé absente en production
+  // rendait la plateforme gratuite en silence. Le comportement attendu est
+  // désormais l'inverse, et ces trois cas en tiennent la frontière.
+  it("PAYDUNYA : refuse (503) hors mode démo si les clés manquent, au lieu de simuler un paiement", async () => {
+    env.payments.demoMode = false;
+    env.payments.paydunya.masterKey = "";
+    const journal = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      await initiatePayment({
+        method: "PAYDUNYA",
+        amount: 25000,
+        invoiceId: "inv-1",
+        payerEmail: "a@test.local",
+      });
+      expect.unreachable("un paiement sans clé ne doit jamais aboutir hors mode démo");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
+      expect((err as ApiError).statusCode).toBe(503);
+    }
+
+    // Aucun appel réseau : le refus est décidé avant, sur la configuration.
+    expect(fetchMock).not.toHaveBeenCalled();
+    // La cause exacte reste côté serveur — c'est le seul indice de l'exploitant.
+    expect(journal).toHaveBeenCalled();
+    expect(journal.mock.calls[0]?.[0]).toContain("PAYDUNYA");
+    journal.mockRestore();
+  });
+
+  it("PAYDUNYA : simule encore sans clés SI le mode démo est explicite (flux de développement)", async () => {
+    // Le garde-fou ne doit pas coûter le développement local : en mode démo
+    // assumé, l'absence de clés reste un paiement simulé.
+    env.payments.demoMode = true;
+    env.payments.paydunya = { ...original.paydunya, masterKey: "", privateKey: "", token: "" };
 
     const result = await initiatePayment({
       method: "PAYDUNYA",
-      amount: 29,
+      amount: 25000,
       invoiceId: "inv-1",
-      payerEmail: "test@test.local",
+      payerEmail: "a@test.local",
     });
 
     expect(result.status).toBe("PAID");
+  });
+
+  it("STRIPE : refuse (503) hors mode démo si la clé manque, au lieu de simuler un paiement", async () => {
+    // Même trou que PayDunya, et jamais couvert : la condition
+    // `!stripeSecretKey || demoMode` simulait un PAID dès que la clé était
+    // absente, production comprise.
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "";
+    const journal = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      await initiatePayment({
+        method: "STRIPE",
+        amount: 29,
+        invoiceId: "inv-1",
+        payerEmail: "a@test.local",
+      });
+      expect.unreachable("un paiement sans clé ne doit jamais aboutir hors mode démo");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
+      expect((err as ApiError).statusCode).toBe(503);
+    }
+
+    expect(journal).toHaveBeenCalled();
+    journal.mockRestore();
   });
 
   it("PAYDUNYA : crée une facture de paiement réelle et renvoie l'URL de redirection", async () => {

@@ -57,9 +57,50 @@ export async function initiatePayment(params: {
   }
 }
 
+/**
+ * Autorise — ou refuse — de retomber sur un paiement simulé.
+ *
+ * Un paiement simulé renvoie PAID sans qu'aucun argent n'ait changé de main :
+ * l'abonnement s'active, le loyer passe en réglé et la quittance s'émet. En
+ * développement c'est indispensable ; en production c'est une plateforme
+ * gratuite.
+ *
+ * Or les deux prestataires retombaient sur cette simulation dès qu'une clé
+ * manquait, y compris hors mode démo. Une clé mal recopiée, supprimée par
+ * erreur, ou simplement absente d'un nouvel environnement Vercel suffisait
+ * donc à offrir tous les abonnements — sans aucun signal : rien dans les
+ * logs, rien dans Sentry, et pour seul symptôme l'absence de recettes,
+ * constatée des semaines plus tard.
+ *
+ * Ce garde-fou inverse le défaut : hors mode démo explicite, une
+ * configuration incomplète est une panne, pas un paiement. Le code 503 est
+ * délibéré — il est ≥ 500, donc remonté à Sentry (voir shouldReportToSentry
+ * dans instrument.ts), ce qui transforme le silence en alerte. Le payeur, de
+ * son côté, voit un message neutre : la cause exacte reste dans les logs
+ * serveur, elle ne le concerne pas.
+ */
+function autoriserSimulation(method: PaymentMethodKey, cause: string): void {
+  if (env.payments.demoMode) return;
+
+  console.error(
+    `[paiement] ${method} refusé : ${cause}. Une simulation hors mode démo activerait ` +
+      `un abonnement ou solderait un loyer sans encaissement.`
+  );
+
+  throw new ApiError(
+    503,
+    "Ce moyen de paiement est momentanément indisponible. Merci d'en choisir un autre ou de réessayer plus tard."
+  );
+}
+
 async function initiateStripePayment(amount: number, reference: string, payerEmail: string): Promise<PaymentIntentResult> {
-  if (!env.payments.stripeSecretKey || env.payments.demoMode) {
+  if (!env.payments.stripeSecretKey) {
+    autoriserSimulation("STRIPE", "STRIPE_SECRET_KEY absente");
     return simulatedResult("STRIPE", reference, "Stripe non configuré — paiement simulé (mode démo).");
+  }
+
+  if (env.payments.demoMode) {
+    return simulatedResult("STRIPE", reference, "Mode démo — paiement Stripe simulé.");
   }
   // Intégration réelle: utiliser le SDK `stripe` avec env.payments.stripeSecretKey
   // pour créer une Checkout Session, puis retourner son URL.
@@ -106,8 +147,13 @@ async function initiatePaydunyaPayment(
 ): Promise<PaymentIntentResult> {
   const { masterKey, privateKey, token, mode, storeName } = env.payments.paydunya;
 
-  if (!masterKey || !privateKey || !token || env.payments.demoMode) {
+  if (!masterKey || !privateKey || !token) {
+    autoriserSimulation("PAYDUNYA", "clés API incomplètes (master, privée ou token)");
     return simulatedResult("PAYDUNYA", reference, "PayDunya non configuré — paiement simulé (mode démo).");
+  }
+
+  if (env.payments.demoMode) {
+    return simulatedResult("PAYDUNYA", reference, "Mode démo — paiement PayDunya simulé.");
   }
 
   const baseUrl =
