@@ -14,9 +14,11 @@ describe("En-têtes de sécurité HTTP (helmet)", () => {
     expect(res.headers["x-powered-by"]).toBeUndefined();
   });
 
-  it("ne pose pas de Content-Security-Policy (désactivée : casserait les quittances/baux HTML avec styles en ligne)", async () => {
+  it("applique une Content-Security-Policy stricte (interdit les scripts, autorise les styles inline pour les documents)", async () => {
     const res = await request(app).get("/api/health");
 
-    expect(res.headers["content-security-policy"]).toBeUndefined();
+    expect(res.headers["content-security-policy"]).toBeDefined();
+    expect(res.headers["content-security-policy"]).toContain("script-src 'none'");
+    expect(res.headers["content-security-policy"]).toContain("style-src 'self' 'unsafe-inline'");
   });
 });

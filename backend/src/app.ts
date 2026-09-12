@@ -27,14 +27,30 @@ import tenantRoutes from "./routes/tenant.routes";
 export const app = express();
 
 // En-têtes de sécurité HTTP standards (anti-sniffing MIME, anti-clickjacking,
-// HSTS, suppression de "X-Powered-By"...). La Content-Security-Policy par
-// défaut de helmet est désactivée : les quittances et baux générés par
-// /api/documents (voir document.controller.ts + pdf.service.ts) sont du HTML
-// brut avec des styles en ligne, qu'une CSP par défaut ('self' uniquement)
-// bloquerait. Une CSP adaptée à ces documents pourra être ajoutée plus tard
-// si besoin — en attendant, toutes les autres protections de helmet
-// s'appliquent normalement.
-app.use(helmet({ contentSecurityPolicy: false }));
+// HSTS, suppression de "X-Powered-By"...). La Content-Security-Policy (CSP)
+// est configurée de manière stricte : 'script-src none' bloque toute exécution
+// de JavaScript (l'API et les quittances/baux HTML ne contiennent aucun script),
+// tandis que 'style-src self unsafe-inline' permet le rendu et l'impression des
+// documents HTML (voir document.controller.ts + pdf.service.ts).
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'none'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", "https:", "data:"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'none'"],
+        frameAncestors: ["'self'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    },
+  })
+);
 
 // En plus du site web (env.frontendUrl), on autorise les origines des
 // builds mobiles Capacitor : "https://localhost" (Android, androidScheme:
