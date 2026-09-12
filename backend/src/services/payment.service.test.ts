@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
 import { ApiError } from "../utils/asyncHandler";
-import { initiatePayment } from "./payment.service";
+import { initiatePayment, MOYENS_DE_PAIEMENT, moyensDePaiementDisponibles } from "./payment.service";
 
 /**
  * payment.service.ts n'avait aucun test direct : il n'était exercé qu'en
@@ -314,5 +314,103 @@ describe("initiatePayment", () => {
     await expect(
       initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
     ).rejects.toThrow(ApiError);
+  });
+});
+
+describe("moyensDePaiementDisponibles", () => {
+  const original = {
+    demoMode: env.payments.demoMode,
+    stripeSecretKey: env.payments.stripeSecretKey,
+    paydunya: { ...env.payments.paydunya },
+  };
+
+  afterEach(() => {
+    env.payments.demoMode = original.demoMode;
+    env.payments.stripeSecretKey = original.stripeSecretKey;
+    env.payments.paydunya = { ...original.paydunya };
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  /**
+   * La propriété qui compte vraiment. L'interface affichait une liste écrite à
+   * la main pendant que le serveur appliquait ses propres conditions : d'où un
+   * bouton PayDunya proposé, puis refusé en 503, avec un message invitant à
+   * choisir « un autre » moyen inexistant. Ce test interdit à cette divergence
+   * de réapparaître : tout moyen annoncé doit aboutir, tout moyen écarté doit être
+   * refusé — vérifié en appelant réellement initiatePayment.
+   */
+  async function verifierCoherence(devisePayee: string) {
+    const disponibles = moyensDePaiementDisponibles(devisePayee);
+
+    for (const method of MOYENS_DE_PAIEMENT) {
+      let aAbouti = true;
+      try {
+        await initiatePayment({
+          method,
+          currency: devisePayee,
+          amount: 25000,
+          invoiceId: "inv-coherence",
+          payerEmail: "a@test.local",
+        });
+      } catch {
+        aAbouti = false;
+      }
+
+      expect(
+        aAbouti,
+        `${method} annoncé ${disponibles.includes(method) ? "disponible" : "indisponible"} mais ${aAbouti ? "accepté" : "refusé"} par initiatePayment (devise ${devisePayee})`
+      ).toBe(disponibles.includes(method));
+    }
+
+    return disponibles;
+  }
+
+  it("mode démo : tout est proposé, et tout aboutit", async () => {
+    env.payments.demoMode = true;
+    env.payments.paydunya = { ...original.paydunya, masterKey: "", privateKey: "", token: "" };
+
+    const disponibles = await verifierCoherence("EUR");
+    expect(disponibles).toEqual(MOYENS_DE_PAIEMENT);
+  });
+
+  it("hors mode démo sans aucune clé : seul le virement reste, et il est le seul à aboutir", async () => {
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "";
+    env.payments.paydunya = { ...original.paydunya, masterKey: "", privateKey: "", token: "", currency: "XOF" };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const disponibles = await verifierCoherence("XOF");
+    expect(disponibles).toEqual(["BANK_TRANSFER"]);
+  });
+
+  it("hors mode démo, clés posées et devise compatible : PayDunya redevient proposable", async () => {
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "";
+    env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk", currency: "XOF" };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ response_code: "00", response_text: "https://paydunya.test/abc", token: "tok" }),
+      })
+    );
+
+    const disponibles = await verifierCoherence("XOF");
+    expect(disponibles).toEqual(["PAYDUNYA", "BANK_TRANSFER"]);
+  });
+
+  it("clés posées mais facture dans une autre devise : PayDunya disparaît de la liste", async () => {
+    // Le cas qui coûtait de l'argent : un montant en EUR envoyé à un compte en
+    // XOF aurait été facturé au centième du prix. L'interface ne doit donc
+    // même pas le proposer.
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "";
+    env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk", currency: "XOF" };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const disponibles = await verifierCoherence("EUR");
+    expect(disponibles).toEqual(["BANK_TRANSFER"]);
   });
 });

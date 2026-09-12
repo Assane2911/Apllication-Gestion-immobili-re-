@@ -19,6 +19,7 @@ import issueRoutes from "./routes/issue.routes";
 import messageRoutes from "./routes/message.routes";
 import notificationRoutes from "./routes/notification.routes";
 import paydunyaRoutes from "./routes/paydunya.routes";
+import paymentRoutes from "./routes/payment.routes";
 import propertyRoutes from "./routes/property.routes";
 import searchRoutes from "./routes/search.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
@@ -97,6 +98,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/activity-log", activityLogRoutes);
 app.use("/api/cron", cronRoutes);
 app.use("/api/payments/paydunya", paydunyaRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use(notFoundHandler);

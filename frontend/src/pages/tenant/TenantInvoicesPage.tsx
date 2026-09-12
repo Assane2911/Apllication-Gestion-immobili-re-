@@ -5,6 +5,7 @@ import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import { useCurrency } from "../../context/currency";
+import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import type { Invoice, PaymentMethod } from "../../types";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
@@ -21,18 +22,17 @@ export default function TenantInvoicesPage() {
   const [bankRef, setBankRef] = useState("");
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
 
-  const methods: { key: PaymentMethod; label: string; hint: string }[] = [
-    {
-      key: "PAYDUNYA",
-      label: t("tenant.invoices.methods.PAYDUNYA.label"),
-      hint: t("tenant.invoices.methods.PAYDUNYA.hint"),
-    },
-    {
-      key: "BANK_TRANSFER",
-      label: t("tenant.invoices.methods.BANK_TRANSFER.label"),
-      hint: t("tenant.invoices.methods.BANK_TRANSFER.hint"),
-    },
-  ];
+  // La disponibilité dépend de la devise de la facture réglée : PayDunya
+  // n'accepte que la devise de son compte (voir payment.service.ts). On
+  // interroge donc le serveur pour la facture en cours de règlement, pas une
+  // fois pour toutes.
+  const factureEnCours = invoices.find((inv) => inv.id === payingId) ?? null;
+  const moyensDisponibles = useMoyensDePaiement(factureEnCours?.currency ?? null);
+  const methods = (moyensDisponibles ?? []).map((key) => ({
+    key: key as PaymentMethod,
+    label: t(`tenant.invoices.methods.${key}.label`),
+    hint: t(`tenant.invoices.methods.${key}.hint`),
+  }));
 
   function load() {
     api

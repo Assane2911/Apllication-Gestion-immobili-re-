@@ -4,6 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { api, apiErrorMessage } from "../../api/client";
 import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
+import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
 
 interface SubscriptionHistoryRecord {
@@ -35,21 +36,24 @@ export default function SubscriptionPage() {
   const [error, setError] = useState<string | null>(null);
   const isNativeApp = Capacitor.isNativePlatform();
 
-  // STRIPE est volontairement masqué : l'intégration réelle (Checkout Session
-  // + webhook) n'est pas encore écrite (voir payment.service.ts) — l'afficher
-  // exposerait un moyen de paiement qui échoue silencieusement dès qu'une
-  // vraie clé Stripe serait configurée.
-  //
-  // DEMO l'est aussi, et pour une raison plus grave : il activait un
-  // abonnement payant complet, instantanément et sans contrepartie. Le
-  // proposer ici revenait à offrir un bouton « contourner l'abonnement » à
-  // tout gestionnaire dont l'essai venait d'expirer. Le serveur le refuse
-  // désormais hors mode démo explicite (voir payment.service.ts) ; on le
-  // retire aussi de l'interface pour ne pas exposer un choix voué à échouer.
-  const paymentMethods: { key: PaymentMethod; label: string; hint: string }[] = [
-    { key: "PAYDUNYA", label: t("manager.subscription.paymentMethods.PAYDUNYA.label"), hint: t("manager.subscription.paymentMethods.PAYDUNYA.hint") },
-    { key: "BANK_TRANSFER", label: t("manager.subscription.paymentMethods.BANK_TRANSFER.label"), hint: t("manager.subscription.paymentMethods.BANK_TRANSFER.hint") },
-  ];
+  // Les moyens proposés viennent du serveur, seul à savoir quelles clés sont
+  // configurées et dans quelle devise le compte encaisse. Les masquer en dur
+  // ici — comme c'était le cas pour Stripe et DEMO — laissait l'interface et
+  // le serveur diverger : le bouton s'affichait, le paiement échouait.
+  const moyensDisponibles = useMoyensDePaiement(currency);
+  const paymentMethods = (moyensDisponibles ?? []).map((key) => ({
+    key: key as PaymentMethod,
+    label: t(`manager.subscription.paymentMethods.${key}.label`),
+    hint: t(`manager.subscription.paymentMethods.${key}.hint`),
+  }));
+
+  // Le moyen présélectionné doit exister dans la liste : sinon le premier clic
+  // sur « Payer » partirait sur un moyen que le serveur refuse.
+  useEffect(() => {
+    if (moyensDisponibles && moyensDisponibles.length > 0 && !moyensDisponibles.includes(selectedMethod)) {
+      setSelectedMethod(moyensDisponibles[0]);
+    }
+  }, [moyensDisponibles, selectedMethod]);
 
   function loadData() {
     setLoading(true);

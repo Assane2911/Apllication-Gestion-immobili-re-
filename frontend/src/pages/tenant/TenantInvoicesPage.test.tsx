@@ -39,14 +39,47 @@ function renderPage() {
   );
 }
 
+
+/**
+ * Les écrans de paiement interrogent désormais /payments/methods (voir
+ * useMoyensDePaiement) : les moyens proposés viennent du serveur et non d'une
+ * liste écrite dans le composant. Cette requête supplémentaire décalerait la
+ * file des réponses mockées par ordre d'appel, d'où cette file explicite qui
+ * ne concerne que les AUTRES requêtes. Les mocks deviennent ainsi
+ * indépendants du nombre d'appels que fait la page.
+ */
+const MOYENS_PAR_DEFAUT = ["PAYDUNYA", "BANK_TRANSFER"];
+const fileGet: { ok: boolean; valeur: unknown }[] = [];
+
+function queueGet(reponse: unknown) {
+  fileGet.push({ ok: true, valeur: reponse });
+}
+
+function queueGetError(erreur: unknown) {
+  fileGet.push({ ok: false, valeur: erreur });
+}
+
+function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
+  mockedApi.get.mockImplementation((url: string) => {
+    if (String(url).startsWith("/payments/methods")) {
+      return Promise.resolve({ data: { currency: "EUR", methods: moyens } }) as never;
+    }
+    const suivant = fileGet.shift();
+    if (!suivant) return Promise.resolve({ data: undefined }) as never;
+    return (suivant.ok ? Promise.resolve(suivant.valeur) : Promise.reject(suivant.valeur)) as never;
+  });
+}
+
 describe("TenantInvoicesPage", () => {
   beforeEach(() => {
+    fileGet.length = 0;
     mockedApi.get.mockReset();
+    installerGet();
     mockedApi.post.mockReset();
   });
 
   it("affiche la liste des factures avec montant, échéance et statut", async () => {
-    mockedApi.get.mockResolvedValueOnce({
+    queueGet({
       data: [
         invoice({ id: "inv-pending", status: "PENDING" }),
         invoice({ id: "inv-paid", status: "PAID", amount: 650 }),
@@ -65,13 +98,13 @@ describe("TenantInvoicesPage", () => {
   });
 
   it("affiche un message quand il n'y a aucune facture", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    queueGet({ data: [] });
     renderPage();
     await waitFor(() => expect(screen.getByText("Aucune facture pour le moment")).toBeInTheDocument());
   });
 
   it("affiche une erreur si le chargement des factures échoue", async () => {
-    mockedApi.get.mockRejectedValueOnce({
+    queueGetError({
       response: { data: { error: "Authentification requise" } },
       isAxiosError: true,
     });
@@ -86,7 +119,7 @@ describe("TenantInvoicesPage", () => {
     // refuse désormais (voir payment.service.ts) ; il ne doit pas non plus
     // réapparaître ici.
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: [invoice({ status: "PENDING" })] });
+    queueGet({ data: [invoice({ status: "PENDING" })] });
 
     renderPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
@@ -99,9 +132,8 @@ describe("TenantInvoicesPage", () => {
 
   it("paiement en ligne : envoie la bonne requête, affiche la confirmation et recharge la liste", async () => {
     const user = userEvent.setup();
-    mockedApi.get
-      .mockResolvedValueOnce({ data: [invoice({ status: "PENDING" })] })
-      .mockResolvedValueOnce({ data: [invoice({ status: "PAID" })] });
+    queueGet({ data: [invoice({ status: "PENDING" })] });
+    queueGet({ data: [invoice({ status: "PAID" })] });
     mockedApi.post.mockResolvedValueOnce({
       data: {
         invoice: invoice({ status: "PAID" }),
@@ -121,12 +153,16 @@ describe("TenantInvoicesPage", () => {
       method: "PAYDUNYA",
       bankReference: undefined,
     });
-    expect(mockedApi.get).toHaveBeenCalledTimes(2); // chargement initial + rechargement après paiement
+    // On compte les chargements de factures, et non tous les GET : la page
+    // interroge aussi /payments/methods, dont le nombre d'appels n'a rien à
+    // voir avec ce que ce test vérifie.
+    const chargements = mockedApi.get.mock.calls.filter((appel) => String(appel[0]).startsWith("/invoices/mine"));
+    expect(chargements).toHaveLength(2); // chargement initial + rechargement après paiement
   });
 
   it("virement bancaire : transmet la référence saisie", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: [invoice({ status: "PENDING" })] });
+    queueGet({ data: [invoice({ status: "PENDING" })] });
     mockedApi.post.mockResolvedValueOnce({
       data: {
         invoice: invoice({ status: "PENDING" }),
@@ -158,7 +194,7 @@ describe("TenantInvoicesPage", () => {
       writable: true,
     });
 
-    mockedApi.get.mockResolvedValueOnce({ data: [invoice({ status: "PENDING" })] });
+    queueGet({ data: [invoice({ status: "PENDING" })] });
     mockedApi.post.mockResolvedValueOnce({
       data: {
         payment: { method: "PAYDUNYA", status: "REQUIRES_ACTION", redirectUrl: "https://paydunya.example/checkout" },

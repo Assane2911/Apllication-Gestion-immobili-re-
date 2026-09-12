@@ -84,11 +84,65 @@ function renderPage() {
   );
 }
 
+
+/**
+ * Les écrans de paiement interrogent désormais /payments/methods (voir
+ * useMoyensDePaiement) : les moyens proposés viennent du serveur et non d'une
+ * liste écrite dans le composant. Cette requête supplémentaire décalerait la
+ * file des réponses mockées par ordre d'appel, d'où cette file explicite qui
+ * ne concerne que les AUTRES requêtes. Les mocks deviennent ainsi
+ * indépendants du nombre d'appels que fait la page.
+ */
+const MOYENS_PAR_DEFAUT = ["PAYDUNYA", "BANK_TRANSFER"];
+const fileGet: { ok: boolean; valeur: unknown }[] = [];
+
+function queueGet(reponse: unknown) {
+  fileGet.push({ ok: true, valeur: reponse });
+}
+
+function queueGetError(erreur: unknown) {
+  fileGet.push({ ok: false, valeur: erreur });
+}
+
+function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
+  mockedApi.get.mockImplementation((url: string) => {
+    if (String(url).startsWith("/payments/methods")) {
+      return Promise.resolve({ data: { currency: "EUR", methods: moyens } }) as never;
+    }
+    const suivant = fileGet.shift();
+    if (!suivant) return Promise.resolve({ data: undefined }) as never;
+    return (suivant.ok ? Promise.resolve(suivant.valeur) : Promise.reject(suivant.valeur)) as never;
+  });
+}
+
 describe("SubscriptionPage", () => {
   beforeEach(() => {
+    fileGet.length = 0;
     mockedApi.get.mockReset();
+    installerGet();
     mockedApi.post.mockReset();
     mockedIsNativePlatform.mockReturnValue(false);
+  });
+
+  it("ne propose que les moyens de paiement renvoyés par le serveur", async () => {
+    // Le symptôme observé en production : PayDunya était affiché en dur, le
+    // serveur le refusait (clés absentes), et le message d'erreur invitait à
+    // « choisir un autre » moyen — alors que c'était le seul proposé. La liste
+    // vient désormais du serveur, qui seul connaît les clés configurées et la
+    // devise du compte encaisseur.
+    const user = userEvent.setup();
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+    // Le serveur n'annonce que le virement : aucune clé PayDunya configurée.
+    installerGet(["BANK_TRANSFER"]);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+
+    await waitFor(() => expect(screen.getByRole("radio", { name: /Virement bancaire/ })).toBeInTheDocument());
+    expect(screen.queryByRole("radio", { name: /PayDunya/ })).not.toBeInTheDocument();
   });
 
   it("demande les tarifs dans la devise du gestionnaire et n'affiche jamais un symbole figé", async () => {
@@ -98,13 +152,16 @@ describe("SubscriptionPage", () => {
     // symbole vient maintenant de la devise renvoyée avec le tarif.
     localStorage.removeItem("app_currency");
     seedUser(authUser({ currency: "XOF" }));
-    mockedApi.get.mockImplementation((url: string) =>
-      Promise.resolve(
-        url.startsWith("/subscription/plans")
+    mockedApi.get.mockImplementation((url: string) => {
+      if (String(url).startsWith("/payments/methods")) {
+        return Promise.resolve({ data: { currency: "XOF", methods: MOYENS_PAR_DEFAUT } }) as never;
+      }
+      return Promise.resolve(
+        String(url).startsWith("/subscription/plans")
           ? { data: [plan({ id: "PRO", name: "Pro", monthlyPrice: 15000, annualPrice: 144000, currency: "XOF" })] }
           : { data: { history: [] } }
-      ) as never
-    );
+      ) as never;
+    });
 
     renderPage();
 
@@ -121,8 +178,8 @@ describe("SubscriptionPage", () => {
 
   it("affiche le statut d'essai et les formules disponibles", async () => {
     seedUser(authUser());
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro", monthlyPrice: 39 })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro", monthlyPrice: 39 })] });
+    queueGet({ data: { history: [] } });
 
     renderPage();
 
@@ -135,8 +192,8 @@ describe("SubscriptionPage", () => {
 
   it("désactive le bouton de la formule déjà active", async () => {
     seedUser(authUser({ subscription: subscription({ status: "ACTIVE", plan: "PRO", isTrialActive: false, isSubscriptionActive: true, subscriptionEndsAt: "2026-10-01T00:00:00.000Z" }) }));
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro", monthlyPrice: 39 })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro", monthlyPrice: 39 })] });
+    queueGet({ data: { history: [] } });
 
     renderPage();
 
@@ -149,8 +206,8 @@ describe("SubscriptionPage", () => {
   it("le basculement facturation annuelle change le prix affiché", async () => {
     const user = userEvent.setup();
     seedUser(authUser());
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER", monthlyPrice: 19, annualPrice: 180 })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER", monthlyPrice: 19, annualPrice: 180 })] });
+    queueGet({ data: { history: [] } });
 
     renderPage();
     await waitFor(() => expect(screen.getByText("19 €")).toBeInTheDocument());
@@ -169,8 +226,8 @@ describe("SubscriptionPage", () => {
     // pas non plus réapparaître ici.
     const user = userEvent.setup();
     seedUser(authUser());
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
 
     renderPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
@@ -185,11 +242,11 @@ describe("SubscriptionPage", () => {
   it("souscription : envoie la requête, affiche la confirmation et recharge", async () => {
     const user = userEvent.setup();
     seedUser(authUser());
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
     mockedApi.post.mockResolvedValueOnce({ data: { message: "Abonnement activé avec succès !" } });
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
 
     renderPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
@@ -213,8 +270,8 @@ describe("SubscriptionPage", () => {
   it("virement bancaire : transmet la référence saisie", async () => {
     const user = userEvent.setup();
     seedUser(authUser());
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
     mockedApi.post.mockResolvedValueOnce({ data: { message: "Virement déclaré, en attente de validation." } });
 
     renderPage();
@@ -252,8 +309,8 @@ describe("SubscriptionPage", () => {
     });
 
     seedUser(authUser());
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
     mockedApi.post.mockResolvedValueOnce({
       data: { payment: { method: "PAYDUNYA", status: "REQUIRES_ACTION", redirectUrl: "https://paydunya.example/checkout" } },
     });
@@ -270,8 +327,8 @@ describe("SubscriptionPage", () => {
 
   it("affiche l'historique des paiements d'abonnement quand il existe", async () => {
     seedUser(authUser());
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" })] });
-    mockedApi.get.mockResolvedValueOnce({
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({
       data: {
         history: [
           {
@@ -300,7 +357,7 @@ describe("SubscriptionPage", () => {
 
   it("affiche une erreur si le chargement des formules échoue", async () => {
     seedUser(authUser());
-    mockedApi.get.mockRejectedValueOnce({
+    queueGetError({
       response: { data: { error: "Erreur serveur" } },
       isAxiosError: true,
     });
@@ -312,8 +369,8 @@ describe("SubscriptionPage", () => {
   it("sur mobile natif (Capacitor), masque la grille de plans et affiche le message de repli", async () => {
     mockedIsNativePlatform.mockReturnValue(true);
     seedUser(authUser()); // TRIAL par défaut, donc pas encore "ACTIVE"
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
+    queueGet({ data: { history: [] } });
 
     renderPage();
 
@@ -333,8 +390,8 @@ describe("SubscriptionPage", () => {
         subscription: subscription({ status: "ACTIVE", plan: "PRO", isTrialActive: false, isSubscriptionActive: true, subscriptionEndsAt: "2026-10-01T00:00:00.000Z" }),
       })
     );
-    mockedApi.get.mockResolvedValueOnce({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
-    mockedApi.get.mockResolvedValueOnce({ data: { history: [] } });
+    queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
+    queueGet({ data: { history: [] } });
 
     renderPage();
 

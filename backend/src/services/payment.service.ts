@@ -45,6 +45,14 @@ export async function initiatePayment(params: {
 }): Promise<PaymentIntentResult> {
   const { method, amount, currency, invoiceId: reference, payerEmail, bankReference, returnPath } = params;
 
+  // Porte unique : le refus est décidé AVANT tout appel réseau, par la même
+  // règle que celle consultée par l'interface.
+  const refus = indisponibilite(method, currency);
+  if (refus) {
+    console.error(`[paiement] ${method} refusé : ${refus.cause}.`);
+    throw new ApiError(refus.status, refus.message);
+  }
+
   switch (method) {
     case "STRIPE":
       return initiateStripePayment(amount, currency, reference, payerEmail);
@@ -54,59 +62,112 @@ export async function initiatePayment(params: {
       return initiateBankTransferDeclaration(amount, currency, reference, bankReference);
     case "DEMO":
     default:
-      // Verrou serveur : "DEMO" confirme un paiement instantanément, sans
-      // contrepartie. Le masquer dans l'interface ne suffit pas — n'importe
-      // qui peut appeler l'API directement et s'offrir un abonnement, ou
-      // solder un loyer sans le régler. Hors mode démo explicite, on refuse.
-      if (!env.payments.demoMode) {
-        throw new ApiError(400, "Le mode démo n'est pas disponible sur cette plateforme.");
-      }
       return initiateDemoPayment(amount, currency, reference);
   }
 }
 
+const MESSAGE_NEUTRE =
+  "Ce moyen de paiement est momentanément indisponible. Merci d'en choisir un autre ou de réessayer plus tard.";
+
+export interface Indisponibilite {
+  /** Code HTTP à renvoyer si quelqu'un tente quand même ce moyen de paiement. */
+  status: number;
+  /** Message destiné au payeur — jamais la cause technique. */
+  message: string;
+  /** Cause exacte, pour les journaux serveur et Sentry. */
+  cause: string;
+}
+
 /**
- * Autorise — ou refuse — de retomber sur un paiement simulé.
+ * Ce moyen de paiement est-il réellement utilisable pour un montant libellé
+ * dans cette devise ? Renvoie `null` si oui, sinon la raison du refus.
  *
- * Un paiement simulé renvoie PAID sans qu'aucun argent n'ait changé de main :
- * l'abonnement s'active, le loyer passe en réglé et la quittance s'émet. En
- * développement c'est indispensable ; en production c'est une plateforme
- * gratuite.
+ * Une seule règle, deux usages : `initiatePayment` s'en sert pour refuser, et
+ * `moyensDePaiementDisponibles` pour dire à l'interface ce qu'elle peut
+ * proposer. C'est délibérément la MÊME fonction. Dupliquer la logique
+ * — une liste de moyens d'un côté, des conditions de refus de l'autre —
+ * garantit qu'elles divergeront : l'interface finirait par afficher un bouton
+ * que le serveur refuse, ce qui est exactement le symptôme observé en
+ * production (« Ce moyen de paiement est momentanément indisponible » sur le
+ * seul moyen proposé).
  *
- * Or les deux prestataires retombaient sur cette simulation dès qu'une clé
- * manquait, y compris hors mode démo. Une clé mal recopiée, supprimée par
- * erreur, ou simplement absente d'un nouvel environnement Vercel suffisait
- * donc à offrir tous les abonnements — sans aucun signal : rien dans les
- * logs, rien dans Sentry, et pour seul symptôme l'absence de recettes,
- * constatée des semaines plus tard.
- *
- * Ce garde-fou inverse le défaut : hors mode démo explicite, une
- * configuration incomplète est une panne, pas un paiement. Le code 503 est
- * délibéré — il est ≥ 500, donc remonté à Sentry (voir shouldReportToSentry
- * dans instrument.ts), ce qui transforme le silence en alerte. Le payeur, de
- * son côté, voit un message neutre : la cause exacte reste dans les logs
- * serveur, elle ne le concerne pas.
+ * Rappel du contexte : hors mode démo, une configuration incomplète est une
+ * panne, pas un paiement. Un paiement simulé renvoie PAID sans qu'aucun
+ * argent n'ait changé de main — l'abonnement s'active, le loyer passe en
+ * réglé, la quittance s'émet. Le code 503 est délibéré : il est ≥ 500, donc
+ * remonté à Sentry (voir shouldReportToSentry dans instrument.ts), ce qui
+ * transforme un silence en alerte.
  */
-function autoriserSimulation(method: PaymentMethodKey, cause: string): void {
-  if (env.payments.demoMode) return;
+export function indisponibilite(method: PaymentMethodKey, currency: string): Indisponibilite | null {
+  // Le virement bancaire est une DÉCLARATION, pas un encaissement : il ne
+  // dépend d'aucun prestataire et reste toujours proposable. C'est d'ailleurs
+  // le seul recours quand tout le reste est indisponible.
+  if (method === "BANK_TRANSFER") return null;
 
-  console.error(
-    `[paiement] ${method} refusé : ${cause}. Une simulation hors mode démo activerait ` +
-      `un abonnement ou solderait un loyer sans encaissement.`
-  );
+  if (method === "DEMO") {
+    if (env.payments.demoMode) return null;
+    // "DEMO" confirme un paiement instantanément, sans contrepartie. Le masquer
+    // dans l'interface ne suffit pas — l'API reste appelable directement.
+    return {
+      status: 400,
+      message: "Le mode démo n'est pas disponible sur cette plateforme.",
+      cause: "mode démo désactivé",
+    };
+  }
 
-  throw new ApiError(
-    503,
-    "Ce moyen de paiement est momentanément indisponible. Merci d'en choisir un autre ou de réessayer plus tard."
-  );
+  // En mode démo assumé, tout est simulé : les prestataires « fonctionnent »
+  // sans clé ni devise compatible. C'est ce qui permet de dérouler le parcours
+  // complet en développement.
+  if (env.payments.demoMode) return null;
+
+  if (method === "STRIPE") {
+    if (!env.payments.stripeSecretKey) {
+      return { status: 503, message: MESSAGE_NEUTRE, cause: "STRIPE_SECRET_KEY absente" };
+    }
+    return {
+      status: 503,
+      message: "Le paiement par carte (Stripe) n'est pas encore disponible. Merci d'utiliser un autre moyen de paiement.",
+      cause: "intégration Stripe non câblée",
+    };
+  }
+
+  const { masterKey, privateKey, token, currency: deviseDuCompte } = env.payments.paydunya;
+
+  if (!masterKey || !privateKey || !token) {
+    return { status: 503, message: MESSAGE_NEUTRE, cause: "clés API incomplètes (master, privée ou token)" };
+  }
+
+  // L'API PayDunya ne transporte pas de devise (voir config/env.ts) : le
+  // montant est interprété dans celle du compte. Un prix de 29 EUR envoyé tel
+  // quel sur un compte en XOF serait facturé 29 FCFA — un centième du prix.
+  // Aucune conversion n'est tentée : convertir sans taux de référence fiable
+  // produirait des montants faux mais crédibles, plus difficiles à repérer
+  // qu'un refus.
+  if (currency !== deviseDuCompte) {
+    return {
+      status: 503,
+      message: `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`,
+      cause: `montant libellé en ${currency} alors que le compte encaisse en ${deviseDuCompte}`,
+    };
+  }
+
+  return null;
+}
+
+/** Tous les moyens connus, dans l'ordre où l'interface les présente. */
+export const MOYENS_DE_PAIEMENT: PaymentMethodKey[] = ["PAYDUNYA", "STRIPE", "BANK_TRANSFER", "DEMO"];
+
+/**
+ * Les moyens réellement utilisables pour un montant dans cette devise.
+ * L'interface n'a ainsi plus à deviner, ni à masquer un moyen « en dur ».
+ */
+export function moyensDePaiementDisponibles(currency: string): PaymentMethodKey[] {
+  return MOYENS_DE_PAIEMENT.filter((method) => indisponibilite(method, currency) === null);
 }
 
 async function initiateStripePayment(amount: number, currency: string, reference: string, payerEmail: string): Promise<PaymentIntentResult> {
-  if (!env.payments.stripeSecretKey) {
-    autoriserSimulation("STRIPE", "STRIPE_SECRET_KEY absente");
-    return simulatedResult("STRIPE", reference, "Stripe non configuré — paiement simulé (mode démo).");
-  }
-
+  // Au-delà de ce point, indisponibilite() a déjà tranché : hors mode démo,
+  // Stripe n'est jamais utilisable tant que l'intégration n'est pas écrite.
   if (env.payments.demoMode) {
     return simulatedResult("STRIPE", reference, "Mode démo — paiement Stripe simulé.");
   }
@@ -156,32 +217,10 @@ async function initiatePaydunyaPayment(
 ): Promise<PaymentIntentResult> {
   const { masterKey, privateKey, token, mode, storeName } = env.payments.paydunya;
 
-  if (!masterKey || !privateKey || !token) {
-    autoriserSimulation("PAYDUNYA", "clés API incomplètes (master, privée ou token)");
-    return simulatedResult("PAYDUNYA", reference, "PayDunya non configuré — paiement simulé (mode démo).");
-  }
-
+  // indisponibilite() garantit ici la présence des trois clés et la
+  // correspondance de la devise ; il ne reste que le cas du mode démo.
   if (env.payments.demoMode) {
     return simulatedResult("PAYDUNYA", reference, "Mode démo — paiement PayDunya simulé.");
-  }
-
-  // L'API PayDunya ne transporte pas de devise (voir config/env.ts) : le
-  // montant est interprété dans celle du compte. Un prix de 29 € envoyé tel
-  // quel sur un compte en XOF serait donc facturé 29 FCFA — un centième du
-  // prix. Aucune conversion n'est tentée ici : convertir à la volée sans taux
-  // de référence fiable produirait des montants faux mais crédibles, plus
-  // difficiles à repérer qu'un refus. Le tarif dans la devise du compte se
-  // décide ailleurs (voir TARIFS dans subscription.controller.ts).
-  if (currency !== env.payments.paydunya.currency) {
-    console.error(
-      `[paydunya] paiement refusé : montant libellé en ${currency} alors que le compte encaisse ` +
-        `en ${env.payments.paydunya.currency}. Sans champ de devise dans l'API, le montant serait ` +
-        `facturé dans la devise du compte.`
-    );
-    throw new ApiError(
-      503,
-      `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`
-    );
   }
 
   const baseUrl =
