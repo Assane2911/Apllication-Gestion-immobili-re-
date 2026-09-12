@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { db } from "../db/client";
 import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
 import { generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
+import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
@@ -115,3 +116,36 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(leaseHtml);
 });
+
+/**
+ * Récupère l'URL d'accès sécurisée (signée) au scan papier du contrat de bail.
+ * Accessible uniquement au gestionnaire propriétaire du bien ou au locataire rattaché au contrat.
+ */
+export const getScannedLease = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  const { contractId } = req.params;
+
+  const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
+  if (!contract) throw new ApiError(404, "Contrat introuvable");
+
+  if (req.user.role === "TENANT" && contract.tenantId !== req.user.tenantId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+
+  const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+
+  if (req.user.role === "MANAGER" && property?.managerId !== req.user.userId) {
+    throw new ApiError(403, "Accès refusé");
+  }
+
+  if (!contract.scannedContractUrl) {
+    throw new ApiError(404, "Aucun contrat papier scanné n'est rattaché à ce bail");
+  }
+
+  const fileUrl = /^https?:\/\//i.test(contract.scannedContractUrl)
+    ? contract.scannedContractUrl
+    : await getSignedUrl(contract.scannedContractUrl);
+
+  res.json({ url: fileUrl });
+});
+

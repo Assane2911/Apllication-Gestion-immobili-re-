@@ -128,3 +128,67 @@ describe("GET /api/contracts/:id — isolation entre gestionnaires", () => {
     expect(asOther.status).toBe(404);
   });
 });
+
+describe("POST /api/contracts/:id/scan", () => {
+  it("permet au gestionnaire d'uploader un scan papier de contrat", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const token = tokenFor(manager);
+
+    const contractRes = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(token))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: "2026-06-01",
+        endDate: "2027-05-31",
+      });
+    const contractId = contractRes.body.id;
+
+    const res = await request(app)
+      .post(`/api/contracts/${contractId}/scan`)
+      .set(authHeader(token))
+      .attach("scan", Buffer.from("%PDF-1.4 test contract"), {
+        filename: "contrat-signe.pdf",
+        contentType: "application/pdf",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.scannedContractUrl).toBeDefined();
+  });
+
+  it("refuse l'upload à un gestionnaire non propriétaire", async () => {
+    const managerA = await createManager();
+    const managerB = await createManager();
+    const property = await createProperty(managerA.id);
+    const tenant = await createTenant(managerA.id);
+
+    const contractRes = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(tokenFor(managerA)))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: "2026-06-01",
+        endDate: "2027-05-31",
+      });
+    const contractId = contractRes.body.id;
+
+    const res = await request(app)
+      .post(`/api/contracts/${contractId}/scan`)
+      .set(authHeader(tokenFor(managerB)))
+      .attach("scan", Buffer.from("%PDF-1.4 test contract"), {
+        filename: "contrat-signe.pdf",
+        contentType: "application/pdf",
+      });
+
+    expect(res.status).toBe(403);
+  });
+});
+

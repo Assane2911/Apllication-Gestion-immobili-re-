@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Camera, FileCheck } from "lucide-react";
 import { api, apiErrorMessage } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
+import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
@@ -41,6 +43,10 @@ export default function ContractsPage() {
 
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
+  const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
+  const [uploadingScanContractId, setUploadingScanContractId] = useState<string | null>(null);
+  const [targetScanContract, setTargetScanContract] = useState<Contract | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -112,6 +118,55 @@ export default function ContractsPage() {
     try {
       await api.post(`/contracts/${c.id}/renew`, { months: 12 });
       load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
+  function triggerScanUpload(contract: Contract) {
+    setTargetScanContract(contract);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }
+
+  async function handleScanFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !targetScanContract) return;
+
+    setUploadingScanContractId(targetScanContract.id);
+    const formData = new FormData();
+    formData.append("scan", file);
+
+    try {
+      await api.post(`/contracts/${targetScanContract.id}/scan`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    } finally {
+      setUploadingScanContractId(null);
+      setTargetScanContract(null);
+    }
+  }
+
+  async function handleViewScannedContract(c: Contract) {
+    if (c.scannedContractUrl) {
+      setViewingScannedContract({
+        title: t("manager.contracts.leaseDocTitle", { property: c.property?.title }),
+        url: c.scannedContractUrl,
+      });
+      return;
+    }
+
+    try {
+      const res = await api.get<{ url: string }>(`/documents/lease-scan/${c.id}`);
+      setViewingScannedContract({
+        title: t("manager.contracts.leaseDocTitle", { property: c.property?.title }),
+        url: res.data.url,
+      });
     } catch (err) {
       alert(apiErrorMessage(err));
     }
@@ -256,6 +311,35 @@ export default function ContractsPage() {
                   >
                     <span>📄</span> {t("manager.contracts.leasePdf")}
                   </button>
+
+                  {/* Boutons Scan Papier */}
+                  {c.scannedContractUrl ? (
+                    <button
+                      onClick={() => handleViewScannedContract(c)}
+                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                      title={t("manager.contracts.viewScannedContract")}
+                    >
+                      <FileCheck size={13} />
+                      <span>{t("manager.contracts.scanContractShort")}</span>
+                    </button>
+                  ) : null}
+
+                  <button
+                    onClick={() => triggerScanUpload(c)}
+                    disabled={uploadingScanContractId === c.id}
+                    className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20 disabled:opacity-50"
+                    title={t("manager.contracts.scanPaperContract")}
+                  >
+                    <Camera size={13} />
+                    <span>
+                      {uploadingScanContractId === c.id
+                        ? t("manager.contracts.uploadingScan")
+                        : c.scannedContractUrl
+                        ? "Remplacer scan"
+                        : t("manager.contracts.scanContractShort")}
+                    </span>
+                  </button>
+
                   {showRenewal && (
                     <>
                       <button
@@ -338,6 +422,32 @@ export default function ContractsPage() {
                 >
                   <span>📄</span> {t("manager.contracts.leasePdf")}
                 </button>
+
+                {c.scannedContractUrl ? (
+                  <button
+                    onClick={() => handleViewScannedContract(c)}
+                    className="text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                  >
+                    <FileCheck size={13} />
+                    <span>{t("manager.contracts.scanContractShort")}</span>
+                  </button>
+                ) : null}
+
+                <button
+                  onClick={() => triggerScanUpload(c)}
+                  disabled={uploadingScanContractId === c.id}
+                  className="text-xs bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20 disabled:opacity-50"
+                >
+                  <Camera size={13} />
+                  <span>
+                    {uploadingScanContractId === c.id
+                      ? t("manager.contracts.uploadingScan")
+                      : c.scannedContractUrl
+                      ? "Remplacer scan"
+                      : t("manager.contracts.scanContractShort")}
+                  </span>
+                </button>
+
                 {showRenewal && (
                   <>
                     <button
@@ -365,6 +475,16 @@ export default function ContractsPage() {
         })}
       </div>
 
+      {/* Input de fichier pour scanner le contrat papier (supporte la caméra smartphone via capture="environment") */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleScanFileChange}
+        accept="application/pdf,image/png,image/jpeg,image/webp"
+        capture="environment"
+        className="hidden"
+      />
+
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {signingContract && (
@@ -384,6 +504,14 @@ export default function ContractsPage() {
           title={t("manager.contracts.leaseDocTitle", { property: viewingLeaseContract.property?.title })}
           docUrl={`/documents/lease/${viewingLeaseContract.id}`}
           onClose={() => setViewingLeaseContract(null)}
+        />
+      )}
+
+      {viewingScannedContract && (
+        <ScannedContractModal
+          title={viewingScannedContract.title}
+          fileUrl={viewingScannedContract.url}
+          onClose={() => setViewingScannedContract(null)}
         />
       )}
     </div>

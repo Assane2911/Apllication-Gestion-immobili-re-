@@ -8,8 +8,10 @@ import {
   renewContract,
   signContract,
   updateContract,
+  uploadScannedContract,
 } from "../controllers/contract.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
+import { uploadContractScan } from "../middleware/upload";
 
 const router = Router();
 
@@ -20,6 +22,7 @@ router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 router.get("/", listContracts);
 router.get("/:id", getContract);
 router.post("/", createContract);
+router.post("/:id/scan", uploadContractScan.single("scan"), uploadScannedContract);
 router.post("/:id/renew", renewContract);
 router.put("/:id", updateContract);
 router.delete("/:id", deleteContract);

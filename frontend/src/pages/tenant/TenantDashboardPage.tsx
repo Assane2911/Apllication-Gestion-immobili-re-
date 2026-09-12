@@ -1,10 +1,11 @@
-import { Building2, Calendar, CheckCircle2, Clock, CreditCard, ShieldCheck } from "lucide-react";
+import { Building2, Calendar, CheckCircle2, Clock, CreditCard, FileCheck, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
+import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract } from "../../types";
@@ -15,6 +16,7 @@ export default function TenantDashboardPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
+  const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
@@ -187,6 +189,21 @@ export default function TenantDashboardPage() {
                   >
                     <span>📄</span> {t("tenant.dashboard.viewLeasePdf")}
                   </button>
+
+                  {c.scannedContractUrl && (
+                    <button
+                      onClick={() =>
+                        setViewingScannedContract({
+                          title: t("tenant.dashboard.leaseDocTitle", { property: c.property?.title }),
+                          url: c.scannedContractUrl!,
+                        })
+                      }
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-500/30 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <FileCheck size={14} />
+                      <span>{t("tenant.dashboard.viewScannedLease")}</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -227,6 +244,14 @@ export default function TenantDashboardPage() {
           title={t("tenant.dashboard.leaseDocTitle", { property: viewingLeaseContract.property?.title })}
           docUrl={`/documents/lease/${viewingLeaseContract.id}`}
           onClose={() => setViewingLeaseContract(null)}
+        />
+      )}
+
+      {viewingScannedContract && (
+        <ScannedContractModal
+          title={viewingScannedContract.title}
+          fileUrl={viewingScannedContract.url}
+          onClose={() => setViewingScannedContract(null)}
         />
       )}
     </div>

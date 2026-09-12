@@ -165,3 +165,67 @@ describe("GET /api/documents/lease/:contractId", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("GET /api/documents/lease-scan/:contractId", () => {
+  it("renvoie 404 si le contrat n'a pas de scan papier", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .get(`/api/documents/lease-scan/${contract.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(404);
+  });
+
+  it("renvoie l'URL signée pour le gestionnaire propriétaire", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      scannedContractUrl: "contracts/test-scan.pdf",
+    } as any);
+
+    const res = await request(app)
+      .get(`/api/documents/lease-scan/${contract.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBeDefined();
+  });
+
+  it("renvoie l'URL signée pour le locataire du contrat", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      scannedContractUrl: "contracts/test-scan.pdf",
+    } as any);
+
+    const res = await request(app)
+      .get(`/api/documents/lease-scan/${contract.id}`)
+      .set(authHeader(tokenFor({ id: "tenant-user", role: "TENANT" }, tenant.id)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBeDefined();
+  });
+
+  it("refuse l'accès à un gestionnaire tiers", async () => {
+    const managerA = await createManager();
+    const managerB = await createManager();
+    const property = await createProperty(managerA.id);
+    const tenant = await createTenant(managerA.id);
+    const contract = await createContract(property.id, tenant.id, {
+      scannedContractUrl: "contracts/test-scan.pdf",
+    } as any);
+
+    const res = await request(app)
+      .get(`/api/documents/lease-scan/${contract.id}`)
+      .set(authHeader(tokenFor(managerB)));
+
+    expect(res.status).toBe(403);
+  });
+});
+

@@ -136,6 +136,8 @@ export const contracts = pgTable(
     startDate: timestamp("start_date", { mode: "date" }).notNull(),
     endDate: timestamp("end_date", { mode: "date" }).notNull(),
     status: contractStatusEnum("status").notNull().default("ACTIVE"),
+    scannedContractUrl: text("scanned_contract_url"),
+    terms: text("terms"),
     reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     // Signature électronique
     signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),

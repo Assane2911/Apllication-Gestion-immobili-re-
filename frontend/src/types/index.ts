@@ -74,6 +74,8 @@ export interface Contract {
   startDate: string;
   endDate: string;
   status: ContractStatus;
+  scannedContractUrl?: string | null;
+  terms?: string | null;
   reminderSentAt?: string | null;
   signedByManagerAt?: string | null;
   managerSignatureUrl?: string | null;

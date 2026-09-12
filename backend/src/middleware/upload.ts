@@ -30,3 +30,4 @@ const storage = multer.memoryStorage();
 export const uploadPropertyImage = multer({ storage, fileFilter, limits });
 export const uploadTenantDocument = multer({ storage, fileFilter, limits });
 export const uploadIssuePhoto = multer({ storage, fileFilter, limits });
+export const uploadContractScan = multer({ storage, fileFilter, limits });

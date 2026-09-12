@@ -6,6 +6,7 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, invoices, issueReports, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
+import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 const contractSchema = z.object({
@@ -17,7 +18,18 @@ const contractSchema = z.object({
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
   status: z.enum(["ACTIVE", "ENDED", "TERMINATED"]).optional(),
+  terms: z.string().optional(),
 });
+
+export async function resolveScannedUrl(value: string | null | undefined): Promise<string | null | undefined> {
+  if (!value) return value;
+  if (/^https?:\/\//i.test(value)) return value;
+  try {
+    return await getSignedUrl(value);
+  } catch {
+    return value;
+  }
+}
 
 async function withRelations(contractId: string) {
   const [row] = await db
@@ -32,7 +44,8 @@ async function withRelations(contractId: string) {
     .from(invoices)
     .where(eq(invoices.contractId, contractId))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
-  return { ...row.contract, property: row.property, tenant: row.tenant, invoices: contractInvoices };
+  const scannedContractUrl = await resolveScannedUrl(row.contract.scannedContractUrl);
+  return { ...row.contract, scannedContractUrl, property: row.property, tenant: row.tenant, invoices: contractInvoices };
 }
 
 export const listContracts = asyncHandler(async (req: Request, res: Response) => {
@@ -56,17 +69,16 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
       .where(whereClause),
   ]);
 
-  res.json(
-    buildPaginatedResult(
-      rows.map((r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
-        ...r.contract,
-        property: r.property,
-        tenant: r.tenant,
-      })),
-      count,
-      pagination
-    )
+  const items = await Promise.all(
+    rows.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
+      ...r.contract,
+      scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
+      property: r.property,
+      tenant: r.tenant,
+    }))
   );
+
+  res.json(buildPaginatedResult(items, count, pagination));
 });
 
 export const getContract = asyncHandler(async (req: Request, res: Response) => {
@@ -251,11 +263,14 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  const result = rows.map((row) => ({
-    ...row.contract,
-    property: row.property,
-    invoices: invoicesByContract.get(row.contract.id) ?? [],
-  }));
+  const result = await Promise.all(
+    rows.map(async (row) => ({
+      ...row.contract,
+      scannedContractUrl: await resolveScannedUrl(row.contract.scannedContractUrl),
+      property: row.property,
+      invoices: invoicesByContract.get(row.contract.id) ?? [],
+    }))
+  );
 
   res.json(result);
 });
@@ -370,4 +385,44 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     return res.json(await withRelations(updated.id));
   }
 });
+
+/**
+ * Upload ou remplacement du scan papier d'un contrat de bail (PDF ou photo/scan).
+ * Seul le gestionnaire propriétaire du bien rattaché au contrat peut uploader le scan.
+ */
+export const uploadScannedContract = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires");
+  if (!req.file) throw new ApiError(400, "Aucun fichier fourni pour le scan du contrat");
+
+  const { id } = req.params;
+  const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
+  if (!contract) throw new ApiError(404, "Contrat introuvable");
+
+  const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+  if (!property || property.managerId !== req.user.userId) throw new ApiError(403, "Accès refusé");
+
+  const storagePath = await uploadPrivateFile(req.file, "contracts");
+
+  const [updated] = await db
+    .update(contracts)
+    .set({
+      scannedContractUrl: storagePath,
+    })
+    .where(eq(contracts.id, id))
+    .returning();
+
+  await logActivity({
+    req,
+    managerId: req.user.userId,
+    action: "contract.scan_upload",
+    entityType: "contract",
+    entityId: contract.id,
+    entityLabel: property.title,
+    details: `Contrat papier scanné uploadé pour le bien ${property.title}`,
+  });
+
+  const full = await withRelations(updated.id);
+  res.json(full);
+});
+
 
