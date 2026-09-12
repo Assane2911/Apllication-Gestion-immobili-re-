@@ -79,10 +79,19 @@ export async function runRentDueReminders(managerId?: string) {
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  // 1. S'assure que les factures du mois en cours sont générées pour tous les contrats actifs
-  const activeContracts = await db.select().from(contracts).where(eq(contracts.status, "ACTIVE"));
-  for (const c of activeContracts) {
-    await generateInvoicesForContract(c);
+  // 1. S'assure que les factures du mois en cours sont générées pour les contrats actifs
+  //    (scopés au gestionnaire si managerId est fourni, sinon tous les contrats actifs de la plateforme)
+  const activeContractsQuery = managerId
+    ? db
+        .select({ contract: contracts })
+        .from(contracts)
+        .innerJoin(properties, eq(contracts.propertyId, properties.id))
+        .where(and(eq(contracts.status, "ACTIVE"), eq(properties.managerId, managerId)))
+    : db.select({ contract: contracts }).from(contracts).where(eq(contracts.status, "ACTIVE"));
+
+  const activeContractRows = await activeContractsQuery;
+  for (const { contract } of activeContractRows) {
+    await generateInvoicesForContract(contract);
   }
 
   // 2. Recherche toutes les factures impayées du mois courant pour les contrats actifs

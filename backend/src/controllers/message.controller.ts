@@ -37,23 +37,32 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
       .orderBy(desc(contracts.createdAt));
   }
 
-  // Pour chaque contrat, récupérer le dernier message
-  const conversations = [];
-  for (const item of contractList) {
-    const lastMsg = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.contractId, item.contract.id))
-      .orderBy(desc(messages.createdAt))
-      .limit(1);
-
-    conversations.push({
-      contractId: item.contract.id,
-      property: item.property,
-      tenant: item.tenant,
-      lastMessage: lastMsg[0] ?? null,
-    });
+  if (contractList.length === 0) {
+    return res.json([]);
   }
+
+  // Évite la requête N+1 : on charge tous les messages de ces contrats en une
+  // seule requête ordonnée par date décroissante, puis on conserve le plus récent.
+  const contractIds = contractList.map((item) => item.contract.id);
+  const allMessages = await db
+    .select()
+    .from(messages)
+    .where(inArray(messages.contractId, contractIds))
+    .orderBy(desc(messages.createdAt));
+
+  const lastMessageByContract = new Map<string, typeof messages.$inferSelect>();
+  for (const msg of allMessages) {
+    if (!lastMessageByContract.has(msg.contractId)) {
+      lastMessageByContract.set(msg.contractId, msg);
+    }
+  }
+
+  const conversations = contractList.map((item) => ({
+    contractId: item.contract.id,
+    property: item.property,
+    tenant: item.tenant,
+    lastMessage: lastMessageByContract.get(item.contract.id) ?? null,
+  }));
 
   res.json(conversations);
 });

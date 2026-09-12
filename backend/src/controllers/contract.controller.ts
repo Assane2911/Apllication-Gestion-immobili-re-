@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
@@ -205,15 +205,32 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(contracts.tenantId, req.user.tenantId))
     .orderBy(desc(contracts.createdAt));
 
-  const result = [];
-  for (const row of rows) {
-    const contractInvoices = await db
-      .select()
-      .from(invoices)
-      .where(eq(invoices.contractId, row.contract.id))
-      .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
-    result.push({ ...row.contract, property: row.property, invoices: contractInvoices });
+  if (rows.length === 0) return res.json([]);
+
+  // Évite la requête N+1 : récupère toutes les factures des contrats du locataire en une passe.
+  const contractIds = rows.map((r) => r.contract.id);
+  const allInvoices = await db
+    .select()
+    .from(invoices)
+    .where(inArray(invoices.contractId, contractIds))
+    .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
+
+  const invoicesByContract = new Map<string, Array<typeof invoices.$inferSelect>>();
+  for (const inv of allInvoices) {
+    const list = invoicesByContract.get(inv.contractId);
+    if (list) {
+      list.push(inv);
+    } else {
+      invoicesByContract.set(inv.contractId, [inv]);
+    }
   }
+
+  const result = rows.map((row) => ({
+    ...row.contract,
+    property: row.property,
+    invoices: invoicesByContract.get(row.contract.id) ?? [],
+  }));
+
   res.json(result);
 });
 

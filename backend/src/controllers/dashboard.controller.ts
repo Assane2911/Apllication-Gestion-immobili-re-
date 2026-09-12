@@ -29,14 +29,40 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
   const managerContractIds = managerContracts.map((c: typeof contractsTable.$inferSelect) => c.id);
   const activeContracts = managerContracts.filter((c: typeof contractsTable.$inferSelect) => c.status === "ACTIVE").length;
 
-  const managerInvoices =
-    managerContractIds.length > 0
-      ? await db.select().from(invoices).where(inArray(invoices.contractId, managerContractIds))
-      : [];
+  const sixMonthsAgo = new Date(year, month - 6, 1);
 
-  const monthlyInvoices = managerInvoices.filter(
-    (i: typeof invoices.$inferSelect) => i.periodMonth === month && i.periodYear === year
-  );
+  // Optimisation SQL : au lieu de charger tout l'historique complet des factures
+  // en mémoire pour filtrer en JS, on cible précisément en base les factures
+  // du mois, les factures en retard et les règlements récents.
+  const [monthlyInvoices, lateInvoicesRows, recentPaidInvoices] =
+    managerContractIds.length > 0
+      ? await Promise.all([
+          db
+            .select()
+            .from(invoices)
+            .where(
+              and(
+                inArray(invoices.contractId, managerContractIds),
+                eq(invoices.periodMonth, month),
+                eq(invoices.periodYear, year)
+              )
+            ),
+          db
+            .select({ id: invoices.id })
+            .from(invoices)
+            .where(and(inArray(invoices.contractId, managerContractIds), eq(invoices.status, "LATE"))),
+          db
+            .select()
+            .from(invoices)
+            .where(
+              and(
+                inArray(invoices.contractId, managerContractIds),
+                eq(invoices.status, "PAID"),
+                gte(invoices.paidAt, sixMonthsAgo)
+              )
+            ),
+        ])
+      : [[], [], []];
 
   // Plateforme multi-devises (EUR/XOF/...) : une simple somme de invoice.amount
   // à travers des factures de devises différentes produirait un nombre sans
@@ -63,13 +89,7 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
             .where(and(inArray(issueReports.status, ["OPEN", "IN_PROGRESS"]), inArray(issueReports.contractId, managerContractIds)))
         ).length
       : 0;
-  const lateInvoices = managerInvoices.filter((i: typeof invoices.$inferSelect) => i.status === "LATE").length;
-
-  // Revenus des 6 derniers mois (paiements encaissés) pour un mini graphique.
-  const sixMonthsAgo = new Date(year, month - 6, 1);
-  const recentPaidInvoices = managerInvoices.filter(
-    (i: typeof invoices.$inferSelect) => i.status === "PAID" && i.paidAt && new Date(i.paidAt) >= sixMonthsAgo
-  );
+  const lateInvoices = lateInvoicesRows.length;
 
   // Même principe que ci-dessus : regroupé par devise (mois -> devise -> montant)
   // plutôt que sommé à travers des devises différentes.
