@@ -43,8 +43,12 @@ describe("POST /api/properties — devise", () => {
     expect(res.body.currency).toBe("EUR");
   });
 
-  it("retombe sur EUR si le gestionnaire n'a aucune devise renseignée", async () => {
-    const manager = await createManager({ currency: null as unknown as string });
+  it("retombe sur EUR si la devise du gestionnaire est vide", async () => {
+    // users.currency est NOT NULL : une devise nulle est impossible en base,
+    // et la contrainte rejette l'insertion. Le repli `|| "EUR"` n'est donc
+    // atteignable qu'avec une chaîne vide — valeur qu'aucune route n'accepte
+    // (le schéma exige min(1)) mais qui reste possible au niveau de la base.
+    const manager = await createManager({ currency: "" });
 
     const res = await request(app)
       .post("/api/properties")
