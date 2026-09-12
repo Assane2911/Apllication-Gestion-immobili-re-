@@ -12,7 +12,7 @@ export async function initDb() {
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL CHECK (role IN ('MANAGER', 'TENANT')),
+        role TEXT NOT NULL CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN')),
         subscription_status TEXT NOT NULL DEFAULT 'TRIAL' CHECK (subscription_status IN ('TRIAL', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
         subscription_plan TEXT NOT NULL DEFAULT 'STARTER' CHECK (subscription_plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
         trial_ends_at TIMESTAMP,
@@ -41,6 +41,36 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_soon_reminder_sent_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`); } catch {}
+
+    // Colonnes ajoutées au schéma après l'écriture des CREATE TABLE ci-dessus.
+    // Elles étaient absentes de ce fichier, si bien qu'une base créée par
+    // initDb() (installation locale neuve) n'avait ni l'isolation par
+    // gestionnaire, ni la réinitialisation de mot de passe, ni la vérification
+    // d'email — et toute requête Drizzle sur ces tables échouait, Drizzle
+    // nommant explicitement chaque colonne déclarée dans schema.ts.
+    //
+    // manager_id est ajouté NULLABLE ici, alors que le schéma le déclare
+    // obligatoire : une colonne NOT NULL ne peut pas être ajoutée à une table
+    // contenant déjà des lignes sans valeur par défaut. Les insertions
+    // applicatives la renseignent toujours, la contrainte n'est donc utile
+    // qu'à la création initiale de la table.
+    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
+    try { await db.execute(sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
+    try { await db.execute(sql`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS terms TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token_hash TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP`); } catch {}
+
+    // Les bases locales créées avant l'ajout du rôle ADMIN portent encore une
+    // contrainte CHECK qui ne l'autorise pas : un admin créé via
+    // « npm run create-admin » y serait refusé. On la remplace.
+    try {
+      await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+      await db.execute(sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN'))`);
+    } catch {}
     try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '10 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
 
     await db.execute(sql`
