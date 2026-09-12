@@ -30,7 +30,9 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
     const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
     if (!tenant?.email) return { sent: false, reason: "no_tenant_email" as const };
 
-    const [agency] = await db.select().from(agencySettings);
+    const [agency] = property?.managerId
+      ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId))
+      : [];
 
     const receiptData: ReceiptData = {
       receiptNumber: `QUITT-${invoice.periodYear}-${String(invoice.periodMonth).padStart(2, "0")}-${invoice.id

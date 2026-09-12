@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { agencySettings } from "../db/schema";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
+import { testDb } from "../test/setupTestDb";
 import { sendEmail } from "./email.service";
 import { generateReceiptPdfBuffer } from "./pdf.service";
 import { sendPaymentReceiptEmail } from "./receipt.service";
@@ -126,5 +128,40 @@ describe("sendPaymentReceiptEmail", () => {
     expect(result).toEqual({ sent: false, reason: "error" });
     expect(sendEmail).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalled();
+  });
+
+  it("utilise les paramètres d'agence du bon gestionnaire et n'utilise pas ceux d'un autre gestionnaire", async () => {
+    const managerA = await createManager();
+    const managerB = await createManager();
+
+    await testDb.insert(agencySettings).values({
+      userId: managerA.id,
+      agencyName: "Agence A - Luxe",
+      email: "contact@agence-a.com",
+    });
+    await testDb.insert(agencySettings).values({
+      userId: managerB.id,
+      agencyName: "Agence B - Rivage",
+      email: "contact@agence-b.com",
+    });
+
+    const propertyB = await createProperty(managerB.id, { title: "Appart B" });
+    const tenantB = await createTenant(managerB.id, { email: "tenant.b@test.local" });
+    const contractB = await createContract(propertyB.id, tenantB.id);
+    const invoiceB = await createInvoice(contractB.id, {
+      status: "PAID",
+      amount: 150000,
+      paidAt: new Date(),
+    });
+
+    vi.mocked(generateReceiptPdfBuffer).mockResolvedValue(Buffer.from("PDF-B"));
+    vi.mocked(sendEmail).mockResolvedValue({ simulated: false });
+
+    await sendPaymentReceiptEmail(invoiceB.id);
+
+    expect(generateReceiptPdfBuffer).toHaveBeenCalledTimes(1);
+    const receiptData = vi.mocked(generateReceiptPdfBuffer).mock.calls[0][0];
+    expect(receiptData.agency.name).toBe("Agence B - Rivage");
+    expect(receiptData.agency.email).toBe("contact@agence-b.com");
   });
 });

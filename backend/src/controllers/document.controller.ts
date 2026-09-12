@@ -31,8 +31,10 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
 
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
 
-  // Récupérer les paramètres d'agence
-  const [agency] = await db.select().from(agencySettings);
+  // Récupérer les paramètres d'agence du gestionnaire propriétaire du bien
+  const [agency] = property?.managerId
+    ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId))
+    : [];
 
   const receiptHtml = generateReceiptHtml({
     receiptNumber: `QUITT-${invoice.periodYear}-${String(invoice.periodMonth).padStart(2, "0")}-${invoice.id.slice(-6).toUpperCase()}`,
@@ -91,7 +93,9 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   }
 
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
-  const [agency] = await db.select().from(agencySettings);
+  const [agency] = property?.managerId
+    ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId))
+    : [];
 
   const leaseHtml = generateLeaseHtml(
     {
