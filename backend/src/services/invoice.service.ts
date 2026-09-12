@@ -44,6 +44,7 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
           periodMonth,
           periodYear,
           amount: contract.rent,
+          currency: contract.currency ?? "EUR",
           dueDate,
           status: dueDate < today ? "LATE" : "PENDING",
         })

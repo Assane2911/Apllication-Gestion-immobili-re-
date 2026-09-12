@@ -152,4 +152,34 @@ describe("generateInvoicesForContract", () => {
     // janvier, février, mars uniquement (pas avril à juin, le contrat est fini avant)
     expect(createdIds).toHaveLength(3);
   });
+
+  it("préserve la devise du contrat sur toutes les factures générées (ex: XOF)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { currency: "XOF" });
+    const tenant = await createTenant(manager.id);
+
+    const [contract] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 250000,
+        deposit: 500000,
+        currency: "XOF",
+        startDate: new Date(2026, 4, 1),
+        endDate: new Date(2027, 3, 30),
+      })
+      .returning();
+
+    await generateInvoicesForContract(contract, testDb);
+
+    const rows = await testDb
+      .select()
+      .from(invoices)
+      .where(eq(invoices.contractId, contract.id));
+
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    expect(rows.every((r: typeof invoices.$inferSelect) => r.currency === "XOF")).toBe(true);
+    expect(rows.every((r: typeof invoices.$inferSelect) => r.amount === 250000)).toBe(true);
+  });
 });

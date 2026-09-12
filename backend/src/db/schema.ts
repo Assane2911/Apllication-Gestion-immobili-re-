@@ -1,6 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
-import { doublePrecision, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { doublePrecision, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 const id = () => text("id").primaryKey().$defaultFn(() => createId());
 const timestamps = {
@@ -67,22 +67,28 @@ export const platformSubscriptions = pgTable("platform_subscriptions", {
 });
 
 // --- Properties (biens immobiliers) ---
-export const properties = pgTable("properties", {
-  id: id(),
-  // Gestionnaire propriétaire du bien — isole les données d'une agence à l'autre.
-  managerId: text("manager_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  address: text("address").notNull(),
-  surface: doublePrecision("surface").notNull(),
-  rent: doublePrecision("rent").notNull(),
-  currency: text("currency").notNull().default("EUR"),
-  status: propertyStatusEnum("status").notNull().default("AVAILABLE"),
-  description: text("description"),
-  imageUrl: text("image_url"),
-  ...timestamps,
-});
+export const properties = pgTable(
+  "properties",
+  {
+    id: id(),
+    // Gestionnaire propriétaire du bien — isole les données d'une agence à l'autre.
+    managerId: text("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    address: text("address").notNull(),
+    surface: doublePrecision("surface").notNull(),
+    rent: doublePrecision("rent").notNull(),
+    currency: text("currency").notNull().default("EUR"),
+    status: propertyStatusEnum("status").notNull().default("AVAILABLE"),
+    description: text("description"),
+    imageUrl: text("image_url"),
+    ...timestamps,
+  },
+  (table) => ({
+    managerIdIdx: index("properties_manager_id_idx").on(table.managerId),
+  })
+);
 
 // --- Tenants (locataires) ---
 export const tenants = pgTable(
@@ -109,32 +115,41 @@ export const tenants = pgTable(
   },
   (table) => ({
     managerEmailUnique: uniqueIndex("tenants_manager_email_unique").on(table.managerId, table.email),
+    managerIdIdx: index("tenants_manager_id_idx").on(table.managerId),
   })
 );
 
 // --- Contracts (contrats de location) ---
-export const contracts = pgTable("contracts", {
-  id: id(),
-  propertyId: text("property_id")
-    .notNull()
-    .references(() => properties.id),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id),
-  rent: doublePrecision("rent").notNull(),
-  deposit: doublePrecision("deposit").notNull(),
-  currency: text("currency").notNull().default("EUR"),
-  startDate: timestamp("start_date", { mode: "date" }).notNull(),
-  endDate: timestamp("end_date", { mode: "date" }).notNull(),
-  status: contractStatusEnum("status").notNull().default("ACTIVE"),
-  reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
-  // Signature électronique
-  signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),
-  managerSignatureUrl: text("manager_signature_url"),
-  signedByTenantAt: timestamp("signed_by_tenant_at", { mode: "date" }),
-  tenantSignatureUrl: text("tenant_signature_url"),
-  ...timestamps,
-});
+export const contracts = pgTable(
+  "contracts",
+  {
+    id: id(),
+    propertyId: text("property_id")
+      .notNull()
+      .references(() => properties.id),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    rent: doublePrecision("rent").notNull(),
+    deposit: doublePrecision("deposit").notNull(),
+    currency: text("currency").notNull().default("EUR"),
+    startDate: timestamp("start_date", { mode: "date" }).notNull(),
+    endDate: timestamp("end_date", { mode: "date" }).notNull(),
+    status: contractStatusEnum("status").notNull().default("ACTIVE"),
+    reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
+    // Signature électronique
+    signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),
+    managerSignatureUrl: text("manager_signature_url"),
+    signedByTenantAt: timestamp("signed_by_tenant_at", { mode: "date" }),
+    tenantSignatureUrl: text("tenant_signature_url"),
+    ...timestamps,
+  },
+  (table) => ({
+    propertyIdIdx: index("contracts_property_id_idx").on(table.propertyId),
+    tenantIdIdx: index("contracts_tenant_id_idx").on(table.tenantId),
+    statusIdx: index("contracts_status_idx").on(table.status),
+  })
+);
 
 // --- Invoices (factures / échéances de loyer) ---
 export const invoices = pgTable(
@@ -165,79 +180,110 @@ export const invoices = pgTable(
       table.periodMonth,
       table.periodYear
     ),
+    contractIdIdx: index("invoices_contract_id_idx").on(table.contractId),
+    statusIdx: index("invoices_status_idx").on(table.status),
+    dueDateIdx: index("invoices_due_date_idx").on(table.dueDate),
   })
 );
 
 // --- Issue reports (signalements d'incidents avec photo) ---
-export const issueReports = pgTable("issue_reports", {
-  id: id(),
-  contractId: text("contract_id")
-    .notNull()
-    .references(() => contracts.id),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  photoUrl: text("photo_url").notNull(),
-  additionalPhotos: text("additional_photos"), // JSON string array of photo URLs
-  status: issueStatusEnum("status").notNull().default("OPEN"),
-  managerNote: text("manager_note"),
-  ...timestamps,
-});
+export const issueReports = pgTable(
+  "issue_reports",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    photoUrl: text("photo_url").notNull(),
+    additionalPhotos: text("additional_photos"), // JSON string array of photo URLs
+    status: issueStatusEnum("status").notNull().default("OPEN"),
+    managerNote: text("manager_note"),
+    ...timestamps,
+  },
+  (table) => ({
+    contractIdIdx: index("issue_reports_contract_id_idx").on(table.contractId),
+    tenantIdIdx: index("issue_reports_tenant_id_idx").on(table.tenantId),
+    statusIdx: index("issue_reports_status_idx").on(table.status),
+  })
+);
 
 // --- Expenses (Dépenses, Travaux, Charges & Taxe foncière) ---
 export const expenseCategoryEnum = pgEnum("expense_category", ["MAINTENANCE", "TAX", "INSURANCE", "SYNDIC", "OTHER"]);
 
-export const expenses = pgTable("expenses", {
-  id: id(),
-  propertyId: text("property_id")
-    .notNull()
-    .references(() => properties.id, { onDelete: "cascade" }),
-  category: text("category").notNull().default("MAINTENANCE"),
-  title: text("title").notNull(),
-  amount: doublePrecision("amount").notNull(),
-  currency: text("currency").notNull().default("EUR"),
-  expenseDate: timestamp("expense_date", { mode: "date" }).notNull().defaultNow(),
-  receiptUrl: text("receipt_url"),
-  notes: text("notes"),
-  ...timestamps,
-});
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: id(),
+    propertyId: text("property_id")
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    category: text("category").notNull().default("MAINTENANCE"),
+    title: text("title").notNull(),
+    amount: doublePrecision("amount").notNull(),
+    currency: text("currency").notNull().default("EUR"),
+    expenseDate: timestamp("expense_date", { mode: "date" }).notNull().defaultNow(),
+    receiptUrl: text("receipt_url"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (table) => ({
+    propertyIdIdx: index("expenses_property_id_idx").on(table.propertyId),
+  })
+);
 
 // --- Messages (Messagerie directe Agence - Locataire) ---
-export const messages = pgTable("messages", {
-  id: id(),
-  contractId: text("contract_id")
-    .notNull()
-    .references(() => contracts.id, { onDelete: "cascade" }),
-  senderId: text("sender_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  senderRole: roleEnum("sender_role").notNull(),
-  content: text("content").notNull(),
-  isRead: text("is_read").notNull().default("false"),
-  ...timestamps,
-});
+export const messages = pgTable(
+  "messages",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    senderId: text("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    senderRole: roleEnum("sender_role").notNull(),
+    content: text("content").notNull(),
+    isRead: text("is_read").notNull().default("false"),
+    ...timestamps,
+  },
+  (table) => ({
+    contractIdIdx: index("messages_contract_id_idx").on(table.contractId),
+    senderIdIdx: index("messages_sender_id_idx").on(table.senderId),
+  })
+);
 
 // --- Activity Log (Journal d'activité / audit — qui a fait quoi, quand) ---
-export const activityLogs = pgTable("activity_logs", {
-  id: id(),
-  // Gestionnaire "propriétaire" du journal — nécessaire car actorId peut être
-  // un locataire (ex: signalement d'incident) : on doit quand même savoir
-  // quelle agence doit voir cette entrée dans son journal d'activité.
-  managerId: text("manager_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
-  actorRole: roleEnum("actor_role"),
-  actorLabel: text("actor_label").notNull(), // ex: email du gestionnaire au moment de l'action
-  action: text("action").notNull(), // ex: "property.create", "contract.renew"
-  entityType: text("entity_type").notNull(), // ex: "property", "tenant", "contract", "invoice", "issue"
-  entityId: text("entity_id"),
-  entityLabel: text("entity_label").notNull(), // libellé lisible, ex: le titre du bien
-  details: text("details"), // description courte lisible en français
-  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
-});
+export const activityLogs = pgTable(
+  "activity_logs",
+  {
+    id: id(),
+    // Gestionnaire "propriétaire" du journal — nécessaire car actorId peut être
+    // un locataire (ex: signalement d'incident) : on doit quand même savoir
+    // quelle agence doit voir cette entrée dans son journal d'activité.
+    managerId: text("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
+    actorRole: roleEnum("actor_role"),
+    actorLabel: text("actor_label").notNull(), // ex: email du gestionnaire au moment de l'action
+    action: text("action").notNull(), // ex: "property.create", "contract.renew"
+    entityType: text("entity_type").notNull(), // ex: "property", "tenant", "contract", "invoice", "issue"
+    entityId: text("entity_id"),
+    entityLabel: text("entity_label").notNull(), // libellé lisible, ex: le titre du bien
+    details: text("details"), // description courte lisible en français
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    managerIdIdx: index("activity_logs_manager_id_idx").on(table.managerId),
+    createdAtIdx: index("activity_logs_created_at_idx").on(table.createdAt),
+  })
+);
 
 // --- Agency Settings (Paramètres & Marque Blanche de l'Agence) ---
 export const agencySettings = pgTable("agency_settings", {

@@ -13,6 +13,7 @@ const contractSchema = z.object({
   tenantId: z.string().min(1),
   rent: z.coerce.number().positive(),
   deposit: z.coerce.number().nonnegative(),
+  currency: z.string().optional(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
   status: z.enum(["ACTIVE", "ENDED", "TERMINATED"]).optional(),
@@ -86,11 +87,17 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
   if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
+  // Hérite de la devise spécifiée ou de celle du bien par défaut.
+  const contractValues = {
+    ...body,
+    currency: body.currency || property.currency || "EUR",
+  };
+
   // Ces trois écritures doivent rester cohérentes entre elles : si l'une
   // échoue, on ne veut ni contrat orphelin, ni bien marqué occupé sans
   // contrat, ni contrat actif sans aucune facture générée.
   const contract = await db.transaction(async (tx: Transaction) => {
-    const [created] = await tx.insert(contracts).values(body).returning();
+    const [created] = await tx.insert(contracts).values(contractValues).returning();
     await tx.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
     await generateInvoicesForContract(created, tx);
     return created;

@@ -170,6 +170,22 @@ describe("templates d'emails", () => {
     expect(html).toContain("150000 €");
   });
 
+  it("rentDueReminderEmail : affiche la devise personnalisée et assainit le HTML", () => {
+    const { html } = rentDueReminderEmail({
+      tenantName: "<script>alert('xss')</script>Amadou",
+      propertyTitle: "Villa <b>Almadies</b>",
+      amount: 450000,
+      currency: "XOF",
+      periodMonth: 4,
+      periodYear: 2026,
+      dueDate: new Date(2026, 3, 5),
+      frontendUrl: "https://app.test",
+    });
+    expect(html).toContain("450000 XOF");
+    expect(html).toContain("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;Amadou");
+    expect(html).not.toContain("<script>");
+  });
+
   it("rentDueSoonReminderEmail : accorde 'jour' au singulier et inclut la devise fournie", () => {
     const { subject, html } = rentDueSoonReminderEmail({
       tenantName: "Ibrahima Diop",

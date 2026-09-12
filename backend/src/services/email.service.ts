@@ -55,6 +55,16 @@ export async function sendEmail(to: string, subject: string, html: string, attac
   }
 }
 
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /**
  * Email envoyé lors d'une demande de réinitialisation de mot de passe
  * (page "Mot de passe oublié"). Le lien contient un token à usage unique,
@@ -140,9 +150,9 @@ export function contractEndingReminderEmail(params: {
         <h2 style="color:#1f2937;">Rappel de fin de contrat de location</h2>
         <p>Bonjour,</p>
         <p>
-          Le contrat de location de <strong>${tenantName}</strong> pour le bien
-          <strong>${propertyTitle}</strong> arrive à échéance le
-          <strong>${formattedDate}</strong> (dans ${daysLeft} jours).
+          Le contrat de location de <strong>${escapeHtml(tenantName)}</strong> pour le bien
+          <strong>${escapeHtml(propertyTitle)}</strong> arrive à échéance le
+          <strong>${escapeHtml(formattedDate)}</strong> (dans ${daysLeft} jours).
         </p>
         <p>Pensez à contacter le locataire pour discuter d'un renouvellement, d'un état des lieux de sortie ou de la libération du bien.</p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
@@ -180,15 +190,15 @@ export function issueStatusUpdateEmail(params: {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
         <h2 style="color:#0f172a;">${meta.emoji} Mise à jour de votre incident signalé</h2>
-        <p>Bonjour ${tenantName},</p>
+        <p>Bonjour ${escapeHtml(tenantName)},</p>
         <p>
-          Le statut de votre signalement <strong>« ${issueTitle} »</strong> concernant le logement
-          <strong>${propertyTitle}</strong> a été mis à jour :
+          Le statut de votre signalement <strong>« ${escapeHtml(issueTitle)} »</strong> concernant le logement
+          <strong>${escapeHtml(propertyTitle)}</strong> a été mis à jour :
         </p>
         <div style="display:inline-block; background:${meta.color}1a; color:${meta.color}; font-weight:bold; padding:8px 16px; border-radius:20px; border:1px solid ${meta.color}40; margin: 8px 0 16px 0;">
-          ${meta.label}
+          ${escapeHtml(meta.label)}
         </div>
-        ${managerNote ? `<p style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; color:#334155;"><strong>Message de votre agence :</strong><br/>${managerNote}</p>` : ""}
+        ${managerNote ? `<p style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; color:#334155;"><strong>Message de votre agence :</strong><br/>${escapeHtml(managerNote)}</p>` : ""}
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${frontendUrl}/portail/incidents" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
             Voir mes signalements →
@@ -217,10 +227,10 @@ export function newMessageFromManagerEmail(params: {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
         <h2 style="color:#0f172a;">💬 Nouveau message de votre agence</h2>
-        <p>Bonjour ${tenantName},</p>
-        <p>Vous avez reçu un nouveau message concernant le logement <strong>${propertyTitle}</strong> :</p>
+        <p>Bonjour ${escapeHtml(tenantName)},</p>
+        <p>Vous avez reçu un nouveau message concernant le logement <strong>${escapeHtml(propertyTitle)}</strong> :</p>
         <p style="background:#f8fafc; border-left:3px solid #2563eb; border-radius:4px; padding:12px 16px; color:#334155; font-style:italic;">
-          « ${preview} »
+          « ${escapeHtml(preview)} »
         </p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${frontendUrl}/portail/messages" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
@@ -243,17 +253,19 @@ export function rentDueReminderEmail(params: {
   tenantName: string;
   propertyTitle: string;
   amount: number;
+  currency?: string;
   periodMonth: number;
   periodYear: number;
   dueDate: Date;
   frontendUrl: string;
 }) {
-  const { tenantName, propertyTitle, amount, periodMonth, periodYear, frontendUrl } = params;
+  const { tenantName, propertyTitle, amount, currency = "EUR", periodMonth, periodYear, frontendUrl } = params;
   const monthNames = [
     "janvier", "février", "mars", "avril", "mai", "juin",
     "juillet", "août", "septembre", "octobre", "novembre", "décembre"
   ];
   const monthName = monthNames[periodMonth - 1] || `${periodMonth}`;
+  const currencyDisplay = currency === "EUR" ? "€" : escapeHtml(currency);
 
   return {
     subject: `📢 Échéance de loyer ${monthName} ${periodYear} — Règlement attendu avant le 5`,
@@ -261,17 +273,17 @@ export function rentDueReminderEmail(params: {
       <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
           <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Avis d'Échéance de Loyer</h1>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${monthName} ${periodYear} • ${propertyTitle}</p>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${monthName} ${periodYear} • ${escapeHtml(propertyTitle)}</p>
         </div>
         <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
-          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${tenantName}</strong>,</p>
+          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(tenantName)}</strong>,</p>
           <p>
-            Votre avis d'échéance de loyer pour le mois de <strong>${monthName} ${periodYear}</strong> concernant le bien <strong>${propertyTitle}</strong> est désormais émis.
+            Votre avis d'échéance de loyer pour le mois de <strong>${monthName} ${periodYear}</strong> concernant le bien <strong>${escapeHtml(propertyTitle)}</strong> est désormais émis.
           </p>
           
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
             <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Montant à régler</span>
-            <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0;">${amount} €</div>
+            <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0;">${amount} ${currencyDisplay}</div>
             <div style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: bold; padding: 6px 14px; border-radius: 20px; border: 1px solid #fde68a;">
               ⏰ Date limite de règlement : au plus tard le 5 ${monthName} ${periodYear}
             </div>
@@ -330,14 +342,14 @@ export function rentDueSoonReminderEmail(params: {
           <h1 style="margin: 0; font-size: 18px; font-weight: 700;">⏰ Rappel avant échéance</h1>
         </div>
         <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
-          <p>Bonjour <strong>${tenantName}</strong>,</p>
+          <p>Bonjour <strong>${escapeHtml(tenantName)}</strong>,</p>
           <p>
             Votre loyer de <strong>${monthName} ${periodYear}</strong> pour le logement
-            <strong>${propertyTitle}</strong> n'a pas encore été réglé et arrive à échéance le
-            <strong>${formattedDueDate}</strong> (dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}).
+            <strong>${escapeHtml(propertyTitle)}</strong> n'a pas encore été réglé et arrive à échéance le
+            <strong>${escapeHtml(formattedDueDate)}</strong> (dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}).
           </p>
           <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px; margin: 16px 0; text-align: center;">
-            <span style="font-size: 24px; font-weight: 900; color: #92400e;">${amount} ${currency}</span>
+            <span style="font-size: 24px; font-weight: 900; color: #92400e;">${amount} ${escapeHtml(currency)}</span>
           </div>
           <div style="text-align: center; margin: 20px 0;">
             <a href="${frontendUrl}/portail/paiements" style="background: #2563eb; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block;">

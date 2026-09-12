@@ -205,6 +205,22 @@ export async function initDb() {
       )
     `);
 
+    // Index de performance sur clés étrangères et filtres fréquents
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS tenants_manager_id_idx ON tenants (manager_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS contracts_property_id_idx ON contracts (property_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS contracts_tenant_id_idx ON contracts (tenant_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS contracts_status_idx ON contracts (status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS invoices_contract_id_idx ON invoices (contract_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS invoices_status_idx ON invoices (status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS invoices_due_date_idx ON invoices (due_date)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS expenses_property_id_idx ON expenses (property_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_contract_id_idx ON issue_reports (contract_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_tenant_id_idx ON issue_reports (tenant_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS messages_contract_id_idx ON messages (contract_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs (created_at)`);
+
     console.log("✅ Tables et types de base de données initialisés avec succès.");
 
     // Auto-seed if database is empty
