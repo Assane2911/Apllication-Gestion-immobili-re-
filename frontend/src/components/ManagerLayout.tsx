@@ -35,29 +35,34 @@ export default function ManagerLayout() {
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
       {mobileNavOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 z-30 sm:hidden"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 sm:hidden transition-opacity"
           onClick={() => setMobileNavOpen(false)}
           aria-hidden="true"
         />
       )}
       <aside
-        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-screen bg-slate-900 text-slate-100 flex flex-col shrink-0 transform transition-transform duration-200 ease-in-out ${
+        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 border-r border-slate-800/80 flex flex-col shrink-0 shadow-xl transform transition-transform duration-200 ease-in-out ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         } sm:translate-x-0`}
       >
-        <div className="shrink-0 px-5 py-6 border-b border-slate-800">
+        <div className="shrink-0 px-5 py-5 border-b border-slate-800/80">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md" />
-              <div>
-                <h1 className="text-sm font-bold leading-tight">{t("common.appName")}</h1>
-                <p className="text-[11px] text-slate-400">{t("components.managerLayout.subtitle")}</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md shadow-brand-900/30" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-sm font-bold leading-tight truncate">{t("common.appName")}</h1>
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">{t("components.managerLayout.subtitle")}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={toggleTheme}
-                className="shrink-0 w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+                className="shrink-0 w-8 h-8 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
                 title={theme === "dark" ? t("common.theme.toLight") : t("common.theme.toDark")}
                 aria-label={t("common.theme.toggleAria")}
               >
@@ -65,7 +70,7 @@ export default function ManagerLayout() {
               </button>
               <button
                 onClick={() => setMobileNavOpen(false)}
-                className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+                className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
                 aria-label={t("components.managerLayout.closeMenuAria")}
               >
                 <X size={15} />
@@ -73,12 +78,18 @@ export default function ManagerLayout() {
             </div>
           </div>
           {sub?.isTrialActive && (
-            <div className="mt-2.5 bg-brand-900/60 border border-brand-500/30 rounded-lg px-2.5 py-1 text-[11px] text-brand-200 flex items-center justify-between">
-              <span>{t("components.managerLayout.trialFree")}</span>
-              <span className="font-bold text-white">{sub.trialDaysRemaining} j</span>
+            <div className="mt-3 bg-gradient-to-r from-brand-950/80 to-slate-900 border border-brand-500/30 rounded-lg px-3 py-1.5 text-[11px] text-brand-200 flex items-center justify-between shadow-2xs">
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand-400" />
+                </span>
+                <span>{t("components.managerLayout.trialFree")}</span>
+              </div>
+              <span className="font-bold text-white bg-brand-600/40 px-1.5 py-0.5 rounded text-[10px]">{sub.trialDaysRemaining} j</span>
             </div>
           )}
-          <div className="mt-3 pt-3 border-t border-slate-800">
+          <div className="mt-3 pt-3 border-t border-slate-800/80">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
               {t("nav.currencyLabel")}
             </label>
@@ -91,44 +102,52 @@ export default function ManagerLayout() {
             <LanguageSwitcher className="w-full [&>select]:w-full" />
           </div>
         </div>
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-1" onClick={() => setMobileNavOpen(false)}>
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1" onClick={() => setMobileNavOpen(false)}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === "/dashboard"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive ? "bg-brand-600 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                `flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 ${
+                  isActive
+                    ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white font-medium shadow-xs shadow-brand-500/25"
+                    : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
                 }`
               }
             >
-              <span>{item.icon}</span>
-              <span>{t(`nav.manager.${item.key}`)}</span>
+              <span className="text-base">{item.icon}</span>
+              <span className="truncate">{t(`nav.manager.${item.key}`)}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="shrink-0 px-4 py-4 border-t border-slate-800">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-md shadow-brand-900/40">
+        <div className="shrink-0 px-4 py-4 border-t border-slate-800/80 bg-slate-950/40">
+          <div className="flex items-center gap-2.5 min-w-0 p-1.5 rounded-xl bg-slate-900/50 border border-slate-800/60">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
               {(user?.email?.[0] || "?").toUpperCase()}
             </div>
-            <p className="text-sm text-slate-200 font-medium truncate min-w-0">{user?.email}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-slate-200 font-medium truncate">{user?.email}</p>
+              <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                {t("nav.manager.dashboard")}
+              </p>
+            </div>
           </div>
           <button
             onClick={logout}
-            className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 bg-slate-800/60 border border-slate-700 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40 transition-colors"
+            className="mt-2.5 w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 bg-slate-900/40 border border-slate-800 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
           >
-            <LogOut size={14} />
+            <LogOut size={13} />
             {t("nav.logout")}
           </button>
         </div>
       </aside>
       <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
-        <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center justify-between gap-3 mb-6">
           <button
             onClick={() => setMobileNavOpen(true)}
-            className="sm:hidden shrink-0 w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300"
+            className="sm:hidden shrink-0 w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             aria-label={t("components.managerLayout.openMenuAria")}
           >
             <Menu size={18} />

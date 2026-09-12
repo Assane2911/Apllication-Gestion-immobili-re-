@@ -276,11 +276,15 @@ export default function DashboardPage() {
                       ];
                     }}
                     contentStyle={{
-                      borderRadius: "12px",
+                      borderRadius: "14px",
                       fontSize: "12px",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
+                      backgroundColor: "var(--tw-tooltip-bg, #0f172a)",
+                      color: "#f8fafc",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      padding: "10px 14px",
                     }}
+                    itemStyle={{ color: "#f8fafc" }}
                   />
                   <Legend
                     formatter={(value) => {
@@ -340,9 +344,15 @@ export default function DashboardPage() {
                         statusLabels[item.payload.status as PropertyStatus],
                       ]}
                       contentStyle={{
-                        borderRadius: "12px",
+                        borderRadius: "14px",
                         fontSize: "12px",
+                        backgroundColor: "#0f172a",
+                        color: "#f8fafc",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
+                        padding: "8px 12px",
                       }}
+                      itemStyle={{ color: "#f8fafc" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
