@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { properties } from "../db/schema";
+import { invoices, properties } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -12,6 +12,84 @@ import {
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+
+describe("POST /api/properties — devise", () => {
+  // Regression : property.controller n'a longtemps pas gere la devise du tout.
+  // Un bien restait donc en EUR (valeur par defaut en base) et toute la
+  // cascade avec lui, le contrat heritant du bien et la facture du contrat.
+  // Un gestionnaire regle en XOF voyait ses loyers, ses quittances et ses baux
+  // libelles en euros.
+  it("hérite de la devise de règlement du gestionnaire", async () => {
+    const manager = await createManager({ currency: "XOF" });
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "Villa Ngor", address: "3 rue des Almadies", surface: 120, rent: 250000 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.currency).toBe("XOF");
+  });
+
+  it("respecte une devise explicitement fournie, même si elle diffère de celle du gestionnaire", async () => {
+    const manager = await createManager({ currency: "XOF" });
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "Appartement Paris", address: "10 rue de la Paix", surface: 40, rent: 900, currency: "EUR" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.currency).toBe("EUR");
+  });
+
+  it("retombe sur EUR si le gestionnaire n'a aucune devise renseignée", async () => {
+    const manager = await createManager({ currency: null as unknown as string });
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "Studio", address: "1 rue du Test", surface: 20, rent: 300 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.currency).toBe("EUR");
+  });
+
+  it("propage la devise du bien au contrat, puis du contrat à la facture", async () => {
+    // Vérifie la chaîne complète, le point de la régression : chaque maillon
+    // hérite du précédent.
+    const manager = await createManager({ currency: "XOF" });
+
+    const bien = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "Résidence Ouakam", address: "12 Corniche", surface: 90, rent: 150000 });
+    expect(bien.body.currency).toBe("XOF");
+
+    const locataire = await createTenant(manager.id);
+
+    const contrat = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(tokenFor(manager)))
+      .send({
+        propertyId: bien.body.id,
+        tenantId: locataire.id,
+        rent: 150000,
+        deposit: 300000,
+        startDate: "2026-09-01",
+        endDate: "2027-09-01",
+      });
+
+    expect(contrat.status).toBe(201);
+    expect(contrat.body.currency).toBe("XOF");
+
+    const [facture] = await testDb
+      .select()
+      .from(invoices)
+      .where(eq(invoices.contractId, contrat.body.id));
+    if (facture) expect(facture.currency).toBe("XOF");
+  });
+});
 
 describe("POST /api/properties", () => {
   it("crée un bien pour le gestionnaire connecté", async () => {

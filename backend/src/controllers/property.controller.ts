@@ -2,7 +2,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { contracts, properties, tenants } from "../db/schema";
+import { contracts, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -15,6 +15,7 @@ const propertySchema = z.object({
   rent: z.coerce.number().positive(),
   status: z.enum(["AVAILABLE", "OCCUPIED", "MAINTENANCE"]).optional(),
   description: z.string().optional(),
+  currency: z.string().min(1).max(10).optional(),
 });
 
 export const listProperties = asyncHandler(async (req: Request, res: Response) => {
@@ -53,9 +54,26 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
   const body = propertySchema.parse(req.body);
   const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
+  // Le bien hérite de la devise de règlement choisie par le gestionnaire, à
+  // moins qu'une devise soit explicitement fournie. C'est le premier maillon
+  // de la chaîne : le contrat hérite ensuite du bien (voir
+  // contract.controller.ts) et la facture du contrat (voir invoice.service.ts).
+  // Sans cet héritage, un bien restait en EUR par défaut et toute la cascade
+  // avec lui — un gestionnaire réglé en XOF voyait ses loyers, ses quittances
+  // et ses baux libellés en euros.
+  const [manager] = await db
+    .select({ currency: users.currency })
+    .from(users)
+    .where(eq(users.id, req.user!.userId));
+
   const [property] = await db
     .insert(properties)
-    .values({ ...body, imageUrl, managerId: req.user!.userId })
+    .values({
+      ...body,
+      currency: body.currency || manager?.currency || "EUR",
+      imageUrl,
+      managerId: req.user!.userId,
+    })
     .returning();
 
   await logActivity({
