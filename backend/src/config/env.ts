@@ -92,6 +92,13 @@ export const env = {
       // "test" utilise le bac à sable PayDunya (sandbox-api), "live" la prod.
       mode: (process.env.PAYDUNYA_MODE ?? "test") as "test" | "live",
       storeName: process.env.PAYDUNYA_STORE_NAME ?? "ImmoPlatform Pro",
+      // L'API PayDunya n'a AUCUN champ de devise : `total_amount` est lu dans
+      // la devise du compte marchand, fixée par le pays de celui-ci. Sur un
+      // compte sénégalais (XOF), envoyer 29 pour un prix de 29 € facture donc
+      // 29 FCFA, soit environ quatre centimes d'euro. Cette valeur déclare la
+      // devise du compte afin de pouvoir refuser tout paiement libellé dans
+      // une autre, au lieu d'encaisser un centième du prix.
+      currency: process.env.PAYDUNYA_CURRENCY ?? "XOF",
     },
   },
 };

@@ -20,6 +20,8 @@ export interface SubscriptionPlanDetail {
   description: string;
   monthlyPrice: number;
   annualPrice: number;
+  /** Devise dans laquelle les deux prix ci-dessus sont libellés (renvoyée par le backend). */
+  currency: string;
   maxProperties: string | number;
   popular?: boolean;
   features: string[];

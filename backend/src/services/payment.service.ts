@@ -29,21 +29,29 @@ export interface PaymentIntentResult {
 export async function initiatePayment(params: {
   method: PaymentMethodKey;
   amount: number;
+  /**
+   * Devise du montant, en code ISO ("EUR", "XOF"). Obligatoire, et non
+   * optionnelle avec une valeur par défaut : un montant sans devise n'a aucun
+   * sens dès lors qu'un prestataire encaisse dans la sienne, et un défaut
+   * silencieux reproduirait exactement le défaut que ce paramètre corrige.
+   * La rendre obligatoire force chaque appelant à dire ce qu'il facture.
+   */
+  currency: string;
   invoiceId: string;
   payerEmail: string;
   bankReference?: string;
   /** Chemin du frontend vers lequel rediriger une fois le paiement terminé (ex: "/portail/paiements"). */
   returnPath?: string;
 }): Promise<PaymentIntentResult> {
-  const { method, amount, invoiceId: reference, payerEmail, bankReference, returnPath } = params;
+  const { method, amount, currency, invoiceId: reference, payerEmail, bankReference, returnPath } = params;
 
   switch (method) {
     case "STRIPE":
-      return initiateStripePayment(amount, reference, payerEmail);
+      return initiateStripePayment(amount, currency, reference, payerEmail);
     case "PAYDUNYA":
-      return initiatePaydunyaPayment(amount, reference, payerEmail, returnPath);
+      return initiatePaydunyaPayment(amount, currency, reference, payerEmail, returnPath);
     case "BANK_TRANSFER":
-      return initiateBankTransferDeclaration(amount, reference, bankReference);
+      return initiateBankTransferDeclaration(amount, currency, reference, bankReference);
     case "DEMO":
     default:
       // Verrou serveur : "DEMO" confirme un paiement instantanément, sans
@@ -53,7 +61,7 @@ export async function initiatePayment(params: {
       if (!env.payments.demoMode) {
         throw new ApiError(400, "Le mode démo n'est pas disponible sur cette plateforme.");
       }
-      return initiateDemoPayment(amount, reference);
+      return initiateDemoPayment(amount, currency, reference);
   }
 }
 
@@ -93,7 +101,7 @@ function autoriserSimulation(method: PaymentMethodKey, cause: string): void {
   );
 }
 
-async function initiateStripePayment(amount: number, reference: string, payerEmail: string): Promise<PaymentIntentResult> {
+async function initiateStripePayment(amount: number, currency: string, reference: string, payerEmail: string): Promise<PaymentIntentResult> {
   if (!env.payments.stripeSecretKey) {
     autoriserSimulation("STRIPE", "STRIPE_SECRET_KEY absente");
     return simulatedResult("STRIPE", reference, "Stripe non configuré — paiement simulé (mode démo).");
@@ -141,6 +149,7 @@ async function initiateStripePayment(amount: number, reference: string, payerEma
  */
 async function initiatePaydunyaPayment(
   amount: number,
+  currency: string,
   reference: string,
   payerEmail: string,
   returnPath?: string
@@ -154,6 +163,25 @@ async function initiatePaydunyaPayment(
 
   if (env.payments.demoMode) {
     return simulatedResult("PAYDUNYA", reference, "Mode démo — paiement PayDunya simulé.");
+  }
+
+  // L'API PayDunya ne transporte pas de devise (voir config/env.ts) : le
+  // montant est interprété dans celle du compte. Un prix de 29 € envoyé tel
+  // quel sur un compte en XOF serait donc facturé 29 FCFA — un centième du
+  // prix. Aucune conversion n'est tentée ici : convertir à la volée sans taux
+  // de référence fiable produirait des montants faux mais crédibles, plus
+  // difficiles à repérer qu'un refus. Le tarif dans la devise du compte se
+  // décide ailleurs (voir TARIFS dans subscription.controller.ts).
+  if (currency !== env.payments.paydunya.currency) {
+    console.error(
+      `[paydunya] paiement refusé : montant libellé en ${currency} alors que le compte encaisse ` +
+        `en ${env.payments.paydunya.currency}. Sans champ de devise dans l'API, le montant serait ` +
+        `facturé dans la devise du compte.`
+    );
+    throw new ApiError(
+      503,
+      `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`
+    );
   }
 
   const baseUrl =
@@ -214,6 +242,7 @@ async function initiatePaydunyaPayment(
 
 async function initiateBankTransferDeclaration(
   amount: number,
+  currency: string,
   reference: string,
   bankReference?: string
 ): Promise<PaymentIntentResult> {
@@ -221,12 +250,12 @@ async function initiateBankTransferDeclaration(
     method: "BANK_TRANSFER",
     status: "PENDING_VALIDATION",
     reference: bankReference || `virement_${reference}`,
-    message: `Virement de ${amount} déclaré, en attente de validation par le gestionnaire.`,
+    message: `Virement de ${amount} ${currency} déclaré, en attente de validation par le gestionnaire.`,
   };
 }
 
-async function initiateDemoPayment(amount: number, reference: string): Promise<PaymentIntentResult> {
-  return simulatedResult("DEMO", reference, `Paiement démo de ${amount} confirmé instantanément.`);
+async function initiateDemoPayment(amount: number, currency: string, reference: string): Promise<PaymentIntentResult> {
+  return simulatedResult("DEMO", reference, `Paiement démo de ${amount} ${currency} confirmé instantanément.`);
 }
 
 function simulatedResult(method: PaymentMethodKey, reference: string, message: string): PaymentIntentResult {

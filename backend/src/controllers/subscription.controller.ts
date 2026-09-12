@@ -7,13 +7,60 @@ import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { computeSubscriptionInfo } from "./auth.controller";
 
+/** Devise de repli, pour une devise utilisateur qui n'est pas tarifée. */
+export const DEVISE_PAR_DEFAUT = "EUR";
+
+/**
+ * Tarifs des formules, devise par devise, écrits à la main.
+ *
+ * Pourquoi pas une conversion depuis l'euro : un prix local n'est pas un taux
+ * de change mais une décision commerciale. 29 € convertis à la parité fixe
+ * donneraient 19 023 FCFA — un montant illisible, et calé sur un pouvoir
+ * d'achat qui n'est pas celui du marché visé. Les montants XOF sont donc
+ * choisis, arrondis, et respectent le même rabais annuel de 20 % que
+ * l'interface annonce (12 × mensuel × 0,8).
+ *
+ * Pour changer un prix, il n'y a qu'une ligne à toucher ici : c'est aussi
+ * pourquoi les champs monthlyPrice / annualPrice ont disparu du catalogue
+ * ci-dessous — deux sources de vérité pour un prix finissent par diverger.
+ */
+const TARIFS: Record<string, Record<string, { monthly: number; annual: number }>> = {
+  STARTER: {
+    EUR: { monthly: 9, annual: 86 },
+    XOF: { monthly: 5000, annual: 48000 },
+  },
+  PRO: {
+    EUR: { monthly: 29, annual: 278 },
+    XOF: { monthly: 15000, annual: 144000 },
+  },
+  ENTERPRISE: {
+    EUR: { monthly: 49, annual: 470 },
+    XOF: { monthly: 25000, annual: 240000 },
+  },
+};
+
+/**
+ * Devise réellement facturée pour une devise demandée : la devise elle-même si
+ * elle est tarifée, sinon l'euro. Ce qui est affiché et ce qui est débité
+ * viennent ainsi toujours de la même décision — c'est précisément l'écart
+ * inverse (prix affichés en euros, compte encaissant en FCFA) qui rendait la
+ * chaîne fausse.
+ */
+export function deviseFacturee(currency?: string | null): string {
+  const demandee = (currency ?? "").toUpperCase();
+  return TARIFS.PRO[demandee] ? demandee : DEVISE_PAR_DEFAUT;
+}
+
+/** Tarif d'un plan dans une devise déjà résolue par deviseFacturee(). */
+export function tarifPourDevise(planId: string, currency: string) {
+  return TARIFS[planId]?.[currency] ?? null;
+}
+
 export const SUBSCRIPTION_PLANS = [
   {
     id: "STARTER",
     name: "Starter",
     description: "Idéal pour les propriétaires indépendants et petites locations.",
-    monthlyPrice: 9,
-    annualPrice: 86, // ~7€/mois
     maxProperties: 5,
     features: [
       "Jusqu'à 5 biens immobiliers",
@@ -28,8 +75,6 @@ export const SUBSCRIPTION_PLANS = [
     name: "Professionnel",
     popular: true,
     description: "Pour les gestionnaires et agences en pleine croissance.",
-    monthlyPrice: 29,
-    annualPrice: 278, // ~23€/mois
     maxProperties: "Illimité",
     features: [
       "Nombre de biens illimité",
@@ -44,8 +89,6 @@ export const SUBSCRIPTION_PLANS = [
     id: "ENTERPRISE",
     name: "Agence & Multi-Comptes",
     description: "Pour les cabinets de gestion immobilière et syndics.",
-    monthlyPrice: 49,
-    annualPrice: 470, // ~39€/mois
     maxProperties: "Illimité",
     features: [
       "Tout ce qui est inclus dans Pro",
@@ -57,9 +100,27 @@ export const SUBSCRIPTION_PLANS = [
   },
 ];
 
-/** Retourne la liste des formules SaaS et leurs tarifs. */
-export const getPlans = asyncHandler(async (_req: Request, res: Response) => {
-  res.json(SUBSCRIPTION_PLANS);
+/**
+ * Retourne la liste des formules SaaS et leurs tarifs.
+ *
+ * La route est publique : elle ne connaît donc pas l'utilisateur et sa devise
+ * arrive en paramètre (`?currency=XOF`). La réponse indique toujours la devise
+ * effectivement appliquée, afin que l'interface n'ait jamais à la supposer.
+ */
+export const getPlans = asyncHandler(async (req: Request, res: Response) => {
+  const currency = deviseFacturee(typeof req.query.currency === "string" ? req.query.currency : null);
+
+  res.json(
+    SUBSCRIPTION_PLANS.map((plan) => {
+      const tarif = tarifPourDevise(plan.id, currency);
+      return {
+        ...plan,
+        currency,
+        monthlyPrice: tarif?.monthly ?? 0,
+        annualPrice: tarif?.annual ?? 0,
+      };
+    })
+  );
 });
 
 /** Retourne l'état complet de l'abonnement et de la période d'essai de l'utilisateur connecté. */
@@ -106,13 +167,21 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   const planDef = SUBSCRIPTION_PLANS.find((p) => p.id === body.plan);
   if (!planDef) throw new ApiError(400, "Plan invalide");
 
-  const amount = body.billingCycle === "ANNUAL" ? planDef.annualPrice : planDef.monthlyPrice;
+  // Le prix suit la devise du gestionnaire, et c'est cette même devise qui est
+  // transmise au prestataire : le montant débité ne peut donc plus différer du
+  // montant affiché d'un facteur 655.
+  const currency = deviseFacturee(user.currency);
+  const tarif = tarifPourDevise(body.plan, currency);
+  if (!tarif) throw new ApiError(400, "Plan invalide");
+
+  const amount = body.billingCycle === "ANNUAL" ? tarif.annual : tarif.monthly;
   const paymentReferenceId = `sub_${user.id}_${Date.now()}`;
 
   // Déclenche l'initiation du paiement de l'abonnement
   const paymentResult = await initiatePayment({
     method: body.paymentMethod as PaymentMethodKey,
     amount,
+    currency,
     invoiceId: paymentReferenceId,
     payerEmail: user.email,
     bankReference: body.bankReference,

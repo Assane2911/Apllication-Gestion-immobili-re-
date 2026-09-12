@@ -29,6 +29,7 @@ describe("initiatePayment", () => {
   it("DEMO : renvoie toujours un paiement simulé confirmé (PAID)", async () => {
     const result = await initiatePayment({
       method: "DEMO",
+      currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
       payerEmail: "test@test.local",
@@ -49,11 +50,11 @@ describe("initiatePayment", () => {
     env.payments.demoMode = false;
 
     await expect(
-      initiatePayment({ method: "DEMO", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" })
+      initiatePayment({ method: "DEMO", currency: "XOF", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" })
     ).rejects.toThrow(ApiError);
 
     try {
-      await initiatePayment({ method: "DEMO", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" });
+      await initiatePayment({ method: "DEMO", currency: "XOF", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" });
     } catch (err) {
       expect((err as ApiError).statusCode).toBe(400);
     }
@@ -73,6 +74,7 @@ describe("initiatePayment", () => {
 
     const result = await initiatePayment({
       method: "PAYDUNYA",
+      currency: "XOF",
       amount: 25000,
       invoiceId: "inv-2",
       payerEmail: "a@test.local",
@@ -85,6 +87,7 @@ describe("initiatePayment", () => {
   it("BANK_TRANSFER : renvoie toujours PENDING_VALIDATION, jamais un accès immédiat", async () => {
     const result = await initiatePayment({
       method: "BANK_TRANSFER",
+      currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
       payerEmail: "test@test.local",
@@ -98,6 +101,7 @@ describe("initiatePayment", () => {
   it("BANK_TRANSFER : génère une référence par défaut si aucune n'est fournie", async () => {
     const result = await initiatePayment({
       method: "BANK_TRANSFER",
+      currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
       payerEmail: "test@test.local",
@@ -111,6 +115,7 @@ describe("initiatePayment", () => {
 
     const result = await initiatePayment({
       method: "STRIPE",
+      currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
       payerEmail: "test@test.local",
@@ -125,11 +130,11 @@ describe("initiatePayment", () => {
     env.payments.stripeSecretKey = "sk_test_fake_key";
 
     await expect(
-      initiatePayment({ method: "STRIPE", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
+      initiatePayment({ method: "STRIPE", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
     ).rejects.toThrow(ApiError);
 
     try {
-      await initiatePayment({ method: "STRIPE", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" });
+      await initiatePayment({ method: "STRIPE", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" });
     } catch (err) {
       expect((err as ApiError).statusCode).toBe(503);
     }
@@ -151,6 +156,7 @@ describe("initiatePayment", () => {
     try {
       await initiatePayment({
         method: "PAYDUNYA",
+        currency: "XOF",
         amount: 25000,
         invoiceId: "inv-1",
         payerEmail: "a@test.local",
@@ -177,6 +183,7 @@ describe("initiatePayment", () => {
 
     const result = await initiatePayment({
       method: "PAYDUNYA",
+      currency: "XOF",
       amount: 25000,
       invoiceId: "inv-1",
       payerEmail: "a@test.local",
@@ -196,6 +203,7 @@ describe("initiatePayment", () => {
     try {
       await initiatePayment({
         method: "STRIPE",
+        currency: "XOF",
         amount: 29,
         invoiceId: "inv-1",
         payerEmail: "a@test.local",
@@ -206,6 +214,38 @@ describe("initiatePayment", () => {
       expect((err as ApiError).statusCode).toBe(503);
     }
 
+    expect(journal).toHaveBeenCalled();
+    journal.mockRestore();
+  });
+
+  it("PAYDUNYA : refuse (503) un montant libellé dans une autre devise que celle du compte", async () => {
+    // L'API PayDunya ne transporte pas de devise : `total_amount` est lu dans
+    // celle du compte. Un abonnement affiché 29 € envoyé tel quel sur un
+    // compte sénégalais aurait été facturé 29 FCFA, soit environ quatre
+    // centimes — et la souscription aurait paru réussir.
+    env.payments.demoMode = false;
+    env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk", currency: "XOF" };
+    const journal = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      await initiatePayment({
+        method: "PAYDUNYA",
+        currency: "EUR",
+        amount: 29,
+        invoiceId: "sub-1",
+        payerEmail: "a@test.local",
+      });
+      expect.unreachable("un montant en EUR ne doit pas partir vers un compte en XOF");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
+      expect((err as ApiError).statusCode).toBe(503);
+      expect((err as ApiError).message).toContain("EUR");
+    }
+
+    // Rien n'est parti sur le réseau : le refus précède l'appel.
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(journal).toHaveBeenCalled();
     journal.mockRestore();
   });
@@ -228,6 +268,7 @@ describe("initiatePayment", () => {
 
     const result = await initiatePayment({
       method: "PAYDUNYA",
+      currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
       payerEmail: "test@test.local",
@@ -255,7 +296,7 @@ describe("initiatePayment", () => {
     );
 
     await expect(
-      initiatePayment({ method: "PAYDUNYA", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
+      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
     ).rejects.toThrow(ApiError);
   });
 
@@ -271,7 +312,7 @@ describe("initiatePayment", () => {
     );
 
     await expect(
-      initiatePayment({ method: "PAYDUNYA", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
+      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
     ).rejects.toThrow(ApiError);
   });
 });

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Capacitor } from "@capacitor/core";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
+import { CurrencyProvider } from "../../context/CurrencyContext";
 import type { AuthUser, SubscriptionInfo, SubscriptionPlanDetail } from "../../types";
 import SubscriptionPage from "./SubscriptionPage";
 
@@ -34,6 +35,7 @@ function plan(overrides: Partial<SubscriptionPlanDetail> = {}): SubscriptionPlan
     description: "Pour débuter en toute simplicité",
     monthlyPrice: 19,
     annualPrice: 182,
+    currency: "EUR",
     maxProperties: 5,
     popular: false,
     features: ["5 biens", "Support par email"],
@@ -75,7 +77,9 @@ function seedUser(user: AuthUser) {
 function renderPage() {
   return render(
     <AuthProvider>
-      <SubscriptionPage />
+      <CurrencyProvider>
+        <SubscriptionPage />
+      </CurrencyProvider>
     </AuthProvider>
   );
 }
@@ -85,6 +89,34 @@ describe("SubscriptionPage", () => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();
     mockedIsNativePlatform.mockReturnValue(false);
+  });
+
+  it("demande les tarifs dans la devise du gestionnaire et n'affiche jamais un symbole figé", async () => {
+    // Les prix étaient rendus par `{price} €` et par des libellés i18n
+    // contenant « € » : un gestionnaire réglant en FCFA voyait donc « 29 € »
+    // pour un montant que le backend allait facturer en francs CFA. Le
+    // symbole vient maintenant de la devise renvoyée avec le tarif.
+    localStorage.removeItem("app_currency");
+    seedUser(authUser({ currency: "XOF" }));
+    mockedApi.get.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.startsWith("/subscription/plans")
+          ? { data: [plan({ id: "PRO", name: "Pro", monthlyPrice: 15000, annualPrice: 144000, currency: "XOF" })] }
+          : { data: { history: [] } }
+      ) as never
+    );
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Pro")).toBeInTheDocument());
+
+    // La devise voyage jusqu'à la requête : sans cela le backend tarifierait en euros.
+    const urls = mockedApi.get.mock.calls.map((appel) => String(appel[0]));
+    expect(urls.some((url) => url.includes("/subscription/plans") && url.includes("currency=XOF"))).toBe(true);
+
+    // Et le montant est rendu dans cette devise, sans euro nulle part.
+    expect(screen.getByText((texte) => texte.includes("FCFA"))).toBeInTheDocument();
+    expect(screen.queryByText((texte) => texte.includes("€"))).not.toBeInTheDocument();
   });
 
   it("affiche le statut d'essai et les formules disponibles", async () => {

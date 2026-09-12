@@ -183,6 +183,9 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
   const result = await initiatePayment({
     method: body.method as PaymentMethodKey,
     amount: row.invoice.amount,
+    // Chaque facture porte sa devise (invoices.currency) : un loyer saisi en
+    // EUR ne doit pas partir vers un prestataire qui encaisse en FCFA.
+    currency: row.invoice.currency,
     invoiceId: row.invoice.id,
     payerEmail: row.tenant.email,
     bankReference: body.bankReference,

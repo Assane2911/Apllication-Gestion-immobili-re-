@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
 import { api, apiErrorMessage } from "../../api/client";
 import { useAuth } from "../../context/auth";
+import { useCurrency } from "../../context/currency";
 import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
 
 interface SubscriptionHistoryRecord {
@@ -21,6 +22,7 @@ interface SubscriptionHistoryRecord {
 export default function SubscriptionPage() {
   const { t, i18n } = useTranslation();
   const { user, refreshUser } = useAuth();
+  const { currency, formatMoney } = useCurrency();
   const [plans, setPlans] = useState<SubscriptionPlanDetail[]>([]);
   const [history, setHistory] = useState<SubscriptionHistoryRecord[]>([]);
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
@@ -52,7 +54,7 @@ export default function SubscriptionPage() {
   function loadData() {
     setLoading(true);
     Promise.all([
-      api.get<SubscriptionPlanDetail[]>("/subscription/plans"),
+      api.get<SubscriptionPlanDetail[]>(`/subscription/plans?currency=${encodeURIComponent(currency)}`),
       api.get<{ history: SubscriptionHistoryRecord[] }>("/subscription/status"),
     ])
       .then(([plansRes, statusRes]) => {
@@ -63,9 +65,12 @@ export default function SubscriptionPage() {
       .finally(() => setLoading(false));
   }
 
+  // Les tarifs dépendent de la devise : en changer doit les recharger, sinon
+  // l'écran afficherait des montants dans une devise qu'il n'a plus.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currency]);
 
   async function handleSubscribe() {
     if (!selectedPlan) return;
@@ -245,11 +250,11 @@ export default function SubscriptionPage() {
               </div>
 
               <div className="mb-6 flex items-baseline gap-1">
-                <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{price} €</span>
+                <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{formatMoney(price, plan.currency)}</span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t("manager.subscription.perMonth")}</span>
                 {billingCycle === "ANNUAL" && (
                   <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-1">
-                    {t("manager.subscription.billedAnnually", { amount: plan.annualPrice })}
+                    {t("manager.subscription.billedAnnually", { amount: formatMoney(plan.annualPrice, plan.currency) })}
                   </span>
                 )}
               </div>
@@ -300,8 +305,8 @@ export default function SubscriptionPage() {
                   {t("manager.subscription.amountToPay")}{" "}
                   <strong>
                     {billingCycle === "ANNUAL"
-                      ? `${selectedPlan.annualPrice} ${t("manager.subscription.perYearShort")}`
-                      : `${selectedPlan.monthlyPrice} ${t("manager.subscription.perMonthShort")}`}
+                      ? `${formatMoney(selectedPlan.annualPrice, selectedPlan.currency)} ${t("manager.subscription.perYearShort")}`
+                      : `${formatMoney(selectedPlan.monthlyPrice, selectedPlan.currency)} ${t("manager.subscription.perMonthShort")}`}
                   </strong>
                 </p>
               </div>
