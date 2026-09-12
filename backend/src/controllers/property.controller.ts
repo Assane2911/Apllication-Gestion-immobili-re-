@@ -101,12 +101,18 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
   if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
 
-  const activeContracts = await db
+  const propertyContracts = await db
     .select()
     .from(contracts)
     .where(eq(contracts.propertyId, req.params.id));
-  if (activeContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
+  if (propertyContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
     throw new ApiError(409, "Impossible de supprimer un bien ayant un contrat actif");
+  }
+  if (propertyContracts.length > 0) {
+    throw new ApiError(
+      409,
+      "Impossible de supprimer un bien ayant un historique de contrats. Veuillez d'abord supprimer les contrats associés."
+    );
   }
 
   await db.delete(properties).where(eq(properties.id, req.params.id));

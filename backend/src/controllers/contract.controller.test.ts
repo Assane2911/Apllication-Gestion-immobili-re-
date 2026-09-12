@@ -61,6 +61,41 @@ describe("POST /api/contracts", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("refuse de créer un contrat actif qui chevauche un contrat actif existant sur le même bien", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant1 = await createTenant(manager.id);
+    const tenant2 = await createTenant(manager.id);
+    const token = tokenFor(manager);
+
+    const first = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(token))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant1.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: "2026-06-01",
+        endDate: "2027-05-31",
+      });
+    expect(first.status).toBe(201);
+
+    const overlapping = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(token))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant2.id,
+        rent: 600,
+        deposit: 1200,
+        startDate: "2026-09-01",
+        endDate: "2027-08-31",
+      });
+    expect(overlapping.status).toBe(409);
+    expect(overlapping.body.error).toContain("contrat actif");
+  });
 });
 
 describe("GET /api/contracts/:id — isolation entre gestionnaires", () => {

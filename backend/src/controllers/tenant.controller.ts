@@ -13,7 +13,7 @@ const tenantSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phone: z.string().min(6),
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.trim().toLowerCase()),
 });
 
 export const listTenants = asyncHandler(async (req: Request, res: Response) => {
@@ -111,9 +111,25 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
   if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
 
-  const tenantContracts = await db.select().from(contracts).where(eq(contracts.tenantId, req.params.id));
+  const [tenantContracts, tenantIssues] = await Promise.all([
+    db.select().from(contracts).where(eq(contracts.tenantId, req.params.id)),
+    db.select().from(issueReports).where(eq(issueReports.tenantId, req.params.id)),
+  ]);
+
   if (tenantContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
     throw new ApiError(409, "Impossible de supprimer un locataire ayant un contrat actif");
+  }
+  if (tenantContracts.length > 0) {
+    throw new ApiError(
+      409,
+      "Impossible de supprimer un locataire associé à un historique de contrats. Veuillez d'abord supprimer les contrats associés."
+    );
+  }
+  if (tenantIssues.length > 0) {
+    throw new ApiError(
+      409,
+      "Impossible de supprimer un locataire ayant des signalements d'incidents enregistrés."
+    );
   }
 
   await db.delete(tenants).where(eq(tenants.id, req.params.id));

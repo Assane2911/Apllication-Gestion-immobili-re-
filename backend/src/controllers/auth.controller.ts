@@ -21,12 +21,12 @@ function hashToken(rawToken: string): string {
 }
 
 const registerManagerSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.trim().toLowerCase()),
   password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1),
 });
 
@@ -212,7 +212,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const resendVerificationSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.trim().toLowerCase()),
 });
 
 /**
@@ -273,7 +273,7 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.trim().toLowerCase()),
 });
 
 /**

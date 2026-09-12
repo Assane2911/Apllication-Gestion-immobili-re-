@@ -84,6 +84,21 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
 
     expect(res.status).toBe(403);
   });
+
+  it("refuse de générer une quittance pour une facture impayée (statut PENDING)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, { status: "PENDING" });
+
+    const res = await request(app)
+      .get(`/api/documents/receipt/${invoice.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("PAID");
+  });
 });
 
 describe("GET /api/documents/lease/:contractId", () => {

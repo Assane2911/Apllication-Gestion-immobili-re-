@@ -186,6 +186,9 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
   if (contract.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
+  if (contract.status !== "ACTIVE") {
+    throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif");
+  }
 
   const photoUrl = await uploadPrivateFile(req.file, "issues");
 

@@ -29,6 +29,12 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
     throw new ApiError(403, "Accès refusé");
   }
 
+  // Une quittance de loyer atteste juridiquement du paiement effectif du loyer :
+  // elle ne peut être délivrée que si la facture est acquittée (PAID).
+  if (invoice.status !== "PAID") {
+    throw new ApiError(400, "Une quittance de loyer ne peut être générée que pour une facture réglée (statut PAID)");
+  }
+
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
 
   // Récupérer les paramètres d'agence du gestionnaire propriétaire du bien

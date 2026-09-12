@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
@@ -86,6 +86,25 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
   if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
   if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+
+  const contractStatus = body.status ?? "ACTIVE";
+  if (contractStatus === "ACTIVE") {
+    const existingActive = await db
+      .select()
+      .from(contracts)
+      .where(and(eq(contracts.propertyId, body.propertyId), eq(contracts.status, "ACTIVE")));
+
+    const hasOverlap = existingActive.some(
+      (c: typeof contracts.$inferSelect) => new Date(c.startDate) < body.endDate && new Date(c.endDate) > body.startDate
+    );
+
+    if (hasOverlap) {
+      throw new ApiError(
+        409,
+        "Ce bien fait déjà l'objet d'un contrat actif sur cette période. Clôturez le contrat en cours avant d'en créer un nouveau."
+      );
+    }
+  }
 
   // Hérite de la devise spécifiée ou de celle du bien par défaut.
   const contractValues = {

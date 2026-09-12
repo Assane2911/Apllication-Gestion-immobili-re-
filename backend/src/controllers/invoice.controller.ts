@@ -178,6 +178,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
   if (!row) throw new ApiError(404, "Facture introuvable");
   if (row.contract.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
   if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée");
+  if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée");
 
   const result = await initiatePayment({
     method: body.method as PaymentMethodKey,
