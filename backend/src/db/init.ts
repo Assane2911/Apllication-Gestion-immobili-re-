@@ -1,7 +1,5 @@
 import { sql } from "drizzle-orm";
 import { db } from "./client";
-import { users } from "./schema";
-import { seedDatabase } from "../seed";
 
 export async function initDb() {
   try {
@@ -256,12 +254,17 @@ export async function initDb() {
 
     console.log("✅ Tables et types de base de données initialisés avec succès.");
 
-    // Auto-seed if database is empty
-    const existingUsers = await db.select().from(users);
-    if (existingUsers.length === 0) {
-      console.log("🌱 Aucune donnée détectée — injection automatique du seed de démo...");
-      await seedDatabase();
-    }
+    // L'injection automatique de données de démonstration a été RETIRÉE d'ici.
+    // Elle se déclenchait dès qu'une base était vide, sans autre condition :
+    // un démarrage local pointé sur la base de production (DATABASE_URL mal
+    // positionnée) y créait donc des comptes dont le mot de passe était écrit
+    // dans le code — et le dépôt est public. Une base vide n'est pas une
+    // invitation à créer des comptes.
+    //
+    // Le seed reste disponible, mais toujours de façon explicite :
+    //     npm run seed
+    // et il refuse désormais toute base non locale (voir refusDeSeed dans
+    // src/seed.ts).
   } catch (err) {
     console.error("[db] Erreur lors de l'initialisation du schéma :", err);
     throw err;

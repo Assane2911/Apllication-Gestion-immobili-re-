@@ -62,8 +62,18 @@ Dans `backend/.env` (copié depuis `.env.example`), renseignez `DATABASE_URL`, `
 cd backend
 npm install
 npm run db:push   # crée les tables dans votre base Supabase
-npm run seed       # (optionnel) données de démonstration
 ```
+
+> ⚠️ **Ne lancez pas `npm run seed` sur cette base.** Le seed crée des comptes de
+> démonstration destinés au développement local. Lancé sur la base Supabase, il y
+> crée des comptes accessibles depuis l'application déployée — c'est exactement ce
+> qui s'est produit, et deux comptes de démonstration se sont retrouvés en
+> production avec un mot de passe alors écrit en clair dans le dépôt.
+>
+> Le script refuse désormais toute base non locale, et génère un mot de passe
+> aléatoire affiché une seule fois (voir `refusDeSeed` dans `backend/src/seed.ts`).
+> Pour peupler une base **locale** : pointez `DATABASE_URL` sur `localhost`, puis
+> `npm run seed`.
 
 ---
 

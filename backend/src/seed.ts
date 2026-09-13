@@ -1,15 +1,86 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { asc, eq } from "drizzle-orm";
 import { db } from "./db/client";
 import { contracts, invoices, properties, tenants, users } from "./db/schema";
 import { generateInvoicesForContract } from "./services/invoice.service";
 
+/**
+ * Le seed a-t-il le droit de s'exécuter sur la base actuellement configurée ?
+ * Renvoie `null` si oui, sinon la raison du refus.
+ *
+ * Pourquoi ce garde-fou existe. Ce fichier créait des comptes de
+ * démonstration avec un mot de passe écrit en clair dans le code — donc
+ * publié, puisque le dépôt est public. Ces comptes se sont retrouvés dans la
+ * base de PRODUCTION : un `npm run seed` (ou un `npm run dev`, qui déclenchait
+ * alors un seed automatique) lancé avec DATABASE_URL pointant sur Supabase
+ * suffisait. N'importe qui lisant le dépôt pouvait ensuite se connecter à la
+ * plateforme en gestionnaire.
+ *
+ * Deux verrous, parce qu'un seul n'aurait pas suffi :
+ *
+ *  - le premier refuse la production (NODE_ENV, VERCEL) ;
+ *  - le second refuse toute base NON LOCALE, et c'est celui qui aurait
+ *    réellement évité l'incident : la machine était en développement, seule
+ *    l'URL de base pointait ailleurs. Un `SEED_ALLOW_REMOTE=true` explicite
+ *    reste possible pour un cas légitime (base de test distante), mais il faut
+ *    alors l'écrire soi-même — ce n'est plus un défaut silencieux.
+ */
+export function refusDeSeed(): { raison: string } | null {
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    return { raison: "environnement de production" };
+  }
+
+  const url = process.env.DATABASE_URL ?? "";
+  if (!url) {
+    return { raison: "DATABASE_URL absente" };
+  }
+
+  if (!estBaseLocale(url) && process.env.SEED_ALLOW_REMOTE !== "true") {
+    return {
+      raison:
+        `la base visée n'est pas locale (${hoteDe(url) ?? "hôte illisible"}). ` +
+        `Si c'est volontaire, relance avec SEED_ALLOW_REMOTE=true`,
+    };
+  }
+
+  return null;
+}
+
+function hoteDe(url: string): string | null {
+  try {
+    return new URL(url).hostname || null;
+  } catch {
+    return null;
+  }
+}
+
+function estBaseLocale(url: string): boolean {
+  const hote = hoteDe(url);
+  if (!hote) return false;
+  return ["localhost", "127.0.0.1", "::1", "0.0.0.0", "[::1]"].includes(hote);
+}
+
 export async function seedDatabase() {
+  const refus = refusDeSeed();
+  if (refus) {
+    throw new Error(
+      `Seed refusé : ${refus.raison}. Ce script crée des comptes de démonstration — ` +
+        `il ne doit jamais toucher une base réelle.`
+    );
+  }
+
   console.log("🌱 Seed de la base de données...");
 
   const managerEmail = "gestionnaire@demo.com";
-  const managerPassword = "Demo1234!";
-  const tenantPassword = "Demo1234!";
+  // Mot de passe ALÉATOIRE, affiché une seule fois. Un mot de passe fixe dans
+  // le code est un identifiant publié : c'est précisément ce qui a ouvert la
+  // plateforme de production. SEED_PASSWORD permet d'en fixer un pour un usage
+  // local répétable, mais ce n'est jamais la valeur par défaut.
+  const motDePasse = process.env.SEED_PASSWORD ?? crypto.randomBytes(9).toString("base64url");
+  const managerPassword = motDePasse;
+  const tenantPassword = motDePasse;
+  let comptesCrees = false;
 
   let [existingManager] = await db.select().from(users).where(eq(users.email, managerEmail));
   const trialEndsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 jours d'essai gratuit
@@ -27,7 +98,8 @@ export async function seedDatabase() {
       })
       .returning();
     existingManager = created;
-    console.log(`👤 Compte gestionnaire créé: ${managerEmail} / ${managerPassword} (Essai: 10 jours)`);
+    comptesCrees = true;
+    console.log(`👤 Compte gestionnaire créé : ${managerEmail} (essai : 10 jours)`);
   } else {
     await db
       .update(users)
@@ -128,13 +200,24 @@ export async function seedDatabase() {
   }
 
   console.log("✅ Seed terminé.");
+
+  if (comptesCrees) {
+    console.log("");
+    console.log("   ┌─────────────────────────────────────────────────────────");
+    console.log(`   │ Mot de passe des comptes de démonstration : ${motDePasse}`);
+    console.log("   │ Généré aléatoirement, affiché une seule fois — note-le.");
+    console.log("   └─────────────────────────────────────────────────────────");
+    console.log("");
+  }
 }
 
 if (process.argv[1]?.includes("seed")) {
   seedDatabase()
     .then(() => process.exit(0))
     .catch((e) => {
-      console.error(e);
+      // Un refus du garde-fou n'est pas un plantage : on affiche la raison
+      // seule, sans pile d'appels, pour que le message soit lisible.
+      console.error(e instanceof Error ? `\n❌ ${e.message}\n` : e);
       process.exit(1);
     });
 }
