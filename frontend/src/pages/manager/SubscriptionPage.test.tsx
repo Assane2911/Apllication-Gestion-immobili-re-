@@ -117,11 +117,80 @@ function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
 
 describe("SubscriptionPage", () => {
   beforeEach(() => {
+    window.history.replaceState({}, "", "/");
     fileGet.length = 0;
     mockedApi.get.mockReset();
     installerGet();
     mockedApi.post.mockReset();
     mockedIsNativePlatform.mockReturnValue(false);
+  });
+
+  it("annonce le retour d'un paiement et nettoie l'URL", async () => {
+    // Stripe et PayDunya ramènent le payeur avec ?stripe=succes. Personne ne
+    // lisait ce paramètre : le client revenait sans message, son abonnement
+    // pas encore confirmé (le webhook arrive en parallèle), et pouvait croire
+    // à un échec puis payer une seconde fois.
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+    window.history.replaceState({}, "", "/subscription?stripe=succes");
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getByText(/confirmation arrive dans quelques instants/i)).toBeInTheDocument()
+    );
+
+    // Le paramètre disparaît : un rafraîchissement ne doit pas ré-annoncer un
+    // paiement déjà traité.
+    expect(window.location.search).not.toContain("stripe");
+  });
+
+  it("distingue un paiement annulé d'un paiement transmis", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+    window.history.replaceState({}, "", "/subscription?stripe=annule");
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText(/Aucun montant n'a été débité/i)).toBeInTheDocument());
+    expect(screen.queryByText(/confirmation arrive dans quelques instants/i)).not.toBeInTheDocument();
+  });
+
+  it("recharge les données après le retour, pour laisser au webhook le temps d'arriver", async () => {
+    // Un seul rechargement immédiat devancerait presque toujours la
+    // confirmation et afficherait un état périmé.
+    vi.useFakeTimers();
+    try {
+      seedUser(authUser());
+      installerGet();
+      mockedApi.get.mockImplementation((url: string) =>
+        Promise.resolve(
+          String(url).startsWith("/payments/methods")
+            ? { data: { currency: "EUR", methods: MOYENS_PAR_DEFAUT } }
+            : String(url).startsWith("/subscription/plans")
+              ? { data: [plan({ id: "STARTER" })] }
+              : { data: { history: [] } }
+        ) as never
+      );
+      window.history.replaceState({}, "", "/subscription?stripe=succes");
+
+      renderPage();
+      await vi.advanceTimersByTimeAsync(50);
+      const avant = mockedApi.get.mock.calls.filter((appel) =>
+        String(appel[0]).startsWith("/subscription/plans")
+      ).length;
+
+      await vi.advanceTimersByTimeAsync(11000);
+      const apres = mockedApi.get.mock.calls.filter((appel) =>
+        String(appel[0]).startsWith("/subscription/plans")
+      ).length;
+
+      expect(apres).toBeGreaterThan(avant);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("ne propose que les moyens de paiement renvoyés par le serveur", async () => {

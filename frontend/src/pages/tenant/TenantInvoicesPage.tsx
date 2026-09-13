@@ -1,4 +1,4 @@
-import { CheckCircle2, Download } from "lucide-react";
+import { CheckCircle2, Clock, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
@@ -6,6 +6,7 @@ import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
+import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { Invoice, PaymentMethod } from "../../types";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
@@ -42,6 +43,8 @@ export default function TenantInvoicesPage() {
   }
 
   useEffect(load, []);
+
+  const retourPaiement = useRetourDePaiement(load);
 
   async function pay(invoiceId: string, method: PaymentMethod) {
     setError(null);
@@ -84,6 +87,19 @@ export default function TenantInvoicesPage() {
           </div>
         )}
       </div>
+
+      {/* Retour d'un prestataire de paiement : voir useRetourDePaiement. */}
+      {retourPaiement === "succes" && (
+        <div className="text-sm bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-sky-800 dark:text-sky-300 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
+          <Clock size={16} />
+          <span>{t("common.payment.returned")}</span>
+        </div>
+      )}
+      {retourPaiement === "annule" && (
+        <div className="text-sm bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 rounded-xl px-4 py-3 shadow-2xs">
+          {t("common.payment.cancelled")}
+        </div>
+      )}
 
       {message && (
         <div className="text-sm bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">

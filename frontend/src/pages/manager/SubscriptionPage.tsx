@@ -5,6 +5,7 @@ import { api, apiErrorMessage } from "../../api/client";
 import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
+import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
 
 interface SubscriptionHistoryRecord {
@@ -76,6 +77,10 @@ export default function SubscriptionPage() {
     loadData();
   }, [currency]);
 
+  // Doit venir APRÈS la définition de loadData : le hook la rappelle plusieurs
+  // fois pour laisser au webhook le temps d'arriver.
+  const retourPaiement = useRetourDePaiement(loadData);
+
   async function handleSubscribe() {
     if (!selectedPlan) return;
     setSubscribing(true);
@@ -123,6 +128,21 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Messages */}
+      {/* Retour d'un prestataire de paiement (Stripe ou PayDunya) : la
+          confirmation arrive par webhook, donc parfois après le retour du
+          navigateur — d'où un message distinct du succès immédiat. */}
+      {retourPaiement === "succes" && (
+        <div className="bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-sky-800 dark:text-sky-300 px-4 py-3 rounded-xl flex items-center gap-2">
+          <span>⏳</span>
+          <span className="text-sm font-medium">{t("common.payment.returned")}</span>
+        </div>
+      )}
+      {retourPaiement === "annule" && (
+        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl flex items-center gap-2">
+          <span>↩️</span>
+          <span className="text-sm font-medium">{t("common.payment.cancelled")}</span>
+        </div>
+      )}
       {successMessage && (
         <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl flex items-center gap-2">
           <span>🎉</span>

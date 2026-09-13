@@ -2,6 +2,10 @@ import type { TranslationSchema } from "./fr";
 
 const en: TranslationSchema = {
   common: {
+    payment: {
+      returned: "Payment submitted. Confirmation arrives in a few moments — this page updates on its own.",
+      cancelled: "Payment cancelled. No amount was charged.",
+    },
     appName: "ImmoPlatform Pro",
     actions: {
       save: "Save",

@@ -1,5 +1,9 @@
 const fr = {
   common: {
+    payment: {
+      returned: "Paiement transmis. La confirmation arrive dans quelques instants — cette page se met à jour toute seule.",
+      cancelled: "Paiement annulé. Aucun montant n'a été débité.",
+    },
     appName: "ImmoPlatform Pro",
     actions: {
       save: "Enregistrer",
