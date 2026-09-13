@@ -38,7 +38,9 @@ export default function TenantInvoicesPage() {
   function load() {
     api
       .get<Invoice[]>("/invoices/mine")
-      .then((res) => setInvoices(res.data))
+      // Même précaution que sur l'écran d'abonnement : un corps inattendu
+      // plantait le rendu sur `invoices.find`.
+      .then((res) => setInvoices(Array.isArray(res.data) ? res.data : []))
       .catch((err) => setError(apiErrorMessage(err)));
   }
 

@@ -65,7 +65,19 @@ function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
       return Promise.resolve({ data: { currency: "EUR", methods: moyens } }) as never;
     }
     const suivant = fileGet.shift();
-    if (!suivant) return Promise.resolve({ data: undefined }) as never;
+    if (!suivant) {
+      // La file s'epuise des que la page recharge plus de fois que le test n'a
+      // prevu de reponses -- ce qui arrive normalement : changement de devise,
+      // rechargements apres un retour de paiement. Renvoyer `undefined`
+      // injectait une valeur impossible dans l'etat du composant, et
+      // l'exception remontait APRES la fin du test : les tests passaient, mais
+      // vitest sortait en erreur et la CI echouait. On renvoie donc une
+      // reponse vide mais valide, conforme a la forme attendue par l'appelant.
+      if (String(url).startsWith("/subscription/status")) {
+        return Promise.resolve({ data: { history: [] } }) as never;
+      }
+      return Promise.resolve({ data: [] }) as never;
+    }
     return (suivant.ok ? Promise.resolve(suivant.valeur) : Promise.reject(suivant.valeur)) as never;
   });
 }

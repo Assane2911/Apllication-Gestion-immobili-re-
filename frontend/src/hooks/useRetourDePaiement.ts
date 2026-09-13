@@ -24,10 +24,19 @@ export function useRetourDePaiement(recharger: () => void): RetourDePaiement {
   const [retour, setRetour] = useState<RetourDePaiement>(null);
 
   // La fonction de rechargement est souvent redéfinie à chaque rendu ; la
-  // passer en dépendance relancerait l'effet en boucle. On garde la dernière
-  // version dans une référence, et l'effet ne s'exécute qu'au montage.
+  // passer en dépendance relancerait l'effet en boucle. On garde donc la
+  // dernière version dans une référence, et l'effet principal ne s'exécute
+  // qu'au montage.
+  //
+  // La mise à jour se fait dans un effet et NON pendant le rendu : écrire dans
+  // une ref pendant le rendu est un anti-patron React (le rendu doit rester
+  // pur, et React peut l'interrompre ou le rejouer). Les minuteries ne
+  // déclenchent rien avant deux secondes, donc l'effet a largement le temps
+  // d'avoir posé la bonne version.
   const rechargerRef = useRef(recharger);
-  rechargerRef.current = recharger;
+  useEffect(() => {
+    rechargerRef.current = recharger;
+  }, [recharger]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
 import { api, apiErrorMessage } from "../../api/client";
@@ -56,26 +56,35 @@ export default function SubscriptionPage() {
     }
   }, [moyensDisponibles, selectedMethod]);
 
-  function loadData() {
+  const loadData = useCallback(() => {
     setLoading(true);
     Promise.all([
       api.get<SubscriptionPlanDetail[]>(`/subscription/plans?currency=${encodeURIComponent(currency)}`),
       api.get<{ history: SubscriptionHistoryRecord[] }>("/subscription/status"),
     ])
       .then(([plansRes, statusRes]) => {
-        setPlans(plansRes.data);
-        setHistory(statusRes.data.history || []);
+        // Un corps de réponse inattendu (204, réponse vide, proxy qui tronque)
+        // mettait `undefined` dans l'état, et le rendu suivant plantait sur
+        // `plans.map` — page blanche, sans message. La CI l'a révélé : vitest
+        // signale ces exceptions même quand tous les tests passent, et sort
+        // en erreur. L'état reste donc toujours un tableau.
+        setPlans(Array.isArray(plansRes.data) ? plansRes.data : []);
+        setHistory(Array.isArray(statusRes.data?.history) ? statusRes.data.history : []);
       })
       .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
-  }
+    // useCallback plutot qu'une simple fonction : loadData est passee a
+    // useRetourDePaiement et sert de dependance a l'effet ci-dessous.
+    // Redefinie a chaque rendu, elle aurait relance ces deux usages en
+    // boucle -- et la declarer stable vaut mieux que faire taire
+    // l'avertissement du linter.
+  }, [currency]);
 
   // Les tarifs dépendent de la devise : en changer doit les recharger, sinon
   // l'écran afficherait des montants dans une devise qu'il n'a plus.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadData();
-  }, [currency]);
+  }, [loadData]);
 
   // Doit venir APRÈS la définition de loadData : le hook la rappelle plusieurs
   // fois pour laisser au webhook le temps d'arriver.
