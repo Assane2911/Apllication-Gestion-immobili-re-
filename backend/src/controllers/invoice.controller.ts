@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -68,6 +68,47 @@ const markPaidSchema = z.object({
   paymentRef: z.string().optional(),
 });
 
+/**
+ * États depuis lesquels une facture peut encore changer.
+ *
+ * PAYÉE et ANNULÉE sont TERMINAUX. Rien ne l'imposait jusqu'ici, et cela
+ * coûtait trois choses :
+ *
+ *  - une facture réellement réglée pouvait être annulée tout en conservant son
+ *    paidAt et sa référence de paiement : le loyer disparaissait des
+ *    encaissements alors que l'argent avait été perçu ;
+ *  - une facture déjà réglée en ligne pouvait être re-marquée « payée à la
+ *    main », ce qui remplaçait la référence Stripe ou PayDunya par
+ *    `manuel_<horodatage>` — le lien avec le paiement réel était perdu, et le
+ *    locataire recevait une SECONDE quittance pour le même loyer ;
+ *  - une facture annulée pouvait être ressuscitée en « payée ».
+ *
+ * Corriger une erreur sur une facture réglée relève d'un avoir ou d'un
+ * remboursement, pas d'une réécriture silencieuse de l'historique.
+ */
+const ETATS_MODIFIABLES = ["PENDING", "LATE"] as const;
+
+/**
+ * Refuse une facture déjà dans un état terminal, avec un message qui dit
+ * laquelle des deux situations s'applique.
+ */
+function assertFactureModifiable(
+  facture: typeof invoices.$inferSelect,
+  operation: "regler" | "annuler"
+): void {
+  if (facture.status === "PAID") {
+    throw new ApiError(
+      409,
+      operation === "regler"
+        ? "Cette facture est déjà réglée."
+        : "Une facture réglée ne peut pas être annulée. Passez par un avoir ou un remboursement."
+    );
+  }
+  if (facture.status === "CANCELLED") {
+    throw new ApiError(409, "Cette facture a été annulée : elle ne peut plus être modifiée.");
+  }
+}
+
 async function assertInvoiceOwnership(invoiceId: string, managerId: string) {
   const [row] = await db
     .select({ invoice: invoices, property: properties })
@@ -83,6 +124,12 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
   const body = markPaidSchema.parse(req.body);
   const invoice = await assertInvoiceOwnership(req.params.id, req.user!.userId);
 
+  assertFactureModifiable(invoice, "regler");
+
+  // L'écriture est CONDITIONNÉE à l'état lu : la vérification ci-dessus et la
+  // mise à jour ne sont pas atomiques à elles deux, et deux clics simultanés
+  // pourraient toutes deux la franchir. En exigeant l'état dans le WHERE, une
+  // seule des deux écritures aboutit — la seconde ne renvoie aucune ligne.
   const [updated] = await db
     .update(invoices)
     .set({
@@ -91,8 +138,12 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
       paymentMethod: body.paymentMethod,
       paymentRef: body.paymentRef ?? `manuel_${Date.now()}`,
     })
-    .where(eq(invoices.id, req.params.id))
+    .where(and(eq(invoices.id, req.params.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
     .returning();
+
+  if (!updated) {
+    throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.");
+  }
 
   // Envoi de la quittance PDF par email au locataire — ne doit jamais faire
   // échouer la réponse si l'email ne part pas (SMTP non configuré, etc.).
@@ -120,8 +171,26 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
 });
 
 export const cancelInvoice = asyncHandler(async (req: Request, res: Response) => {
-  await assertInvoiceOwnership(req.params.id, req.user!.userId);
-  const [updated] = await db.update(invoices).set({ status: "CANCELLED" }).where(eq(invoices.id, req.params.id)).returning();
+  const invoice = await assertInvoiceOwnership(req.params.id, req.user!.userId);
+
+  // Annuler une facture déjà annulée n'est pas une erreur : un double clic ne
+  // doit pas produire un message d'échec. On renvoie la facture telle quelle,
+  // sans réécrire ni journaliser une seconde fois.
+  if (invoice.status === "CANCELLED") {
+    return res.json(invoice);
+  }
+
+  assertFactureModifiable(invoice, "annuler");
+
+  const [updated] = await db
+    .update(invoices)
+    .set({ status: "CANCELLED" })
+    .where(and(eq(invoices.id, req.params.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
+    .returning();
+
+  if (!updated) {
+    throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.");
+  }
 
   await logActivity({
     req,
@@ -192,6 +261,10 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     returnPath: "/portail/paiements",
   });
 
+  // Même précaution que pour le règlement manuel : la facture a pu être réglée
+  // pendant l'appel au prestataire (un webhook arrive vite). Sans cette
+  // condition, on écraserait la référence du paiement réellement encaissé par
+  // celle d'une session qui, elle, n'a rien encaissé.
   const [updated] = await db
     .update(invoices)
     .set({
@@ -199,8 +272,12 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
       paymentRef: result.reference,
       ...(result.status === "PAID" ? { status: "PAID" as const, paidAt: new Date() } : {}),
     })
-    .where(eq(invoices.id, row.invoice.id))
+    .where(and(eq(invoices.id, row.invoice.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
     .returning();
+
+  if (!updated) {
+    throw new ApiError(409, "Cette facture vient d'être réglée. Rechargez la page.");
+  }
 
   if (updated.status === "PAID") {
     await sendPaymentReceiptEmail(updated.id).catch((err) =>

@@ -20,6 +20,112 @@ async function setupManagerWithInvoice(overrides: Parameters<typeof createInvoic
   return { manager, property, tenant, contract, invoice };
 }
 
+/**
+ * Régressions sur les états terminaux d'une facture.
+ *
+ * PAYÉE et ANNULÉE étaient traversables dans les deux sens : aucune des trois
+ * routes ne regardait l'état courant avant d'écrire. Ces tests en font des
+ * états terminaux.
+ */
+describe("états terminaux d'une facture", () => {
+  it("refuse (409) de re-marquer payée une facture déjà réglée, et préserve la référence du paiement réel", async () => {
+    // Le cas coûteux : la facture a été réglée en ligne, sa référence est
+    // celle du prestataire. Un second « marquer payée » la remplaçait par
+    // `manuel_<horodatage>` — le rapprochement comptable devenait impossible —
+    // et renvoyait une SECONDE quittance au locataire pour le même loyer.
+    const { manager, invoice } = await setupManagerWithInvoice({
+      status: "PAID",
+      paidAt: new Date(2026, 5, 15),
+      paymentMethod: "PAYDUNYA",
+      paymentRef: "pd_token_reel_123",
+    });
+
+    const res = await request(app)
+      .post(`/api/invoices/${invoice.id}/mark-paid`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ paymentMethod: "BANK_TRANSFER" });
+
+    expect(res.status).toBe(409);
+
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.paymentRef).toBe("pd_token_reel_123");
+    expect(apres.paymentMethod).toBe("PAYDUNYA");
+  });
+
+  it("refuse (409) de ressusciter en payée une facture annulée", async () => {
+    const { manager, invoice } = await setupManagerWithInvoice({ status: "CANCELLED" });
+
+    const res = await request(app)
+      .post(`/api/invoices/${invoice.id}/mark-paid`)
+      .set(authHeader(tokenFor(manager)))
+      .send({});
+
+    expect(res.status).toBe(409);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("CANCELLED");
+  });
+
+  it("accepte de régler une facture en retard (LATE reste un état modifiable)", async () => {
+    // Le garde-fou ne doit pas bloquer le cas le plus courant : un loyer en
+    // retard que le gestionnaire encaisse enfin.
+    const { manager, invoice } = await setupManagerWithInvoice({ status: "LATE" });
+
+    const res = await request(app)
+      .post(`/api/invoices/${invoice.id}/mark-paid`)
+      .set(authHeader(tokenFor(manager)))
+      .send({});
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("PAID");
+  });
+
+  it("refuse (409) d'annuler une facture réglée, et lui laisse ses traces de paiement", async () => {
+    // Sans cette garde, la facture passait à ANNULÉE en CONSERVANT paidAt et
+    // sa référence : un loyer réellement encaissé disparaissait des recettes
+    // tout en gardant les preuves du paiement.
+    const paidAt = new Date(2026, 5, 15);
+    const { manager, invoice } = await setupManagerWithInvoice({
+      status: "PAID",
+      paidAt,
+      paymentMethod: "PAYDUNYA",
+      paymentRef: "pd_token_reel_456",
+    });
+
+    const res = await request(app)
+      .post(`/api/invoices/${invoice.id}/cancel`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("PAID");
+    expect(apres.paidAt?.getTime()).toBe(paidAt.getTime());
+  });
+
+  it("annuler deux fois n'est pas une erreur : la seconde fois ne change rien", async () => {
+    const { manager, invoice } = await setupManagerWithInvoice();
+
+    const premier = await request(app)
+      .post(`/api/invoices/${invoice.id}/cancel`)
+      .set(authHeader(tokenFor(manager)));
+    expect(premier.status).toBe(200);
+
+    const second = await request(app)
+      .post(`/api/invoices/${invoice.id}/cancel`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(second.status).toBe(200);
+    expect(second.body.status).toBe("CANCELLED");
+
+    // Et l'action n'est journalisée qu'une seule fois.
+    const journal = await testDb
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.entityId, invoice.id));
+    expect(journal.filter((ligne: typeof activityLogs.$inferSelect) => ligne.action === "invoice.cancel")).toHaveLength(1);
+  });
+});
+
 describe("POST /api/invoices/:id/mark-paid", () => {
   it("marque une facture réglée manuellement, avec la méthode par défaut, et journalise l'action", async () => {
     const { manager, invoice } = await setupManagerWithInvoice();
