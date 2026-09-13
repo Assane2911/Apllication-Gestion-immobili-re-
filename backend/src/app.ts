@@ -20,6 +20,7 @@ import messageRoutes from "./routes/message.routes";
 import notificationRoutes from "./routes/notification.routes";
 import paydunyaRoutes from "./routes/paydunya.routes";
 import paymentRoutes from "./routes/payment.routes";
+import stripeRoutes from "./routes/stripe.routes";
 import propertyRoutes from "./routes/property.routes";
 import searchRoutes from "./routes/search.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
@@ -71,6 +72,12 @@ app.use(
     credentials: true,
   })
 );
+// AVANT express.json : la signature du webhook Stripe porte sur les octets
+// exacts du corps. Une fois analysé puis re-sérialisé, le JSON ne redonne pas
+// la même empreinte (ordre des clés, espaces), et toute confirmation de
+// paiement serait rejetée. Ce montage doit donc rester en amont.
+app.use("/api/payments/stripe/webhook", express.raw({ type: "*/*" }));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -98,6 +105,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/activity-log", activityLogRoutes);
 app.use("/api/cron", cronRoutes);
 app.use("/api/payments/paydunya", paydunyaRoutes);
+app.use("/api/payments/stripe", stripeRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 

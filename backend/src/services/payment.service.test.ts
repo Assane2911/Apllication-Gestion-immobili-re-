@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
 import { ApiError } from "../utils/asyncHandler";
-import { initiatePayment, MOYENS_DE_PAIEMENT, moyensDePaiementDisponibles } from "./payment.service";
+import {
+  initiatePayment,
+  MOYENS_DE_PAIEMENT,
+  moyensDePaiementDisponibles,
+  versPlusPetiteUnite,
+} from "./payment.service";
 
 /**
  * payment.service.ts n'avait aucun test direct : il n'était exercé qu'en
@@ -16,12 +21,16 @@ describe("initiatePayment", () => {
   const original = {
     demoMode: env.payments.demoMode,
     stripeSecretKey: env.payments.stripeSecretKey,
+    stripeWebhookSecret: env.payments.stripeWebhookSecret,
+    stripeCurrencies: [...env.payments.stripeCurrencies],
     paydunya: { ...env.payments.paydunya },
   };
 
   afterEach(() => {
     env.payments.demoMode = original.demoMode;
     env.payments.stripeSecretKey = original.stripeSecretKey;
+    env.payments.stripeWebhookSecret = original.stripeWebhookSecret;
+    env.payments.stripeCurrencies = [...original.stripeCurrencies];
     env.payments.paydunya = { ...original.paydunya };
     vi.unstubAllGlobals();
   });
@@ -125,19 +134,146 @@ describe("initiatePayment", () => {
     expect(result.method).toBe("STRIPE");
   });
 
-  it("STRIPE : échoue clairement (503) hors mode démo si une clé est configurée, plutôt qu'une fausse redirection", async () => {
+  it("STRIPE : refuse (503) sans secret de webhook, car le paiement ne pourrait jamais être confirmé", async () => {
+    // Ce test remplace « Stripe n'est pas encore câblé » : l'intégration
+    // existe désormais. Le risque a changé de nature — une clé secrète seule
+    // permettrait d'encaisser, mais sans secret de webhook aucune
+    // confirmation ne serait authentifiable, et le client paierait sans que
+    // sa facture ne soit jamais soldée.
     env.payments.demoMode = false;
     env.payments.stripeSecretKey = "sk_test_fake_key";
-
-    await expect(
-      initiatePayment({ method: "STRIPE", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
-    ).rejects.toThrow(ApiError);
+    env.payments.stripeWebhookSecret = "";
+    const journal = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
 
     try {
-      await initiatePayment({ method: "STRIPE", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" });
+      await initiatePayment({
+        method: "STRIPE",
+        currency: "EUR",
+        amount: 29,
+        invoiceId: "inv-1",
+        payerEmail: "test@test.local",
+      });
+      expect.unreachable("un paiement Stripe sans secret de webhook ne doit pas aboutir");
     } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
       expect((err as ApiError).statusCode).toBe(503);
     }
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    journal.mockRestore();
+  });
+
+  it("STRIPE : refuse (503) une devise absente de STRIPE_CURRENCIES", async () => {
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "sk_test_fake_key";
+    env.payments.stripeWebhookSecret = "whsec_test";
+    env.payments.stripeCurrencies = ["EUR"];
+    const journal = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      await initiatePayment({
+        method: "STRIPE",
+        currency: "XOF",
+        amount: 15000,
+        invoiceId: "inv-1",
+        payerEmail: "test@test.local",
+      });
+      expect.unreachable("une devise non déclarée ne doit pas partir chez Stripe");
+    } catch (err) {
+      expect((err as ApiError).statusCode).toBe(503);
+      expect((err as ApiError).message).toContain("XOF");
+    }
+
+    journal.mockRestore();
+  });
+
+  it("STRIPE : crée une session Checkout et renvoie son URL de redirection", async () => {
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "sk_test_fake_key";
+    env.payments.stripeWebhookSecret = "whsec_test";
+    env.payments.stripeCurrencies = ["EUR"];
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "cs_test_123", url: "https://checkout.stripe.com/c/pay/cs_test_123" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await initiatePayment({
+      method: "STRIPE",
+      currency: "EUR",
+      amount: 29,
+      invoiceId: "sub_mgr_1",
+      payerEmail: "test@test.local",
+      returnPath: "/subscription",
+    });
+
+    expect(result.status).toBe("REQUIRES_ACTION");
+    // L'identifiant de session devient paymentRef : c'est par lui que le
+    // webhook retrouvera l'abonnement.
+    expect(result.reference).toBe("cs_test_123");
+    expect(result.redirectUrl).toBe("https://checkout.stripe.com/c/pay/cs_test_123");
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://api.stripe.com/v1/checkout/sessions");
+    expect(options.headers.Authorization).toBe("Bearer sk_test_fake_key");
+    const corps = new URLSearchParams(options.body as string);
+    expect(corps.get("mode")).toBe("payment");
+    expect(corps.get("client_reference_id")).toBe("sub_mgr_1");
+    expect(corps.get("line_items[0][price_data][currency]")).toBe("eur");
+    // 29 EUR = 2900 centimes.
+    expect(corps.get("line_items[0][price_data][unit_amount]")).toBe("2900");
+  });
+
+  it("STRIPE : n'ajoute pas de centimes à une devise qui n'en a pas (XOF)", async () => {
+    // Le piège symétrique de celui de PayDunya : Stripe attend la plus petite
+    // unité de la devise, mais le franc CFA n'a pas de sous-unité. Multiplier
+    // par 100 facturerait 1 500 000 FCFA au lieu de 15 000.
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "sk_test_fake_key";
+    env.payments.stripeWebhookSecret = "whsec_test";
+    env.payments.stripeCurrencies = ["XOF"];
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "cs_x", url: "https://checkout.stripe.com/c/pay/cs_x" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await initiatePayment({
+      method: "STRIPE",
+      currency: "XOF",
+      amount: 15000,
+      invoiceId: "inv-1",
+      payerEmail: "test@test.local",
+    });
+
+    const corps = new URLSearchParams(fetchMock.mock.calls[0][1].body as string);
+    expect(corps.get("line_items[0][price_data][unit_amount]")).toBe("15000");
+  });
+
+  it("STRIPE : échoue (502) proprement si Stripe répond une erreur", async () => {
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "sk_test_fake_key";
+    env.payments.stripeWebhookSecret = "whsec_test";
+    env.payments.stripeCurrencies = ["EUR"];
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: { message: "Clé invalide" } }) })
+    );
+
+    await expect(
+      initiatePayment({
+        method: "STRIPE",
+        currency: "EUR",
+        amount: 29,
+        invoiceId: "inv-1",
+        payerEmail: "test@test.local",
+      })
+    ).rejects.toThrow(ApiError);
   });
 
   // Ce test affirmait exactement le contraire : « retombe sur une simulation
@@ -321,12 +457,16 @@ describe("moyensDePaiementDisponibles", () => {
   const original = {
     demoMode: env.payments.demoMode,
     stripeSecretKey: env.payments.stripeSecretKey,
+    stripeWebhookSecret: env.payments.stripeWebhookSecret,
+    stripeCurrencies: [...env.payments.stripeCurrencies],
     paydunya: { ...env.payments.paydunya },
   };
 
   afterEach(() => {
     env.payments.demoMode = original.demoMode;
     env.payments.stripeSecretKey = original.stripeSecretKey;
+    env.payments.stripeWebhookSecret = original.stripeWebhookSecret;
+    env.payments.stripeCurrencies = [...original.stripeCurrencies];
     env.payments.paydunya = { ...original.paydunya };
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -412,5 +552,27 @@ describe("moyensDePaiementDisponibles", () => {
 
     const disponibles = await verifierCoherence("EUR");
     expect(disponibles).toEqual(["BANK_TRANSFER"]);
+  });
+});
+
+describe("versPlusPetiteUnite", () => {
+  it("convertit en centimes les devises à décimales", () => {
+    expect(versPlusPetiteUnite(29, "EUR")).toBe(2900);
+    expect(versPlusPetiteUnite(9.5, "EUR")).toBe(950);
+    expect(versPlusPetiteUnite(500, "usd")).toBe(50000);
+  });
+
+  it("laisse intactes les devises sans sous-unité", () => {
+    // Un franc CFA ne se divise pas en centimes : 15 000 XOF valent 15000,
+    // pas 1 500 000. Même règle pour le yen et le franc CFA d'Afrique centrale.
+    expect(versPlusPetiteUnite(15000, "XOF")).toBe(15000);
+    expect(versPlusPetiteUnite(15000, "xof")).toBe(15000);
+    expect(versPlusPetiteUnite(25000, "XAF")).toBe(25000);
+    expect(versPlusPetiteUnite(3000, "JPY")).toBe(3000);
+  });
+
+  it("arrondit à l'entier, Stripe n'acceptant pas de décimale", () => {
+    expect(versPlusPetiteUnite(29.999, "EUR")).toBe(3000);
+    expect(versPlusPetiteUnite(15000.4, "XOF")).toBe(15000);
   });
 });

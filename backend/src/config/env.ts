@@ -79,6 +79,17 @@ export const env = {
         (process.env.NODE_ENV === "production" || process.env.VERCEL ? "false" : "true")) === "true",
     stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+    // Devises que ton compte Stripe accepte réellement. Déclarées plutôt que
+    // devinées : présenter un paiement dans une devise que le compte ne sait
+    // pas encaisser échoue au moment du règlement, devant le client.
+    stripeCurrencies: (process.env.STRIPE_CURRENCIES ?? "EUR")
+      .split(",")
+      .map((code) => code.trim().toUpperCase())
+      .filter(Boolean),
+    // Nom affiché au payeur, sur la page Stripe comme sur la page PayDunya.
+    // Une seule valeur pour les deux : deux réglages pour un même nom
+    // finiraient par se contredire d'un prestataire à l'autre.
+    storeName: process.env.PAYMENTS_STORE_NAME ?? process.env.PAYDUNYA_STORE_NAME ?? "ImmoPlatform Pro",
     // PayDunya (https://paydunya.com) : agrégateur de paiement ouest-africain
     // (Orange Money, Wave, Free Money, MTN Money, cartes bancaires...). Tant
     // que masterKey/privateKey/token ne sont pas renseignés (ou que
@@ -91,7 +102,6 @@ export const env = {
       token: process.env.PAYDUNYA_TOKEN ?? "",
       // "test" utilise le bac à sable PayDunya (sandbox-api), "live" la prod.
       mode: (process.env.PAYDUNYA_MODE ?? "test") as "test" | "live",
-      storeName: process.env.PAYDUNYA_STORE_NAME ?? "ImmoPlatform Pro",
       // L'API PayDunya n'a AUCUN champ de devise : `total_amount` est lu dans
       // la devise du compte marchand, fixée par le pays de celui-ci. Sur un
       // compte sénégalais (XOF), envoyer 29 pour un prix de 29 € facture donc

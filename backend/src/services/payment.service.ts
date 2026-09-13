@@ -55,7 +55,7 @@ export async function initiatePayment(params: {
 
   switch (method) {
     case "STRIPE":
-      return initiateStripePayment(amount, currency, reference, payerEmail);
+      return initiateStripePayment(amount, currency, reference, payerEmail, returnPath);
     case "PAYDUNYA":
       return initiatePaydunyaPayment(amount, currency, reference, payerEmail, returnPath);
     case "BANK_TRANSFER":
@@ -64,6 +64,33 @@ export async function initiatePayment(params: {
     default:
       return initiateDemoPayment(amount, currency, reference);
   }
+}
+
+/**
+ * Devises dont l'unité n'a pas de sous-division : un "franc CFA" ne se divise
+ * pas en centimes. Stripe attend TOUJOURS un entier dans la plus petite unité
+ * de la devise — 2900 pour 29,00 EUR, mais 15000 pour 15 000 XOF. Multiplier
+ * par 100 sans distinction facturerait cent fois le prix sur ces devises-là,
+ * exactement l'erreur d'un facteur 100 déjà rencontrée dans l'autre sens avec
+ * PayDunya.
+ *
+ * Liste des devises sans décimale prises en charge par Stripe.
+ */
+const DEVISES_SANS_DECIMALE = new Set([
+  "BIF", "CLP", "DJF", "GNF", "JPY", "KMF", "KRW", "MGA",
+  "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF",
+]);
+
+/** Convertit un montant lisible (29, 15000) vers la plus petite unité Stripe. */
+export function versPlusPetiteUnite(amount: number, currency: string): number {
+  if (DEVISES_SANS_DECIMALE.has(currency.toUpperCase())) return Math.round(amount);
+  return Math.round(amount * 100);
+}
+
+/** Opération inverse, pour relire un montant confirmé par Stripe. */
+export function depuisPlusPetiteUnite(amount: number, currency: string): number {
+  if (DEVISES_SANS_DECIMALE.has(currency.toUpperCase())) return amount;
+  return amount / 100;
 }
 
 const MESSAGE_NEUTRE =
@@ -124,11 +151,24 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
     if (!env.payments.stripeSecretKey) {
       return { status: 503, message: MESSAGE_NEUTRE, cause: "STRIPE_SECRET_KEY absente" };
     }
-    return {
-      status: 503,
-      message: "Le paiement par carte (Stripe) n'est pas encore disponible. Merci d'utiliser un autre moyen de paiement.",
-      cause: "intégration Stripe non câblée",
-    };
+
+    // Sans secret de webhook, une session de paiement peut être créée et
+    // réglée, mais AUCUNE confirmation ne pourrait être authentifiée : le
+    // client paierait sans que sa facture ou son abonnement ne soit jamais
+    // validé. Refuser vaut mieux qu'encaisser sans rien débloquer.
+    if (!env.payments.stripeWebhookSecret) {
+      return { status: 503, message: MESSAGE_NEUTRE, cause: "STRIPE_WEBHOOK_SECRET absente" };
+    }
+
+    if (!env.payments.stripeCurrencies.includes(currency.toUpperCase())) {
+      return {
+        status: 503,
+        message: `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`,
+        cause: `devise ${currency} absente de STRIPE_CURRENCIES (${env.payments.stripeCurrencies.join(", ")})`,
+      };
+    }
+
+    return null;
   }
 
   const { masterKey, privateKey, token, currency: deviseDuCompte } = env.payments.paydunya;
@@ -165,29 +205,93 @@ export function moyensDePaiementDisponibles(currency: string): PaymentMethodKey[
   return MOYENS_DE_PAIEMENT.filter((method) => indisponibilite(method, currency) === null);
 }
 
-async function initiateStripePayment(amount: number, currency: string, reference: string, payerEmail: string): Promise<PaymentIntentResult> {
-  // Au-delà de ce point, indisponibilite() a déjà tranché : hors mode démo,
-  // Stripe n'est jamais utilisable tant que l'intégration n'est pas écrite.
+/**
+ * Stripe Checkout en mode paiement ponctuel.
+ *
+ * On crée une session hébergée par Stripe et on renvoie son URL : le parcours
+ * est donc identique à celui de PayDunya (statut REQUIRES_ACTION, redirection,
+ * confirmation asynchrone par webhook), ce qui évite d'avoir deux logiques de
+ * paiement différentes dans l'application.
+ *
+ * Pourquoi un appel HTTP direct plutôt que le SDK `stripe` : l'API Checkout
+ * tient en une requête form-encodée, le webhook se vérifie avec le module
+ * `crypto` de Node, et le reste du projet appelle déjà PayDunya de cette
+ * manière. Cela évite surtout d'ajouter une dépendance — et le
+ * `node_modules` de ce projet est installé sous Windows, donc pas
+ * modifiable sans risque depuis l'environnement de développement distant.
+ *
+ * Le montant part en PLUS PETITE UNITÉ de la devise (voir
+ * versPlusPetiteUnite) : c'est la convention de Stripe, et s'en écarter
+ * facturerait cent fois trop ou cent fois trop peu.
+ */
+async function initiateStripePayment(
+  amount: number,
+  currency: string,
+  reference: string,
+  payerEmail: string,
+  returnPath?: string
+): Promise<PaymentIntentResult> {
   if (env.payments.demoMode) {
     return simulatedResult("STRIPE", reference, "Mode démo — paiement Stripe simulé.");
   }
-  // Intégration réelle: utiliser le SDK `stripe` avec env.payments.stripeSecretKey
-  // pour créer une Checkout Session, puis retourner son URL.
-  // const stripe = new Stripe(env.payments.stripeSecretKey);
-  // const session = await stripe.checkout.sessions.create({ ... amount, customer_email: payerEmail ... });
-  //
-  // Cette intégration réelle n'est pas encore écrite. Tant que ce sera le cas,
-  // on préfère échouer clairement ici plutôt que renvoyer une fausse
-  // redirection ("#stripe-checkout-a-brancher") qui laissait silencieusement
-  // le payeur bloqué avec une facture qu'il ne pourrait jamais régler par ce
-  // biais — un STRIPE_SECRET_KEY configuré sans que ce code soit fini aurait
-  // provoqué exactement ce cas. Le moyen de paiement est aussi masqué côté
-  // frontend (voir SubscriptionPage.tsx / TenantInvoicesPage.tsx) tant que ce
-  // n'est pas prêt.
-  throw new ApiError(
-    503,
-    "Le paiement par carte (Stripe) n'est pas encore disponible. Merci d'utiliser un autre moyen de paiement."
-  );
+
+  const redirectBase = `${env.frontendUrl}${returnPath ?? "/"}`;
+
+  const corps = new URLSearchParams({
+    mode: "payment",
+    customer_email: payerEmail,
+    // client_reference_id nous revient tel quel dans le webhook : c'est notre
+    // identifiant d'origine (id de facture, ou "sub_<userId>_<timestamp>").
+    client_reference_id: reference,
+    "metadata[reference]": reference,
+    "line_items[0][quantity]": "1",
+    "line_items[0][price_data][currency]": currency.toLowerCase(),
+    "line_items[0][price_data][unit_amount]": String(versPlusPetiteUnite(amount, currency)),
+    "line_items[0][price_data][product_data][name]": env.payments.storeName,
+    "line_items[0][price_data][product_data][description]": `Paiement ${reference}`,
+    success_url: `${redirectBase}?stripe=succes`,
+    cancel_url: `${redirectBase}?stripe=annule`,
+  });
+
+  let response: Response;
+  try {
+    response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.payments.stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        // Deux clics sur « Payer » pour la même facture renvoient la même
+        // session au lieu d'en créer deux. La référence suffit comme clé :
+        // elle identifie précisément ce qui est réglé.
+        "Idempotency-Key": `checkout_${reference}`,
+      },
+      body: corps.toString(),
+    });
+  } catch (err) {
+    console.error("[stripe] Échec réseau lors de la création de la session:", err);
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Réessayez plus tard.");
+  }
+
+  const data = (await response.json()) as {
+    id?: string;
+    url?: string;
+    error?: { message?: string };
+  };
+
+  if (!response.ok || !data.id || !data.url) {
+    console.error("[stripe] Réponse inattendue lors de la création de la session:", data);
+    throw new ApiError(502, data.error?.message || "Échec de l'initialisation du paiement par carte.");
+  }
+
+  return {
+    method: "STRIPE",
+    status: "REQUIRES_ACTION",
+    // L'identifiant de session est enregistré comme paymentRef : c'est par lui
+    // que le webhook retrouvera la facture ou l'abonnement concerné.
+    reference: data.id,
+    redirectUrl: data.url,
+    message: "Redirection vers Stripe pour finaliser le paiement.",
+  };
 }
 
 /**
@@ -215,7 +319,8 @@ async function initiatePaydunyaPayment(
   payerEmail: string,
   returnPath?: string
 ): Promise<PaymentIntentResult> {
-  const { masterKey, privateKey, token, mode, storeName } = env.payments.paydunya;
+  const { masterKey, privateKey, token, mode } = env.payments.paydunya;
+  const { storeName } = env.payments;
 
   // indisponibilite() garantit ici la présence des trois clés et la
   // correspondance de la devise ; il ne reste que le cas du mode démo.

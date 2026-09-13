@@ -89,6 +89,14 @@ process.env.SENTRY_DSN = "";
 // clés en test — aucun test ne doit jamais appeler une vraie API de paiement.
 process.env.PAYMENTS_DEMO_MODE = "true";
 process.env.STRIPE_SECRET_KEY = "";
+// STRIPE_WEBHOOK_SECRET garde une valeur FIXE connue des tests, pour la même
+// raison que PAYDUNYA_MASTER_KEY ci-dessous : le webhook Stripe public
+// authentifie ses appels par un HMAC-SHA256 de ce secret, et
+// stripe.controller.test.ts doit pouvoir reproduire une signature valide —
+// et surtout en fabriquer des invalides. Aucune conséquence sur la sécurité
+// réelle : STRIPE_SECRET_KEY reste vide, donc aucun paiement sortant n'est
+// possible (voir indisponibilite() dans payment.service.ts).
+process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_do_not_use_in_production";
 // PAYDUNYA_MASTER_KEY reste à une valeur FIXE connue des tests (plutôt que
 // vidée) : le webhook IPN public (paydunya.controller.ts) vérifie un hash
 // SHA-512 de cette clé, et paydunya.controller.test.ts a besoin de pouvoir
