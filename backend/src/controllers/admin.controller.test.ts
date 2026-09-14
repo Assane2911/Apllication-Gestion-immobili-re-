@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { agencySettings, platformSubscriptions, users } from "../db/schema";
+import { ApiError } from "../utils/asyncHandler";
 import {
   authHeader,
   createAdmin,
@@ -14,6 +15,44 @@ import {
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+import { confirmBankTransfer, rejectBankTransfer } from "./admin.controller";
+
+/**
+ * Appelle un handler asyncHandler(...) directement (sans passer par
+ * Express/supertest, dont l'envoi de requête est asynchrone et ne garantit
+ * aucun ordre précis entre deux appels HTTP "concurrents") — nécessaire pour
+ * contrôler exactement quand chaque appel atteint sa propre lecture en base,
+ * condition du test de course ci-dessous.
+ */
+async function appelerHandler(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler: (req: any, res: any, next: any) => void,
+  params: Record<string, string>
+): Promise<{ status: number; body: unknown }> {
+  const req = { params };
+  return new Promise((resolve) => {
+    const res = {
+      statusCode: 200,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(body: unknown) {
+        resolve({ status: this.statusCode, body });
+        return this;
+      },
+    };
+    const next = (err: unknown) => {
+      const status = err instanceof ApiError ? err.statusCode : 500;
+      resolve({ status, body: { error: (err as Error)?.message } });
+    };
+    handler(req, res, next);
+  });
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 async function createPendingBankTransfer(managerId: string, overrides: Partial<typeof platformSubscriptions.$inferInsert> = {}) {
   const [record] = await testDb
@@ -35,6 +74,34 @@ async function createPendingBankTransfer(managerId: string, overrides: Partial<t
 
 function daysFromNow(days: number) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+}
+
+/**
+ * Enveloppe récursivement un query builder Drizzle pour retarder de `ms`
+ * L'EXÉCUTION RÉELLE (pas seulement la propagation de son résultat) — sert à
+ * élargir artificiellement une fenêtre de course dans les tests : une simple
+ * écriture (UPDATE) part dès que `.then()`/`await` est invoqué, donc retarder
+ * seulement la propagation du résultat laisserait l'écriture déjà committée
+ * avant même que le délai n'ait commencé. Ici, c'est l'appel à `.then()`
+ * lui-même qui est différé.
+ */
+function retarderExecution<T>(valeur: T, ms: number): T {
+  if (!valeur || (typeof valeur !== "object" && typeof valeur !== "function")) return valeur;
+  return new Proxy(valeur as object, {
+    get(cible, prop, recepteur) {
+      const original = Reflect.get(cible, prop, recepteur);
+      if (prop === "then" && typeof original === "function") {
+        return (onFulfilled?: unknown, onRejected?: unknown) =>
+          new Promise((resolve, reject) => {
+            setTimeout(() => (original as Function).call(cible, resolve, reject), ms);
+          }).then(onFulfilled as never, onRejected as never);
+      }
+      if (typeof original === "function") {
+        return (...args: unknown[]) => retarderExecution(original.apply(cible, args), ms);
+      }
+      return original;
+    },
+  }) as T;
 }
 
 describe("GET /api/admin/subscriptions/pending-bank-transfers", () => {
@@ -274,6 +341,74 @@ describe("POST /api/admin/subscriptions/:id/reject-bank-transfer", () => {
       .from(platformSubscriptions)
       .where(eq(platformSubscriptions.id, record.id));
     expect(stillPaid.status).toBe("PAID");
+  });
+
+  // Régression : rejectBankTransfer ne faisait sa vérification "déjà PAID ?"
+  // qu'à partir d'une lecture séparée de son écriture. Si confirmBankTransfer
+  // committait ENTRE cette lecture et l'UPDATE de rejectBankTransfer (deux
+  // administrateurs qui traitent la même ligne de la file d'attente au même
+  // moment), l'UPDATE — jusqu'ici inconditionnel sur le statut — écrasait
+  // silencieusement la confirmation déjà accordée en "REJECTED", alors même
+  // que l'accès payant restait débloqué côté compte : l'historique de
+  // facturation mentait, et plus aucune requête ne pouvait alors corriger cet
+  // enregistrement (activateSubscriptionRecord refuse de réactiver un
+  // REJECTED).
+  it("ne rejette pas un virement confirmé par une requête concurrente entre sa lecture et son écriture", async () => {
+    const manager = await createManager({ subscriptionStatus: "TRIAL" });
+    const record = await createPendingBankTransfer(manager.id, { plan: "STARTER" });
+
+    // Ne retarde QUE l'écriture de REJET (set({status: "REJECTED"})), jamais
+    // celle de la confirmation (set({status: "PAID", ...})) qui passe par le
+    // même testDb.update(platformSubscriptions) — sans quoi les deux
+    // écritures concurrentes se retrouveraient toutes deux différées, sans
+    // garantie sur leur ordre relatif.
+    const originalUpdate = testDb.update.bind(testDb);
+    const spy = vi.spyOn(testDb, "update").mockImplementation((table: any) => {
+      const builder = originalUpdate(table);
+      if (table !== platformSubscriptions) return builder;
+      return new Proxy(builder, {
+        get(cible, prop, recepteur) {
+          const original = Reflect.get(cible, prop, recepteur);
+          if (prop !== "set" || typeof original !== "function") {
+            return typeof original === "function" ? original.bind(cible) : original;
+          }
+          return (values: Record<string, unknown>) => {
+            const setBuilder = original.call(cible, values);
+            // Laisse le temps à la confirmation concurrente (déclenchée
+            // juste après la lecture ci-dessus, voir plus bas) de committer
+            // intégralement avant que cette écriture de rejet ne s'exécute.
+            return values?.status === "REJECTED" ? retarderExecution(setBuilder, 30) : setBuilder;
+          };
+        },
+      });
+    });
+
+    // Appel direct des handlers (pas de supertest/HTTP ici) : l'envoi d'une
+    // requête HTTP est lui-même asynchrone et ne garantit aucun ordre précis
+    // entre deux appels "concurrents" — on a besoin ici de savoir avec
+    // certitude que la lecture du rejet a bien lieu AVANT la confirmation.
+    const rejectPromise = appelerHandler(rejectBankTransfer, { id: record.id });
+
+    // Un handler asyncHandler(...) s'exécute de façon synchrone jusqu'à son
+    // premier `await` : au retour de l'appel ci-dessus, la lecture de
+    // rejectBankTransfer a donc déjà été émise (pas nécessairement résolue).
+    const confirmRes = await appelerHandler(confirmBankTransfer, { id: record.id });
+
+    const rejectRes = await rejectPromise;
+    spy.mockRestore();
+
+    expect(confirmRes.status).toBe(200);
+    // Le rejet, arrivé après coup, ne doit plus pouvoir écraser la confirmation.
+    expect(rejectRes.status).toBe(409);
+
+    const [finalRecord] = await testDb
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.id, record.id));
+    expect(finalRecord.status).toBe("PAID");
+
+    const [finalManager] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(finalManager.subscriptionStatus).toBe("ACTIVE");
   });
 });
 

@@ -78,11 +78,25 @@ export const rejectBankTransfer = asyncHandler(async (req: Request, res: Respons
     throw new ApiError(400, "Ce virement a déjà été confirmé : impossible de le rejeter");
   }
 
+  // Réclamation atomique : la lecture ci-dessus et cette écriture ne sont pas
+  // la même opération. Sans la condition sur le statut courant, un
+  // administrateur qui confirme le virement (confirmBankTransfer, dans une
+  // autre requête) entre notre lecture et notre écriture voyait son
+  // activation — déjà committée, accès débloqué — silencieusement écrasée en
+  // "REJECTED" par ce rejet arrivé une fraction de seconde plus tard : le
+  // client gardait l'accès payant, mais son historique de facturation
+  // affichait ce paiement comme rejeté, sans plus aucun moyen de le corriger
+  // (activateSubscriptionRecord refuse explicitement de réactiver un
+  // enregistrement REJECTED).
   const [updated] = await db
     .update(platformSubscriptions)
     .set({ status: "REJECTED" })
-    .where(eq(platformSubscriptions.id, id))
+    .where(and(eq(platformSubscriptions.id, id), eq(platformSubscriptions.status, "PENDING")))
     .returning();
+
+  if (!updated) {
+    throw new ApiError(409, "Ce virement vient d'être traité par une autre requête. Veuillez rafraîchir la page.");
+  }
 
   res.json({ success: true, record: updated });
 });
