@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoices } from "../db/schema";
+import * as emailService from "./email.service";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
-import { runRentDueReminders, runUpcomingRentDueReminders } from "./reminder.service";
+import { runRentDueReminders, runUpcomingRentDueReminders, sendSingleInvoiceReminder } from "./reminder.service";
 
 describe("runRentDueReminders", () => {
   beforeEach(() => {
@@ -43,6 +44,99 @@ describe("runRentDueReminders", () => {
 
     const secondRun = await runRentDueReminders();
     expect(secondRun.sent).toBe(0);
+  });
+
+  /**
+   * Régression : le SELECT initial chargeait toutes les factures sans
+   * rappel envoyé AVANT que la boucle n'écrive `reminderSentAt` sur
+   * chacune. Deux exécutions concurrentes (le cron du 1er du mois et un
+   * gestionnaire cliquant "Envoyer les avis" au même moment, ou une double
+   * invocation du cron) chargeaient donc le MÊME instantané et envoyaient
+   * chacune leur propre email pour la même facture — le locataire recevait
+   * l'avis en double. Le délai artificiel sur sendEmail laisse le temps à
+   * la seconde exécution d'atteindre sa propre tentative de réclamation
+   * avant que la première n'ait terminé — la fenêtre qui, avant ce
+   * correctif, laissait passer les deux envois.
+   */
+  it("deux exécutions concurrentes n'envoient qu'un seul avis par facture", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+    // Facture créée directement (plutôt que via generateInvoicesForContract,
+    // appelé en interne par runRentDueReminders) : ce test cible la course
+    // sur la RÉCLAMATION du rappel, pas sur la génération de facture elle-même
+    // — un contrat démarré ce mois-ci aurait fait tourner la génération
+    // automatique en concurrence dans les deux appels, avec son propre lot de
+    // problèmes hors sujet ici.
+    await createInvoice(contract.id, {
+      periodMonth: 8,
+      periodYear: 2026,
+      status: "PENDING",
+      dueDate: new Date(2026, 7, 5),
+    });
+
+    const sendEmailSpy = vi
+      .spyOn(emailService, "sendEmail")
+      .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ simulated: true }), 40)));
+
+    const [resultA, resultB] = await Promise.all([runRentDueReminders(), runRentDueReminders()]);
+
+    expect(resultA.sent + resultB.sent).toBe(1);
+    expect(sendEmailSpy).toHaveBeenCalledTimes(1);
+
+    const [invoice] = await testDb.select().from(invoices);
+    expect(invoice.reminderSentAt).not.toBeNull();
+
+    sendEmailSpy.mockRestore();
+  });
+});
+
+describe("sendSingleInvoiceReminder", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 7, 1));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /**
+   * Régression : sendSingleInvoiceReminder envoyait l'email PUIS marquait
+   * reminderSentAt, sans aucune réclamation préalable — un double-clic du
+   * gestionnaire sur "Envoyer un rappel" (ou deux requêtes API quasi
+   * simultanées) déclenchait deux envois pour la même facture.
+   */
+  it("deux envois manuels quasi simultanés sur la même facture n'envoient qu'un seul rappel", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, {
+      periodMonth: 8,
+      periodYear: 2026,
+      status: "PENDING",
+      dueDate: new Date(2026, 7, 20),
+    });
+
+    const sendEmailSpy = vi
+      .spyOn(emailService, "sendEmail")
+      .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ simulated: true }), 40)));
+
+    const [resultA, resultB] = await Promise.allSettled([
+      sendSingleInvoiceReminder(invoice.id, manager.id),
+      sendSingleInvoiceReminder(invoice.id, manager.id),
+    ]);
+
+    const statuses = [resultA.status, resultB.status].sort();
+    expect(statuses).toEqual(["fulfilled", "rejected"]);
+    expect(sendEmailSpy).toHaveBeenCalledTimes(1);
+
+    sendEmailSpy.mockRestore();
   });
 });
 

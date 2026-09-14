@@ -1,4 +1,4 @@
-import { SQL, and, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
+import { SQL, and, desc, eq, gte, isNull, lt, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
@@ -46,6 +46,23 @@ export async function runContractEndingReminders() {
       continue;
     }
 
+    // Réclamation atomique AVANT l'envoi (même principe que
+    // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : la
+    // requête SELECT ci-dessus charge un instantané des contrats sans
+    // rappel envoyé, mais rien n'empêchait auparavant deux exécutions
+    // concurrentes de ce job (chevauchement du cron si un envoi précédent
+    // traîne, ou un futur déclenchement manuel) de charger le MÊME
+    // instantané avant que l'une ou l'autre n'ait eu le temps d'écrire
+    // `reminderSentAt` — chacune envoyait alors son propre email pour le
+    // même contrat. Seule une des deux exécutions concurrentes peut
+    // réclamer une ligne donnée ; l'autre la voit déjà marquée et passe.
+    const [reclame] = await db
+      .update(contracts)
+      .set({ reminderSentAt: new Date() })
+      .where(and(eq(contracts.id, row.contract.id), isNull(contracts.reminderSentAt)))
+      .returning();
+    if (!reclame) continue;
+
     const { subject, html } = contractEndingReminderEmail({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       propertyTitle: row.property.title,
@@ -54,7 +71,6 @@ export async function runContractEndingReminders() {
     });
 
     await sendEmail(managerEmail, subject, html);
-    await db.update(contracts).set({ reminderSentAt: new Date() }).where(eq(contracts.id, row.contract.id));
     sent += 1;
   }
 
@@ -129,6 +145,24 @@ export async function runRentDueReminders(managerId?: string) {
   const details = [];
 
   for (const row of rows) {
+    // Réclamation atomique AVANT l'envoi (même principe que
+    // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : le
+    // SELECT ci-dessus charge un instantané des factures sans rappel
+    // envoyé, mais rien n'empêchait auparavant deux exécutions
+    // concurrentes de cette fonction (le cron du 1er du mois ET un
+    // gestionnaire cliquant "Envoyer les avis" depuis son tableau de bord
+    // au même moment, ou une double invocation du cron) de charger le
+    // MÊME instantané avant que l'une ou l'autre n'ait eu le temps
+    // d'écrire `reminderSentAt` — chaque locataire impayé recevait alors
+    // l'avis en double. Seule une des deux exécutions concurrentes peut
+    // réclamer une ligne donnée ; l'autre la voit déjà marquée et passe.
+    const [reclamee] = await db
+      .update(invoices)
+      .set({ reminderSentAt: new Date() })
+      .where(and(eq(invoices.id, row.invoice.id), isNull(invoices.reminderSentAt)))
+      .returning();
+    if (!reclamee) continue;
+
     const { subject, html } = rentDueReminderEmail({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       propertyTitle: row.property.title,
@@ -141,10 +175,6 @@ export async function runRentDueReminders(managerId?: string) {
     });
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
-    await db
-      .update(invoices)
-      .set({ reminderSentAt: new Date() })
-      .where(eq(invoices.id, row.invoice.id));
 
     sent += 1;
     details.push({
@@ -201,6 +231,16 @@ export async function runUpcomingRentDueReminders() {
   const details = [];
 
   for (const row of rows) {
+    // Réclamation atomique AVANT l'envoi — même course concurrentielle que
+    // runRentDueReminders ci-dessus (chevauchement du cron quotidien si un
+    // envoi précédent traîne encore).
+    const [reclamee] = await db
+      .update(invoices)
+      .set({ dueSoonReminderSentAt: new Date() })
+      .where(and(eq(invoices.id, row.invoice.id), isNull(invoices.dueSoonReminderSentAt)))
+      .returning();
+    if (!reclamee) continue;
+
     const { subject, html } = rentDueSoonReminderEmail({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       propertyTitle: row.property.title,
@@ -214,10 +254,6 @@ export async function runUpcomingRentDueReminders() {
     });
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
-    await db
-      .update(invoices)
-      .set({ dueSoonReminderSentAt: new Date() })
-      .where(eq(invoices.id, row.invoice.id));
 
     sent += 1;
     details.push({
@@ -234,6 +270,17 @@ export async function runUpcomingRentDueReminders() {
   }
   return { sent, details };
 }
+
+// Fenêtre de réclamation pour l'envoi manuel d'un rappel individuel : assez
+// courte pour ne bloquer qu'un double-clic ou une double requête quasi
+// simultanée sur la MÊME facture, assez longue pour absorber la latence
+// réelle d'un envoi SMTP. Passé ce délai, le gestionnaire peut renvoyer un
+// rappel de suivi pour la même facture — contrairement à reminderSentAt
+// posé par le job automatique du 1er du mois (isNull strict, permanent),
+// cette réclamation-ci n'a pas vocation à empêcher un futur renvoi manuel,
+// seulement les doublons d'une même action de clic. Même valeur que
+// invoice.controller.ts::DUREE_RECLAMATION_MS pour le même type de garde.
+const DUREE_RECLAMATION_RAPPEL_MS = 60_000;
 
 /**
  * Envoie un rappel d'échéance pour une facture spécifique (déclenché manuellement par l'agence).
@@ -258,6 +305,27 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     throw new ApiError(404, "Facture introuvable");
   }
 
+  // Réclamation atomique AVANT l'envoi (même principe que
+  // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : sans
+  // elle, un double-clic sur "Envoyer un rappel" (ou deux requêtes API
+  // quasi simultanées) déclenchait deux envois pour la même facture, le
+  // SELECT ci-dessus n'empêchant rien à lui seul.
+  const seuilReclamationPerimee = new Date(Date.now() - DUREE_RECLAMATION_RAPPEL_MS);
+  const [reclamee] = await db
+    .update(invoices)
+    .set({ reminderSentAt: new Date() })
+    .where(
+      and(
+        eq(invoices.id, row.invoice.id),
+        or(isNull(invoices.reminderSentAt), lt(invoices.reminderSentAt, seuilReclamationPerimee))
+      )
+    )
+    .returning();
+
+  if (!reclamee) {
+    throw new ApiError(409, "Un rappel vient déjà d'être envoyé pour cette facture. Patientez un instant puis réessayez.");
+  }
+
   const { subject, html } = rentDueReminderEmail({
     tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
     propertyTitle: row.property.title,
@@ -270,10 +338,6 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   });
 
   const emailResult = await sendEmail(row.tenant.email, subject, html);
-  await db
-    .update(invoices)
-    .set({ reminderSentAt: new Date() })
-    .where(eq(invoices.id, row.invoice.id));
 
   return {
     success: true,
