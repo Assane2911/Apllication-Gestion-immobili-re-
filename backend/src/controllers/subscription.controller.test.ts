@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { env } from "../config/env";
 import { users } from "../db/schema";
-import { authHeader, createManager, tokenFor } from "../test/authHelpers";
+import { calculerJoursCredit, calculerPeriode } from "../services/subscriptionPeriod.service";
+import { authHeader, createManager, createPlatformSubscription, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 describe("GET /api/subscription/plans", () => {
@@ -152,6 +153,105 @@ describe("POST /api/subscription/subscribe", () => {
     const joursRestants =
       (updated.subscriptionEndsAt!.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     expect(joursRestants).toBeGreaterThan(45);
+  });
+
+  /**
+   * Régression : un changement de plan (upgrade ou downgrade) reportait les
+   * jours restants TELS QUELS sur le nouveau plan, comme pour un
+   * renouvellement du même plan — alors que les deux plans n'ont pas le
+   * même tarif journalier. Un upgrade STARTER (9€/mois) -> PRO (29€/mois)
+   * avec 10 jours restants donnait ainsi 10 jours de PRO OFFERTS (valant
+   * ~9,67€ au tarif PRO), pour une valeur réellement non consommée de
+   * seulement 3€ (9€ × 10/30) sur l'ancien plan.
+   */
+  it("proratise (ne reporte pas tel quel) les jours restants lors d'un upgrade de plan", async () => {
+    const now = new Date();
+    const ancienStart = new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000);
+    const ancienEnd = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
+
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "STARTER",
+      subscriptionEndsAt: ancienEnd,
+    });
+    await createPlatformSubscription(manager.id, {
+      plan: "STARTER",
+      amount: 9,
+      billingCycle: "MONTHLY",
+      startDate: ancienStart,
+      endDate: ancienEnd,
+    });
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", billingCycle: "MONTHLY", paymentMethod: "DEMO" });
+
+    expect(res.status).toBe(200);
+
+    const base = calculerPeriode({ maintenant: now, cycle: "MONTHLY", finActuelle: null });
+    const nouveauCycleJours = (base.endDate.getTime() - base.startDate.getTime()) / 86_400_000;
+    const joursCreditAttendus = calculerJoursCredit({
+      ancienMontant: 9,
+      ancienCycleJours: 30,
+      joursRestants: 10,
+      nouveauMontant: 29,
+      nouveauCycleJours,
+    });
+
+    const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    const joursTotal = (updated.subscriptionEndsAt!.getTime() - now.getTime()) / 86_400_000;
+
+    expect(joursTotal).toBeCloseTo(nouveauCycleJours + joursCreditAttendus, 0);
+    // Un report brut des jours restants (le bug) aurait donné environ
+    // nouveauCycleJours + 10 jours — nettement plus que la proratisation
+    // (~3 jours de crédit ici).
+    expect(joursTotal).toBeLessThan(nouveauCycleJours + 8);
+  });
+
+  /** Symétrique : un downgrade doit au contraire créditer PLUS de jours (le
+   * gestionnaire avait payé pour un plan plus cher que celui vers lequel il
+   * bascule), jamais moins que ce que ses jours restants valaient réellement. */
+  it("proratise (crédite davantage) les jours restants lors d'un downgrade de plan", async () => {
+    const now = new Date();
+    const ancienStart = new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000);
+    const ancienEnd = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
+
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "PRO",
+      subscriptionEndsAt: ancienEnd,
+    });
+    await createPlatformSubscription(manager.id, {
+      plan: "PRO",
+      amount: 29,
+      billingCycle: "MONTHLY",
+      startDate: ancienStart,
+      endDate: ancienEnd,
+    });
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "STARTER", billingCycle: "MONTHLY", paymentMethod: "DEMO" });
+
+    expect(res.status).toBe(200);
+
+    const base = calculerPeriode({ maintenant: now, cycle: "MONTHLY", finActuelle: null });
+    const nouveauCycleJours = (base.endDate.getTime() - base.startDate.getTime()) / 86_400_000;
+    const joursCreditAttendus = calculerJoursCredit({
+      ancienMontant: 29,
+      ancienCycleJours: 30,
+      joursRestants: 10,
+      nouveauMontant: 9,
+      nouveauCycleJours,
+    });
+
+    const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    const joursTotal = (updated.subscriptionEndsAt!.getTime() - now.getTime()) / 86_400_000;
+
+    expect(joursCreditAttendus).toBeGreaterThan(10);
+    expect(joursTotal).toBeCloseTo(nouveauCycleJours + joursCreditAttendus, 0);
   });
 });
 

@@ -46,6 +46,53 @@ export function calculerPeriode(params: {
 }
 
 /**
+ * Convertit en jours, sur le NOUVEAU plan, la valeur monétaire encore due au
+ * gestionnaire sur l'ANCIEN plan au moment d'un changement de formule
+ * (upgrade ou downgrade) — la proratisation.
+ *
+ * calculerPeriode ci-dessus reporte le temps restant TEL QUEL, ce qui n'est
+ * correct que pour un renouvellement du MÊME plan (même tarif journalier des
+ * deux côtés). Lors d'un changement de plan, reporter le temps restant sans
+ * le convertir crée un des deux défauts symétriques suivants :
+ *
+ * 1. Un gestionnaire avec 20 jours restants sur STARTER (9 €/mois, ~0,30
+ *    €/jour) qui passe à PRO (29 €/mois, ~0,97 €/jour) sans conversion
+ *    recevait 20 jours de PRO OFFERTS — largement plus que ce que ses 20
+ *    jours de STARTER valaient réellement (~6 € au tarif PRO, contre 20
+ *    jours facturés au tarif PRO complet).
+ * 2. À l'inverse, ignorer purement le temps restant (le faire démarrer à
+ *    "maintenant" sans aucun crédit) lui ferait perdre l'intégralité de ce
+ *    qu'il avait déjà payé sur l'ancien plan, upgrade comme downgrade.
+ *
+ * La conversion : valeur non consommée de l'ancien plan (montant payé ×
+ * fraction de jours restants) ÷ tarif journalier du nouveau plan = jours de
+ * crédit sur le nouveau plan. Ni perdu, ni offert — juste reconverti.
+ */
+export function calculerJoursCredit(params: {
+  ancienMontant: number;
+  ancienCycleJours: number;
+  joursRestants: number;
+  nouveauMontant: number;
+  nouveauCycleJours: number;
+}): number {
+  const { ancienMontant, ancienCycleJours, joursRestants, nouveauMontant, nouveauCycleJours } = params;
+  if (joursRestants <= 0 || ancienCycleJours <= 0 || nouveauCycleJours <= 0 || nouveauMontant <= 0) {
+    return 0;
+  }
+
+  const valeurNonConsommee = ancienMontant * (joursRestants / ancienCycleJours);
+  const tarifJournalierNouveau = nouveauMontant / nouveauCycleJours;
+  return valeurNonConsommee / tarifJournalierNouveau;
+}
+
+/** Ajoute un nombre (entier ou non — arrondi à l'entier le plus proche) de jours civils à une date. */
+export function ajouterJours(depuis: Date, jours: number): Date {
+  const resultat = new Date(depuis);
+  resultat.setDate(resultat.getDate() + Math.round(jours));
+  return resultat;
+}
+
+/**
  * Ajoute un mois ou un an à une date, SANS le débordement de `setMonth()`.
  *
  * `new Date(2026, 0, 31).setMonth(1)` ne donne pas le 28 février mais le
