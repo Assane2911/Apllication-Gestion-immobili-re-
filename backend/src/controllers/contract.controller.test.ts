@@ -2,8 +2,16 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { contracts, properties, users } from "../db/schema";
-import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
+import { contracts, invoices, properties, users } from "../db/schema";
+import {
+  authHeader,
+  createContract,
+  createInvoice,
+  createManager,
+  createProperty,
+  createTenant,
+  tokenFor,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 // PNG 1x1 valide encodé en base64, pour satisfaire le format attendu par signContractSchema.
@@ -133,6 +141,82 @@ describe("GET /api/contracts/:id — isolation entre gestionnaires", () => {
 
     const asOther = await request(app).get(`/api/contracts/${contractId}`).set(authHeader(tokenB));
     expect(asOther.status).toBe(404);
+  });
+});
+
+describe("DELETE /api/contracts/:id", () => {
+  // Régression : contrairement à deleteProperty/deleteTenant, cette route ne
+  // vérifiait jusqu'ici RIEN avant de supprimer. Un contrat ACTIVE (locataire
+  // en place) pouvait être effacé — factures PAID comprises — et le bien
+  // repassait "AVAILABLE" sans aucune procédure de résiliation. Cela
+  // contournait aussi les garde-fous de deleteProperty/deleteTenant, qui
+  // refusent tant qu'un contrat existe : il suffisait de supprimer le contrat
+  // ici (sans frein) puis le bien ou le locataire devenu "libre".
+  it("refuse de supprimer un contrat actif", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id); // status ACTIVE par défaut
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+    const stillThere = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(stillThere).toHaveLength(1);
+  });
+
+  it("refuse de supprimer un contrat clos ayant une facture déjà réglée", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+    await createInvoice(contract.id, { status: "PAID" });
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+    const stillThere = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(stillThere).toHaveLength(1);
+  });
+
+  it("refuse de supprimer un contrat clos ayant une facture en retard", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+    await createInvoice(contract.id, { status: "LATE" });
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+  });
+
+  it("supprime un contrat clos sans facture réglée (factures en attente/annulées comprises)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+    await createInvoice(contract.id, { status: "CANCELLED" });
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(204);
+    const remaining = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(remaining).toHaveLength(0);
+    const remainingInvoices = await testDb.select().from(invoices).where(eq(invoices.contractId, contract.id));
+    expect(remainingInvoices).toHaveLength(0);
+  });
+
+  it("refuse de supprimer le contrat d'un autre gestionnaire", async () => {
+    const managerA = await createManager();
+    const managerB = await createManager();
+    const property = await createProperty(managerA.id);
+    const tenant = await createTenant(managerA.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(authHeader(tokenFor(managerB)));
+
+    expect(res.status).toBe(404);
   });
 });
 
@@ -304,6 +388,43 @@ describe("PUT /api/contracts/:id — revalidation", () => {
 
     const [apres] = await testDb.select().from(properties).where(eq(properties.id, property.id));
     expect(apres.status).toBe("OCCUPIED");
+  });
+
+  // Régression : updateProperty refuse déjà de changer la devise d'un bien
+  // tant qu'un contrat actif existe, précisément parce que les factures déjà
+  // émises restent figées dans l'ancienne devise (elles héritent du CONTRAT,
+  // jamais du bien). Ce même garde-fou n'existait pas au niveau du contrat.
+  it("refuse de changer la devise d'un contrat ayant déjà des factures", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { currency: "EUR" });
+    await createInvoice(contract.id, { currency: "EUR", status: "PENDING" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ currency: "XOF" });
+
+    expect(res.status).toBe(409);
+    const [inchangé] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(inchangé.currency).toBe("EUR");
+  });
+
+  it("autorise le changement de devise tant qu'aucune facture (autre qu'annulée) n'existe", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { currency: "EUR" });
+    await createInvoice(contract.id, { currency: "EUR", status: "CANCELLED" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ currency: "XOF" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.currency).toBe("XOF");
   });
 });
 

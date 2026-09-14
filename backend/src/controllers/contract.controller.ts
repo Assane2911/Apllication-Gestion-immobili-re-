@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
@@ -212,6 +212,29 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     }
   }
 
+  // Régression : updateProperty refuse déjà de changer la devise d'un BIEN
+  // tant qu'un contrat actif existe (voir property.controller.ts), justement
+  // parce que les factures déjà émises restent figées dans l'ancienne devise
+  // (invoice.service.ts hérite currency du CONTRAT, jamais du bien). Mais ce
+  // même garde-fou n'existait pas ici, au niveau du contrat lui-même : rien
+  // n'empêchait de changer sa devise alors qu'il porte déjà des factures —
+  // celles déjà émises restant dans l'ancienne devise, les suivantes dans la
+  // nouvelle, sur un seul et même contrat.
+  const changeCurrency = body.currency !== undefined && body.currency !== existing.currency;
+  if (changeCurrency) {
+    const [factureExistante] = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(and(eq(invoices.contractId, existing.id), ne(invoices.status, "CANCELLED")))
+      .limit(1);
+    if (factureExistante) {
+      throw new ApiError(
+        409,
+        "Impossible de changer la devise d'un contrat ayant déjà des factures : elles resteraient dans l'ancienne devise."
+      );
+    }
+  }
+
   // Tout ou rien, comme dans deleteContract. Clore un bail et reliberer le
   // bien sont UNE decision : en deux ecritures separees, l'echec de la seconde
   // laissait un contrat termine sur un bien qui reste OCCUPIED — donc invisible
@@ -272,6 +295,30 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   if (!existing) throw new ApiError(404, "Contrat introuvable");
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
   if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Contrat introuvable");
+
+  // RÉGRESSION : contrairement à deleteProperty/deleteTenant, cette route ne
+  // vérifiait jusqu'ici RIEN avant de supprimer — ni que le contrat n'est pas
+  // ACTIVE (un locataire en place, un bail en cours), ni qu'aucune facture
+  // déjà réglée n'y est rattachée (preuve comptable/juridique de paiement).
+  // Un contrat ACTIVE supprimé effaçait aussi ses factures PAID et remettait
+  // le bien "AVAILABLE" alors qu'un locataire y résidait toujours, sans passer
+  // par aucune procédure de résiliation. Cela permettait en plus de contourner
+  // les garde-fous de deleteProperty/deleteTenant (qui refusent tant qu'un
+  // contrat existe) : il suffisait de supprimer d'abord le contrat ici, sans
+  // aucun frein, puis le bien ou le locataire devenu "libre".
+  if (existing.status === "ACTIVE") {
+    throw new ApiError(409, "Impossible de supprimer un contrat actif. Veuillez d'abord le résilier.");
+  }
+  const facturesReglees = await db
+    .select({ id: invoices.id })
+    .from(invoices)
+    .where(and(eq(invoices.contractId, req.params.id), inArray(invoices.status, ["PAID", "LATE"])));
+  if (facturesReglees.length > 0) {
+    throw new ApiError(
+      409,
+      "Impossible de supprimer un contrat ayant des factures réglées ou en retard. Cet historique doit être conservé."
+    );
+  }
 
   // Suppression en cascade + mise à jour du statut du bien : tout ou rien,
   // pour ne jamais laisser un contrat supprimé avec un bien resté OCCUPIED
