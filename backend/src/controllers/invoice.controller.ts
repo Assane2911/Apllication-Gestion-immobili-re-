@@ -15,12 +15,25 @@ function isInvoiceStatus(value: unknown): value is (typeof invoiceStatusEnum.enu
   return typeof value === "string" && (invoiceStatusEnum.enumValues as readonly string[]).includes(value);
 }
 
+/**
+ * Express (via `qs`) transforme un paramètre de requête répété en tableau :
+ * `?contractId=a&contractId=b` donne `req.query.contractId === ["a", "b"]`.
+ * `String(...)` sur ce tableau ne plantait pas — il produisait juste
+ * `"a,b"`, une valeur qui ne correspond à aucun contrat réel. La requête
+ * semblait donc réussir (200) mais renvoyait silencieusement une liste
+ * vide, au lieu d'un 400 signalant clairement une requête mal formée.
+ */
+const listInvoicesQuerySchema = z.object({
+  contractId: z.string().min(1).optional(),
+});
+
 export const listInvoices = asyncHandler(async (req: Request, res: Response) => {
   const pagination = parsePagination(req);
-  const { contractId, status } = req.query;
+  const { contractId } = listInvoicesQuerySchema.parse(req.query);
+  const { status } = req.query;
 
   const conditions = [eq(properties.managerId, req.user!.userId)];
-  if (contractId) conditions.push(eq(invoices.contractId, String(contractId)));
+  if (contractId) conditions.push(eq(invoices.contractId, contractId));
   if (isInvoiceStatus(status)) conditions.push(eq(invoices.status, status));
   const whereClause = and(...conditions);
 

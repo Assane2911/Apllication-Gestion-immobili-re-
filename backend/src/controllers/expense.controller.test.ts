@@ -77,6 +77,43 @@ describe("DELETE /api/expenses/:id", () => {
   });
 });
 
+describe("GET /api/expenses", () => {
+  /**
+   * Régression : même faille que sur listInvoices (invoice.controller.ts).
+   * `propertyId` répété dans l'URL devient un tableau via Express/qs, et
+   * `String([...])` produisait silencieusement une valeur qui ne correspond
+   * à aucun bien réel — 200 avec une liste vide plutôt qu'un 400 clair.
+   */
+  it("rejette (400) un propertyId répété plutôt que de renvoyer silencieusement une liste vide", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await testDb
+      .insert(expenses)
+      .values({ propertyId: property.id, title: "Assurance", amount: 80, expenseDate: new Date(2026, 5, 1) });
+
+    const res = await request(app)
+      .get(`/api/expenses?propertyId=${property.id}&propertyId=autre-valeur`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(400);
+  });
+
+  it("filtre correctement sur un propertyId unique", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const [expense] = await testDb
+      .insert(expenses)
+      .values({ propertyId: property.id, title: "Assurance", amount: 80, expenseDate: new Date(2026, 5, 1) })
+      .returning();
+
+    const res = await request(app).get(`/api/expenses?propertyId=${property.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].id).toBe(expense.id);
+  });
+});
+
 describe("GET /api/expenses/summary", () => {
   it("calcule le résumé financier (revenus, dépenses, net) scopé au gestionnaire connecté, sans fuite d'une autre agence", async () => {
     // --- Agence A (celle dont on va lire le résumé) ---

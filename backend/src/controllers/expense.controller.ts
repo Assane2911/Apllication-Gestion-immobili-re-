@@ -16,12 +16,23 @@ const createExpenseSchema = z.object({
   notes: z.string().optional(),
 });
 
+/**
+ * Même garde que sur listInvoices (invoice.controller.ts) : un paramètre de
+ * requête répété (`?propertyId=a&propertyId=b`) devient un tableau via
+ * Express/qs, et `String([...])` produisait silencieusement une valeur
+ * (`"a,b"`) qui ne correspond à aucun bien réel — la requête renvoyait 200
+ * avec une liste vide plutôt qu'un 400 signalant une requête mal formée.
+ */
+const listExpensesQuerySchema = z.object({
+  propertyId: z.string().min(1).optional(),
+});
+
 export const listExpenses = asyncHandler(async (req: Request, res: Response) => {
   const pagination = parsePagination(req);
-  const { propertyId } = req.query;
+  const { propertyId } = listExpensesQuerySchema.parse(req.query);
 
   const conditions = [eq(properties.managerId, req.user!.userId)];
-  if (propertyId) conditions.push(eq(expenses.propertyId, String(propertyId)));
+  if (propertyId) conditions.push(eq(expenses.propertyId, propertyId));
   const whereClause = and(...conditions);
 
   type ExpenseRow = { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect };

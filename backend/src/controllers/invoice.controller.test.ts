@@ -193,6 +193,35 @@ describe("GET /api/invoices — isolation entre gestionnaires", () => {
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0].id).toBe(invoice.id);
   });
+
+  /**
+   * Régression : `contractId` répété dans l'URL (`?contractId=a&contractId=b`)
+   * devient un tableau via Express/qs. `String([...])` ne plantait pas — il
+   * produisait une valeur ("a,b") qui ne correspond à aucun contrat réel, et
+   * la route renvoyait 200 avec une liste vide plutôt qu'un 400 signalant
+   * clairement une requête mal formée.
+   */
+  it("rejette (400) un contractId répété plutôt que de renvoyer silencieusement une liste vide", async () => {
+    const { manager, contract } = await setupManagerWithInvoice();
+
+    const res = await request(app)
+      .get(`/api/invoices?contractId=${contract.id}&contractId=autre-valeur`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(400);
+  });
+
+  it("filtre correctement sur un contractId unique", async () => {
+    const { manager, contract, invoice } = await setupManagerWithInvoice();
+
+    const res = await request(app)
+      .get(`/api/invoices?contractId=${contract.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].id).toBe(invoice.id);
+  });
 });
 
 describe("POST /api/invoices/:id/pay (portail locataire)", () => {
