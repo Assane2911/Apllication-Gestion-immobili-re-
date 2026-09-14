@@ -974,6 +974,9 @@ const fr = {
       confirmButton: "Confirmer le paiement",
       confirming: "Confirmation...",
       confirmPrompt: "Confirmer la réception du virement de {{amount}} de {{email}} ? Cette action activera immédiatement son abonnement.",
+      rejectButton: "Rejeter",
+      rejecting: "Rejet...",
+      rejectPrompt: "Rejeter la demande de virement de {{amount}} de {{email}} ? Cette action n'active aucun abonnement et ne peut pas être annulée.",
     },
     settings: {
       title: "Paramètres de la plateforme",

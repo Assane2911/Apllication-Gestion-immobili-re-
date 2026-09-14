@@ -148,6 +148,106 @@ describe("POST /api/admin/subscriptions/:id/confirm-bank-transfer", () => {
   });
 });
 
+/**
+ * Régression : une demande de virement qui n'était finalement qu'un test (ou
+ * un virement annoncé mais jamais reçu) n'avait aucune issue propre — la
+ * seule action possible était "Confirmer", ce qui aurait activé à tort un
+ * abonnement payant. Sans "rejeter", la ligne restait indéfiniment PENDING.
+ */
+describe("POST /api/admin/subscriptions/:id/reject-bank-transfer", () => {
+  it("refuse l'accès à un gestionnaire (rôle non-admin)", async () => {
+    const manager = await createManager();
+    const record = await createPendingBankTransfer(manager.id);
+
+    const res = await request(app)
+      .post(`/api/admin/subscriptions/${record.id}/reject-bank-transfer`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(403);
+  });
+
+  it("rejette le virement : marque l'enregistrement REJECTED sans activer l'abonnement", async () => {
+    const admin = await createAdmin();
+    const manager = await createManager({ subscriptionStatus: "EXPIRED" });
+    const record = await createPendingBankTransfer(manager.id);
+
+    const res = await request(app)
+      .post(`/api/admin/subscriptions/${record.id}/reject-bank-transfer`)
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.record.status).toBe("REJECTED");
+
+    const [updatedRecord] = await testDb
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.id, record.id));
+    expect(updatedRecord.status).toBe("REJECTED");
+
+    // Aucun accès accordé : contrairement à la confirmation, le rejet ne doit
+    // jamais activer l'abonnement du gestionnaire.
+    const [updatedManager] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(updatedManager.subscriptionStatus).toBe("EXPIRED");
+  });
+
+  it("disparaît de la liste des virements en attente une fois rejeté", async () => {
+    const admin = await createAdmin();
+    const manager = await createManager();
+    const record = await createPendingBankTransfer(manager.id);
+
+    await request(app)
+      .post(`/api/admin/subscriptions/${record.id}/reject-bank-transfer`)
+      .set(authHeader(tokenFor(admin)));
+
+    const res = await request(app)
+      .get("/api/admin/subscriptions/pending-bank-transfers")
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.body.find((r: { id: string }) => r.id === record.id)).toBeUndefined();
+  });
+
+  it("renvoie 404 si l'abonnement n'existe pas", async () => {
+    const admin = await createAdmin();
+
+    const res = await request(app)
+      .post("/api/admin/subscriptions/introuvable/reject-bank-transfer")
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(404);
+  });
+
+  it("refuse de rejeter un abonnement qui n'est pas payé par virement bancaire", async () => {
+    const admin = await createAdmin();
+    const manager = await createManager();
+    const record = await createPendingBankTransfer(manager.id, { paymentMethod: "PAYDUNYA", paymentRef: "pd_token_777" });
+
+    const res = await request(app)
+      .post(`/api/admin/subscriptions/${record.id}/reject-bank-transfer`)
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(400);
+  });
+
+  it("refuse de rejeter un virement déjà confirmé", async () => {
+    const admin = await createAdmin();
+    const manager = await createManager();
+    const record = await createPendingBankTransfer(manager.id, { status: "PAID" });
+
+    const res = await request(app)
+      .post(`/api/admin/subscriptions/${record.id}/reject-bank-transfer`)
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(400);
+
+    const [stillPaid] = await testDb
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.id, record.id));
+    expect(stillPaid.status).toBe("PAID");
+  });
+});
+
 describe("GET /api/admin/dashboard/stats", () => {
   it("refuse l'accès sans authentification", async () => {
     const res = await request(app).get("/api/admin/dashboard/stats");

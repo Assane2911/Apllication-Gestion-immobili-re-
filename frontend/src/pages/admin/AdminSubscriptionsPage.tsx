@@ -28,6 +28,7 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   function load() {
     setLoadError(null);
@@ -52,6 +53,26 @@ export default function AdminSubscriptionsPage() {
       alert(apiErrorMessage(err));
     } finally {
       setConfirmingId(null);
+    }
+  }
+
+  // Pour une demande de test ou un virement annoncé mais jamais reçu : ne
+  // donne jamais accès (contrairement à confirm), retire simplement la ligne
+  // de la liste des virements en attente. Sans cette action, la seule
+  // alternative était de laisser la ligne PENDING indéfiniment ou de
+  // confirmer à tort un paiement fictif.
+  async function reject(row: PendingBankTransfer) {
+    if (!window.confirm(t("admin.subscriptions.rejectPrompt", { email: row.managerEmail, amount: formatMoney(row.amount, row.currency) }))) {
+      return;
+    }
+    setRejectingId(row.id);
+    try {
+      await api.post(`/admin/subscriptions/${row.id}/reject-bank-transfer`);
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    } finally {
+      setRejectingId(null);
     }
   }
 
@@ -105,10 +126,19 @@ export default function AdminSubscriptionsPage() {
                     <td className="py-3 font-bold">{formatMoney(row.amount, row.currency)}</td>
                     <td className="py-3 text-slate-500 dark:text-slate-400">{row.paymentRef || "—"}</td>
                     <td className="py-3">{new Date(row.createdAt).toLocaleDateString(i18n.language)}</td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => reject(row)}
+                        disabled={confirmingId === row.id || rejectingId === row.id}
+                        className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap mr-2"
+                      >
+                        {rejectingId === row.id
+                          ? t("admin.subscriptions.rejecting")
+                          : t("admin.subscriptions.rejectButton")}
+                      </button>
                       <button
                         onClick={() => confirm(row)}
-                        disabled={confirmingId === row.id}
+                        disabled={confirmingId === row.id || rejectingId === row.id}
                         className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
                       >
                         {confirmingId === row.id

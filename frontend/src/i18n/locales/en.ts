@@ -974,6 +974,9 @@ const en: TranslationSchema = {
       confirmButton: "Confirm payment",
       confirming: "Confirming...",
       confirmPrompt: "Confirm receipt of the {{amount}} transfer from {{email}}? This will immediately activate their subscription.",
+      rejectButton: "Reject",
+      rejecting: "Rejecting...",
+      rejectPrompt: "Reject the {{amount}} transfer request from {{email}}? This does not activate any subscription and cannot be undone.",
     },
     settings: {
       title: "Platform settings",

@@ -58,6 +58,36 @@ export const confirmBankTransfer = asyncHandler(async (req: Request, res: Respon
 });
 
 /**
+ * Rejette une demande de virement bancaire encore en attente : ne donne
+ * jamais accès (contrairement à confirmBankTransfer, aucun appel à
+ * activateSubscriptionRecord), marque simplement l'enregistrement REJECTED
+ * pour qu'il disparaisse de la liste des virements en attente. Sert par
+ * exemple à nettoyer une demande de test ou un virement annoncé mais jamais
+ * reçu — sans quoi la seule option de l'administrateur était de laisser la
+ * ligne PENDING indéfiniment ou de confirmer à tort un paiement fictif.
+ */
+export const rejectBankTransfer = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const [record] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, id));
+  if (!record) throw new ApiError(404, "Abonnement introuvable");
+  if (record.paymentMethod !== "BANK_TRANSFER") {
+    throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire");
+  }
+  if (record.status === "PAID") {
+    throw new ApiError(400, "Ce virement a déjà été confirmé : impossible de le rejeter");
+  }
+
+  const [updated] = await db
+    .update(platformSubscriptions)
+    .set({ status: "REJECTED" })
+    .where(eq(platformSubscriptions.id, id))
+    .returning();
+
+  res.json({ success: true, record: updated });
+});
+
+/**
  * Tableau de bord de pilotage de la plateforme (vue d'ensemble pour
  * l'administrateur) : santé du portefeuille de gestionnaires (essai / abonnement
  * payant actif / sans accès), revenu récurrent mensuel (MRR) estimé à partir du

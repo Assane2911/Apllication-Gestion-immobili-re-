@@ -157,4 +157,79 @@ describe("AdminSubscriptionsPage", () => {
     // La ligne reste affichée puisque la confirmation a échoué côté serveur.
     expect(screen.getByText("agence@test.local")).toBeInTheDocument();
   });
+
+  /**
+   * Régression : une demande de test (ou un virement annoncé mais jamais
+   * reçu) n'avait aucune issue propre — la seule action possible était
+   * "Confirmer le paiement", ce qui aurait activé à tort un abonnement payant.
+   */
+  it("rejette un virement après validation : POST puis retire la ligne de la liste", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: [pendingTransfer()] });
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Rejeter" }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/admin/subscriptions/sub-1/reject-bank-transfer"));
+    await waitFor(() => expect(screen.queryByText("agence@test.local")).not.toBeInTheDocument());
+  });
+
+  it("n'envoie rien si l'administrateur annule le rejet", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    mockedApi.get.mockResolvedValueOnce({ data: [pendingTransfer()] });
+
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Rejeter" }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(screen.getByText("agence@test.local")).toBeInTheDocument();
+  });
+
+  it("affiche une alerte si le rejet échoue côté serveur", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: [pendingTransfer()] });
+    mockedApi.post.mockRejectedValueOnce({
+      response: { data: { error: "Ce virement a déjà été confirmé : impossible de le rejeter" } },
+      isAxiosError: true,
+    });
+
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <AdminSubscriptionsPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Rejeter" }));
+
+    await waitFor(() =>
+      expect(window.alert).toHaveBeenCalledWith("Ce virement a déjà été confirmé : impossible de le rejeter")
+    );
+    expect(screen.getByText("agence@test.local")).toBeInTheDocument();
+  });
 });

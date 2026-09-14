@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { confirmBankTransfer, getPlatformDashboardStats, listPendingBankTransfers } from "../controllers/admin.controller";
+import { confirmBankTransfer, getPlatformDashboardStats, listPendingBankTransfers, rejectBankTransfer } from "../controllers/admin.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { authenticate, requireRole } from "../middleware/auth";
 
@@ -12,6 +12,7 @@ router.use(authenticate, requireRole("ADMIN"));
 router.get("/dashboard/stats", getPlatformDashboardStats);
 router.get("/subscriptions/pending-bank-transfers", listPendingBankTransfers);
 router.post("/subscriptions/:id/confirm-bank-transfer", confirmBankTransfer);
+router.post("/subscriptions/:id/reject-bank-transfer", rejectBankTransfer);
 router.get("/settings", getPlatformSettings);
 router.put("/settings", updatePlatformSettings);
 
