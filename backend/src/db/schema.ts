@@ -180,6 +180,14 @@ export const invoices = pgTable(
     // Rappel distinct envoyé quelques jours AVANT l'échéance (voir reminder.service.ts),
     // différent du rappel/avis du 1er du mois qui alimente `reminderSentAt`.
     dueSoonReminderSentAt: timestamp("due_soon_reminder_sent_at", { mode: "date" }),
+    // Réclamation en cours d'un appel à un prestataire de paiement (voir
+    // payInvoice, invoice.controller.ts). Stripe protège son propre appel via
+    // un Idempotency-Key ; PayDunya n'offre aucun mécanisme équivalent, donc
+    // deux clics simultanés sur "Payer" créeraient deux factures PayDunya
+    // distinctes pour un même loyer sans cette marque. Posée juste avant
+    // d'appeler le prestataire, effacée juste après (succès ou échec) : une
+    // valeur non nulle signifie "un appel est en cours", pas "verrouillé".
+    paymentAttemptStartedAt: timestamp("payment_attempt_started_at", { mode: "date" }),
     ...timestamps,
   },
   (table) => ({

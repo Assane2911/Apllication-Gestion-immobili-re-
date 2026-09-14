@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -6,7 +6,7 @@ import { invoiceStatusEnum } from "../db/schema";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, invoices, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
-import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
+import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -87,6 +87,18 @@ const markPaidSchema = z.object({
  * remboursement, pas d'une réécriture silencieuse de l'historique.
  */
 const ETATS_MODIFIABLES = ["PENDING", "LATE"] as const;
+
+/**
+ * Durée pendant laquelle une réclamation de paiement (voir payInvoice) reste
+ * opposable à une nouvelle tentative. Ce n'est pas le temps qu'on ACCORDE au
+ * prestataire — la réclamation est levée juste après son appel, succès ou
+ * échec — mais un filet de rattrapage si le processus s'arrête net entre les
+ * deux (crash, redéploiement) : sans lui, une facture resterait bloquée pour
+ * toujours après un incident, à l'opposé du principe du projet qui préfère
+ * refuser une tentative concurrente plutôt qu'interdire un nouvel essai
+ * légitime. Largement suffisant pour un appel réseau à un prestataire.
+ */
+const DUREE_RECLAMATION_MS = 60_000;
 
 /**
  * Refuse une facture déjà dans un état terminal, avec un message qui dit
@@ -249,17 +261,52 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
   if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée");
   if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée");
 
-  const result = await initiatePayment({
-    method: body.method as PaymentMethodKey,
-    amount: row.invoice.amount,
-    // Chaque facture porte sa devise (invoices.currency) : un loyer saisi en
-    // EUR ne doit pas partir vers un prestataire qui encaisse en FCFA.
-    currency: row.invoice.currency,
-    invoiceId: row.invoice.id,
-    payerEmail: row.tenant.email,
-    bankReference: body.bankReference,
-    returnPath: "/portail/paiements",
-  });
+  // Réclamation atomique, AVANT tout appel au prestataire. Stripe se protège
+  // lui-même via un Idempotency-Key (voir initiateStripePayment) ; l'API
+  // PayDunya n'a rien d'équivalent, donc deux clics simultanés sur "Payer"
+  // atteignaient tous les deux initiatePayment et créaient deux factures
+  // PayDunya distinctes pour un seul loyer — seule l'écriture FINALE ci-dessous
+  // était protégée, trop tard pour empêcher le second appel réseau. Une seule
+  // des deux requêtes concurrentes peut poser cette marque ; l'autre est
+  // refusée ici, avant d'avoir contacté qui que ce soit.
+  const seuilReclamationPerimee = new Date(Date.now() - DUREE_RECLAMATION_MS);
+  const [reclamee] = await db
+    .update(invoices)
+    .set({ paymentAttemptStartedAt: new Date() })
+    .where(
+      and(
+        eq(invoices.id, row.invoice.id),
+        inArray(invoices.status, [...ETATS_MODIFIABLES]),
+        or(isNull(invoices.paymentAttemptStartedAt), lt(invoices.paymentAttemptStartedAt, seuilReclamationPerimee))
+      )
+    )
+    .returning();
+
+  if (!reclamee) {
+    throw new ApiError(409, "Un paiement est déjà en cours pour cette facture. Patientez un instant puis réessayez.");
+  }
+
+  let result: PaymentIntentResult;
+  try {
+    result = await initiatePayment({
+      method: body.method as PaymentMethodKey,
+      amount: row.invoice.amount,
+      // Chaque facture porte sa devise (invoices.currency) : un loyer saisi en
+      // EUR ne doit pas partir vers un prestataire qui encaisse en FCFA.
+      currency: row.invoice.currency,
+      invoiceId: row.invoice.id,
+      payerEmail: row.tenant.email,
+      bankReference: body.bankReference,
+      returnPath: "/portail/paiements",
+    });
+  } finally {
+    // Levée inconditionnelle : que l'appel ait réussi, échoué, ou n'ait même
+    // pas eu lieu (exception avant le fetch), la réclamation ne doit jamais
+    // survivre à cette tentative. C'est l'écriture ci-dessous (conditionnée à
+    // l'état) qui protège le résultat, pas cette marque — elle ne fait que
+    // fermer la fenêtre du prochain appel réseau.
+    await db.update(invoices).set({ paymentAttemptStartedAt: null }).where(eq(invoices.id, row.invoice.id));
+  }
 
   // Même précaution que pour le règlement manuel : la facture a pu être réglée
   // pendant l'appel au prestataire (un webhook arrive vite). Sans cette
