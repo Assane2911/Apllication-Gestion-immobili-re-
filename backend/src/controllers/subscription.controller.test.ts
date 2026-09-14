@@ -120,6 +120,38 @@ describe("POST /api/subscription/subscribe", () => {
     expect(updated.subscriptionStatus).toBe("TRIAL");
     expect(updated.subscriptionPlan).not.toBe("PRO");
   });
+
+  // Régression. La date de fin repartait systématiquement de l'instant de la
+  // demande : un gestionnaire abonné jusqu'à la fin du mois qui renouvelait en
+  // avance perdait purement et simplement les jours restants. Or renouveler
+  // avant l'échéance est exactement ce que l'interface encourage, et le seul
+  // moyen d'éviter une coupure d'accès.
+  it("reporte les jours déjà payés lors d'un renouvellement anticipé", async () => {
+    const finEnCours = new Date();
+    finEnCours.setDate(finEnCours.getDate() + 20);
+
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "PRO",
+      subscriptionEndsAt: finEnCours,
+    });
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", billingCycle: "MONTHLY", paymentMethod: "DEMO" });
+
+    expect(res.status).toBe(200);
+
+    // La nouvelle période démarre à la fin de l'ancienne, pas aujourd'hui.
+    expect(new Date(res.body.record.startDate).getTime()).toBe(finEnCours.getTime());
+
+    // Et l'accès court donc environ 50 jours (20 restants + 1 mois), pas 30.
+    const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    const joursRestants =
+      (updated.subscriptionEndsAt!.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    expect(joursRestants).toBeGreaterThan(45);
+  });
 });
 
 describe("POST /api/subscription/cancel", () => {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
 import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
+import { calculerPeriode } from "../services/subscriptionPeriod.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { computeSubscriptionInfo } from "./auth.controller";
 
@@ -188,13 +189,17 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
     returnPath: "/subscription",
   });
 
+  // La période ne repart pas de zéro à chaque renouvellement : si le
+  // gestionnaire a encore des jours payés devant lui, elle les prolonge au lieu
+  // de les effacer (voir calculerPeriode). Renouveler avant l'échéance — ce
+  // que l'interface encourage, et le seul moyen d'éviter une coupure — ne coûte
+  // donc plus les jours restants.
   const now = new Date();
-  const endDate = new Date(now);
-  if (body.billingCycle === "ANNUAL") {
-    endDate.setFullYear(endDate.getFullYear() + 1);
-  } else {
-    endDate.setMonth(endDate.getMonth() + 1);
-  }
+  const { startDate, endDate } = calculerPeriode({
+    maintenant: now,
+    cycle: body.billingCycle,
+    finActuelle: user.subscriptionEndsAt,
+  });
 
   // N'active RÉELLEMENT l'abonnement (droits d'accès) que si le paiement est
   // confirmé (status "PAID" — cas DEMO, simulation sans clé configurée, ou
@@ -235,7 +240,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
         status: isConfirmed ? "PAID" : "PENDING",
         paymentMethod: body.paymentMethod,
         paymentRef: paymentResult.reference,
-        startDate: now,
+        startDate,
         endDate,
       })
       .returning();

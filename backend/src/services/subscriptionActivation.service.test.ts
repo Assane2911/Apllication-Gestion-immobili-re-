@@ -5,6 +5,8 @@ import { createManager, createPlatformSubscription } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { activateSubscriptionRecord } from "./subscriptionActivation.service";
 
+const JOUR = 24 * 60 * 60 * 1000;
+
 describe("activateSubscriptionRecord", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -85,7 +87,67 @@ describe("activateSubscriptionRecord", () => {
     expect(updatedUser.subscriptionStatus).toBe("ACTIVE");
     expect(updatedUser.subscriptionPlan).toBe("PRO");
     expect(updatedUser.subscriptionPaymentMethod).toBe("BANK_TRANSFER");
-    expect(new Date(updatedUser.subscriptionEndsAt!).getTime()).toBe(endDate.getTime());
+
+    // La fin des droits vient du RECALCUL fait ici, pas de la date figée à la
+    // demande : un mois plein à partir de l'ouverture de l'accès, et non les
+    // 30 jours qu'annonçait l'enregistrement (voir le test suivant).
+    expect(updatedUser.subscriptionEndsAt!.getTime()).toBe(updated!.endDate.getTime());
+    expect(updatedUser.subscriptionEndsAt!.getTime()).toBeGreaterThan(endDate.getTime() - JOUR);
+  });
+
+  // Régression. La période était figée au moment de la DEMANDE, alors que
+  // l'accès ne s'ouvre qu'à la validation du virement par un administrateur.
+  // Entre les deux il s'écoule souvent plusieurs jours : le client payait un
+  // mois et en recevait trois semaines.
+  it("ne fait pas courir l'abonnement pendant l'attente de validation du virement", async () => {
+    const manager = await createManager({ subscriptionStatus: "TRIAL" });
+
+    // Virement déclaré il y a 12 jours, validé seulement aujourd'hui.
+    const demande = new Date(Date.now() - 12 * JOUR);
+    const finAnnoncee = new Date(demande.getTime() + 30 * JOUR);
+    const record = await createPlatformSubscription(manager.id, {
+      status: "PENDING",
+      plan: "PRO",
+      paymentMethod: "BANK_TRANSFER",
+      startDate: demande,
+      endDate: finAnnoncee,
+    });
+
+    const updated = await activateSubscriptionRecord(record.id, testDb);
+
+    const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    const joursCouverts = (compte.subscriptionEndsAt!.getTime() - Date.now()) / JOUR;
+
+    // Un mois entier à partir d'aujourd'hui — pas les 18 jours qui restaient.
+    expect(joursCouverts).toBeGreaterThan(27);
+    expect(joursCouverts).toBeLessThan(32);
+
+    // L'historique de facturation porte les dates corrigées, sans quoi il
+    // continuerait d'annoncer une période que le compte n'a pas eue.
+    expect(updated!.startDate.getTime()).toBeGreaterThan(demande.getTime());
+    expect(updated!.endDate.getTime()).toBe(compte.subscriptionEndsAt!.getTime());
+  });
+
+  it("reporte les droits déjà payés quand le virement anticipe l'échéance", async () => {
+    // Le gestionnaire a réglé d'avance : il lui reste 20 jours au moment où
+    // l'administrateur valide. Ils doivent s'ajouter, pas disparaître.
+    const finEnCours = new Date(Date.now() + 20 * JOUR);
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "PRO",
+      subscriptionEndsAt: finEnCours,
+    });
+    const record = await createPlatformSubscription(manager.id, {
+      status: "PENDING",
+      plan: "PRO",
+      paymentMethod: "BANK_TRANSFER",
+    });
+
+    await activateSubscriptionRecord(record.id, testDb);
+
+    const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    const joursCouverts = (compte.subscriptionEndsAt!.getTime() - Date.now()) / JOUR;
+    expect(joursCouverts).toBeGreaterThan(45);
   });
 
   it("est idempotent : un enregistrement déjà PAID n'est pas retraité", async () => {

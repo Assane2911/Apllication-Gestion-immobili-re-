@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, DbClient, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
+import { calculerPeriode } from "./subscriptionPeriod.service";
 
 /**
  * Active réellement l'abonnement d'un utilisateur à partir d'un enregistrement
@@ -49,9 +50,29 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
   if (!record) return null;
   if (record.status === "PAID") return record;
 
+  const [compte] = await dbClient.select().from(users).where(eq(users.id, record.userId));
+  if (!compte) return null;
+
+  // La période est RECALCULÉE ici, et non reprise telle qu'elle avait été
+  // enregistrée à la demande. Un virement bancaire est validé plusieurs jours
+  // après avoir été déclaré ; garder les dates de la demande revenait à faire
+  // courir l'abonnement pendant un délai où le compte était encore fermé — le
+  // client payait un mois et en recevait trois semaines. Le même écart existe
+  // pour tout paiement confirmé en différé.
+  //
+  // On repart donc de l'instant où l'accès s'ouvre réellement, en reportant
+  // les droits déjà payés s'il en reste (voir calculerPeriode).
+  const { startDate, endDate } = calculerPeriode({
+    maintenant: new Date(),
+    cycle: record.billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+    finActuelle: compte.subscriptionEndsAt,
+  });
+
+  // L'historique de facturation porte les dates corrigées : sans cela il
+  // continuerait d'annoncer une période que le compte n'a pas eue.
   const [updatedRecord] = await dbClient
     .update(platformSubscriptions)
-    .set({ status: "PAID" })
+    .set({ status: "PAID", startDate, endDate })
     .where(eq(platformSubscriptions.id, subscriptionId))
     .returning();
 
@@ -60,7 +81,7 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
     .set({
       subscriptionStatus: "ACTIVE",
       subscriptionPlan: record.plan,
-      subscriptionEndsAt: record.endDate,
+      subscriptionEndsAt: endDate,
       subscriptionPaymentMethod: record.paymentMethod,
     })
     .where(eq(users.id, record.userId));
