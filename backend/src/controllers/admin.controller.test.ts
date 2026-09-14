@@ -146,6 +146,35 @@ describe("POST /api/admin/subscriptions/:id/confirm-bank-transfer", () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
+
+  /**
+   * Régression : rien n'empêchait de confirmer un virement pourtant déjà
+   * rejeté par un administrateur (ex. reject-bank-transfer suivi, par erreur
+   * ou par un second administrateur, de confirm-bank-transfer) — l'abonnement
+   * se retrouvait activé alors même que le virement avait été explicitement
+   * jugé invalide/jamais reçu.
+   */
+  it("refuse de confirmer un virement déjà rejeté", async () => {
+    const admin = await createAdmin();
+    const manager = await createManager({ subscriptionStatus: "EXPIRED" });
+    const record = await createPendingBankTransfer(manager.id, { status: "REJECTED" });
+
+    const res = await request(app)
+      .post(`/api/admin/subscriptions/${record.id}/confirm-bank-transfer`)
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(400);
+
+    const [stillRejected] = await testDb
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.id, record.id));
+    expect(stillRejected.status).toBe("REJECTED");
+
+    // Aucun accès ne doit avoir été accordé au gestionnaire.
+    const [updatedManager] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(updatedManager.subscriptionStatus).toBe("EXPIRED");
+  });
 });
 
 /**

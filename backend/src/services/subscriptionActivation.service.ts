@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, DbClient, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
+import { ApiError } from "../utils/asyncHandler";
 import { calculerPeriode } from "./subscriptionPeriod.service";
 
 /**
@@ -49,6 +50,18 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
 
   if (!record) return null;
   if (record.status === "PAID") return record;
+
+  // Un enregistrement REJECTED (virement bancaire explicitement rejeté par un
+  // administrateur, voir rejectBankTransfer) ne doit JAMAIS pouvoir être
+  // activé après coup : sans ce garde-fou, confirmer un virement déjà rejeté
+  // (ou rappeler cette fonction par erreur sur un enregistrement rejeté)
+  // donnait quand même accès à l'abonnement payant. On lève une erreur
+  // plutôt que de faire un no-op silencieux comme pour PAID, car ici
+  // l'appelant croit confirmer un paiement qui n'a en réalité jamais été
+  // validé.
+  if (record.status === "REJECTED") {
+    throw new ApiError(400, "Ce virement a été rejeté : impossible de le confirmer");
+  }
 
   const [compte] = await dbClient.select().from(users).where(eq(users.id, record.userId));
   if (!compte) return null;
