@@ -1,7 +1,10 @@
+import { eq } from "drizzle-orm";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { authHeader, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
+import { properties } from "../db/schema";
+import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
+import { testDb } from "../test/setupTestDb";
 
 describe("POST /api/contracts", () => {
   beforeEach(() => {
@@ -189,6 +192,114 @@ describe("POST /api/contracts/:id/scan", () => {
       });
 
     expect(res.status).toBe(403);
+  });
+});
+
+/**
+ * Régression : contrairement à createContract, updateContract ne revalidait
+ * ni l'ordre des dates, ni les chevauchements avec un autre contrat ACTIF du
+ * même bien, ni l'occupation réelle du ou des biens concernés — un contrat
+ * pouvait ainsi, après modification, chevaucher un autre bail actif sur le
+ * même bien (double location silencieuse) sans qu'aucune requête ne le
+ * détecte, et un bien pouvait rester à tort OCCUPIED ou AVAILABLE après un
+ * changement de bien ou une réactivation.
+ */
+describe("PUT /api/contracts/:id — revalidation", () => {
+  it("rejette une date de fin antérieure ou égale à la date de début", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 0, 1),
+      endDate: new Date(2027, 0, 1),
+      status: "ACTIVE",
+    });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ endDate: "2025-06-01" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("refuse d'étendre les dates d'un contrat actif si elles chevauchent alors un autre contrat actif du même bien", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenantA = await createTenant(manager.id);
+    const tenantB = await createTenant(manager.id);
+    await createContract(property.id, tenantA.id, {
+      startDate: new Date(2026, 0, 1),
+      endDate: new Date(2026, 5, 1),
+      status: "ACTIVE",
+    });
+    const contractB = await createContract(property.id, tenantB.id, {
+      startDate: new Date(2026, 6, 1),
+      endDate: new Date(2027, 0, 1),
+      status: "ACTIVE",
+    });
+
+    // On étend le début de B pour qu'il chevauche désormais A.
+    const res = await request(app)
+      .put(`/api/contracts/${contractB.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ startDate: "2026-03-01" });
+
+    expect(res.status).toBe(409);
+  });
+
+  it("refuse de déplacer un contrat actif vers un bien déjà loué sur la même période", async () => {
+    const manager = await createManager();
+    const propertyA = await createProperty(manager.id, { status: "OCCUPIED" });
+    const propertyB = await createProperty(manager.id, { status: "OCCUPIED" });
+    const tenantA = await createTenant(manager.id);
+    const tenantB = await createTenant(manager.id);
+    const contractA = await createContract(propertyA.id, tenantA.id, { status: "ACTIVE" });
+    await createContract(propertyB.id, tenantB.id, { status: "ACTIVE" }); // mêmes dates par défaut
+
+    const res = await request(app)
+      .put(`/api/contracts/${contractA.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: propertyB.id });
+
+    expect(res.status).toBe(409);
+  });
+
+  it("libère l'ancien bien et occupe le nouveau quand un contrat actif change de bien", async () => {
+    const manager = await createManager();
+    const propertyA = await createProperty(manager.id, { status: "OCCUPIED" });
+    const propertyB = await createProperty(manager.id); // AVAILABLE
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(propertyA.id, tenant.id, { status: "ACTIVE" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: propertyB.id });
+
+    expect(res.status).toBe(200);
+
+    const [apresA] = await testDb.select().from(properties).where(eq(properties.id, propertyA.id));
+    const [apresB] = await testDb.select().from(properties).where(eq(properties.id, propertyB.id));
+    expect(apresA.status).toBe("AVAILABLE");
+    expect(apresB.status).toBe("OCCUPIED");
+  });
+
+  it("réoccupe le bien quand un contrat terminé est réactivé (ENDED -> ACTIVE)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id); // AVAILABLE
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "ACTIVE" });
+
+    expect(res.status).toBe(200);
+
+    const [apres] = await testDb.select().from(properties).where(eq(properties.id, property.id));
+    expect(apres.status).toBe("OCCUPIED");
   });
 });
 

@@ -171,6 +171,46 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     if (!newTenant || newTenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
   }
 
+  // Valeurs EFFECTIVES après la modification (partielle) demandée : c'est sur
+  // elles, et non sur les seuls champs envoyés, que les contrôles suivants
+  // doivent porter.
+  const newPropertyId = body.propertyId ?? existing.propertyId;
+  const newStartDate = body.startDate ?? existing.startDate;
+  const newEndDate = body.endDate ?? existing.endDate;
+  const newStatus = body.status ?? existing.status;
+
+  // createContract validait déjà ceci ; updateContract, lui, ne le faisait
+  // jamais — un simple changement de date pouvait donc inverser début/fin.
+  if (newEndDate <= newStartDate) {
+    throw new ApiError(400, "La date de fin doit être postérieure à la date de début");
+  }
+
+  // Régression : updateContract ne revalidait ni les chevauchements ni le
+  // bien lorsqu'on déplaçait un contrat vers un AUTRE bien, qu'on modifiait
+  // ses dates, ou qu'on le réactivait (ENDED/TERMINATED -> ACTIVE) — seule la
+  // création (createContract) le faisait. Un contrat ACTIVE pouvait ainsi se
+  // retrouver, après modification, à chevaucher un autre contrat ACTIVE sur
+  // le même bien (double location silencieuse), ce qu'aucune requête ne
+  // détectait ni n'empêchait.
+  if (newStatus === "ACTIVE") {
+    const existingActive = await db
+      .select()
+      .from(contracts)
+      .where(and(eq(contracts.propertyId, newPropertyId), eq(contracts.status, "ACTIVE")));
+
+    const hasOverlap = existingActive.some(
+      (c: typeof contracts.$inferSelect) =>
+        c.id !== existing.id && new Date(c.startDate) < newEndDate && new Date(c.endDate) > newStartDate
+    );
+
+    if (hasOverlap) {
+      throw new ApiError(
+        409,
+        "Ce bien fait déjà l'objet d'un contrat actif sur cette période. Clôturez le contrat en cours avant d'en créer un nouveau."
+      );
+    }
+  }
+
   // Tout ou rien, comme dans deleteContract. Clore un bail et reliberer le
   // bien sont UNE decision : en deux ecritures separees, l'echec de la seconde
   // laissait un contrat termine sur un bien qui reste OCCUPIED — donc invisible
@@ -184,11 +224,24 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   const contract = await db.transaction(async (tx: Transaction) => {
     const [contract] = await tx.update(contracts).set(body).where(eq(contracts.id, req.params.id)).returning();
 
-    if (body.status === "ENDED" || body.status === "TERMINATED") {
-      const propertyContracts = await tx.select().from(contracts).where(eq(contracts.propertyId, contract.propertyId));
-      const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
-      if (stillActive === 0) {
-        await tx.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, contract.propertyId));
+    // Resynchronise l'occupation de TOUS les biens concernés — l'ancien (si le
+    // contrat en changeait) et le nouveau — dès que le bien ou le statut a pu
+    // en changer l'occupation réelle. Se limiter, comme avant ce correctif, au
+    // seul cas ENDED/TERMINATED laissait deux trous : déplacer un contrat
+    // ACTIVE vers un autre bien ne libérait jamais l'ancien ni n'occupait le
+    // nouveau, et réactiver un contrat (ENDED/TERMINATED -> ACTIVE) ne remettait
+    // jamais le bien à OCCUPIED.
+    const bienChange = body.propertyId !== undefined && body.propertyId !== existing.propertyId;
+    const statutChange = body.status !== undefined && body.status !== existing.status;
+    if (bienChange || statutChange) {
+      const biensConcernes = new Set([existing.propertyId, contract.propertyId]);
+      for (const propertyId of biensConcernes) {
+        const propertyContracts = await tx.select().from(contracts).where(eq(contracts.propertyId, propertyId));
+        const aUnContratActif = propertyContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE");
+        await tx
+          .update(properties)
+          .set({ status: aUnContratActif ? "OCCUPIED" : "AVAILABLE" })
+          .where(eq(properties.id, propertyId));
       }
     }
 
