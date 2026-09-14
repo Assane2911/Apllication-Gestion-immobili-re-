@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import {
   authHeader,
+  createAdmin,
   createContract,
   createManager,
   createProperty,
@@ -343,6 +344,36 @@ describe("POST /api/issues/:id/photo", () => {
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
       .set(authHeader(tokenFor(otherManager)))
+      .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+
+    expect(res.status).toBe(403);
+  });
+
+  /**
+   * Régression : le contrôle d'accès (deux `if` indépendants, un pour TENANT,
+   * un pour MANAGER) laissait passer silencieusement tout autre rôle — un
+   * compte ADMIN pouvait ainsi ajouter une photo à n'importe quel signalement
+   * d'incident de n'importe quel gestionnaire/locataire de la plateforme.
+   * Cette route n'a d'ailleurs aucun `requireRole` (voir issue.routes.ts) :
+   * seul ce contrôle applicatif protégeait la ressource.
+   */
+  it("refuse l'ajout de photo par un administrateur", async () => {
+    const manager = await createManager();
+    const admin = await createAdmin();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const createRes = await request(app)
+      .post("/api/issues")
+      .set(tenantToken(tenant.id))
+      .field("contractId", contract.id)
+      .field("title", "Fuite d'eau")
+      .field("description", "Description")
+      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+    const res = await request(app)
+      .post(`/api/issues/${createRes.body.id}/photo`)
+      .set(authHeader(tokenFor(admin)))
       .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(403);

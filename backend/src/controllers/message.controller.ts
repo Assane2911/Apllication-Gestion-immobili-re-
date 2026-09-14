@@ -6,6 +6,7 @@ import { db } from "../db/client";
 import { contracts, messages, properties, tenants, users } from "../db/schema";
 import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
 
 export const listConversations = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -84,12 +85,11 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
 
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
-  if (req.user.role === "TENANT" && contract.contract.tenantId !== req.user.tenantId) {
-    throw new ApiError(403, "Accès refusé");
-  }
-  if (req.user.role === "MANAGER" && contract.property.managerId !== req.user.userId) {
-    throw new ApiError(403, "Accès refusé");
-  }
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    contract.contract.tenantId === req.user.tenantId,
+    contract.property.managerId === req.user.userId
+  );
 
   const msgList = await db
     .select({
@@ -143,12 +143,11 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   if (!row) throw new ApiError(404, "Contrat introuvable");
   const { contract } = row;
 
-  if (req.user.role === "TENANT" && contract.tenantId !== req.user.tenantId) {
-    throw new ApiError(403, "Accès refusé");
-  }
-  if (req.user.role === "MANAGER" && row.property.managerId !== req.user.userId) {
-    throw new ApiError(403, "Accès refusé");
-  }
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    contract.tenantId === req.user.tenantId,
+    row.property.managerId === req.user.userId
+  );
 
   const [newMsg] = await db
     .insert(messages)

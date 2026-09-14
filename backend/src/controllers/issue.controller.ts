@@ -8,6 +8,7 @@ import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 function isIssueStatus(value: unknown): value is (typeof issueStatusEnum.enumValues)[number] {
@@ -219,12 +220,11 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
   if (!row) throw new ApiError(404, "Signalement introuvable");
   const { issue } = row;
 
-  if (req.user.role === "TENANT" && issue.tenantId !== req.user.tenantId) {
-    throw new ApiError(403, "Accès refusé");
-  }
-  if (req.user.role === "MANAGER" && row.property.managerId !== req.user.userId) {
-    throw new ApiError(403, "Accès refusé");
-  }
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    issue.tenantId === req.user.tenantId,
+    row.property.managerId === req.user.userId
+  );
 
   const newPhotoUrl = await uploadPrivateFile(req.file, "issues");
 

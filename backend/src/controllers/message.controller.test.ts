@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import {
   authHeader,
+  createAdmin,
   createContract,
   createManager,
   createProperty,
@@ -77,6 +78,42 @@ describe("Messages API (/api/messages)", () => {
     const res = await request(app)
       .get(`/api/messages/${contractA.id}`)
       .set(authHeader(tokenFor(managerB)));
+
+    expect(res.status).toBe(403);
+  });
+
+  /**
+   * Régression : le contrôle d'accès était écrit comme deux `if` indépendants
+   * (un pour TENANT, un pour MANAGER) — un rôle ADMIN ne déclenchait ni l'un
+   * ni l'autre, donc n'était jamais refusé. Un compte ADMIN pouvait ainsi lire
+   * (et même écrire dans) n'importe quelle conversation privée
+   * gestionnaire-locataire de la plateforme.
+   */
+  it("GET /api/messages/:id — interdit l'accès à un administrateur", async () => {
+    const manager = await createManager();
+    const admin = await createAdmin();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .get(`/api/messages/${contract.id}`)
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(403);
+  });
+
+  it("POST /api/messages/:id — interdit à un administrateur d'écrire dans une conversation", async () => {
+    const manager = await createManager();
+    const admin = await createAdmin();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .post(`/api/messages/${contract.id}`)
+      .set(authHeader(tokenFor(admin)))
+      .send({ content: "Message injecté" });
 
     expect(res.status).toBe(403);
   });

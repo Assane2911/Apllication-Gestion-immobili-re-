@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import {
   authHeader,
+  createAdmin,
   createContract,
   createInvoice,
   createManager,
@@ -99,6 +100,27 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("PAID");
   });
+
+  /**
+   * Régression : le contrôle d'accès (deux `if` indépendants, un pour TENANT,
+   * un pour MANAGER) laissait passer silencieusement tout autre rôle — un
+   * compte ADMIN pouvait ainsi récupérer la quittance de n'importe quel
+   * locataire de n'importe quel gestionnaire de la plateforme.
+   */
+  it("interdit l'accès à un administrateur", async () => {
+    const manager = await createManager();
+    const admin = await createAdmin();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, { status: "PAID", paidAt: new Date() });
+
+    const res = await request(app)
+      .get(`/api/documents/receipt/${invoice.id}`)
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(403);
+  });
 });
 
 describe("GET /api/documents/lease/:contractId", () => {
@@ -164,6 +186,20 @@ describe("GET /api/documents/lease/:contractId", () => {
 
     expect(res.status).toBe(403);
   });
+
+  it("interdit l'accès à un administrateur", async () => {
+    const manager = await createManager();
+    const admin = await createAdmin();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .get(`/api/documents/lease/${contract.id}`)
+      .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(403);
+  });
 });
 
 describe("GET /api/documents/lease-scan/:contractId", () => {
@@ -224,6 +260,22 @@ describe("GET /api/documents/lease-scan/:contractId", () => {
     const res = await request(app)
       .get(`/api/documents/lease-scan/${contract.id}`)
       .set(authHeader(tokenFor(managerB)));
+
+    expect(res.status).toBe(403);
+  });
+
+  it("interdit l'accès à un administrateur", async () => {
+    const manager = await createManager();
+    const admin = await createAdmin();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      scannedContractUrl: "contracts/test-scan.pdf",
+    } as any);
+
+    const res = await request(app)
+      .get(`/api/documents/lease-scan/${contract.id}`)
+      .set(authHeader(tokenFor(admin)));
 
     expect(res.status).toBe(403);
   });

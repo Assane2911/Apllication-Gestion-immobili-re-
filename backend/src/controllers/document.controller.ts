@@ -5,6 +5,7 @@ import { agencySettings, contracts, invoices, properties, tenants } from "../db/
 import { generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
 
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -16,19 +17,18 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, invoice.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
-  // Sécurité locataire
-  if (req.user.role === "TENANT" && contract.tenantId !== req.user.tenantId) {
-    throw new ApiError(403, "Accès refusé");
-  }
-
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
 
-  // Sécurité gestionnaire : la facture doit appartenir à l'un de ses biens
-  // (sans ce contrôle, n'importe quel gestionnaire pouvait récupérer la
-  // quittance d'une autre agence en devinant/récupérant l'ID de la facture).
-  if (req.user.role === "MANAGER" && property?.managerId !== req.user.userId) {
-    throw new ApiError(403, "Accès refusé");
-  }
+  // Sécurité locataire/gestionnaire : seuls le locataire du contrat, ou le
+  // gestionnaire propriétaire du bien (sans ce dernier contrôle, n'importe
+  // quel gestionnaire pouvait récupérer la quittance d'une autre agence en
+  // devinant/récupérant l'ID de la facture), ont accès à cette quittance —
+  // tout autre rôle, y compris ADMIN, est refusé par défaut.
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    contract.tenantId === req.user.tenantId,
+    property?.managerId === req.user.userId
+  );
 
   // Une quittance de loyer atteste juridiquement du paiement effectif du loyer :
   // elle ne peut être délivrée que si la facture est acquittée (PAID).
@@ -86,18 +86,17 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
-  if (req.user.role === "TENANT" && contract.tenantId !== req.user.tenantId) {
-    throw new ApiError(403, "Accès refusé");
-  }
-
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
 
-  // Sécurité gestionnaire : le contrat doit appartenir à l'un de ses biens
-  // (même faille que ci-dessus pour les quittances : sans ce contrôle,
-  // n'importe quel gestionnaire pouvait récupérer le bail d'une autre agence).
-  if (req.user.role === "MANAGER" && property?.managerId !== req.user.userId) {
-    throw new ApiError(403, "Accès refusé");
-  }
+  // Sécurité locataire/gestionnaire : même contrôle que pour les quittances
+  // (voir getInvoiceReceipt ci-dessus) — sans lui, n'importe quel gestionnaire
+  // pouvait récupérer le bail d'une autre agence, et tout compte ADMIN
+  // pouvait lire n'importe quel bail de la plateforme.
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    contract.tenantId === req.user.tenantId,
+    property?.managerId === req.user.userId
+  );
 
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
   const [agency] = property?.managerId
@@ -128,15 +127,13 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
-  if (req.user.role === "TENANT" && contract.tenantId !== req.user.tenantId) {
-    throw new ApiError(403, "Accès refusé");
-  }
-
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
 
-  if (req.user.role === "MANAGER" && property?.managerId !== req.user.userId) {
-    throw new ApiError(403, "Accès refusé");
-  }
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    contract.tenantId === req.user.tenantId,
+    property?.managerId === req.user.userId
+  );
 
   if (!contract.scannedContractUrl) {
     throw new ApiError(404, "Aucun contrat papier scanné n'est rattaché à ce bail");
