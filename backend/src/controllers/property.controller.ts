@@ -91,10 +91,16 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
 
 export const updateProperty = asyncHandler(async (req: Request, res: Response) => {
   const body = propertySchema.partial().parse(req.body);
-  const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
   if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+
+  // La vérification de propriété doit précéder l'upload : sinon, un
+  // gestionnaire pouvait faire uploader (et donc stocker, sur notre
+  // infrastructure, à nos frais) n'importe quel fichier arbitraire en visant
+  // simplement l'id du bien d'un AUTRE gestionnaire — le 404 n'arrivait
+  // qu'après coup, une fois le fichier déjà écrit sans jamais être utilisé.
+  const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   // Le statut d'un bien (AVAILABLE/OCCUPIED/MAINTENANCE) est normalement
   // synchronisé automatiquement par contract.controller.ts au gré des

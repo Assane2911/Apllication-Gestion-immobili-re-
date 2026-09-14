@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { tenants, users } from "../db/schema";
+import { uploadPrivateFile } from "../services/storage.service";
 import {
   authHeader,
   createContract,
@@ -12,6 +13,13 @@ import {
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+
+// Permet de vérifier qu'aucun upload n'est déclenché quand la vérification
+// de propriété échoue (voir la régression ci-dessous).
+vi.mock("../services/storage.service", () => ({
+  uploadPrivateFile: vi.fn().mockResolvedValue("tenants/mock-document.pdf"),
+  getSignedUrl: vi.fn().mockResolvedValue("http://test.local/signed/mock-document.pdf"),
+}));
 
 describe("POST /api/tenants", () => {
   it("crée une fiche locataire pour le gestionnaire connecté", async () => {
@@ -155,5 +163,29 @@ describe("GET /api/tenants — isolation entre gestionnaires", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
+  });
+});
+
+describe("PUT /api/tenants/:id — ordre upload / vérification de propriété", () => {
+  /**
+   * Régression : updateTenant appelait uploadPrivateFile AVANT de vérifier
+   * que le locataire appartient au gestionnaire connecté. Un gestionnaire
+   * pouvait donc faire stocker (sur notre infrastructure, à nos frais)
+   * n'importe quel fichier arbitraire en visant l'id du locataire d'un AUTRE
+   * gestionnaire — le 404 n'arrivait qu'après coup, une fois le fichier déjà
+   * uploadé sans jamais être utilisé nulle part.
+   */
+  it("n'uploade jamais la pièce d'identité quand le locataire n'appartient pas au gestionnaire connecté", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const intrus = await createManager();
+
+    const res = await request(app)
+      .put(`/api/tenants/${tenant.id}`)
+      .set(authHeader(tokenFor(intrus)))
+      .attach("idDocument", Buffer.from("contenu-document-factice"), "cni.pdf");
+
+    expect(res.status).toBe(404);
+    expect(uploadPrivateFile).not.toHaveBeenCalled();
   });
 });

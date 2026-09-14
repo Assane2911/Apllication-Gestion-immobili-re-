@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { invoices, properties } from "../db/schema";
+import { uploadPublicFile } from "../services/storage.service";
 import {
   authHeader,
   createContract,
@@ -12,6 +13,12 @@ import {
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+
+// Permet de vérifier qu'aucun upload n'est déclenché quand la vérification
+// de propriété échoue (voir la régression ci-dessous).
+vi.mock("../services/storage.service", () => ({
+  uploadPublicFile: vi.fn().mockResolvedValue("http://test.local/mock-image.png"),
+}));
 
 describe("POST /api/properties — devise", () => {
   // Regression : property.controller n'a longtemps pas gere la devise du tout.
@@ -308,5 +315,29 @@ describe("GET /api/properties — isolation entre gestionnaires", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
+  });
+});
+
+describe("PUT /api/properties/:id — ordre upload / vérification de propriété", () => {
+  /**
+   * Régression : updateProperty appelait uploadPublicFile AVANT de vérifier
+   * que le bien appartient au gestionnaire connecté. Un gestionnaire pouvait
+   * donc faire stocker (sur notre infrastructure, à nos frais) n'importe
+   * quel fichier arbitraire en visant l'id du bien d'un AUTRE gestionnaire —
+   * le 404 n'arrivait qu'après coup, une fois le fichier déjà uploadé sans
+   * jamais être utilisé nulle part.
+   */
+  it("n'uploade jamais l'image quand le bien n'appartient pas au gestionnaire connecté", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const intrus = await createManager();
+
+    const res = await request(app)
+      .put(`/api/properties/${property.id}`)
+      .set(authHeader(tokenFor(intrus)))
+      .attach("image", Buffer.from("contenu-image-factice"), "photo.png");
+
+    expect(res.status).toBe(404);
+    expect(uploadPublicFile).not.toHaveBeenCalled();
   });
 });
