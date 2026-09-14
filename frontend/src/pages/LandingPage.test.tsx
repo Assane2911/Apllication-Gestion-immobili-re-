@@ -53,6 +53,25 @@ describe("LandingPage", () => {
     expect(screen.queryByRole("link", { name: "Se connecter" })).not.toBeInTheDocument();
   });
 
+  // Régression. Le second bouton de l'accroche annonçait « Tester en mode
+  // démo » et menait à /login, où deux comptes de démonstration remplissaient
+  // le formulaire. Ces comptes ont été retirés — leur mot de passe était écrit
+  // en clair dans le code du frontend, donc servi au navigateur de chaque
+  // visiteur. Le bouton promettait dès lors une porte qui n'existe plus.
+  it("ne promet plus de mode démo dans l'accroche", () => {
+    renderPage();
+
+    expect(screen.queryByText(/mode démo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/démo/i)).not.toBeInTheDocument();
+  });
+
+  it("propose les tarifs comme seconde entrée de l'accroche", () => {
+    renderPage();
+
+    const bouton = screen.getByRole("link", { name: "Voir les tarifs" });
+    expect(bouton).toHaveAttribute("href", "#pricing");
+  });
+
   it("affiche les sections fonctionnalités et tarifs", () => {
     renderPage();
     expect(screen.getByText("Quittances & Baux PDF Certifiés")).toBeInTheDocument();

@@ -206,7 +206,7 @@ const es: TranslationSchema = {
       subtitle:
         "Genera tus recibos en PDF certificado, firma tus contratos en línea, envía tus recordatorios automáticos desde el día 1 de cada mes y sigue tu rentabilidad neta en tiempo real.",
       ctaTrial: "Comenzar la prueba gratuita de 10 días →",
-      ctaDemo: "Probar en modo demo",
+      ctaPricing: "Ver precios",
     },
     features: {
       receipts: {

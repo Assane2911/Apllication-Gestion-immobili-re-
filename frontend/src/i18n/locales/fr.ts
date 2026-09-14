@@ -204,7 +204,7 @@ const fr = {
       subtitle:
         "Générez vos quittances en PDF certifié, faites signer vos baux en ligne, envoyez vos relances automatiques du 1er du mois et suivez votre rentabilité nette en temps réel.",
       ctaTrial: "Démarrer l'essai 10 jours gratuit →",
-      ctaDemo: "Tester en mode démo",
+      ctaPricing: "Voir les tarifs",
     },
     features: {
       receipts: {

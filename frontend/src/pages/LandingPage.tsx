@@ -314,12 +314,19 @@ export default function LandingPage() {
             >
               {t("landing.hero.ctaTrial")}
             </Link>
-            <Link
-              to="/login"
+            {/* Ce bouton annoncait « Tester en mode demo » et menait a /login,
+                ou deux comptes de demonstration remplissaient le formulaire.
+                Ces comptes ont ete retires : leur mot de passe etait ecrit en
+                clair dans le code du frontend, donc servi au navigateur de
+                chaque visiteur. Le bouton promettait donc une porte qui
+                n'existe plus. Il mene desormais aux tarifs — ce que veut
+                generalement voir un visiteur qui hesite a demarrer l'essai. */}
+            <a
+              href="#pricing"
               className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-all hover:scale-105"
             >
-              {t("landing.hero.ctaDemo")}
-            </Link>
+              {t("landing.hero.ctaPricing")}
+            </a>
           </div>
         </Reveal>
       </section>

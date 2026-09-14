@@ -206,7 +206,7 @@ const en: TranslationSchema = {
       subtitle:
         "Generate certified PDF rent receipts, get your leases signed online, send automatic reminders on the 1st of each month, and track your net profitability in real time.",
       ctaTrial: "Start your free 10-day trial →",
-      ctaDemo: "Try demo mode",
+      ctaPricing: "See pricing",
     },
     features: {
       receipts: {
