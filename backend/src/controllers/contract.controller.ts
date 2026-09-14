@@ -8,6 +8,7 @@ import { logActivity } from "../services/activity.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 
 const contractSchema = z.object({
   propertyId: z.string().min(1),
@@ -477,6 +478,7 @@ export const uploadScannedContract = asyncHandler(async (req: Request, res: Resp
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
   if (!property || property.managerId !== req.user.userId) throw new ApiError(403, "Accès refusé");
 
+  assertFileContentMatchesDeclaredType(req.file);
   const storagePath = await uploadPrivateFile(req.file, "contracts");
 
   const [updated] = await db

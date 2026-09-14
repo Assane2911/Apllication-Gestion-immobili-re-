@@ -7,6 +7,7 @@ import {
   createManager,
   createProperty,
   createTenant,
+  fakeJpegBuffer,
   tokenFor,
 } from "../test/authHelpers";
 import { MAX_UPLOAD_SIZE_MB } from "./upload";
@@ -47,7 +48,7 @@ describe("filtre d'upload", () => {
   it("accepte une image dont le type est sur la liste blanche", async () => {
     const { contract, token } = await tenantWithContract();
 
-    const res = await postIssueWith(contract.id, token).attach("photo", Buffer.from("image"), {
+    const res = await postIssueWith(contract.id, token).attach("photo", fakeJpegBuffer("image"), {
       filename: "fuite.jpg",
       contentType: "image/jpeg",
     });
@@ -109,7 +110,13 @@ describe("filtre d'upload", () => {
 
   it("accepte un fichier juste sous la limite de taille", async () => {
     const { contract, token } = await tenantWithContract();
-    const presqueTropGros = Buffer.alloc(MAX_UPLOAD_SIZE_MB * 1024 * 1024 - 1024, 1);
+    // Les 3 premiers octets doivent être la signature JPEG réelle (voir
+    // assertFileContentMatchesDeclaredType) ; le reste ne fait que remplir
+    // le fichier jusqu'à la taille voulue.
+    const presqueTropGros = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff]),
+      Buffer.alloc(MAX_UPLOAD_SIZE_MB * 1024 * 1024 - 1024 - 3, 1),
+    ]);
 
     const res = await postIssueWith(contract.id, token).attach("photo", presqueTropGros, {
       filename: "panorama.jpg",
@@ -117,5 +124,27 @@ describe("filtre d'upload", () => {
     });
 
     expect(res.status).toBe(201);
+  });
+
+  /**
+   * Régression : fileFilter (ci-dessus) ne contrôle que le Content-Type
+   * déclaré par le client dans le multipart — jamais le contenu réel du
+   * fichier. Un fichier malveillant (script, exécutable, page HTML)
+   * mentant sur son Content-Type ("image/png" par exemple) passait ce
+   * filtre sans encombre. assertFileContentMatchesDeclaredType (appelée
+   * dans chaque contrôleur juste avant l'upload) vérifie que les premiers
+   * octets du fichier correspondent réellement au type déclaré.
+   */
+  it("refuse un fichier dont le contenu ne correspond pas au type MIME déclaré", async () => {
+    const { contract, token } = await tenantWithContract();
+
+    const res = await postIssueWith(contract.id, token).attach(
+      "photo",
+      Buffer.from("<script>alert(1)</script>"),
+      { filename: "fuite.png", contentType: "image/png" }
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("ne correspond pas au type de fichier déclaré");
   });
 });

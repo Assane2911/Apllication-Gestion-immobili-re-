@@ -8,6 +8,7 @@ import { contracts, issueReports, properties, tenants, users } from "../db/schem
 import { logActivity } from "../services/activity.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { resolveScannedUrl } from "./contract.controller";
 
 const tenantSchema = z.object({
@@ -64,6 +65,7 @@ export const getTenant = asyncHandler(async (req: Request, res: Response) => {
 
 export const createTenant = asyncHandler(async (req: Request, res: Response) => {
   const body = tenantSchema.parse(req.body);
+  assertFileContentMatchesDeclaredType(req.file);
   const idDocument = req.file ? await uploadPrivateFile(req.file, "tenants") : undefined;
 
   const [existing] = await db
@@ -101,6 +103,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
   // infrastructure, à nos frais) n'importe quel fichier arbitraire en visant
   // simplement l'id du locataire d'un AUTRE gestionnaire — le 404 n'arrivait
   // qu'après coup, une fois le fichier déjà écrit sans jamais être utilisé.
+  assertFileContentMatchesDeclaredType(req.file);
   const idDocument = req.file ? await uploadPrivateFile(req.file, "tenants") : undefined;
 
   const [tenant] = await db

@@ -9,6 +9,7 @@ import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
+import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 function isIssueStatus(value: unknown): value is (typeof issueStatusEnum.enumValues)[number] {
@@ -191,6 +192,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif");
   }
 
+  assertFileContentMatchesDeclaredType(req.file);
   const photoUrl = await uploadPrivateFile(req.file, "issues");
 
   const [issue] = await db
@@ -226,6 +228,7 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
     row.property.managerId === req.user.userId
   );
 
+  assertFileContentMatchesDeclaredType(req.file);
   const newPhotoUrl = await uploadPrivateFile(req.file, "issues");
 
   // Régression corrigée : la version précédente lisait `additionalPhotos`

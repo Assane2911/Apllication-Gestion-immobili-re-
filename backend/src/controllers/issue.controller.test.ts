@@ -9,6 +9,7 @@ import {
   createManager,
   createProperty,
   createTenant,
+  fakeJpegBuffer,
   tokenFor,
 } from "../test/authHelpers";
 
@@ -45,7 +46,7 @@ describe("POST /api/issues", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Fuite sous l'évier de la cuisine")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "fuite.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "fuite.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(201);
     expect(res.body.title).toBe("Fuite d'eau");
@@ -83,7 +84,7 @@ describe("POST /api/issues", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Fuite sous l'évier de la cuisine")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "fuite.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "fuite.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(403);
   });
@@ -110,14 +111,14 @@ describe("GET /api/issues/mine", () => {
       .field("contractId", contract.id)
       .field("title", "Mon incident")
       .field("description", "Description de mon incident")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
     await request(app)
       .post("/api/issues")
       .set(tenantToken(otherTenant.id))
       .field("contractId", otherContract.id)
       .field("title", "Incident d'un autre")
       .field("description", "Description d'un autre incident")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "b.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     const res = await request(app).get("/api/issues/mine").set(tenantToken(tenant.id));
 
@@ -144,7 +145,7 @@ describe("GET /api/issues", () => {
       .field("contractId", contract.id)
       .field("title", "Incident chez moi")
       .field("description", "Description de l'incident")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const otherManager = await createManager();
     const otherProperty = await createProperty(otherManager.id);
@@ -156,7 +157,7 @@ describe("GET /api/issues", () => {
       .field("contractId", otherContract.id)
       .field("title", "Incident chez un autre")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "b.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     const res = await request(app).get("/api/issues").set(authHeader(tokenFor(manager)));
 
@@ -176,7 +177,7 @@ describe("GET /api/issues", () => {
       .field("contractId", contract.id)
       .field("title", "Incident à traiter")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     await request(app)
       .put(`/api/issues/${createRes.body.id}/status`)
@@ -205,7 +206,7 @@ describe("PUT /api/issues/:id/status", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const res = await request(app)
       .put(`/api/issues/${createRes.body.id}/status`)
@@ -228,7 +229,7 @@ describe("PUT /api/issues/:id/status", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const otherManager = await createManager();
     const res = await request(app)
@@ -250,7 +251,7 @@ describe("PUT /api/issues/:id/status", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const res = await request(app)
       .put(`/api/issues/${createRes.body.id}/status`)
@@ -273,12 +274,12 @@ describe("POST /api/issues/:id/photo", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
       .set(tenantToken(tenant.id))
-      .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(200);
     const additional = JSON.parse(res.body.additionalPhotos);
@@ -296,12 +297,12 @@ describe("POST /api/issues/:id/photo", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
       .set(authHeader(tokenFor(manager)))
-      .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(200);
   });
@@ -317,13 +318,13 @@ describe("POST /api/issues/:id/photo", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const otherTenant = await createTenant(manager.id);
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
       .set(tenantToken(otherTenant.id))
-      .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(403);
   });
@@ -339,13 +340,13 @@ describe("POST /api/issues/:id/photo", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const otherManager = await createManager();
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
       .set(authHeader(tokenFor(otherManager)))
-      .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(403);
   });
@@ -370,12 +371,12 @@ describe("POST /api/issues/:id/photo", () => {
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
-      .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
 
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
       .set(authHeader(tokenFor(admin)))
-      .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+      .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(403);
   });
@@ -408,7 +409,7 @@ describe("POST /api/issues/:id/photo", () => {
         .field("contractId", contract.id)
         .field("title", "Fuite d'eau")
         .field("description", "Description")
-        .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
       const issueId = createRes.body.id;
 
       let debloquerPremiere: (url: string) => void;
@@ -437,7 +438,7 @@ describe("POST /api/issues/:id/photo", () => {
       const requetePremiere = request(app)
         .post(`/api/issues/${issueId}/photo`)
         .set(tenantToken(tenant.id))
-        .attach("photo", Buffer.from("photo-a"), { filename: "a2.jpg", contentType: "image/jpeg" })
+        .attach("photo", fakeJpegBuffer("photo-a"), { filename: "a2.jpg", contentType: "image/jpeg" })
         .then((res) => res);
 
       // Attend que la première requête ait bien atteint (et soit bloquée
@@ -447,7 +448,7 @@ describe("POST /api/issues/:id/photo", () => {
       const requeteSeconde = await request(app)
         .post(`/api/issues/${issueId}/photo`)
         .set(authHeader(tokenFor(manager)))
-        .attach("photo", Buffer.from("photo-b"), { filename: "b2.jpg", contentType: "image/jpeg" });
+        .attach("photo", fakeJpegBuffer("photo-b"), { filename: "b2.jpg", contentType: "image/jpeg" });
 
       expect(requeteSeconde.status).toBe(200);
       expect(JSON.parse(requeteSeconde.body.additionalPhotos)).toEqual(["http://test.local/deuxieme-photo.jpg"]);

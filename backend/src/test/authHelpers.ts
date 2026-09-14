@@ -5,6 +5,19 @@ import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
 import { contracts, invoices, platformSubscriptions, properties, tenants, users } from "../db/schema";
 
+/**
+ * Construit un buffer commençant par la vraie signature magique JPEG
+ * (FF D8 FF), pour les tests d'upload : depuis le correctif de
+ * middleware/upload.ts (vérification du contenu réel du fichier, pas
+ * seulement du Content-Type déclaré), un buffer de test qui ne contient
+ * pas ces trois octets est désormais rejeté (400) même s'il est déclaré
+ * comme "image/jpeg". Le texte fourni n'a plus valeur d'image réelle, mais
+ * reste utile pour distinguer plusieurs fichiers de test entre eux.
+ */
+export function fakeJpegBuffer(label: string): Buffer {
+  return Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.from(label)]);
+}
+
 /** Crée un gestionnaire (email déjà vérifié, essai en cours) directement en base de test. */
 export async function createManager(overrides: Partial<typeof users.$inferInsert> = {}) {
   const id = overrides.id ?? createId();

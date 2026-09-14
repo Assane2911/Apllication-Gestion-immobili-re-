@@ -6,6 +6,7 @@ import { contracts, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 const propertySchema = z.object({
@@ -52,6 +53,7 @@ export const getProperty = asyncHandler(async (req: Request, res: Response) => {
 
 export const createProperty = asyncHandler(async (req: Request, res: Response) => {
   const body = propertySchema.parse(req.body);
+  assertFileContentMatchesDeclaredType(req.file);
   const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   // Le bien hérite de la devise de règlement choisie par le gestionnaire, à
@@ -100,6 +102,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
   // infrastructure, à nos frais) n'importe quel fichier arbitraire en visant
   // simplement l'id du bien d'un AUTRE gestionnaire — le 404 n'arrivait
   // qu'après coup, une fois le fichier déjà écrit sans jamais être utilisé.
+  assertFileContentMatchesDeclaredType(req.file);
   const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   // Le statut d'un bien (AVAILABLE/OCCUPIED/MAINTENANCE) est normalement
