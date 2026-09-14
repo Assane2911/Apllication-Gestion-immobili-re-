@@ -107,7 +107,6 @@ export const getFinancialSummary = asyncHandler(async (req: Request, res: Respon
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(and(eq(invoices.status, "PAID"), eq(properties.managerId, managerId)));
   const paidInvoices = paidInvoiceRows.map((r: { invoice: typeof invoices.$inferSelect }) => r.invoice);
-  const totalRevenue = paidInvoices.reduce((acc: number, inv: typeof invoices.$inferSelect) => acc + inv.amount, 0);
 
   // Total des dépenses (scopé aux biens du gestionnaire connecté)
   const expenseRows = await db
@@ -116,20 +115,39 @@ export const getFinancialSummary = asyncHandler(async (req: Request, res: Respon
     .innerJoin(properties, eq(expenses.propertyId, properties.id))
     .where(eq(properties.managerId, managerId));
   const allExpenses = expenseRows.map((r: { expense: typeof expenses.$inferSelect }) => r.expense);
-  const totalExpenses = allExpenses.reduce((acc: number, exp: typeof expenses.$inferSelect) => acc + exp.amount, 0);
 
-  // Ventilation par catégorie
-  const expensesByCategory: Record<string, number> = {};
-  for (const exp of allExpenses) {
-    expensesByCategory[exp.category] = (expensesByCategory[exp.category] || 0) + exp.amount;
+  // Régression corrigée : plateforme multi-devises (EUR/XOF/...) — un
+  // gestionnaire peut avoir des biens réglés dans des devises différentes.
+  // Une simple somme de invoice.amount/expense.amount à travers des devises
+  // différentes produisait un nombre sans signification (ex: 100 EUR +
+  // 50 000 XOF affiché "50 100", comme si c'était homogène). Même principe
+  // déjà appliqué à dashboard.controller.ts et admin.controller.ts : on
+  // regroupe chaque total par devise plutôt que de les additionner.
+  const totalRevenueByCurrency: Record<string, number> = {};
+  for (const inv of paidInvoices) {
+    const currency = inv.currency || "EUR";
+    totalRevenueByCurrency[currency] = (totalRevenueByCurrency[currency] ?? 0) + inv.amount;
   }
 
-  const netCashFlow = totalRevenue - totalExpenses;
+  const totalExpensesByCurrency: Record<string, number> = {};
+  // Ventilation par catégorie, elle aussi groupée par devise pour la même raison.
+  const expensesByCategory: Record<string, Record<string, number>> = {};
+  for (const exp of allExpenses) {
+    const currency = exp.currency || "EUR";
+    totalExpensesByCurrency[currency] = (totalExpensesByCurrency[currency] ?? 0) + exp.amount;
+    expensesByCategory[exp.category] = expensesByCategory[exp.category] ?? {};
+    expensesByCategory[exp.category][currency] = (expensesByCategory[exp.category][currency] ?? 0) + exp.amount;
+  }
+
+  const netCashFlowByCurrency: Record<string, number> = {};
+  for (const currency of new Set([...Object.keys(totalRevenueByCurrency), ...Object.keys(totalExpensesByCurrency)])) {
+    netCashFlowByCurrency[currency] = (totalRevenueByCurrency[currency] ?? 0) - (totalExpensesByCurrency[currency] ?? 0);
+  }
 
   res.json({
-    totalRevenue,
-    totalExpenses,
-    netCashFlow,
+    totalRevenueByCurrency,
+    totalExpensesByCurrency,
+    netCashFlowByCurrency,
     expensesByCategory,
     expenseCount: allExpenses.length,
     paidInvoiceCount: paidInvoices.length,

@@ -146,11 +146,60 @@ describe("GET /api/expenses/summary", () => {
     const res = await request(app).get("/api/expenses/summary").set(authHeader(tokenFor(managerA)));
 
     expect(res.status).toBe(200);
-    expect(res.body.totalRevenue).toBe(500);
-    expect(res.body.totalExpenses).toBe(200);
-    expect(res.body.netCashFlow).toBe(300);
-    expect(res.body.expensesByCategory).toEqual({ MAINTENANCE: 200 });
+    expect(res.body.totalRevenueByCurrency).toEqual({ EUR: 500 });
+    expect(res.body.totalExpensesByCurrency).toEqual({ EUR: 200 });
+    expect(res.body.netCashFlowByCurrency).toEqual({ EUR: 300 });
+    expect(res.body.expensesByCategory).toEqual({ MAINTENANCE: { EUR: 200 } });
     expect(res.body.expenseCount).toBe(1);
     expect(res.body.paidInvoiceCount).toBe(1);
+  });
+
+  /**
+   * Régression : totalRevenue/totalExpenses/netCashFlow additionnaient
+   * invoice.amount / expense.amount à travers TOUTES les devises sans les
+   * distinguer — un gestionnaire avec un bien réglé en EUR et un autre en
+   * XOF obtenait un total unique sans signification (ex: 1500 + 500000 =
+   * "501500"), affiché comme si c'était homogène. Chaque total doit rester
+   * ventilé par devise, comme dashboard.controller.ts et admin.controller.ts
+   * le font déjà pour les mêmes montants.
+   */
+  it("ne mélange pas les devises dans le résumé financier", async () => {
+    const manager = await createManager();
+
+    const propertyEur = await createProperty(manager.id, { currency: "EUR" });
+    const tenantEur = await createTenant(manager.id);
+    const contractEur = await createContract(propertyEur.id, tenantEur.id, { currency: "EUR" });
+    await createInvoice(contractEur.id, { amount: 1500, currency: "EUR", status: "PAID", paidAt: new Date(2026, 5, 5) });
+    await testDb.insert(expenses).values({
+      propertyId: propertyEur.id,
+      category: "MAINTENANCE",
+      title: "Plomberie",
+      amount: 100,
+      currency: "EUR",
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const propertyXof = await createProperty(manager.id, { currency: "XOF" });
+    const tenantXof = await createTenant(manager.id);
+    const contractXof = await createContract(propertyXof.id, tenantXof.id, { currency: "XOF" });
+    await createInvoice(contractXof.id, { amount: 500000, currency: "XOF", status: "PAID", paidAt: new Date(2026, 5, 5) });
+    await testDb.insert(expenses).values({
+      propertyId: propertyXof.id,
+      category: "MAINTENANCE",
+      title: "Peinture",
+      amount: 50000,
+      currency: "XOF",
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app).get("/api/expenses/summary").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalRevenueByCurrency).toEqual({ EUR: 1500, XOF: 500000 });
+    expect(res.body.totalExpensesByCurrency).toEqual({ EUR: 100, XOF: 50000 });
+    expect(res.body.netCashFlowByCurrency).toEqual({ EUR: 1400, XOF: 450000 });
+    expect(res.body.expensesByCategory).toEqual({ MAINTENANCE: { EUR: 100, XOF: 50000 } });
+    expect(res.body.expenseCount).toBe(2);
+    expect(res.body.paidInvoiceCount).toBe(2);
   });
 });

@@ -5,10 +5,16 @@ import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { Expense, ExpenseCategory, PaginatedResponse, Property } from "../../types";
+import { formatByCurrency } from "../../utils/currencyFormat";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
   return { from: `${year}-01-01`, to: `${year}-12-31` };
+}
+
+/** Vert seulement si le résultat net est positif ou nul dans TOUTES les devises. */
+function netCashFlowAllPositive(byCurrency: Record<string, number>): boolean {
+  return Object.values(byCurrency).every((amount) => amount >= 0);
 }
 
 const PAGE_SIZE = 20;
@@ -25,10 +31,12 @@ const categoryColors: Record<ExpenseCategory, string> = {
 };
 
 interface FinancialSummary {
-  totalRevenue: number;
-  totalExpenses: number;
-  netCashFlow: number;
-  expensesByCategory: Record<string, number>;
+  // Groupés par devise (pas une somme unique) : un gestionnaire peut avoir
+  // des biens réglés dans des devises différentes (voir formatByCurrency).
+  totalRevenueByCurrency: Record<string, number>;
+  totalExpensesByCurrency: Record<string, number>;
+  netCashFlowByCurrency: Record<string, number>;
+  expensesByCategory: Record<string, Record<string, number>>;
   expenseCount: number;
   paidInvoiceCount: number;
 }
@@ -230,21 +238,25 @@ export default function ExpensesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
             label={t("manager.expenses.stats.revenueCollected")}
-            value={formatMoney(summary.totalRevenue)}
+            value={formatByCurrency(summary.totalRevenueByCurrency, formatMoney)}
             hint={t("manager.expenses.stats.revenueHint", { count: summary.paidInvoiceCount })}
             accent="green"
           />
           <StatCard
             label={t("manager.expenses.stats.totalExpenses")}
-            value={formatMoney(summary.totalExpenses)}
+            value={formatByCurrency(summary.totalExpensesByCurrency, formatMoney)}
             hint={t("manager.expenses.stats.expensesHint", { count: summary.expenseCount })}
             accent="red"
           />
           <StatCard
             label={t("manager.expenses.stats.netCashFlow")}
-            value={formatMoney(summary.netCashFlow)}
-            hint={summary.netCashFlow >= 0 ? t("manager.expenses.stats.netCashFlowPositive") : t("manager.expenses.stats.netCashFlowNegative")}
-            accent={summary.netCashFlow >= 0 ? "green" : "red"}
+            value={formatByCurrency(summary.netCashFlowByCurrency, formatMoney)}
+            hint={
+              netCashFlowAllPositive(summary.netCashFlowByCurrency)
+                ? t("manager.expenses.stats.netCashFlowPositive")
+                : t("manager.expenses.stats.netCashFlowNegative")
+            }
+            accent={netCashFlowAllPositive(summary.netCashFlowByCurrency) ? "green" : "red"}
           />
         </div>
       )}

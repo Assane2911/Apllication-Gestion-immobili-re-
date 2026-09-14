@@ -29,6 +29,7 @@ import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { DashboardStats, PropertyStatus } from "../../types";
+import { formatByCurrency } from "../../utils/currencyFormat";
 
 const statusColors: Record<PropertyStatus, string> = {
   AVAILABLE: "#10b981",
@@ -40,16 +41,6 @@ const statusColors: Record<PropertyStatus, string> = {
 // courant : une seule devise, donc une seule paire de couleurs utilisée).
 const REVENUE_COLORS = ["#2563eb", "#0891b2", "#7c3aed", "#be185d"];
 const EXPENSE_COLORS = ["#f59e0b", "#ea580c", "#65a30d", "#a16207"];
-
-/** Formate un total groupé par devise (ex: {EUR: 150, XOF: 50000}) en chaîne lisible ("150 € + 50 000 FCFA"). */
-function formatByCurrency(
-  byCurrency: Record<string, number> | undefined,
-  formatMoney: (amount: number | null | undefined, overrideCurrency?: string | null) => string
-): string {
-  const entries = Object.entries(byCurrency ?? {});
-  if (entries.length === 0) return formatMoney(0);
-  return entries.map(([currency, amount]) => formatMoney(amount, currency)).join(" + ");
-}
 
 export default function DashboardPage() {
   const { t } = useTranslation();

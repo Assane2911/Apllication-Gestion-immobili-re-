@@ -47,10 +47,10 @@ function expense(overrides: Partial<Expense> = {}): Expense {
 
 function summary(overrides: Partial<Record<string, unknown>> = {}) {
   return {
-    totalRevenue: 5000,
-    totalExpenses: 250,
-    netCashFlow: 4750,
-    expensesByCategory: { MAINTENANCE: 250 },
+    totalRevenueByCurrency: { EUR: 5000 },
+    totalExpensesByCurrency: { EUR: 250 },
+    netCashFlowByCurrency: { EUR: 4750 },
+    expensesByCategory: { MAINTENANCE: { EUR: 250 } },
     expenseCount: 1,
     paidInvoiceCount: 10,
     ...overrides,
@@ -101,6 +101,29 @@ describe("ExpensesPage", () => {
     expect(screen.getByText("Bénéfice net positif")).toBeInTheDocument();
   });
 
+  /**
+   * Régression : le résumé financier additionnait invoice.amount/expense.amount
+   * à travers toutes les devises en un seul total sans signification. Chaque
+   * indicateur doit désormais afficher un montant par devise (voir
+   * formatByCurrency), comme le tableau de bord le fait déjà.
+   */
+  it("affiche chaque indicateur financier ventilé par devise plutôt qu'en un seul total mélangé", async () => {
+    queueLoad(
+      [property()],
+      summary({
+        totalRevenueByCurrency: { EUR: 5000, XOF: 500000 },
+        totalExpensesByCurrency: { EUR: 250 },
+        netCashFlowByCurrency: { EUR: 4750, XOF: 500000 },
+      }),
+      [expense()]
+    );
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Loyers Encaissés")).toBeInTheDocument());
+    expect(screen.getByText("5 000 € + 500 000 FCFA")).toBeInTheDocument();
+    expect(screen.getByText("4 750 € + 500 000 FCFA")).toBeInTheDocument();
+  });
+
   it("affiche la liste des dépenses avec catégorie et montant", async () => {
     queueLoad([property()], summary(), [expense()]);
     renderPage();
@@ -112,7 +135,11 @@ describe("ExpensesPage", () => {
   });
 
   it("affiche un message quand il n'y a aucune dépense", async () => {
-    queueLoad([property()], summary({ totalExpenses: 0, expenseCount: 0, netCashFlow: 5000 }), []);
+    queueLoad(
+      [property()],
+      summary({ totalExpensesByCurrency: { EUR: 0 }, expenseCount: 0, netCashFlowByCurrency: { EUR: 5000 } }),
+      []
+    );
     const user = userEvent.setup();
     renderPage();
 
@@ -186,7 +213,7 @@ describe("ExpensesPage", () => {
     const user = userEvent.setup();
     queueLoad([property()], summary(), [expense({ id: "exp-1" })]);
     mockedApi.delete.mockResolvedValueOnce({ data: {} });
-    queueLoad([property()], summary({ totalExpenses: 0, expenseCount: 0 }), []);
+    queueLoad([property()], summary({ totalExpensesByCurrency: { EUR: 0 }, expenseCount: 0 }), []);
 
     renderPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Supprimer" })).toBeInTheDocument());
