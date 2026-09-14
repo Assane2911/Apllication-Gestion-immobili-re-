@@ -203,3 +203,53 @@ describe("GET /api/expenses/summary", () => {
     expect(res.body.paidInvoiceCount).toBe(2);
   });
 });
+
+describe("GET /api/expenses/export", () => {
+  /**
+   * Régression CWE-1236 (injection de formule CSV) : un titre de dépense ou
+   * de bien est une donnée saisie par l'utilisateur. Si elle commence par
+   * =, +, -, @ (ou une tabulation/retour chariot), Excel/Google
+   * Sheets/LibreOffice l'interprètent comme le début d'une formule à
+   * l'ouverture du CSV exporté — un gestionnaire ouvrant son propre export
+   * comptable pouvait ainsi exécuter une commande arbitraire via une
+   * dépense nommée "=cmd|'/C calc'!A1" par exemple. csvEscape doit
+   * neutraliser ces caractères déclencheurs.
+   */
+  it("neutralise un titre de dépense qui ressemble à une formule (=, +, -, @)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { title: "=2+2" });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "MAINTENANCE",
+      title: "=cmd|'/C calc'!A1",
+      amount: 100,
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain(";=cmd");
+    expect(res.text).not.toContain(";=2+2;");
+    expect(res.text).toContain("'=cmd|'/C calc'!A1");
+    expect(res.text).toContain("'=2+2");
+  });
+
+  it("exporte normalement un rapport sans caractère à risque", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "MAINTENANCE",
+      title: "Peinture",
+      amount: 100,
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("Villa Ngor");
+    expect(res.text).toContain("Peinture");
+  });
+});

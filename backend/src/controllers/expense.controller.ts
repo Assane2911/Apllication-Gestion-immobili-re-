@@ -154,8 +154,23 @@ export const getFinancialSummary = asyncHandler(async (req: Request, res: Respon
   });
 });
 
+// CWE-1236 (injection de formule CSV) : un titre de bien, de dépense ou un
+// nom de locataire est une donnée saisie par l'utilisateur, jamais
+// contrôlée par nous. Si elle commence par =, +, -, @, une tabulation ou un
+// retour chariot, Excel/Google Sheets/LibreOffice l'interprètent comme le
+// début d'une formule lors de l'ouverture du CSV exporté (ex: un locataire
+// nommé "=CMD|'/C calc'!A1" ou "@SUM(1+1)*cmd|..." exécutant du code côté
+// gestionnaire qui ouvre le fichier). On neutralise en préfixant d'une
+// apostrophe, convention reconnue par les tableurs pour forcer une lecture
+// en texte brut, avant d'appliquer l'échappement CSV usuel des guillemets.
+const FORMULA_TRIGGER_CHARS = /^[=+\-@\t\r]/;
+
 function csvEscape(value: string | number): string {
-  return `"${String(value).replace(/"/g, '""')}"`;
+  let text = String(value);
+  if (FORMULA_TRIGGER_CHARS.test(text)) {
+    text = `'${text}`;
+  }
+  return `"${text.replace(/"/g, '""')}"`;
 }
 
 /**
