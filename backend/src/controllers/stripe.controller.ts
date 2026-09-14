@@ -4,6 +4,7 @@ import { Request, Response } from "express";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { invoices, platformSubscriptions } from "../db/schema";
+import { ETATS_MODIFIABLES } from "./invoice.controller";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { depuisPlusPetiteUnite } from "../services/payment.service";
 import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
@@ -111,6 +112,16 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
       );
     } else if (facture.status === "PAID") {
       console.log(`[stripe] Facture ${facture.id} déjà réglée, rien à faire.`);
+    } else if (!ETATS_MODIFIABLES.includes(facture.status as (typeof ETATS_MODIFIABLES)[number])) {
+      // Régression corrigée : seul le cas PAID était un no-op ci-dessus ; une
+      // facture CANCELLED tombait dans le `else` suivant et repassait PAID.
+      // Stripe rejoue ses webhooks (doute réseau, redémarrage) — un paiement
+      // confirmé APRÈS l'annulation d'une facture (contrat résilié pendant
+      // qu'un paiement était en cours, ou simple rejeu tardif) ne doit jamais
+      // ressusciter une facture que le gestionnaire a explicitement annulée.
+      console.warn(
+        `[stripe] Facture ${facture.id} dans un état non modifiable (${facture.status}) : confirmation de paiement ignorée.`
+      );
     } else {
       const [misAJour] = await db
         .update(invoices)

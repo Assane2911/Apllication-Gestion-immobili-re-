@@ -159,4 +159,60 @@ describe("POST /api/payments/paydunya/ipn", () => {
 
     expect(res.status).toBe(400);
   });
+
+  /**
+   * Régression : contrairement au webhook Stripe (qui traitait au moins le
+   * cas PAID en no-op) et à markInvoicePaid/cancelInvoice, cette IPN
+   * n'inspectait AUCUN statut courant avant d'écrire — une facture CANCELLED
+   * pouvait être ressuscitée en PAID par une confirmation arrivée après
+   * l'annulation.
+   */
+  it("ne ressuscite pas une facture annulée sur une IPN de confirmation", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, {
+      status: "CANCELLED",
+      paymentMethod: "PAYDUNYA",
+      paymentRef: "pd_token_annulee",
+    });
+
+    const res = await request(app)
+      .post("/api/payments/paydunya/ipn")
+      .send(ipnBody({ token: "pd_token_annulee", reference: invoice.id, totalAmount: invoice.amount }));
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("CANCELLED");
+    expect(apres.paidAt).toBeNull();
+  });
+
+  /**
+   * Régression : sans aucune garde d'état, une IPN rejouée (PayDunya rejoue
+   * en cas de doute réseau) sur une facture déjà PAID écrasait silencieusement
+   * paidAt et renvoyait une SECONDE quittance au locataire pour le même loyer.
+   */
+  it("n'écrase pas paidAt et ne renvoie pas de seconde quittance sur une IPN rejouée pour une facture déjà payée", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const paidAtOrigine = new Date(2026, 5, 1, 10, 0, 0);
+    const invoice = await createInvoice(contract.id, {
+      status: "PAID",
+      paidAt: paidAtOrigine,
+      paymentMethod: "PAYDUNYA",
+      paymentRef: "pd_token_rejeu",
+    });
+
+    const res = await request(app)
+      .post("/api/payments/paydunya/ipn")
+      .send(ipnBody({ token: "pd_token_rejeu", reference: invoice.id, totalAmount: invoice.amount }));
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("PAID");
+    expect(apres.paidAt?.getTime()).toBe(paidAtOrigine.getTime());
+  });
 });

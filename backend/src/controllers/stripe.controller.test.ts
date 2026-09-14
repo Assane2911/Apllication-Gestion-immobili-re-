@@ -218,4 +218,31 @@ describe("POST /api/payments/stripe/webhook", () => {
     expect(second.status).toBe("PAID");
     expect(second.paidAt?.getTime()).toBe(premier.paidAt?.getTime());
   });
+
+  /**
+   * Régression : seul le cas PAID était traité en no-op ci-dessus — une
+   * facture CANCELLED tombait dans le `else` suivant et repassait PAID sur
+   * une confirmation de paiement arrivée en retard (contrat résilié pendant
+   * qu'un paiement Stripe était en cours) ou un simple rejeu du webhook.
+   */
+  it("ne ressuscite pas une facture annulée sur une confirmation de paiement tardive", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, {
+      status: "CANCELLED",
+      paymentMethod: "STRIPE",
+      paymentRef: "cs_test_annulee",
+      amount: 500,
+    });
+
+    const corps = evenementSession({ id: "cs_test_annulee", reference: invoice.id, amountTotal: 50000 });
+    const res = await envoyer(corps, signer(corps));
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("CANCELLED");
+    expect(apres.paidAt).toBeNull();
+  });
 });

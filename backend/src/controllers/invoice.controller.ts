@@ -86,7 +86,7 @@ const markPaidSchema = z.object({
  * Corriger une erreur sur une facture réglée relève d'un avoir ou d'un
  * remboursement, pas d'une réécriture silencieuse de l'historique.
  */
-const ETATS_MODIFIABLES = ["PENDING", "LATE"] as const;
+export const ETATS_MODIFIABLES = ["PENDING", "LATE"] as const;
 
 /**
  * Durée pendant laquelle une réclamation de paiement (voir payInvoice) reste

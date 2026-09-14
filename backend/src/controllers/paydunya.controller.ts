@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { invoices, platformSubscriptions } from "../db/schema";
+import { ETATS_MODIFIABLES } from "./invoice.controller";
 import { env } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
@@ -96,6 +97,16 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
     } else if (!amountMatches(paidAmount, invoiceRow.amount)) {
       console.warn(
         `[paydunya] IPN rejetée pour la facture ${invoiceRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${invoiceRow.amount}).`
+      );
+    } else if (!ETATS_MODIFIABLES.includes(invoiceRow.status as (typeof ETATS_MODIFIABLES)[number])) {
+      // Régression corrigée : contrairement à markInvoicePaid/cancelInvoice
+      // (invoice.controller.ts), cette IPN n'inspectait jamais le statut
+      // courant avant d'écrire — une facture déjà PAID (réglée autrement, ou
+      // IPN rejouée par PayDunya) voyait son paidAt et sa quittance
+      // régénérés à chaque rejeu, et une facture CANCELLED pouvait être
+      // ressuscitée en PAID par une confirmation arrivée après l'annulation.
+      console.warn(
+        `[paydunya] Facture ${invoiceRow.id} dans un état non modifiable (${invoiceRow.status}) : IPN ignorée.`
       );
     } else {
       const [updated] = await db
