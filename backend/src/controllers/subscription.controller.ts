@@ -1,9 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
-import { initiatePayment, PaymentMethodKey } from "../services/payment.service";
+import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
 import { calculerPeriode } from "../services/subscriptionPeriod.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { computeSubscriptionInfo } from "./auth.controller";
@@ -155,6 +155,15 @@ const subscribeSchema = z.object({
   bankReference: z.string().optional(),
 });
 
+/**
+ * Durée pendant laquelle une réclamation de paiement d'abonnement (voir plus
+ * bas) reste opposable à une nouvelle tentative. Même principe et même valeur
+ * que DUREE_RECLAMATION_MS dans invoice.controller.ts : largement suffisant
+ * pour un appel réseau à un prestataire, tout en évitant qu'un crash entre la
+ * pose de la réclamation et sa levée ne bloque le compte indéfiniment.
+ */
+const DUREE_RECLAMATION_ABONNEMENT_MS = 60_000;
+
 /** Souscrit ou renouvelle un plan d'abonnement SaaS. */
 export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") {
@@ -178,16 +187,58 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   const amount = body.billingCycle === "ANNUAL" ? tarif.annual : tarif.monthly;
   const paymentReferenceId = `sub_${user.id}_${Date.now()}`;
 
-  // Déclenche l'initiation du paiement de l'abonnement
-  const paymentResult = await initiatePayment({
-    method: body.paymentMethod as PaymentMethodKey,
-    amount,
-    currency,
-    invoiceId: paymentReferenceId,
-    payerEmail: user.email,
-    bankReference: body.bankReference,
-    returnPath: "/subscription",
-  });
+  // Réclamation atomique, AVANT tout appel au prestataire — même principe que
+  // payInvoice (voir invoice.controller.ts) : sans elle, un double clic sur
+  // "S'abonner", ou deux onglets ouverts sur la même page, atteignaient tous
+  // les deux initiatePayment en même temps. Contrairement à une facture, il
+  // n'existe pas ici de ligne PENDING préexistante à réclamer : subscribe()
+  // en crée une nouvelle à chaque appel. La réclamation porte donc sur le
+  // COMPTE lui-même (users.subscriptionPaymentAttemptStartedAt), pour
+  // qu'une seule tentative de paiement d'abonnement soit jamais en vol par
+  // gestionnaire à la fois — sans quoi le prestataire (Stripe/PayDunya)
+  // pouvait être débité deux fois pour un seul clic, et deux enregistrements
+  // PAID concurrents pouvaient se marcher dessus sur la date de fin
+  // d'abonnement (calculée à partir du même `subscriptionEndsAt` de départ).
+  const seuilReclamationPerimee = new Date(Date.now() - DUREE_RECLAMATION_ABONNEMENT_MS);
+  const [reclame] = await db
+    .update(users)
+    .set({ subscriptionPaymentAttemptStartedAt: new Date() })
+    .where(
+      and(
+        eq(users.id, user.id),
+        or(
+          isNull(users.subscriptionPaymentAttemptStartedAt),
+          lt(users.subscriptionPaymentAttemptStartedAt, seuilReclamationPerimee)
+        )
+      )
+    )
+    .returning();
+
+  if (!reclame) {
+    throw new ApiError(409, "Une demande d'abonnement est déjà en cours pour ce compte. Patientez un instant puis réessayez.");
+  }
+
+  let paymentResult: PaymentIntentResult;
+  try {
+    // Déclenche l'initiation du paiement de l'abonnement
+    paymentResult = await initiatePayment({
+      method: body.paymentMethod as PaymentMethodKey,
+      amount,
+      currency,
+      invoiceId: paymentReferenceId,
+      payerEmail: user.email,
+      bankReference: body.bankReference,
+      returnPath: "/subscription",
+    });
+  } finally {
+    // Levée inconditionnelle, comme pour payInvoice : que l'appel ait réussi,
+    // échoué, ou n'ait même pas eu lieu, la réclamation ne doit jamais
+    // survivre à cette tentative.
+    await db
+      .update(users)
+      .set({ subscriptionPaymentAttemptStartedAt: null })
+      .where(eq(users.id, user.id));
+  }
 
   // La période ne repart pas de zéro à chaque renouvellement : si le
   // gestionnaire a encore des jours payés devant lui, elle les prolonge au lieu

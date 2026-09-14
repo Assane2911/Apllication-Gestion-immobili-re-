@@ -33,6 +33,11 @@ export const users = pgTable("users", {
   trialEndsAt: timestamp("trial_ends_at", { mode: "date" }),
   subscriptionEndsAt: timestamp("subscription_ends_at", { mode: "date" }),
   subscriptionPaymentMethod: paymentMethodEnum("subscription_payment_method"),
+  // Réclamation atomique anti-double-paiement pour subscribe() (voir
+  // subscription.controller.ts) — même principe que invoices.paymentAttemptStartedAt :
+  // sans elle, un double clic ou deux onglets envoyaient chacun leur propre
+  // appel au prestataire de paiement pour le même abonnement.
+  subscriptionPaymentAttemptStartedAt: timestamp("subscription_payment_attempt_started_at", { mode: "date" }),
   // Réinitialisation de mot de passe : on ne stocke jamais le token en clair,
   // seulement son empreinte SHA-256 (comme un token à usage unique classique,
   // distinct du hash bcrypt du mot de passe lui-même). expiresAt limite sa

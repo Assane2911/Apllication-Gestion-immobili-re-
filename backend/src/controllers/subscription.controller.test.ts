@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
+import { env } from "../config/env";
 import { users } from "../db/schema";
 import { authHeader, createManager, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -151,6 +152,97 @@ describe("POST /api/subscription/subscribe", () => {
     const joursRestants =
       (updated.subscriptionEndsAt!.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     expect(joursRestants).toBeGreaterThan(45);
+  });
+});
+
+/**
+ * Régression : subscribe() ne protégeait que l'écriture finale en base — deux
+ * requêtes concurrentes (double clic, deux onglets) passaient toutes les deux
+ * jusqu'à l'appel PayDunya, créant deux paiements réels distincts pour un seul
+ * clic d'abonnement. Même bug, et même correctif, que celui déjà appliqué à
+ * payInvoice (voir paiementIdempotence.test.ts).
+ */
+describe("POST /api/subscription/subscribe — anti-double-paiement", () => {
+  const original = { paydunya: { ...env.payments.paydunya } };
+
+  afterEach(() => {
+    env.payments.demoMode = true;
+    env.payments.paydunya = { ...original.paydunya };
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function activerPaydunya() {
+    env.payments.demoMode = false;
+    env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk" };
+  }
+
+  function reponsePaydunyaOk() {
+    return { ok: true, json: async () => ({ response_code: "00", response_text: "https://paydunya.test/abc", token: "tok" }) };
+  }
+
+  it("refuse (409) une seconde demande d'abonnement pendant qu'une première est en cours, sans jamais appeler PayDunya", async () => {
+    const manager = await createManager();
+    activerPaydunya();
+    // Réclamation posée directement, comme le ferait le premier des deux clics
+    // simultanés — la première étape de subscribe() pour cette requête-ci,
+    // sans dépendre d'un minutage réel entre deux appels HTTP concurrents.
+    await testDb
+      .update(users)
+      .set({ subscriptionPaymentAttemptStartedAt: new Date() })
+      .where(eq(users.id, manager.id));
+
+    const fetchMock = vi.fn().mockResolvedValue(reponsePaydunyaOk());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", paymentMethod: "PAYDUNYA" });
+
+    expect(res.status).toBe(409);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const [apres] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(apres.subscriptionStatus).toBe("TRIAL");
+  });
+
+  it("une réclamation périmée (crash passé) n'empêche pas un nouvel essai légitime", async () => {
+    // Devise XOF : requise pour que PAYDUNYA passe le contrôle de devise de
+    // indisponibilite() (voir payment.service.ts) et parte réellement en
+    // réseau au lieu d'être refusé en amont.
+    const manager = await createManager({ currency: "XOF" });
+    activerPaydunya();
+    const perimee = new Date(Date.now() - 5 * 60 * 1000); // 5 min, largement > le seuil de 60 s
+    await testDb.update(users).set({ subscriptionPaymentAttemptStartedAt: perimee }).where(eq(users.id, manager.id));
+
+    const fetchMock = vi.fn().mockResolvedValue(reponsePaydunyaOk());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", paymentMethod: "PAYDUNYA" });
+
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("lève la réclamation même si l'appel au prestataire échoue, pour ne pas bloquer un nouvel essai légitime", async () => {
+    const manager = await createManager({ currency: "XOF" });
+    activerPaydunya();
+    const fetchMock = vi.fn().mockRejectedValue(new Error("réseau indisponible"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", paymentMethod: "PAYDUNYA" });
+
+    expect(res.status).toBe(502);
+
+    const [apres] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(apres.subscriptionPaymentAttemptStartedAt).toBeNull();
   });
 });
 
