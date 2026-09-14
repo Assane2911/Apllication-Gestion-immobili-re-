@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -95,6 +95,31 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
 
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
   if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+
+  // Le statut d'un bien (AVAILABLE/OCCUPIED/MAINTENANCE) est normalement
+  // synchronisé automatiquement par contract.controller.ts au gré des
+  // contrats (OCCUPIED à la création d'un contrat actif, AVAILABLE quand le
+  // dernier contrat actif se termine). Rien n'empêchait pourtant un
+  // gestionnaire de changer ce statut à la main via ce formulaire pendant
+  // qu'un contrat de location est en cours — un bien réellement loué pouvait
+  // ainsi se retrouver affiché "disponible" (risque de double location) ou
+  // "en maintenance" alors qu'un locataire y habite sous bail actif. Un
+  // changement manuel n'est donc accepté que si aucun contrat actif n'existe
+  // sur ce bien ; sinon, c'est la clôture du contrat (voir updateContract)
+  // qui doit remettre le bien à AVAILABLE.
+  if (body.status && body.status !== existing.status) {
+    const [contratActif] = await db
+      .select({ id: contracts.id })
+      .from(contracts)
+      .where(and(eq(contracts.propertyId, req.params.id), eq(contracts.status, "ACTIVE")))
+      .limit(1);
+    if (contratActif) {
+      throw new ApiError(
+        409,
+        "Impossible de changer le statut d'un bien ayant un contrat de location actif. Clôturez d'abord le contrat."
+      );
+    }
+  }
 
   const [property] = await db
     .update(properties)

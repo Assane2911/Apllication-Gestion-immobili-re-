@@ -163,6 +163,65 @@ describe("PUT /api/properties/:id", () => {
     const [unchanged] = await testDb.select().from(properties).where(eq(properties.id, property.id));
     expect(unchanged.rent).toBe(500);
   });
+
+  /**
+   * Régression : le statut d'un bien (AVAILABLE/OCCUPIED/MAINTENANCE) est
+   * normalement géré automatiquement par le cycle de vie des contrats
+   * (contract.controller.ts), mais rien n'empêchait un gestionnaire de le
+   * changer à la main pendant qu'un contrat actif est en cours — un bien
+   * réellement loué pouvait ainsi passer "disponible" (risque de double
+   * location) ou "en maintenance" sans que le contrat en cours n'en soit
+   * jamais informé.
+   */
+  it("refuse de changer le statut d'un bien ayant un contrat actif", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    // createContract insère directement en base (sans passer par l'API) : on
+    // simule donc à la main l'état OCCUPIED que contract.controller.ts aurait
+    // posé pour un contrat ACTIVE créé via POST /api/contracts.
+    await createContract(property.id, tenant.id); // status ACTIVE par défaut
+    await testDb.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, property.id));
+
+    const res = await request(app)
+      .put(`/api/properties/${property.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "AVAILABLE" });
+
+    expect(res.status).toBe(409);
+    const [inchange] = await testDb.select().from(properties).where(eq(properties.id, property.id));
+    expect(inchange.status).toBe("OCCUPIED");
+  });
+
+  it("autorise le changement de statut d'un bien sans contrat actif", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+
+    const res = await request(app)
+      .put(`/api/properties/${property.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "MAINTENANCE" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("MAINTENANCE");
+  });
+
+  it("autorise une modification qui ne touche pas au statut, même avec un contrat actif", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id);
+    await testDb.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, property.id));
+
+    const res = await request(app)
+      .put(`/api/properties/${property.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ rent: 800 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.rent).toBe(800);
+    expect(res.body.status).toBe("OCCUPIED");
+  });
 });
 
 describe("DELETE /api/properties/:id", () => {
