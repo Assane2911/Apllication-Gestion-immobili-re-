@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
 import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
-import { ajouterJours, calculerJoursCredit, calculerPeriode } from "../services/subscriptionPeriod.service";
+import { calculerPeriodeActivation } from "../services/subscriptionPeriod.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { computeSubscriptionInfo } from "./auth.controller";
 
@@ -257,51 +257,39 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   const changeDePlan = user.subscriptionPlan !== body.plan;
   const joursRestants = user.subscriptionEndsAt ? (user.subscriptionEndsAt.getTime() - now.getTime()) / 86_400_000 : 0;
 
-  let startDate: Date;
-  let endDate: Date;
-
+  // La période active en cours n'a de valeur connue que via le dernier
+  // paiement effectivement réglé : c'est lui qui porte le montant et la
+  // périodicité (mensuel/annuel) réellement payés pour l'ancien plan.
+  let dernierPaiement: typeof platformSubscriptions.$inferSelect | undefined;
   if (changeDePlan && joursRestants > 0) {
-    // La période active en cours n'a de valeur connue que via le dernier
-    // paiement effectivement réglé : c'est lui qui porte le montant et la
-    // périodicité (mensuel/annuel) réellement payés pour l'ancien plan.
-    const [dernierPaiement] = await db
+    [dernierPaiement] = await db
       .select()
       .from(platformSubscriptions)
       .where(and(eq(platformSubscriptions.userId, user.id), eq(platformSubscriptions.status, "PAID")))
       .orderBy(desc(platformSubscriptions.createdAt))
       .limit(1);
-
-    const base = calculerPeriode({ maintenant: now, cycle: body.billingCycle, finActuelle: null });
-    startDate = base.startDate;
-
-    if (dernierPaiement) {
-      const ancienCycleJours = Math.max(
-        1,
-        Math.round((dernierPaiement.endDate.getTime() - dernierPaiement.startDate.getTime()) / 86_400_000)
-      );
-      const nouveauCycleJours = Math.max(1, Math.round((base.endDate.getTime() - base.startDate.getTime()) / 86_400_000));
-      const joursCredit = calculerJoursCredit({
-        ancienMontant: dernierPaiement.amount,
-        ancienCycleJours,
-        joursRestants,
-        nouveauMontant: amount,
-        nouveauCycleJours,
-      });
-      endDate = ajouterJours(base.endDate, joursCredit);
-    } else {
-      // Pas d'historique de paiement exploitable (cas limite) : impossible de
-      // reconvertir équitablement une valeur qu'on ne connaît pas. On démarre
-      // une période neuve plutôt que de reporter aveuglément les jours
-      // restants au tarif de l'ancien plan sur le nouveau.
-      endDate = base.endDate;
-    }
-  } else {
-    ({ startDate, endDate } = calculerPeriode({
-      maintenant: now,
-      cycle: body.billingCycle,
-      finActuelle: user.subscriptionEndsAt,
-    }));
   }
+
+  // NOTE : ce calcul ne sert de valeur DÉFINITIVE que pour un paiement
+  // confirmé tout de suite (isConfirmed ci-dessous, ex. DEMO) — "now" est
+  // alors bien l'instant réel d'activation. Pour un paiement asynchrone
+  // (virement, PayDunya, Stripe), il n'est stocké sur l'enregistrement PENDING
+  // qu'à titre indicatif : activateSubscriptionRecord() refait ce même calcul
+  // au moment où l'accès s'ouvre réellement (voir calculerPeriodeActivation).
+  const { startDate, endDate } = calculerPeriodeActivation({
+    maintenant: now,
+    cycle: body.billingCycle,
+    changeDePlan,
+    finActuelle: user.subscriptionEndsAt,
+    nouveauMontant: amount,
+    dernierPaiement: dernierPaiement
+      ? {
+          amount: dernierPaiement.amount,
+          startDate: dernierPaiement.startDate,
+          billingCycle: dernierPaiement.billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+        }
+      : null,
+  });
 
   // N'active RÉELLEMENT l'abonnement (droits d'accès) que si le paiement est
   // confirmé (status "PAID" — cas DEMO, simulation sans clé configurée, ou

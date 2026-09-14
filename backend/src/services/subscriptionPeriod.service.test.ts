@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ajouterJours, calculerJoursCredit, calculerPeriode } from "./subscriptionPeriod.service";
+import { ajouterJours, calculerJoursCredit, calculerPeriode, calculerPeriodeActivation } from "./subscriptionPeriod.service";
 
 /** Écriture lisible d'une date locale, pour que l'intention des cas reste évidente. */
 function d(annee: number, mois: number, jour: number): Date {
@@ -198,6 +198,73 @@ describe("calculerJoursCredit", () => {
     });
 
     expect(jours).toBe(0);
+  });
+});
+
+describe("calculerPeriodeActivation", () => {
+  it("recalcule la période à l'activation, en reconvertissant un changement de plan (proratisation)", () => {
+    const resultat = calculerPeriodeActivation({
+      maintenant: d(2026, 9, 20),
+      cycle: "MONTHLY",
+      changeDePlan: true,
+      finActuelle: d(2026, 9, 30), // 10 jours restants
+      nouveauMontant: 29,
+      dernierPaiement: { amount: 9, startDate: d(2026, 8, 30), billingCycle: "MONTHLY" },
+    });
+
+    const base = calculerPeriode({ maintenant: d(2026, 9, 20), cycle: "MONTHLY", finActuelle: null });
+    const joursCreditAttendu = calculerJoursCredit({
+      ancienMontant: 9,
+      ancienCycleJours: 31, // cycle nominal du 30 août au 30 septembre
+      joursRestants: 10,
+      nouveauMontant: 29,
+      nouveauCycleJours: Math.round((base.endDate.getTime() - base.startDate.getTime()) / (86_400_000)),
+    });
+
+    expect(resultat.endDate).toEqual(ajouterJours(base.endDate, joursCreditAttendu));
+  });
+
+  it("ne conserve pas le même plan sans changement (report tel quel des jours restants)", () => {
+    const resultat = calculerPeriodeActivation({
+      maintenant: d(2026, 9, 20),
+      cycle: "MONTHLY",
+      changeDePlan: false,
+      finActuelle: d(2026, 9, 30),
+      nouveauMontant: 9,
+      dernierPaiement: null,
+    });
+
+    expect(resultat.startDate).toEqual(d(2026, 9, 30));
+    expect(resultat.endDate).toEqual(d(2026, 10, 30));
+  });
+
+  // Régression : la durée de l'ancien cycle doit être recalculée depuis le
+  // startDate NOMINAL du dernier paiement, jamais lue sur une durée déjà
+  // gonflée par un crédit de proratisation antérieur (changements de plan
+  // enchaînés) — c'est pourquoi la fonction n'accepte même plus `endDate` en
+  // entrée. Ce test fixe le cycle nominal de mars (31 jours) comme référence :
+  // si l'implémentation se mettait à dériver la durée d'ailleurs (ex. d'un
+  // endDate déjà crédité), le crédit calculé s'écarterait de cette valeur.
+  it("dérive la durée de l'ancien cycle du startDate nominal, jamais d'une durée déjà créditée", () => {
+    const resultat = calculerPeriodeActivation({
+      maintenant: d(2026, 3, 25),
+      cycle: "MONTHLY",
+      changeDePlan: true,
+      finActuelle: d(2026, 4, 1), // 6 jours restants
+      nouveauMontant: 29,
+      dernierPaiement: { amount: 9, startDate: d(2026, 3, 1), billingCycle: "MONTHLY" },
+    });
+
+    const base = calculerPeriode({ maintenant: d(2026, 3, 25), cycle: "MONTHLY", finActuelle: null });
+    const joursCreditAttendu = calculerJoursCredit({
+      ancienMontant: 9,
+      ancienCycleJours: 31, // mars compte 31 jours
+      joursRestants: 6,
+      nouveauMontant: 29,
+      nouveauCycleJours: Math.round((base.endDate.getTime() - base.startDate.getTime()) / 86_400_000),
+    });
+
+    expect(resultat.endDate).toEqual(ajouterJours(base.endDate, joursCreditAttendu));
   });
 });
 

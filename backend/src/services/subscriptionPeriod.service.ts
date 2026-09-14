@@ -93,6 +93,86 @@ export function ajouterJours(depuis: Date, jours: number): Date {
 }
 
 /**
+ * Calcule la période à appliquer au moment où un paiement d'abonnement est
+ * RÉELLEMENT activé — que ce soit tout de suite (subscribe(), paiement
+ * confirmé de façon synchrone) ou en différé (activateSubscriptionRecord,
+ * webhook PayDunya/Stripe ou validation d'un virement par un administrateur).
+ *
+ * RÉGRESSION que cette fonction corrige : les deux points d'activation
+ * dupliquaient chacun leur propre calcul de la période, et seul celui de
+ * subscribe() avait été mis à jour avec la proratisation (calculerJoursCredit)
+ * lors d'un changement de plan. activateSubscriptionRecord — le SEUL chemin
+ * réellement emprunté pour tout paiement asynchrone (virement bancaire,
+ * PayDunya, Stripe) — continuait d'appeler calculerPeriode seul, en ignorant
+ * totalement le plan/montant de l'ancien abonnement : un changement de plan
+ * payé par un moyen différé recevait donc le temps restant reporté À VALEUR
+ * NOMINALE PLEINE sur le nouveau plan (le défaut n°1 documenté plus haut sur
+ * calculerJoursCredit), plus un cycle complet neuf par-dessus. En centralisant
+ * le calcul ici, les deux points d'activation restent nécessairement
+ * synchronisés.
+ *
+ * `dernierPaiement` est le dernier enregistrement PAID de l'ANCIEN plan
+ * (celui qui porte son montant et sa périodicité réellement payés) ; `null`
+ * quand il n'y en a pas ou que le plan ne change pas — la proratisation
+ * n'entre en jeu QUE lors d'un changement de plan avec des jours encore dus.
+ * On n'y transmet que `startDate` et `billingCycle`, jamais `endDate` — voir
+ * pourquoi juste en dessous.
+ */
+export function calculerPeriodeActivation(params: {
+  maintenant: Date;
+  cycle: BillingCycle;
+  changeDePlan: boolean;
+  finActuelle: Date | null;
+  nouveauMontant: number;
+  dernierPaiement: { amount: number; startDate: Date; billingCycle: BillingCycle } | null;
+}): { startDate: Date; endDate: Date } {
+  const { maintenant, cycle, changeDePlan, finActuelle, nouveauMontant, dernierPaiement } = params;
+  const joursRestants = finActuelle ? (finActuelle.getTime() - maintenant.getTime()) / 86_400_000 : 0;
+
+  if (changeDePlan && joursRestants > 0) {
+    const base = calculerPeriode({ maintenant, cycle, finActuelle: null });
+
+    if (!dernierPaiement) {
+      // Pas d'historique de paiement exploitable (cas limite) : impossible de
+      // reconvertir équitablement une valeur qu'on ne connaît pas. On démarre
+      // une période neuve plutôt que de reporter aveuglément les jours
+      // restants au tarif de l'ancien plan sur le nouveau.
+      return base;
+    }
+
+    // Durée NOMINALE du cycle de l'ancien plan — recalculée depuis son
+    // startDate, jamais lue sur son endDate. RÉGRESSION évitée : si ce
+    // dernier paiement est LUI-MÊME issu d'un changement de plan précédent
+    // avec crédit, son endDate a été allongé (voir ci-dessous) et ne reflète
+    // plus un cycle nominal mais un cycle "mois + crédit précédent" — l'
+    // utiliser sous-évaluerait le tarif journalier de l'ancien plan et
+    // fausserait la conversion d'un changement de plan enchaîné. startDate,
+    // lui, n'est JAMAIS modifié par la proratisation (seul endDate l'est,
+    // juste en dessous), il reste donc toujours fiable comme ancrage.
+    const ancienNominal = calculerPeriode({
+      maintenant: dernierPaiement.startDate,
+      cycle: dernierPaiement.billingCycle,
+      finActuelle: null,
+    });
+    const ancienCycleJours = Math.max(
+      1,
+      Math.round((ancienNominal.endDate.getTime() - ancienNominal.startDate.getTime()) / 86_400_000)
+    );
+    const nouveauCycleJours = Math.max(1, Math.round((base.endDate.getTime() - base.startDate.getTime()) / 86_400_000));
+    const joursCredit = calculerJoursCredit({
+      ancienMontant: dernierPaiement.amount,
+      ancienCycleJours,
+      joursRestants,
+      nouveauMontant,
+      nouveauCycleJours,
+    });
+    return { startDate: base.startDate, endDate: ajouterJours(base.endDate, joursCredit) };
+  }
+
+  return calculerPeriode({ maintenant, cycle, finActuelle });
+}
+
+/**
  * Ajoute un mois ou un an à une date, SANS le débordement de `setMonth()`.
  *
  * `new Date(2026, 0, 31).setMonth(1)` ne donne pas le 28 février mais le

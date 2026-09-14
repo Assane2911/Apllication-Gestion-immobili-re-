@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, DbClient, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
-import { calculerPeriode } from "./subscriptionPeriod.service";
+import { calculerPeriodeActivation } from "./subscriptionPeriod.service";
 
 /**
  * Active réellement l'abonnement d'un utilisateur à partir d'un enregistrement
@@ -74,21 +74,71 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
   // pour tout paiement confirmé en différé.
   //
   // On repart donc de l'instant où l'accès s'ouvre réellement, en reportant
-  // les droits déjà payés s'il en reste (voir calculerPeriode).
-  const { startDate, endDate } = calculerPeriode({
-    maintenant: new Date(),
+  // les droits déjà payés s'il en reste ET en les reconvertissant au tarif du
+  // nouveau plan si le plan a changé (voir calculerPeriodeActivation) —
+  // RÉGRESSION : cette fonction recalculait auparavant la période avec
+  // calculerPeriode seul, en ignorant totalement record.plan/record.amount et
+  // la proratisation ajoutée dans subscribe(). Cette fonction étant le SEUL
+  // chemin réellement emprunté pour tout paiement asynchrone (virement,
+  // PayDunya, Stripe), un changement de plan payé par l'un de ces moyens
+  // recevait le temps restant reporté à valeur nominale pleine sur le nouveau
+  // plan au lieu d'être reconverti.
+  const maintenant = new Date();
+  const changeDePlan = compte.subscriptionPlan !== record.plan;
+  const joursRestants = compte.subscriptionEndsAt
+    ? (compte.subscriptionEndsAt.getTime() - maintenant.getTime()) / 86_400_000
+    : 0;
+
+  let dernierPaiement: typeof platformSubscriptions.$inferSelect | undefined;
+  if (changeDePlan && joursRestants > 0) {
+    [dernierPaiement] = await dbClient
+      .select()
+      .from(platformSubscriptions)
+      .where(and(eq(platformSubscriptions.userId, record.userId), eq(platformSubscriptions.status, "PAID")))
+      .orderBy(desc(platformSubscriptions.createdAt))
+      .limit(1);
+  }
+
+  const { startDate, endDate } = calculerPeriodeActivation({
+    maintenant,
     cycle: record.billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+    changeDePlan,
     finActuelle: compte.subscriptionEndsAt,
+    nouveauMontant: record.amount,
+    dernierPaiement: dernierPaiement
+      ? {
+          amount: dernierPaiement.amount,
+          startDate: dernierPaiement.startDate,
+          billingCycle: dernierPaiement.billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+        }
+      : null,
   });
 
-  // L'historique de facturation porte les dates corrigées : sans cela il
-  // continuerait d'annoncer une période que le compte n'a pas eue.
+  // Réclamation atomique : la transition PENDING → PAID est conditionnée au
+  // statut lu plus haut. Sans cette garde, un rejeu de webhook (Stripe et
+  // PayDunya documentent eux-mêmes rejouer leurs événements) ou un double clic
+  // administrateur sur "confirmer le virement" pouvaient tous deux passer le
+  // contrôle précédent (record.status === "PAID" au tout début de la
+  // fonction) avant que l'un des deux n'ait committé, puis exécuter chacun
+  // leur propre écriture. La condition ci-dessous fait qu'un seul de ces
+  // appels concurrents peut effectivement faire progresser l'enregistrement ;
+  // l'autre trouve 0 ligne affectée et se rabat sur le comportement idempotent
+  // déjà prévu plus haut.
   const [updatedRecord] = await dbClient
     .update(platformSubscriptions)
     .set({ status: "PAID", startDate, endDate })
-    .where(eq(platformSubscriptions.id, subscriptionId))
+    .where(and(eq(platformSubscriptions.id, subscriptionId), eq(platformSubscriptions.status, "PENDING")))
     .returning();
 
+  if (!updatedRecord) {
+    // Un autre appel a gagné la course entre notre lecture et cette écriture.
+    const [actuel] = await dbClient.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, subscriptionId));
+    if (actuel?.status === "PAID") return actuel;
+    throw new ApiError(409, "Ce paiement vient d'être traité par une autre requête. Veuillez réessayer.");
+  }
+
+  // L'historique de facturation porte les dates corrigées : sans cela il
+  // continuerait d'annoncer une période que le compte n'a pas eue.
   await dbClient
     .update(users)
     .set({

@@ -191,9 +191,14 @@ describe("POST /api/subscription/subscribe", () => {
 
     const base = calculerPeriode({ maintenant: now, cycle: "MONTHLY", finActuelle: null });
     const nouveauCycleJours = (base.endDate.getTime() - base.startDate.getTime()) / 86_400_000;
+    // Durée NOMINALE du cycle de l'ancien plan, dérivée du même startDate que
+    // le fixture (voir calculerPeriodeActivation) — et non un 30 fixe : le
+    // mois calendaire réel depuis ancienStart peut compter 28 à 31 jours.
+    const ancienNominal = calculerPeriode({ maintenant: ancienStart, cycle: "MONTHLY", finActuelle: null });
+    const ancienCycleJours = (ancienNominal.endDate.getTime() - ancienNominal.startDate.getTime()) / 86_400_000;
     const joursCreditAttendus = calculerJoursCredit({
       ancienMontant: 9,
-      ancienCycleJours: 30,
+      ancienCycleJours,
       joursRestants: 10,
       nouveauMontant: 29,
       nouveauCycleJours,
@@ -239,9 +244,14 @@ describe("POST /api/subscription/subscribe", () => {
 
     const base = calculerPeriode({ maintenant: now, cycle: "MONTHLY", finActuelle: null });
     const nouveauCycleJours = (base.endDate.getTime() - base.startDate.getTime()) / 86_400_000;
+    // Durée NOMINALE du cycle de l'ancien plan, dérivée du même startDate que
+    // le fixture (voir calculerPeriodeActivation) — et non un 30 fixe : le
+    // mois calendaire réel depuis ancienStart peut compter 28 à 31 jours.
+    const ancienNominal = calculerPeriode({ maintenant: ancienStart, cycle: "MONTHLY", finActuelle: null });
+    const ancienCycleJours = (ancienNominal.endDate.getTime() - ancienNominal.startDate.getTime()) / 86_400_000;
     const joursCreditAttendus = calculerJoursCredit({
       ancienMontant: 29,
-      ancienCycleJours: 30,
+      ancienCycleJours,
       joursRestants: 10,
       nouveauMontant: 9,
       nouveauCycleJours,

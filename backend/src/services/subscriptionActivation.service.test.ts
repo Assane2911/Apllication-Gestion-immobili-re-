@@ -7,6 +7,40 @@ import { activateSubscriptionRecord } from "./subscriptionActivation.service";
 
 const JOUR = 24 * 60 * 60 * 1000;
 
+/**
+ * Enveloppe récursivement un query builder Drizzle (select().from().where()…)
+ * pour retarder de `ms` la PROPAGATION du résultat final, sans changer ce que
+ * chaque étape renvoie — sert à élargir artificiellement une fenêtre de
+ * course entre deux appels concurrents dans les tests. Nécessaire car le
+ * builder retourné par `.select(...)` seul n'a pas encore de `.then` : seule
+ * la chaîne complète, une fois `.from()`/`.where()` appliqués, en devient
+ * une — d'où le besoin d'intercepter récursivement chaque étape plutôt que le
+ * seul objet immédiatement renvoyé par le premier appel.
+ */
+function retarderResultat<T>(valeur: T, ms: number): T {
+  if (!valeur || (typeof valeur !== "object" && typeof valeur !== "function")) return valeur;
+  return new Proxy(valeur as object, {
+    get(cible, prop, recepteur) {
+      const original = Reflect.get(cible, prop, recepteur);
+      if (prop === "then" && typeof original === "function") {
+        return (onFulfilled?: unknown, onRejected?: unknown) =>
+          (original as Function).call(
+            cible,
+            async (v: unknown) => {
+              await new Promise((resolve) => setTimeout(resolve, ms));
+              return typeof onFulfilled === "function" ? (onFulfilled as (x: unknown) => unknown)(v) : v;
+            },
+            onRejected
+          );
+      }
+      if (typeof original === "function") {
+        return (...args: unknown[]) => retarderResultat(original.apply(cible, args), ms);
+      }
+      return original;
+    },
+  }) as T;
+}
+
 describe("activateSubscriptionRecord", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -170,6 +204,105 @@ describe("activateSubscriptionRecord", () => {
   it("renvoie null si l'enregistrement n'existe pas", async () => {
     const result = await activateSubscriptionRecord("inexistant-id", testDb);
     expect(result).toBeNull();
+  });
+
+  // Régression : ce recalcul ignorait entièrement la proratisation
+  // (calculerJoursCredit) ajoutée dans subscribe() lors d'un changement de
+  // plan — il ne consultait ni record.plan, ni record.amount, ni le dernier
+  // paiement réglé, se contentant de reporter le temps restant à sa valeur
+  // NOMINALE PLEINE sur le nouveau plan. Cette fonction étant le SEUL chemin
+  // réellement emprunté pour tout paiement confirmé de façon asynchrone
+  // (virement bancaire, PayDunya, Stripe), un changement de plan payé par
+  // l'un de ces moyens recevait donc le défaut que la proratisation était
+  // censée corriger.
+  it("reconvertit la valeur restante de l'ancien plan lors d'un changement de plan confirmé en différé", async () => {
+    const finEnCours = new Date(Date.now() + 10 * JOUR);
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "STARTER",
+      subscriptionEndsAt: finEnCours,
+    });
+    // Dernier paiement réellement réglé sur l'ancien plan : STARTER, 9 €,
+    // cycle mensuel de 30 jours.
+    await createPlatformSubscription(manager.id, {
+      status: "PAID",
+      plan: "STARTER",
+      amount: 9,
+      billingCycle: "MONTHLY",
+      startDate: new Date(finEnCours.getTime() - 30 * JOUR),
+      endDate: finEnCours,
+    });
+    // Upgrade vers PRO (29 €), payé par virement — confirmation différée.
+    const record = await createPlatformSubscription(manager.id, {
+      status: "PENDING",
+      plan: "PRO",
+      amount: 29,
+      billingCycle: "MONTHLY",
+      paymentMethod: "BANK_TRANSFER",
+    });
+
+    const updated = await activateSubscriptionRecord(record.id, testDb);
+
+    const joursCouverts = (updated!.endDate.getTime() - Date.now()) / JOUR;
+
+    // Attendu : un cycle PRO plein (~30 j) + le crédit reconverti
+    // ((9×(10/30))/(29/30) ≈ 3,1 j) ≈ 33 j. Sans le correctif : les 10 jours
+    // restants reportés tels quels + un cycle PRO plein ≈ 40 jours.
+    expect(joursCouverts).toBeGreaterThan(31);
+    expect(joursCouverts).toBeLessThan(36);
+  });
+
+  // Régression : la transition PENDING → PAID n'était conditionnée à AUCUN
+  // état courant (UPDATE ... WHERE id = ?, sans clause sur le statut). Deux
+  // appels concurrents à cette fonction — rejeu de webhook PayDunya/Stripe
+  // (les deux prestataires documentent eux-mêmes rejouer leurs événements),
+  // ou un double clic administrateur sur "confirmer le virement" — pouvaient
+  // tous deux dépasser le contrôle "déjà PAID ?" avant que l'un des deux
+  // n'ait committé, puis exécuter chacun sa propre écriture : le second,
+  // relisant alors un compte DÉJÀ activé par le premier, calculait sa propre
+  // extension par-dessus celle du premier au lieu de la remplacer par un
+  // no-op — l'abonnement se retrouvait crédité deux fois pour un seul
+  // paiement réellement encaissé.
+  it("n'active pas deux fois le même paiement lors d'appels concurrents (rejeu de webhook, double clic admin)", async () => {
+    const manager = await createManager({ subscriptionStatus: "TRIAL" });
+    const record = await createPlatformSubscription(manager.id, {
+      status: "PENDING",
+      plan: "PRO",
+      amount: 29,
+      billingCycle: "MONTHLY",
+      paymentMethod: "PAYDUNYA",
+    });
+
+    // Retarde la PROPAGATION (pas l'exécution SQL elle-même) du tout premier
+    // SELECT rencontré, pour laisser le temps au second appel concurrent de
+    // terminer entièrement son activation avant que le premier ne reprenne —
+    // élargit artificiellement la fenêtre de course, sans changer ce que
+    // chaque lecture renvoie.
+    const originalSelect = testDb.select.bind(testDb);
+    let premierAppel = true;
+    const spy = vi.spyOn(testDb, "select").mockImplementation((...args: unknown[]) => {
+      const builder = (originalSelect as (...a: unknown[]) => any)(...args);
+      if (premierAppel) {
+        premierAppel = false;
+        return retarderResultat(builder, 30);
+      }
+      return builder;
+    });
+
+    const [r1, r2] = await Promise.all([
+      activateSubscriptionRecord(record.id, testDb),
+      activateSubscriptionRecord(record.id, testDb),
+    ]);
+    spy.mockRestore();
+
+    expect(r1?.status).toBe("PAID");
+    expect(r2?.status).toBe("PAID");
+    // Les deux appels doivent converger vers LE MÊME résultat : un seul a
+    // réellement appliqué la transition, l'autre s'est aligné dessus.
+    expect(r1?.endDate.getTime()).toBe(r2?.endDate.getTime());
+
+    const [compteFinal] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(compteFinal.subscriptionEndsAt!.getTime()).toBe(r1!.endDate.getTime());
   });
 
   it("ne modifie que le compte associé, pas les autres gestionnaires", async () => {
