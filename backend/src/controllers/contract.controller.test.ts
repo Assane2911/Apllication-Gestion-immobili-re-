@@ -2,9 +2,13 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { properties } from "../db/schema";
+import { contracts, properties, users } from "../db/schema";
 import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+
+// PNG 1x1 valide encodé en base64, pour satisfaire le format attendu par signContractSchema.
+const SIGNATURE_DATA_URL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
 describe("POST /api/contracts", () => {
   beforeEach(() => {
@@ -300,6 +304,83 @@ describe("PUT /api/contracts/:id — revalidation", () => {
 
     const [apres] = await testDb.select().from(properties).where(eq(properties.id, property.id));
     expect(apres.status).toBe("OCCUPIED");
+  });
+});
+
+describe("POST /api/contracts/:id/sign", () => {
+  it("permet au locataire du contrat de signer", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/sign`)
+      .set(authHeader(tokenFor({ id: "peu-importe", role: "TENANT" }, tenant.id)))
+      .send({ signatureDataUrl: SIGNATURE_DATA_URL });
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(apres.signedByTenantAt).not.toBeNull();
+  });
+
+  it("permet au gestionnaire propriétaire du bien de signer", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/sign`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ signatureDataUrl: SIGNATURE_DATA_URL });
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(apres.signedByManagerAt).not.toBeNull();
+  });
+
+  /**
+   * Régression : la branche `else` ne vérifiait que
+   * `property.managerId === req.user.userId`, jamais le rôle réel. Un
+   * compte ADMIN promu depuis un ancien compte MANAGER
+   * (scripts/createAdmin.ts conserve le même id utilisateur lors de la
+   * promotion) tombait dans cette branche comme s'il était toujours
+   * gestionnaire, et pouvait signer à sa place le contrat d'un de ses
+   * anciens biens.
+   */
+  it("refuse même quand l'id de l'admin correspond à un ancien managerId", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    // Simule scripts/createAdmin.ts : promotion d'un compte existant vers
+    // ADMIN par UPDATE, qui conserve le même id utilisateur.
+    await testDb.update(users).set({ role: "ADMIN" }).where(eq(users.id, manager.id));
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/sign`)
+      .set(authHeader(tokenFor({ id: manager.id, role: "ADMIN" })))
+      .send({ signatureDataUrl: SIGNATURE_DATA_URL });
+
+    expect(res.status).toBe(403);
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(apres.signedByManagerAt).toBeNull();
+  });
+
+  it("refuse à un locataire de signer le contrat d'un autre locataire", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const autreTenant = await createTenant(manager.id);
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/sign`)
+      .set(authHeader(tokenFor({ id: "peu-importe", role: "TENANT" }, autreTenant.id)))
+      .send({ signatureDataUrl: SIGNATURE_DATA_URL });
+
+    expect(res.status).toBe(403);
   });
 });
 

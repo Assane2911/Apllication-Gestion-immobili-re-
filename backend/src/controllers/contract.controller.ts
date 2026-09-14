@@ -438,7 +438,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       .where(eq(contracts.id, id))
       .returning();
     return res.json(await withRelations(updated.id));
-  } else {
+  } else if (req.user.role === "MANAGER") {
     const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
     if (!property || property.managerId !== req.user.userId) throw new ApiError(403, "Accès refusé");
     const [updated] = await db
@@ -450,6 +450,15 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       .where(eq(contracts.id, id))
       .returning();
     return res.json(await withRelations(updated.id));
+  } else {
+    // Un compte ADMIN n'est ni le locataire ni le gestionnaire du contrat.
+    // Un ancien MANAGER promu ADMIN (voir scripts/createAdmin.ts, qui
+    // conserve le même id utilisateur) voyait auparavant cette branche
+    // `else` s'exécuter comme s'il était toujours gestionnaire, car seul
+    // `property.managerId === req.user.userId` était vérifié — jamais le
+    // rôle réel. Refus explicite par défaut pour tout rôle qui n'est ni
+    // TENANT ni MANAGER.
+    throw new ApiError(403, "Accès refusé");
   }
 });
 

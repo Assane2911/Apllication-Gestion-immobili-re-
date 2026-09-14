@@ -1,6 +1,8 @@
+import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
+import { users } from "../db/schema";
 import {
   authHeader,
   createAdmin,
@@ -10,6 +12,7 @@ import {
   createTenant,
   tokenFor,
 } from "../test/authHelpers";
+import { testDb } from "../test/setupTestDb";
 
 describe("Messages API (/api/messages)", () => {
   it("GET /api/messages/conversations — liste les conversations du gestionnaire avec le dernier message", async () => {
@@ -114,6 +117,31 @@ describe("Messages API (/api/messages)", () => {
       .post(`/api/messages/${contract.id}`)
       .set(authHeader(tokenFor(admin)))
       .send({ content: "Message injecté" });
+
+    expect(res.status).toBe(403);
+  });
+
+  /**
+   * Régression : la branche `else` de listConversations ne testait que
+   * `properties.managerId === req.user.userId`, jamais le rôle réel. Un
+   * compte ADMIN promu depuis un ancien compte MANAGER (scripts/createAdmin.ts
+   * conserve le même id utilisateur lors de la promotion) tombait dans
+   * cette branche comme s'il était toujours gestionnaire, exposant les
+   * conversations de ses anciens biens.
+   */
+  it("GET /api/messages/conversations — refuse même quand l'id de l'admin correspond à un ancien managerId", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id);
+    // Simule scripts/createAdmin.ts : promotion d'un compte existant vers
+    // ADMIN par UPDATE, qui conserve le même id utilisateur (donc le même
+    // id que celui référencé par properties.managerId).
+    await testDb.update(users).set({ role: "ADMIN" }).where(eq(users.id, manager.id));
+
+    const res = await request(app)
+      .get("/api/messages/conversations")
+      .set(authHeader(tokenFor({ id: manager.id, role: "ADMIN" })));
 
     expect(res.status).toBe(403);
   });

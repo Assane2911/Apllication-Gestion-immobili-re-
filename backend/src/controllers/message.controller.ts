@@ -24,7 +24,7 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .where(eq(contracts.tenantId, req.user.tenantId));
-  } else {
+  } else if (req.user.role === "MANAGER") {
     contractList = await db
       .select({
         contract: contracts,
@@ -36,6 +36,13 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .where(eq(properties.managerId, req.user.userId))
       .orderBy(desc(contracts.createdAt));
+  } else {
+    // Un compte ADMIN promu depuis un ancien compte MANAGER (voir
+    // scripts/createAdmin.ts, qui conserve le même id utilisateur) voyait
+    // auparavant cette branche `else` s'exécuter comme s'il était toujours
+    // gestionnaire, exposant les conversations de ses anciens biens. Aucun
+    // rôle autre que TENANT ou MANAGER n'a d'accès à cette liste.
+    throw new ApiError(403, "Accès refusé");
   }
 
   if (contractList.length === 0) {
