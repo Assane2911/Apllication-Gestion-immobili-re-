@@ -31,11 +31,31 @@ export interface EmailAttachment {
   contentType?: string;
 }
 
+/**
+ * Masque une adresse email destinee aux journaux.
+ *
+ * L'application ecrivait l'adresse complete du destinataire dans la sortie
+ * standard, a chaque echec SMTP et a chaque email simule. Ces lignes sont
+ * conservees par l'hebergeur, lisibles par toute personne ayant acces au
+ * tableau de bord, et exportables : les journaux devenaient un second fichier
+ * de donnees personnelles, non declare, alimente sans qu'on le decide. Or
+ * pour diagnostiquer un envoi il suffit de reconnaitre une adresse, pas de
+ * la lire en entier.
+ *
+ * Le domaine est conserve : c'est lui qui porte l'information utile au
+ * diagnostic (un seul fournisseur qui refuse, un domaine mal orthographie).
+ */
+function masquer(email: string): string {
+  const arobase = email.lastIndexOf("@");
+  if (arobase < 1) return "***";
+  return `${email[0]}***${email.slice(arobase)}`;
+}
+
 export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]) {
   const t = getTransporter();
   if (!t) {
     console.warn(
-      `[email] SMTP non configuré (SMTP_USER/SMTP_APP_PASSWORD manquants) — email simulé vers ${to}: "${subject}"` +
+      `[email] SMTP non configuré (SMTP_USER/SMTP_APP_PASSWORD manquants) — email simulé vers ${masquer(to)}: "${subject}"` +
         (attachments?.length ? ` (avec ${attachments.length} pièce(s) jointe(s))` : "")
     );
     return { simulated: true };
@@ -50,7 +70,7 @@ export async function sendEmail(to: string, subject: string, html: string, attac
     });
     return { simulated: false, messageId: info.messageId };
   } catch (err) {
-    console.error(`[email] Échec de l'envoi vers ${to}:`, err instanceof Error ? err.message : err);
+    console.error(`[email] Échec de l'envoi vers ${masquer(to)}:`, err instanceof Error ? err.message : err);
     return { simulated: false, error: true };
   }
 }
@@ -126,6 +146,51 @@ export function emailVerificationEmail(params: { verifyUrl: string }) {
         <p style="color:#6b7280; font-size:12px;">
           Si tu n'es pas à l'origine de cette inscription, tu peux ignorer cet email sans risque :
           aucun compte ne sera activé sans confirmation.
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
+/**
+ * Envoyé quand quelqu'un tente de s'inscrire avec une adresse DÉJÀ prise.
+ *
+ * L'inscription répond désormais la même chose que l'adresse soit libre ou
+ * non, pour ne pas laisser tester de l'extérieur quelles adresses ont un
+ * compte. Sans cet email, le titulaire légitime qui a simplement oublié qu'il
+ * était déjà inscrit attendrait une confirmation qui n'arriverait jamais :
+ * c'est ici qu'on lui dit quoi faire.
+ *
+ * Le message ne révèle rien à un tiers : il part vers une adresse dont le
+ * propriétaire sait déjà qu'il a un compte.
+ */
+export function accountAlreadyExistsEmail(params: { loginUrl: string; resetUrl: string }) {
+  const { loginUrl, resetUrl } = params;
+  return {
+    subject: "Tu as déjà un compte chez nous",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">Tu as déjà un compte</h2>
+        <p>Bonjour,</p>
+        <p>
+          Une inscription vient d'être tentée avec cette adresse email, mais un
+          compte existe déjà. Pas besoin d'en créer un second : connecte-toi
+          directement.
+        </p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${escapeHtml(loginUrl)}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Me connecter →
+          </a>
+        </div>
+        <p style="color:#6b7280; font-size:12px;">
+          Mot de passe oublié ? <a href="${escapeHtml(resetUrl)}">Réinitialise-le ici</a>.
+        </p>
+        <p style="color:#6b7280; font-size:12px;">
+          Si tu n'es pas à l'origine de cette tentative, tu peux ignorer cet
+          email : ton compte n'a pas été modifié et personne n'y a eu accès.
         </p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
           Cet email a été envoyé automatiquement par votre application de gestion immobilière.

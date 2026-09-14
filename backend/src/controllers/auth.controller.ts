@@ -7,7 +7,12 @@ import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { tenants, users } from "../db/schema";
-import { emailVerificationEmail, passwordResetEmail, sendEmail } from "../services/email.service";
+import {
+  accountAlreadyExistsEmail,
+  emailVerificationEmail,
+  passwordResetEmail,
+  sendEmail,
+} from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 // Durée de validité du lien de réinitialisation de mot de passe.
@@ -29,6 +34,15 @@ const loginSchema = z.object({
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1),
 });
+
+/**
+ * Empreinte bcrypt d'une valeur qu'aucun mot de passe ne peut atteindre,
+ * utilisee quand l'adresse est inconnue. bcrypt.compare la traite comme
+ * n'importe quelle autre : meme cout, meme duree, et le resultat est
+ * toujours faux. Cout 10, identique a celui des empreintes reelles (voir
+ * bcrypt.hash a l'inscription) — un cout different se verrait, lui aussi.
+ */
+const EMPREINTE_FACTICE = "$2b$10$C6UzMDM.H6dfI/f/IKcEe.PjF5Qs7lQEJ7c4yQ0sVn5b6CYXcTQlS";
 
 function signToken(payload: { userId: string; role: "MANAGER" | "TENANT" | "ADMIN"; tenantId?: string | null }) {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
@@ -71,11 +85,46 @@ export function computeSubscriptionInfo(user: typeof users.$inferSelect) {
  * Le compte est créé immédiatement mais reste bloqué à la connexion tant que
  * l'adresse email n'a pas été confirmée via le lien envoyé par email.
  */
+/**
+ * Reponse unique de l'inscription, quel que soit le sort de la demande.
+ *
+ * Une seule constante et non deux objets identiques : deux reponses ecrites
+ * separement finissent par diverger d'un mot ou d'un champ, et il suffit de
+ * cet ecart pour rouvrir la fuite que cette reponse est censee fermer.
+ * `email` en a d'ailleurs disparu : le renvoyer depuis la base aurait suffi
+ * a distinguer les deux cas.
+ */
+const REPONSE_INSCRIPTION = {
+  pendingVerification: true,
+  message: "Compte créé. Vérifie ta boîte email pour confirmer ton adresse et activer ton compte.",
+} as const;
+
 export const registerManager = asyncHandler(async (req: Request, res: Response) => {
   const body = registerManagerSchema.parse(req.body);
 
+  // Reponse IDENTIQUE que l'adresse soit libre ou deja prise. Un 409
+  // "Un compte existe deja avec cet email" laissait tester une liste
+  // d'adresses et apprendre lesquelles ont un compte ici — un renseignement
+  // qui a de la valeur pour qui prepare du hameconnage, et que la plateforme
+  // n'a aucune raison de donner. /forgot-password etait deja muet ;
+  // l'inscription etait le dernier endroit qui parlait.
   const [existing] = await db.select().from(users).where(eq(users.email, body.email));
-  if (existing) throw new ApiError(409, "Un compte existe déjà avec cet email");
+  if (existing) {
+    // Le titulaire legitime qui a simplement oublie son inscription doit
+    // pouvoir s'en sortir : on le lui dit par email, canal que seul lui peut
+    // lire. Rien n'est ecrit en base — une tentative d'inscription sur une
+    // adresse prise ne doit rien modifier du compte existant.
+    const { subject, html } = accountAlreadyExistsEmail({
+      loginUrl: `${env.frontendUrl}/login`,
+      resetUrl: `${env.frontendUrl}/mot-de-passe-oublie`,
+    });
+    try {
+      await sendEmail(existing.email, subject, html);
+    } catch (err) {
+      console.error("[auth] Échec de l'envoi de l'email « compte déjà existant » :", err);
+    }
+    return res.status(201).json(REPONSE_INSCRIPTION);
+  }
 
   const passwordHash = await bcrypt.hash(body.password, 10);
   const trialEndsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 jours d'essai
@@ -110,11 +159,7 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
     console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
   }
 
-  res.status(201).json({
-    pendingVerification: true,
-    email: user.email,
-    message: "Compte créé. Vérifie ta boîte email pour confirmer ton adresse et activer ton compte.",
-  });
+  res.status(201).json(REPONSE_INSCRIPTION);
 });
 
 /** Connexion (gestionnaire ou locataire). */
@@ -122,10 +167,18 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   const body = loginSchema.parse(req.body);
 
   const [user] = await db.select().from(users).where(eq(users.email, body.email));
-  if (!user) throw new ApiError(401, "Email ou mot de passe incorrect");
 
-  const valid = await bcrypt.compare(body.password, user.passwordHash);
-  if (!valid) throw new ApiError(401, "Email ou mot de passe incorrect");
+  // Le message d'erreur etait deja le meme dans les deux cas, mais pas le
+  // TEMPS de reponse : une adresse inconnue repondait aussitot, une adresse
+  // connue apres un bcrypt.compare (~100 ms). L'ecart se mesure de
+  // l'exterieur, et suffit a distinguer les deux — la meme fuite que le 409
+  // de l'inscription, par un autre canal.
+  //
+  // On hache donc TOUJOURS, contre une empreinte de rattrapage quand le
+  // compte n'existe pas, pour que les deux chemins coutent le meme temps.
+  const empreinte = user?.passwordHash ?? EMPREINTE_FACTICE;
+  const valid = await bcrypt.compare(body.password, empreinte);
+  if (!user || !valid) throw new ApiError(401, "Email ou mot de passe incorrect");
 
   if (user.role === "MANAGER" && !user.emailVerifiedAt) {
     throw new ApiError(

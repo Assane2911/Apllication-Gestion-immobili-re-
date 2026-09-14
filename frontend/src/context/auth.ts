@@ -5,7 +5,7 @@ export interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
-  register: (email: string, password: string) => Promise<{ pendingVerification: boolean; email: string }>;
+  register: (email: string, password: string) => Promise<{ pendingVerification: boolean }>;
   verifyEmail: (token: string) => Promise<AuthUser>;
   logout: () => void;
   refreshUser: () => Promise<AuthUser | null>;

@@ -53,7 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/register", { email, password });
-      return data as { pendingVerification: boolean; email: string };
+      // `email` ne fait plus partie de la réponse : le renvoyer permettait de
+      // distinguer une adresse libre d'une adresse déjà prise, et donc de
+      // tester qui a un compte (voir registerManager côté serveur).
+      return data as { pendingVerification: boolean };
     } finally {
       setLoading(false);
     }

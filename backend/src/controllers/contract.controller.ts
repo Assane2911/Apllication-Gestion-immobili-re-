@@ -171,15 +171,29 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     if (!newTenant || newTenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
   }
 
-  const [contract] = await db.update(contracts).set(body).where(eq(contracts.id, req.params.id)).returning();
+  // Tout ou rien, comme dans deleteContract. Clore un bail et reliberer le
+  // bien sont UNE decision : en deux ecritures separees, l'echec de la seconde
+  // laissait un contrat termine sur un bien qui reste OCCUPIED — donc invisible
+  // dans la liste des biens disponibles, et impossible a relouer. Rien ne
+  // signalait l'incoherence, et rien ne la rattrapait : le gestionnaire aurait
+  // du rouvrir puis reclore le contrat pour repasser par ce chemin.
+  //
+  // La lecture des contrats du bien est faite DANS la transaction : lue en
+  // dehors, elle pouvait dater d'avant une modification concurrente et
+  // reliberer un bien encore loue.
+  const contract = await db.transaction(async (tx: Transaction) => {
+    const [contract] = await tx.update(contracts).set(body).where(eq(contracts.id, req.params.id)).returning();
 
-  if (body.status === "ENDED" || body.status === "TERMINATED") {
-    const propertyContracts = await db.select().from(contracts).where(eq(contracts.propertyId, contract.propertyId));
-    const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
-    if (stillActive === 0) {
-      await db.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, contract.propertyId));
+    if (body.status === "ENDED" || body.status === "TERMINATED") {
+      const propertyContracts = await tx.select().from(contracts).where(eq(contracts.propertyId, contract.propertyId));
+      const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
+      if (stillActive === 0) {
+        await tx.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, contract.propertyId));
+      }
     }
-  }
+
+    return contract;
+  });
 
   if (contract.status === "ACTIVE") {
     await generateInvoicesForContract(contract);

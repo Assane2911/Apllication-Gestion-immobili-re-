@@ -122,3 +122,36 @@ describe("GET /api/cron/daily", () => {
     expect(typeof res.body.upcomingRentDueRemindersSent).toBe("number");
   });
 });
+
+/**
+ * Le secret était comparé par `!==`, qui s'arrête au premier caractère
+ * différent : la durée de la comparaison dépendait donc du nombre de
+ * caractères déjà devinés. L'attaque est difficile à mener à travers le
+ * réseau, mais la parade ne coûte rien — et le webhook Stripe comparait déjà
+ * sa signature en temps constant. Deux façons de comparer un secret dans la
+ * même application, c'est une de trop.
+ */
+describe("comparaison du secret cron en temps constant", () => {
+  const ROUTE = "/api/cron/daily";
+
+  it("accepte toujours le bon secret", async () => {
+    const res = await request(app).get(ROUTE).set({ Authorization: `Bearer ${CRON_SECRET}` });
+    expect(res.status).toBe(200);
+  });
+
+  // Le point sensible de la mise en œuvre : timingSafeEqual exige des
+  // longueurs égales et LÈVE sinon. Comparer les empreintes plutôt que les
+  // valeurs règle le problème — mais si on s'était trompé, ces requêtes
+  // répondraient 500 au lieu de 401, transformant un refus propre en panne.
+  it.each([
+    ["un en-tête vide", ""],
+    ["un en-tête bien plus court", "B"],
+    ["un en-tête bien plus long", `Bearer ${"x".repeat(5000)}`],
+    ["un préfixe correct mais un secret tronqué", `Bearer ${CRON_SECRET.slice(0, -1)}`],
+    ["le bon secret sans le préfixe Bearer", CRON_SECRET],
+    ["un secret d'une autre casse", `Bearer ${CRON_SECRET.toUpperCase()}`],
+  ])("refuse %s avec un 401, sans jamais lever", async (_cas, entete) => {
+    const res = await request(app).get(ROUTE).set({ Authorization: entete });
+    expect(res.status).toBe(401);
+  });
+});

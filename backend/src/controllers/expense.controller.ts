@@ -134,10 +134,40 @@ function csvEscape(value: string | number): string {
  * exporté en CSV — utile pour la comptabilité/fiscalité du gestionnaire.
  * Filtrable sur une période via ?from=YYYY-MM-DD&to=YYYY-MM-DD.
  */
+/**
+ * Periode de l'export : deux dates AAAA-MM-JJ, toutes deux facultatives.
+ *
+ * Le format ne suffit pas a faire une date : « 2026-13-45 » a la bonne forme
+ * et n'existe pas. On verifie donc AUSSI que le calendrier la reconnait, en
+ * comparant la date reconstruite a ce qui a ete saisi — sans quoi le 31 juin
+ * glisserait au 1er juillet sans prevenir, et l'export couvrirait une periode
+ * que personne n'a demandee.
+ */
+const jourIso = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Format de date attendu : AAAA-MM-JJ")
+  .refine((v) => {
+    // Date.toISOString() leve sur une date invalide : sans ce garde-fou, un
+    // « 2026-13-45 » ne donnerait pas un 400 mais une erreur 500.
+    const d = new Date(`${v}T00:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(v);
+  }, "Cette date n'existe pas");
+
+const periodeExportSchema = z.object({
+  from: jourIso.optional(),
+  to: jourIso.optional(),
+});
+
 export const exportFinancialReport = asyncHandler(async (req: Request, res: Response) => {
   const managerId = req.user!.userId;
-  const { from, to } = req.query as { from?: string; to?: string };
-  const fromDate = from ? new Date(from) : null;
+  // Une date illisible donnait un Invalid Date, et toute comparaison avec un
+  // Invalid Date est FAUSSE : le filtre ne rejetait pas la requete, il
+  // excluait silencieusement chaque ligne. Une faute de frappe dans une URL
+  // produisait donc un rapport comptable vide, impossible a distinguer d'un
+  // trimestre sans activite — le pire resultat possible pour un export sur
+  // lequel on fonde une declaration.
+  const { from, to } = periodeExportSchema.parse(req.query);
+  const fromDate = from ? new Date(`${from}T00:00:00`) : null;
   const toDate = to ? new Date(`${to}T23:59:59`) : null;
 
   const paidInvoiceRows = await db

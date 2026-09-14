@@ -13,7 +13,11 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
 
     expect(registerRes.status).toBe(201);
     expect(registerRes.body.pendingVerification).toBe(true);
-    expect(registerRes.body.email).toBe("nouveau@test.local");
+    // `email` a volontairement disparu de la réponse : le renvoyer depuis la
+    // base aurait suffi à distinguer une adresse libre d'une adresse déjà
+    // prise, et rouvert l'énumération que cette réponse ferme (voir
+    // enumerationComptes.test.ts).
+    expect(registerRes.body).not.toHaveProperty("email");
 
     const loginRes = await request(app)
       .post("/api/auth/login")
@@ -23,13 +27,28 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
     expect(loginRes.body.code).toBe("EMAIL_NOT_VERIFIED");
   });
 
-  it("refuse l'inscription si l'email existe déjà", async () => {
+  // Ce test attendait un 409 « Un compte existe déjà avec cet email ». Ce
+  // message permettait de tester une liste d'adresses pour savoir lesquelles
+  // ont un compte ici. L'inscription répond désormais la même chose dans les
+  // deux cas ; ce qui reste à garantir, c'est qu'aucun second compte n'est
+  // créé et que l'existant n'est pas touché.
+  it("ne crée pas de second compte si l'email existe déjà", async () => {
     await request(app).post("/api/auth/register").send({ email: "dup@test.local", password: "Password123!" });
     const secondRes = await request(app)
       .post("/api/auth/register")
       .send({ email: "dup@test.local", password: "AutreMotDePasse1!" });
 
-    expect(secondRes.status).toBe(409);
+    expect(secondRes.status).toBe(201);
+
+    const comptes = await testDb.select().from(users).where(eq(users.email, "dup@test.local"));
+    expect(comptes).toHaveLength(1);
+
+    // Et le mot de passe du compte existant n'a pas été remplacé.
+    await testDb.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.email, "dup@test.local"));
+    const connexion = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "dup@test.local", password: "AutreMotDePasse1!" });
+    expect(connexion.status).toBe(401);
   });
 
   it("connecte un compte une fois l'email vérifié, avec un JWT exploitable sur /api/auth/me", async () => {

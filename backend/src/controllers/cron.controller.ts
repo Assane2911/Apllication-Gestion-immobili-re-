@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "../services/reminder.service";
@@ -12,10 +13,29 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
  * n'importe qui), et on se contente d'un avertissement en développement
  * local pour ne pas gêner les tests.
  */
+/**
+ * Compare l'en-tete d'autorisation au secret attendu en TEMPS CONSTANT.
+ *
+ * `!==` s'arrete au premier caractere qui differe : la duree de la comparaison
+ * depend donc du nombre de caracteres devines, ce qui permet en principe de
+ * reconstituer le secret octet par octet. L'attaque est difficile a mener a
+ * travers le reseau, mais la parade ne coute rien et le webhook Stripe compare
+ * deja sa signature ainsi (voir stripe.controller.ts) : deux facons de
+ * comparer un secret dans la meme application, c'est une de trop.
+ *
+ * timingSafeEqual exige des longueurs egales et leve sinon. On compare donc
+ * les EMPREINTES des deux valeurs : toujours 32 octets, quelle que soit la
+ * longueur de l'en-tete recu, qui reste ainsi sans influence sur la duree.
+ */
+function secretValide(recu: string | undefined, attendu: string): boolean {
+  if (typeof recu !== "string") return false;
+  const empreinte = (valeur: string) => crypto.createHash("sha256").update(valeur).digest();
+  return crypto.timingSafeEqual(empreinte(recu), empreinte(attendu));
+}
+
 function assertCronAuthorized(req: Request) {
   if (env.cronSecret) {
-    const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${env.cronSecret}`) {
+    if (!secretValide(req.headers.authorization, `Bearer ${env.cronSecret}`)) {
       throw new ApiError(401, "Non autorisé");
     }
     return;

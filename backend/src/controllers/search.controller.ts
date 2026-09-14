@@ -17,13 +17,33 @@ export interface SearchResultItem {
  * locataires, biens, contrats et factures — jusqu'à 5 résultats par
  * catégorie, triés par pertinence simple (correspondance directe en tête).
  */
+/**
+ * Neutralise les jokers de LIKE/ILIKE dans un texte saisi par l'utilisateur.
+ *
+ * Le motif etait construit par `%${q}%` sans traitement. Ce n'est pas une
+ * injection SQL — drizzle passe bien la valeur en parametre — mais le contenu
+ * du parametre reste interprete par LIKE : `%` remplace n'importe quelle
+ * suite de caracteres et `_` n'importe quel caractere. Chercher « _ »
+ * remontait donc TOUT, et un motif comme « %a%b%c%d% » force un balayage
+ * complet de chaque table a chaque frappe, sur quatre tables en parallele.
+ *
+ * On echappe les trois caracteres concernes. La classe de caracteres traite
+ * l'antislash en meme temps que les deux jokers, et non apres : echapper les
+ * jokers d'abord reviendrait a echapper ensuite les antislashs qu'on vient
+ * d'ajouter. Aucune clause ESCAPE n'est necessaire — l'antislash est deja le
+ * caractere d'echappement par defaut de LIKE sous PostgreSQL.
+ */
+export function echapperLike(valeur: string): string {
+  return valeur.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
 export const globalSearch = asyncHandler(async (req: Request, res: Response) => {
   const managerId = req.user!.userId;
   const q = String(req.query.q ?? "").trim();
   if (q.length < 2) {
     return res.json({ query: q, results: [] });
   }
-  const pattern = `%${q}%`;
+  const pattern = `%${echapperLike(q)}%`;
 
   const [tenantRows, propertyRows, contractRows, invoiceRows] = await Promise.all([
     db
