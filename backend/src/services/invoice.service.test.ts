@@ -182,4 +182,64 @@ describe("generateInvoicesForContract", () => {
     expect(rows.every((r: typeof invoices.$inferSelect) => r.currency === "XOF")).toBe(true);
     expect(rows.every((r: typeof invoices.$inferSelect) => r.amount === 250000)).toBe(true);
   });
+
+  /**
+   * Régression : un renouvellement (voir renewContract, contract.controller.ts)
+   * démarre le nouveau contrat le lendemain de la fin de l'ancien — souvent en
+   * milieu de mois — mais le curseur ci-dessus repart toujours du 1er du mois
+   * de son startDate. Le mois de transition recevait donc une facture PLEINE
+   * de l'ancien contrat (déjà émise avant le renouvellement) ET une facture
+   * PLEINE du nouveau (émise aussitôt après) : le double du loyer réellement
+   * dû pour ce mois. L'index unique (contractId, mois, année) ne pouvait pas
+   * l'empêcher : il ne protège que contre un doublon au sein d'un même
+   * contrat, jamais entre deux contrats successifs du même bien.
+   */
+  it("ne refacture pas un mois déjà facturé par un AUTRE contrat du même bien (renouvellement mi-mois)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+
+    const [ancienContrat] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        status: "ENDED",
+        startDate: new Date(2026, 0, 1),
+        endDate: new Date(2026, 1, 15), // se termine le 15 février, renouvelé le lendemain
+      })
+      .returning();
+    // L'ancien contrat a déjà facturé février (loyer plein) avant son renouvellement.
+    await generateInvoicesForContract(ancienContrat, testDb);
+    const facturesAncien = await testDb.select().from(invoices).where(eq(invoices.contractId, ancienContrat.id));
+    expect(
+      facturesAncien.some((f: typeof invoices.$inferSelect) => f.periodMonth === 2 && f.periodYear === 2026)
+    ).toBe(true);
+
+    const [nouveauContrat] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 550, // loyer réévalué au renouvellement
+        deposit: 1000,
+        startDate: new Date(2026, 1, 16), // démarre le lendemain de la fin de l'ancien
+        endDate: new Date(2027, 1, 15),
+      })
+      .returning();
+
+    await generateInvoicesForContract(nouveauContrat, testDb);
+
+    const facturesNouveau = await testDb.select().from(invoices).where(eq(invoices.contractId, nouveauContrat.id));
+    // Février est déjà réglé par l'ancien contrat : le nouveau ne doit PAS le refacturer.
+    expect(
+      facturesNouveau.some((f: typeof invoices.$inferSelect) => f.periodMonth === 2 && f.periodYear === 2026)
+    ).toBe(false);
+    // Mars, en revanche, n'a jamais été facturé par personne : il doit apparaître.
+    expect(
+      facturesNouveau.some((f: typeof invoices.$inferSelect) => f.periodMonth === 3 && f.periodYear === 2026)
+    ).toBe(true);
+  });
 });

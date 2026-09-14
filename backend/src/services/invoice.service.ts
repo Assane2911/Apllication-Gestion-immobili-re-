@@ -19,8 +19,25 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
   const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
   const created: string[] = [];
 
-  const existingInvoices = await dbClient.select().from(invoices).where(eq(invoices.contractId, contract.id));
-  const existingKeys = new Set(existingInvoices.map((i: typeof invoices.$inferSelect) => `${i.periodMonth}-${i.periodYear}`));
+  // Le mois déjà facturé par N'IMPORTE QUEL contrat de CE bien (pas
+  // seulement celui-ci) ne doit jamais l'être une seconde fois. Un
+  // renouvellement (voir renewContract) démarre le nouveau contrat le
+  // lendemain de la fin de l'ancien, mais le curseur ci-dessus repart
+  // toujours du 1er du mois de son startDate — sans ce garde-fou au niveau
+  // du bien, le mois de transition recevait une facture PLEINE de l'ancien
+  // contrat (déjà émise avant le renouvellement) ET une facture PLEINE du
+  // nouveau (émise aussitôt après), soit le double du loyer réellement dû
+  // pour ce mois. L'index unique (contractId, mois, année) ne pouvait pas
+  // l'empêcher : il protège contre un doublon au sein d'un même contrat, pas
+  // entre deux contrats successifs sur le même bien.
+  const existingInvoices = await dbClient
+    .select({ periodMonth: invoices.periodMonth, periodYear: invoices.periodYear })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .where(eq(contracts.propertyId, contract.propertyId));
+  const existingKeys = new Set(
+    existingInvoices.map((i: { periodMonth: number; periodYear: number }) => `${i.periodMonth}-${i.periodYear}`)
+  );
 
   while (cursor <= cutoff) {
     const periodMonth = cursor.getMonth() + 1;
