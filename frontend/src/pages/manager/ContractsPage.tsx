@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, FileCheck } from "lucide-react";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
@@ -58,11 +58,11 @@ export default function ContractsPage() {
       api.get<PaginatedResponse<Tenant>>("/tenants", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
     ])
       .then(([contractsRes, propertiesRes, tenantsRes]) => {
-        setContracts(contractsRes.data.items);
+        setContracts(liste<Contract>(contractsRes.data, "items"));
         setTotal(contractsRes.data.total);
         setTotalPages(contractsRes.data.totalPages);
-        setProperties(propertiesRes.data.items);
-        setTenants(tenantsRes.data.items);
+        setProperties(liste<Property>(propertiesRes.data, "items"));
+        setTenants(liste<Tenant>(tenantsRes.data, "items"));
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)));

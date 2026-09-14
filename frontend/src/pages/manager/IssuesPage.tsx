@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, fileUrl } from "../../api/client";
+import { api, apiErrorMessage, fileUrl, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import Pagination from "../../components/Pagination";
 import PhotoLightbox from "../../components/PhotoLightbox";
@@ -27,7 +27,7 @@ export default function IssuesPage() {
         params: { page, pageSize: PAGE_SIZE, ...(filter !== "ALL" ? { status: filter } : {}) },
       })
       .then((res) => {
-        setIssues(res.data.items);
+        setIssues(liste<IssueReport>(res.data, "items"));
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
         setLoadError(null);

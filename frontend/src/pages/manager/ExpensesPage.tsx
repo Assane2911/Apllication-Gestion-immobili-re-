@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, liste } from "../../api/client";
 import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
@@ -76,9 +76,9 @@ export default function ExpensesPage() {
       }),
     ])
       .then(([propertiesRes, summaryRes, expensesRes]) => {
-        setProperties(propertiesRes.data.items);
+        setProperties(liste<Property>(propertiesRes.data, "items"));
         setSummary(summaryRes.data);
-        setExpenses(expensesRes.data.items);
+        setExpenses(liste<Expense>(expensesRes.data, "items"));
         setTotal(expensesRes.data.total);
         setTotalPages(expensesRes.data.totalPages);
         setLoadError(null);

@@ -1,7 +1,7 @@
 import { Building2, Clock, FileText, Receipt, Wrench, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { TableRowSkeleton } from "../../components/Skeleton";
 import type { ActivityLogEntry } from "../../types";
@@ -40,7 +40,7 @@ export default function ActivityLogPage() {
         params: type !== "ALL" ? { entityType: type } : {},
       })
       .then((res) => {
-        setLogs(res.data);
+        setLogs(liste<ActivityLogEntry>(res.data));
         setLoadError(null);
       })
       // Sans ce .catch(), un échec réseau laissait logs à [] : l'utilisateur

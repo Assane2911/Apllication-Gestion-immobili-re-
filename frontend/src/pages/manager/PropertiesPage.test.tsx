@@ -94,6 +94,29 @@ describe("PropertiesPage (manager)", () => {
     expect(screen.getByText("Disponible")).toBeInTheDocument();
   });
 
+  // Régression. L'écran lisait `res.data.items` sans vérifier que c'en était
+  // un tableau, puis enchaînait sur `.length` et `.map()` PENDANT le rendu.
+  // Une réponse de forme inattendue ne donnait donc pas un message d'erreur
+  // mais la disparition de l'écran entier, derrière l'ErrorBoundary.
+  //
+  // Ce n'est pas théorique : le projet expose deux formes de réponse pour des
+  // listes — tableau nu côté locataire, objet paginé côté gestionnaire.
+  // Uniformiser la pagination côté serveur viderait la moitié de
+  // l'application sans autre symptôme qu'une page blanche.
+  it.each([
+    ["un objet d'erreur", { data: { error: "Accès refusé" } }],
+    ["une liste nulle", { data: { items: null, total: 0 } }],
+    ["un tableau nu au lieu d'un objet paginé", { data: [] }],
+  ])("reste affiché quand le serveur renvoie %s", async (_cas, reponse) => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockedApi.get.mockResolvedValueOnce(reponse);
+
+    renderPage();
+
+    // L'écran tient debout et affiche son état vide au lieu de disparaître.
+    await waitFor(() => expect(screen.getByText("Aucun bien pour l'instant")).toBeInTheDocument());
+  });
+
   it("affiche l'état vide avec un bouton d'ajout quand il n'y a aucun bien", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([]));
     renderPage();

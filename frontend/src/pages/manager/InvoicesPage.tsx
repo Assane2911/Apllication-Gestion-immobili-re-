@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
@@ -40,7 +40,7 @@ export default function InvoicesPage() {
         params: { page, pageSize: PAGE_SIZE, ...(filter !== "ALL" ? { status: filter } : {}) },
       })
       .then((res) => {
-        setInvoices(res.data.items);
+        setInvoices(liste<Invoice>(res.data, "items"));
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
       })

@@ -2,7 +2,7 @@ import { AlertTriangle, Bell, CalendarClock, MessageSquare, Wrench } from "lucid
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
+import { api, liste } from "../api/client";
 import type { NotificationItem, NotificationType } from "../types";
 
 const iconByType: Record<NotificationType, typeof Bell> = {
@@ -32,7 +32,7 @@ export default function NotificationBell() {
   function load() {
     api
       .get<{ notifications: NotificationItem[] }>("/notifications")
-      .then((res) => setItems(res.data.notifications))
+      .then((res) => setItems(liste<NotificationItem>(res.data, "notifications")))
       .catch(() => {
         // silencieux : la cloche ne doit jamais faire planter le reste de l'app
       });

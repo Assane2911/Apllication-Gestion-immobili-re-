@@ -1,7 +1,7 @@
 import { Landmark } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, liste } from "../../api/client";
 import { useCurrency } from "../../context/currency";
 import EmptyState from "../../components/EmptyState";
 
@@ -33,7 +33,7 @@ export default function AdminSubscriptionsPage() {
     setLoadError(null);
     api
       .get<PendingBankTransfer[]>("/admin/subscriptions/pending-bank-transfers")
-      .then((res) => setRows(res.data))
+      .then((res) => setRows(liste<PendingBankTransfer>(res.data)))
       .catch((err) => setLoadError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }

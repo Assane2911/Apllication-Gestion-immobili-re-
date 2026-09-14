@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, fileUrl } from "../../api/client";
+import { api, apiErrorMessage, fileUrl, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport } from "../../types";
@@ -32,8 +32,8 @@ export default function TenantIssuesPage() {
   function load() {
     Promise.all([api.get<IssueReport[]>("/issues/mine"), api.get<Contract[]>("/contracts/mine")])
       .then(([issuesRes, contractsRes]) => {
-        setIssues(issuesRes.data);
-        setContracts(contractsRes.data);
+        setIssues(liste<IssueReport>(issuesRes.data));
+        setContracts(liste<Contract>(contractsRes.data));
         if (contractsRes.data[0]) setContractId(contractsRes.data[0].id);
         setLoadError(null);
       })

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { api, apiErrorMessage } from "../api/client";
+import { api, apiErrorMessage, liste } from "../api/client";
 import { useAuth } from "../context/auth";
 import type { Conversation, Message, Role } from "../types";
 
@@ -38,7 +38,7 @@ export function useConversationThread(role: Role, options: UseConversationThread
     return api
       .get<Conversation[]>("/messages/conversations")
       .then((res) => {
-        setConversations(res.data);
+        setConversations(liste<Conversation>(res.data));
         setSelectedContractId((current) => current ?? (res.data.length > 0 ? res.data[0].contractId : null));
         setError(null);
       })
@@ -60,7 +60,7 @@ export function useConversationThread(role: Role, options: UseConversationThread
     api
       .get(`/messages/${selectedContractId}`)
       .then((res) => {
-        setMessages(res.data.messages);
+        setMessages(liste<Message>(res.data, "messages"));
         setActiveContract(res.data.contract);
       })
       .catch((err) => setError(apiErrorMessage(err)))

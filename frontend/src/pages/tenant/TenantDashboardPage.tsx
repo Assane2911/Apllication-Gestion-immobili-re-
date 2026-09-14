@@ -2,7 +2,7 @@ import { Building2, Calendar, CheckCircle2, Clock, CreditCard, FileCheck, Shield
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, apiErrorMessage, fileUrl } from "../../api/client";
+import { api, apiErrorMessage, fileUrl, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
@@ -23,7 +23,7 @@ export default function TenantDashboardPage() {
     api
       .get<Contract[]>("/contracts/mine")
       .then((res) => {
-        setContracts(res.data);
+        setContracts(liste<Contract>(res.data));
         setError(null);
       })
       .catch((err) => setError(apiErrorMessage(err)));

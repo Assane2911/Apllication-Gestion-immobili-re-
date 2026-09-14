@@ -2,7 +2,7 @@ import { Building2, FileText, Receipt, Search, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api/client";
+import { api, liste } from "../api/client";
 import type { SearchResultItem, SearchResultType } from "../types";
 
 const iconByType: Record<SearchResultType, typeof Search> = {
@@ -33,7 +33,7 @@ export default function GlobalSearch() {
     const handle = setTimeout(() => {
       api
         .get<{ query: string; results: SearchResultItem[] }>("/search", { params: { q: query.trim() } })
-        .then((res) => setResults(res.data.results))
+        .then((res) => setResults(liste<SearchResultItem>(res.data, "results")))
         .catch(() => setResults([]))
         .finally(() => setLoading(false));
     }, 300);

@@ -51,3 +51,44 @@ export function apiErrorCode(err: unknown): string | undefined {
   }
   return undefined;
 }
+/**
+ * Extrait une liste d'une réponse d'API, en garantissant un tableau.
+ *
+ * Un écran de cette application affiche presque toujours une liste, et le
+ * rendu enchaîne aussitôt sur `.map()` ou `.length`. Si la réponse n'a pas la
+ * forme attendue, ces appels lèvent — et comme ils ont lieu PENDANT le rendu,
+ * ce n'est pas un message d'erreur qui s'affiche mais l'écran entier qui
+ * disparaît, remplacé par la page blanche de l'ErrorBoundary. Une donnée
+ * manquante ne doit pas coûter la page.
+ *
+ * Ce n'est pas une précaution théorique. Le projet expose DEUX formes de
+ * réponse pour des listes : certaines routes renvoient un tableau nu
+ * (`[...]`), d'autres un objet paginé (`{ items, total, totalPages }`). Les
+ * écrans locataire lisent `res.data`, les écrans gestionnaire lisent
+ * `res.data.items`. Uniformiser la pagination côté serveur — un changement
+ * parfaitement raisonnable — viderait donc la moitié de l'application, sans
+ * autre symptôme qu'un écran blanc. C'est exactement ce qui était arrivé à
+ * l'écran d'abonnement et à celui des factures du locataire.
+ *
+ * `cle` désigne le champ à lire dans un objet paginé. Sans elle, on attend un
+ * tableau nu. Dans les deux cas, toute autre forme — `undefined`, `null`, un
+ * objet d'erreur — donne une liste vide plutôt qu'une exception.
+ */
+export function liste<T>(donnees: unknown, cle?: string): T[] {
+  const source =
+    cle && typeof donnees === "object" && donnees !== null
+      ? (donnees as Record<string, unknown>)[cle]
+      : donnees;
+
+  if (Array.isArray(source)) return source as T[];
+
+  // Une liste vide n'est pas un état anormal (un compte neuf n'a aucun bien) :
+  // seule une réponse de forme INATTENDUE mérite une trace. Sans elle, le
+  // défaut deviendrait invisible — l'écran afficherait sereinement « aucun
+  // élément » alors que le serveur a répondu autre chose.
+  if (source !== undefined) {
+    console.warn("Réponse inattendue : un tableau était attendu, reçu", source);
+  }
+
+  return [];
+}

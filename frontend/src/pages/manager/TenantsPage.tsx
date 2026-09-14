@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
@@ -31,7 +31,7 @@ export default function TenantsPage() {
     api
       .get<PaginatedResponse<Tenant>>("/tenants", { params: { page, pageSize: PAGE_SIZE } })
       .then((res) => {
-        setTenants(res.data.items);
+        setTenants(liste<Tenant>(res.data, "items"));
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
         setLoadError(null);
