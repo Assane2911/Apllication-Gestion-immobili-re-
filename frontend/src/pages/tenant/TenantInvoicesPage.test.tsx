@@ -49,6 +49,15 @@ function renderPage() {
  * indépendants du nombre d'appels que fait la page.
  */
 const MOYENS_PAR_DEFAUT = ["PAYDUNYA", "BANK_TRANSFER"];
+// Coordonnées bancaires par défaut pour les tests qui ne portent pas
+// spécifiquement dessus : /agency/mine est interrogée une seule fois au
+// montage (voir TenantInvoicesPage.tsx), indépendamment de la file `fileGet`
+// ci-dessous — sans quoi elle en décalerait chaque entrée d'un cran.
+const COORDONNEES_BANCAIRES_PAR_DEFAUT = {
+  agencyName: "Agence du Port",
+  iban: "FR7630006000011234567890189",
+  bic: "BNPAFRPPXXX",
+};
 const fileGet: { ok: boolean; valeur: unknown }[] = [];
 
 function queueGet(reponse: unknown) {
@@ -59,10 +68,13 @@ function queueGetError(erreur: unknown) {
   fileGet.push({ ok: false, valeur: erreur });
 }
 
-function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
+function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT, coordonneesBancaires: unknown = COORDONNEES_BANCAIRES_PAR_DEFAUT) {
   mockedApi.get.mockImplementation((url: string) => {
     if (String(url).startsWith("/payments/methods")) {
       return Promise.resolve({ data: { currency: "EUR", methods: moyens } }) as never;
+    }
+    if (String(url).startsWith("/agency/mine")) {
+      return Promise.resolve({ data: coordonneesBancaires }) as never;
     }
     const suivant = fileGet.shift();
     if (!suivant) {
@@ -196,6 +208,48 @@ describe("TenantInvoicesPage", () => {
         bankReference: "VIR-2026-06-001",
       })
     );
+  });
+
+  /**
+   * Régression : rien n'indiquait au locataire vers quel compte envoyer son
+   * virement — la carte "Virement bancaire" ne montrait qu'un champ de
+   * référence, sans IBAN ni BIC nulle part dans l'application.
+   */
+  it("virement bancaire : affiche l'IBAN et le BIC de l'agence, copiables", async () => {
+    const user = userEvent.setup();
+    const ecrirePressePapiers = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: ecrirePressePapiers },
+      configurable: true,
+    });
+    queueGet({ data: [invoice({ status: "PENDING" })] });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Payer" }));
+
+    const bankCard = screen.getByText("🏦 Virement bancaire").closest("div")!;
+    expect(within(bankCard).getByText("FR7630006000011234567890189")).toBeInTheDocument();
+    expect(within(bankCard).getByText("BNPAFRPPXXX")).toBeInTheDocument();
+
+    await user.click(within(bankCard).getAllByRole("button", { name: /Copier/ })[0]);
+    expect(ecrirePressePapiers).toHaveBeenCalledWith("FR7630006000011234567890189");
+    expect(within(bankCard).getByText("Copié !")).toBeInTheDocument();
+  });
+
+  it("virement bancaire : prévient le locataire quand l'agence n'a pas encore renseigné son IBAN", async () => {
+    const user = userEvent.setup();
+    installerGet(MOYENS_PAR_DEFAUT, { agencyName: "Agence du Port", iban: null, bic: null });
+    queueGet({ data: [invoice({ status: "PENDING" })] });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Payer" }));
+
+    const bankCard = screen.getByText("🏦 Virement bancaire").closest("div")!;
+    expect(
+      within(bankCard).getByText(/n'a pas encore renseigné ses coordonnées bancaires/)
+    ).toBeInTheDocument();
   });
 
   it("redirige vers l'URL PayDunya quand le paiement nécessite une action (REQUIRES_ACTION)", async () => {

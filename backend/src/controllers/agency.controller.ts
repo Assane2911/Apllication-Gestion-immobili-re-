@@ -2,8 +2,9 @@ import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { agencySettings } from "../db/schema";
+import { agencySettings, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { bicValide, ibanValide, normaliserBic, normaliserIban } from "../utils/iban";
 
 export const getAgencySettings = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -30,6 +31,29 @@ export const getAgencySettings = asyncHandler(async (req: Request, res: Response
   res.json(settings);
 });
 
+/**
+ * Vide ("") comme absent (null/undefined) : le formulaire envoie une chaîne
+ * vide quand le gestionnaire efface le champ, ce qui ne doit pas être rejeté
+ * comme un IBAN invalide.
+ */
+const ibanSchema = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((valeur) => (valeur ? normaliserIban(valeur) : valeur || null))
+  .refine((valeur) => !valeur || ibanValide(valeur), {
+    message: "IBAN invalide — vérifiez qu'il est complet et sans erreur de saisie.",
+  });
+
+const bicSchema = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((valeur) => (valeur ? normaliserBic(valeur) : valeur || null))
+  .refine((valeur) => !valeur || bicValide(valeur), {
+    message: "BIC/SWIFT invalide — 8 ou 11 caractères attendus (ex: BNPAFRPPXXX).",
+  });
+
 const updateAgencySettingsSchema = z.object({
   agencyName: z.string().min(1),
   logoUrl: z.string().optional().nullable(),
@@ -39,6 +63,8 @@ const updateAgencySettingsSchema = z.object({
   email: z.string().optional().nullable(),
   legalNotice: z.string().optional().nullable(),
   stampOrSignatureUrl: z.string().optional().nullable(),
+  iban: ibanSchema,
+  bic: bicSchema,
 });
 
 export const updateAgencySettings = asyncHandler(async (req: Request, res: Response) => {
@@ -71,4 +97,32 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
     .returning();
 
   res.json(updated);
+});
+
+/**
+ * Coordonnées bancaires de SON agence, pour le locataire qui choisit
+ * "Virement bancaire" (voir TenantInvoicesPage.tsx). Volontairement un
+ * sous-ensemble minimal des paramètres d'agence — pas de logo, de mentions
+ * légales ni de tampon — puisqu'un locataire n'a besoin que de savoir où
+ * envoyer son virement, pas d'accéder aux réglages de l'agence.
+ */
+export const getAgencyBankInfoForTenant = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
+
+  const [tenant] = await db
+    .select({ managerId: tenants.managerId })
+    .from(tenants)
+    .where(eq(tenants.id, req.user.tenantId));
+  if (!tenant) throw new ApiError(404, "Locataire introuvable");
+
+  const [settings] = await db
+    .select({ agencyName: agencySettings.agencyName, iban: agencySettings.iban, bic: agencySettings.bic })
+    .from(agencySettings)
+    .where(eq(agencySettings.userId, tenant.managerId));
+
+  res.json({
+    agencyName: settings?.agencyName ?? null,
+    iban: settings?.iban ?? null,
+    bic: settings?.bic ?? null,
+  });
 });

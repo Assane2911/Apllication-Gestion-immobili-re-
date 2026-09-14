@@ -757,6 +757,12 @@ const pt: TranslationSchema = {
         phonePlaceholder: "+351 210 000 000",
         address: "Morada da sede da agência",
         addressPlaceholder: "Avenida da Liberdade 100, 1250-096 Lisboa",
+        bankSectionTitle: "Dados bancários",
+        bankSectionHint: "Mostrados aos inquilinos que escolham a transferência bancária como forma de pagamento.",
+        iban: "IBAN",
+        ibanPlaceholder: "PT50 0002 0123 1234 5678 9015 4",
+        bic: "BIC / SWIFT",
+        bicPlaceholder: "CGDIPTPL",
         legalNotice: "Menções legais do rodapé dos recibos",
         legalNoticePlaceholder:
           "Ex.: Sociedade de gestão imobiliária, capital social de 50.000€. Licença profissional n.º...",
@@ -845,6 +851,14 @@ const pt: TranslationSchema = {
       bankRefPlaceholder: "Referência da transferência",
       noInvoices: "Nenhuma fatura por enquanto",
       receiptTitle: "Recibo de renda - {{period}}",
+      bankDetails: {
+        title: "Dados bancários da agência",
+        iban: "IBAN",
+        bic: "BIC / SWIFT",
+        missing: "A sua agência ainda não configurou os dados bancários. Contacte-a antes de fazer a transferência.",
+        copy: "Copiar",
+        copied: "Copiado!",
+      },
       methods: {
         STRIPE: { label: "💳 Cartão bancário", hint: "Pagamento seguro via Stripe" },
         PAYDUNYA: { label: "🌍 PayDunya", hint: "Orange Money, Wave, Free Money, MTN, cartão bancário..." },

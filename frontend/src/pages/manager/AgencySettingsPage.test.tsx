@@ -41,6 +41,51 @@ describe("AgencySettingsPage", () => {
     expect(screen.getByLabelText("Téléphone de l'agence")).toHaveValue("+33 1 40 00 00 00");
   });
 
+  it("pré-remplit aussi l'IBAN et le BIC quand ils sont déjà renseignés", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: settings({ iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" }),
+    });
+    render(<AgencySettingsPage />);
+
+    await waitFor(() => expect(screen.getByLabelText("IBAN")).toHaveValue("FR7630006000011234567890189"));
+    expect(screen.getByLabelText("BIC / SWIFT")).toHaveValue("BNPAFRPPXXX");
+  });
+
+  it("enregistre l'IBAN et le BIC saisis", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.put.mockResolvedValueOnce({
+      data: settings({ iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" }),
+    });
+    render(<AgencySettingsPage />);
+
+    await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+    await userEvent.setup().type(screen.getByLabelText("IBAN"), "FR7630006000011234567890189");
+    await userEvent.setup().type(screen.getByLabelText("BIC / SWIFT"), "BNPAFRPPXXX");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
+
+    await waitFor(() =>
+      expect(mockedApi.put).toHaveBeenCalledWith(
+        "/agency",
+        expect.objectContaining({ iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" })
+      )
+    );
+  });
+
+  it("affiche l'erreur du serveur quand l'IBAN saisi est invalide", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.put.mockRejectedValueOnce({
+      response: { data: { error: "Requête invalide : données manquantes ou incorrectes (champ concerné : iban)." } },
+      isAxiosError: true,
+    });
+    render(<AgencySettingsPage />);
+
+    await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+    await userEvent.setup().type(screen.getByLabelText("IBAN"), "FR00INVALIDE");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
+
+    await waitFor(() => expect(screen.getByText(/champ concerné : iban/)).toBeInTheDocument());
+  });
+
   it("enregistre les modifications et affiche un message de succès", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: settings() });
     mockedApi.put.mockResolvedValueOnce({ data: settings({ agencyName: "Agence du Port Renommée" }) });

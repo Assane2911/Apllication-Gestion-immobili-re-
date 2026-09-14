@@ -316,6 +316,13 @@ export const agencySettings = pgTable("agency_settings", {
   email: text("email"),
   legalNotice: text("legal_notice"),
   stampOrSignatureUrl: text("stamp_or_signature_url"),
+  // Coordonnées bancaires affichées au locataire qui choisit "Virement
+  // bancaire" (voir agency.controller.ts pour la validation IBAN/BIC et
+  // TenantInvoicesPage.tsx pour l'affichage). Sans elles, un locataire qui
+  // déclare un virement n'a aucun moyen de savoir où l'envoyer — la
+  // déclaration ne fait alors que masquer l'absence réelle de paiement.
+  iban: text("iban"),
+  bic: text("bic"),
   ...timestamps,
 });
 

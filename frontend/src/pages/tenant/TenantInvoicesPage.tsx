@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Download } from "lucide-react";
+import { CheckCircle2, Clock, Copy, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
@@ -7,7 +7,67 @@ import DocumentModal from "../../components/DocumentModal";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
-import type { Invoice, PaymentMethod } from "../../types";
+import type { AgencyBankInfo, Invoice, PaymentMethod } from "../../types";
+
+/**
+ * Coordonnées bancaires de l'agence, affichées sur la carte "Virement
+ * bancaire" (voir ci-dessous). Sans elles, déclarer un virement ne dit nulle
+ * part vers quel compte l'envoyer — la déclaration masquait l'absence réelle
+ * de paiement plutôt que de la résoudre.
+ */
+function CoordonneesBancaires({ info }: { info: AgencyBankInfo | null }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState<"iban" | "bic" | null>(null);
+
+  if (!info || (!info.iban && !info.bic)) {
+    return (
+      <p className="mt-3 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg px-3 py-2">
+        {t("tenant.invoices.bankDetails.missing")}
+      </p>
+    );
+  }
+
+  async function copier(champ: "iban" | "bic", valeur: string) {
+    try {
+      await navigator.clipboard.writeText(valeur);
+      setCopied(champ);
+      setTimeout(() => setCopied((c) => (c === champ ? null : c)), 1500);
+    } catch {
+      // Environnement sans presse-papiers (permission refusée, contexte non
+      // sécurisé) : la valeur reste affichée et copiable à la main, ce n'est
+      // pas une raison de faire échouer l'affichage des coordonnées.
+    }
+  }
+
+  function ligne(champ: "iban" | "bic", label: string, valeur: string) {
+    return (
+      <div className="flex items-center justify-between gap-2 mt-1.5 first:mt-0">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</p>
+          <p className="text-xs font-mono text-slate-800 dark:text-slate-200 truncate">{valeur}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => copier(champ, valeur)}
+          className="shrink-0 text-[10px] font-semibold text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer"
+        >
+          <Copy size={11} />
+          {copied === champ ? t("tenant.invoices.bankDetails.copied") : t("tenant.invoices.bankDetails.copy")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5">
+      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+        {t("tenant.invoices.bankDetails.title")}
+      </p>
+      {info.iban && ligne("iban", t("tenant.invoices.bankDetails.iban"), info.iban)}
+      {info.bic && ligne("bic", t("tenant.invoices.bankDetails.bic"), info.bic)}
+    </div>
+  );
+}
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, monthIndex1to12 - 1, 1));
@@ -22,6 +82,7 @@ export default function TenantInvoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [bankRef, setBankRef] = useState("");
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
+  const [bankInfo, setBankInfo] = useState<AgencyBankInfo | null>(null);
 
   // La disponibilité dépend de la devise de la facture réglée : PayDunya
   // n'accepte que la devise de son compte (voir payment.service.ts). On
@@ -45,6 +106,16 @@ export default function TenantInvoicesPage() {
   }
 
   useEffect(load, []);
+
+  // Chargées une fois pour toutes : ce sont les coordonnées de SON agence, pas
+  // d'une facture en particulier, donc pas besoin de les redemander à chaque
+  // ouverture du panneau de règlement.
+  useEffect(() => {
+    api
+      .get<AgencyBankInfo>("/agency/mine")
+      .then((res) => setBankInfo(res.data))
+      .catch(() => setBankInfo(null));
+  }, []);
 
   const retourPaiement = useRetourDePaiement(load);
 
@@ -217,13 +288,16 @@ export default function TenantInvoicesPage() {
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{m.label}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{m.hint}</p>
                         {m.key === "BANK_TRANSFER" && (
-                          <input
-                            aria-label={t("tenant.invoices.bankRefPlaceholder")}
-                            placeholder={t("tenant.invoices.bankRefPlaceholder")}
-                            value={bankRef}
-                            onChange={(e) => setBankRef(e.target.value)}
-                            className="w-full mt-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-none"
-                          />
+                          <>
+                            <CoordonneesBancaires info={bankInfo} />
+                            <input
+                              aria-label={t("tenant.invoices.bankRefPlaceholder")}
+                              placeholder={t("tenant.invoices.bankRefPlaceholder")}
+                              value={bankRef}
+                              onChange={(e) => setBankRef(e.target.value)}
+                              className="w-full mt-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-none"
+                            />
+                          </>
                         )}
                         <button
                           onClick={() => pay(inv.id, m.key)}

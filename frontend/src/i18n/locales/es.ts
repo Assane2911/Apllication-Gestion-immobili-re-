@@ -759,6 +759,12 @@ const es: TranslationSchema = {
         phonePlaceholder: "+34 91 000 00 00",
         address: "Dirección de la sede de la agencia",
         addressPlaceholder: "Calle Gran Vía 12, 28013 Madrid",
+        bankSectionTitle: "Datos bancarios",
+        bankSectionHint: "Se muestran a los inquilinos que elijan la transferencia bancaria como método de pago.",
+        iban: "IBAN",
+        ibanPlaceholder: "ES91 2100 0418 4502 0005 1332",
+        bic: "BIC / SWIFT",
+        bicPlaceholder: "CAIXESBBXXX",
         legalNotice: "Menciones legales del pie de página de los recibos",
         legalNoticePlaceholder:
           "Ej: Sociedad de gestión inmobiliaria S.L. con capital de 50.000€. Tarjeta profesional de Transacción y Gestión Inmobiliaria n.º CPI 7501 expedida por la Cámara de Comercio...",
@@ -847,6 +853,14 @@ const es: TranslationSchema = {
       bankRefPlaceholder: "Referencia de la transferencia",
       noInvoices: "Aún no hay facturas",
       receiptTitle: "Recibo de alquiler - {{period}}",
+      bankDetails: {
+        title: "Datos bancarios de la agencia",
+        iban: "IBAN",
+        bic: "BIC / SWIFT",
+        missing: "Tu agencia todavía no ha configurado sus datos bancarios. Contáctala antes de hacer la transferencia.",
+        copy: "Copiar",
+        copied: "¡Copiado!",
+      },
       methods: {
         STRIPE: { label: "💳 Tarjeta bancaria", hint: "Pago seguro con Stripe" },
         PAYDUNYA: { label: "🌍 PayDunya", hint: "Orange Money, Wave, Free Money, MTN, tarjeta bancaria..." },

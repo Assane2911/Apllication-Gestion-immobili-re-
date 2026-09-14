@@ -757,6 +757,12 @@ const en: TranslationSchema = {
         phonePlaceholder: "+1 555 000 0000",
         address: "Agency head office address",
         addressPlaceholder: "123 Main Street, Suite 100",
+        bankSectionTitle: "Bank details",
+        bankSectionHint: "Shown to tenants who choose bank transfer as their payment method.",
+        iban: "IBAN",
+        ibanPlaceholder: "GB29 NWBK 6016 1331 9268 19",
+        bic: "BIC / SWIFT",
+        bicPlaceholder: "NWBKGB2L",
         legalNotice: "Legal notice for the receipts' footer",
         legalNoticePlaceholder:
           "E.g.: Real estate management company, registered agent license no. ...",
@@ -845,6 +851,14 @@ const en: TranslationSchema = {
       bankRefPlaceholder: "Transfer reference",
       noInvoices: "No invoices yet",
       receiptTitle: "Rent receipt - {{period}}",
+      bankDetails: {
+        title: "Agency bank details",
+        iban: "IBAN",
+        bic: "BIC / SWIFT",
+        missing: "Your agency hasn't set up its bank details yet. Contact them before making the transfer.",
+        copy: "Copy",
+        copied: "Copied!",
+      },
       methods: {
         STRIPE: { label: "💳 Credit/debit card", hint: "Secure payment via Stripe" },
         PAYDUNYA: { label: "🌍 PayDunya", hint: "Orange Money, Wave, Free Money, MTN, card..." },

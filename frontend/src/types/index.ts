@@ -137,6 +137,15 @@ export interface AgencySettings {
   email?: string | null;
   legalNotice?: string | null;
   stampOrSignatureUrl?: string | null;
+  iban?: string | null;
+  bic?: string | null;
+}
+
+/** Coordonnées bancaires vues par le locataire (voir GET /api/agency/mine) — un sous-ensemble minimal, pas les paramètres complets de l'agence. */
+export interface AgencyBankInfo {
+  agencyName: string | null;
+  iban: string | null;
+  bic: string | null;
 }
 
 export type InvoiceStatus = "PENDING" | "PAID" | "LATE" | "CANCELLED";

@@ -16,6 +16,8 @@ export default function AgencySettingsPage() {
     phone: "",
     email: "",
     legalNotice: "",
+    iban: "",
+    bic: "",
   });
 
   useEffect(() => {
@@ -27,6 +29,8 @@ export default function AgencySettingsPage() {
         phone: res.data.phone || "",
         email: res.data.email || "",
         legalNotice: res.data.legalNotice || "",
+        iban: res.data.iban || "",
+        bic: res.data.bic || "",
       });
     });
   }, []);
@@ -140,6 +144,41 @@ export default function AgencySettingsPage() {
               placeholder={t("manager.agencySettings.fields.addressPlaceholder")}
               className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="md:col-span-2">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                {t("manager.agencySettings.fields.bankSectionTitle")}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {t("manager.agencySettings.fields.bankSectionHint")}
+              </p>
+            </div>
+            <div>
+              <label htmlFor="agency-iban" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t("manager.agencySettings.fields.iban")}
+              </label>
+              <input
+                id="agency-iban"
+                value={form.iban}
+                onChange={(e) => setForm({ ...form, iban: e.target.value })}
+                placeholder={t("manager.agencySettings.fields.ibanPlaceholder")}
+                className="w-full text-sm font-mono border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="agency-bic" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t("manager.agencySettings.fields.bic")}
+              </label>
+              <input
+                id="agency-bic"
+                value={form.bic}
+                onChange={(e) => setForm({ ...form, bic: e.target.value })}
+                placeholder={t("manager.agencySettings.fields.bicPlaceholder")}
+                className="w-full text-sm font-mono border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
           </div>
 
           <div>

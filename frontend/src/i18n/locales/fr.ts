@@ -757,6 +757,12 @@ const fr = {
         phonePlaceholder: "+33 1 40 00 00 00",
         address: "Adresse du siège de l'agence",
         addressPlaceholder: "12 Avenue des Champs-Élysées, 75008 Paris",
+        bankSectionTitle: "Coordonnées bancaires",
+        bankSectionHint: "Affichées à vos locataires qui choisissent le virement bancaire comme moyen de paiement.",
+        iban: "IBAN",
+        ibanPlaceholder: "FR76 3000 6000 0112 3456 7890 189",
+        bic: "BIC / SWIFT",
+        bicPlaceholder: "BNPAFRPPXXX",
         legalNotice: "Mentions légales du pied de page des quittances",
         legalNoticePlaceholder:
           "Ex: Société de gestion immobilière SARL au capital de 50 000€. Carte professionnelle Transaction et Gestion Immobilière n°CPI 7501 délivrée par la CCI...",
@@ -845,6 +851,14 @@ const fr = {
       bankRefPlaceholder: "Référence du virement",
       noInvoices: "Aucune facture pour le moment",
       receiptTitle: "Quittance de loyer - {{period}}",
+      bankDetails: {
+        title: "Coordonnées bancaires de l'agence",
+        iban: "IBAN",
+        bic: "BIC / SWIFT",
+        missing: "Votre agence n'a pas encore renseigné ses coordonnées bancaires. Contactez-la avant d'effectuer le virement.",
+        copy: "Copier",
+        copied: "Copié !",
+      },
       methods: {
         STRIPE: { label: "💳 Carte bancaire", hint: "Paiement sécurisé par Stripe" },
         PAYDUNYA: { label: "🌍 PayDunya", hint: "Orange Money, Wave, Free Money, MTN, carte bancaire..." },
