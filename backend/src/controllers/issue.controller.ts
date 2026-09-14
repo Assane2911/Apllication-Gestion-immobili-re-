@@ -228,19 +228,26 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
 
   const newPhotoUrl = await uploadPrivateFile(req.file, "issues");
 
-  let existingPhotos: string[] = [];
-  try {
-    if (issue.additionalPhotos) {
-      existingPhotos = JSON.parse(issue.additionalPhotos);
-    }
-  } catch {}
-
-  const updatedPhotos = [...existingPhotos, newPhotoUrl];
-
+  // Régression corrigée : la version précédente lisait `additionalPhotos`
+  // (déjà fait plus haut, dans `issue`), le combinait en mémoire avec la
+  // nouvelle photo, puis réécrivait le tableau entier. Deux photos envoyées
+  // à quelques millisecondes d'intervalle (deux onglets, ou l'appli mobile
+  // qui retente) partaient toutes deux du même tableau de départ : la
+  // seconde écriture remplaçait la première au lieu de s'y ajouter, et une
+  // photo pourtant bien envoyée à Supabase Storage disparaissait de la liste
+  // affichée sur le signalement.
+  //
+  // On ajoute donc la photo dans l'UPDATE lui-même plutôt qu'en mémoire :
+  // Postgres verrouille la ligne pour la durée de l'écriture, et calcule
+  // `additional_photos` à partir de sa valeur ACTUELLE en base au moment de
+  // chaque écriture — deux écritures concurrentes sur la même ligne
+  // s'exécutent l'une après l'autre, jamais à partir du même instantané.
   const [updated] = await db
     .update(issueReports)
     .set({
-      additionalPhotos: JSON.stringify(updatedPhotos),
+      additionalPhotos: sql`(
+        COALESCE(${issueReports.additionalPhotos}::jsonb, '[]'::jsonb) || jsonb_build_array(${newPhotoUrl}::text)
+      )::text`,
       updatedAt: new Date(),
     })
     .where(eq(issueReports.id, req.params.id))

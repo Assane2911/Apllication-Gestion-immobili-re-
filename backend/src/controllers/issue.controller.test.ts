@@ -1,6 +1,7 @@
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
+import * as storageService from "../services/storage.service";
 import {
   authHeader,
   createAdmin,
@@ -377,5 +378,91 @@ describe("POST /api/issues/:id/photo", () => {
       .attach("photo", Buffer.from("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(403);
+  });
+
+  /**
+   * Régression : `additionalPhotos` était lu, combiné en mémoire avec la
+   * nouvelle photo, puis réécrit en entier. Deux ajouts de photo à quelques
+   * millisecondes d'intervalle (deux onglets, une appli mobile qui retente)
+   * partaient tous deux du même tableau de départ ; la seconde écriture
+   * remplaçait la première au lieu de s'y ajouter.
+   *
+   * On force ici l'entrelacement qui produisait le bug — la première requête
+   * se bloque juste après avoir démarré son upload, le temps que la seconde
+   * termine intégralement le sien — plutôt que de compter sur un vrai
+   * parallélisme, non garanti et instable en intégration continue.
+   */
+  describe("POST /api/issues/:id/photo — concurrence", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("n'écrase pas une photo ajoutée par une requête concurrente", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", Buffer.from("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      const issueId = createRes.body.id;
+
+      let debloquerPremiere: (url: string) => void;
+      const premierUploadBloque = new Promise<string>((resolve) => {
+        debloquerPremiere = resolve;
+      });
+      let signalerPremierAppelEnCours: () => void;
+      const premierAppelEnCours = new Promise<void>((resolve) => {
+        signalerPremierAppelEnCours = resolve;
+      });
+
+      let appel = 0;
+      vi.spyOn(storageService, "uploadPrivateFile").mockImplementation(async () => {
+        appel += 1;
+        if (appel === 1) {
+          signalerPremierAppelEnCours();
+          return premierUploadBloque;
+        }
+        return "http://test.local/deuxieme-photo.jpg";
+      });
+
+      // supertest/superagent ne déclenche l'appel HTTP qu'au premier `.then`
+      // (ou `await`) sur la requête : on l'enchaîne donc immédiatement dans
+      // une Promise ordinaire pour la lancer maintenant, sans pour autant
+      // bloquer ici en l'attendant tout de suite.
+      const requetePremiere = request(app)
+        .post(`/api/issues/${issueId}/photo`)
+        .set(tenantToken(tenant.id))
+        .attach("photo", Buffer.from("photo-a"), { filename: "a2.jpg", contentType: "image/jpeg" })
+        .then((res) => res);
+
+      // Attend que la première requête ait bien atteint (et soit bloquée
+      // dans) son upload avant de lancer la seconde — pas un délai arbitraire.
+      await premierAppelEnCours;
+
+      const requeteSeconde = await request(app)
+        .post(`/api/issues/${issueId}/photo`)
+        .set(authHeader(tokenFor(manager)))
+        .attach("photo", Buffer.from("photo-b"), { filename: "b2.jpg", contentType: "image/jpeg" });
+
+      expect(requeteSeconde.status).toBe(200);
+      expect(JSON.parse(requeteSeconde.body.additionalPhotos)).toEqual(["http://test.local/deuxieme-photo.jpg"]);
+
+      // La première requête ne reprend (et n'écrit) qu'après que la seconde
+      // a déjà écrit sa propre photo en base.
+      debloquerPremiere!("http://test.local/premiere-photo.jpg");
+      const premiere = await requetePremiere;
+
+      expect(premiere.status).toBe(200);
+      const photosFinales: string[] = JSON.parse(premiere.body.additionalPhotos);
+      expect(photosFinales).toHaveLength(2);
+      expect(photosFinales.sort()).toEqual(
+        ["http://test.local/deuxieme-photo.jpg", "http://test.local/premiere-photo.jpg"].sort()
+      );
+    });
   });
 });
