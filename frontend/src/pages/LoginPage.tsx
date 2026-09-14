@@ -7,11 +7,6 @@ import Reveal from "../components/Reveal";
 import { useAuth } from "../context/auth";
 import { homePathForRole } from "../utils/roleHome";
 
-const DEMO_ACCOUNTS = {
-  manager: { email: "gestionnaire@demo.com", password: "Demo1234!" },
-  tenant: { email: "amine.silva@demo.com", password: "Demo1234!" },
-} as const;
-
 function MailIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -63,13 +58,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<"form" | "manager" | "tenant" | null>(null);
+  const [loading, setLoading] = useState<"form" | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   const highlights = t("auth.login.panel.highlights", { returnObjects: true }) as string[];
 
-  async function doLogin(loginEmail: string, loginPassword: string, source: "form" | "manager" | "tenant") {
+  async function doLogin(loginEmail: string, loginPassword: string, source: "form") {
     setError(null);
     setUnverifiedEmail(null);
     setResendState("idle");
@@ -101,13 +96,6 @@ export default function LoginPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     doLogin(email, password, "form");
-  }
-
-  function tryDemo(role: "manager" | "tenant") {
-    const account = DEMO_ACCOUNTS[role];
-    setEmail(account.email);
-    setPassword(account.password);
-    doLogin(account.email, account.password, role);
   }
 
   return (
@@ -259,42 +247,6 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <div className="mt-8">
-            <div className="flex items-center gap-3 text-[11px] text-slate-600 uppercase tracking-wider">
-              <span className="h-px flex-1 bg-slate-800" />
-              {t("auth.login.tryDemoTitle")}
-              <span className="h-px flex-1 bg-slate-800" />
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => tryDemo("manager")}
-                disabled={loading !== null}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 hover:border-slate-600 disabled:opacity-60 px-3 py-3 text-xs font-medium text-slate-300 transition-all"
-              >
-                {loading === "manager" ? (
-                  <span className="w-4 h-4 border-2 border-slate-500 border-t-brand-400 rounded-full animate-spin" />
-                ) : (
-                  <span className="text-lg">🏢</span>
-                )}
-                {t("auth.login.tryDemoManagerLabel")}
-              </button>
-              <button
-                type="button"
-                onClick={() => tryDemo("tenant")}
-                disabled={loading !== null}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 hover:border-slate-600 disabled:opacity-60 px-3 py-3 text-xs font-medium text-slate-300 transition-all"
-              >
-                {loading === "tenant" ? (
-                  <span className="w-4 h-4 border-2 border-slate-500 border-t-brand-400 rounded-full animate-spin" />
-                ) : (
-                  <span className="text-lg">🏠</span>
-                )}
-                {t("auth.login.tryDemoTenantLabel")}
-              </button>
-            </div>
-          </div>
         </Reveal>
       </div>
     </div>
