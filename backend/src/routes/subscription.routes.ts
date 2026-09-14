@@ -5,6 +5,7 @@ import {
   getStatus,
   subscribe,
 } from "../controllers/subscription.controller";
+import { getPlatformBankInfoForManager } from "../controllers/platformSettings.controller";
 import { authenticate, requireRole } from "../middleware/auth";
 
 const router = Router();
@@ -16,5 +17,9 @@ router.get("/plans", getPlans);
 router.get("/status", authenticate, requireRole("MANAGER"), getStatus);
 router.post("/subscribe", authenticate, requireRole("MANAGER"), subscribe);
 router.post("/cancel", authenticate, requireRole("MANAGER"), cancelSubscription);
+// Coordonnées bancaires de LA PLATEFORME (pas celles d'une agence), pour le
+// gestionnaire qui règle son abonnement par virement — voir
+// platformSettings.controller.ts.
+router.get("/bank-details", authenticate, requireRole("MANAGER"), getPlatformBankInfoForManager);
 
 export default router;

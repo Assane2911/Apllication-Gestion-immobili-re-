@@ -800,6 +800,14 @@ const en: TranslationSchema = {
       paymentMethodLabel: "Payment method",
       bankRefLabel: "Bank transfer reference number:",
       bankRefPlaceholder: "E.g.: TRF-2026-08-01",
+      bankDetails: {
+        title: "Platform bank details",
+        iban: "IBAN",
+        bic: "BIC / SWIFT",
+        missing: "The platform hasn't provided its bank details yet. Contact support before making the transfer.",
+        copy: "Copy",
+        copied: "Copied!",
+      },
       confirmAndActivate: "Confirm and Activate Subscription",
       processing: "Processing...",
       historyTitle: "Your subscription invoice history",
@@ -914,6 +922,7 @@ const en: TranslationSchema = {
     nav: {
       dashboard: "Dashboard",
       transfers: "Bank transfers",
+      settings: "Settings",
     },
     dashboard: {
       title: "Dashboard",
@@ -965,6 +974,19 @@ const en: TranslationSchema = {
       confirmButton: "Confirm payment",
       confirming: "Confirming...",
       confirmPrompt: "Confirm receipt of the {{amount}} transfer from {{email}}? This will immediately activate their subscription.",
+    },
+    settings: {
+      title: "Platform settings",
+      subtitle: "Bank details used to receive subscriptions paid by bank transfer",
+      success: "Bank details saved",
+      fields: {
+        iban: "Platform IBAN",
+        ibanPlaceholder: "E.g.: FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        bic: "BIC / SWIFT",
+        bicPlaceholder: "E.g.: XXXXFRPPXXX",
+      },
+      save: "Save",
+      saving: "Saving...",
     },
   },
 };

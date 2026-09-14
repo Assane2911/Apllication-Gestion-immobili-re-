@@ -326,6 +326,20 @@ export const agencySettings = pgTable("agency_settings", {
   ...timestamps,
 });
 
+// --- Platform Settings (coordonnées bancaires de LA PLATEFORME elle-même) ---
+// Table volontairement à une seule ligne (id fixe "platform", voir
+// platformSettings.controller.ts) : contrairement à agencySettings — un
+// compte par agence, pour encaisser SES loyers — il n'existe qu'un seul
+// compte destinataire des abonnements SaaS, celui de l'exploitant de la
+// plateforme, montré à tout gestionnaire qui règle son abonnement par
+// virement (voir subscription.routes.ts /bank-details).
+export const platformSettings = pgTable("platform_settings", {
+  id: text("id").primaryKey(),
+  iban: text("iban"),
+  bic: text("bic"),
+  ...timestamps,
+});
+
 // --- Relations (pour les requêtes imbriquées via db.query.*) ---
 export const usersRelations = relations(users, ({ one, many }) => ({
   tenant: one(tenants, { fields: [users.id], references: [tenants.userId] }),

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { agencySettings, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { bicValide, ibanValide, normaliserBic, normaliserIban } from "../utils/iban";
+import { bicSchema, ibanSchema } from "../utils/iban";
 
 export const getAgencySettings = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -30,29 +30,6 @@ export const getAgencySettings = asyncHandler(async (req: Request, res: Response
 
   res.json(settings);
 });
-
-/**
- * Vide ("") comme absent (null/undefined) : le formulaire envoie une chaîne
- * vide quand le gestionnaire efface le champ, ce qui ne doit pas être rejeté
- * comme un IBAN invalide.
- */
-const ibanSchema = z
-  .string()
-  .optional()
-  .nullable()
-  .transform((valeur) => (valeur ? normaliserIban(valeur) : valeur || null))
-  .refine((valeur) => !valeur || ibanValide(valeur), {
-    message: "IBAN invalide — vérifiez qu'il est complet et sans erreur de saisie.",
-  });
-
-const bicSchema = z
-  .string()
-  .optional()
-  .nullable()
-  .transform((valeur) => (valeur ? normaliserBic(valeur) : valeur || null))
-  .refine((valeur) => !valeur || bicValide(valeur), {
-    message: "BIC/SWIFT invalide — 8 ou 11 caractères attendus (ex: BNPAFRPPXXX).",
-  });
 
 const updateAgencySettingsSchema = z.object({
   agencyName: z.string().min(1),

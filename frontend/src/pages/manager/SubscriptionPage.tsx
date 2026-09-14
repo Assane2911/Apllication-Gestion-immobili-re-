@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
 import { api, apiErrorMessage } from "../../api/client";
+import BankDetails from "../../components/BankDetails";
 import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
-import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
+import type { PaymentMethod, PlatformBankInfo, SubscriptionPlanDetail } from "../../types";
 
 interface SubscriptionHistoryRecord {
   id: string;
@@ -31,6 +32,7 @@ export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanDetail | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("PAYDUNYA");
   const [bankRef, setBankRef] = useState("");
+  const [bankInfo, setBankInfo] = useState<PlatformBankInfo | null>(null);
   const [, setLoading] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -55,6 +57,17 @@ export default function SubscriptionPage() {
       setSelectedMethod(moyensDisponibles[0]);
     }
   }, [moyensDisponibles, selectedMethod]);
+
+  // Coordonnées bancaires de LA PLATEFORME (distinctes de celles de l'agence
+  // affichées au locataire) : nécessaires si le gestionnaire choisit de régler
+  // son abonnement par virement. Échec silencieux : l'absence de RIB configuré
+  // ne doit pas empêcher d'afficher le reste du formulaire de paiement.
+  useEffect(() => {
+    api
+      .get<PlatformBankInfo>("/subscription/bank-details")
+      .then((res) => setBankInfo(res.data))
+      .catch(() => setBankInfo(null));
+  }, []);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -382,7 +395,16 @@ export default function SubscriptionPage() {
 
               {selectedMethod === "BANK_TRANSFER" && (
                 <div className="pt-2">
-                  <label htmlFor="subscription-bank-ref" className="text-xs text-slate-600 dark:text-slate-400 block mb-1">{t("manager.subscription.bankRefLabel")}</label>
+                  <BankDetails
+                    info={bankInfo}
+                    title={t("manager.subscription.bankDetails.title")}
+                    ibanLabel={t("manager.subscription.bankDetails.iban")}
+                    bicLabel={t("manager.subscription.bankDetails.bic")}
+                    missingMessage={t("manager.subscription.bankDetails.missing")}
+                    copyLabel={t("manager.subscription.bankDetails.copy")}
+                    copiedLabel={t("manager.subscription.bankDetails.copied")}
+                  />
+                  <label htmlFor="subscription-bank-ref" className="text-xs text-slate-600 dark:text-slate-400 block mb-1 mt-3">{t("manager.subscription.bankRefLabel")}</label>
                   <input
                     id="subscription-bank-ref"
                     type="text"

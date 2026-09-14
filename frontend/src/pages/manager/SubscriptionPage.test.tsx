@@ -94,6 +94,12 @@ function renderPage() {
  * indépendants du nombre d'appels que fait la page.
  */
 const MOYENS_PAR_DEFAUT = ["PAYDUNYA", "BANK_TRANSFER"];
+// Coordonnées bancaires de LA PLATEFORME (voir /subscription/bank-details),
+// distinctes de celles de l'agence renvoyées par /agency/mine côté locataire.
+const COORDONNEES_BANCAIRES_PLATEFORME_PAR_DEFAUT = {
+  iban: "FR7630001007941234567890185",
+  bic: "BDFEFRPPXXX",
+};
 const fileGet: { ok: boolean; valeur: unknown }[] = [];
 
 function queueGet(reponse: unknown) {
@@ -104,10 +110,18 @@ function queueGetError(erreur: unknown) {
   fileGet.push({ ok: false, valeur: erreur });
 }
 
-function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
+function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT, bankInfo: unknown = COORDONNEES_BANCAIRES_PLATEFORME_PAR_DEFAUT) {
   mockedApi.get.mockImplementation((url: string) => {
     if (String(url).startsWith("/payments/methods")) {
       return Promise.resolve({ data: { currency: "EUR", methods: moyens } }) as never;
+    }
+    // Coordonnées bancaires de la plateforme (voir /subscription/bank-details) :
+    // requête indépendante du chargement des plans/de l'historique, jouée en
+    // parallèle. Sans ce cas particulier, elle consommerait la file `fileGet`
+    // prévue pour les DEUX autres appels et décalerait toutes les réponses
+    // mockées d'un cran.
+    if (String(url).startsWith("/subscription/bank-details")) {
+      return Promise.resolve({ data: bankInfo }) as never;
     }
     const suivant = fileGet.shift();
     if (!suivant) {
@@ -481,5 +495,53 @@ describe("SubscriptionPage", () => {
     expect(
       screen.queryByText(/Pour souscrire ou changer d'offre, connectez-vous depuis le site web/)
     ).not.toBeInTheDocument();
+  });
+
+  /**
+   * Régression : un gestionnaire choisissant de régler son abonnement par
+   * virement ne voyait aucun IBAN — seulement un champ pour déclarer une
+   * référence de virement déjà envoyé, vers un compte jamais indiqué nulle
+   * part dans l'application (voir GET /subscription/bank-details).
+   */
+  it("virement bancaire : affiche l'IBAN et le BIC de la plateforme, copiables", async () => {
+    const user = userEvent.setup();
+    const ecrirePressePapiers = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: ecrirePressePapiers },
+      configurable: true,
+    });
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+    await user.click(screen.getByRole("radio", { name: /Virement bancaire/ }));
+
+    const bankCard = screen.getByText("Coordonnées bancaires de la plateforme").closest("div")!;
+    expect(within(bankCard).getByText("FR7630001007941234567890185")).toBeInTheDocument();
+    expect(within(bankCard).getByText("BDFEFRPPXXX")).toBeInTheDocument();
+
+    await user.click(within(bankCard).getAllByRole("button", { name: /Copier/ })[0]);
+    expect(ecrirePressePapiers).toHaveBeenCalledWith("FR7630001007941234567890185");
+    expect(within(bankCard).getByText("Copié !")).toBeInTheDocument();
+  });
+
+  it("virement bancaire : prévient le gestionnaire quand la plateforme n'a pas encore renseigné son IBAN", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser());
+    installerGet(MOYENS_PAR_DEFAUT, { iban: null, bic: null });
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+    await user.click(screen.getByRole("radio", { name: /Virement bancaire/ }));
+
+    expect(
+      screen.getByText(/La plateforme n'a pas encore renseigné ses coordonnées bancaires/)
+    ).toBeInTheDocument();
   });
 });

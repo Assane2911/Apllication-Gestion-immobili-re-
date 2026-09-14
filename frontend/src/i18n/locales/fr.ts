@@ -800,6 +800,14 @@ const fr = {
       paymentMethodLabel: "Moyen de règlement",
       bankRefLabel: "Numéro ou référence du virement :",
       bankRefPlaceholder: "Ex: VIR-2026-08-01",
+      bankDetails: {
+        title: "Coordonnées bancaires de la plateforme",
+        iban: "IBAN",
+        bic: "BIC / SWIFT",
+        missing: "La plateforme n'a pas encore renseigné ses coordonnées bancaires. Contactez le support avant d'effectuer le virement.",
+        copy: "Copier",
+        copied: "Copié !",
+      },
       confirmAndActivate: "Confirmer et Activer l'Abonnement",
       processing: "Traitement en cours...",
       historyTitle: "Historique de vos factures d'abonnement",
@@ -914,6 +922,7 @@ const fr = {
     nav: {
       dashboard: "Tableau de bord",
       transfers: "Virements bancaires",
+      settings: "Paramètres",
     },
     dashboard: {
       title: "Tableau de bord",
@@ -965,6 +974,19 @@ const fr = {
       confirmButton: "Confirmer le paiement",
       confirming: "Confirmation...",
       confirmPrompt: "Confirmer la réception du virement de {{amount}} de {{email}} ? Cette action activera immédiatement son abonnement.",
+    },
+    settings: {
+      title: "Paramètres de la plateforme",
+      subtitle: "Coordonnées bancaires utilisées pour recevoir les abonnements réglés par virement",
+      success: "Coordonnées bancaires enregistrées",
+      fields: {
+        iban: "IBAN de la plateforme",
+        ibanPlaceholder: "Ex: FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        bic: "BIC / SWIFT",
+        bicPlaceholder: "Ex: XXXXFRPPXXX",
+      },
+      save: "Enregistrer",
+      saving: "Enregistrement...",
     },
   },
 };

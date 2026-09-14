@@ -126,6 +126,7 @@ const TABLES = [
   "messages",
   "activity_logs",
   "agency_settings",
+  "platform_settings",
 ];
 
 // Table vide avant chaque test pour qu'aucun test ne dépende de l'ordre

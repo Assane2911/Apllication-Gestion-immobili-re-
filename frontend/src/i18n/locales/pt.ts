@@ -800,6 +800,14 @@ const pt: TranslationSchema = {
       paymentMethodLabel: "Método de pagamento",
       bankRefLabel: "Número ou referência da transferência:",
       bankRefPlaceholder: "Ex.: TRF-2026-08-01",
+      bankDetails: {
+        title: "Dados bancários da plataforma",
+        iban: "IBAN",
+        bic: "BIC / SWIFT",
+        missing: "A plataforma ainda não indicou os seus dados bancários. Contacte o suporte antes de efetuar a transferência.",
+        copy: "Copiar",
+        copied: "Copiado!",
+      },
       confirmAndActivate: "Confirmar e Ativar a Assinatura",
       processing: "A processar...",
       historyTitle: "Histórico das suas faturas de assinatura",
@@ -914,6 +922,7 @@ const pt: TranslationSchema = {
     nav: {
       dashboard: "Painel",
       transfers: "Transferências bancárias",
+      settings: "Definições",
     },
     dashboard: {
       title: "Painel de controlo",
@@ -965,6 +974,19 @@ const pt: TranslationSchema = {
       confirmButton: "Confirmar pagamento",
       confirming: "A confirmar...",
       confirmPrompt: "Confirmar a receção da transferência de {{amount}} de {{email}}? Isto ativará imediatamente a assinatura.",
+    },
+    settings: {
+      title: "Definições da plataforma",
+      subtitle: "Dados bancários usados para receber as assinaturas pagas por transferência",
+      success: "Dados bancários guardados",
+      fields: {
+        iban: "IBAN da plataforma",
+        ibanPlaceholder: "Ex.: FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        bic: "BIC / SWIFT",
+        bicPlaceholder: "Ex.: XXXXFRPPXXX",
+      },
+      save: "Guardar",
+      saving: "A guardar...",
     },
   },
 };

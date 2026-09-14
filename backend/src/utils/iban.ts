@@ -1,13 +1,15 @@
 /**
- * Validation IBAN/BIC pour les coordonnées bancaires de l'agence.
- *
- * Ces coordonnées sont montrées telles quelles au locataire pour qu'il sache
- * où envoyer son virement (voir agency.controller.ts / TenantInvoicesPage.tsx).
- * Un IBAN mal saisi n'y ferait pas obstacle — le champ est un simple texte —
- * mais laisserait le gestionnaire diriger ses locataires vers un compte qui
- * n'existe pas, ou vers le sien mal recopié, sans qu'aucun message ne le
- * prévienne avant qu'un premier virement n'échoue à l'autre bout.
+ * Validation IBAN/BIC pour des coordonnées bancaires affichées telles quelles
+ * à qui doit faire un virement : celles d'une agence pour son locataire (voir
+ * agency.controller.ts / TenantInvoicesPage.tsx) comme celles de la
+ * plateforme pour un gestionnaire qui règle son abonnement par virement (voir
+ * platformSettings.controller.ts / SubscriptionPage.tsx). Un IBAN mal saisi
+ * n'y ferait pas obstacle — le champ est un simple texte — mais dirigerait le
+ * payeur vers un compte qui n'existe pas, ou mal recopié, sans qu'aucun
+ * message ne le prévienne avant qu'un premier virement n'échoue à l'autre
+ * bout.
  */
+import { z } from "zod";
 
 /** Retire espaces/tirets et met en majuscules, pour un stockage et une comparaison uniformes. */
 export function normaliserIban(brut: string): string {
@@ -49,3 +51,27 @@ export function bicValide(bic: string): boolean {
   const valeur = normaliserBic(bic);
   return /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(valeur);
 }
+
+/**
+ * Schémas Zod prêts à l'emploi pour un champ IBAN/BIC optionnel dans un
+ * formulaire de paramètres (agence ou plateforme) : une chaîne vide (""),
+ * comme quand le formulaire efface le champ, est traitée comme absente
+ * (null) plutôt que comme un IBAN invalide.
+ */
+export const ibanSchema = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((valeur) => (valeur ? normaliserIban(valeur) : valeur || null))
+  .refine((valeur) => !valeur || ibanValide(valeur), {
+    message: "IBAN invalide — vérifiez qu'il est complet et sans erreur de saisie.",
+  });
+
+export const bicSchema = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((valeur) => (valeur ? normaliserBic(valeur) : valeur || null))
+  .refine((valeur) => !valeur || bicValide(valeur), {
+    message: "BIC/SWIFT invalide — 8 ou 11 caractères attendus (ex: BNPAFRPPXXX).",
+  });

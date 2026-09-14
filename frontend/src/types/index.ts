@@ -148,6 +148,19 @@ export interface AgencyBankInfo {
   bic: string | null;
 }
 
+/** Paramètres bancaires de LA PLATEFORME (un seul compte, celui de l'exploitant) — voir GET/PUT /api/admin/settings. */
+export interface PlatformSettings {
+  id: string;
+  iban?: string | null;
+  bic?: string | null;
+}
+
+/** Coordonnées bancaires de la plateforme vues par un gestionnaire qui règle son abonnement (voir GET /api/subscription/bank-details). */
+export interface PlatformBankInfo {
+  iban: string | null;
+  bic: string | null;
+}
+
 export type InvoiceStatus = "PENDING" | "PAID" | "LATE" | "CANCELLED";
 export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO";
 
