@@ -107,16 +107,34 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
   // changement manuel n'est donc accepté que si aucun contrat actif n'existe
   // sur ce bien ; sinon, c'est la clôture du contrat (voir updateContract)
   // qui doit remettre le bien à AVAILABLE.
-  if (body.status && body.status !== existing.status) {
+  //
+  // Même garde pour la devise : createContract fige currency sur le contrat
+  // au moment de sa création (`body.currency || property.currency || "EUR"`,
+  // voir contract.controller.ts), et invoice.service.ts hérite ensuite du
+  // contrat, jamais du bien. Changer la devise du bien pendant qu'un contrat
+  // actif existe ne touche donc à rien de ce contrat ni de ses factures déjà
+  // libellées dans l'ancienne devise — seul l'affichage du bien change,
+  // créant un bien et son contrat/ses quittances dans deux devises
+  // différentes, sans qu'aucun montant n'ait réellement été reconverti.
+  const changeStatus = body.status !== undefined && body.status !== existing.status;
+  const changeCurrency = body.currency !== undefined && body.currency !== existing.currency;
+
+  if (changeStatus || changeCurrency) {
     const [contratActif] = await db
       .select({ id: contracts.id })
       .from(contracts)
       .where(and(eq(contracts.propertyId, req.params.id), eq(contracts.status, "ACTIVE")))
       .limit(1);
     if (contratActif) {
+      if (changeStatus) {
+        throw new ApiError(
+          409,
+          "Impossible de changer le statut d'un bien ayant un contrat de location actif. Clôturez d'abord le contrat."
+        );
+      }
       throw new ApiError(
         409,
-        "Impossible de changer le statut d'un bien ayant un contrat de location actif. Clôturez d'abord le contrat."
+        "Impossible de changer la devise d'un bien ayant un contrat de location actif : le contrat et ses factures resteraient dans l'ancienne devise. Clôturez d'abord le contrat."
       );
     }
   }

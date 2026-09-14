@@ -222,6 +222,45 @@ describe("PUT /api/properties/:id", () => {
     expect(res.body.rent).toBe(800);
     expect(res.body.status).toBe("OCCUPIED");
   });
+
+  /**
+   * Régression : createContract fige la devise sur le contrat au moment de
+   * sa création (héritée du bien à cet instant), et invoice.service.ts
+   * hérite ensuite du contrat — jamais du bien. Rien n'empêchait pourtant de
+   * changer la devise du bien pendant qu'un contrat actif existe : le
+   * contrat et ses factures restaient dans l'ancienne devise, mais le bien
+   * affichait la nouvelle — un même logement dans deux devises différentes
+   * sans qu'aucun montant n'ait été reconverti.
+   */
+  it("refuse de changer la devise d'un bien ayant un contrat actif", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { currency: "EUR" });
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id); // status ACTIVE par défaut
+    await testDb.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, property.id));
+
+    const res = await request(app)
+      .put(`/api/properties/${property.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ currency: "XOF" });
+
+    expect(res.status).toBe(409);
+    const [inchange] = await testDb.select().from(properties).where(eq(properties.id, property.id));
+    expect(inchange.currency).toBe("EUR");
+  });
+
+  it("autorise le changement de devise d'un bien sans contrat actif", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { currency: "EUR" });
+
+    const res = await request(app)
+      .put(`/api/properties/${property.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ currency: "XOF" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.currency).toBe("XOF");
+  });
 });
 
 describe("DELETE /api/properties/:id", () => {
