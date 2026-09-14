@@ -2,7 +2,11 @@ import bcrypt from "bcryptjs";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
+import * as emailService from "../services/email.service";
 import { createManager } from "../test/authHelpers";
+import { testDb } from "../test/setupTestDb";
+import { users } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Une plateforme ne doit pas laisser vérifier de l'extérieur quelles adresses
@@ -94,5 +98,62 @@ describe("énumération des comptes", () => {
       expect(inconnue.status).toBe(mauvaisMotDePasse.status);
       expect(inconnue.body).toEqual(mauvaisMotDePasse.body);
     });
+  });
+
+  /**
+   * Régression. Le message était déjà identique dans les deux cas (adresse
+   * connue ou non), mais pas le temps de réponse : seule une adresse à qui
+   * il restait quelque chose à renvoyer attendait un envoi SMTP réel — une
+   * opération réseau, bien plus longue et bien plus variable que tout le
+   * reste de la route. Un chronomètre serait instable en intégration
+   * continue ; on vérifie donc la cause directement, en bloquant l'envoi
+   * d'email et en s'assurant que la réponse arrive quand même. Si le code
+   * attend encore l'envoi avant de répondre, ce test expire (timeout) au
+   * lieu d'aboutir.
+   */
+  describe("POST /api/auth/forgot-password", () => {
+    it("répond sans attendre l'envoi de l'email de réinitialisation", async () => {
+      const manager = await createManager();
+      const envoiBloque = new Promise<void>(() => {
+        /* volontairement jamais résolue : simule un SMTP très lent/injoignable */
+      });
+      const espion = vi
+        .spyOn(emailService, "sendEmail")
+        .mockReturnValue(envoiBloque as unknown as ReturnType<typeof emailService.sendEmail>);
+
+      const res = await request(app)
+        .post("/api/auth/forgot-password")
+        .send({ email: manager.email });
+
+      expect(res.status).toBe(200);
+      expect(espion).toHaveBeenCalledTimes(1);
+
+      const [apres] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(apres.resetPasswordTokenHash).not.toBeNull();
+    }, 1000);
+  });
+
+  describe("POST /api/auth/resend-verification", () => {
+    it("répond sans attendre l'envoi de l'email de confirmation", async () => {
+      // createManager() vérifie l'email par défaut : on force le compte à
+      // l'état "en attente de confirmation" que cette route est censée traiter.
+      const manager = await createManager({ emailVerifiedAt: null });
+      const envoiBloque = new Promise<void>(() => {
+        /* volontairement jamais résolue */
+      });
+      const espion = vi
+        .spyOn(emailService, "sendEmail")
+        .mockReturnValue(envoiBloque as unknown as ReturnType<typeof emailService.sendEmail>);
+
+      const res = await request(app)
+        .post("/api/auth/resend-verification")
+        .send({ email: manager.email });
+
+      expect(res.status).toBe(200);
+      expect(espion).toHaveBeenCalledTimes(1);
+
+      const [apres] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(apres.emailVerificationTokenHash).not.toBeNull();
+    }, 1000);
   });
 });

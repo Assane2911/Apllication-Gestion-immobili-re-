@@ -289,13 +289,22 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
       .set({ emailVerificationTokenHash, emailVerificationExpiresAt })
       .where(eq(users.id, user.id));
 
+    // Régression corrigée : un `await` ici faisait dépendre la réponse de
+    // l'envoi SMTP réel — une opération réseau, bien plus longue et bien
+    // plus variable que tout ce que fait cette route pour une adresse
+    // inconnue ou déjà vérifiée. Une adresse à qui il restait quelque chose
+    // à renvoyer répondait donc systématiquement plus lentement, d'un écart
+    // mesurable de l'extérieur : même faille que le temps de réponse de
+    // login() (voir EMPREINTE_FACTICE), par un autre canal. Contrairement à
+    // login(), il n'existe rien à hacher pour une adresse sans compte — la
+    // réponse ne doit donc plus jamais attendre l'envoi, dans aucun des deux
+    // cas ; il continue en arrière-plan, capturé uniquement pour le journal
+    // en cas d'échec.
     const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
     const { subject, html } = emailVerificationEmail({ verifyUrl });
-    try {
-      await sendEmail(user.email, subject, html);
-    } catch (err) {
+    sendEmail(user.email, subject, html).catch((err) => {
       console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
-    }
+    });
   }
 
   res.json({
@@ -349,13 +358,17 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
       .set({ resetPasswordTokenHash, resetPasswordExpiresAt })
       .where(eq(users.id, user.id));
 
+    // Régression corrigée : voir le commentaire équivalent dans
+    // resendVerification ci-dessus. Un `await` sur l'envoi SMTP faisait
+    // répondre plus lentement une adresse connue qu'une adresse inconnue,
+    // d'un écart mesurable de l'extérieur — la même fuite que le temps de
+    // réponse de login(), par un autre canal. La réponse ne doit donc plus
+    // dépendre de l'envoi, qui continue en arrière-plan.
     const resetUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
     const { subject, html } = passwordResetEmail({ resetUrl });
-    try {
-      await sendEmail(user.email, subject, html);
-    } catch (err) {
+    sendEmail(user.email, subject, html).catch((err) => {
       console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err);
-    }
+    });
   }
 
   res.json({
