@@ -62,6 +62,53 @@ describe("énumération des comptes", () => {
       // Le mot de passe du compte n'a pas été remplacé par celui du visiteur.
       expect(connexion.status).toBe(401);
     });
+
+    /**
+     * Régression mineure, même famille que le test bcrypt de /login
+     * ci-dessous. Le message et le statut étaient déjà identiques dans les
+     * deux cas, mais le chemin "adresse libre" hache le mot de passe (bcrypt,
+     * ~100 ms) avant de créer le compte, alors que le chemin "adresse prise"
+     * ne le faisait pas — un écart de temps de réponse mesurable.
+     */
+    it("passe par bcrypt.hash même pour une adresse déjà prise", async () => {
+      const existant = await createManager();
+      const espion = vi.spyOn(bcrypt, "hash");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .send({ email: existant.email, password: "UnAutreMotDePasse123" });
+
+      expect(res.status).toBe(201);
+      expect(espion).toHaveBeenCalledTimes(1);
+    });
+
+    /**
+     * Régression : les deux chemins (adresse libre ou déjà prise) attendaient
+     * l'envoi SMTP réel avant de répondre — une opération réseau bien plus
+     * variable que tout calcul local. Si le code attend encore l'un des deux
+     * envois, ce test expire (timeout) au lieu d'aboutir.
+     */
+    it("répond sans attendre l'envoi de l'email, adresse prise ou libre", async () => {
+      const existant = await createManager();
+      const envoiBloque = new Promise<void>(() => {
+        /* volontairement jamais résolue */
+      });
+      const espion = vi
+        .spyOn(emailService, "sendEmail")
+        .mockReturnValue(envoiBloque as unknown as ReturnType<typeof emailService.sendEmail>);
+
+      const surPrise = await request(app)
+        .post("/api/auth/register")
+        .send({ email: existant.email, password: "UnAutreMotDePasse123" });
+      expect(surPrise.status).toBe(201);
+
+      const surLibre = await request(app)
+        .post("/api/auth/register")
+        .send({ email: `libre-${Date.now()}@exemple.fr`, password: "UnAutreMotDePasse123" });
+      expect(surLibre.status).toBe(201);
+
+      expect(espion).toHaveBeenCalledTimes(2);
+    }, 1000);
   });
 
   describe("POST /api/auth/login", () => {

@@ -110,6 +110,15 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
   // l'inscription etait le dernier endroit qui parlait.
   const [existing] = await db.select().from(users).where(eq(users.email, body.email));
   if (existing) {
+    // Régression mineure, même famille que EMPREINTE_FACTICE (login) : le
+    // chemin "adresse libre" ci-dessous hache le mot de passe (bcrypt, coût
+    // 10, ~100 ms) avant de créer le compte. Sans un hachage équivalent ici,
+    // une adresse déjà prise répondait mécaniquement plus vite qu'une
+    // inscription réussie — un écart mesurable de l'extérieur, même une fois
+    // le message et le statut rendus identiques. Le résultat est jeté : il
+    // ne sert qu'à égaliser le temps de calcul entre les deux chemins.
+    await bcrypt.hash(body.password, 10);
+
     // Le titulaire legitime qui a simplement oublie son inscription doit
     // pouvoir s'en sortir : on le lui dit par email, canal que seul lui peut
     // lire. Rien n'est ecrit en base — une tentative d'inscription sur une
@@ -118,11 +127,12 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
       loginUrl: `${env.frontendUrl}/login`,
       resetUrl: `${env.frontendUrl}/mot-de-passe-oublie`,
     });
-    try {
-      await sendEmail(existing.email, subject, html);
-    } catch (err) {
+    // Même correctif que forgotPassword/resendVerification : la réponse ne
+    // doit plus dépendre de l'envoi SMTP, dont la durée réseau varie bien
+    // plus que tout calcul local et créerait à elle seule un écart mesurable.
+    sendEmail(existing.email, subject, html).catch((err) => {
       console.error("[auth] Échec de l'envoi de l'email « compte déjà existant » :", err);
-    }
+    });
     return res.status(201).json(REPONSE_INSCRIPTION);
   }
 
@@ -153,11 +163,9 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
 
   const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
   const { subject, html } = emailVerificationEmail({ verifyUrl });
-  try {
-    await sendEmail(user.email, subject, html);
-  } catch (err) {
+  sendEmail(user.email, subject, html).catch((err) => {
     console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
-  }
+  });
 
   res.status(201).json(REPONSE_INSCRIPTION);
 });
