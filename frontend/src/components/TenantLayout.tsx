@@ -41,7 +41,7 @@ export default function TenantLayout() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
             <LanguageSwitcher />
             <CurrencySelector />
             <button
@@ -52,13 +52,18 @@ export default function TenantLayout() {
             >
               {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
             </button>
+            {/* Séparateur visuel + style visible au repos (pas seulement au
+                survol, inutilisable au doigt sur mobile) : sans ça, ce bouton
+                se fondait parmi les icônes voisines (langue/devise/thème) et
+                pouvait disparaître complètement de l'écran sur mobile quand
+                la ligne débordait (voir flex-wrap ci-dessus). */}
             <button
               onClick={logout}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all cursor-pointer"
+              className="shrink-0 inline-flex items-center gap-1.5 pl-2.5 sm:pl-2.5 ml-0.5 pr-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200/70 dark:border-rose-500/20 hover:bg-rose-100 dark:hover:bg-rose-500/20 hover:border-rose-300 dark:hover:border-rose-500/40 transition-all cursor-pointer"
               title={t("nav.logout")}
             >
               <LogOut size={13} />
-              <span className="hidden sm:inline">{t("nav.logout")}</span>
+              <span>{t("nav.logout")}</span>
             </button>
           </div>
         </div>
