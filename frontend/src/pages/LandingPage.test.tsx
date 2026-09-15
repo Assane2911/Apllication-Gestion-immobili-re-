@@ -30,7 +30,7 @@ describe("LandingPage", () => {
 
   it("affiche l'accroche principale et le badge de la version", () => {
     renderPage();
-    expect(screen.getByText("Nouvelle Version 2.0 • 10 jours d'essai gratuit offert sans engagement")).toBeInTheDocument();
+    expect(screen.getByText("Nouvelle Version 2.0 • 15 jours d'essai gratuit offert sans engagement")).toBeInTheDocument();
     expect(screen.getByText("La gestion locative")).toBeInTheDocument();
     expect(screen.getByText("réinventée & automatisée.")).toBeInTheDocument();
   });

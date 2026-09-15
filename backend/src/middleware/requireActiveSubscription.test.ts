@@ -6,7 +6,7 @@ import { requireActiveSubscription } from "./auth";
 import { createAdmin, createManager, createTenantPortalUser, createTenant, authHeader, tokenFor } from "../test/authHelpers";
 
 // Ce middleware est le mécanisme réel qui bloque l'accès aux fonctionnalités de
-// gestion (biens, contrats, factures, etc.) quand la période d'essai de 10
+// gestion (biens, contrats, factures, etc.) quand la période d'essai de 15
 // jours est terminée et qu'aucun abonnement payant n'est actif. Il est monté
 // sur la quasi-totalité des routes gestionnaire (property, contract, invoice,
 // tenant, dashboard, expense, issue, notification, agency, activityLog,
@@ -35,7 +35,7 @@ describe("requireActiveSubscription", () => {
         .get("/api/properties")
         .set(authHeader(tokenFor(manager)));
       expect(res.status).toBe(402);
-      expect(res.body.error).toMatch(/période d'essai de 10 jours est terminée/);
+      expect(res.body.error).toMatch(/période d'essai de 15 jours est terminée/);
     });
 
     it("autorise l'accès avec un abonnement actif dont la date de fin est future", async () => {

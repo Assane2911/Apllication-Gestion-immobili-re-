@@ -113,12 +113,12 @@ const es: TranslationSchema = {
           "Pagos en línea seguros (tarjeta, mobile money, transferencia)",
           "Interfaz disponible en francés, inglés, portugués y español",
         ],
-        trialNote: "10 días de prueba gratuita, sin tarjeta bancaria.",
+        trialNote: "15 días de prueba gratuita, sin tarjeta bancaria.",
       },
     },
     register: {
       title: "Crear una cuenta",
-      subtitle: "10 días de prueba gratuita, sin tarjeta bancaria.",
+      subtitle: "15 días de prueba gratuita, sin tarjeta bancaria.",
       email: "Correo electrónico",
       emailPlaceholder: "tu@ejemplo.com",
       password: "Contraseña",
@@ -148,7 +148,7 @@ const es: TranslationSchema = {
           "Pagos en línea seguros (tarjeta, mobile money, transferencia)",
           "Interfaz disponible en francés, inglés, portugués y español",
         ],
-        trialNote: "10 días de prueba gratuita, sin tarjeta bancaria.",
+        trialNote: "15 días de prueba gratuita, sin tarjeta bancaria.",
       },
     },
     forgotPassword: {
@@ -197,15 +197,15 @@ const es: TranslationSchema = {
       faq: "Preguntas frecuentes",
       goToSpace: "Ir a mi espacio →",
       login: "Iniciar sesión",
-      trial: "Prueba gratis 10 días →",
+      trial: "Prueba gratis 15 días →",
     },
-    badge: "Nueva Versión 2.0 • 10 días de prueba gratuita sin compromiso",
+    badge: "Nueva Versión 2.0 • 15 días de prueba gratuita sin compromiso",
     hero: {
       titleLine1: "La gestión de alquileres,",
       titleLine2: "reinventada y automatizada.",
       subtitle:
         "Genera tus recibos en PDF certificado, firma tus contratos en línea, envía tus recordatorios automáticos desde el día 1 de cada mes y sigue tu rentabilidad neta en tiempo real.",
-      ctaTrial: "Comenzar la prueba gratuita de 10 días →",
+      ctaTrial: "Comenzar la prueba gratuita de 15 días →",
       ctaPricing: "Ver precios",
     },
     features: {
@@ -310,7 +310,7 @@ const es: TranslationSchema = {
       items: [
         {
           q: "¿Cuánto tiempo se tarda en empezar?",
-          a: "Solo unos minutos: crea tu cuenta, añade tu primera propiedad y disfruta de inmediato de 10 días de prueba gratuita, sin necesidad de tarjeta bancaria.",
+          a: "Solo unos minutos: crea tu cuenta, añade tu primera propiedad y disfruta de inmediato de 15 días de prueba gratuita, sin necesidad de tarjeta bancaria.",
         },
         {
           q: "¿Mis datos están seguros?",
@@ -333,11 +333,11 @@ const es: TranslationSchema = {
     finalCta: {
       title: "¿Listo para modernizar tu gestión de alquileres?",
       subtitle: "Únete a los gestores que ya han simplificado sus recibos, recordatorios y seguimiento financiero.",
-      cta: "Comenzar mi prueba gratuita de 10 días →",
+      cta: "Comenzar mi prueba gratuita de 15 días →",
     },
     pricing: {
       title: "Planes simples y transparentes",
-      subtitle: "Todos los planes incluyen 10 días de prueba gratuita sin necesidad de tarjeta bancaria.",
+      subtitle: "Todos los planes incluyen 15 días de prueba gratuita sin necesidad de tarjeta bancaria.",
       perMonth: "/ mes",
       starter: {
         name: "Starter",
@@ -348,7 +348,7 @@ const es: TranslationSchema = {
           "Recordatorios automáticos el día 1 de cada mes",
           "Portal del inquilino incluido",
         ],
-        cta: "Comenzar la prueba de 10 días",
+        cta: "Comenzar la prueba de 15 días",
       },
       pro: {
         name: "Pro Agencia",
@@ -361,7 +361,7 @@ const es: TranslationSchema = {
           "🏢 Marca blanca (Logo y Encabezado de agencia)",
           "💬 Mensajería directa integrada",
         ],
-        cta: "Comenzar la prueba gratuita de 10 días",
+        cta: "Comenzar la prueba gratuita de 15 días",
       },
       enterprise: {
         name: "Empresa",
@@ -372,7 +372,7 @@ const es: TranslationSchema = {
           "Multiusuario y multigestor",
           "Exportación contable automatizada",
         ],
-        cta: "Comenzar la prueba de 10 días",
+        cta: "Comenzar la prueba de 15 días",
       },
     },
     footer: {
@@ -418,9 +418,9 @@ const es: TranslationSchema = {
     trialBanner: {
       expiredTitle: "Período de prueba expirado",
       expiredDesc:
-        "Tu período de prueba de 10 días ha finalizado. Por favor, suscríbete a un plan para seguir usando la aplicación.",
+        "Tu período de prueba de 15 días ha finalizado. Por favor, suscríbete a un plan para seguir usando la aplicación.",
       unlockCta: "Desbloquear mi cuenta →",
-      trialBadge: "Modo Prueba 10 Días",
+      trialBadge: "Modo Prueba 15 Días",
       lastDay: "¡Último día de prueba!",
       oneDayLeft: "Te queda 1 día de prueba",
       daysLeft: "Te quedan {{count}} días de prueba gratuita",
@@ -777,7 +777,7 @@ const es: TranslationSchema = {
       subtitle: "Gestiona tu plan de gestión inmobiliaria y tus opciones de facturación.",
       currentStatus: "Tu estado actual",
       planActive: "Plan {{plan}} Activo",
-      trialStatus: "Período de prueba gratuita (10 días)",
+      trialStatus: "Período de prueba gratuita (15 días)",
       expiredStatus: "Suscripción Expirada",
       paid: "Pagado",
       trialRemaining: "Prueba: {{count}} día(s) restante(s)",

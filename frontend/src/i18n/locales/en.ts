@@ -113,12 +113,12 @@ const en: TranslationSchema = {
           "Secure online payments (card, mobile money, bank transfer)",
           "Interface available in French, English, Portuguese and Spanish",
         ],
-        trialNote: "10-day free trial, no credit card required.",
+        trialNote: "15-day free trial, no credit card required.",
       },
     },
     register: {
       title: "Create an account",
-      subtitle: "10-day free trial, no credit card required.",
+      subtitle: "15-day free trial, no credit card required.",
       email: "Email",
       emailPlaceholder: "you@example.com",
       password: "Password",
@@ -148,7 +148,7 @@ const en: TranslationSchema = {
           "Secure online payments (card, mobile money, bank transfer)",
           "Interface available in French, English, Portuguese and Spanish",
         ],
-        trialNote: "10-day free trial, no credit card required.",
+        trialNote: "15-day free trial, no credit card required.",
       },
     },
     forgotPassword: {
@@ -197,15 +197,15 @@ const en: TranslationSchema = {
       faq: "FAQ",
       goToSpace: "Go to my dashboard →",
       login: "Sign in",
-      trial: "Free 10-day trial →",
+      trial: "Free 15-day trial →",
     },
-    badge: "New Version 2.0 • 10-day free trial, no commitment",
+    badge: "New Version 2.0 • 15-day free trial, no commitment",
     hero: {
       titleLine1: "Rental property management,",
       titleLine2: "reinvented & automated.",
       subtitle:
         "Generate certified PDF rent receipts, get your leases signed online, send automatic reminders on the 1st of each month, and track your net profitability in real time.",
-      ctaTrial: "Start your free 10-day trial →",
+      ctaTrial: "Start your free 15-day trial →",
       ctaPricing: "See pricing",
     },
     features: {
@@ -310,7 +310,7 @@ const en: TranslationSchema = {
       items: [
         {
           q: "How long does it take to get started?",
-          a: "Just a few minutes: create your account, add your first property and immediately enjoy a 10-day free trial, no credit card required.",
+          a: "Just a few minutes: create your account, add your first property and immediately enjoy a 15-day free trial, no credit card required.",
         },
         {
           q: "Is my data secure?",
@@ -333,11 +333,11 @@ const en: TranslationSchema = {
     finalCta: {
       title: "Ready to modernize your rental management?",
       subtitle: "Join the managers who've already simplified their receipts, reminders and financial tracking.",
-      cta: "Start my free 10-day trial →",
+      cta: "Start my free 15-day trial →",
     },
     pricing: {
       title: "Simple, transparent plans",
-      subtitle: "Every plan includes a free 10-day trial, no credit card required.",
+      subtitle: "Every plan includes a free 15-day trial, no credit card required.",
       perMonth: "/ month",
       starter: {
         name: "Starter",
@@ -348,7 +348,7 @@ const en: TranslationSchema = {
           "Automatic reminders on the 1st of the month",
           "Tenant portal included",
         ],
-        cta: "Start the 10-day trial",
+        cta: "Start the 15-day trial",
       },
       pro: {
         name: "Pro Agency",
@@ -361,7 +361,7 @@ const en: TranslationSchema = {
           "🏢 White label (agency logo & letterhead)",
           "💬 Built-in direct messaging",
         ],
-        cta: "Start the free 10-day trial",
+        cta: "Start the free 15-day trial",
       },
       enterprise: {
         name: "Enterprise",
@@ -372,7 +372,7 @@ const en: TranslationSchema = {
           "Multiple users & managers",
           "Automated accounting export",
         ],
-        cta: "Start the 10-day trial",
+        cta: "Start the 15-day trial",
       },
     },
     footer: {
@@ -418,9 +418,9 @@ const en: TranslationSchema = {
     trialBanner: {
       expiredTitle: "Trial period expired",
       expiredDesc:
-        "Your 10-day trial period has ended. Please subscribe to a plan to keep using the application.",
+        "Your 15-day trial period has ended. Please subscribe to a plan to keep using the application.",
       unlockCta: "Unlock my account →",
-      trialBadge: "10-Day Trial Mode",
+      trialBadge: "15-Day Trial Mode",
       lastDay: "Last day of your trial!",
       oneDayLeft: "1 day left in your trial",
       daysLeft: "{{count}} days left in your free trial",
