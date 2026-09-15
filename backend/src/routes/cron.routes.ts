@@ -5,8 +5,14 @@ import {
   triggerRentDueReminders,
   triggerUpcomingRentDueReminders,
 } from "../controllers/cron.controller";
+import { cronLimiter } from "../middleware/rateLimit";
 
 const router = Router();
+
+// Profondeur de défense : la comparaison en temps constant du secret
+// (assertCronAuthorized) empêche une attaque par mesure de timing, mais pas
+// un nombre illimité de tentatives réseau pour le deviner par force brute.
+router.use(cronLimiter);
 
 // GET, car c'est la méthode utilisée par Vercel Cron Jobs pour invoquer une route planifiée.
 // "/daily" est la route réellement déclarée dans vercel.json (voir ce fichier) :

@@ -1,5 +1,5 @@
 import { Request } from "express";
-import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import rateLimit, { ipKeyGenerator, MemoryStore } from "express-rate-limit";
 
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -35,4 +35,40 @@ export const authEmailLimiter = rateLimit({
     return email ? `email:${email}` : ipKeyGenerator(req.ip ?? "unknown");
   },
   message: { error: "Trop de tentatives pour ce compte. Réessayez dans quelques minutes." },
+});
+
+/**
+ * Limite par adresse IP sur les routes /api/cron/* : leur seule protection
+ * est la comparaison en temps constant du secret (cron.controller.ts::
+ * secretValide), qui empêche une attaque par mesure de TIMING mais pas un
+ * nombre illimité de TENTATIVES pour deviner CRON_SECRET par force brute. Ces
+ * routes déclenchent l'envoi d'emails en masse (rappels d'échéance) : une
+ * limite de fréquence — même généreuse, pour ne jamais gêner Vercel Cron
+ * Jobs ou un déclenchement manuel légitime — réduit en profondeur de défense
+ * la fenêtre d'un secret compromis ou faible, quelle que soit la robustesse
+ * réelle du secret configuré.
+ */
+// Instancié explicitement (plutôt que de laisser `rateLimit()` créer son
+// MemoryStore par défaut de façon opaque) uniquement pour exposer une
+// référence : cronRateLimit.test.ts l'utilise pour réinitialiser le compteur
+// entre ses tests (`resetAll()`), afin qu'un test qui épuise volontairement
+// le quota pour vérifier le blocage ne fasse pas déborder ce même quota sur
+// le test suivant, qui vérifie au contraire qu'un appel légitime répété ne
+// le consomme jamais. Le comportement en production est strictement
+// identique à avant : c'est le même MemoryStore que `rateLimit()` aurait
+// créé implicitement.
+export const cronLimiterStore = new MemoryStore();
+
+export const cronLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Seuls les échecs d'authentification (401, mauvais/absent secret) comptent
+  // dans la limite : un appel légitime répété avec le bon secret (Vercel Cron
+  // Jobs, un déclenchement manuel/ops) n'use jamais ce quota, qui ne vise que
+  // les tentatives de deviner CRON_SECRET par force brute.
+  skipSuccessfulRequests: true,
+  store: cronLimiterStore,
+  message: { error: "Trop de tentatives. Réessayez plus tard." },
 });
