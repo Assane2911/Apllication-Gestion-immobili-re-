@@ -81,15 +81,33 @@ const DEVISES_SANS_DECIMALE = new Set([
   "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF",
 ]);
 
+/**
+ * Devises Stripe à TROIS décimales — leur plus petite unité (le fils, le
+ * fils/baisa, le fils tunisien...) vaut un millième de l'unité affichée, pas
+ * un centième. Sans ce cas, versPlusPetiteUnite les traiterait comme les
+ * devises à 2 décimales par défaut : un montant de 100 KWD serait envoyé à
+ * Stripe comme unit_amount=10000, que Stripe interprète comme 10 KWD (10 000
+ * fils) — le client serait débité 10× moins que prévu. Le contrôle
+ * anti-fraude du webhook (montantCorrespond, stripe.controller.ts) utilise
+ * depuisPlusPetiteUnite dans l'autre sens et retomberait alors pile sur le
+ * montant attendu en base : la sous-facturation serait invisible au
+ * contrôle, pas seulement au client.
+ */
+const DEVISES_TROIS_DECIMALES = new Set(["BHD", "JOD", "KWD", "OMR", "TND"]);
+
 /** Convertit un montant lisible (29, 15000) vers la plus petite unité Stripe. */
 export function versPlusPetiteUnite(amount: number, currency: string): number {
-  if (DEVISES_SANS_DECIMALE.has(currency.toUpperCase())) return Math.round(amount);
+  const devise = currency.toUpperCase();
+  if (DEVISES_SANS_DECIMALE.has(devise)) return Math.round(amount);
+  if (DEVISES_TROIS_DECIMALES.has(devise)) return Math.round(amount * 1000);
   return Math.round(amount * 100);
 }
 
 /** Opération inverse, pour relire un montant confirmé par Stripe. */
 export function depuisPlusPetiteUnite(amount: number, currency: string): number {
-  if (DEVISES_SANS_DECIMALE.has(currency.toUpperCase())) return amount;
+  const devise = currency.toUpperCase();
+  if (DEVISES_SANS_DECIMALE.has(devise)) return amount;
+  if (DEVISES_TROIS_DECIMALES.has(devise)) return amount / 1000;
   return amount / 100;
 }
 

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
 import { ApiError } from "../utils/asyncHandler";
 import {
+  depuisPlusPetiteUnite,
   initiatePayment,
   MOYENS_DE_PAIEMENT,
   moyensDePaiementDisponibles,
@@ -574,5 +575,35 @@ describe("versPlusPetiteUnite", () => {
   it("arrondit à l'entier, Stripe n'acceptant pas de décimale", () => {
     expect(versPlusPetiteUnite(29.999, "EUR")).toBe(3000);
     expect(versPlusPetiteUnite(15000.4, "XOF")).toBe(15000);
+  });
+
+  // Régression : ces devises ont une plus petite unité qui vaut un MILLIÈME
+  // de l'unité affichée (le fils, le baisa...), pas un centième. Traitées
+  // comme les devises à 2 décimales par défaut, 100 KWD auraient été envoyés
+  // à Stripe comme unit_amount=10000 — que Stripe interprète comme 10 KWD :
+  // le client aurait été débité 10× moins que prévu.
+  it("convertit en millièmes les devises à trois décimales (KWD, BHD, JOD, OMR, TND)", () => {
+    expect(versPlusPetiteUnite(100, "KWD")).toBe(100000);
+    expect(versPlusPetiteUnite(100, "kwd")).toBe(100000);
+    expect(versPlusPetiteUnite(50, "BHD")).toBe(50000);
+    expect(versPlusPetiteUnite(50, "JOD")).toBe(50000);
+    expect(versPlusPetiteUnite(50, "OMR")).toBe(50000);
+    expect(versPlusPetiteUnite(50, "TND")).toBe(50000);
+  });
+});
+
+describe("depuisPlusPetiteUnite", () => {
+  it("relit correctement un montant confirmé par Stripe dans une devise à trois décimales", () => {
+    // Symétrique du test ci-dessus : sans le correctif, le contrôle
+    // anti-fraude du webhook (montantCorrespond) qui compare ce résultat au
+    // montant attendu en base retomberait, par une double erreur, pile sur
+    // la bonne valeur — rendant la sous-facturation invisible.
+    expect(depuisPlusPetiteUnite(100000, "KWD")).toBe(100);
+    expect(depuisPlusPetiteUnite(50000, "BHD")).toBe(50);
+  });
+
+  it("relit un montant à deux décimales et une devise sans sous-unité", () => {
+    expect(depuisPlusPetiteUnite(2900, "EUR")).toBe(29);
+    expect(depuisPlusPetiteUnite(15000, "XOF")).toBe(15000);
   });
 });
