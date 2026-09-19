@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoices } from "../db/schema";
 import * as emailService from "./email.service";
+import * as whatsappService from "./whatsapp.service";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { runRentDueReminders, runUpcomingRentDueReminders, sendSingleInvoiceReminder } from "./reminder.service";
@@ -44,6 +45,58 @@ describe("runRentDueReminders", () => {
 
     const secondRun = await runRentDueReminders();
     expect(secondRun.sent).toBe(0);
+  });
+
+  // Le WhatsApp s'ajoute à l'email (voir whatsapp.service.ts) : ce test vérifie
+  // qu'il est bien invoqué avec le numéro et un message cohérents, et que son
+  // résultat (simulated) remonte dans `details` sous `whatsappSimulated`.
+  it("envoie aussi un message WhatsApp en complément de l'email et reporte son statut dans details", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+
+    const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+    const result = await runRentDueReminders();
+
+    expect(result.sent).toBe(1);
+    expect(whatsappSpy).toHaveBeenCalledTimes(1);
+    expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, expect.stringContaining(tenant.firstName));
+    // Twilio non configuré dans l'environnement de test => simulation, comme sendEmail sans SMTP.
+    expect(result.details[0].whatsappSimulated).toBe(true);
+
+    whatsappSpy.mockRestore();
+  });
+
+  // Résilience : un échec du canal WhatsApp (numéro invalide, panne Twilio...)
+  // ne doit ni interrompre la boucle ni empêcher l'email — déjà envoyé
+  // séparément — d'être comptabilisé.
+  it("continue d'envoyer l'email et de compter le rappel même si l'envoi WhatsApp échoue", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+
+    const sendEmailSpy = vi.spyOn(emailService, "sendEmail");
+    const whatsappSpy = vi
+      .spyOn(whatsappService, "envoyerMessageWhatsapp")
+      .mockResolvedValue({ simulated: false, error: true, raison: "erreur_api" });
+
+    const result = await runRentDueReminders();
+
+    expect(result.sent).toBe(1);
+    expect(sendEmailSpy).toHaveBeenCalledTimes(1);
+    expect(result.details[0].whatsappSimulated).toBe(false);
+
+    whatsappSpy.mockRestore();
+    sendEmailSpy.mockRestore();
   });
 
   /**
@@ -138,6 +191,30 @@ describe("sendSingleInvoiceReminder", () => {
 
     sendEmailSpy.mockRestore();
   });
+
+  it("envoie aussi un message WhatsApp et reporte son statut sous whatsappSimulated dans le résultat", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, {
+      periodMonth: 8,
+      periodYear: 2026,
+      status: "PENDING",
+      dueDate: new Date(2026, 7, 20),
+    });
+
+    const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+    const result = await sendSingleInvoiceReminder(invoice.id, manager.id);
+
+    expect(result.success).toBe(true);
+    expect(whatsappSpy).toHaveBeenCalledTimes(1);
+    expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, expect.stringContaining(tenant.firstName));
+    expect(result.whatsappSimulated).toBe(true);
+
+    whatsappSpy.mockRestore();
+  });
 });
 
 describe("runUpcomingRentDueReminders", () => {
@@ -186,6 +263,30 @@ describe("runUpcomingRentDueReminders", () => {
 
     const result = await runUpcomingRentDueReminders();
     expect(result.sent).toBe(0);
+  });
+
+  it("envoie aussi un message WhatsApp 'avant échéance' et reporte son statut dans details", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, {
+      periodMonth: 8,
+      periodYear: 2026,
+      dueDate: new Date(2026, 7, 4),
+      status: "PENDING",
+    });
+
+    const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+    const result = await runUpcomingRentDueReminders();
+
+    expect(result.sent).toBe(1);
+    expect(whatsappSpy).toHaveBeenCalledTimes(1);
+    expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, expect.stringContaining(tenant.firstName));
+    expect(result.details[0].whatsappSimulated).toBe(true);
+
+    whatsappSpy.mockRestore();
   });
 
   it("bascule automatiquement en retard (LATE) les factures PENDING dont l'échéance est déjà dépassée", async () => {

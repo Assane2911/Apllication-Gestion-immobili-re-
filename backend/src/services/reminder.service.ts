@@ -6,6 +6,7 @@ import { contracts, invoices, properties, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
+import { envoyerMessageWhatsapp, rentDueReminderWhatsapp, rentDueSoonReminderWhatsapp } from "./whatsapp.service";
 
 /**
  * Recherche les contrats ACTIFS dont la date de fin tombe exactement dans
@@ -176,6 +177,23 @@ export async function runRentDueReminders(managerId?: string) {
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
 
+    // WhatsApp s'ajoute à l'email (ne le remplace pas) : un échec ici
+    // (numéro invalide, Twilio non configuré) ne doit jamais empêcher
+    // l'email — déjà parti — d'avoir eu lieu, ni bloquer le reste de la
+    // boucle pour les autres locataires.
+    const whatsappResult = await envoyerMessageWhatsapp(
+      row.tenant.phone,
+      rentDueReminderWhatsapp({
+        tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+        propertyTitle: row.property.title,
+        amount: row.invoice.amount,
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+        frontendUrl: env.frontendUrl,
+      })
+    );
+
     sent += 1;
     details.push({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
@@ -183,6 +201,7 @@ export async function runRentDueReminders(managerId?: string) {
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
       simulated: emailResult.simulated,
+      whatsappSimulated: whatsappResult.simulated,
     });
   }
 
@@ -255,6 +274,20 @@ export async function runUpcomingRentDueReminders() {
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
 
+    const whatsappResult = await envoyerMessageWhatsapp(
+      row.tenant.phone,
+      rentDueSoonReminderWhatsapp({
+        tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+        propertyTitle: row.property.title,
+        amount: row.invoice.amount,
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+        daysLeft: daysBefore,
+        frontendUrl: env.frontendUrl,
+      })
+    );
+
     sent += 1;
     details.push({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
@@ -262,6 +295,7 @@ export async function runUpcomingRentDueReminders() {
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
       simulated: emailResult.simulated,
+      whatsappSimulated: whatsappResult.simulated,
     });
   }
 
@@ -339,11 +373,25 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
 
   const emailResult = await sendEmail(row.tenant.email, subject, html);
 
+  const whatsappResult = await envoyerMessageWhatsapp(
+    row.tenant.phone,
+    rentDueReminderWhatsapp({
+      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      propertyTitle: row.property.title,
+      amount: row.invoice.amount,
+      currency: row.invoice.currency || "EUR",
+      periodMonth: row.invoice.periodMonth,
+      periodYear: row.invoice.periodYear,
+      frontendUrl: env.frontendUrl,
+    })
+  );
+
   return {
     success: true,
     tenantEmail: row.tenant.email,
     tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
     simulated: emailResult.simulated,
+    whatsappSimulated: whatsappResult.simulated,
   };
 }
 
