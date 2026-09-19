@@ -46,6 +46,19 @@ export const env = {
     from: process.env.EMAIL_FROM ?? "Gestion Immobilière <no-reply@example.com>",
   },
 
+  // WhatsApp (Twilio) : rappels de loyer envoyés en complément de l'email —
+  // voir whatsapp.service.ts pour les prérequis (numéro Sandbox pour tester,
+  // modèle de message approuvé par Meta requis en production). Tant que
+  // accountSid/authToken/from ne sont pas renseignés, l'envoi retombe sur une
+  // simulation (comme sendEmail quand SMTP n'est pas configuré).
+  whatsapp: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID ?? "",
+    authToken: process.env.TWILIO_AUTH_TOKEN ?? "",
+    // Ex: "whatsapp:+14155238886" (numéro Sandbox Twilio par défaut) ou le
+    // numéro WhatsApp Business approuvé, avec ou sans le préfixe "whatsapp:".
+    from: process.env.TWILIO_WHATSAPP_FROM ?? "",
+  },
+
   reminder: {
     daysBefore: parseInt(process.env.CONTRACT_REMINDER_DAYS ?? "14", 10),
     cron: process.env.REMINDER_CRON ?? "0 8 * * *",
