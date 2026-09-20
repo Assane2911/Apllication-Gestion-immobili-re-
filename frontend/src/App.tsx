@@ -26,6 +26,7 @@ const AgencySettingsPage = lazy(() => import("./pages/manager/AgencySettingsPage
 const ContractsPage = lazy(() => import("./pages/manager/ContractsPage"));
 const DashboardPage = lazy(() => import("./pages/manager/DashboardPage"));
 const ExpensesPage = lazy(() => import("./pages/manager/ExpensesPage"));
+const FiscalPage = lazy(() => import("./pages/manager/FiscalPage"));
 const InvoicesPage = lazy(() => import("./pages/manager/InvoicesPage"));
 const IssuesPage = lazy(() => import("./pages/manager/IssuesPage"));
 const MessagesPage = lazy(() => import("./pages/manager/MessagesPage"));
@@ -88,6 +89,7 @@ function AppRoutes() {
           <Route path="/etats-des-lieux" element={<InspectionsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
+          <Route path="/bilan-fiscal" element={<FiscalPage />} />
           <Route path="/messages" element={<MessagesPage />} />
           <Route path="/issues" element={<IssuesPage />} />
           <Route path="/activity-log" element={<ActivityLogPage />} />

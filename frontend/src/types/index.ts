@@ -341,6 +341,34 @@ export interface DashboardStats {
   expensesByMonth: Record<string, Record<string, number>>;
 }
 
+/** Une ligne du bilan foncier par bien (voir GET /api/fiscal/synthese) — ventilée par devise, pas seulement par bien. */
+export interface PropertyFiscalBalance {
+  propertyId: string;
+  propertyTitle: string;
+  currency: string;
+  revenue: number;
+  expense: number;
+  net: number;
+}
+
+/**
+ * Synthèse annuelle du module "Bilan Fiscal & Comptabilité" (GET
+ * /api/fiscal/synthese?year=YYYY). Contrairement à DashboardStats (fenêtre
+ * glissante des 6 derniers mois), ceci couvre une année civile complète et
+ * sert de base à la déclaration de revenus fonciers du gestionnaire.
+ */
+export interface AnnualFiscalSynthesis {
+  year: number;
+  availableYears: number[];
+  totalRevenueByCurrency: Record<string, number>;
+  totalExpensesByCurrency: Record<string, number>;
+  netResultByCurrency: Record<string, number>;
+  revenueByMonth: Record<string, Record<string, number>>;
+  expensesByMonth: Record<string, Record<string, number>>;
+  expensesByCategory: Record<string, Record<string, number>>;
+  bilanParBien: PropertyFiscalBalance[];
+}
+
 export interface AdminDashboardStats {
   managers: {
     total: number;

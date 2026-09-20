@@ -19,6 +19,7 @@ const navItems = [
   { to: "/etats-des-lieux", key: "inspections", icon: "🔑" },
   { to: "/invoices", key: "invoices", icon: "💳" },
   { to: "/expenses", key: "expenses", icon: "💰" },
+  { to: "/bilan-fiscal", key: "fiscal", icon: "🧾" },
   { to: "/messages", key: "messages", icon: "💬" },
   { to: "/issues", key: "issues", icon: "🛠️" },
   { to: "/activity-log", key: "activityLog", icon: "🕒" },
