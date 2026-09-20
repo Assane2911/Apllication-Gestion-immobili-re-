@@ -1,11 +1,11 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
-import { agencySettings, owners, properties, users } from "../db/schema";
+import { agencySettings, contracts, invoices, owners, properties, users } from "../db/schema";
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -222,4 +222,120 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
   });
 
   res.json({ message: "Invitation envoyée", userId: targetUserId });
+});
+
+/**
+ * Résumé financier en lecture seule pour le propriétaire connecté (Espace
+ * propriétaire) : loyer perçu / en attente ce mois-ci pour chacun de ses
+ * biens, plus un historique 6 mois — volontairement sans contrats, factures
+ * détaillées, documents ni identité des locataires (voir la décision de
+ * périmètre prise avec l'utilisateur : "résumé financier seulement").
+ *
+ * Même construction que getDashboardStats (dashboard.controller.ts), scopée
+ * par properties.ownerId au lieu de properties.managerId, et bucketée par
+ * devise (jamais sommée à travers des devises différentes — même règle que
+ * partout ailleurs dans l'app).
+ */
+export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response) => {
+  const ownerId = req.user!.ownerId;
+  if (!ownerId) throw new ApiError(404, "Aucune fiche propriétaire associée à ce compte");
+
+  const [owner] = await db.select().from(owners).where(eq(owners.id, ownerId));
+  if (!owner) throw new ApiError(404, "Fiche propriétaire introuvable");
+
+  const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, ownerId));
+  const propertyIds = ownerProperties.map((p: typeof properties.$inferSelect) => p.id);
+
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const sixMonthsAgo = new Date(year, month - 6, 1);
+
+  const ownerContracts =
+    propertyIds.length > 0
+      ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds))
+      : [];
+  const contractIdToPropertyId = new Map(
+    ownerContracts.map((c: typeof contracts.$inferSelect) => [c.id, c.propertyId])
+  );
+  const contractIds = ownerContracts.map((c: typeof contracts.$inferSelect) => c.id);
+
+  const [monthlyInvoices, recentPaidInvoices] =
+    contractIds.length > 0
+      ? await Promise.all([
+          db
+            .select()
+            .from(invoices)
+            .where(
+              and(
+                inArray(invoices.contractId, contractIds),
+                eq(invoices.periodMonth, month),
+                eq(invoices.periodYear, year)
+              )
+            ),
+          db
+            .select()
+            .from(invoices)
+            .where(
+              and(
+                inArray(invoices.contractId, contractIds),
+                eq(invoices.status, "PAID"),
+                gte(invoices.paidAt, sixMonthsAgo)
+              )
+            ),
+        ])
+      : [[], []];
+
+  // Détail par bien : perçu / en attente ce mois-ci (une devise par bien —
+  // voir contracts/invoices, qui héritent la devise du bien à leur création).
+  const perProperty = new Map<
+    string,
+    { propertyId: string; title: string; address: string; currency: string; collected: number; pending: number }
+  >();
+  for (const p of ownerProperties) {
+    perProperty.set(p.id, {
+      propertyId: p.id,
+      title: p.title,
+      address: p.address,
+      currency: p.currency,
+      collected: 0,
+      pending: 0,
+    });
+  }
+  for (const inv of monthlyInvoices) {
+    const propertyId = contractIdToPropertyId.get(inv.contractId);
+    const entry = propertyId ? perProperty.get(propertyId) : undefined;
+    if (!entry) continue;
+    if (inv.status === "PAID") entry.collected += inv.amount;
+    else if (inv.status === "PENDING" || inv.status === "LATE") entry.pending += inv.amount;
+  }
+
+  // Totaux, groupés par devise plutôt que sommés à travers des devises différentes.
+  const collectedThisMonthByCurrency: Record<string, number> = {};
+  const pendingThisMonthByCurrency: Record<string, number> = {};
+  for (const entry of perProperty.values()) {
+    if (entry.collected > 0) {
+      collectedThisMonthByCurrency[entry.currency] = (collectedThisMonthByCurrency[entry.currency] ?? 0) + entry.collected;
+    }
+    if (entry.pending > 0) {
+      pendingThisMonthByCurrency[entry.currency] = (pendingThisMonthByCurrency[entry.currency] ?? 0) + entry.pending;
+    }
+  }
+
+  const revenueByMonth: Record<string, Record<string, number>> = {};
+  for (const inv of recentPaidInvoices) {
+    const key = `${inv.periodYear}-${String(inv.periodMonth).padStart(2, "0")}`;
+    const currency = inv.currency || "EUR";
+    revenueByMonth[key] = revenueByMonth[key] ?? {};
+    revenueByMonth[key][currency] = (revenueByMonth[key][currency] ?? 0) + inv.amount;
+  }
+
+  res.json({
+    ownerName: `${owner.firstName} ${owner.lastName}`,
+    managementFeeRate: owner.managementFeeRate,
+    properties: Array.from(perProperty.values()),
+    collectedThisMonthByCurrency,
+    pendingThisMonthByCurrency,
+    revenueByMonth,
+  });
 });

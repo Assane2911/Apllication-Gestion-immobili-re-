@@ -110,8 +110,12 @@ export async function createOwner(managerId: string, overrides: Partial<typeof o
 }
 
 /** Émet un JWT valide pour les tests, avec le même secret que l'app en mode test. */
-export function tokenFor(user: { id: string; role: "MANAGER" | "TENANT" | "ADMIN" }, tenantId: string | null = null) {
-  return jwt.sign({ userId: user.id, role: user.role, tenantId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+export function tokenFor(
+  user: { id: string; role: "MANAGER" | "TENANT" | "ADMIN" | "OWNER" },
+  tenantId: string | null = null,
+  ownerId: string | null = null
+) {
+  return jwt.sign({ userId: user.id, role: user.role, tenantId, ownerId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
 }
 
 export function authHeader(token: string) {
@@ -208,5 +212,27 @@ export async function createTenantPortalUser(tenant: { id: string }) {
     })
     .returning();
   await testDb.update(tenants).set({ userId: user.id }).where(eq(tenants.id, tenant.id));
+  return user;
+}
+
+/**
+ * Crée un compte utilisateur "portail" (role OWNER) et le lie à la fiche
+ * propriétaire donnée (owners.userId) — même principe que
+ * createTenantPortalUser ci-dessus, pour tester login/me côté propriétaire
+ * sans passer par le flux d'invitation complet (email + token).
+ */
+export async function createOwnerPortalUser(owner: { id: string; email: string }) {
+  const id = createId();
+  const passwordHash = await bcrypt.hash("Password123!", 10);
+  const [user] = await testDb
+    .insert(users)
+    .values({
+      id,
+      email: owner.email,
+      passwordHash,
+      role: "OWNER" as const,
+    })
+    .returning();
+  await testDb.update(owners).set({ userId: user.id }).where(eq(owners.id, owner.id));
   return user;
 }

@@ -3,6 +3,7 @@ import {
   createOwner,
   deleteOwner,
   getOwner,
+  getOwnerDashboard,
   inviteOwnerPortalAccount,
   listOwners,
   updateOwner,
@@ -10,6 +11,11 @@ import {
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
 
 const router = Router();
+
+// Portail propriétaire (résumé financier en lecture seule) — avant le
+// router.use ci-dessous, réservé au gestionnaire (même pattern que
+// contract.routes.ts pour GET /mine côté locataire).
+router.get("/mine/dashboard", authenticate, requireRole("OWNER"), getOwnerDashboard);
 
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 

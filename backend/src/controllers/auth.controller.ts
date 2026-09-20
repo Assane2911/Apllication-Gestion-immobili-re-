@@ -6,7 +6,7 @@ import jwt, { SignOptions } from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { tenants, users } from "../db/schema";
+import { owners, tenants, users } from "../db/schema";
 import {
   accountAlreadyExistsEmail,
   emailVerificationEmail,
@@ -38,7 +38,12 @@ const loginSchema = z.object({
  */
 const EMPREINTE_FACTICE = "$2b$10$C6UzMDM.H6dfI/f/IKcEe.PjF5Qs7lQEJ7c4yQ0sVn5b6CYXcTQlS";
 
-function signToken(payload: { userId: string; role: "MANAGER" | "TENANT" | "ADMIN"; tenantId?: string | null }) {
+function signToken(payload: {
+  userId: string;
+  role: "MANAGER" | "TENANT" | "ADMIN" | "OWNER";
+  tenantId?: string | null;
+  ownerId?: string | null;
+}) {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
 }
 
@@ -195,10 +200,16 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     [tenant] = await db.select().from(tenants).where(eq(tenants.userId, user.id));
   }
 
+  let owner: typeof owners.$inferSelect | undefined;
+  if (user.role === "OWNER") {
+    [owner] = await db.select().from(owners).where(eq(owners.userId, user.id));
+  }
+
   const token = signToken({
     userId: user.id,
-    role: user.role as "MANAGER" | "TENANT" | "ADMIN",
+    role: user.role as "MANAGER" | "TENANT" | "ADMIN" | "OWNER",
     tenantId: tenant?.id ?? null,
+    ownerId: owner?.id ?? null,
   });
 
   const subscription = computeSubscriptionInfo(user);
@@ -212,6 +223,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       currency: user.currency ?? "EUR",
       tenantId: tenant?.id ?? null,
       tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : null,
+      ownerId: owner?.id ?? null,
+      ownerName: owner ? `${owner.firstName} ${owner.lastName}` : null,
       subscription,
     },
   });
@@ -324,6 +337,11 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     [tenant] = await db.select().from(tenants).where(eq(tenants.userId, user.id));
   }
 
+  let owner: typeof owners.$inferSelect | undefined;
+  if (user.role === "OWNER") {
+    [owner] = await db.select().from(owners).where(eq(owners.userId, user.id));
+  }
+
   const subscription = computeSubscriptionInfo(user);
 
   res.json({
@@ -332,6 +350,7 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     role: user.role,
     currency: user.currency ?? "EUR",
     tenant: tenant ?? null,
+    owner: owner ?? null,
     subscription,
   });
 });

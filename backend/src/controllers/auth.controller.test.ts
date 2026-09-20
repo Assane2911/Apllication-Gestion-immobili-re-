@@ -3,6 +3,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import { users } from "../db/schema";
+import { createManager, createOwner, createOwnerPortalUser } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 describe("POST /api/auth/register puis /api/auth/login", () => {
@@ -92,5 +93,33 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
   it("refuse /api/auth/me sans token", async () => {
     const res = await request(app).get("/api/auth/me");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("POST /api/auth/login puis /api/auth/me — compte propriétaire (Espace propriétaire)", () => {
+  it("renvoie ownerId/ownerName au login et à /me, comme tenantId/tenantName pour un locataire", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, {
+      firstName: "Fatou",
+      lastName: "Diop",
+      email: "fatou-login@test.local",
+    });
+    await createOwnerPortalUser(owner);
+
+    const loginRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "fatou-login@test.local", password: "Password123!" });
+
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.user.role).toBe("OWNER");
+    expect(loginRes.body.user.ownerId).toBe(owner.id);
+    expect(loginRes.body.user.ownerName).toBe("Fatou Diop");
+
+    const meRes = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${loginRes.body.token}`);
+
+    expect(meRes.status).toBe(200);
+    expect(meRes.body.owner.id).toBe(owner.id);
   });
 });

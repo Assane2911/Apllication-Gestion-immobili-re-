@@ -3,7 +3,16 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import { owners, properties, users } from "../db/schema";
-import { authHeader, createManager, createOwner, createProperty, tokenFor } from "../test/authHelpers";
+import {
+  authHeader,
+  createContract,
+  createInvoice,
+  createManager,
+  createOwner,
+  createProperty,
+  createTenant,
+  tokenFor,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 describe("POST /api/owners", () => {
@@ -232,5 +241,74 @@ describe("POST /api/properties — association à un propriétaire", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.ownerId).toBe(owner.id);
+  });
+});
+
+describe("GET /api/owners/mine/dashboard — Espace propriétaire (résumé financier)", () => {
+  it("renvoie le loyer perçu et en attente ce mois-ci, par bien, groupé par devise", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { managementFeeRate: 10 });
+    const propertyA = await createProperty(manager.id, { ownerId: owner.id, title: "Villa A", currency: "EUR" });
+    const propertyB = await createProperty(manager.id, { ownerId: owner.id, title: "Villa B", currency: "EUR" });
+    const tenant = await createTenant(manager.id);
+    const contractA = await createContract(propertyA.id, tenant.id);
+    const now = new Date();
+    await createInvoice(contractA.id, {
+      periodMonth: now.getMonth() + 1,
+      periodYear: now.getFullYear(),
+      amount: 500,
+      currency: "EUR",
+      status: "PAID",
+      paidAt: now,
+    });
+    const contractB = await createContract(propertyB.id, tenant.id);
+    await createInvoice(contractB.id, {
+      periodMonth: now.getMonth() + 1,
+      periodYear: now.getFullYear(),
+      amount: 300,
+      currency: "EUR",
+      status: "PENDING",
+    });
+
+    const res = await request(app)
+      .get("/api/owners/mine/dashboard")
+      .set(authHeader(tokenFor({ id: "irrelevant-user-id", role: "OWNER" }, null, owner.id)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.ownerName).toBe(`${owner.firstName} ${owner.lastName}`);
+    expect(res.body.managementFeeRate).toBe(10);
+    expect(res.body.collectedThisMonthByCurrency.EUR).toBe(500);
+    expect(res.body.pendingThisMonthByCurrency.EUR).toBe(300);
+    expect(res.body.properties).toHaveLength(2);
+  });
+
+  it("n'expose jamais les biens d'un autre propriétaire", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id);
+    const otherOwner = await createOwner(manager.id);
+    await createProperty(manager.id, { ownerId: otherOwner.id, title: "Ne doit pas apparaître" });
+
+    const res = await request(app)
+      .get("/api/owners/mine/dashboard")
+      .set(authHeader(tokenFor({ id: "irrelevant-user-id", role: "OWNER" }, null, owner.id)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.properties).toHaveLength(0);
+  });
+
+  it("refuse l'accès à un rôle autre que OWNER", async () => {
+    const manager = await createManager();
+
+    const res = await request(app).get("/api/owners/mine/dashboard").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(403);
+  });
+
+  it("refuse si le token OWNER ne porte aucun ownerId", async () => {
+    const res = await request(app)
+      .get("/api/owners/mine/dashboard")
+      .set(authHeader(tokenFor({ id: "irrelevant-user-id", role: "OWNER" })));
+
+    expect(res.status).toBe(404);
   });
 });

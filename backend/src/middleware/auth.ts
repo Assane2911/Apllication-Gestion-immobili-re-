@@ -5,8 +5,11 @@ import { ApiError } from "../utils/asyncHandler";
 
 export interface AuthPayload {
   userId: string;
-  role: "MANAGER" | "TENANT" | "ADMIN";
+  role: "MANAGER" | "TENANT" | "ADMIN" | "OWNER";
   tenantId?: string | null;
+  // Id de la fiche propriétaire (table owners) associée à ce compte quand
+  // role === "OWNER" — même principe que tenantId ci-dessus pour un locataire.
+  ownerId?: string | null;
 }
 
 declare global {
