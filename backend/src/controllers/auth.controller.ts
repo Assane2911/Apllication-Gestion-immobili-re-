@@ -14,16 +14,10 @@ import {
   sendEmail,
 } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-
-// Durée de validité du lien de réinitialisation de mot de passe.
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
+import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
 // Durée de validité du lien de confirmation d'email envoyé à l'inscription.
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
-
-function hashToken(rawToken: string): string {
-  return crypto.createHash("sha256").update(rawToken).digest("hex");
-}
 
 const registerManagerSchema = z.object({
   email: z.string().email().transform((v) => v.trim().toLowerCase()),

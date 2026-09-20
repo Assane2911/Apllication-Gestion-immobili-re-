@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
-import { contracts, invoices, platformSubscriptions, properties, tenants, users } from "../db/schema";
+import { contracts, invoices, owners, platformSubscriptions, properties, tenants, users } from "../db/schema";
 
 /**
  * Construit un buffer commençant par la vraie signature magique JPEG
@@ -89,6 +89,24 @@ export async function createTenant(managerId: string, overrides: Partial<typeof 
     })
     .returning();
   return tenant;
+}
+
+/** Crée une fiche propriétaire (Espace propriétaire) pour un gestionnaire donné. */
+export async function createOwner(managerId: string, overrides: Partial<typeof owners.$inferInsert> = {}) {
+  const id = overrides.id ?? createId();
+  const [owner] = await testDb
+    .insert(owners)
+    .values({
+      id,
+      managerId,
+      firstName: "Fatou",
+      lastName: "Diop",
+      phone: "0600000000",
+      email: `owner-${id}@test.local`,
+      ...overrides,
+    })
+    .returning();
+  return owner;
 }
 
 /** Émet un JWT valide pour les tests, avec le même secret que l'app en mode test. */

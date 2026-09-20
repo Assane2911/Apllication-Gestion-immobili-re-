@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { contracts, properties, tenants, users } from "../db/schema";
+import { contracts, owners, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -17,7 +17,24 @@ const propertySchema = z.object({
   status: z.enum(["AVAILABLE", "OCCUPIED", "MAINTENANCE"]).optional(),
   description: z.string().optional(),
   currency: z.string().min(1).max(10).optional(),
+  // Propriétaire réel du bien (Espace propriétaire) — nullable pour pouvoir
+  // retirer explicitement l'association (dissocier un bien de son propriétaire).
+  ownerId: z.string().min(1).nullable().optional(),
 });
+
+/**
+ * Vérifie que l'id propriétaire fourni existe et appartient bien au
+ * gestionnaire courant — sans ce contrôle, un gestionnaire pourrait associer
+ * un de ses biens à la fiche propriétaire d'un AUTRE gestionnaire, lui
+ * donnant de fait accès (via l'Espace propriétaire) à des chiffres qui ne le
+ * regardent pas.
+ */
+async function assertOwnerBelongsToManager(ownerId: string, managerId: string) {
+  const [owner] = await db.select({ managerId: owners.managerId }).from(owners).where(eq(owners.id, ownerId));
+  if (!owner || owner.managerId !== managerId) {
+    throw new ApiError(400, "Propriétaire invalide");
+  }
+}
 
 export const listProperties = asyncHandler(async (req: Request, res: Response) => {
   const pagination = parsePagination(req);
@@ -53,6 +70,7 @@ export const getProperty = asyncHandler(async (req: Request, res: Response) => {
 
 export const createProperty = asyncHandler(async (req: Request, res: Response) => {
   const body = propertySchema.parse(req.body);
+  if (body.ownerId) await assertOwnerBelongsToManager(body.ownerId, req.user!.userId);
   assertFileContentMatchesDeclaredType(req.file);
   const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
@@ -96,6 +114,8 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
 
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
   if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+
+  if (body.ownerId) await assertOwnerBelongsToManager(body.ownerId, req.user!.userId);
 
   // La vérification de propriété doit précéder l'upload : sinon, un
   // gestionnaire pouvait faire uploader (et donc stocker, sur notre

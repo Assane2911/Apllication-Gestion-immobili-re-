@@ -121,6 +121,45 @@ export function passwordResetEmail(params: { resetUrl: string }) {
 }
 
 /**
+ * Email d'invitation envoyé à un propriétaire par son gestionnaire pour lui
+ * ouvrir l'accès à son espace propriétaire (résumé financier en lecture
+ * seule). Réutilise le même lien/mécanisme que la réinitialisation de mot de
+ * passe (token à usage unique, valable 1 heure) : cliquer dessus laisse le
+ * propriétaire choisir lui-même son mot de passe — voir owner.controller.ts
+ * (inviteOwnerPortalAccount) et auth.controller.ts (resetPassword).
+ */
+export function ownerInvitationEmail(params: { ownerName: string; agencyName: string; inviteUrl: string }) {
+  const { ownerName, agencyName, inviteUrl } = params;
+  return {
+    subject: `🔑 ${escapeHtml(agencyName)} vous invite à votre espace propriétaire`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">🔑 Votre espace propriétaire</h2>
+        <p>Bonjour ${escapeHtml(ownerName)},</p>
+        <p>
+          <strong>${escapeHtml(agencyName)}</strong> vous invite à accéder à votre espace propriétaire :
+          vous pourrez y suivre le loyer perçu et en attente pour vos biens.
+          Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et activer votre accès.
+          Ce lien est valable <strong>1 heure</strong>.
+        </p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${inviteUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Activer mon accès →
+          </a>
+        </div>
+        <p style="color:#6b7280; font-size:12px;">
+          Si vous ne vous attendiez pas à cette invitation, vous pouvez ignorer cet email sans risque :
+          aucun accès ne sera créé sans confirmation de votre part.
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
+/**
  * Email envoyé à l'inscription pour confirmer la propriété de l'adresse
  * email avant d'activer le compte. Le lien contient un token à usage unique,
  * valable 24 heures — voir auth.controller.ts (registerManager / verifyEmail).
