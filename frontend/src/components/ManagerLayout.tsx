@@ -14,6 +14,7 @@ const navItems = [
   { to: "/dashboard", key: "dashboard", icon: "📊" },
   { to: "/properties", key: "properties", icon: "🏠" },
   { to: "/tenants", key: "tenants", icon: "👥" },
+  { to: "/proprietaires", key: "owners", icon: "🧑‍💼" },
   { to: "/contracts", key: "contracts", icon: "📄" },
   { to: "/invoices", key: "invoices", icon: "💳" },
   { to: "/expenses", key: "expenses", icon: "💰" },

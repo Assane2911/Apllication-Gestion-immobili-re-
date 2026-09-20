@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
-import type { PaginatedResponse, Property } from "../../types";
+import type { Owner, PaginatedResponse, Property } from "../../types";
 import PropertiesPage from "./PropertiesPage";
 
 vi.mock("../../api/client", async () => {
@@ -35,6 +35,13 @@ function paginated(items: Property[]): { data: PaginatedResponse<Property> } {
   return { data: { items, page: 1, pageSize: 20, total: items.length, totalPages: 1 } };
 }
 
+// PropertiesPage récupère aussi la liste des propriétaires (pour le
+// sélecteur du formulaire) via un effet séparé, monté une seule fois — on
+// répond systématiquement vide ici, ces tests ne portant pas sur ce sélecteur.
+function paginatedOwners(items: Owner[] = []): { data: PaginatedResponse<Owner> } {
+  return { data: { items, page: 1, pageSize: 100, total: items.length, totalPages: 1 } };
+}
+
 function renderPage() {
   return render(
     <AuthProvider>
@@ -60,16 +67,19 @@ function formDataEntries(fd: FormData): Record<string, unknown> {
 // que par getByLabelText, qui ne trouverait aucune association.
 // Ordre des champs "textbox" (input texte + textarea) : Titre, Adresse, Description.
 // Ordre des champs "spinbutton" (input number) : Surface, Loyer.
+// Ordre des champs "combobox" : Statut, Propriétaire.
 function getFormFields() {
   const textboxes = screen.getAllByRole("textbox");
   const spinbuttons = screen.getAllByRole("spinbutton");
+  const comboboxes = screen.getAllByRole("combobox");
   return {
     title: textboxes[0],
     address: textboxes[1],
     description: textboxes[2],
     surface: spinbuttons[0],
     rent: spinbuttons[1],
-    status: screen.getByRole("combobox"),
+    status: comboboxes[0],
+    owner: comboboxes[1],
   };
 }
 
@@ -85,6 +95,7 @@ describe("PropertiesPage (manager)", () => {
 
   it("affiche la liste des biens avec statut, surface et loyer", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([property()]));
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument());
@@ -110,6 +121,7 @@ describe("PropertiesPage (manager)", () => {
   ])("reste affiché quand le serveur renvoie %s", async (_cas, reponse) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     mockedApi.get.mockResolvedValueOnce(reponse);
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
 
     renderPage();
 
@@ -119,6 +131,7 @@ describe("PropertiesPage (manager)", () => {
 
   it("affiche l'état vide avec un bouton d'ajout quand il n'y a aucun bien", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([]));
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Aucun bien pour l'instant")).toBeInTheDocument());
@@ -130,6 +143,7 @@ describe("PropertiesPage (manager)", () => {
       response: { data: { error: "Erreur serveur" } },
       isAxiosError: true,
     });
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
@@ -142,6 +156,7 @@ describe("PropertiesPage (manager)", () => {
   it("crée un bien : envoie un FormData avec les bons champs, y compris l'image", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce(paginated([]));
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
     mockedApi.post.mockResolvedValueOnce({ data: { id: "prop-new" } });
     mockedApi.get.mockResolvedValueOnce(paginated([property({ id: "prop-new" })]));
 
@@ -181,6 +196,7 @@ describe("PropertiesPage (manager)", () => {
   it("modifie un bien existant : pré-remplit le formulaire et envoie une requête PUT", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce(paginated([property({ id: "prop-1", title: "Studio Centre-ville" })]));
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
     mockedApi.put.mockResolvedValueOnce({ data: {} });
     mockedApi.get.mockResolvedValueOnce(paginated([property({ id: "prop-1", title: "Studio Rénové" })]));
 
@@ -205,6 +221,7 @@ describe("PropertiesPage (manager)", () => {
   it("supprime un bien après confirmation", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce(paginated([property({ id: "prop-1" })]));
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
     mockedApi.delete.mockResolvedValueOnce({ data: {} });
     mockedApi.get.mockResolvedValueOnce(paginated([]));
 

@@ -7,15 +7,19 @@ import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { PropertyCardSkeleton } from "../../components/Skeleton";
 import { useCurrency } from "../../context/currency";
-import type { PaginatedResponse, Property, PropertyStatus } from "../../types";
+import type { Owner, PaginatedResponse, Property, PropertyStatus } from "../../types";
 
-const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAILABLE" as PropertyStatus, description: "" };
+const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAILABLE" as PropertyStatus, description: "", ownerId: "" };
 const PAGE_SIZE = 20;
+// Pour le sélecteur "propriétaire" du formulaire : on récupère la liste complète en une
+// page (max autorisé par l'API) plutôt que de paginer un simple menu déroulant.
+const OWNERS_PAGE_SIZE = 100;
 
 export default function PropertiesPage() {
   const { t } = useTranslation();
   const { formatMoney } = useCurrency();
   const [properties, setProperties] = useState<Property[]>([]);
+  const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Property | null>(null);
@@ -43,6 +47,13 @@ export default function PropertiesPage() {
 
   useEffect(load, [page]);
 
+  useEffect(() => {
+    api
+      .get<PaginatedResponse<Owner>>("/owners", { params: { page: 1, pageSize: OWNERS_PAGE_SIZE } })
+      .then((res) => setOwners(liste<Owner>(res.data, "items")))
+      .catch(() => setOwners([]));
+  }, []);
+
   function openCreate() {
     setEditing(null);
     setForm(emptyForm);
@@ -59,6 +70,7 @@ export default function PropertiesPage() {
       rent: String(p.rent),
       status: p.status,
       description: p.description ?? "",
+      ownerId: p.ownerId ?? "",
     });
     setImage(null);
     setShowForm(true);
@@ -76,6 +88,10 @@ export default function PropertiesPage() {
       data.append("rent", form.rent);
       data.append("status", form.status);
       if (form.description) data.append("description", form.description);
+      // Une chaîne vide n'est pas envoyée : le backend traite l'absence du champ
+      // comme "ne pas modifier l'association" (voir property.controller.ts),
+      // là où une chaîne vide échouerait la validation ownerId.min(1).
+      if (form.ownerId) data.append("ownerId", form.ownerId);
       if (image) data.append("image", image);
 
       if (editing) {
@@ -149,6 +165,18 @@ export default function PropertiesPage() {
                 <option value="AVAILABLE">{t("common.status.AVAILABLE")}</option>
                 <option value="OCCUPIED">{t("common.status.OCCUPIED")}</option>
                 <option value="MAINTENANCE">{t("common.status.MAINTENANCE")}</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="property-owner" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.owner")}</label>
+              <select id="property-owner" value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+                <option value="">{t("manager.properties.fields.noOwner")}</option>
+                {owners.map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {owner.firstName} {owner.lastName}
+                    {owner.companyName ? ` (${owner.companyName})` : ""}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

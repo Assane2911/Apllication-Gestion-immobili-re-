@@ -9,5 +9,6 @@ import type { Role } from "../types";
 export function homePathForRole(role: Role): string {
   if (role === "MANAGER") return "/dashboard";
   if (role === "ADMIN") return "/admin";
+  if (role === "OWNER") return "/proprietaire";
   return "/portail";
 }

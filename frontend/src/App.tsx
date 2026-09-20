@@ -3,6 +3,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import AdminLayout from "./components/AdminLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ManagerLayout from "./components/ManagerLayout";
+import OwnerLayout from "./components/OwnerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
 import { AuthProvider } from "./context/AuthContext";
@@ -31,10 +32,12 @@ const MessagesPage = lazy(() => import("./pages/manager/MessagesPage"));
 const PropertiesPage = lazy(() => import("./pages/manager/PropertiesPage"));
 const SubscriptionPage = lazy(() => import("./pages/manager/SubscriptionPage"));
 const TenantsPage = lazy(() => import("./pages/manager/TenantsPage"));
+const OwnersPage = lazy(() => import("./pages/manager/OwnersPage"));
 const TenantDashboardPage = lazy(() => import("./pages/tenant/TenantDashboardPage"));
 const TenantInvoicesPage = lazy(() => import("./pages/tenant/TenantInvoicesPage"));
 const TenantIssuesPage = lazy(() => import("./pages/tenant/TenantIssuesPage"));
 const TenantMessagesPage = lazy(() => import("./pages/tenant/TenantMessagesPage"));
+const OwnerDashboardPage = lazy(() => import("./pages/owner/OwnerDashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminSubscriptionsPage = lazy(() => import("./pages/admin/AdminSubscriptionsPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
@@ -79,6 +82,7 @@ function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/tenants" element={<TenantsPage />} />
+          <Route path="/proprietaires" element={<OwnersPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
@@ -100,6 +104,16 @@ function AppRoutes() {
           <Route path="/portail/paiements" element={<TenantInvoicesPage />} />
           <Route path="/portail/messages" element={<TenantMessagesPage />} />
           <Route path="/portail/incidents" element={<TenantIssuesPage />} />
+        </Route>
+
+        <Route
+          element={
+            <ProtectedRoute role="OWNER">
+              <OwnerLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/proprietaire" element={<OwnerDashboardPage />} />
         </Route>
 
         <Route

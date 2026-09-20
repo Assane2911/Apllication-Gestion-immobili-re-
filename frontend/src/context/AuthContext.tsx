@@ -22,6 +22,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: data.role,
         tenantId: data.tenant?.id ?? null,
         tenantName: data.tenant ? `${data.tenant.firstName} ${data.tenant.lastName}` : null,
+        ownerId: data.owner?.id ?? null,
+        ownerName: data.owner ? `${data.owner.firstName} ${data.owner.lastName}` : null,
         subscription: data.subscription,
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));

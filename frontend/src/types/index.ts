@@ -1,4 +1,4 @@
-export type Role = "MANAGER" | "TENANT" | "ADMIN";
+export type Role = "MANAGER" | "TENANT" | "ADMIN" | "OWNER";
 
 export type SubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED";
 export type SubscriptionPlan = "STARTER" | "PRO" | "ENTERPRISE";
@@ -34,6 +34,8 @@ export interface AuthUser {
   currency?: string;
   tenantId?: string | null;
   tenantName?: string | null;
+  ownerId?: string | null;
+  ownerName?: string | null;
   subscription?: SubscriptionInfo | null;
 }
 
@@ -49,8 +51,50 @@ export interface Property {
   status: PropertyStatus;
   description?: string | null;
   imageUrl?: string | null;
+  ownerId?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type OwnerPortalStatus = "NONE" | "PENDING" | "ACTIVE";
+
+/** Fiche propriétaire (Espace propriétaire) — voir owner.controller.ts. */
+export interface Owner {
+  id: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string | null;
+  email: string;
+  phone: string;
+  address?: string | null;
+  iban?: string | null;
+  bic?: string | null;
+  managementFeeRate: number;
+  notes?: string | null;
+  userId?: string | null;
+  /** NONE = aucun accès créé, PENDING = invité mais mot de passe pas encore posé, ACTIVE = accès utilisable. */
+  portalStatus: OwnerPortalStatus;
+  createdAt: string;
+}
+
+/** Résumé financier d'un bien tel que renvoyé par GET /api/owners/mine/dashboard. */
+export interface OwnerDashboardProperty {
+  propertyId: string;
+  title: string;
+  address: string;
+  currency: string;
+  collected: number;
+  pending: number;
+}
+
+/** Réponse de GET /api/owners/mine/dashboard — voir getOwnerDashboard côté serveur. */
+export interface OwnerDashboard {
+  ownerName: string;
+  managementFeeRate: number;
+  properties: OwnerDashboardProperty[];
+  collectedThisMonthByCurrency: Record<string, number>;
+  pendingThisMonthByCurrency: Record<string, number>;
+  revenueByMonth: Record<string, Record<string, number>>;
 }
 
 export interface Tenant {
