@@ -213,7 +213,7 @@ const fr = {
       faq: "FAQ",
       goToSpace: "Accéder à mon espace →",
       login: "Se connecter",
-      trial: "Essai 10j gratuit →",
+      trial: "Essai 15j gratuit →",
     },
     badge: "Nouvelle Version 2.0 • 15 jours d'essai gratuit offert sans engagement",
     hero: {
@@ -364,7 +364,7 @@ const fr = {
           "Rappels automatiques du 1er du mois",
           "Portail locataire inclus",
         ],
-        cta: "Démarrer l'essai 10j",
+        cta: "Démarrer l'essai 15j",
       },
       pro: {
         name: "Pro Agence",
@@ -377,7 +377,7 @@ const fr = {
           "🏢 Marque blanche (Logo & En-tête agence)",
           "💬 Messagerie directe intégrée",
         ],
-        cta: "Démarrer l'essai 10j gratuit",
+        cta: "Démarrer l'essai 15j gratuit",
       },
       enterprise: {
         name: "Entreprise",
@@ -388,7 +388,7 @@ const fr = {
           "Multi-utilisateurs & gestionnaires",
           "Export comptable automatisé",
         ],
-        cta: "Démarrer l'essai 10j",
+        cta: "Démarrer l'essai 15j",
       },
     },
     footer: {

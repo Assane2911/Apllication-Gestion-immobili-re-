@@ -35,6 +35,19 @@ describe("LandingPage", () => {
     expect(screen.getByText("réinventée & automatisée.")).toBeInTheDocument();
   });
 
+  // Régression. La durée réelle de l'essai (auth.controller.ts::register,
+  // trialEndsAt = +15 jours) était annoncée à "15 jours" partout sauf sur le
+  // bouton "Essai" de la barre de navigation et les 3 CTA de tarifs, restés à
+  // "10j" — une coquille qui promettait au visiteur un essai plus court que
+  // ce que son inscription lui accorde réellement.
+  it("annonce partout la même durée d'essai (15 jours), y compris sur les CTA de tarifs", () => {
+    renderPage();
+
+    expect(screen.getByRole("link", { name: "Essai 15j gratuit →" })).toBeInTheDocument();
+    expect(screen.queryByText(/10j/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /essai 15j/i }).length).toBeGreaterThanOrEqual(3);
+  });
+
   it("propose la connexion et l'essai gratuit vers /inscription quand personne n'est connecté", () => {
     renderPage();
     const trialLinks = screen.getAllByRole("link", { name: /essai/i });
