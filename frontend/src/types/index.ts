@@ -403,6 +403,64 @@ export interface CrgSynthesis {
   totalNetByCurrency: Record<string, number>;
 }
 
+export type ListingType = "RENT" | "SALE" | "PROMOTION" | "LAND" | "OTHER";
+export type ListingStatus = "PUBLISHED" | "DRAFT" | "ARCHIVED";
+export type PricePeriod = "MONTH" | "ONE_TIME";
+export type LeadRequestType = "VISIT" | "INFO";
+export type LeadStatus = "NEW" | "CONTACTED" | "VISITED" | "CONVERTED" | "ARCHIVED";
+
+/**
+ * Annonce de la vitrine publique (voir listing.controller.ts). `managerId`
+ * n'est présent que côté CRM gestionnaire (GET /api/listings...) — les
+ * réponses publiques (GET /api/listings/public...) l'omettent
+ * (toPublicListing), d'où son caractère optionnel ici.
+ */
+export interface Listing {
+  id: string;
+  managerId?: string;
+  type: ListingType;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  pricePeriod: PricePeriod;
+  surface?: number | null;
+  rooms?: number | null;
+  location: string;
+  imageUrl?: string | null;
+  contactPhone?: string | null;
+  contactWhatsapp?: string | null;
+  contactEmail?: string | null;
+  status: ListingStatus;
+  featured: boolean;
+  country?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Demande de visite/information soumise (sans authentification) depuis la
+ * vitrine publique sur une annonce (voir listing.controller.ts). `listingTitle`
+ * n'est présent que sur GET /api/listings/leads côté gestionnaire (jointure
+ * avec l'annonce), jamais renvoyé par le backend à la création.
+ */
+export interface ListingLead {
+  id: string;
+  listingId: string;
+  listingTitle?: string;
+  managerId: string;
+  prospectName: string;
+  prospectEmail: string;
+  prospectPhone: string;
+  requestType: LeadRequestType;
+  preferredDate?: string | null;
+  message?: string | null;
+  status: LeadStatus;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminDashboardStats {
   managers: {
     total: number;

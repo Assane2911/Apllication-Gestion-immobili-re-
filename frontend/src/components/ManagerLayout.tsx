@@ -18,6 +18,8 @@ const navItems = [
   { to: "/contracts", key: "contracts", icon: "📄" },
   { to: "/etats-des-lieux", key: "inspections", icon: "🔑" },
   { to: "/invoices", key: "invoices", icon: "💳" },
+  { to: "/annonces", key: "listings", icon: "🏘️" },
+  { to: "/leads", key: "leads", icon: "📞" },
   { to: "/expenses", key: "expenses", icon: "💰" },
   { to: "/bilan-fiscal", key: "fiscal", icon: "🧾" },
   { to: "/messages", key: "messages", icon: "💬" },

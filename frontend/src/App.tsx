@@ -30,6 +30,8 @@ const ExpensesPage = lazy(() => import("./pages/manager/ExpensesPage"));
 const FiscalPage = lazy(() => import("./pages/manager/FiscalPage"));
 const InvoicesPage = lazy(() => import("./pages/manager/InvoicesPage"));
 const IssuesPage = lazy(() => import("./pages/manager/IssuesPage"));
+const ListingsPage = lazy(() => import("./pages/manager/ListingsPage"));
+const ListingLeadsPage = lazy(() => import("./pages/manager/ListingLeadsPage"));
 const MessagesPage = lazy(() => import("./pages/manager/MessagesPage"));
 const PropertiesPage = lazy(() => import("./pages/manager/PropertiesPage"));
 const SubscriptionPage = lazy(() => import("./pages/manager/SubscriptionPage"));
@@ -45,6 +47,7 @@ const OwnerCrgPage = lazy(() => import("./pages/owner/OwnerCrgPage"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminSubscriptionsPage = lazy(() => import("./pages/admin/AdminSubscriptionsPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const VitrinePage = lazy(() => import("./pages/VitrinePage"));
 
 /** Indicateur de chargement affiché pendant le téléchargement du chunk d'une page (React.lazy). */
 function PageLoader() {
@@ -75,6 +78,10 @@ function AppRoutes() {
         <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
         <Route path="/cgu" element={<CGUPage />} />
         <Route path="/confidentialite" element={<PolitiqueConfidentialitePage />} />
+        {/* Vitrine publique des annonces : accessible sans authentification,
+            volontairement hors de tout layout protégé (voir listing.routes.ts
+            côté backend, dont les routes /public/... suivent la même logique). */}
+        <Route path="/vitrine" element={<VitrinePage />} />
 
         <Route
           element={
@@ -91,6 +98,8 @@ function AppRoutes() {
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/etats-des-lieux" element={<InspectionsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/annonces" element={<ListingsPage />} />
+          <Route path="/leads" element={<ListingLeadsPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/bilan-fiscal" element={<FiscalPage />} />
           <Route path="/messages" element={<MessagesPage />} />
