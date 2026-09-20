@@ -47,6 +47,13 @@ function contract(overrides: Partial<Contract> = {}): Contract {
   };
 }
 
+// TenantDashboardPage récupère aussi /inspections/mine (état des lieux) via le
+// même Promise.all que /contracts/mine : chaque test doit donc mettre en file
+// une deuxième réponse (vide par défaut, ces tests ne portent pas dessus).
+function emptyInspections(): { data: [] } {
+  return { data: [] };
+}
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -66,6 +73,7 @@ describe("TenantDashboardPage", () => {
 
   it("affiche le logement, le loyer et les dates du bail", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument());
@@ -76,6 +84,7 @@ describe("TenantDashboardPage", () => {
 
   it("propose de signer le bail tant qu'il n'est pas signé, puis affiche la date de signature", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: null })] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
     renderPage();
 
     await waitFor(() => expect(screen.getByRole("button", { name: /Signer mon bail/ })).toBeInTheDocument());
@@ -84,6 +93,7 @@ describe("TenantDashboardPage", () => {
 
   it("affiche la date de signature une fois le bail signé", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: "2026-02-01T00:00:00.000Z" })] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
     renderPage();
 
     await waitFor(() => expect(screen.getByText(/Signé par vous le/)).toBeInTheDocument());
@@ -92,6 +102,7 @@ describe("TenantDashboardPage", () => {
 
   it("alerte sur les mensualités impayées avec un lien vers le paiement", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ status: "PENDING" })] })] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
     renderPage();
 
     await waitFor(() => expect(screen.getByText(/mensualité\(s\) de loyer en attente/)).toBeInTheDocument());
@@ -100,6 +111,7 @@ describe("TenantDashboardPage", () => {
 
   it("affiche un message dédié quand aucun contrat n'est associé", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
     renderPage();
 
     await waitFor(() =>
@@ -119,6 +131,7 @@ describe("TenantDashboardPage", () => {
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
 
     mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument());
   });

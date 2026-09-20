@@ -15,6 +15,8 @@ const styles: Record<string, string> = {
   IN_PROGRESS: "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20",
   RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20",
   REJECTED: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700/60",
+  DRAFT: "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20",
+  COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20",
 };
 
 const dotStyles: Record<string, string> = {
@@ -32,6 +34,8 @@ const dotStyles: Record<string, string> = {
   IN_PROGRESS: "bg-amber-500",
   RESOLVED: "bg-emerald-500",
   REJECTED: "bg-slate-400",
+  DRAFT: "bg-amber-500",
+  COMPLETED: "bg-emerald-500",
 };
 
 const shouldPulse: Record<string, boolean> = {

@@ -132,6 +132,51 @@ export interface Contract {
   invoices?: Invoice[];
 }
 
+export type InspectionType = "ENTRY" | "EXIT";
+export type InspectionStatus = "DRAFT" | "COMPLETED";
+export type RoomCondition = "BON" | "MOYEN" | "MAUVAIS";
+
+export interface InspectionRoom {
+  name: string;
+  condition: RoomCondition;
+  notes: string;
+}
+
+export interface InspectionMeters {
+  electricity: string;
+  water: string;
+  gas: string;
+}
+
+export interface InspectionKeyEntry {
+  label: string;
+  quantity: number;
+}
+
+/** État des lieux (EDL) — voir inspection.controller.ts. */
+export interface Inspection {
+  id: string;
+  contractId: string;
+  propertyId: string;
+  tenantId: string;
+  managerId: string;
+  type: InspectionType;
+  status: InspectionStatus;
+  inspectionDate: string;
+  rooms: InspectionRoom[];
+  meters: InspectionMeters;
+  keys: InspectionKeyEntry[];
+  generalComments?: string | null;
+  managerSignatureUrl?: string | null;
+  signedByManagerAt?: string | null;
+  tenantSignatureUrl?: string | null;
+  signedByTenantAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  property?: Property;
+  tenant?: Tenant;
+}
+
 export type ExpenseCategory = "MAINTENANCE" | "TAX" | "INSURANCE" | "SYNDIC" | "OTHER";
 
 export interface Expense {

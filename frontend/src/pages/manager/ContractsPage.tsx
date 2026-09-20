@@ -489,8 +489,8 @@ export default function ContractsPage() {
 
       {signingContract && (
         <SignatureModal
-          contractId={signingContract.id}
-          contractTitle={t("manager.contracts.leaseTitle", { property: signingContract.property?.title })}
+          signUrl={`/contracts/${signingContract.id}/sign`}
+          title={t("manager.contracts.leaseTitle", { property: signingContract.property?.title })}
           onSuccess={() => {
             setSigningContract(null);
             load();

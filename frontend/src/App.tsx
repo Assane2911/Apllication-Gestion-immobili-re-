@@ -33,6 +33,7 @@ const PropertiesPage = lazy(() => import("./pages/manager/PropertiesPage"));
 const SubscriptionPage = lazy(() => import("./pages/manager/SubscriptionPage"));
 const TenantsPage = lazy(() => import("./pages/manager/TenantsPage"));
 const OwnersPage = lazy(() => import("./pages/manager/OwnersPage"));
+const InspectionsPage = lazy(() => import("./pages/manager/InspectionsPage"));
 const TenantDashboardPage = lazy(() => import("./pages/tenant/TenantDashboardPage"));
 const TenantInvoicesPage = lazy(() => import("./pages/tenant/TenantInvoicesPage"));
 const TenantIssuesPage = lazy(() => import("./pages/tenant/TenantIssuesPage"));
@@ -84,6 +85,7 @@ function AppRoutes() {
           <Route path="/tenants" element={<TenantsPage />} />
           <Route path="/proprietaires" element={<OwnersPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
+          <Route path="/etats-des-lieux" element={<InspectionsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/messages" element={<MessagesPage />} />

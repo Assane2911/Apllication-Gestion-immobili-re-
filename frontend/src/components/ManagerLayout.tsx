@@ -16,6 +16,7 @@ const navItems = [
   { to: "/tenants", key: "tenants", icon: "👥" },
   { to: "/proprietaires", key: "owners", icon: "🧑‍💼" },
   { to: "/contracts", key: "contracts", icon: "📄" },
+  { to: "/etats-des-lieux", key: "inspections", icon: "🔑" },
   { to: "/invoices", key: "invoices", icon: "💳" },
   { to: "/expenses", key: "expenses", icon: "💰" },
   { to: "/messages", key: "messages", icon: "💬" },

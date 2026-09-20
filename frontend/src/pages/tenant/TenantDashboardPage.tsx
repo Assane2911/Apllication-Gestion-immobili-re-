@@ -8,22 +8,25 @@ import DocumentModal from "../../components/DocumentModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
-import type { Contract } from "../../types";
+import type { Contract, Inspection } from "../../types";
 
 export default function TenantDashboardPage() {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [inspections, setInspections] = useState<Inspection[]>([]);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
+  const [signingInspection, setSigningInspection] = useState<Inspection | null>(null);
+  const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    api
-      .get<Contract[]>("/contracts/mine")
-      .then((res) => {
-        setContracts(liste<Contract>(res.data));
+    Promise.all([api.get<Contract[]>("/contracts/mine"), api.get<Inspection[]>("/inspections/mine")])
+      .then(([contractsRes, inspectionsRes]) => {
+        setContracts(liste<Contract>(contractsRes.data));
+        setInspections(liste<Inspection>(inspectionsRes.data));
         setError(null);
       })
       .catch((err) => setError(apiErrorMessage(err)));
@@ -219,6 +222,56 @@ export default function TenantDashboardPage() {
                 </div>
               </div>
 
+              {/* États des lieux (entrée/sortie) rattachés à ce contrat */}
+              {inspections.filter((insp) => insp.contractId === c.id).length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t("tenant.dashboard.inspectionsTitle")}</p>
+                  {inspections
+                    .filter((insp) => insp.contractId === c.id)
+                    .map((insp) => (
+                      <div
+                        key={insp.id}
+                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-xl p-3.5 flex items-center justify-between flex-wrap gap-3 shadow-2xs"
+                      >
+                        <div>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            {insp.type === "ENTRY" ? t("tenant.dashboard.inspectionEntry") : t("tenant.dashboard.inspectionExit")}
+                          </p>
+                          <p className="text-xs mt-0.5">
+                            {insp.status === "DRAFT" ? (
+                              <span className="text-slate-500 dark:text-slate-400">{t("tenant.dashboard.inspectionAwaitingCompletion")}</span>
+                            ) : insp.signedByTenantAt ? (
+                              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                                {t("tenant.dashboard.inspectionSignedByYouOn", { date: new Date(insp.signedByTenantAt).toLocaleDateString(i18n.language) })}
+                              </span>
+                            ) : (
+                              <span className="text-amber-700 dark:text-amber-400 font-semibold">{t("tenant.dashboard.inspectionAwaitingYourSignature")}</span>
+                            )}
+                          </p>
+                        </div>
+                        {insp.status === "COMPLETED" && (
+                          <div className="flex items-center gap-2">
+                            {!insp.signedByTenantAt && (
+                              <button
+                                onClick={() => setSigningInspection(insp)}
+                                className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                              >
+                                ✍️ {t("tenant.dashboard.inspectionSignMine")}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setViewingReportInspection(insp)}
+                              className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                            >
+                              📋 {t("tenant.dashboard.inspectionViewReport")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+
               {/* Unpaid Alerts */}
               {unpaid.length > 0 && (
                 <div className="bg-gradient-to-r from-amber-50 to-amber-100/60 dark:from-amber-500/10 dark:to-amber-500/5 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs rounded-xl p-4 flex items-center justify-between gap-3 shadow-2xs">
@@ -241,8 +294,8 @@ export default function TenantDashboardPage() {
 
       {signingContract && (
         <SignatureModal
-          contractId={signingContract.id}
-          contractTitle={t("tenant.dashboard.leaseTitle", { property: signingContract.property?.title })}
+          signUrl={`/contracts/${signingContract.id}/sign`}
+          title={t("tenant.dashboard.leaseTitle", { property: signingContract.property?.title })}
           onSuccess={() => {
             setSigningContract(null);
             load();
@@ -264,6 +317,26 @@ export default function TenantDashboardPage() {
           title={viewingScannedContract.title}
           fileUrl={viewingScannedContract.url}
           onClose={() => setViewingScannedContract(null)}
+        />
+      )}
+
+      {signingInspection && (
+        <SignatureModal
+          signUrl={`/inspections/${signingInspection.id}/sign`}
+          title={t("tenant.dashboard.inspectionDocTitle", { property: signingInspection.property?.title })}
+          onSuccess={() => {
+            setSigningInspection(null);
+            load();
+          }}
+          onClose={() => setSigningInspection(null)}
+        />
+      )}
+
+      {viewingReportInspection && (
+        <DocumentModal
+          title={t("tenant.dashboard.inspectionDocTitle", { property: viewingReportInspection.property?.title })}
+          docUrl={`/documents/inspection/${viewingReportInspection.id}`}
+          onClose={() => setViewingReportInspection(null)}
         />
       )}
     </div>

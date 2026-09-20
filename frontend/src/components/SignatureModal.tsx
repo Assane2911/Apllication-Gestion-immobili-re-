@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 
 interface SignatureModalProps {
-  contractId: string;
-  contractTitle: string;
+  /** Chemin complet de l'endpoint de signature (ex: `/contracts/${id}/sign`, `/inspections/${id}/sign`). */
+  signUrl: string;
+  title: string;
   onSuccess: () => void;
   onClose: () => void;
 }
 
-export default function SignatureModal({ contractId, contractTitle, onSuccess, onClose }: SignatureModalProps) {
+export default function SignatureModal({ signUrl, title, onSuccess, onClose }: SignatureModalProps) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -105,7 +106,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
     setSaving(true);
     setError(null);
     try {
-      await api.post(`/contracts/${contractId}/sign`, { signatureDataUrl });
+      await api.post(signUrl, { signatureDataUrl });
       onSuccess();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -128,7 +129,7 @@ export default function SignatureModal({ contractId, contractTitle, onSuccess, o
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.signatureModal.title")}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{contractTitle}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{title}</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-semibold">
             ✕
