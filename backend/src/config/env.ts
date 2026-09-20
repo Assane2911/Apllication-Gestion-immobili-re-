@@ -37,6 +37,14 @@ export const env = {
   jwtSecret: required("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
 
+  // Identifiant client OAuth Google (public, PAS le secret — voir
+  // loginWithGoogle dans auth.controller.ts, qui vérifie le jeton d'identité
+  // renvoyé par Google Identity Services sans jamais avoir besoin du Client
+  // Secret). Vide par défaut : le bouton "Se connecter avec Google" reste
+  // simplement masqué côté frontend tant que cette variable n'est pas
+  // renseignée, comme pour Stripe/PayDunya/Twilio ci-dessous.
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
+
   smtp: {
     host: process.env.SMTP_HOST ?? "smtp.gmail.com",
     port: parseInt(process.env.SMTP_PORT ?? "465", 10),

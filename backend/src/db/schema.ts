@@ -25,6 +25,14 @@ export const users = pgTable("users", {
   id: id(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
+  // Identifiant Google (claim "sub" du jeton d'identité) pour la connexion
+  // "Se connecter avec Google", réservée aux gestionnaires — voir
+  // auth.controller.ts::loginWithGoogle. Nullable : la grande majorité des
+  // comptes restent créés par email/mot de passe. passwordHash reste
+  // NOT NULL même pour un compte Google : on y stocke le hash bcrypt d'une
+  // valeur aléatoire inatteignable par un mot de passe (voir loginWithGoogle),
+  // pour éviter une migration de colonne nullable rien que pour ce cas.
+  googleId: text("google_id").unique(),
   role: roleEnum("role").notNull(),
   currency: text("currency").notNull().default("EUR"),
   // SaaS & Période d'essai (15 jours offerts à l'inscription pour les gestionnaires)

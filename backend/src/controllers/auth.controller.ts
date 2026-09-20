@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
+import { OAuth2Client } from "google-auth-library";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -28,6 +29,18 @@ const loginSchema = z.object({
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1),
 });
+
+const googleLoginSchema = z.object({
+  // Jeton d'identité (JWT) renvoyé par Google Identity Services côté
+  // navigateur — jamais un code d'autorisation ni, a fortiori, un secret.
+  credential: z.string().min(1),
+});
+
+// Un seul client, sans Client ID passé au constructeur : l'audience attendue
+// est vérifiée explicitement à chaque appel de verifyIdToken (voir
+// loginWithGoogle), ce qui permet à ce module de se charger même quand
+// GOOGLE_CLIENT_ID n'est pas encore configuré (voir env.ts::googleClientId).
+const googleClient = new OAuth2Client();
 
 /**
  * Empreinte bcrypt d'une valeur qu'aucun mot de passe ne peut atteindre,
@@ -225,6 +238,125 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : null,
       ownerId: owner?.id ?? null,
       ownerName: owner ? `${owner.firstName} ${owner.lastName}` : null,
+      subscription,
+    },
+  });
+});
+
+/**
+ * Connexion / inscription automatique via Google (gestionnaires uniquement).
+ *
+ * Flux "Google Identity Services" côté navigateur : le frontend obtient un
+ * jeton d'identité (ID token, un JWT signé par Google) et nous l'envoie tel
+ * quel. On le vérifie ici via `verifyIdToken`, qui contrôle la signature,
+ * l'émetteur et l'audience (notre GOOGLE_CLIENT_ID) — aucun Client Secret
+ * n'est nécessaire pour ce flux, contrairement à un échange de code
+ * d'autorisation OAuth classique, ce qui garde l'architecture sans session
+ * serveur (JWT stateless) déjà en place pour login().
+ */
+export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) => {
+  if (!env.googleClientId) {
+    throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur");
+  }
+
+  const body = googleLoginSchema.parse(req.body);
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: body.credential,
+      audience: env.googleClientId,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    throw new ApiError(401, "Jeton Google invalide ou expiré");
+  }
+
+  if (!payload || !payload.sub || !payload.email) {
+    throw new ApiError(401, "Jeton Google invalide");
+  }
+
+  // Google atteste lui-même la possession de l'adresse (écran de consentement
+  // OAuth) ; sans cette vérification explicite, un compte Google avec une
+  // adresse non confirmée (cas rare, ex. certains comptes Workspace) suffirait
+  // à prouver une identité que ni nous ni Google n'avons vérifiée.
+  if (!payload.email_verified) {
+    throw new ApiError(403, "Ton adresse email Google n'est pas vérifiée");
+  }
+
+  const email = payload.email.trim().toLowerCase();
+  const googleId = payload.sub;
+
+  let [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+
+  if (!user) {
+    [user] = await db.select().from(users).where(eq(users.email, email));
+
+    if (user) {
+      // Un compte existant sous cette adresse, mais créé par email/mot de
+      // passe : la connexion Google est réservée aux gestionnaires (choix
+      // produit), donc un compte locataire/propriétaire portant la même
+      // adresse ne doit surtout pas se retrouver connecté à la place de son
+      // titulaire réel via ce raccourci.
+      if (user.role !== "MANAGER") {
+        throw new ApiError(
+          403,
+          "La connexion avec Google est réservée aux comptes gestionnaire",
+          "GOOGLE_LOGIN_WRONG_ROLE"
+        );
+      }
+
+      const updates: Partial<typeof users.$inferInsert> = { googleId };
+      // Google vient de prouver la possession de cette adresse : si
+      // l'inscription email/mot de passe d'origine n'avait jamais été
+      // confirmée, cette preuve équivalente lève le même blocage que
+      // verifyEmail (EMAIL_NOT_VERIFIED), au lieu de laisser ce compte
+      // bloqué malgré une identité désormais vérifiée.
+      if (!user.emailVerifiedAt) {
+        updates.emailVerifiedAt = new Date();
+      }
+
+      [user] = await db.update(users).set(updates).where(eq(users.id, user.id)).returning();
+    } else {
+      // Nouveau compte gestionnaire, même point de départ que
+      // registerManager (essai STARTER 15 jours) : l'email est déjà vérifié
+      // par Google, donc pas de double confirmation à envoyer. passwordHash
+      // reste NOT NULL (voir schema.ts::googleId) : on y stocke le hash d'une
+      // valeur aléatoire qu'aucun mot de passe ne peut atteindre, pour que
+      // login() par mot de passe échoue naturellement sur ce compte.
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+      const trialEndsAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 jours d'essai
+
+      [user] = await db
+        .insert(users)
+        .values({
+          email,
+          passwordHash,
+          googleId,
+          role: "MANAGER",
+          subscriptionStatus: "TRIAL",
+          subscriptionPlan: "STARTER",
+          trialEndsAt,
+          emailVerifiedAt: new Date(),
+        })
+        .returning();
+    }
+  }
+
+  const token = signToken({ userId: user.id, role: user.role as "MANAGER" });
+  const subscription = computeSubscriptionInfo(user);
+
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      currency: user.currency ?? "EUR",
+      tenantId: null,
+      tenantName: null,
+      ownerId: null,
+      ownerName: null,
       subscription,
     },
   });

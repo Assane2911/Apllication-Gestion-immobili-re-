@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   forgotPassword,
   login,
+  loginWithGoogle,
   me,
   registerManager,
   resendVerification,
@@ -24,6 +25,10 @@ const router = Router();
 // seule la limite par IP s'y applique.
 router.post("/register", authIpLimiter, authEmailLimiter, registerManager);
 router.post("/login", authIpLimiter, authEmailLimiter, login);
+// Pas de authEmailLimiter ici : la requête ne porte pas d'email en clair
+// (seulement un jeton Google) — authIpLimiter suffit, comme pour
+// verify-email/reset-password ci-dessous.
+router.post("/google", authIpLimiter, loginWithGoogle);
 router.post("/verify-email", authIpLimiter, verifyEmail);
 router.post("/resend-verification", authIpLimiter, authEmailLimiter, resendVerification);
 router.post("/forgot-password", authIpLimiter, authEmailLimiter, forgotPassword);
