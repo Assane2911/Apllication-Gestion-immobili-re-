@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
-import { generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
+import { loadInspectionForExport } from "./inspection.controller";
+import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
@@ -114,6 +115,54 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(leaseHtml);
+});
+
+export const getInspectionReport = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  const { inspectionId } = req.params;
+
+  const inspection = await loadInspectionForExport(inspectionId);
+  if (!inspection) throw new ApiError(404, "État des lieux introuvable");
+
+  // Même contrôle d'accès que le bail et la quittance (voir
+  // getContractLease/getInvoiceReceipt ci-dessus) : seuls le locataire
+  // concerné et le gestionnaire propriétaire du bien y ont accès.
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    inspection.tenantId === req.user.tenantId,
+    inspection.managerId === req.user.userId
+  );
+
+  // Un export "certifié" n'a de sens qu'une fois le constat finalisé : tant
+  // qu'il est en brouillon, son contenu peut encore changer (même garde-fou
+  // que pour la quittance, délivrée uniquement sur facture PAID).
+  if (inspection.status !== "COMPLETED") {
+    throw new ApiError(400, "L'export n'est disponible qu'une fois l'état des lieux finalisé");
+  }
+
+  const [agency] = inspection.property?.managerId
+    ? await db.select().from(agencySettings).where(eq(agencySettings.userId, inspection.property.managerId))
+    : [];
+
+  const html = generateInspectionHtml({
+    reference: `EDL-${inspection.type}-${inspection.id.slice(-6).toUpperCase()}`,
+    type: inspection.type as "ENTRY" | "EXIT",
+    inspectionDate: inspection.inspectionDate,
+    agencyName: agency?.agencyName || "Agence Immobilière",
+    property: { title: inspection.property?.title || "", address: inspection.property?.address || "" },
+    tenant: { fullName: `${inspection.tenant?.firstName || ""} ${inspection.tenant?.lastName || ""}`.trim() },
+    rooms: inspection.rooms,
+    meters: inspection.meters,
+    keys: inspection.keys,
+    generalComments: inspection.generalComments,
+    managerSignatureUrl: inspection.managerSignatureUrl,
+    signedByManagerAt: inspection.signedByManagerAt,
+    tenantSignatureUrl: inspection.tenantSignatureUrl,
+    signedByTenantAt: inspection.signedByTenantAt,
+  });
+
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(html);
 });
 
 /**

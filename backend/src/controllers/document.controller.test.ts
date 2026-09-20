@@ -5,6 +5,7 @@ import {
   authHeader,
   createAdmin,
   createContract,
+  createInspection,
   createInvoice,
   createManager,
   createProperty,
@@ -276,6 +277,71 @@ describe("GET /api/documents/lease-scan/:contractId", () => {
     const res = await request(app)
       .get(`/api/documents/lease-scan/${contract.id}`)
       .set(authHeader(tokenFor(admin)));
+
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /api/documents/inspection/:inspectionId", () => {
+  it("refuse tant que l'état des lieux n'est pas finalisé", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const inspection = await createInspection(contract, manager.id);
+
+    const res = await request(app)
+      .get(`/api/documents/inspection/${inspection.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(400);
+  });
+
+  it("renvoie le rapport HTML pour le gestionnaire propriétaire, une fois finalisé", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const inspection = await createInspection(contract, manager.id, {
+      status: "COMPLETED",
+      roomsData: JSON.stringify([{ name: "Séjour", condition: "BON", notes: "RAS" }]),
+    });
+
+    const res = await request(app)
+      .get(`/api/documents/inspection/${inspection.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/html");
+    expect(res.text).toContain("ÉTAT DES LIEUX");
+    expect(res.text).toContain("Séjour");
+  });
+
+  it("renvoie le rapport HTML pour le locataire concerné", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const inspection = await createInspection(contract, manager.id, { status: "COMPLETED" });
+
+    const res = await request(app)
+      .get(`/api/documents/inspection/${inspection.id}`)
+      .set(authHeader(tokenFor({ id: "tenant-user", role: "TENANT" }, tenant.id)));
+
+    expect(res.status).toBe(200);
+  });
+
+  it("refuse l'accès à un gestionnaire tiers", async () => {
+    const managerA = await createManager();
+    const managerB = await createManager();
+    const property = await createProperty(managerA.id);
+    const tenant = await createTenant(managerA.id);
+    const contract = await createContract(property.id, tenant.id);
+    const inspection = await createInspection(contract, managerA.id, { status: "COMPLETED" });
+
+    const res = await request(app)
+      .get(`/api/documents/inspection/${inspection.id}`)
+      .set(authHeader(tokenFor(managerB)));
 
     expect(res.status).toBe(403);
   });

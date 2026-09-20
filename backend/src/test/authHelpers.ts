@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
-import { contracts, invoices, owners, platformSubscriptions, properties, tenants, users } from "../db/schema";
+import { contracts, inspections, invoices, owners, platformSubscriptions, properties, tenants, users } from "../db/schema";
 
 /**
  * Construit un buffer commençant par la vraie signature magique JPEG
@@ -141,6 +141,25 @@ export async function createContract(
     })
     .returning();
   return contract;
+}
+
+/** Crée directement un état des lieux (sans passer par createInspection du contrôleur). */
+export async function createInspection(
+  contract: { id: string; propertyId: string; tenantId: string },
+  managerId: string,
+  overrides: Partial<typeof inspections.$inferInsert> = {}
+) {
+  const [inspection] = await testDb
+    .insert(inspections)
+    .values({
+      contractId: contract.id,
+      propertyId: contract.propertyId,
+      managerId,
+      tenantId: contract.tenantId,
+      ...overrides,
+    })
+    .returning();
+  return inspection;
 }
 
 /** Crée directement une facture pour un contrat donné (sans passer par generateInvoicesForContract). */

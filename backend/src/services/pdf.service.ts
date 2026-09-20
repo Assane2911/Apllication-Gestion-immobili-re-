@@ -581,3 +581,154 @@ export function generateLeaseHtml(contract: any, agency: any): string {
 </html>
   `.trim();
 }
+
+export interface InspectionExportData {
+  reference: string;
+  type: "ENTRY" | "EXIT";
+  inspectionDate: Date | string;
+  agencyName: string;
+  property: { title: string; address: string };
+  tenant: { fullName: string };
+  rooms: Array<{ name: string; condition: "BON" | "MOYEN" | "MAUVAIS"; notes: string }>;
+  meters: { electricity: string; water: string; gas: string };
+  keys: Array<{ label: string; quantity: number }>;
+  generalComments: string | null;
+  managerSignatureUrl: string | null;
+  signedByManagerAt: Date | string | null;
+  tenantSignatureUrl: string | null;
+  signedByTenantAt: Date | string | null;
+}
+
+const conditionLabel: Record<string, string> = { BON: "Bon état", MOYEN: "État moyen", MAUVAIS: "Mauvais état" };
+const conditionColor: Record<string, string> = { BON: "#059669", MOYEN: "#d97706", MAUVAIS: "#dc2626" };
+
+/**
+ * Export HTML "certifié" de l'état des lieux (contradictoire, une fois
+ * finalisé) — même principe que generateLeaseHtml : un document HTML
+ * autonome, servi tel quel par document.controller.ts, imprimable/exportable
+ * en PDF depuis le navigateur (voir DocumentModal.tsx côté frontend).
+ */
+export function generateInspectionHtml(data: InspectionExportData): string {
+  const dateFormatted = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date(data.inspectionDate));
+  const typeLabel = data.type === "ENTRY" ? "ENTRÉE" : "SORTIE";
+
+  const roomsRows = data.rooms.length
+    ? data.rooms
+        .map(
+          (room) => `
+      <tr>
+        <td>${escapeHtml(room.name)}</td>
+        <td><span style="color:${conditionColor[room.condition] || "#475569"}; font-weight:600;">${escapeHtml(conditionLabel[room.condition] || room.condition)}</span></td>
+        <td>${escapeHtml(room.notes) || "—"}</td>
+      </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Aucune pièce renseignée</td></tr>`;
+
+  const keysRows = data.keys.length
+    ? data.keys.map((k) => `<li>${escapeHtml(k.label)} — <strong>${k.quantity}</strong></li>`).join("")
+    : `<li style="color:#94a3b8;">Aucune clé renseignée</li>`;
+
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>État des Lieux ${escapeHtml(typeLabel)} - ${escapeHtml(data.property.title)}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; line-height: 1.6; padding: 24px; }
+    h1 { color: #0f172a; font-size: 20px; text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; }
+    .subtitle { text-align:center; font-size:12px; color:#64748b; margin-top: 4px; }
+    .badge { display:inline-block; background:#2563eb; color:#fff; font-weight:700; font-size:11px; letter-spacing:0.05em; padding: 3px 10px; border-radius: 999px; margin-top: 8px; }
+    .section { margin-top: 20px; }
+    .section-title { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #2563eb; margin-bottom: 6px; }
+    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    th { background: #0f172a; color: #fff; text-align: left; padding: 8px 10px; }
+    td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    ul { margin: 4px 0; padding-left: 18px; font-size: 13px; }
+    .meters-grid { display: flex; gap: 16px; }
+    .meter-box { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; text-align: center; }
+    .meter-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; }
+    .meter-value { font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 2px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 32px; }
+    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; }
+    .sig-img { max-height: 60px; margin-top: 8px; }
+    .stamp-certified { display:inline-block; margin-top: 16px; color: #059669; font-weight: 700; border: 1px dashed #059669; background: #ecfdf5; border-radius: 8px; padding: 8px 16px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>ÉTAT DES LIEUX</h1>
+  <p class="subtitle">Constat contradictoire établi entre le bailleur (ou son mandataire) et le locataire</p>
+  <p style="text-align:center;"><span class="badge">${escapeHtml(typeLabel)}</span></p>
+
+  <div class="section">
+    <div class="section-title">1. Les Parties & le Bien</div>
+    <div class="box">
+      <strong>Agence / Mandataire :</strong> ${escapeHtml(data.agencyName)}<br>
+      <strong>Locataire :</strong> ${escapeHtml(data.tenant.fullName)}<br>
+      <strong>Bien :</strong> ${escapeHtml(data.property.title)} — ${escapeHtml(data.property.address)}<br>
+      <strong>Date du constat :</strong> ${dateFormatted}<br>
+      <strong>Référence :</strong> ${escapeHtml(data.reference)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">2. Relevé des Compteurs</div>
+    <div class="meters-grid">
+      <div class="meter-box"><div class="meter-label">Électricité</div><div class="meter-value">${escapeHtml(data.meters.electricity) || "—"}</div></div>
+      <div class="meter-box"><div class="meter-label">Eau</div><div class="meter-value">${escapeHtml(data.meters.water) || "—"}</div></div>
+      <div class="meter-box"><div class="meter-label">Gaz</div><div class="meter-value">${escapeHtml(data.meters.gas) || "—"}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3. Constat Pièce par Pièce</div>
+    <table>
+      <thead><tr><th>Pièce</th><th>État</th><th>Observations</th></tr></thead>
+      <tbody>${roomsRows}</tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">4. Clés & Accès Remis</div>
+    <ul>${keysRows}</ul>
+  </div>
+
+  ${
+    data.generalComments
+      ? `<div class="section">
+    <div class="section-title">5. Observations Générales</div>
+    <div class="box">${escapeHtml(data.generalComments)}</div>
+  </div>`
+      : ""
+  }
+
+  <div class="signatures">
+    <div class="sig-block">
+      <strong>Pour le Bailleur / Gestionnaire :</strong>
+      ${data.signedByManagerAt ? `
+        <div style="color:#059669; font-size:11px; margin-top:4px;">Signé électroniquement le ${new Date(data.signedByManagerAt).toLocaleDateString("fr-FR")}</div>
+        ${data.managerSignatureUrl ? `<img src="${escapeHtml(data.managerSignatureUrl)}" class="sig-img" alt="Signature Gestionnaire" />` : ""}
+      ` : `<div style="color:#94a3b8; margin-top:20px;">En attente de signature</div>`}
+    </div>
+
+    <div class="sig-block">
+      <strong>Le Locataire :</strong>
+      ${data.signedByTenantAt ? `
+        <div style="color:#059669; font-size:11px; margin-top:4px;">Signé électroniquement le ${new Date(data.signedByTenantAt).toLocaleDateString("fr-FR")}</div>
+        ${data.tenantSignatureUrl ? `<img src="${escapeHtml(data.tenantSignatureUrl)}" class="sig-img" alt="Signature Locataire" />` : ""}
+      ` : `<div style="color:#94a3b8; margin-top:20px;">En attente de signature</div>`}
+    </div>
+  </div>
+
+  ${
+    data.signedByManagerAt && data.signedByTenantAt
+      ? `<p style="text-align:center;"><span class="stamp-certified">✅ ÉTAT DES LIEUX SIGNÉ CONTRADICTOIREMENT</span></p>`
+      : ""
+  }
+</body>
+</html>
+  `.trim();
+}
