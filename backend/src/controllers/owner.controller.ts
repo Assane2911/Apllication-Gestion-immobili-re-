@@ -31,14 +31,31 @@ const ownerSchema = z.object({
   notes: z.string().optional(),
 });
 
+/**
+ * Statut de l'accès au portail propriétaire, dérivé de owners.userId et de
+ * users.resetPasswordTokenHash (jamais exposé tel quel au frontend) :
+ *  - NONE : aucun compte "portail" créé (owner.userId est null)
+ *  - PENDING : compte créé par inviteOwnerPortalAccount, en attente que le
+ *    propriétaire pose son mot de passe via le lien de réinitialisation
+ *  - ACTIVE : mot de passe déjà posé (resetPasswordTokenHash retombé à null,
+ *    voir resetPassword dans auth.controller.ts)
+ */
+type PortalStatus = "NONE" | "PENDING" | "ACTIVE";
+
+function computePortalStatus(ownerUserId: string | null, resetPasswordTokenHash: string | null | undefined): PortalStatus {
+  if (!ownerUserId) return "NONE";
+  return resetPasswordTokenHash ? "PENDING" : "ACTIVE";
+}
+
 export const listOwners = asyncHandler(async (req: Request, res: Response) => {
   const pagination = parsePagination(req);
   const whereClause = eq(owners.managerId, req.user!.userId);
 
   const [rows, [{ count }]] = await Promise.all([
     db
-      .select()
+      .select({ owner: owners, resetPasswordTokenHash: users.resetPasswordTokenHash })
       .from(owners)
+      .leftJoin(users, eq(users.id, owners.userId))
       .where(whereClause)
       .orderBy(desc(owners.createdAt))
       .limit(pagination.pageSize)
@@ -46,16 +63,29 @@ export const listOwners = asyncHandler(async (req: Request, res: Response) => {
     db.select({ count: sql<number>`count(*)::int` }).from(owners).where(whereClause),
   ]);
 
-  res.json(buildPaginatedResult(rows, count, pagination));
+  const items = rows.map(({ owner, resetPasswordTokenHash }) => ({
+    ...owner,
+    portalStatus: computePortalStatus(owner.userId, resetPasswordTokenHash),
+  }));
+
+  res.json(buildPaginatedResult(items, count, pagination));
 });
 
 export const getOwner = asyncHandler(async (req: Request, res: Response) => {
-  const [owner] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  if (!owner || owner.managerId !== req.user!.userId) throw new ApiError(404, "Propriétaire introuvable");
+  const [row] = await db
+    .select({ owner: owners, resetPasswordTokenHash: users.resetPasswordTokenHash })
+    .from(owners)
+    .leftJoin(users, eq(users.id, owners.userId))
+    .where(eq(owners.id, req.params.id));
+  if (!row || row.owner.managerId !== req.user!.userId) throw new ApiError(404, "Propriétaire introuvable");
 
-  const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, owner.id));
+  const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, row.owner.id));
 
-  res.json({ ...owner, properties: ownerProperties });
+  res.json({
+    ...row.owner,
+    portalStatus: computePortalStatus(row.owner.userId, row.resetPasswordTokenHash),
+    properties: ownerProperties,
+  });
 });
 
 export const createOwner = asyncHandler(async (req: Request, res: Response) => {

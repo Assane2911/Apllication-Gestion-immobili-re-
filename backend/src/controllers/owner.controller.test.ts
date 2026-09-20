@@ -9,6 +9,7 @@ import {
   createInvoice,
   createManager,
   createOwner,
+  createOwnerPortalUser,
   createProperty,
   createTenant,
   tokenFor,
@@ -100,6 +101,53 @@ describe("GET /api/owners/:id", () => {
     expect(res.status).toBe(200);
     expect(res.body.properties).toHaveLength(1);
     expect(res.body.properties[0].title).toBe("Villa Almadies");
+  });
+});
+
+describe("GET /api/owners & GET /api/owners/:id — portalStatus dérivé", () => {
+  it("renvoie portalStatus=NONE tant qu'aucun accès portail n'a été créé", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id);
+
+    const list = await request(app).get("/api/owners").set(authHeader(tokenFor(manager)));
+    const detail = await request(app).get(`/api/owners/${owner.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(list.body.items[0].portalStatus).toBe("NONE");
+    expect(detail.body.portalStatus).toBe("NONE");
+  });
+
+  it("renvoie portalStatus=PENDING juste après l'invitation, avant que le propriétaire ne pose son mot de passe", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id);
+
+    await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
+    const list = await request(app).get("/api/owners").set(authHeader(tokenFor(manager)));
+    const detail = await request(app).get(`/api/owners/${owner.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(list.body.items[0].portalStatus).toBe("PENDING");
+    expect(detail.body.portalStatus).toBe("PENDING");
+  });
+
+  it("renvoie portalStatus=ACTIVE une fois le mot de passe posé (resetPasswordTokenHash retombé à null)", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id);
+    await createOwnerPortalUser(owner);
+
+    const list = await request(app).get("/api/owners").set(authHeader(tokenFor(manager)));
+    const detail = await request(app).get(`/api/owners/${owner.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(list.body.items[0].portalStatus).toBe("ACTIVE");
+    expect(detail.body.portalStatus).toBe("ACTIVE");
+  });
+
+  it("ne renvoie jamais le hash de token brut au frontend", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id);
+    await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
+
+    const detail = await request(app).get(`/api/owners/${owner.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(detail.body.resetPasswordTokenHash).toBeUndefined();
   });
 });
 
