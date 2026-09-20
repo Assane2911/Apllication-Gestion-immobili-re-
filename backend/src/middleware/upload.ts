@@ -31,6 +31,7 @@ export const uploadPropertyImage = multer({ storage, fileFilter, limits });
 export const uploadTenantDocument = multer({ storage, fileFilter, limits });
 export const uploadIssuePhoto = multer({ storage, fileFilter, limits });
 export const uploadContractScan = multer({ storage, fileFilter, limits });
+export const uploadListingImage = multer({ storage, fileFilter, limits });
 
 /**
  * `fileFilter` ci-dessus ne contrôle que le champ `Content-Type` envoyé par

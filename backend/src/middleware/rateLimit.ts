@@ -72,3 +72,22 @@ export const cronLimiter = rateLimit({
   store: cronLimiterStore,
   message: { error: "Trop de tentatives. Réessayez plus tard." },
 });
+
+/**
+ * Limite par adresse IP sur la soumission d'une demande de contact/visite
+ * depuis la vitrine publique (POST /api/listings/public/:id/leads) : c'est la
+ * seule route de tout le backend qui accepte une ÉCRITURE en base sans
+ * authentification. Sans cette limite, un tiers pouvait générer un nombre
+ * illimité de faux leads (spam, saturation du CRM d'un gestionnaire, ou abus
+ * de la plateforme comme relais d'envoi de texte arbitraire via les champs
+ * libres). Fenêtre plus généreuse que les limites d'authentification : un
+ * même visiteur légitime peut vouloir demander une info puis une visite sur
+ * plusieurs annonces différentes en peu de temps.
+ */
+export const listingLeadLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de demandes envoyées depuis cette adresse. Réessayez dans quelques minutes." },
+});

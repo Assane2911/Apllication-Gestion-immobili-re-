@@ -9,14 +9,16 @@ function uniqueObjectPath(folder: string, originalName: string) {
 }
 
 /**
- * Upload un fichier vers le bucket PUBLIC de Supabase Storage (uniquement les
- * images de biens, peu sensibles) et retourne son URL publique, directement
- * utilisable côté frontend. Les photos d'incidents, elles, passent par
- * `uploadPrivateFile` ci-dessous : elles peuvent montrer l'intérieur du
- * logement d'un locataire et ne doivent pas être devinables/accessibles sans
- * autorisation (voir issue.controller.ts).
+ * Upload un fichier vers le bucket PUBLIC de Supabase Storage (images de
+ * biens, peu sensibles, et photos d'annonces de la vitrine publique —
+ * "listings", puisqu'une annonce est par nature destinée à être vue par
+ * n'importe quel visiteur non authentifié) et retourne son URL publique,
+ * directement utilisable côté frontend. Les photos d'incidents, elles,
+ * passent par `uploadPrivateFile` ci-dessous : elles peuvent montrer
+ * l'intérieur du logement d'un locataire et ne doivent pas être
+ * devinables/accessibles sans autorisation (voir issue.controller.ts).
  */
-export async function uploadPublicFile(file: Express.Multer.File, folder: "properties") {
+export async function uploadPublicFile(file: Express.Multer.File, folder: "properties" | "listings") {
   const objectPath = uniqueObjectPath(folder, file.originalname);
 
   const { error } = await supabaseAdmin.storage
