@@ -732,3 +732,153 @@ export function generateInspectionHtml(data: InspectionExportData): string {
 </html>
   `.trim();
 }
+
+export interface CrgPropertyLine {
+  propertyId: string;
+  propertyTitle: string;
+  currency: string;
+  loyersEncaisses: number;
+  chargesDeduites: number;
+  commission: number;
+  netAReverser: number;
+}
+
+export interface CrgExportData {
+  agencyName: string;
+  ownerName: string;
+  ownerCompanyName?: string | null;
+  iban?: string | null;
+  bic?: string | null;
+  managementFeeRate: number;
+  month: number;
+  year: number;
+  properties: CrgPropertyLine[];
+  totalLoyersByCurrency: Record<string, number>;
+  totalChargesByCurrency: Record<string, number>;
+  totalCommissionByCurrency: Record<string, number>;
+  totalNetByCurrency: Record<string, number>;
+}
+
+/**
+ * Export HTML du Compte-Rendu de Gestion (CRG) mensuel d'un propriétaire —
+ * même principe que generateInspectionHtml/generateReceiptHtml : un document
+ * HTML autonome, servi tel quel par crg.controller.ts, imprimable/exportable
+ * en PDF depuis le navigateur. Contrairement au Bilan Fiscal (point de vue du
+ * gestionnaire, revenus moins charges), le CRG ajoute la commission d'agence
+ * et le net à reverser au propriétaire, et ne couvre qu'un seul propriétaire
+ * à la fois (pas toute l'agence).
+ *
+ * Une ligne par bien du propriétaire est toujours affichée, y compris un bien
+ * sans aucune activité ce mois-ci (loyers/charges à 0) — le propriétaire doit
+ * pouvoir constater l'absence d'encaissement, pas seulement l'ignorer.
+ */
+export function generateCrgHtml(data: CrgExportData): string {
+  const periodLabel = `${monthNames[data.month - 1]} ${data.year}`;
+  const generatedDate = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date());
+
+  const propertyRows = data.properties.length
+    ? data.properties
+        .map(
+          (p) => `
+      <tr>
+        <td>${escapeHtml(p.propertyTitle)}</td>
+        <td style="text-align:right;">${p.loyersEncaisses} ${escapeHtml(p.currency)}</td>
+        <td style="text-align:right;">${p.chargesDeduites} ${escapeHtml(p.currency)}</td>
+        <td style="text-align:right;">${p.commission} ${escapeHtml(p.currency)}</td>
+        <td style="text-align:right; font-weight:700;">${p.netAReverser} ${escapeHtml(p.currency)}</td>
+      </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Aucun bien rattaché à ce propriétaire</td></tr>`;
+
+  const currencies = Array.from(
+    new Set([
+      ...Object.keys(data.totalLoyersByCurrency),
+      ...Object.keys(data.totalChargesByCurrency),
+      ...Object.keys(data.totalCommissionByCurrency),
+      ...Object.keys(data.totalNetByCurrency),
+    ])
+  ).sort();
+
+  const totalRows = currencies.length
+    ? currencies
+        .map(
+          (currency) => `
+      <tr class="total-row">
+        <td>Total ${escapeHtml(currency)}</td>
+        <td style="text-align:right;">${data.totalLoyersByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
+        <td style="text-align:right;">${data.totalChargesByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
+        <td style="text-align:right;">${data.totalCommissionByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
+        <td style="text-align:right;">${data.totalNetByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
+      </tr>`
+        )
+        .join("")
+    : "";
+
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Compte-Rendu de Gestion - ${escapeHtml(periodLabel)} - ${escapeHtml(data.ownerName)}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; line-height: 1.6; padding: 24px; }
+    h1 { color: #0f172a; font-size: 20px; text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; }
+    .subtitle { text-align:center; font-size:12px; color:#64748b; margin-top: 4px; }
+    .section { margin-top: 20px; }
+    .section-title { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #2563eb; margin-bottom: 6px; }
+    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    th { background: #0f172a; color: #fff; text-align: left; padding: 8px 10px; }
+    th.num, td.num { text-align: right; }
+    td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .total-row td { font-weight: 700; background: #f1f5f9; border-top: 2px solid #0f172a; }
+    .footer-legal { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>COMPTE-RENDU DE GESTION</h1>
+  <p class="subtitle">Période : ${escapeHtml(periodLabel)}</p>
+
+  <div class="section">
+    <div class="section-title">Propriétaire</div>
+    <div class="box">
+      <strong>Agence / Mandataire :</strong> ${escapeHtml(data.agencyName)}<br>
+      <strong>Propriétaire :</strong> ${escapeHtml(data.ownerName)}${data.ownerCompanyName ? ` (${escapeHtml(data.ownerCompanyName)})` : ""}<br>
+      <strong>Taux de commission :</strong> ${data.managementFeeRate}%
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Détail par bien</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Bien</th>
+          <th class="num">Loyers encaissés</th>
+          <th class="num">Charges déduites</th>
+          <th class="num">Commission</th>
+          <th class="num">Net à reverser</th>
+        </tr>
+      </thead>
+      <tbody>${propertyRows}${totalRows}</tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Coordonnées bancaires du propriétaire</div>
+    <div class="box">
+      ${
+        data.iban
+          ? `<strong>IBAN :</strong> ${escapeHtml(data.iban)}<br>${data.bic ? `<strong>BIC :</strong> ${escapeHtml(data.bic)}` : ""}`
+          : `<span style="color:#94a3b8;">Aucune coordonnée bancaire renseignée pour ce propriétaire.</span>`
+      }
+    </div>
+  </div>
+
+  <div class="footer-legal">Document généré le ${escapeHtml(generatedDate)} — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire.</div>
+</body>
+</html>
+  `.trim();
+}
