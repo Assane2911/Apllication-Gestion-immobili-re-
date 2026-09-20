@@ -6,6 +6,7 @@ export interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
   register: (email: string, password: string) => Promise<{ pendingVerification: boolean }>;
+  loginWithGoogle: (credential: string) => Promise<AuthUser>;
   verifyEmail: (token: string) => Promise<AuthUser>;
   logout: () => void;
   refreshUser: () => Promise<AuthUser | null>;

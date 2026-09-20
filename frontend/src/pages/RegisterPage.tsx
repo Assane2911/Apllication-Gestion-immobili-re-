@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api/client";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import { useAuth } from "../context/auth";
+import { isGoogleSignInEnabled } from "../utils/googleAuth";
+import { homePathForRole } from "../utils/roleHome";
 
 function MailIcon() {
   return (
@@ -50,8 +53,9 @@ function CheckIcon() {
 }
 
 export default function RegisterPage() {
-  const { t } = useTranslation();
-  const { register } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { register, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,6 +64,8 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const highlights = t("auth.register.panel.highlights", { returnObjects: true }) as string[];
 
@@ -84,6 +90,20 @@ export default function RegisterPage() {
       setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogleCredential(credential: string) {
+    setError(null);
+    setGoogleError(null);
+    setGoogleLoading(true);
+    try {
+      const user = await loginWithGoogle(credential);
+      navigate(homePathForRole(user.role));
+    } catch (err) {
+      setGoogleError(apiErrorMessage(err));
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -238,13 +258,36 @@ export default function RegisterPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                   className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
                 >
                   {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                   {loading ? t("auth.register.submitting") : t("auth.register.submit")}
                 </button>
               </form>
+
+              {isGoogleSignInEnabled() && (
+                <div className="mt-5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-slate-800" />
+                    <span className="text-[11px] uppercase tracking-wide text-slate-600">{t("auth.google.orDivider")}</span>
+                    <div className="h-px flex-1 bg-slate-800" />
+                  </div>
+                  <div className="mt-4">
+                    <GoogleSignInButton
+                      onCredential={handleGoogleCredential}
+                      onError={() => setGoogleError(t("auth.google.error"))}
+                      locale={i18n.language}
+                    />
+                  </div>
+                  {googleLoading && <p className="mt-3 text-center text-xs text-slate-500">{t("auth.register.submitting")}</p>}
+                  {googleError && (
+                    <p className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                      {googleError}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <p className="mt-5 text-[11px] text-slate-500 text-center leading-relaxed">
                 {t("auth.register.legalPrefix")}{" "}

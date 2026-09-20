@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
 import LoginPage from "./LoginPage";
@@ -10,6 +10,29 @@ vi.mock("../api/client", async () => {
   const actual = await vi.importActual<typeof import("../api/client")>("../api/client");
   return { ...actual, api: { get: vi.fn(), post: vi.fn() } };
 });
+
+// GoogleSignInButton a ses propres tests (chargement du script Google
+// Identity Services, callback...) — ici on ne teste que le câblage de
+// LoginPage autour de lui : un double minimal suffit, piloté par deux
+// boutons qui déclenchent onCredential / onError sur simple clic.
+vi.mock("../components/GoogleSignInButton", () => ({
+  default: ({
+    onCredential,
+    onError,
+  }: {
+    onCredential: (credential: string) => void;
+    onError?: () => void;
+  }) => (
+    <div>
+      <button type="button" onClick={() => onCredential("fake-google-credential")}>
+        Simuler connexion Google
+      </button>
+      <button type="button" onClick={() => onError?.()}>
+        Simuler échec script Google
+      </button>
+    </div>
+  ),
+}));
 
 const mockedApi = vi.mocked(api, { deep: true });
 
@@ -112,5 +135,67 @@ describe("LoginPage", () => {
       expect(mockedApi.post).toHaveBeenCalledWith("/auth/resend-verification", { email: "pas-encore-verifie@test.local" })
     );
     expect(await screen.findByText(/Email renvoyé/)).toBeInTheDocument();
+  });
+
+  it("ne montre pas le bouton Google si VITE_GOOGLE_CLIENT_ID n'est pas configuré", () => {
+    renderPage();
+    expect(screen.queryByRole("button", { name: "Simuler connexion Google" })).not.toBeInTheDocument();
+  });
+});
+
+describe("LoginPage — connexion avec Google (VITE_GOOGLE_CLIENT_ID configuré)", () => {
+  beforeEach(() => {
+    mockedApi.post.mockReset();
+    vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "test-client-id.apps.googleusercontent.com");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("affiche le bouton Google", () => {
+    renderPage();
+    expect(screen.getByRole("button", { name: "Simuler connexion Google" })).toBeInTheDocument();
+  });
+
+  it("connecte le gestionnaire via Google et redirige vers son tableau de bord", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({
+      data: {
+        token: "tok_google_1",
+        user: { id: "mgr-google-1", email: "gestionnaire@test.local", role: "MANAGER" },
+      },
+    });
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Simuler connexion Google" }));
+
+    await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
+    expect(mockedApi.post).toHaveBeenCalledWith("/auth/google", { credential: "fake-google-credential" });
+    expect(localStorage.getItem("token")).toBe("tok_google_1");
+  });
+
+  it("affiche l'erreur du serveur si la connexion Google est refusée (ex: compte non gestionnaire)", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockRejectedValueOnce({
+      response: {
+        data: { error: "La connexion avec Google est réservée aux comptes gestionnaire", code: "GOOGLE_LOGIN_WRONG_ROLE" },
+      },
+      isAxiosError: true,
+    });
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Simuler connexion Google" }));
+
+    expect(await screen.findByText("La connexion avec Google est réservée aux comptes gestionnaire")).toBeInTheDocument();
+  });
+
+  it("affiche un message d'erreur si le script Google échoue à charger", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Simuler échec script Google" }));
+
+    expect(await screen.findByText("La connexion avec Google a échoué. Réessaie.")).toBeInTheDocument();
   });
 });

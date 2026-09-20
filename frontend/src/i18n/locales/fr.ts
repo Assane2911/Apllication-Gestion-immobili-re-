@@ -201,6 +201,11 @@ const fr = {
       missingToken: "Ce lien de confirmation est incomplet ou invalide.",
       backToLogin: "Retour à la connexion",
     },
+    google: {
+      orDivider: "ou",
+      error: "La connexion avec Google a échoué. Réessaie.",
+      wrongRole: "La connexion avec Google est réservée aux comptes gestionnaire.",
+    },
   },
 
   landing: {

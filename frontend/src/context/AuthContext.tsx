@@ -51,6 +51,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  /**
+   * Connexion / inscription automatique via Google (gestionnaires
+   * uniquement) — `credential` est le jeton d'identité renvoyé par Google
+   * Identity Services (voir GoogleSignInButton.tsx), vérifié côté serveur
+   * dans loginWithGoogle (auth.controller.ts). Contrairement à register(),
+   * la réponse contient directement un token exploitable : Google a déjà
+   * vérifié l'adresse, il n'y a pas d'étape de confirmation par email.
+   */
+  async function loginWithGoogle(credential: string) {
+    setLoading(true);
+    try {
+      const { data } = await api.post("/auth/google", { credential });
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(data.user);
+      return data.user as AuthUser;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function register(email: string, password: string) {
     setLoading(true);
     try {
@@ -84,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, verifyEmail, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, verifyEmail, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

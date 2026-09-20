@@ -203,6 +203,11 @@ const pt: TranslationSchema = {
       missingToken: "Este link de confirmação está incompleto ou inválido.",
       backToLogin: "Voltar à conexão",
     },
+    google: {
+      orDivider: "ou",
+      error: "A conexão com o Google falhou. Tenta novamente.",
+      wrongRole: "A conexão com o Google é reservada às contas de gestor.",
+    },
   },
 
   landing: {

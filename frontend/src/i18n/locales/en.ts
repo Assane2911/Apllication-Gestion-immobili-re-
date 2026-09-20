@@ -203,6 +203,11 @@ const en: TranslationSchema = {
       missingToken: "This confirmation link is incomplete or invalid.",
       backToLogin: "Back to login",
     },
+    google: {
+      orDivider: "or",
+      error: "Google sign-in failed. Please try again.",
+      wrongRole: "Google sign-in is reserved for manager accounts.",
+    },
   },
 
   landing: {

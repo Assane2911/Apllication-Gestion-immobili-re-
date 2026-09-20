@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { api, apiErrorCode, apiErrorMessage } from "../api/client";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import { useAuth } from "../context/auth";
 import { homePathForRole } from "../utils/roleHome";
+import { isGoogleSignInEnabled } from "../utils/googleAuth";
 
 function MailIcon() {
   return (
@@ -51,14 +53,15 @@ function CheckIcon() {
 }
 
 export default function LoginPage() {
-  const { t } = useTranslation();
-  const { login } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<"form" | null>(null);
+  const [loading, setLoading] = useState<"form" | "google" | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
@@ -96,6 +99,20 @@ export default function LoginPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     doLogin(email, password, "form");
+  }
+
+  async function handleGoogleCredential(credential: string) {
+    setError(null);
+    setGoogleError(null);
+    setLoading("google");
+    try {
+      const user = await loginWithGoogle(credential);
+      navigate(homePathForRole(user.role));
+    } catch (err) {
+      setGoogleError(apiErrorMessage(err));
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
@@ -239,6 +256,28 @@ export default function LoginPage() {
               {loading === "form" ? t("auth.login.submitting") : t("auth.login.submit")}
             </button>
           </form>
+
+          {isGoogleSignInEnabled() && (
+            <div className="mt-5">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-800" />
+                <span className="text-[11px] uppercase tracking-wide text-slate-600">{t("auth.google.orDivider")}</span>
+                <div className="h-px flex-1 bg-slate-800" />
+              </div>
+              <div className="mt-4">
+                <GoogleSignInButton
+                  onCredential={handleGoogleCredential}
+                  onError={() => setGoogleError(t("auth.google.error"))}
+                  locale={i18n.language}
+                />
+              </div>
+              {googleError && (
+                <p className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                  {googleError}
+                </p>
+              )}
+            </div>
+          )}
 
           <p className="mt-6 text-center text-xs text-slate-500">
             {t("auth.login.noAccountText")}{" "}
