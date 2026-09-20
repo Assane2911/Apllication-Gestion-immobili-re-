@@ -6,13 +6,17 @@ import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import LanguageSwitcher from "./LanguageSwitcher";
 
-const navItems = [{ to: "/proprietaire", key: "home", icon: "📊" }] as const;
+const navItems = [
+  { to: "/proprietaire", key: "home", icon: "📊" },
+  { to: "/proprietaire/crg", key: "crg", icon: "🧾" },
+] as const;
 
 /**
  * Coquille de l'Espace propriétaire — même structure que TenantLayout.tsx
- * (header sticky, sélecteurs langue/devise, thème, déconnexion), avec une
- * seule entrée de navigation : le périmètre validé avec l'utilisateur est un
- * résumé financier en lecture seule, pas un portail à onglets multiples.
+ * (header sticky, sélecteurs langue/devise, thème, déconnexion). Deux entrées
+ * de navigation : le résumé financier en lecture seule (périmètre initial),
+ * et le CRG mensuel (compte-rendu de gestion, ajouté ensuite) — toujours pas
+ * un portail à onglets multiples au sens large.
  */
 export default function OwnerLayout() {
   const { t } = useTranslation();

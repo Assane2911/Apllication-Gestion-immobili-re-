@@ -369,6 +369,40 @@ export interface AnnualFiscalSynthesis {
   bilanParBien: PropertyFiscalBalance[];
 }
 
+/** Une ligne bien du CRG (voir GET /api/crg/:ownerId ou /api/crg/mine). */
+export interface CrgPropertyLine {
+  propertyId: string;
+  propertyTitle: string;
+  currency: string;
+  loyersEncaisses: number;
+  chargesDeduites: number;
+  commission: number;
+  netAReverser: number;
+}
+
+/**
+ * Compte-Rendu de Gestion (CRG) mensuel d'un propriétaire (GET
+ * /api/crg/:ownerId?month=&year= côté gestionnaire, GET /api/crg/mine côté
+ * propriétaire). Contrairement au Bilan Fiscal (toute l'agence, annuel, point
+ * de vue du gestionnaire), le CRG couvre UN SEUL propriétaire, est mensuel,
+ * et ajoute la commission d'agence + le net à reverser.
+ */
+export interface CrgSynthesis {
+  ownerId: string;
+  ownerName: string;
+  ownerCompanyName?: string | null;
+  iban?: string | null;
+  bic?: string | null;
+  managementFeeRate: number;
+  month: number;
+  year: number;
+  properties: CrgPropertyLine[];
+  totalLoyersByCurrency: Record<string, number>;
+  totalChargesByCurrency: Record<string, number>;
+  totalCommissionByCurrency: Record<string, number>;
+  totalNetByCurrency: Record<string, number>;
+}
+
 export interface AdminDashboardStats {
   managers: {
     total: number;

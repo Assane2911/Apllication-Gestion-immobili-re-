@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { api, apiErrorMessage, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -277,6 +278,7 @@ export default function OwnersPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
+                  <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("manager.owners.viewCrg")}</Link>
                   <button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button>
                   <button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button>
                 </td>
@@ -326,6 +328,7 @@ export default function OwnersPage() {
                     )}
                   </div>
                   <div className="space-x-3">
+                    <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline">{t("manager.owners.viewCrg")}</Link>
                     <button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button>
                     <button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button>
                   </div>

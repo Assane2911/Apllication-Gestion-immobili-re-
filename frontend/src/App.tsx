@@ -24,6 +24,7 @@ const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 const ActivityLogPage = lazy(() => import("./pages/manager/ActivityLogPage"));
 const AgencySettingsPage = lazy(() => import("./pages/manager/AgencySettingsPage"));
 const ContractsPage = lazy(() => import("./pages/manager/ContractsPage"));
+const CrgPage = lazy(() => import("./pages/manager/CrgPage"));
 const DashboardPage = lazy(() => import("./pages/manager/DashboardPage"));
 const ExpensesPage = lazy(() => import("./pages/manager/ExpensesPage"));
 const FiscalPage = lazy(() => import("./pages/manager/FiscalPage"));
@@ -40,6 +41,7 @@ const TenantInvoicesPage = lazy(() => import("./pages/tenant/TenantInvoicesPage"
 const TenantIssuesPage = lazy(() => import("./pages/tenant/TenantIssuesPage"));
 const TenantMessagesPage = lazy(() => import("./pages/tenant/TenantMessagesPage"));
 const OwnerDashboardPage = lazy(() => import("./pages/owner/OwnerDashboardPage"));
+const OwnerCrgPage = lazy(() => import("./pages/owner/OwnerCrgPage"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminSubscriptionsPage = lazy(() => import("./pages/admin/AdminSubscriptionsPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
@@ -85,6 +87,7 @@ function AppRoutes() {
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/tenants" element={<TenantsPage />} />
           <Route path="/proprietaires" element={<OwnersPage />} />
+          <Route path="/proprietaires/:ownerId/crg" element={<CrgPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/etats-des-lieux" element={<InspectionsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
@@ -118,6 +121,7 @@ function AppRoutes() {
           }
         >
           <Route path="/proprietaire" element={<OwnerDashboardPage />} />
+          <Route path="/proprietaire/crg" element={<OwnerCrgPage />} />
         </Route>
 
         <Route
