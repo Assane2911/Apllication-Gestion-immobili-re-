@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { eq } from "drizzle-orm";
 import { Request } from "express";
 import { db } from "../db/client";
@@ -42,6 +43,14 @@ export async function logActivity(params: LogActivityParams) {
       details: params.details,
     });
   } catch (err) {
+    // Ne doit jamais faire échouer l'action métier (voir le commentaire de
+    // fonction), mais un simple console.error ne remonte à rien : Sentry
+    // n'instrumente que les erreurs qui traversent errorHandler (voir
+    // instrument.ts), pas un catch qui les avale ici. Sans capture explicite,
+    // une panne DB qui casse l'écriture du journal d'audit (traçabilité
+    // légale des actions gestionnaire/locataire) restait invisible en prod
+    // hors lecture manuelle des logs serveur (audit sept. 2026).
     console.error("[activity] Échec de l'enregistrement du journal d'activité:", err);
+    Sentry.captureException(err, { tags: { source: "activity.service.logActivity" } });
   }
 }

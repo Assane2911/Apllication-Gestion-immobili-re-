@@ -6,6 +6,13 @@ import { createManager, createTenantPortalUser, createTenant } from "../test/aut
 import { testDb } from "../test/setupTestDb";
 import { logActivity } from "./activity.service";
 
+// Sans ce mock, l'appel réel à Sentry.captureException est un no-op (aucun
+// SENTRY_DSN en test, voir instrument.ts) — on ne pourrait donc pas vérifier
+// qu'il a bien été appelé sans intercepter l'appel lui-même.
+vi.mock("@sentry/node", () => ({
+  captureException: vi.fn(),
+}));
+
 function fakeRequest(user: { userId: string; role: "MANAGER" | "TENANT" | "ADMIN"; tenantId?: string | null }) {
   return { user } as unknown as Request;
 }
@@ -86,5 +93,25 @@ describe("logActivity", () => {
     ).resolves.toBeUndefined();
 
     expect(console.error).toHaveBeenCalled();
+  });
+
+  // Regression (audit sept. 2026) : un échec d'écriture du journal d'audit
+  // n'était journalisé qu'en console, jamais remonté à Sentry — invisible en
+  // prod hors lecture manuelle des logs serveur.
+  it("remonte l'échec à Sentry, en plus du console.error", async () => {
+    const Sentry = await import("@sentry/node");
+
+    await logActivity({
+      managerId: "manager-inexistant",
+      action: "property.create",
+      entityType: "property",
+      entityLabel: "Studio Centre-ville",
+    });
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ tags: expect.objectContaining({ source: "activity.service.logActivity" }) })
+    );
   });
 });
