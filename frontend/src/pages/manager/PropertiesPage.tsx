@@ -1,7 +1,7 @@
 import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, fileUrl, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -95,9 +95,9 @@ export default function PropertiesPage() {
       if (image) data.append("image", image);
 
       if (editing) {
-        await api.put(`/properties/${editing.id}`, data);
+        await api.put(`/properties/${editing.id}`, data, { timeout: DELAI_UPLOAD_MS });
       } else {
-        await api.post("/properties", data);
+        await api.post("/properties", data, { timeout: DELAI_UPLOAD_MS });
       }
       setShowForm(false);
       load();

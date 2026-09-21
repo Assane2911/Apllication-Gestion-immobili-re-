@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
@@ -66,9 +66,9 @@ export default function TenantsPage() {
       if (idDocument) data.append("idDocument", idDocument);
 
       if (editing) {
-        await api.put(`/tenants/${editing.id}`, data);
+        await api.put(`/tenants/${editing.id}`, data, { timeout: DELAI_UPLOAD_MS });
       } else {
-        await api.post("/tenants", data);
+        await api.post("/tenants", data, { timeout: DELAI_UPLOAD_MS });
       }
       setShowForm(false);
       load();

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, FileCheck } from "lucide-react";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
@@ -142,6 +142,7 @@ export default function ContractsPage() {
     try {
       await api.post(`/contracts/${targetScanContract.id}/scan`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: DELAI_UPLOAD_MS,
       });
       load();
     } catch (err) {

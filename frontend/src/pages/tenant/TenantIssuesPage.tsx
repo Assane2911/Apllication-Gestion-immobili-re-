@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, fileUrl, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport } from "../../types";
@@ -72,7 +72,7 @@ export default function TenantIssuesPage() {
       data.append("title", title);
       data.append("description", description);
       data.append("photo", photo);
-      await api.post("/issues", data);
+      await api.post("/issues", data, { timeout: DELAI_UPLOAD_MS });
       setTitle("");
       setDescription("");
       handlePhoto(null);
@@ -91,7 +91,7 @@ export default function TenantIssuesPage() {
     try {
       const data = new FormData();
       data.append("photo", extraPhoto);
-      await api.post(`/issues/${issueId}/photo`, data);
+      await api.post(`/issues/${issueId}/photo`, data, { timeout: DELAI_UPLOAD_MS });
       setAddingPhotoToId(null);
       setExtraPhoto(null);
       setExtraPreview(null);

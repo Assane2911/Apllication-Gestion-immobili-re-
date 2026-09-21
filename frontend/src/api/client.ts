@@ -2,7 +2,21 @@ import axios from "axios";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
-export const api = axios.create({ baseURL: `${API_URL}/api` });
+// Sans timeout, une requête vers un backend injoignable restait en attente
+// indéfiniment (l'utilisateur ne voyait qu'un spinner figé, sans message,
+// parfois plusieurs minutes avant que le navigateur ne coupe lui-même la
+// connexion). 20s est largement suffisant pour un appel JSON classique ; les
+// envois de fichiers (voir DELAI_UPLOAD_MS plus bas) ont besoin de plus de
+// marge et le précisent explicitement à l'appel.
+export const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 20_000 });
+
+/**
+ * Timeout étendu pour les requêtes qui envoient un fichier (photo, pièce
+ * d'identité, contrat scanné) : le corps est plus volumineux (jusqu'à 8 Mo,
+ * voir MAX_UPLOAD_SIZE_MB côté backend) et peut prendre plus de temps sur une
+ * connexion mobile lente qu'un simple appel JSON.
+ */
+export const DELAI_UPLOAD_MS = 60_000;
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");

@@ -2,7 +2,7 @@ import { Megaphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, apiErrorMessage, fileUrl, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -122,9 +122,9 @@ export default function ListingsPage() {
       if (image) data.append("image", image);
 
       if (editing) {
-        await api.put(`/listings/${editing.id}`, data);
+        await api.put(`/listings/${editing.id}`, data, { timeout: DELAI_UPLOAD_MS });
       } else {
-        await api.post("/listings", data);
+        await api.post("/listings", data, { timeout: DELAI_UPLOAD_MS });
       }
       setShowForm(false);
       load();
