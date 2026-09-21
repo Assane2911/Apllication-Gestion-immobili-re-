@@ -10,27 +10,27 @@ import { runRentDueReminders, runUpcomingRentDueReminders, sendSingleInvoiceRemi
 describe("runRentDueReminders", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(2026, 7, 1)); // 1er août 2026
+    vi.setSystemTime(new Date(2026, 7, 1)); // 1er aoÃ»t 2026
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  // Régression du bug corrigé précédemment ("Corriger le doublon possible
-  // des avis d'échéance du 1er du mois") : sans le filtre
-  // isNull(invoices.reminderSentAt), un second déclenchement le même mois
+  // RÃ©gression du bug corrigÃ© prÃ©cÃ©demment ("Corriger le doublon possible
+  // des avis d'Ã©chÃ©ance du 1er du mois") : sans le filtre
+  // isNull(invoices.reminderSentAt), un second dÃ©clenchement le mÃªme mois
   // (cron + clic manuel du gestionnaire, ou double invocation du cron)
-  // renvoyait l'avis à tous les locataires impayés une deuxième fois.
-  it("envoie un avis d'échéance puis n'en renvoie aucun au second appel du même mois", async () => {
+  // renvoyait l'avis Ã  tous les locataires impayÃ©s une deuxiÃ¨me fois.
+  it("envoie un avis d'Ã©chÃ©ance puis n'en renvoie aucun au second appel du mÃªme mois", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
-    // Le contrat démarre CE mois-ci (août) : generateInvoicesForContract,
-    // appelé en interne par runRentDueReminders, ne crée alors qu'une seule
-    // facture (celle du mois courant) — un démarrage antérieur créerait
-    // aussi les factures des mois précédents, qui ne seraient jamais
-    // sélectionnées par le filtre periodMonth/periodYear du mois courant et
+    // Le contrat dÃ©marre CE mois-ci (aoÃ»t) : generateInvoicesForContract,
+    // appelÃ© en interne par runRentDueReminders, ne crÃ©e alors qu'une seule
+    // facture (celle du mois courant) â€” un dÃ©marrage antÃ©rieur crÃ©erait
+    // aussi les factures des mois prÃ©cÃ©dents, qui ne seraient jamais
+    // sÃ©lectionnÃ©es par le filtre periodMonth/periodYear du mois courant et
     // fausseraient la lecture ci-dessous (plusieurs lignes en base).
     await createContract(property.id, tenant.id, {
       startDate: new Date(2026, 7, 1),
@@ -47,10 +47,10 @@ describe("runRentDueReminders", () => {
     expect(secondRun.sent).toBe(0);
   });
 
-  // Le WhatsApp s'ajoute à l'email (voir whatsapp.service.ts) : ce test vérifie
-  // qu'il est bien invoqué avec le numéro et un message cohérents, et que son
-  // résultat (simulated) remonte dans `details` sous `whatsappSimulated`.
-  it("envoie aussi un message WhatsApp en complément de l'email et reporte son statut dans details", async () => {
+  // Le WhatsApp s'ajoute Ã  l'email (voir whatsapp.service.ts) : ce test vÃ©rifie
+  // qu'il est bien invoquÃ© avec le numÃ©ro et un message cohÃ©rents, et que son
+  // rÃ©sultat (simulated) remonte dans `details` sous `whatsappSimulated`.
+  it("envoie aussi un message WhatsApp en complÃ©ment de l'email et reporte son statut dans details", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -65,17 +65,21 @@ describe("runRentDueReminders", () => {
 
     expect(result.sent).toBe(1);
     expect(whatsappSpy).toHaveBeenCalledTimes(1);
-    expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, expect.stringContaining(tenant.firstName));
-    // Twilio non configuré dans l'environnement de test => simulation, comme sendEmail sans SMTP.
+    expect(whatsappSpy).toHaveBeenCalledWith(
+      tenant.phone,
+      expect.any(String),
+      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) })
+    );
+    // API Meta WhatsApp non configurÃ©e dans l'environnement de test => simulation, comme sendEmail sans SMTP.
     expect(result.details[0].whatsappSimulated).toBe(true);
 
     whatsappSpy.mockRestore();
   });
 
-  // Résilience : un échec du canal WhatsApp (numéro invalide, panne Twilio...)
-  // ne doit ni interrompre la boucle ni empêcher l'email — déjà envoyé
-  // séparément — d'être comptabilisé.
-  it("continue d'envoyer l'email et de compter le rappel même si l'envoi WhatsApp échoue", async () => {
+  // RÃ©silience : un Ã©chec du canal WhatsApp (numÃ©ro invalide, panne API Meta...)
+  // ne doit ni interrompre la boucle ni empÃªcher l'email â€” dÃ©jÃ  envoyÃ©
+  // sÃ©parÃ©ment â€” d'Ãªtre comptabilisÃ©.
+  it("continue d'envoyer l'email et de compter le rappel mÃªme si l'envoi WhatsApp Ã©choue", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -100,18 +104,18 @@ describe("runRentDueReminders", () => {
   });
 
   /**
-   * Régression : le SELECT initial chargeait toutes les factures sans
-   * rappel envoyé AVANT que la boucle n'écrive `reminderSentAt` sur
-   * chacune. Deux exécutions concurrentes (le cron du 1er du mois et un
-   * gestionnaire cliquant "Envoyer les avis" au même moment, ou une double
-   * invocation du cron) chargeaient donc le MÊME instantané et envoyaient
-   * chacune leur propre email pour la même facture — le locataire recevait
-   * l'avis en double. Le délai artificiel sur sendEmail laisse le temps à
-   * la seconde exécution d'atteindre sa propre tentative de réclamation
-   * avant que la première n'ait terminé — la fenêtre qui, avant ce
+   * RÃ©gression : le SELECT initial chargeait toutes les factures sans
+   * rappel envoyÃ© AVANT que la boucle n'Ã©crive `reminderSentAt` sur
+   * chacune. Deux exÃ©cutions concurrentes (le cron du 1er du mois et un
+   * gestionnaire cliquant "Envoyer les avis" au mÃªme moment, ou une double
+   * invocation du cron) chargeaient donc le MÃŠME instantanÃ© et envoyaient
+   * chacune leur propre email pour la mÃªme facture â€” le locataire recevait
+   * l'avis en double. Le dÃ©lai artificiel sur sendEmail laisse le temps Ã 
+   * la seconde exÃ©cution d'atteindre sa propre tentative de rÃ©clamation
+   * avant que la premiÃ¨re n'ait terminÃ© â€” la fenÃªtre qui, avant ce
    * correctif, laissait passer les deux envois.
    */
-  it("deux exécutions concurrentes n'envoient qu'un seul avis par facture", async () => {
+  it("deux exÃ©cutions concurrentes n'envoient qu'un seul avis par facture", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -119,12 +123,12 @@ describe("runRentDueReminders", () => {
       startDate: new Date(2026, 7, 1),
       endDate: new Date(2027, 7, 1),
     });
-    // Facture créée directement (plutôt que via generateInvoicesForContract,
-    // appelé en interne par runRentDueReminders) : ce test cible la course
-    // sur la RÉCLAMATION du rappel, pas sur la génération de facture elle-même
-    // — un contrat démarré ce mois-ci aurait fait tourner la génération
+    // Facture crÃ©Ã©e directement (plutÃ´t que via generateInvoicesForContract,
+    // appelÃ© en interne par runRentDueReminders) : ce test cible la course
+    // sur la RÃ‰CLAMATION du rappel, pas sur la gÃ©nÃ©ration de facture elle-mÃªme
+    // â€” un contrat dÃ©marrÃ© ce mois-ci aurait fait tourner la gÃ©nÃ©ration
     // automatique en concurrence dans les deux appels, avec son propre lot de
-    // problèmes hors sujet ici.
+    // problÃ¨mes hors sujet ici.
     await createInvoice(contract.id, {
       periodMonth: 8,
       periodYear: 2026,
@@ -159,12 +163,12 @@ describe("sendSingleInvoiceReminder", () => {
   });
 
   /**
-   * Régression : sendSingleInvoiceReminder envoyait l'email PUIS marquait
-   * reminderSentAt, sans aucune réclamation préalable — un double-clic du
-   * gestionnaire sur "Envoyer un rappel" (ou deux requêtes API quasi
-   * simultanées) déclenchait deux envois pour la même facture.
+   * RÃ©gression : sendSingleInvoiceReminder envoyait l'email PUIS marquait
+   * reminderSentAt, sans aucune rÃ©clamation prÃ©alable â€” un double-clic du
+   * gestionnaire sur "Envoyer un rappel" (ou deux requÃªtes API quasi
+   * simultanÃ©es) dÃ©clenchait deux envois pour la mÃªme facture.
    */
-  it("deux envois manuels quasi simultanés sur la même facture n'envoient qu'un seul rappel", async () => {
+  it("deux envois manuels quasi simultanÃ©s sur la mÃªme facture n'envoient qu'un seul rappel", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -192,7 +196,7 @@ describe("sendSingleInvoiceReminder", () => {
     sendEmailSpy.mockRestore();
   });
 
-  it("envoie aussi un message WhatsApp et reporte son statut sous whatsappSimulated dans le résultat", async () => {
+  it("envoie aussi un message WhatsApp et reporte son statut sous whatsappSimulated dans le rÃ©sultat", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -210,7 +214,11 @@ describe("sendSingleInvoiceReminder", () => {
 
     expect(result.success).toBe(true);
     expect(whatsappSpy).toHaveBeenCalledTimes(1);
-    expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, expect.stringContaining(tenant.firstName));
+    expect(whatsappSpy).toHaveBeenCalledWith(
+      tenant.phone,
+      expect.any(String),
+      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) })
+    );
     expect(result.whatsappSimulated).toBe(true);
 
     whatsappSpy.mockRestore();
@@ -220,14 +228,14 @@ describe("sendSingleInvoiceReminder", () => {
 describe("runUpcomingRentDueReminders", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(2026, 7, 1)); // 1er août 2026
+    vi.setSystemTime(new Date(2026, 7, 1)); // 1er aoÃ»t 2026
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("envoie le rappel 'avant échéance' (J-3) pour une facture qui arrive à échéance dans 3 jours, puis n'en renvoie aucun au second appel", async () => {
+  it("envoie le rappel 'avant Ã©chÃ©ance' (J-3) pour une facture qui arrive Ã  Ã©chÃ©ance dans 3 jours, puis n'en renvoie aucun au second appel", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -235,7 +243,7 @@ describe("runUpcomingRentDueReminders", () => {
     await createInvoice(contract.id, {
       periodMonth: 8,
       periodYear: 2026,
-      dueDate: new Date(2026, 7, 4), // dans exactement 3 jours (RENT_DUE_SOON_DAYS par défaut)
+      dueDate: new Date(2026, 7, 4), // dans exactement 3 jours (RENT_DUE_SOON_DAYS par dÃ©faut)
       status: "PENDING",
     });
 
@@ -249,7 +257,7 @@ describe("runUpcomingRentDueReminders", () => {
     expect(secondRun.sent).toBe(0);
   });
 
-  it("ne renvoie aucun rappel pour une facture dont l'échéance est trop lointaine", async () => {
+  it("ne renvoie aucun rappel pour une facture dont l'Ã©chÃ©ance est trop lointaine", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -257,7 +265,7 @@ describe("runUpcomingRentDueReminders", () => {
     await createInvoice(contract.id, {
       periodMonth: 8,
       periodYear: 2026,
-      dueDate: new Date(2026, 7, 20), // bien au-delà de la fenêtre J-3
+      dueDate: new Date(2026, 7, 20), // bien au-delÃ  de la fenÃªtre J-3
       status: "PENDING",
     });
 
@@ -265,7 +273,7 @@ describe("runUpcomingRentDueReminders", () => {
     expect(result.sent).toBe(0);
   });
 
-  it("envoie aussi un message WhatsApp 'avant échéance' et reporte son statut dans details", async () => {
+  it("envoie aussi un message WhatsApp 'avant Ã©chÃ©ance' et reporte son statut dans details", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -283,13 +291,17 @@ describe("runUpcomingRentDueReminders", () => {
 
     expect(result.sent).toBe(1);
     expect(whatsappSpy).toHaveBeenCalledTimes(1);
-    expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, expect.stringContaining(tenant.firstName));
+    expect(whatsappSpy).toHaveBeenCalledWith(
+      tenant.phone,
+      expect.any(String),
+      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) })
+    );
     expect(result.details[0].whatsappSimulated).toBe(true);
 
     whatsappSpy.mockRestore();
   });
 
-  it("bascule automatiquement en retard (LATE) les factures PENDING dont l'échéance est déjà dépassée", async () => {
+  it("bascule automatiquement en retard (LATE) les factures PENDING dont l'Ã©chÃ©ance est dÃ©jÃ  dÃ©passÃ©e", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -297,7 +309,7 @@ describe("runUpcomingRentDueReminders", () => {
     const overdueInvoice = await createInvoice(contract.id, {
       periodMonth: 7,
       periodYear: 2026,
-      dueDate: new Date(2026, 6, 20), // échéance déjà passée (12 jours avant "aujourd'hui")
+      dueDate: new Date(2026, 6, 20), // Ã©chÃ©ance dÃ©jÃ  passÃ©e (12 jours avant "aujourd'hui")
       status: "PENDING",
     });
 
