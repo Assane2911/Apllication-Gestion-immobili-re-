@@ -34,9 +34,13 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-[680px] flex">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-[70vh] md:h-[680px] flex flex-col md:flex-row">
         {/* Liste des conversations */}
-        <div className="w-80 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-950/40">
+        <div
+          className={`${
+            selectedContractId ? "hidden md:flex" : "flex"
+          } w-full md:w-80 border-r border-slate-200 dark:border-slate-800 flex-col bg-slate-50/50 dark:bg-slate-950/40`}
+        >
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200">{t("manager.messages.ongoingDiscussions")}</h3>
             <p className="text-xs text-slate-400 dark:text-slate-500">{t("manager.messages.conversationCount", { count: conversations.length })}</p>
@@ -74,20 +78,34 @@ export default function MessagesPage() {
         </div>
 
         {/* Zone de discussion */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
+        <div
+          className={`${
+            selectedContractId ? "flex" : "hidden md:flex"
+          } flex-1 flex-col bg-white dark:bg-slate-900`}
+        >
           {selectedContractId && activeDetails ? (
             <>
               {/* En-tête de conversation */}
-              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/40">
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                    {activeDetails.tenant?.firstName} {activeDetails.tenant?.lastName}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {activeDetails.property?.title} — {activeDetails.property?.address}
-                  </p>
+              <div className="px-4 md:px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedContractId(null)}
+                    aria-label={t("common.actions.back")}
+                    className="md:hidden shrink-0 -ml-1 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-800"
+                  >
+                    ←
+                  </button>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
+                      {activeDetails.tenant?.firstName} {activeDetails.tenant?.lastName}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {activeDetails.property?.title} — {activeDetails.property?.address}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full font-medium">
+                <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full font-medium shrink-0">
                   {activeDetails.tenant?.phone}
                 </span>
               </div>

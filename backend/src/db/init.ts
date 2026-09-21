@@ -21,56 +21,194 @@ export async function initDb() {
       )
     `);
 
-    // Ensure columns exist on existing databases
-    try { await db.execute(sql`ALTER TABLE platform_subscriptions ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'TRIAL'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'STARTER'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_method TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS scanned_contract_url TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_manager_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS manager_signature_url TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_tenant_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_signature_url TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    // owners/listings/listing_leads/platform_settings et les colonnes
+    // properties.owner_id, users.google_id,
+    // users.subscription_payment_attempt_started_at et
+    // invoices.payment_attempt_started_at (plus bas) étaient totalement
+    // absents de ce fichier alors que schema.ts les déclare déjà (créés
+    // directement en base de production par un autre chantier) : une base
+    // PGlite locale neuve n'avait donc ni ces tables ni ces colonnes, et
+    // toute requête Drizzle les ciblant (OwnersPage, ListingsPage,
+    // ListingLeadsPage, connexion Google, virement bancaire plateforme...)
+    // échouait avec "column/relation ... does not exist".
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS owners (
+        id TEXT PRIMARY KEY,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        company_name TEXT,
+        email TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        address TEXT,
+        iban TEXT,
+        bic TEXT,
+        management_fee_rate DOUBLE PRECISION NOT NULL DEFAULT 8.0,
+        notes TEXT,
+        user_id TEXT REFERENCES users(id),
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS listings (
+        id TEXT PRIMARY KEY,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL DEFAULT 'RENT',
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        price DOUBLE PRECISION NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'EUR',
+        price_period TEXT NOT NULL DEFAULT 'MONTH',
+        surface DOUBLE PRECISION,
+        rooms INTEGER,
+        location TEXT NOT NULL,
+        image_url TEXT,
+        contact_phone TEXT,
+        contact_whatsapp TEXT,
+        contact_email TEXT,
+        status TEXT NOT NULL DEFAULT 'PUBLISHED',
+        featured BOOLEAN NOT NULL DEFAULT FALSE,
+        country TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS listing_leads (
+        id TEXT PRIMARY KEY,
+        listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        prospect_name TEXT NOT NULL,
+        prospect_email TEXT NOT NULL,
+        prospect_phone TEXT NOT NULL,
+        request_type TEXT NOT NULL DEFAULT 'VISIT',
+        preferred_date TIMESTAMP,
+        message TEXT,
+        status TEXT NOT NULL DEFAULT 'NEW',
+        notes TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS platform_settings (
+        id TEXT PRIMARY KEY,
+        iban TEXT,
+        bic TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Ordre important pour PGlite/Postgres : ces CREATE TABLE portent des
+    // clés étrangères vers properties/tenants/contracts, qui doivent donc
+    // déjà exister. Sur une base totalement vierge (PGlite fallback local,
+    // sans DATABASE_URL), créer "expenses" avant "properties" par exemple
+    // échouait avec "relation properties does not exist" — initDb() plantait
+    // dès le premier démarrage, avant même app.listen(). C'est ce qui a été
+    // corrigé ici en remontant properties/tenants/contracts/invoices avant
+    // les tables qui les référencent.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS properties (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        address TEXT NOT NULL,
+        surface DOUBLE PRECISION NOT NULL,
+        rent DOUBLE PRECISION NOT NULL,
+        status TEXT NOT NULL DEFAULT 'AVAILABLE' CHECK (status IN ('AVAILABLE', 'OCCUPIED', 'MAINTENANCE')),
+        description TEXT,
+        image_url TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS tenants (
+        id TEXT PRIMARY KEY,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        -- Pas UNIQUE ici : schema.ts déclare l'unicité par (manager_id, email)
+        -- uniquement (index composite ci-dessous), pas globalement — deux
+        -- agences distinctes doivent pouvoir chacune enregistrer un locataire
+        -- partageant le même email.
+        email TEXT NOT NULL,
+        id_document TEXT,
+        user_id TEXT UNIQUE REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS contracts (
+        id TEXT PRIMARY KEY,
+        property_id TEXT NOT NULL REFERENCES properties(id),
+        tenant_id TEXT NOT NULL REFERENCES tenants(id),
+        rent DOUBLE PRECISION NOT NULL,
+        deposit DOUBLE PRECISION NOT NULL,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'ENDED', 'TERMINATED')),
+        reminder_sent_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id),
+        period_month INTEGER NOT NULL,
+        period_year INTEGER NOT NULL,
+        amount DOUBLE PRECISION NOT NULL,
+        due_date TIMESTAMP NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'LATE', 'CANCELLED')),
+        paid_at TIMESTAMP,
+        payment_method TEXT CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO')),
+        payment_ref TEXT,
+        reminder_sent_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_soon_reminder_sent_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`); } catch {}
 
-    // Colonnes ajoutées au schéma après l'écriture des CREATE TABLE ci-dessus.
-    // Elles étaient absentes de ce fichier, si bien qu'une base créée par
-    // initDb() (installation locale neuve) n'avait ni l'isolation par
-    // gestionnaire, ni la réinitialisation de mot de passe, ni la vérification
-    // d'email — et toute requête Drizzle sur ces tables échouait, Drizzle
-    // nommant explicitement chaque colonne déclarée dans schema.ts.
-    //
-    // manager_id est ajouté NULLABLE ici, alors que le schéma le déclare
-    // obligatoire : une colonne NOT NULL ne peut pas être ajoutée à une table
-    // contenant déjà des lignes sans valeur par défaut. Les insertions
-    // applicatives la renseignent toujours, la contrainte n'est donc utile
-    // qu'à la création initiale de la table.
-    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
-    try { await db.execute(sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
-    try { await db.execute(sql`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS terms TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token_hash TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP`); } catch {}
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique
+      ON invoices (contract_id, period_month, period_year)
+    `);
 
-    // Les bases locales créées avant l'ajout du rôle ADMIN portent encore une
-    // contrainte CHECK qui ne l'autorise pas : un admin créé via
-    // « npm run create-admin » y serait refusé. On la remplace.
-    try {
-      await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
-      await db.execute(sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN'))`);
-    } catch {}
-    try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '10 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
+    // Doit venir après contracts/properties/tenants (FK).
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS inspections (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        type TEXT NOT NULL DEFAULT 'ENTRY',
+        status TEXT NOT NULL DEFAULT 'DRAFT',
+        inspection_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        rooms_data TEXT,
+        meters_data TEXT,
+        keys_data TEXT,
+        general_comments TEXT,
+        manager_signature_url TEXT,
+        signed_by_manager_at TIMESTAMP,
+        tenant_signature_url TEXT,
+        signed_by_tenant_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS expenses (
@@ -137,76 +275,6 @@ export async function initDb() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS properties (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        address TEXT NOT NULL,
-        surface DOUBLE PRECISION NOT NULL,
-        rent DOUBLE PRECISION NOT NULL,
-        status TEXT NOT NULL DEFAULT 'AVAILABLE' CHECK (status IN ('AVAILABLE', 'OCCUPIED', 'MAINTENANCE')),
-        description TEXT,
-        image_url TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS tenants (
-        id TEXT PRIMARY KEY,
-        first_name TEXT NOT NULL,
-        last_name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        id_document TEXT,
-        user_id TEXT UNIQUE REFERENCES users(id) ON DELETE SET NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS contracts (
-        id TEXT PRIMARY KEY,
-        property_id TEXT NOT NULL REFERENCES properties(id),
-        tenant_id TEXT NOT NULL REFERENCES tenants(id),
-        rent DOUBLE PRECISION NOT NULL,
-        deposit DOUBLE PRECISION NOT NULL,
-        start_date TIMESTAMP NOT NULL,
-        end_date TIMESTAMP NOT NULL,
-        status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'ENDED', 'TERMINATED')),
-        reminder_sent_at TIMESTAMP,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS invoices (
-        id TEXT PRIMARY KEY,
-        contract_id TEXT NOT NULL REFERENCES contracts(id),
-        period_month INTEGER NOT NULL,
-        period_year INTEGER NOT NULL,
-        amount DOUBLE PRECISION NOT NULL,
-        due_date TIMESTAMP NOT NULL,
-        status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'LATE', 'CANCELLED')),
-        paid_at TIMESTAMP,
-        payment_method TEXT CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO')),
-        payment_ref TEXT,
-        reminder_sent_at TIMESTAMP,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
-
-    await db.execute(sql`
-      CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique
-      ON invoices (contract_id, period_month, period_year)
-    `);
-
-    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS issue_reports (
         id TEXT PRIMARY KEY,
         contract_id TEXT NOT NULL REFERENCES contracts(id),
@@ -236,6 +304,77 @@ export async function initDb() {
       )
     `);
 
+    // Ensure columns exist on existing databases. Ces ALTER doivent
+    // s'exécuter APRÈS tous les CREATE TABLE ci-dessus : sur une base
+    // totalement vierge (PGlite fallback local, sans DATABASE_URL), les
+    // tables visées n'existaient pas encore quand ce bloc était placé plus
+    // haut, donc chaque ALTER échouait silencieusement (try/catch) et les
+    // colonnes ci-dessous — dont manager_id, indispensable à l'isolation par
+    // gestionnaire — n'étaient jamais créées, faisant échouer les CREATE
+    // INDEX juste après ("column manager_id does not exist") puis toute
+    // requête applicative qui s'appuie sur ces colonnes.
+    try { await db.execute(sql`ALTER TABLE platform_subscriptions ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'TRIAL'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'STARTER'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_method TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS scanned_contract_url TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_manager_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS manager_signature_url TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_tenant_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_signature_url TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_soon_reminder_sent_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_attempt_started_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_attempt_started_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id TEXT REFERENCES owners(id) ON DELETE SET NULL`); } catch {}
+    try { await db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS iban TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS bic TEXT`); } catch {}
+    // Sur une base créée avant ce correctif, "tenants.email" portait encore
+    // une contrainte UNIQUE globale (nom par défaut Postgres/PGlite pour une
+    // colonne UNIQUE déclarée en ligne) — on la retire au profit de l'index
+    // composite (manager_id, email) créé plus bas, seul contrat réellement
+    // voulu par schema.ts.
+    try { await db.execute(sql`ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_email_key`); } catch {}
+
+    // Colonnes ajoutées au schéma après l'écriture des CREATE TABLE ci-dessus.
+    // Elles étaient absentes de ce fichier, si bien qu'une base créée par
+    // initDb() (installation locale neuve) n'avait ni l'isolation par
+    // gestionnaire, ni la réinitialisation de mot de passe, ni la vérification
+    // d'email — et toute requête Drizzle sur ces tables échouait, Drizzle
+    // nommant explicitement chaque colonne déclarée dans schema.ts.
+    //
+    // manager_id est ajouté NULLABLE ici, alors que le schéma le déclare
+    // obligatoire : une colonne NOT NULL ne peut pas être ajoutée à une table
+    // contenant déjà des lignes sans valeur par défaut. Les insertions
+    // applicatives la renseignent toujours, la contrainte n'est donc utile
+    // qu'à la création initiale de la table.
+    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
+    try { await db.execute(sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
+    try { await db.execute(sql`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
+    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS terms TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token_hash TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP`); } catch {}
+
+    // Les bases locales créées avant l'ajout du rôle ADMIN portent encore une
+    // contrainte CHECK qui ne l'autorise pas : un admin créé via
+    // « npm run create-admin » y serait refusé. On la remplace.
+    try {
+      await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+      await db.execute(sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN'))`);
+    } catch {}
+    try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '10 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
+
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS tenants_manager_id_idx ON tenants (manager_id)`);
@@ -248,9 +387,26 @@ export async function initDb() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS expenses_property_id_idx ON expenses (property_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_contract_id_idx ON issue_reports (contract_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_tenant_id_idx ON issue_reports (tenant_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_status_idx ON issue_reports (status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON messages (sender_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS messages_contract_id_idx ON messages (contract_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs (created_at)`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS tenants_manager_email_unique ON tenants (manager_id, email)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_owner_id_idx ON properties (owner_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS owners_manager_id_idx ON owners (manager_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS owners_user_id_idx ON owners (user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listings_manager_id_idx ON listings (manager_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listings_status_idx ON listings (status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listings_type_idx ON listings (type)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listings_country_idx ON listings (country)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_leads_listing_id_idx ON listing_leads (listing_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_leads_manager_id_idx ON listing_leads (manager_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_leads_status_idx ON listing_leads (status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_contract_id_idx ON inspections (contract_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_property_id_idx ON inspections (property_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_manager_id_idx ON inspections (manager_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_tenant_id_idx ON inspections (tenant_id)`);
 
     console.log("✅ Tables et types de base de données initialisés avec succès.");
 

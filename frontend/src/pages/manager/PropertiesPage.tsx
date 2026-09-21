@@ -120,7 +120,7 @@ export default function PropertiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.properties.title")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.properties.count", { count: properties.length })}</p>
