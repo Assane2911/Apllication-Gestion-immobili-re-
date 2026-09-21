@@ -1,31 +1,36 @@
 /**
  * Informations juridiques de l'éditeur d'ImmoPlatform Pro.
  *
- * ⚠️ À COMPLÉTER : les valeurs marquées "[À COMPLÉTER]" sont des placeholders.
- * Elles doivent être remplacées par les informations réelles de l'auto-entrepreneur
- * avant la mise en production (les mentions légales sont obligatoires en France —
- * loi n°2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique).
+ * Statut actuel (21 sept. 2026) : le service est édité par une personne physique,
+ * en cours de constitution d'une société (LLC américaine, Wyoming — dossier Doola,
+ * EIN attendu ~nov. 2026). Ces informations seront mises à jour dès que la LLC sera
+ * juridiquement finalisée (nom social, EIN, adresse officielle).
+ *
+ * ⚠️ À COMPLÉTER : "address" reste un placeholder tant que la société n'est pas
+ * finalisée (voir ci-dessus) — les autres champs sont à jour.
  *
  * Une fois complétées, ce fichier est la seule source à modifier : les 3 pages
  * légales (mentions-legales, cgu, confidentialite) l'importent toutes.
  */
 export const COMPANY = {
-  /** Nom et prénom de l'auto-entrepreneur, tel qu'il figure sur l'immatriculation. */
-  fullName: "[À COMPLÉTER — nom complet de l'auto-entrepreneur]",
+  /** Nom et prénom de l'éditeur, personne physique (société en cours de formation). */
+  fullName: "Imame Assane Thiam",
   /** Nom commercial utilisé pour le service. */
   tradeName: "ImmoPlatform Pro",
   /** Statut juridique. */
-  legalStatus: "Entreprise Individuelle (Auto-entrepreneur / Micro-entreprise)",
-  /** Numéro SIRET (14 chiffres). */
-  siret: "[À COMPLÉTER — numéro SIRET]",
+  legalStatus:
+    "Personne physique, société en cours de formation (future entité américaine ImmoPlatform Pro LLC, Wyoming, en cours d'immatriculation)",
+  /** Numéro SIRET (14 chiffres) — non applicable, la structure en formation est une LLC américaine. */
+  siret: "Non applicable (entité en cours de formation aux États-Unis)",
   /** Adresse professionnelle ou, à défaut, personnelle. */
-  address: "[À COMPLÉTER — adresse]",
+  address:
+    "[À COMPLÉTER — adresse à définir une fois la société finalisée (LLC en cours d'immatriculation, EIN attendu ~nov. 2026)]",
   /** Email de contact pour les questions légales, contractuelles et RGPD. */
-  contactEmail: "[À COMPLÉTER — email de contact]",
+  contactEmail: "assane@immoplatformpro.com",
   /** Pays et droit applicable. */
   country: "France",
   /** Date de dernière mise à jour des documents légaux (à mettre à jour à chaque révision). */
-  lastUpdated: "30 août 2026",
+  lastUpdated: "21 septembre 2026",
 };
 
 /** Sous-traitants techniques mentionnés dans la politique de confidentialité. */
