@@ -508,7 +508,35 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
   });
 }
 
-export function generateLeaseHtml(contract: any, agency: any): string {
+/**
+ * Sous-ensemble des champs d'un contrat (+ bien et locataire associés)
+ * réellement utilisés par generateLeaseHtml — même principe que
+ * InspectionExportData ci-dessous : un type explicite plutôt que `any`, pour
+ * qu'une régression de schéma sur ce document juridique (contrat de bail
+ * engageant) soit détectée à la compilation plutôt qu'à l'exécution (audit
+ * sept. 2026).
+ */
+export interface LeaseExportData {
+  startDate: Date | string;
+  endDate: Date | string;
+  rent: number;
+  currency?: string | null;
+  deposit: number;
+  signedByManagerAt: Date | string | null;
+  managerSignatureUrl: string | null;
+  signedByTenantAt: Date | string | null;
+  tenantSignatureUrl: string | null;
+  property?: { title: string; address: string; surface: number } | null;
+  tenant?: { firstName: string; lastName: string; email: string; phone: string } | null;
+}
+
+/** Coordonnées d'agence affichées sur le bail — voir document.controller.ts pour le repli par défaut. */
+export interface LeaseAgencyInfo {
+  agencyName: string | null;
+  address?: string | null;
+}
+
+export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgencyInfo): string {
   const startDate = new Date(contract.startDate).toLocaleDateString("fr-FR");
   const endDate = new Date(contract.endDate).toLocaleDateString("fr-FR");
 
