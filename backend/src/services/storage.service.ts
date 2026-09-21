@@ -65,3 +65,44 @@ export async function getSignedUrl(objectPath: string, expiresInSeconds = 3600) 
 
   return data.signedUrl;
 }
+
+/**
+ * Extrait le chemin d'objet à partir d'une URL PUBLIQUE générée par
+ * `getPublicUrl` (bucket public) — introuvable pour toute autre URL (domaine
+ * externe, ancien lien non reconnu...), auquel cas on renvoie `null` plutôt
+ * que de risquer de supprimer le mauvais objet.
+ */
+function extractPublicObjectPath(url: string): string | null {
+  const marker = `/storage/v1/object/public/${STORAGE_BUCKETS.public}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return decodeURIComponent(url.slice(idx + marker.length));
+}
+
+/**
+ * Supprime un objet Supabase Storage en best-effort — bucket privé ou
+ * public déduit automatiquement selon que `value` est un chemin brut (voir
+ * `uploadPrivateFile`) ou une URL complète (voir `uploadPublicFile`).
+ *
+ * Utilisée par la suppression de compte (auth.controller.ts::deleteMyAccount)
+ * pour nettoyer les fichiers qui, sans cela, resteraient orphelins dans le
+ * bucket une fois supprimées les lignes qui en gardaient la référence.
+ * N'échoue JAMAIS : un fichier orphelin est un moindre mal qu'une suppression
+ * de compte bloquée par un simple souci de stockage, et cette fonction est
+ * volontairement appelée APRÈS le commit de la transaction de suppression,
+ * jamais avant ni à l'intérieur.
+ */
+export async function deleteStorageObjectBestEffort(value: string | null | undefined): Promise<void> {
+  if (!value) return;
+  try {
+    if (/^https?:\/\//i.test(value)) {
+      const objectPath = extractPublicObjectPath(value);
+      if (!objectPath) return;
+      await supabaseAdmin.storage.from(STORAGE_BUCKETS.public).remove([objectPath]);
+    } else {
+      await supabaseAdmin.storage.from(STORAGE_BUCKETS.private).remove([value]);
+    }
+  } catch (err) {
+    console.error("[storage] Échec de la suppression best-effort d'un objet :", err);
+  }
+}

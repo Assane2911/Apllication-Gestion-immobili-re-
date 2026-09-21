@@ -420,6 +420,20 @@ const es: TranslationSchema = {
       validating: "Validando...",
       errorRequired: "Por favor, coloca tu firma en el recuadro antes de validar.",
     },
+    deleteAccountModal: {
+      title: "Eliminar definitivamente mi cuenta",
+      subtitle: "Esta acción es irreversible.",
+      warningTitle: "Al confirmar, se eliminará inmediata y definitivamente todo lo siguiente:",
+      warningProperties: "Todos tus inmuebles y anuncios",
+      warningTenants: "Todas tus fichas de inquilinos y propietarios",
+      warningContracts: "Todos tus contratos, facturas y recibos",
+      warningDocuments: "Todos los documentos y fotos asociados (documentos de identidad, contratos escaneados, incidencias reportadas)",
+      confirmWord: "ELIMINAR",
+      confirmLabel: "Escribe «{{word}}» para confirmar",
+      passwordLabel: "Vuelve a introducir tu contraseña actual",
+      confirmButton: "Eliminar definitivamente mi cuenta",
+      deleting: "Eliminando...",
+    },
     globalSearch: {
       placeholder: "Buscar un inquilino, una propiedad, un contrato...",
       clearAria: "Borrar la búsqueda",
@@ -1020,6 +1034,12 @@ const es: TranslationSchema = {
       },
       save: "Guardar la configuración",
       saving: "Guardando...",
+      dangerZone: {
+        title: "⚠️ Zona de peligro",
+        description:
+          "Eliminar tu cuenta borra inmediata y definitivamente todos los datos de tu agencia (inmuebles, inquilinos, contratos, facturas, documentos). Esta acción es irreversible.",
+        deleteButton: "Eliminar mi cuenta",
+      },
     },
     subscription: {
       title: "Suscripción y Planes SaaS",

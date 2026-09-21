@@ -420,6 +420,20 @@ const en: TranslationSchema = {
       validating: "Confirming...",
       errorRequired: "Please sign in the box before confirming.",
     },
+    deleteAccountModal: {
+      title: "Permanently delete my account",
+      subtitle: "This action cannot be undone.",
+      warningTitle: "Confirming will immediately and permanently delete all of the following:",
+      warningProperties: "All your properties and listings",
+      warningTenants: "All your tenant and owner records",
+      warningContracts: "All your contracts, invoices and receipts",
+      warningDocuments: "All associated documents and photos (ID documents, scanned leases, issue reports)",
+      confirmWord: "DELETE",
+      confirmLabel: "Type \"{{word}}\" to confirm",
+      passwordLabel: "Re-enter your current password",
+      confirmButton: "Permanently delete my account",
+      deleting: "Deleting...",
+    },
     globalSearch: {
       placeholder: "Search a tenant, a property, a contract...",
       clearAria: "Clear the search",
@@ -1018,6 +1032,12 @@ const en: TranslationSchema = {
       },
       save: "Save settings",
       saving: "Saving...",
+      dangerZone: {
+        title: "⚠️ Danger zone",
+        description:
+          "Deleting your account immediately and permanently erases all of your agency's data (properties, tenants, contracts, invoices, documents). This action cannot be undone.",
+        deleteButton: "Delete my account",
+      },
     },
     subscription: {
       title: "Subscription & SaaS Plans",

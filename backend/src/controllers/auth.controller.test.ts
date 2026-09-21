@@ -2,8 +2,19 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { users } from "../db/schema";
-import { createManager, createOwner, createOwnerPortalUser } from "../test/authHelpers";
+import { contracts, invoices, owners, properties, tenants, users } from "../db/schema";
+import {
+  authHeader,
+  createContract,
+  createInvoice,
+  createManager,
+  createOwner,
+  createOwnerPortalUser,
+  createProperty,
+  createTenant,
+  createTenantPortalUser,
+  tokenFor,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 describe("POST /api/auth/register puis /api/auth/login", () => {
@@ -121,5 +132,70 @@ describe("POST /api/auth/login puis /api/auth/me — compte propriétaire (Espac
 
     expect(meRes.status).toBe(200);
     expect(meRes.body.owner.id).toBe(owner.id);
+  });
+});
+
+describe("DELETE /api/auth/account — suppression définitive du compte gestionnaire", () => {
+  it("refuse avec un mauvais mot de passe et ne supprime rien", async () => {
+    const manager = await createManager();
+    const token = tokenFor(manager);
+
+    const res = await request(app)
+      .delete("/api/auth/account")
+      .set(authHeader(token))
+      .send({ password: "MauvaisMotDePasse" });
+
+    expect(res.status).toBe(401);
+    const [stillThere] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(stillThere).toBeDefined();
+  });
+
+  it("refuse pour un compte qui n'est pas gestionnaire", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const tenantUser = await createTenantPortalUser(tenant);
+    const token = tokenFor(tenantUser, tenant.id);
+
+    const res = await request(app)
+      .delete("/api/auth/account")
+      .set(authHeader(token))
+      .send({ password: "Password123!" });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("refuse sans authentification", async () => {
+    const res = await request(app).delete("/api/auth/account").send({ password: "Password123!" });
+    expect(res.status).toBe(401);
+  });
+
+  it("supprime définitivement le compte et toutes les données de l'agence avec le bon mot de passe", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id);
+    const owner = await createOwner(manager.id);
+
+    const token = tokenFor(manager);
+    const res = await request(app)
+      .delete("/api/auth/account")
+      .set(authHeader(token))
+      .send({ password: "Password123!" });
+
+    expect(res.status).toBe(204);
+
+    const [userRow] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(userRow).toBeUndefined();
+    const [propertyRow] = await testDb.select().from(properties).where(eq(properties.id, property.id));
+    expect(propertyRow).toBeUndefined();
+    const [tenantRow] = await testDb.select().from(tenants).where(eq(tenants.id, tenant.id));
+    expect(tenantRow).toBeUndefined();
+    const [contractRow] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(contractRow).toBeUndefined();
+    const [invoiceRow] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(invoiceRow).toBeUndefined();
+    const [ownerRow] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
+    expect(ownerRow).toBeUndefined();
   });
 });

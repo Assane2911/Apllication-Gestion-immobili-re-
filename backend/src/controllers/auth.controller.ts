@@ -1,19 +1,20 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config/env";
-import { db } from "../db/client";
-import { owners, tenants, users } from "../db/schema";
+import { db, Transaction } from "../db/client";
+import { contracts, invoices, issueReports, listings, owners, properties, tenants, users } from "../db/schema";
 import {
   accountAlreadyExistsEmail,
   emailVerificationEmail,
   passwordResetEmail,
   sendEmail,
 } from "../services/email.service";
+import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
@@ -570,4 +571,125 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
     .returning();
 
   res.json({ success: true, currency: updated.currency });
+});
+
+const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Mot de passe requis"),
+});
+
+/**
+ * Suppression définitive et immédiate du compte gestionnaire, à sa propre
+ * demande (audit sept. 2026 : la politique de confidentialité promet un
+ * droit à l'effacement, jusqu'ici non implémenté — voir PolitiqueConfidentialitePage.tsx §8).
+ *
+ * Portée (choix explicite du gestionnaire) : TOUT ce qui appartient à
+ * l'agence — biens, locataires, propriétaires, contrats, factures,
+ * signalements, annonces (+ leurs demandes), états des lieux, messages,
+ * journal d'activité, paramètres d'agence, historique des abonnements SaaS —
+ * est supprimé sans anonymisation ni conservation, y compris les données
+ * comptables : aucune obligation légale de conservation ne s'applique à
+ * cette plateforme pour le compte de sa propre agence.
+ *
+ * Les comptes de connexion "portail" d'un locataire/propriétaire (users liés
+ * via tenants.userId / owners.userId) ne sont volontairement PAS supprimés :
+ * ce sont des identités qui appartiennent à ces personnes, pas à l'agence qui
+ * les gérait — seule la fiche locataire/propriétaire de CETTE agence disparaît.
+ *
+ * Confirmation par ressaisie du mot de passe actuel : une action irréversible
+ * ne doit pas se contenter d'une simple confirmation textuelle. L'utilisateur
+ * est déjà authentifié par JWT ; contrairement à login(), il n'y a ici aucune
+ * énumération de compte à craindre, donc pas besoin du hachage à temps
+ * constant utilisé là-bas.
+ */
+export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires");
+  const { password } = deleteAccountSchema.parse(req.body);
+
+  const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));
+  if (!user) throw new ApiError(404, "Utilisateur introuvable");
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) throw new ApiError(401, "Mot de passe incorrect");
+
+  // Récupère tout ce qu'il faut nettoyer sur Supabase Storage AVANT de
+  // supprimer les lignes qui en gardent la référence (chemin ou URL) — une
+  // fois ces lignes supprimées, la référence serait perdue.
+  const [managerProperties, managerListings, managerTenants, managerContracts, managerIssues] = await Promise.all([
+    db.select({ imageUrl: properties.imageUrl }).from(properties).where(eq(properties.managerId, user.id)),
+    db.select({ imageUrl: listings.imageUrl }).from(listings).where(eq(listings.managerId, user.id)),
+    db.select({ idDocument: tenants.idDocument }).from(tenants).where(eq(tenants.managerId, user.id)),
+    db
+      .select({ scannedContractUrl: contracts.scannedContractUrl })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(eq(properties.managerId, user.id)),
+    db
+      .select({ photoUrl: issueReports.photoUrl, additionalPhotos: issueReports.additionalPhotos })
+      .from(issueReports)
+      .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(eq(properties.managerId, user.id)),
+  ]);
+
+  await db.transaction(async (tx: Transaction) => {
+    // contracts.propertyId / contracts.tenantId n'ont PAS de ON DELETE
+    // CASCADE (voir schema.ts) : supprimer un bien ou un locataire qui porte
+    // encore un contrat échouerait (violation de clé étrangère). Ces
+    // contrats — et tout ce qui les référence sans cascade (invoices,
+    // issueReports) — doivent donc être supprimés explicitement ici, avant
+    // de s'appuyer sur les CASCADE existants pour le reste en supprimant
+    // simplement la ligne `users`.
+    const propertyRows = await tx.select({ id: properties.id }).from(properties).where(eq(properties.managerId, user.id));
+    const tenantRows = await tx.select({ id: tenants.id }).from(tenants).where(eq(tenants.managerId, user.id));
+    const propertyIds = propertyRows.map((p: { id: string }) => p.id);
+    const tenantIds = tenantRows.map((t: { id: string }) => t.id);
+
+    const contractConditions = [];
+    if (propertyIds.length > 0) contractConditions.push(inArray(contracts.propertyId, propertyIds));
+    if (tenantIds.length > 0) contractConditions.push(inArray(contracts.tenantId, tenantIds));
+
+    if (contractConditions.length > 0) {
+      const contractRows = await tx.select({ id: contracts.id }).from(contracts).where(or(...contractConditions));
+      const contractIds = contractRows.map((c: { id: string }) => c.id);
+
+      if (contractIds.length > 0) {
+        await tx.delete(invoices).where(inArray(invoices.contractId, contractIds));
+        await tx.delete(issueReports).where(inArray(issueReports.contractId, contractIds));
+        await tx.delete(contracts).where(inArray(contracts.id, contractIds));
+      }
+    }
+
+    // Le reste (biens, locataires, propriétaires, annonces + leurs demandes,
+    // états des lieux, messages, journal d'activité, paramètres d'agence,
+    // historique des abonnements SaaS) est nettoyé par les contraintes
+    // ON DELETE CASCADE déjà déclarées sur users.id (voir schema.ts) : il
+    // suffit de supprimer la ligne `users` elle-même.
+    await tx.delete(users).where(eq(users.id, user.id));
+  });
+
+  // Nettoyage Supabase Storage best-effort, APRÈS le commit : voir le
+  // commentaire de deleteStorageObjectBestEffort — un échec ici ne doit
+  // jamais remettre en cause une suppression de compte déjà actée en base.
+  const storageCleanupTargets: Array<string | null | undefined> = [
+    ...managerProperties.map((p) => p.imageUrl),
+    ...managerListings.map((l) => l.imageUrl),
+    ...managerTenants.map((t) => t.idDocument),
+    ...managerContracts.map((c) => c.scannedContractUrl),
+    ...managerIssues.flatMap((i) => {
+      const extras: string[] = [];
+      if (i.additionalPhotos) {
+        try {
+          extras.push(...(JSON.parse(i.additionalPhotos) as string[]));
+        } catch {
+          // Champ illisible : rien à nettoyer de plus fiable que d'ignorer.
+        }
+      }
+      return [i.photoUrl, ...extras];
+    }),
+  ];
+  await Promise.allSettled(storageCleanupTargets.map((target) => deleteStorageObjectBestEffort(target)));
+
+  console.log(`[account] Compte gestionnaire supprimé définitivement (id=${user.id})`);
+
+  res.status(204).send();
 });

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  deleteMyAccount,
   forgotPassword,
   login,
   loginWithGoogle,
@@ -10,7 +11,7 @@ import {
   updateCurrency,
   verifyEmail,
 } from "../controllers/auth.controller";
-import { authenticate } from "../middleware/auth";
+import { authenticate, requireRole } from "../middleware/auth";
 import { authEmailLimiter, authIpLimiter } from "../middleware/rateLimit";
 
 const router = Router();
@@ -35,5 +36,6 @@ router.post("/forgot-password", authIpLimiter, authEmailLimiter, forgotPassword)
 router.post("/reset-password", authIpLimiter, resetPassword);
 router.get("/me", authenticate, me);
 router.patch("/currency", authenticate, updateCurrency);
+router.delete("/account", authenticate, requireRole("MANAGER"), deleteMyAccount);
 
 export default router;

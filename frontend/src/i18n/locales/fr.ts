@@ -418,6 +418,20 @@ const fr = {
       validating: "Validation...",
       errorRequired: "Veuillez apposer votre signature sur le cadre avant de valider.",
     },
+    deleteAccountModal: {
+      title: "Supprimer définitivement mon compte",
+      subtitle: "Cette action est irréversible.",
+      warningTitle: "En confirmant, tout ce qui suit sera supprimé immédiatement et définitivement :",
+      warningProperties: "Tous vos biens et annonces",
+      warningTenants: "Toutes vos fiches locataires et propriétaires",
+      warningContracts: "Tous vos contrats, factures et quittances",
+      warningDocuments: "Tous les documents et photos associés (pièces d'identité, scans de baux, signalements d'incidents)",
+      confirmWord: "SUPPRIMER",
+      confirmLabel: "Tapez « {{word}} » pour confirmer",
+      passwordLabel: "Ressaisissez votre mot de passe actuel",
+      confirmButton: "Supprimer définitivement mon compte",
+      deleting: "Suppression en cours...",
+    },
     globalSearch: {
       placeholder: "Rechercher un locataire, un bien, un contrat...",
       clearAria: "Effacer la recherche",
@@ -1019,6 +1033,12 @@ const fr = {
       },
       save: "Enregistrer les paramètres",
       saving: "Sauvegarde en cours...",
+      dangerZone: {
+        title: "⚠️ Zone de danger",
+        description:
+          "Supprimer votre compte efface immédiatement et définitivement toutes les données de votre agence (biens, locataires, contrats, factures, documents). Cette action est irréversible.",
+        deleteButton: "Supprimer mon compte",
+      },
     },
     subscription: {
       title: "Abonnement & Formules SaaS",

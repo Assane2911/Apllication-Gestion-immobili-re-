@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
+import DeleteAccountModal from "../../components/DeleteAccountModal";
+import { useAuth } from "../../context/auth";
 import type { AgencySettings } from "../../types";
 
 export default function AgencySettingsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  function handleAccountDeleted() {
+    logout();
+    navigate("/login", { replace: true });
+  }
 
   const [form, setForm] = useState({
     agencyName: "",
@@ -206,6 +217,26 @@ export default function AgencySettingsPage() {
           </div>
         </form>
       </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-red-700 dark:text-red-400 uppercase tracking-wider">
+          {t("manager.agencySettings.dangerZone.title")}
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+          {t("manager.agencySettings.dangerZone.description")}
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          className="mt-4 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+        >
+          {t("manager.agencySettings.dangerZone.deleteButton")}
+        </button>
+      </div>
+
+      {showDeleteModal && (
+        <DeleteAccountModal onSuccess={handleAccountDeleted} onClose={() => setShowDeleteModal(false)} />
+      )}
     </div>
   );
 }
