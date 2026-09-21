@@ -20,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data.id,
         email: data.email,
         role: data.role,
+        hasPassword: data.hasPassword,
         tenantId: data.tenant?.id ?? null,
         tenantName: data.tenant ? `${data.tenant.firstName} ${data.tenant.lastName}` : null,
         ownerId: data.owner?.id ?? null,

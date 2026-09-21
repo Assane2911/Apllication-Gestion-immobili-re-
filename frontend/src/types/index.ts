@@ -32,6 +32,13 @@ export interface AuthUser {
   email: string;
   role: Role;
   currency?: string;
+  /**
+   * false uniquement pour un compte gestionnaire créé directement via "Se
+   * connecter avec Google" (jamais de vrai mot de passe défini) — voir
+   * DeleteAccountModal, qui adapte sa confirmation en conséquence. Absent
+   * (undefined) sur les réponses plus anciennes : à traiter comme true.
+   */
+  hasPassword?: boolean;
   tenantId?: string | null;
   tenantName?: string | null;
   ownerId?: string | null;

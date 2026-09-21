@@ -1,4 +1,6 @@
+import { createId } from "@paralleldrive/cuid2";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { OAuth2Client } from "google-auth-library";
 import request from "supertest";
@@ -6,8 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { env } from "../config/env";
 import { users } from "../db/schema";
-import { createManager } from "../test/authHelpers";
+import { authHeader, createManager, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+import { hashToken } from "../utils/token";
 
 // google-auth-library est mocké : on ne veut pas dépendre du réseau ni d'un
 // vrai jeton Google dans ces tests, seulement du comportement de
@@ -147,6 +150,128 @@ describe("POST /api/auth/google", () => {
     const res = await request(app).post("/api/auth/google").send({ credential: "fake-id-token" });
 
     expect(res.status).toBe(503);
+    expect(mockVerifyIdToken).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Un gestionnaire créé uniquement via "Se connecter avec Google" n'a jamais eu
+ * de vrai mot de passe (voir loginWithGoogle : passwordHash y contient un hash
+ * bcrypt d'une valeur aléatoire inatteignable). deleteMyAccount doit donc lui
+ * demander une reconnexion Google fraîche plutôt qu'un mot de passe qu'il ne
+ * pourrait jamais fournir.
+ */
+describe("DELETE /api/auth/account — comptes Google-only (sans mot de passe réel)", () => {
+  beforeEach(() => {
+    env.googleClientId = "test-google-client-id";
+  });
+
+  afterEach(() => {
+    mockVerifyIdToken.mockReset();
+    env.googleClientId = "";
+  });
+
+  async function createGoogleOnlyManager(overrides: Partial<typeof users.$inferInsert> = {}) {
+    const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+    const [user] = await testDb
+      .insert(users)
+      .values({
+        email: `google-manager-${createId()}@test.local`,
+        passwordHash,
+        googleId: `google-sub-${createId()}`,
+        hasPassword: false,
+        role: "MANAGER",
+        emailVerifiedAt: new Date(),
+        ...overrides,
+      })
+      .returning();
+    return user;
+  }
+
+  it("refuse la suppression sans confirmation Google (aucun mot de passe attendu pour ce compte)", async () => {
+    const manager = await createGoogleOnlyManager();
+    const token = tokenFor(manager);
+
+    const res = await request(app).delete("/api/auth/account").set(authHeader(token)).send({});
+
+    expect(res.status).toBe(400);
+    expect(mockVerifyIdToken).not.toHaveBeenCalled();
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row).toBeDefined();
+  });
+
+  it("refuse un jeton Google invalide ou expiré", async () => {
+    const manager = await createGoogleOnlyManager();
+    const token = tokenFor(manager);
+    mockVerifyIdToken.mockRejectedValue(new Error("Token used too late"));
+
+    const res = await request(app)
+      .delete("/api/auth/account")
+      .set(authHeader(token))
+      .send({ googleCredential: "jeton-invalide" });
+
+    expect(res.status).toBe(401);
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row).toBeDefined();
+  });
+
+  it("refuse un jeton Google valide mais qui ne correspond pas au googleId lié à ce compte", async () => {
+    const manager = await createGoogleOnlyManager({ googleId: "google-sub-du-compte" });
+    const token = tokenFor(manager);
+    mockGooglePayload({ sub: "google-sub-dun-autre-compte", email: manager.email, email_verified: true });
+
+    const res = await request(app)
+      .delete("/api/auth/account")
+      .set(authHeader(token))
+      .send({ googleCredential: "jeton-dun-autre-compte" });
+
+    expect(res.status).toBe(401);
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row).toBeDefined();
+  });
+
+  it("supprime définitivement le compte quand le jeton Google fraîchement fourni correspond au googleId lié", async () => {
+    const manager = await createGoogleOnlyManager({ googleId: "google-sub-suppression" });
+    const token = tokenFor(manager);
+    mockGooglePayload({ sub: "google-sub-suppression", email: manager.email, email_verified: true });
+
+    const res = await request(app)
+      .delete("/api/auth/account")
+      .set(authHeader(token))
+      .send({ googleCredential: "jeton-valide" });
+
+    expect(res.status).toBe(204);
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row).toBeUndefined();
+  });
+
+  it("un compte Google-only qui se définit un vrai mot de passe via resetPassword peut ensuite confirmer par mot de passe", async () => {
+    const manager = await createGoogleOnlyManager({ googleId: "google-sub-mdp-defini" });
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    await testDb
+      .update(users)
+      .set({
+        resetPasswordTokenHash: hashToken(rawToken),
+        resetPasswordExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      })
+      .where(eq(users.id, manager.id));
+
+    const resetRes = await request(app)
+      .post("/api/auth/reset-password")
+      .send({ token: rawToken, password: "NouveauMotDePasse123!" });
+    expect(resetRes.status).toBe(200);
+
+    const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(updated.hasPassword).toBe(true);
+
+    const token = tokenFor(manager);
+    const res = await request(app)
+      .delete("/api/auth/account")
+      .set(authHeader(token))
+      .send({ password: "NouveauMotDePasse123!" });
+
+    expect(res.status).toBe(204);
     expect(mockVerifyIdToken).not.toHaveBeenCalled();
   });
 });

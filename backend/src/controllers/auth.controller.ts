@@ -235,6 +235,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       email: user.email,
       role: user.role,
       currency: user.currency ?? "EUR",
+      hasPassword: user.hasPassword,
       tenantId: tenant?.id ?? null,
       tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : null,
       ownerId: owner?.id ?? null,
@@ -334,6 +335,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
           email,
           passwordHash,
           googleId,
+          hasPassword: false,
           role: "MANAGER",
           subscriptionStatus: "TRIAL",
           subscriptionPlan: "STARTER",
@@ -354,6 +356,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
       email: user.email,
       role: user.role,
       currency: user.currency ?? "EUR",
+      hasPassword: user.hasPassword,
       tenantId: null,
       tenantName: null,
       ownerId: null,
@@ -405,6 +408,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
       email: updated.email,
       role: updated.role,
       currency: updated.currency ?? "EUR",
+      hasPassword: updated.hasPassword,
       tenantId: null,
       tenantName: null,
       subscription,
@@ -482,6 +486,7 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     email: user.email,
     role: user.role,
     currency: user.currency ?? "EUR",
+    hasPassword: user.hasPassword,
     tenant: tenant ?? null,
     owner: owner ?? null,
     subscription,
@@ -550,7 +555,11 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 
   await db
     .update(users)
-    .set({ passwordHash, resetPasswordTokenHash: null, resetPasswordExpiresAt: null })
+    // hasPassword: true — y compris pour un compte Google-only (googleId non
+    // nul) qui vient, via ce flux, de se définir un vrai mot de passe pour la
+    // première fois : deleteMyAccount doit désormais lui proposer la
+    // confirmation par mot de passe plutôt que par reconnexion Google.
+    .set({ passwordHash, hasPassword: true, resetPasswordTokenHash: null, resetPasswordExpiresAt: null })
     .where(eq(users.id, user.id));
 
   res.json({ message: "Mot de passe mis à jour avec succès" });
@@ -574,7 +583,15 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
 });
 
 const deleteAccountSchema = z.object({
-  password: z.string().min(1, "Mot de passe requis"),
+  // L'un ou l'autre selon le type de compte (voir hasPassword sur le schéma
+  // users) : un compte email/mot de passe envoie `password`, un compte créé
+  // uniquement via "Se connecter avec Google" (qui n'a jamais eu de vrai mot
+  // de passe à ressaisir) envoie `googleCredential`, un jeton d'identité
+  // Google fraîchement obtenu. On ne peut pas savoir laquelle des deux
+  // s'applique avant d'avoir chargé l'utilisateur, donc les deux champs
+  // restent optionnels ici et la présence requise est vérifiée plus bas.
+  password: z.string().min(1).optional(),
+  googleCredential: z.string().min(1).optional(),
 });
 
 /**
@@ -600,16 +617,52 @@ const deleteAccountSchema = z.object({
  * est déjà authentifié par JWT ; contrairement à login(), il n'y a ici aucune
  * énumération de compte à craindre, donc pas besoin du hachage à temps
  * constant utilisé là-bas.
+ *
+ * Cas particulier des comptes créés uniquement via "Se connecter avec
+ * Google" (hasPassword = false) : ils n'ont jamais eu de vrai mot de passe
+ * (passwordHash y contient un hash bcrypt d'une valeur aléatoire
+ * inatteignable, voir loginWithGoogle), donc bcrypt.compare y échouerait
+ * TOUJOURS, quel que soit le mot de passe saisi — un gestionnaire dans ce cas
+ * ne pourrait jamais supprimer son propre compte. On exige à la place une
+ * reconnexion Google fraîche (même vérification que loginWithGoogle), preuve
+ * d'identité équivalente au mot de passe pour les autres comptes.
  */
 export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires");
-  const { password } = deleteAccountSchema.parse(req.body);
+  const body = deleteAccountSchema.parse(req.body);
 
   const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));
   if (!user) throw new ApiError(404, "Utilisateur introuvable");
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new ApiError(401, "Mot de passe incorrect");
+  if (user.hasPassword) {
+    if (!body.password) throw new ApiError(400, "Mot de passe requis");
+    const valid = await bcrypt.compare(body.password, user.passwordHash);
+    if (!valid) throw new ApiError(401, "Mot de passe incorrect");
+  } else {
+    if (!env.googleClientId) {
+      throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur");
+    }
+    if (!body.googleCredential) throw new ApiError(400, "Confirmation Google requise");
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: body.googleCredential,
+        audience: env.googleClientId,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new ApiError(401, "Jeton Google invalide ou expiré");
+    }
+
+    // payload.sub doit correspondre au googleId DÉJÀ lié à ce compte (et pas
+    // seulement être un jeton Google valide pour n'importe quel compte) —
+    // sinon quiconque possédant un compte Google pourrait confirmer la
+    // suppression du compte d'un autre gestionnaire Google-only.
+    if (!payload || !payload.email_verified || payload.sub !== user.googleId) {
+      throw new ApiError(401, "Jeton Google invalide");
+    }
+  }
 
   // Récupère tout ce qu'il faut nettoyer sur Supabase Storage AVANT de
   // supprimer les lignes qui en gardent la référence (chemin ou URL) — une

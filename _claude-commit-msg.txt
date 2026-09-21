@@ -1,0 +1,36 @@
+feat: suppression de compte pour les gestionnaires Google-only (reconnexion Google)
+
+Un gestionnaire inscrit uniquement via "Se connecter avec Google" n'a
+jamais de vrai mot de passe (passwordHash y contient un hash bcrypt
+d'une valeur aléatoire inatteignable, voir loginWithGoogle) : la
+confirmation par mot de passe de deleteMyAccount échouait donc
+systématiquement pour ces comptes, les empêchant de supprimer
+eux-mêmes leur compte.
+
+Ajout d'un drapeau explicite users.hasPassword (false uniquement à la
+création directe via Google ; repasse à true dès que resetPassword
+fixe un vrai mot de passe — googleId seul ne suffit pas, un compte
+email/mot de passe existant peut se lier à Google sans perdre son
+mot de passe réel).
+
+Backend : deleteMyAccount se branche sur hasPassword — mot de passe
+inchangé pour les comptes qui en ont un ; pour les autres, exige un
+jeton d'identité Google fraîchement obtenu (googleCredential),
+revérifié comme dans loginWithGoogle et confronté au googleId déjà
+lié au compte. hasPassword exposé dans login/loginWithGoogle/
+verifyEmail/me.
+
+Frontend : DeleteAccountModal affiche le bouton "Se connecter avec
+Google" à la place du champ mot de passe pour ces comptes, et envoie
+googleCredential au lieu de password. Traductions ajoutées dans les
+4 langues (fr/en/es/pt).
+
+Backend : 5 nouveaux tests (636/636 au total). Frontend : 6 nouveaux
+tests (259/259 au total). tsc/build/lint propres des deux côtés.
+
+Nécessitera un `npm run db:push` (backend) sur la base de production
+lors du déploiement, pour créer la colonne users.has_password.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01F2tK8GCXLUrKaKx64RLgb1
+

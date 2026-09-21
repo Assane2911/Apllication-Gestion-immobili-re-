@@ -33,6 +33,17 @@ export const users = pgTable("users", {
   // valeur aléatoire inatteignable par un mot de passe (voir loginWithGoogle),
   // pour éviter une migration de colonne nullable rien que pour ce cas.
   googleId: text("google_id").unique(),
+  // Un compte créé directement via "Se connecter avec Google" (voir
+  // loginWithGoogle) n'a jamais eu de vrai mot de passe : passwordHash y
+  // contient un hash bcrypt d'une valeur aléatoire inatteignable, donc on ne
+  // peut pas se fier à sa présence pour savoir si l'utilisateur en connaît un
+  // (googleId seul ne suffit pas non plus : un compte email/mot de passe
+  // existant peut ensuite se lier à Google sans perdre son vrai mot de
+  // passe — voir loginWithGoogle, branche de liaison). Ce drapeau explicite
+  // sert notamment à deleteMyAccount pour choisir la bonne méthode de
+  // confirmation ; il repasse à true dès que resetPassword fixe un vrai mot
+  // de passe.
+  hasPassword: boolean("has_password").notNull().default(true),
   role: roleEnum("role").notNull(),
   currency: text("currency").notNull().default("EUR"),
   // SaaS & Période d'essai (15 jours offerts à l'inscription pour les gestionnaires)

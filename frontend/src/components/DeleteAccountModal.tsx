@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
+import { useAuth } from "../context/auth";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 interface DeleteAccountModalProps {
   onSuccess: () => void;
@@ -13,26 +15,39 @@ interface DeleteAccountModalProps {
  * PolitiqueConfidentialitePage.tsx §8). Action irréversible : confirmée par
  * ressaisie du mot de passe actuel plutôt qu'une simple case à cocher.
  *
+ * Cas particulier des comptes créés uniquement via "Se connecter avec Google"
+ * (user.hasPassword === false, voir auth.controller.ts::deleteMyAccount) : ils
+ * n'ont jamais eu de vrai mot de passe à ressaisir, donc la confirmation
+ * demande à la place une reconnexion Google fraîche (même bouton que sur la
+ * page de connexion), dont le jeton est revérifié côté serveur.
+ *
  * Ne gère QUE l'appel API + ses états ; `onSuccess` (déconnexion + redirection)
  * reste à la charge de l'appelant, qui connaît le contexte de navigation.
  */
 export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccountModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const isGoogleOnly = user?.hasPassword === false;
+
   const [password, setPassword] = useState("");
+  const [googleCredential, setGoogleCredential] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const confirmationAttendue = t("components.deleteAccountModal.confirmWord");
   const confirmationValide = confirmText.trim().toUpperCase() === confirmationAttendue.toUpperCase();
+  const preuveIdentiteFournie = isGoogleOnly ? googleCredential !== null : password.length > 0;
 
   async function handleDelete(e: React.FormEvent) {
     e.preventDefault();
-    if (!confirmationValide) return;
+    if (!confirmationValide || !preuveIdentiteFournie) return;
     setDeleting(true);
     setError(null);
     try {
-      await api.delete("/auth/account", { data: { password } });
+      await api.delete("/auth/account", {
+        data: isGoogleOnly ? { googleCredential } : { password },
+      });
       onSuccess();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -89,20 +104,44 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
             />
           </div>
 
-          <div>
-            <label htmlFor="delete-account-password" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              {t("components.deleteAccountModal.passwordLabel")}
-            </label>
-            <input
-              id="delete-account-password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
-            />
-          </div>
+          {isGoogleOnly ? (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t("components.deleteAccountModal.googleLabel")}
+              </label>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                {t("components.deleteAccountModal.googleHint")}
+              </p>
+              <GoogleSignInButton
+                onCredential={(credential) => {
+                  setGoogleCredential(credential);
+                  setError(null);
+                }}
+                onError={() => setError(t("auth.google.error"))}
+                locale={i18n.language}
+              />
+              {googleCredential && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+                  {t("components.deleteAccountModal.googleConfirmed")}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="delete-account-password" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t("components.deleteAccountModal.passwordLabel")}
+              </label>
+              <input
+                id="delete-account-password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+          )}
 
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
@@ -117,7 +156,7 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
             </button>
             <button
               type="submit"
-              disabled={deleting || !confirmationValide || password.length === 0}
+              disabled={deleting || !confirmationValide || !preuveIdentiteFournie}
               className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors"
             >
               {deleting
