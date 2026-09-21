@@ -8,7 +8,7 @@ import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
+import { assertAccesLocataireOuGestionnaire, assertOwnership } from "../utils/authorization";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
@@ -107,9 +107,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(issueReports.id, req.params.id));
-  if (!owned || owned.property.managerId !== req.user!.userId) {
-    throw new ApiError(404, "Signalement introuvable");
-  }
+  assertOwnership(owned, (o) => o.property.managerId, req.user!.userId, "Signalement introuvable");
 
   const [updated] = await db
     .update(issueReports)

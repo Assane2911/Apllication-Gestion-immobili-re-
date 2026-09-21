@@ -9,6 +9,7 @@ import { logActivity } from "../services/activity.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
+import { assertOwnership } from "../utils/authorization";
 import { resolveScannedUrl } from "./contract.controller";
 
 const tenantSchema = z.object({
@@ -38,7 +39,7 @@ export const listTenants = asyncHandler(async (req: Request, res: Response) => {
 
 export const getTenant = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
 
   const tenantContracts = await db
     .select({ contract: contracts, property: properties })
@@ -96,7 +97,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
   const body = tenantSchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
 
   // La vérification de propriété doit précéder l'upload : sinon, un
   // gestionnaire pouvait faire uploader (et donc stocker, sur notre
@@ -127,7 +128,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
 
 export const deleteTenant = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
 
   const [tenantContracts, tenantIssues] = await Promise.all([
     db.select().from(contracts).where(eq(contracts.tenantId, req.params.id)),
@@ -168,7 +169,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
 /** Génère une URL signée temporaire pour consulter la pièce d'identité d'un locataire (bucket privé). */
 export const getTenantIdDocumentUrl = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
   if (!tenant.idDocument) throw new ApiError(404, "Aucune pièce d'identité enregistrée pour ce locataire");
 
   const url = await getSignedUrl(tenant.idDocument);
@@ -183,7 +184,7 @@ const createPortalAccountSchema = z.object({
 export const createTenantPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const body = createPortalAccountSchema.parse(req.body);
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, tenant.email));
   if (existingUser) throw new ApiError(409, "Un compte existe déjà pour cet email");

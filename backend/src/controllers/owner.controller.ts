@@ -9,6 +9,7 @@ import { agencySettings, contracts, invoices, owners, properties, users } from "
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
@@ -77,7 +78,7 @@ export const getOwner = asyncHandler(async (req: Request, res: Response) => {
     .from(owners)
     .leftJoin(users, eq(users.id, owners.userId))
     .where(eq(owners.id, req.params.id));
-  if (!row || row.owner.managerId !== req.user!.userId) throw new ApiError(404, "Propriétaire introuvable");
+  assertOwnership(row, (r) => r.owner.managerId, req.user!.userId, "Propriétaire introuvable");
 
   const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, row.owner.id));
 
@@ -123,7 +124,7 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
   const body = ownerSchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Propriétaire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable");
 
   const [owner] = await db.update(owners).set(body).where(eq(owners.id, req.params.id)).returning();
 
@@ -142,7 +143,7 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
 
 export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Propriétaire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable");
 
   const linkedProperties = await db.select().from(properties).where(eq(properties.ownerId, req.params.id));
   if (linkedProperties.length > 0) {
@@ -182,7 +183,7 @@ export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
  */
 export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const [owner] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  if (!owner || owner.managerId !== req.user!.userId) throw new ApiError(404, "Propriétaire introuvable");
+  assertOwnership(owner, (o) => o.managerId, req.user!.userId, "Propriétaire introuvable");
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const resetPasswordTokenHash = hashToken(rawToken);

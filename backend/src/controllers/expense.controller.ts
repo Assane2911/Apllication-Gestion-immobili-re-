@@ -5,6 +5,7 @@ import { db } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertOwnership } from "../utils/authorization";
 import { csvEscape, CSV_BOM } from "../utils/csv";
 
 const createExpenseSchema = z.object({
@@ -67,7 +68,7 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
   const body = createExpenseSchema.parse(req.body);
 
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
-  if (!prop || prop.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+  assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable");
 
   const [expense] = await db
     .insert(expenses)
@@ -91,7 +92,7 @@ export const deleteExpense = asyncHandler(async (req: Request, res: Response) =>
     .from(expenses)
     .innerJoin(properties, eq(expenses.propertyId, properties.id))
     .where(eq(expenses.id, req.params.id));
-  if (!row || row.property.managerId !== req.user!.userId) throw new ApiError(404, "Dépense introuvable");
+  assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Dépense introuvable");
 
   await db.delete(expenses).where(eq(expenses.id, req.params.id));
   res.json({ success: true, message: "Dépense supprimée" });

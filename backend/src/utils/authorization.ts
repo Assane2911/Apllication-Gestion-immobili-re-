@@ -35,3 +35,34 @@ export function assertAccesLocataireOuGestionnaire(
   // gestionnaire propriétaires de cette ressource : refus par défaut.
   throw new ApiError(403, "Accès refusé");
 }
+
+/**
+ * Vérifie qu'une ressource existe et appartient bien au gestionnaire courant
+ * (`entity.managerId === managerId`, directement ou via un accesseur pour les
+ * ressources jointes, ex. `(row) => row.property.managerId`), sinon lève une
+ * ApiError (404 "introuvable" par défaut — un 403 se comporterait comme une
+ * fuite d'existence : il révélerait qu'une ressource appartenant à un AUTRE
+ * gestionnaire existe bien, simplement avec un identifiant différent).
+ *
+ * Ce contrôle était auparavant recopié à l'identique (31 occurrences) dans
+ * 8 contrôleurs (`if (!x || x.managerId !== req.user!.userId) throw new
+ * ApiError(404, "..."`) : chaque copie est un endroit où un correctif futur
+ * (nouveau rôle, code d'erreur différent) peut être appliqué de façon
+ * incohérente, créant une faille d'accès silencieuse sur les copies
+ * oubliées (audit sept. 2026). `entity` est explicitement typé comme
+ * potentiellement absent (`| null | undefined`) : c'est une fonction
+ * d'assertion TypeScript (`asserts entity is NonNullable<T>`), donc tout le
+ * code qui suit son appel voit `entity` comme non-nul, exactement comme
+ * après le `if` qu'elle remplace.
+ */
+export function assertOwnership<T>(
+  entity: T | null | undefined,
+  getManagerId: (entity: NonNullable<T>) => string,
+  managerId: string,
+  message: string,
+  statusCode = 404
+): asserts entity is NonNullable<T> {
+  if (!entity || getManagerId(entity as NonNullable<T>) !== managerId) {
+    throw new ApiError(statusCode, message);
+  }
+}

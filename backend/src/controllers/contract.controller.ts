@@ -9,6 +9,7 @@ import { generateInvoicesForContract } from "../services/invoice.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
+import { assertOwnership } from "../utils/authorization";
 
 const contractSchema = z.object({
   propertyId: z.string().min(1),
@@ -84,7 +85,7 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
 
 export const getContract = asyncHandler(async (req: Request, res: Response) => {
   const full = await withRelations(req.params.id);
-  if (!full || full.property.managerId !== req.user!.userId) throw new ApiError(404, "Contrat introuvable");
+  assertOwnership(full, (f) => f.property.managerId, req.user!.userId, "Contrat introuvable");
   res.json(full);
 });
 
@@ -97,8 +98,8 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
 
   const [property] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
-  if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
-  if (!tenant || tenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
 
   const contractStatus = body.status ?? "ACTIVE";
   if (contractStatus === "ACTIVE") {
@@ -154,9 +155,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable");
   const [existingProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
-  if (!existingProperty || existingProperty.managerId !== req.user!.userId) {
-    throw new ApiError(404, "Contrat introuvable");
-  }
+  assertOwnership(existingProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
 
   // Si la requête change le bien ou le locataire du contrat, revalider que
   // ces NOUVEAUX identifiants appartiennent bien au gestionnaire connecté —
@@ -165,11 +164,11 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   // son propre compte (le contrat, sa facturation et sa signature compris).
   if (body.propertyId && body.propertyId !== existing.propertyId) {
     const [newProperty] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
-    if (!newProperty || newProperty.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+    assertOwnership(newProperty, (p) => p.managerId, req.user!.userId, "Bien introuvable");
   }
   if (body.tenantId && body.tenantId !== existing.tenantId) {
     const [newTenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
-    if (!newTenant || newTenant.managerId !== req.user!.userId) throw new ApiError(404, "Locataire introuvable");
+    assertOwnership(newTenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
   }
 
   // Valeurs EFFECTIVES après la modification (partielle) demandée : c'est sur
@@ -294,7 +293,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable");
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
-  if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Contrat introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
 
   // RÉGRESSION : contrairement à deleteProperty/deleteTenant, cette route ne
   // vérifiait jusqu'ici RIEN avant de supprimer — ni que le contrat n'est pas
@@ -406,9 +405,7 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable");
   const [ownerProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
-  if (!ownerProperty || ownerProperty.managerId !== req.user!.userId) {
-    throw new ApiError(404, "Contrat introuvable");
-  }
+  assertOwnership(ownerProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
   if (existing.status !== "ACTIVE") {
     throw new ApiError(409, "Seul un contrat actif peut être renouvelé");
   }
@@ -488,7 +485,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     return res.json(await withRelations(updated.id));
   } else if (req.user.role === "MANAGER") {
     const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-    if (!property || property.managerId !== req.user.userId) throw new ApiError(403, "Accès refusé");
+    assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403);
     const [updated] = await db
       .update(contracts)
       .set({
@@ -523,7 +520,7 @@ export const uploadScannedContract = asyncHandler(async (req: Request, res: Resp
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-  if (!property || property.managerId !== req.user.userId) throw new ApiError(403, "Accès refusé");
+  assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403);
 
   assertFileContentMatchesDeclaredType(req.file);
   const storagePath = await uploadPrivateFile(req.file, "contracts");

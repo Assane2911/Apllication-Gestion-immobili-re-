@@ -5,6 +5,7 @@ import { db } from "../db/client";
 import { contracts, inspections, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 // État des lieux volontairement simplifié à un triplet nom/état/notes par
@@ -88,7 +89,7 @@ export const getInspection = asyncHandler(async (req: Request, res: Response) =>
     .innerJoin(properties, eq(inspections.propertyId, properties.id))
     .innerJoin(tenants, eq(inspections.tenantId, tenants.id))
     .where(eq(inspections.id, req.params.id));
-  if (!row || row.inspection.managerId !== req.user!.userId) throw new ApiError(404, "État des lieux introuvable");
+  assertOwnership(row, (r) => r.inspection.managerId, req.user!.userId, "État des lieux introuvable");
 
   res.json({ ...parseInspection(row.inspection), property: row.property, tenant: row.tenant });
 });
@@ -116,7 +117,7 @@ export const createInspection = asyncHandler(async (req: Request, res: Response)
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-  if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Contrat introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
 
   const [inspection] = await db
     .insert(inspections)
@@ -146,7 +147,7 @@ export const updateInspection = asyncHandler(async (req: Request, res: Response)
   const body = updateInspectionSchema.parse(req.body);
 
   const [existing] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "État des lieux introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "État des lieux introuvable");
 
   // Une fois finalisé (COMPLETED), le contenu constaté contradictoirement ne
   // doit plus bouger — seule la signature est encore possible. Sans ce garde-
@@ -191,7 +192,7 @@ export const updateInspection = asyncHandler(async (req: Request, res: Response)
 
 export const deleteInspection = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "État des lieux introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "État des lieux introuvable");
 
   if (existing.status === "COMPLETED" || existing.signedByManagerAt || existing.signedByTenantAt) {
     throw new ApiError(409, "Impossible de supprimer un état des lieux finalisé ou déjà signé");
@@ -227,7 +228,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
   }
 
   if (req.user.role === "MANAGER") {
-    if (inspection.managerId !== req.user.userId) throw new ApiError(403, "Accès refusé");
+    assertOwnership(inspection, (i) => i.managerId, req.user.userId, "Accès refusé", 403);
     const [updated] = await db
       .update(inspections)
       .set({ signedByManagerAt: new Date(), managerSignatureUrl: signatureDataUrl })

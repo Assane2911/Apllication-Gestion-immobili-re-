@@ -7,6 +7,7 @@ import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 /**
@@ -338,7 +339,7 @@ export const updateListingLead = asyncHandler(async (req: Request, res: Response
   const body = leadUpdateSchema.parse(req.body);
 
   const [existing] = await db.select().from(listingLeads).where(eq(listingLeads.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Demande introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Demande introuvable");
 
   const [lead] = await db.update(listingLeads).set(body).where(eq(listingLeads.id, existing.id)).returning();
 
