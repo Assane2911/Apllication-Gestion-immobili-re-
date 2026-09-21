@@ -7,7 +7,10 @@ import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
+import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { computeSubscriptionInfo } from "./auth.controller";
+import { maxPropertiesForPlan } from "./subscription.controller";
 
 const propertySchema = z.object({
   title: z.string().min(2),
@@ -56,7 +59,7 @@ export const listProperties = asyncHandler(async (req: Request, res: Response) =
 
 export const getProperty = asyncHandler(async (req: Request, res: Response) => {
   const [property] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  if (!property || property.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable");
 
   const propertyContracts = await db
     .select({ contract: contracts, tenant: tenants })
@@ -81,10 +84,29 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
   // Sans cet héritage, un bien restait en EUR par défaut et toute la cascade
   // avec lui — un gestionnaire réglé en XOF voyait ses loyers, ses quittances
   // et ses baux libellés en euros.
-  const [manager] = await db
-    .select({ currency: users.currency })
-    .from(users)
-    .where(eq(users.id, req.user!.userId));
+  const [manager] = await db.select().from(users).where(eq(users.id, req.user!.userId));
+  if (!manager) throw new ApiError(404, "Gestionnaire introuvable");
+
+  // Plafond de biens de la formule (audit sept. 2026 : jamais vérifié
+  // jusqu'ici, alors que les CGU l'annoncent — Starter 5 / Pro 25 /
+  // Entreprise illimité). Pendant l'essai gratuit, la formule effective est
+  // Pro (promis par les CGU), quelle que soit la formule par défaut
+  // (Starter) attribuée à l'inscription.
+  const subscription = computeSubscriptionInfo(manager);
+  const effectivePlan = subscription?.isTrialActive ? "PRO" : manager.subscriptionPlan;
+  const maxProperties = maxPropertiesForPlan(effectivePlan);
+  if (maxProperties !== null) {
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties)
+      .where(eq(properties.managerId, req.user!.userId));
+    if (count >= maxProperties) {
+      throw new ApiError(
+        403,
+        `Limite de ${maxProperties} biens atteinte pour votre formule actuelle. Passez à une formule supérieure pour en ajouter davantage.`
+      );
+    }
+  }
 
   const [property] = await db
     .insert(properties)
@@ -113,7 +135,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
   const body = propertySchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Bien introuvable");
 
   if (body.ownerId) await assertOwnerBelongsToManager(body.ownerId, req.user!.userId);
 
@@ -189,7 +211,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
 
 export const deleteProperty = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  if (!existing || existing.managerId !== req.user!.userId) throw new ApiError(404, "Bien introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Bien introuvable");
 
   const propertyContracts = await db
     .select()

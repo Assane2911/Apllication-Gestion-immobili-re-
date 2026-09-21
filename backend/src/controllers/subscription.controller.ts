@@ -76,9 +76,9 @@ export const SUBSCRIPTION_PLANS = [
     name: "Professionnel",
     popular: true,
     description: "Pour les gestionnaires et agences en pleine croissance.",
-    maxProperties: "Illimité",
+    maxProperties: 25,
     features: [
-      "Nombre de biens illimité",
+      "Jusqu'à 25 biens immobiliers",
       "Suivi des incidents avec photos",
       "Alertes de fin de bail & renouvellement",
       "Rappels automatiques multi-canaux",
@@ -100,6 +100,22 @@ export const SUBSCRIPTION_PLANS = [
     ],
   },
 ];
+
+/**
+ * Plafond de biens de la formule, ou `null` si illimitée (ENTERPRISE, ou un
+ * identifiant de formule inconnu — on ne bloque jamais sur une donnée absente).
+ *
+ * Pendant l'essai gratuit, l'utilisateur bénéficie des fonctionnalités de la
+ * formule Pro (promis dans les CGU) : c'est à l'appelant de résoudre l'id de
+ * formule effectif (voir property.controller.ts) avant d'appeler cette
+ * fonction, PRO étant alors substitué au plan réellement souscrit (STARTER
+ * par défaut à l'inscription).
+ */
+export function maxPropertiesForPlan(planId: string): number | null {
+  const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
+  if (!plan || typeof plan.maxProperties !== "number") return null;
+  return plan.maxProperties;
+}
 
 /**
  * Retourne la liste des formules SaaS et leurs tarifs.

@@ -341,3 +341,75 @@ describe("PUT /api/properties/:id — ordre upload / vérification de propriét�
     expect(uploadPublicFile).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/properties — plafond de biens par formule", () => {
+  // Regression (audit sept. 2026) : createProperty n'a longtemps vérifié
+  // aucune limite, alors que les CGU en annoncent une par formule (Starter 5
+  // biens). Un gestionnaire pouvait donc créer un nombre illimité de biens
+  // sans jamais payer la formule supérieure.
+  it("refuse la création au-delà de la limite Starter (5 biens)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    for (let i = 0; i < 5; i++) {
+      await createProperty(manager.id, { title: `Bien ${i}` });
+    }
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "Bien de trop", address: "1 rue du Test", surface: 30, rent: 400 });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/limite/i);
+  });
+
+  it("autorise la création tant que la limite Starter n'est pas atteinte", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    for (let i = 0; i < 4; i++) {
+      await createProperty(manager.id, { title: `Bien ${i}` });
+    }
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "5e bien", address: "1 rue du Test", surface: 30, rent: 400 });
+
+    expect(res.status).toBe(201);
+  });
+
+  it("n'applique aucune limite pour la formule Entreprise (illimitée)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    for (let i = 0; i < 6; i++) {
+      await createProperty(manager.id, { title: `Bien ${i}` });
+    }
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "7e bien", address: "1 rue du Test", surface: 30, rent: 400 });
+
+    expect(res.status).toBe(201);
+  });
+
+  // La formule enregistrée à l'inscription est Starter, mais les CGU
+  // promettent l'accès aux fonctionnalités de la formule Pro pendant les 15
+  // jours d'essai — la limite appliquée pendant l'essai doit donc être celle
+  // de Pro (25), pas celle de Starter (5).
+  it("applique la limite Pro (25) pendant l'essai gratuit, même si la formule enregistrée est Starter", async () => {
+    const manager = await createManager({
+      subscriptionStatus: "TRIAL",
+      subscriptionPlan: "STARTER",
+      trialEndsAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+    });
+    for (let i = 0; i < 5; i++) {
+      await createProperty(manager.id, { title: `Bien ${i}` });
+    }
+
+    // Au-delà de la limite Starter (5), mais toujours sous la limite Pro (25).
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "6e bien", address: "1 rue du Test", surface: 30, rent: 400 });
+
+    expect(res.status).toBe(201);
+  });
+});
