@@ -30,13 +30,40 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
   // pour ce mois. L'index unique (contractId, mois, année) ne pouvait pas
   // l'empêcher : il protège contre un doublon au sein d'un même contrat, pas
   // entre deux contrats successifs sur le même bien.
+  //
+  // Une facture ANNULÉE ne compte pas comme un mois facturé : elle n'est plus
+  // réclamée à personne. Sans cette nuance, annuler une facture erronée gelait
+  // son mois définitivement — le loyer ne pouvait plus jamais être facturé, ni
+  // au même locataire ni à son successeur, et rien ne le signalait.
   const existingInvoices = await dbClient
-    .select({ periodMonth: invoices.periodMonth, periodYear: invoices.periodYear })
+    .select({
+      contractId: invoices.contractId,
+      periodMonth: invoices.periodMonth,
+      periodYear: invoices.periodYear,
+      status: invoices.status,
+    })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .where(eq(contracts.propertyId, contract.propertyId));
+
+  type LigneExistante = { contractId: string; periodMonth: number; periodYear: number; status: string };
+
+  // Mois déjà couverts par une facture VIVANTE, quel que soit le contrat du
+  // bien : c'est le garde anti-double-facturation décrit ci-dessus.
   const existingKeys = new Set(
-    existingInvoices.map((i: { periodMonth: number; periodYear: number }) => `${i.periodMonth}-${i.periodYear}`)
+    existingInvoices
+      .filter((i: LigneExistante) => i.status !== "CANCELLED")
+      .map((i: LigneExistante) => `${i.periodMonth}-${i.periodYear}`)
+  );
+
+  // Mois déjà présents pour CE contrat, annulations comprises : l'index unique
+  // (contractId, mois, année) existe toujours, donc réinsérer ici échouerait.
+  // Une facture annulée ne se régénère ainsi que via un AUTRE contrat du bien
+  // (nouveau locataire), jamais en doublon sur le même.
+  const clesDeCeContrat = new Set(
+    existingInvoices
+      .filter((i: LigneExistante) => i.contractId === contract.id)
+      .map((i: LigneExistante) => `${i.periodMonth}-${i.periodYear}`)
   );
 
   while (cursor <= cutoff) {
@@ -53,7 +80,8 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
     const lastDayOfPeriodMonth = new Date(periodYear, periodMonth, 0).getDate();
     const dueDate = new Date(periodYear, periodMonth - 1, Math.min(desiredDay, lastDayOfPeriodMonth));
 
-    if (!existingKeys.has(`${periodMonth}-${periodYear}`)) {
+    const cle = `${periodMonth}-${periodYear}`;
+    if (!existingKeys.has(cle) && !clesDeCeContrat.has(cle)) {
       const [invoice] = await dbClient
         .insert(invoices)
         .values({

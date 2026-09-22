@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { Request, Response } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db/client";
 import { invoices, platformSubscriptions } from "../db/schema";
 import { ETATS_MODIFIABLES } from "./invoice.controller";
@@ -90,7 +90,15 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
       await activateSubscriptionRecord(subscriptionRow.id);
     }
   } else {
-    const [invoiceRow] = await db.select().from(invoices).where(eq(invoices.paymentRef, paydunyaToken));
+    // Rapprochement restreint aux factures réglées PAR PAYDUNYA, même raison
+    // que côté Stripe : paymentRef sert aussi de référence de virement saisie
+    // librement par le locataire (payInvoice) et n'a aucune contrainte
+    // d'unicité — sans ce filtre, une IPN authentique pouvait solder une
+    // facture déclarée en virement portant le même texte.
+    const [invoiceRow] = await db
+      .select()
+      .from(invoices)
+      .where(and(eq(invoices.paymentRef, paydunyaToken), eq(invoices.paymentMethod, "PAYDUNYA")));
 
     if (!invoiceRow) {
       console.warn(`[paydunya] Facture introuvable pour le token ${paydunyaToken}`);
@@ -109,10 +117,14 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
         `[paydunya] Facture ${invoiceRow.id} dans un état non modifiable (${invoiceRow.status}) : IPN ignorée.`
       );
     } else {
+      // Condition de statut dans le WHERE (et pas seulement dans le garde
+      // lu plus haut) : entre le SELECT et cet UPDATE, la facture a pu être
+      // annulée ou déjà soldée par une autre livraison de la même IPN. Voir
+      // le commentaire équivalent dans stripe.controller.ts.
       const [updated] = await db
         .update(invoices)
         .set({ status: "PAID", paidAt: new Date() })
-        .where(eq(invoices.id, invoiceRow.id))
+        .where(and(eq(invoices.id, invoiceRow.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
         .returning();
       if (updated) {
         await sendPaymentReceiptEmail(updated.id).catch((err) =>

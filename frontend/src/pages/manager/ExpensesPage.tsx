@@ -1,3 +1,4 @@
+import { csvEscape, csvMontant, CSV_BOM } from "../../utils/csv";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, liste } from "../../api/client";
@@ -156,15 +157,15 @@ export default function ExpensesPage() {
     ];
     const rows = expenses.map((e) => [
       new Date(e.expenseDate).toLocaleDateString(i18n.language),
-      `"${e.property?.title || ""}"`,
-      `"${categoryLabels[e.category] || e.category}"`,
-      `"${e.title.replace(/"/g, '""')}"`,
-      e.amount,
+      csvEscape(e.property?.title || ""),
+      csvEscape(categoryLabels[e.category] || e.category),
+      csvEscape(e.title),
+      csvMontant(e.amount),
       e.currency,
-      `"${(e.notes || "").replace(/"/g, '""')}"`,
+      csvEscape(e.notes || ""),
     ]);
 
-    const csvContent = "﻿" + [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+    const csvContent = CSV_BOM + [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

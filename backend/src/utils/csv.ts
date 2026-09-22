@@ -24,3 +24,20 @@ export function csvEscape(value: string | number): string {
 
 /** BOM UTF-8 à préfixer au contenu d'un CSV exporté, pour qu'Excel détecte l'encodage. */
 export const CSV_BOM = "﻿";
+
+/**
+ * Montant prêt pour un tableur francophone : deux décimales, séparateur
+ * virgule. Les exports sortaient le nombre brut (`1234.56`) alors que le
+ * séparateur de colonnes est le point-virgule : ouvert dans un tableur
+ * configuré en français, chaque montant était donc lu comme du TEXTE — aucune
+ * somme, aucun tri, aucun contrôle possible sur un export comptable, ce qui
+ * est précisément son seul usage.
+ *
+ * L'arrondi à deux décimales règle au passage les résidus de flottants : un
+ * solde cumulé pouvait sortir en `799.9999999999999` (les montants sont
+ * stockés en doublePrecision, voir schema.ts). `|| 0` neutralise le -0 que
+ * produit la négation d'un montant nul, qui s'afficherait « -0,00 ».
+ */
+export function csvMontant(value: number): string {
+  return ((value || 0).toFixed(2)).replace(".", ",");
+}

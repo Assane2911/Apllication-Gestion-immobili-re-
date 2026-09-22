@@ -1,9 +1,10 @@
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { invoices, platformSubscriptions, users } from "../db/schema";
+import * as emailService from "../services/email.service";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -47,6 +48,84 @@ function envoyer(corps: string, signature: string | null) {
 }
 
 describe("POST /api/payments/stripe/webhook", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("n'émet qu'une seule quittance pour une même facture, même sur deux livraisons du même événement", async () => {
+    // Stripe rejoue ses webhooks par conception (doute réseau, redémarrage).
+    // Ce test verrouille le résultat attendu — une facture réglée, une seule
+    // quittance — sur deux livraisons simultanées.
+    //
+    // Il ne reproduit PAS la course elle-même : la base de test (PGlite,
+    // connexion unique) sérialise les deux requêtes, si bien que la seconde
+    // voit déjà PAID et s'arrête sur le garde de statut. La vraie protection
+    // contre l'entrelacement est la condition de statut portée par le WHERE
+    // de l'UPDATE, comme partout ailleurs dans le projet
+    // (invoice.controller.ts) — en production, deux instances peuvent lire
+    // PENDING toutes les deux avant que l'une n'écrive.
+    const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue(undefined as never);
+
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, {
+      status: "PENDING",
+      paymentMethod: "STRIPE",
+      paymentRef: "cs_test_course",
+      amount: 500,
+    });
+
+    const corps = evenementSession({ id: "cs_test_course", reference: invoice.id, amountTotal: 50000 });
+    const [a, b] = await Promise.all([envoyer(corps, signer(corps)), envoyer(corps, signer(corps))]);
+
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("PAID");
+    expect(envoiEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne solde pas une facture déclarée en virement qui porterait la référence d'une session Stripe", async () => {
+    // paymentRef sert à la fois de référence de virement SAISIE PAR LE
+    // LOCATAIRE (payInvoice accepte un bankReference libre) et de clé de
+    // rapprochement des webhooks, sans contrainte d'unicité. Un locataire
+    // pouvait donc déclarer un virement portant l'identifiant de la session
+    // Stripe d'une autre de ses factures : la confirmation soldait alors la
+    // mauvaise facture — quittance légale émise pour un loyer non réglé,
+    // pendant que celle réellement payée restait due.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const factureVirement = await createInvoice(contract.id, {
+      periodMonth: 5,
+      status: "PENDING",
+      paymentMethod: "BANK_TRANSFER",
+      paymentRef: "cs_test_collision",
+      amount: 500,
+    });
+    const factureStripe = await createInvoice(contract.id, {
+      periodMonth: 6,
+      status: "PENDING",
+      paymentMethod: "STRIPE",
+      paymentRef: "cs_test_collision",
+      amount: 500,
+    });
+
+    const corps = evenementSession({ id: "cs_test_collision", reference: factureStripe.id, amountTotal: 50000 });
+    const res = await envoyer(corps, signer(corps));
+    expect(res.status).toBe(200);
+
+    const [stripeApres] = await testDb.select().from(invoices).where(eq(invoices.id, factureStripe.id));
+    const [virementApres] = await testDb.select().from(invoices).where(eq(invoices.id, factureVirement.id));
+    expect(stripeApres.status).toBe("PAID");
+    expect(virementApres.status).toBe("PENDING");
+  });
+
   it("confirme une facture réglée et déclenche la quittance", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);

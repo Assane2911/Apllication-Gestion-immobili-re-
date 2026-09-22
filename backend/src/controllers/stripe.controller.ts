@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { db } from "../db/client";
@@ -102,7 +102,17 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
       await activateSubscriptionRecord(abonnement.id);
     }
   } else {
-    const [facture] = await db.select().from(invoices).where(eq(invoices.paymentRef, sessionId));
+    // Rapprochement restreint aux factures réglées PAR STRIPE : paymentRef
+    // sert aussi de référence de virement SAISIE PAR LE LOCATAIRE (voir
+    // payInvoice, bankReference libre) et n'a aucune contrainte d'unicité.
+    // Sans ce filtre, un locataire pouvait déclarer un virement portant
+    // l'identifiant de session Stripe d'une autre de ses factures : la
+    // confirmation soldait alors la mauvaise — quittance légale émise pour un
+    // loyer non réglé, pendant que celle réellement payée restait due.
+    const [facture] = await db
+      .select()
+      .from(invoices)
+      .where(and(eq(invoices.paymentRef, sessionId), eq(invoices.paymentMethod, "STRIPE")));
 
     if (!facture) {
       console.warn(`[stripe] Facture introuvable pour la session ${sessionId}`);
@@ -123,10 +133,18 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
         `[stripe] Facture ${facture.id} dans un état non modifiable (${facture.status}) : confirmation de paiement ignorée.`
       );
     } else {
+      // Condition de statut portée par le WHERE, et pas seulement par le
+      // garde lu plus haut : entre le SELECT et cet UPDATE, la facture a pu
+      // être annulée par le gestionnaire ou déjà soldée par une autre
+      // livraison du même événement (Stripe rejoue, et la plateforme tourne
+      // sur plusieurs instances). Sans elle, deux livraisons simultanées
+      // écrivaient toutes deux et envoyaient chacune une quittance — un
+      // document légal, en double, pour un seul loyer. C'est la forme
+      // qu'emploie déjà tout le reste du projet (invoice.controller.ts).
       const [misAJour] = await db
         .update(invoices)
         .set({ status: "PAID", paidAt: new Date() })
-        .where(eq(invoices.id, facture.id))
+        .where(and(eq(invoices.id, facture.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
         .returning();
       if (misAJour) {
         await sendPaymentReceiptEmail(misAJour.id).catch((err) =>

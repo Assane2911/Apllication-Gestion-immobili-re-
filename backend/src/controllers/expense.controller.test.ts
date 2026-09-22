@@ -286,4 +286,26 @@ describe("GET /api/expenses/export", () => {
     expect(res.text).toContain("Villa Ngor");
     expect(res.text).toContain("Peinture");
   });
+
+  it("écrit les montants à la virgule, exploitables dans un tableur francophone", async () => {
+    // Le séparateur de colonnes est le point-virgule et les dates sortent en
+    // fr-FR, mais les montants sortaient bruts (« 1234.56 ») : ouvert dans un
+    // tableur configuré en français, chaque montant était lu comme du texte —
+    // aucune somme possible sur un fichier dont c'est pourtant le seul usage.
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "MAINTENANCE",
+      title: "Peinture",
+      amount: 1234.56,
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("-1234,56");
+    expect(res.text).not.toContain("1234.56");
+  });
 });

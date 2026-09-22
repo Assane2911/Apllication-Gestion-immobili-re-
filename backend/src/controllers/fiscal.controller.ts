@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { asyncHandler } from "../utils/asyncHandler";
-import { csvEscape, CSV_BOM } from "../utils/csv";
+import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
 
 /**
  * Module "Bilan Fiscal & Comptabilité" : synthèse annuelle (revenus/dépenses
@@ -265,10 +265,10 @@ export const exportGrandLivre = asyncHandler(async (req: Request, res: Response)
         entry.type,
         csvEscape(entry.categorie),
         csvEscape(entry.libelle),
-        entry.type === "Recette" ? entry.montant : "",
-        entry.type === "Dépense" ? entry.montant : "",
+        entry.type === "Recette" ? csvMontant(entry.montant) : "",
+        entry.type === "Dépense" ? csvMontant(entry.montant) : "",
         entry.currency,
-        newBalance,
+        csvMontant(newBalance),
       ].join(";")
     );
   }

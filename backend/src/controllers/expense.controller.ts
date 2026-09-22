@@ -6,7 +6,7 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
-import { csvEscape, CSV_BOM } from "../utils/csv";
+import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
 
 const createExpenseSchema = z.object({
   propertyId: z.string().min(1),
@@ -244,7 +244,7 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
         csvEscape(r.property.title),
         csvEscape(`${r.tenant.firstName} ${r.tenant.lastName}`),
         csvEscape(`Loyer ${r.invoice.periodMonth}/${r.invoice.periodYear}`),
-        r.invoice.amount,
+        csvMontant(r.invoice.amount),
         r.invoice.currency || "EUR",
       ].join(";")
     );
@@ -258,7 +258,7 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
         csvEscape(r.property.title),
         csvEscape(r.expense.category),
         csvEscape(r.expense.title),
-        -r.expense.amount,
+        csvMontant(-r.expense.amount),
         r.expense.currency || "EUR",
       ].join(";")
     );
@@ -280,7 +280,14 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
     byProperty.set(r.property.id, entry);
   }
   for (const entry of byProperty.values()) {
-    lines.push([csvEscape(entry.title), entry.revenue, entry.expense, entry.revenue - entry.expense].join(";"));
+    lines.push(
+      [
+        csvEscape(entry.title),
+        csvMontant(entry.revenue),
+        csvMontant(entry.expense),
+        csvMontant(entry.revenue - entry.expense),
+      ].join(";")
+    );
   }
 
   const csvContent = CSV_BOM + lines.join("\n");

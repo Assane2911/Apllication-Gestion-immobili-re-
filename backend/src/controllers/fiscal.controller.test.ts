@@ -225,4 +225,33 @@ describe("GET /api/fiscal/grand-livre", () => {
     expect(res.status).toBe(200);
     expect(res.text).toContain("Aucune écriture pour cet exercice");
   });
+
+  it("écrit montants et solde cumulé à la virgule, sans résidu de flottant", async () => {
+    // Deux écritures dont la différence tombe mal en binaire : le solde
+    // cumulé sortait en « 799.9999999999999 ». Et tous les montants
+    // sortaient au point décimal alors que le séparateur de colonnes est le
+    // point-virgule — illisibles comme nombres dans un tableur français.
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, { amount: 1000.1, status: "PAID", paidAt: new Date(2026, 2, 5) });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "MAINTENANCE",
+      title: "Peinture",
+      amount: 200.1,
+      expenseDate: new Date(2026, 2, 10),
+    });
+
+    const res = await request(app).get("/api/fiscal/grand-livre?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("1000,10");
+    expect(res.text).toContain("200,10");
+    // Solde cumulé après les deux écritures : 1000,10 - 200,10 = 800,00 —
+    // et surtout pas « 799.9999999999999 ».
+    expect(res.text).toContain("800,00");
+    expect(res.text).not.toContain("799.99");
+  });
 });

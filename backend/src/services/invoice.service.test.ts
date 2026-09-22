@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -241,5 +241,91 @@ describe("generateInvoicesForContract", () => {
     expect(
       facturesNouveau.some((f: typeof invoices.$inferSelect) => f.periodMonth === 3 && f.periodYear === 2026)
     ).toBe(true);
+  });
+
+  it("refacture un mois dont la seule facture, émise par un autre contrat du bien, a été annulée", async () => {
+    // Le garde anti-double-facturation ci-dessus ne regardait pas le statut :
+    // une facture ANNULÉE gelait donc son mois définitivement. Un gestionnaire
+    // qui annulait une facture erronée du contrat précédent ne pouvait plus
+    // jamais facturer ce mois-là au nouveau locataire — un loyer perdu, sans
+    // aucun message.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+
+    const [ancienContrat] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        status: "ENDED",
+        startDate: new Date(2026, 0, 1),
+        endDate: new Date(2026, 1, 15),
+      })
+      .returning();
+    await generateInvoicesForContract(ancienContrat, testDb);
+
+    // Le gestionnaire annule la facture de février de l'ancien contrat.
+    await testDb
+      .update(invoices)
+      .set({ status: "CANCELLED" })
+      .where(and(eq(invoices.contractId, ancienContrat.id), eq(invoices.periodMonth, 2)));
+
+    const [nouveauContrat] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 550,
+        deposit: 1000,
+        startDate: new Date(2026, 1, 16),
+        endDate: new Date(2027, 1, 15),
+      })
+      .returning();
+
+    await generateInvoicesForContract(nouveauContrat, testDb);
+
+    const facturesNouveau = await testDb.select().from(invoices).where(eq(invoices.contractId, nouveauContrat.id));
+    expect(
+      facturesNouveau.some((f: typeof invoices.$inferSelect) => f.periodMonth === 2 && f.periodYear === 2026)
+    ).toBe(true);
+  });
+
+  it("ne tente pas de recréer une facture annulée du MÊME contrat (l'index unique l'interdit)", async () => {
+    // Pendant du test précédent : autoriser la régénération après annulation
+    // ne doit pas faire buter la génération sur l'index unique
+    // (contractId, mois, année), qui existe toujours pour le contrat lui-même.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+
+    const [contract] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: new Date(2026, 3, 1),
+        endDate: new Date(2027, 2, 31),
+      })
+      .returning();
+    await generateInvoicesForContract(contract, testDb);
+
+    await testDb
+      .update(invoices)
+      .set({ status: "CANCELLED" })
+      .where(and(eq(invoices.contractId, contract.id), eq(invoices.periodMonth, 4)));
+
+    await expect(generateInvoicesForContract(contract, testDb)).resolves.toBeDefined();
+
+    const facturesAvril = await testDb
+      .select()
+      .from(invoices)
+      .where(and(eq(invoices.contractId, contract.id), eq(invoices.periodMonth, 4)));
+    expect(facturesAvril).toHaveLength(1);
+    expect(facturesAvril[0].status).toBe("CANCELLED");
   });
 });
