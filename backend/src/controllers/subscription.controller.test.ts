@@ -7,7 +7,13 @@ import { users } from "../db/schema";
 import { calculerJoursCredit, calculerPeriode } from "../services/subscriptionPeriod.service";
 import { authHeader, createManager, createPlatformSubscription, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
-import { DEVISE_PAR_DEFAUT, SUBSCRIPTION_PLANS, deviseFacturee, tarifPourDevise } from "./subscription.controller";
+import {
+  DEVISE_PAR_DEFAUT,
+  SUBSCRIPTION_PLANS,
+  deviseFacturee,
+  devisesTarifees,
+  tarifPourDevise,
+} from "./subscription.controller";
 
 describe("GET /api/subscription/plans", () => {
   it("est accessible sans authentification et renvoie les 3 formules", async () => {
@@ -38,13 +44,32 @@ describe("GET /api/subscription/plans", () => {
     expect(pro.annualPrice).toBe(144000);
   });
 
-  it("retombe silencieusement sur EUR quand la devise demandée n'est pas tarifée (ex. USD, GBP, un compte non contraint côté champ users.currency)", async () => {
-    // Rien n'empêche users.currency de contenir n'importe quelle devise
-    // proposée par le sélecteur (updateCurrency n'a pas de liste blanche) :
-    // ce test verrouille le comportement de repli côté tarification, pour
-    // qu'un compte en USD/GBP/etc. reçoive toujours un prix cohérent (EUR),
-    // jamais un prix à 0 ou une réponse incohérente.
-    for (const devise of ["USD", "GBP", "N_IMPORTE_QUOI"]) {
+  it("tarife chacune des devises proposées par le sélecteur de l'interface", async () => {
+    // Le sélecteur de devise du frontend (frontend/src/context/currency.ts)
+    // propose ces neuf codes. Une devise proposée à l'écran mais absente de
+    // TARIFS retomberait sur l'euro : l'utilisateur choisirait une devise et
+    // verrait ses prix dans une autre. Ce test échoue si l'une d'elles perd
+    // sa tarification.
+    const devisesDuSelecteur = ["EUR", "USD", "XOF", "XAF", "STN", "GBP", "CAD", "CHF", "MAD"];
+
+    for (const devise of devisesDuSelecteur) {
+      const res = await request(app).get(`/api/subscription/plans?currency=${devise}`);
+
+      expect(res.status).toBe(200);
+      for (const plan of res.body) {
+        expect(plan.currency).toBe(devise);
+        expect(plan.monthlyPrice).toBeGreaterThan(0);
+        expect(plan.annualPrice).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("retombe silencieusement sur EUR pour une devise qui n'est toujours pas tarifée (users.currency n'a pas de liste blanche)", async () => {
+    // Rien n'empêche users.currency de contenir n'importe quoi :
+    // updateCurrency accepte toute chaîne de 1 à 10 caractères. Ce test
+    // verrouille le repli, pour qu'un tel compte reçoive toujours un prix
+    // cohérent (EUR), jamais un prix à 0 ni une réponse incohérente.
+    for (const devise of ["JPY", "AUD", "N_IMPORTE_QUOI"]) {
       const res = await request(app).get(`/api/subscription/plans?currency=${devise}`);
 
       expect(res.status).toBe(200);
@@ -59,14 +84,15 @@ describe("GET /api/subscription/plans", () => {
 });
 
 describe("deviseFacturee / tarifPourDevise — résolution de la devise facturée", () => {
-  it("retourne la devise demandée quand elle est tarifée, insensible à la casse", () => {
-    expect(deviseFacturee("EUR")).toBe("EUR");
-    expect(deviseFacturee("XOF")).toBe("XOF");
-    expect(deviseFacturee("xof")).toBe("XOF");
+  it("retourne telle quelle chaque devise tarifée, insensible à la casse", () => {
+    for (const devise of devisesTarifees()) {
+      expect(deviseFacturee(devise)).toBe(devise);
+      expect(deviseFacturee(devise.toLowerCase())).toBe(devise);
+    }
   });
 
-  it("retombe sur la devise par défaut pour toute devise non tarifée, une entrée vide ou absente", () => {
-    for (const devise of ["USD", "GBP", "CAD", "CHF", "MAD", "XAF", "STN", ""]) {
+  it("retombe sur la devise par défaut pour une devise non tarifée, une entrée vide ou absente", () => {
+    for (const devise of ["JPY", "AUD", "SEK", ""]) {
       expect(deviseFacturee(devise)).toBe(DEVISE_PAR_DEFAUT);
     }
     expect(deviseFacturee(null)).toBe(DEVISE_PAR_DEFAUT);
@@ -74,8 +100,28 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
   });
 
   it("tarifPourDevise renvoie null (jamais un tarif inventé) pour une devise non tarifée", () => {
-    expect(tarifPourDevise("STARTER", "USD")).toBeNull();
+    expect(tarifPourDevise("STARTER", "JPY")).toBeNull();
     expect(tarifPourDevise("PLAN_INEXISTANT", "EUR")).toBeNull();
+  });
+
+  it("chaque formule est tarifée dans chaque devise annoncée : aucun trou dans la grille", () => {
+    for (const plan of SUBSCRIPTION_PLANS) {
+      for (const devise of devisesTarifees()) {
+        const tarif = tarifPourDevise(plan.id, devise);
+        expect(tarif, `${plan.id} en ${devise}`).not.toBeNull();
+        expect(tarif!.monthly).toBeGreaterThan(0);
+        expect(tarif!.annual).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("l'annuel coûte toujours moins que douze mensualités, dans chaque devise", () => {
+    for (const plan of SUBSCRIPTION_PLANS) {
+      for (const devise of devisesTarifees()) {
+        const tarif = tarifPourDevise(plan.id, devise)!;
+        expect(tarif.annual, `${plan.id} en ${devise}`).toBeLessThan(tarif.monthly * 12);
+      }
+    }
   });
 });
 
@@ -86,7 +132,11 @@ describe("TARIFS — la remise annuelle de -20% annoncée par l'interface reste 
   // à la main sans recalculer l'annuel correspondant. Ce test échoue
   // immédiatement dans ce cas, plutôt que de laisser passer un badge (et une
   // promesse commerciale) devenus faux.
-  const casDeTest = SUBSCRIPTION_PLANS.flatMap((plan) => ["EUR", "XOF"].map((devise) => [plan.id, devise] as const));
+  // Toutes les devises tarifées, pas une liste écrite à la main : une devise
+  // ajoutée à TARIFS est ainsi couverte d'office par cet invariant.
+  const casDeTest = SUBSCRIPTION_PLANS.flatMap((plan) =>
+    devisesTarifees().map((devise) => [plan.id, devise] as const)
+  );
 
   it.each(casDeTest)("%s en %s respecte ~20%% de remise annuelle (12 × mensuel × 0,8, arrondi)", (planId, devise) => {
     const tarif = tarifPourDevise(planId, devise);

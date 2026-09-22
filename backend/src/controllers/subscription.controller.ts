@@ -17,9 +17,22 @@ export const DEVISE_PAR_DEFAUT = "EUR";
  * Pourquoi pas une conversion depuis l'euro : un prix local n'est pas un taux
  * de change mais une décision commerciale. 29 € convertis à la parité fixe
  * donneraient 19 023 FCFA — un montant illisible, et calé sur un pouvoir
- * d'achat qui n'est pas celui du marché visé. Les montants XOF sont donc
- * choisis, arrondis, et respectent le même rabais annuel de 20 % que
- * l'interface annonce (12 × mensuel × 0,8).
+ * d'achat qui n'est pas celui du marché visé. Les montants sont donc choisis,
+ * arrondis, et respectent tous le même rabais annuel de 20 % que l'interface
+ * annonce — invariant verrouillé par un test paramétré
+ * (subscription.controller.test.ts) qui échoue si un prix futur le rompt.
+ *
+ * Les neuf devises proposées par le sélecteur de l'interface
+ * (frontend/src/context/currency.ts) sont toutes tarifées : parité pour les
+ * marchés à pouvoir d'achat comparable (USD, GBP, CAD, CHF), ajustement à la
+ * baisse pour les autres (MAD, STN), au même niveau que le choix déjà fait
+ * pour le XOF. Le XAF partage la parité fixe du XOF avec l'euro et le même
+ * marché : mêmes montants, délibérément.
+ *
+ * Attention, tarifer n'est pas encaisser : le paiement par carte refuse toute
+ * devise absente de STRIPE_CURRENCIES (voir .env.example et
+ * payment.service.ts::indisponibilite), et PayDunya n'encaisse que dans la
+ * devise de son compte. Le virement bancaire, lui, reste toujours proposé.
  *
  * Pour changer un prix, il n'y a qu'une ligne à toucher ici : c'est aussi
  * pourquoi les champs monthlyPrice / annualPrice ont disparu du catalogue
@@ -28,17 +41,48 @@ export const DEVISE_PAR_DEFAUT = "EUR";
 const TARIFS: Record<string, Record<string, { monthly: number; annual: number }>> = {
   STARTER: {
     EUR: { monthly: 9, annual: 86 },
+    USD: { monthly: 10, annual: 96 },
+    GBP: { monthly: 8, annual: 77 },
+    CAD: { monthly: 14, annual: 134 },
+    CHF: { monthly: 9, annual: 86 },
+    MAD: { monthly: 89, annual: 854 },
     XOF: { monthly: 5000, annual: 48000 },
+    XAF: { monthly: 5000, annual: 48000 },
+    STN: { monthly: 179, annual: 1718 },
   },
   PRO: {
     EUR: { monthly: 29, annual: 278 },
+    USD: { monthly: 32, annual: 307 },
+    GBP: { monthly: 25, annual: 240 },
+    CAD: { monthly: 44, annual: 422 },
+    CHF: { monthly: 29, annual: 278 },
+    MAD: { monthly: 289, annual: 2774 },
     XOF: { monthly: 15000, annual: 144000 },
+    XAF: { monthly: 15000, annual: 144000 },
+    STN: { monthly: 579, annual: 5558 },
   },
   ENTERPRISE: {
     EUR: { monthly: 49, annual: 470 },
+    USD: { monthly: 54, annual: 518 },
+    GBP: { monthly: 42, annual: 403 },
+    CAD: { monthly: 74, annual: 710 },
+    CHF: { monthly: 49, annual: 470 },
+    MAD: { monthly: 489, annual: 4694 },
     XOF: { monthly: 25000, annual: 240000 },
+    XAF: { monthly: 25000, annual: 240000 },
+    STN: { monthly: 979, annual: 9398 },
   },
 };
+
+/**
+ * Les devises réellement tarifées, dans l'ordre du catalogue. Exportée pour
+ * que les tests couvrent automatiquement toute devise ajoutée ci-dessus :
+ * une nouvelle entrée sans vérification de son rabais annuel passerait
+ * sinon inaperçue.
+ */
+export function devisesTarifees(): string[] {
+  return Object.keys(TARIFS.PRO);
+}
 
 /**
  * Devise réellement facturée pour une devise demandée : la devise elle-même si

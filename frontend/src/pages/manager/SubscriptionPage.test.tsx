@@ -288,13 +288,14 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByText("-20%")).not.toBeInTheDocument();
   });
 
-  it("prévient le gestionnaire quand sa devise d'affichage n'est pas disponible pour les abonnements", async () => {
-    // MAD n'est pas tarifé côté backend (voir TARIFS dans subscription.controller.ts) :
-    // le serveur retombe silencieusement sur EUR. Sans ce message, un
-    // gestionnaire ayant choisi le dirham pourrait croire à un bug plutôt
-    // qu'à une limitation connue et documentée.
+  it("prévient le gestionnaire quand sa devise d'affichage n'est pas tarifée pour les abonnements", async () => {
+    // Les neuf devises du sélecteur sont désormais tarifées, mais
+    // users.currency n'a pas de liste blanche (updateCurrency accepte toute
+    // chaîne) : une devise comme le yen peut donc s'y trouver, et le serveur
+    // retombe alors sur EUR. Sans ce message, le gestionnaire concerné
+    // croirait à un bug d'affichage plutôt qu'à une limite connue.
     localStorage.removeItem("app_currency");
-    seedUser(authUser({ currency: "MAD" }));
+    seedUser(authUser({ currency: "JPY" }));
     mockedApi.get.mockImplementation((url: string) => {
       if (String(url).startsWith("/payments/methods")) {
         return Promise.resolve({ data: { currency: "EUR", methods: MOYENS_PAR_DEFAUT } }) as never;
@@ -310,7 +311,7 @@ describe("SubscriptionPage", () => {
 
     await waitFor(() => expect(screen.getByText("Starter")).toBeInTheDocument());
     expect(
-      screen.getByText(/Les abonnements ne sont facturés qu'en euros ou en francs CFA/)
+      screen.getByText(/ne sont pas encore facturés dans votre devise d'affichage/)
     ).toBeInTheDocument();
   });
 
@@ -322,7 +323,36 @@ describe("SubscriptionPage", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Starter")).toBeInTheDocument());
-    expect(screen.queryByText(/euros ou en francs CFA/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pas encore facturés dans votre devise/)).not.toBeInTheDocument();
+  });
+
+  it("affiche les tarifs d'une devise désormais tarifée (MAD) sans avertissement de repli", async () => {
+    // Le dirham fait partie des devises ajoutées à TARIFS : le serveur répond
+    // donc en MAD, et le gestionnaire ne doit plus voir ni un prix en euros
+    // ni le message de repli.
+    localStorage.removeItem("app_currency");
+    seedUser(authUser({ currency: "MAD" }));
+    mockedApi.get.mockImplementation((url: string) => {
+      if (String(url).startsWith("/payments/methods")) {
+        return Promise.resolve({ data: { currency: "MAD", methods: ["BANK_TRANSFER"] } }) as never;
+      }
+      return Promise.resolve(
+        String(url).startsWith("/subscription/plans")
+          ? { data: [plan({ id: "PRO", name: "Pro", monthlyPrice: 289, annualPrice: 2774, currency: "MAD" })] }
+          : { data: { history: [] } }
+      ) as never;
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Pro")).toBeInTheDocument());
+
+    // La devise voyage jusqu'à la requête, et le prix revient en dirhams.
+    const urls = mockedApi.get.mock.calls.map((appel) => String(appel[0]));
+    expect(urls.some((url) => url.includes("/subscription/plans") && url.includes("currency=MAD"))).toBe(true);
+    expect(screen.getByText((texte) => texte.includes("DH"))).toBeInTheDocument();
+    expect(screen.queryByText((texte) => texte.includes("€"))).not.toBeInTheDocument();
+    expect(screen.queryByText(/pas encore facturés dans votre devise/)).not.toBeInTheDocument();
   });
 
   it("affiche le statut d'essai et les formules disponibles", async () => {

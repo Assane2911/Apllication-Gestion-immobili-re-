@@ -1063,7 +1063,7 @@ const fr = {
       mostPopular: "Le plus populaire",
       perMonth: "/ mois",
       billedAnnually: "(facturé {{amount}} / an)",
-      unsupportedCurrencyNotice: "Les abonnements ne sont facturés qu'en euros ou en francs CFA. Vos formules sont donc affichées ci-dessous en {{currency}}.",
+      unsupportedCurrencyNotice: "Les abonnements ne sont pas encore facturés dans votre devise d'affichage. Vos formules sont donc affichées ci-dessous en {{currency}}.",
       includedInPlan: "Inclus dans l'offre :",
       currentPlanBtn: "Votre formule actuelle",
       choosePlanBtn: "Choisir {{plan}}",
