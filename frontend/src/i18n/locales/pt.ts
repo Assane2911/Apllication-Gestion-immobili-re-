@@ -1062,6 +1062,7 @@ const pt: TranslationSchema = {
       mostPopular: "Mais popular",
       perMonth: "/ mês",
       billedAnnually: "(faturado {{amount}} / ano)",
+      unsupportedCurrencyNotice: "As subscrições só são faturadas em euros ou francos CFA. Os seus planos são por isso apresentados abaixo em {{currency}}.",
       includedInPlan: "Incluído no plano:",
       currentPlanBtn: "O seu plano atual",
       choosePlanBtn: "Escolher {{plan}}",

@@ -271,6 +271,60 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByText((texte) => texte.includes("€"))).not.toBeInTheDocument();
   });
 
+  it("calcule le badge de remise annuelle depuis les tarifs reçus, jamais figé à -20%", async () => {
+    // Le badge affichait "-20%" en dur : un futur changement de TARIFS
+    // (backend) aurait pu changer la remise réelle sans que rien côté
+    // interface ne le reflète. Ici le tarif annuel ne respecte volontairement
+    // PAS 20 % (25 % de remise) pour prouver que le badge est recalculé
+    // depuis les prix reçus, pas simplement recopié.
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER", monthlyPrice: 20, annualPrice: 180 })] }); // 12×20×0,75 = 180 → -25 %
+    queueGet({ data: { history: [] } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Starter")).toBeInTheDocument());
+    expect(screen.getByText("-25%")).toBeInTheDocument();
+    expect(screen.queryByText("-20%")).not.toBeInTheDocument();
+  });
+
+  it("prévient le gestionnaire quand sa devise d'affichage n'est pas disponible pour les abonnements", async () => {
+    // MAD n'est pas tarifé côté backend (voir TARIFS dans subscription.controller.ts) :
+    // le serveur retombe silencieusement sur EUR. Sans ce message, un
+    // gestionnaire ayant choisi le dirham pourrait croire à un bug plutôt
+    // qu'à une limitation connue et documentée.
+    localStorage.removeItem("app_currency");
+    seedUser(authUser({ currency: "MAD" }));
+    mockedApi.get.mockImplementation((url: string) => {
+      if (String(url).startsWith("/payments/methods")) {
+        return Promise.resolve({ data: { currency: "EUR", methods: MOYENS_PAR_DEFAUT } }) as never;
+      }
+      return Promise.resolve(
+        String(url).startsWith("/subscription/plans")
+          ? { data: [plan({ id: "STARTER", currency: "EUR" })] }
+          : { data: { history: [] } }
+      ) as never;
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Starter")).toBeInTheDocument());
+    expect(
+      screen.getByText(/Les abonnements ne sont facturés qu'en euros ou en francs CFA/)
+    ).toBeInTheDocument();
+  });
+
+  it("n'affiche aucun avertissement de devise quand le tarif reçu correspond à la devise d'affichage choisie", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Starter")).toBeInTheDocument());
+    expect(screen.queryByText(/euros ou en francs CFA/)).not.toBeInTheDocument();
+  });
+
   it("affiche le statut d'essai et les formules disponibles", async () => {
     seedUser(authUser());
     queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro", monthlyPrice: 39 })] });

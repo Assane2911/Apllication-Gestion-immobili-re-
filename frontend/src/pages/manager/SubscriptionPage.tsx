@@ -141,6 +141,19 @@ export default function SubscriptionPage() {
 
   const sub = user?.subscription;
 
+  // Remise annuelle réellement pratiquée, calculée à partir des tarifs reçus
+  // du serveur plutôt qu'annoncée en dur : un badge figé aurait continué à
+  // afficher "-20%" même si un futur changement de TARIFS (backend) modifiait
+  // le rabais réel, sans que rien ne l'empêche de diverger silencieusement.
+  // Toutes les formules partagent le même taux par construction (voir le
+  // commentaire sur TARIFS côté backend) ; la première suffit donc comme
+  // référence, et se met à jour automatiquement quand les plans chargent.
+  const planReference = plans[0];
+  const remiseAnnuelle =
+    planReference && planReference.monthlyPrice > 0
+      ? Math.round((1 - planReference.annualPrice / (planReference.monthlyPrice * 12)) * 100)
+      : null;
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
@@ -263,11 +276,25 @@ export default function SubscriptionPage() {
             }`}
           >
             <span>{t("manager.subscription.annualBilling")}</span>
-            <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-              -20%
-            </span>
+            {remiseAnnuelle !== null && remiseAnnuelle > 0 && (
+              <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                -{remiseAnnuelle}%
+              </span>
+            )}
           </button>
         </div>
+
+        {/* Les abonnements ne sont tarifés qu'en EUR et en XOF (voir TARIFS
+            côté backend, une décision commerciale délibérée plutôt qu'une
+            conversion de taux) : si la devise d'affichage choisie par le
+            gestionnaire n'en fait pas partie, les prix ci-dessous retombent
+            silencieusement sur l'une des deux — ce message évite que ça
+            passe pour une erreur d'affichage. */}
+        {planReference && planReference.currency !== currency && (
+          <p className="text-center text-xs text-slate-500 dark:text-slate-400 max-w-md">
+            {t("manager.subscription.unsupportedCurrencyNotice", { currency: planReference.currency })}
+          </p>
+        )}
       </div>
 
       {/* Grille des Plans (masquée sur build mobile native : la souscription se fait sur le web) */}

@@ -7,6 +7,7 @@ import { users } from "../db/schema";
 import { calculerJoursCredit, calculerPeriode } from "../services/subscriptionPeriod.service";
 import { authHeader, createManager, createPlatformSubscription, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+import { DEVISE_PAR_DEFAUT, SUBSCRIPTION_PLANS, deviseFacturee, tarifPourDevise } from "./subscription.controller";
 
 describe("GET /api/subscription/plans", () => {
   it("est accessible sans authentification et renvoie les 3 formules", async () => {
@@ -15,6 +16,87 @@ describe("GET /api/subscription/plans", () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(3);
     expect(res.body.map((p: { id: string }) => p.id)).toEqual(["STARTER", "PRO", "ENTERPRISE"]);
+  });
+
+  it("sans paramètre currency, tarife dans la devise par défaut", async () => {
+    const res = await request(app).get("/api/subscription/plans");
+
+    for (const plan of res.body) {
+      expect(plan.currency).toBe(DEVISE_PAR_DEFAUT);
+    }
+  });
+
+  it("renvoie les tarifs XOF quand la devise demandée est tarifée", async () => {
+    const res = await request(app).get("/api/subscription/plans?currency=XOF");
+
+    expect(res.status).toBe(200);
+    for (const plan of res.body) {
+      expect(plan.currency).toBe("XOF");
+    }
+    const pro = res.body.find((p: { id: string }) => p.id === "PRO");
+    expect(pro.monthlyPrice).toBe(15000);
+    expect(pro.annualPrice).toBe(144000);
+  });
+
+  it("retombe silencieusement sur EUR quand la devise demandée n'est pas tarifée (ex. USD, GBP, un compte non contraint côté champ users.currency)", async () => {
+    // Rien n'empêche users.currency de contenir n'importe quelle devise
+    // proposée par le sélecteur (updateCurrency n'a pas de liste blanche) :
+    // ce test verrouille le comportement de repli côté tarification, pour
+    // qu'un compte en USD/GBP/etc. reçoive toujours un prix cohérent (EUR),
+    // jamais un prix à 0 ou une réponse incohérente.
+    for (const devise of ["USD", "GBP", "N_IMPORTE_QUOI"]) {
+      const res = await request(app).get(`/api/subscription/plans?currency=${devise}`);
+
+      expect(res.status).toBe(200);
+      for (const plan of res.body) {
+        expect(plan.currency).toBe("EUR");
+      }
+      const pro = res.body.find((p: { id: string }) => p.id === "PRO");
+      expect(pro.monthlyPrice).toBe(29);
+      expect(pro.annualPrice).toBe(278);
+    }
+  });
+});
+
+describe("deviseFacturee / tarifPourDevise — résolution de la devise facturée", () => {
+  it("retourne la devise demandée quand elle est tarifée, insensible à la casse", () => {
+    expect(deviseFacturee("EUR")).toBe("EUR");
+    expect(deviseFacturee("XOF")).toBe("XOF");
+    expect(deviseFacturee("xof")).toBe("XOF");
+  });
+
+  it("retombe sur la devise par défaut pour toute devise non tarifée, une entrée vide ou absente", () => {
+    for (const devise of ["USD", "GBP", "CAD", "CHF", "MAD", "XAF", "STN", ""]) {
+      expect(deviseFacturee(devise)).toBe(DEVISE_PAR_DEFAUT);
+    }
+    expect(deviseFacturee(null)).toBe(DEVISE_PAR_DEFAUT);
+    expect(deviseFacturee(undefined)).toBe(DEVISE_PAR_DEFAUT);
+  });
+
+  it("tarifPourDevise renvoie null (jamais un tarif inventé) pour une devise non tarifée", () => {
+    expect(tarifPourDevise("STARTER", "USD")).toBeNull();
+    expect(tarifPourDevise("PLAN_INEXISTANT", "EUR")).toBeNull();
+  });
+});
+
+describe("TARIFS — la remise annuelle de -20% annoncée par l'interface reste vraie pour chaque formule et chaque devise", () => {
+  // Garde-fou : SubscriptionPage.tsx calcule désormais son badge "-X%" depuis
+  // ces mêmes tarifs plutôt que de l'annoncer en dur, mais rien n'empêcherait
+  // TARIFS lui-même de dériver d'une formule à l'autre si un prix est changé
+  // à la main sans recalculer l'annuel correspondant. Ce test échoue
+  // immédiatement dans ce cas, plutôt que de laisser passer un badge (et une
+  // promesse commerciale) devenus faux.
+  const casDeTest = SUBSCRIPTION_PLANS.flatMap((plan) => ["EUR", "XOF"].map((devise) => [plan.id, devise] as const));
+
+  it.each(casDeTest)("%s en %s respecte ~20%% de remise annuelle (12 × mensuel × 0,8, arrondi)", (planId, devise) => {
+    const tarif = tarifPourDevise(planId, devise);
+    expect(tarif).not.toBeNull();
+
+    const remise = 1 - tarif!.annual / (tarif!.monthly * 12);
+    // Tolérance d'arrondi (les montants restent ronds et lisibles) : ±1 point
+    // de pourcentage autour de 20 %.
+    expect(remise).toBeGreaterThan(0.19);
+    expect(remise).toBeLessThan(0.21);
   });
 });
 
