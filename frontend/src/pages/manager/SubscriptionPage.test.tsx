@@ -430,6 +430,7 @@ describe("SubscriptionPage", () => {
             id: "h1",
             plan: "STARTER",
             amount: 19,
+            currency: "EUR",
             billingCycle: "MONTHLY",
             status: "PAID",
             paymentMethod: "DEMO",
@@ -448,6 +449,41 @@ describe("SubscriptionPage", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByText("19 €")).toBeInTheDocument();
     expect(within(table).getByText("PAID")).toBeInTheDocument();
+  });
+
+  it("affiche chaque ligne d'historique dans SA PROPRE devise, jamais en euros par défaut", async () => {
+    // Régression : cette ligne réglée en FCFA (paiement PayDunya typique d'un
+    // gestionnaire en zone UEMOA) ne doit jamais s'afficher "15000 €" — même
+    // bug que celui déjà corrigé sur AdminSubscriptionsPage (voir le
+    // commentaire sur platformSubscriptions.currency côté schéma backend).
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({
+      data: {
+        history: [
+          {
+            id: "h-xof",
+            plan: "STARTER",
+            amount: 15000,
+            currency: "XOF",
+            billingCycle: "MONTHLY",
+            status: "PAID",
+            paymentMethod: "PAYDUNYA",
+            paymentRef: "ref-xof",
+            startDate: "2026-08-01T00:00:00.000Z",
+            endDate: "2026-09-01T00:00:00.000Z",
+            createdAt: "2026-08-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Historique de vos factures d'abonnement")).toBeInTheDocument());
+    const table = screen.getByRole("table");
+    expect(within(table).getByText(/FCFA/)).toBeInTheDocument();
+    expect(within(table).queryByText(/€/)).not.toBeInTheDocument();
   });
 
   it("affiche une erreur si le chargement des formules échoue", async () => {

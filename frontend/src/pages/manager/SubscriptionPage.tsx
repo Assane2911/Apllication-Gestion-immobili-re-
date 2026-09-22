@@ -13,6 +13,8 @@ interface SubscriptionHistoryRecord {
   id: string;
   plan: string;
   amount: number;
+  /** Devise dans laquelle CETTE ligne a été réglée — pas forcément celle affichée ailleurs sur la page (voir formatMoney(h.amount, h.currency) plus bas). */
+  currency: string;
   billingCycle: string;
   status: string;
   paymentMethod: string;
@@ -461,7 +463,10 @@ export default function SubscriptionPage() {
                     <td className="py-3">{new Date(h.createdAt).toLocaleDateString(i18n.language)}</td>
                     <td className="py-3 font-semibold">{h.plan}</td>
                     <td className="py-3">{h.billingCycle === "ANNUAL" ? t("manager.subscription.annual") : t("manager.subscription.monthly")}</td>
-                    <td className="py-3 font-bold">{h.amount} €</td>
+                    {/* Chaque ligne porte sa propre devise (voir platformSubscriptions.currency
+                        côté backend) : un abonnement réglé en FCFA ne doit jamais s'afficher en
+                        euros — c'est exactement le bug déjà corrigé sur AdminSubscriptionsPage. */}
+                    <td className="py-3 font-bold">{formatMoney(h.amount, h.currency)}</td>
                     <td className="py-3">{h.paymentMethod}</td>
                     <td className="py-3">
                       <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-bold">
