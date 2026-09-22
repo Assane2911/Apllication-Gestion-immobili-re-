@@ -42,6 +42,40 @@ describe("POST /api/expenses", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("hérite de la devise du bien quand la requête n'en précise aucune", async () => {
+    // L'interface (ExpensesPage) n'envoie jamais de devise : un `.default()`
+    // dans le schéma la remplissait donc toujours à EUR et rendait le repli
+    // sur la devise du bien inatteignable. Une dépense de 50 000 sur un bien
+    // en francs CFA était enregistrée « 50 000 EUR », puis ressortait telle
+    // quelle dans le Grand Livre, la synthèse fiscale et le CRG.
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { currency: "XOF" });
+
+    const res = await request(app)
+      .post("/api/expenses")
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: property.id, title: "Peinture", amount: 50000 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.currency).toBe("XOF");
+
+    const [enBase] = await testDb.select().from(expenses).where(eq(expenses.id, res.body.id));
+    expect(enBase.currency).toBe("XOF");
+  });
+
+  it("respecte la devise explicitement demandée", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { currency: "XOF" });
+
+    const res = await request(app)
+      .post("/api/expenses")
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: property.id, title: "Assurance", amount: 300, currency: "EUR" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.currency).toBe("EUR");
+  });
 });
 
 describe("DELETE /api/expenses/:id", () => {

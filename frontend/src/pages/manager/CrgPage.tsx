@@ -198,7 +198,7 @@ export default function CrgPage() {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {crg.properties.map((row) => (
-                <tr key={row.propertyId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{row.propertyTitle}</td>
                   <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">{row.currency}</td>
                   <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">

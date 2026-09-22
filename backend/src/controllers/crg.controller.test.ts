@@ -87,6 +87,53 @@ describe("GET /api/crg/:ownerId (gestionnaire)", () => {
     expect(res.body.totalNetByCurrency).toEqual({ EUR: 920, XOF: 460000 });
   });
 
+  it("ne mélange pas les devises AU SEIN d'un même bien : une charge en euros n'est pas comptée en francs CFA", async () => {
+    // Le cas qui faussait le reversement : la ligne d'un bien portait la
+    // devise du BIEN et y additionnait tout, sans regarder la devise propre
+    // de chaque loyer et de chaque charge. Une assurance de 300 EUR sur un
+    // bien en FCFA était donc déduite comme 300 FCFA (~0,46 EUR) : le
+    // propriétaire était payé près de 197 000 FCFA de trop. La configuration
+    // est réelle, pas théorique — un contrat peut légitimement porter une
+    // devise différente de celle de son bien (voir contract.controller.ts).
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { managementFeeRate: 8 });
+    const property = await createProperty(manager.id, { currency: "XOF", ownerId: owner.id, title: "Villa Dakar" });
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { currency: "XOF" });
+    await createInvoice(contract.id, { amount: 500000, currency: "XOF", status: "PAID", paidAt: new Date(2026, 8, 5) });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "INSURANCE",
+      title: "Assurance",
+      amount: 300,
+      currency: "EUR",
+      expenseDate: new Date(2026, 8, 10),
+    });
+
+    const res = await request(app)
+      .get(`/api/crg/${owner.id}?month=9&year=2026`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+
+    // Le loyer en FCFA n'est pas amputé de la charge en euros.
+    const ligneXof = res.body.properties.find((p: { currency: string }) => p.currency === "XOF");
+    expect(ligneXof.loyersEncaisses).toBe(500000);
+    expect(ligneXof.chargesDeduites).toBe(0);
+    expect(ligneXof.netAReverser).toBe(460000);
+
+    // Et la charge en euros reste visible, dans sa propre devise.
+    const ligneEur = res.body.properties.find((p: { currency: string }) => p.currency === "EUR");
+    expect(ligneEur.propertyTitle).toBe("Villa Dakar");
+    expect(ligneEur.chargesDeduites).toBe(300);
+    expect(ligneEur.netAReverser).toBe(-300);
+
+    // La ligne FCFA figure bien dans les totaux avec 0 charge : elle existe
+    // (elle porte le loyer), elle n'a simplement aucune charge dans SA devise.
+    expect(res.body.totalChargesByCurrency).toEqual({ EUR: 300, XOF: 0 });
+    expect(res.body.totalNetByCurrency).toEqual({ EUR: -300, XOF: 460000 });
+  });
+
   it("inclut un bien du propriétaire sans aucune activité ce mois-ci, à zéro", async () => {
     const manager = await createManager();
     const owner = await createOwner(manager.id);

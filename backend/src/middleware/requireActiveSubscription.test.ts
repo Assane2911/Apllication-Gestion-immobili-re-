@@ -73,10 +73,44 @@ describe("requireActiveSubscription", () => {
       expect(res.status).toBe(200);
     });
 
-    it("bloque (402) un abonnement CANCELLED même avec une ancienne date de fin future", async () => {
+    // Résilier, c'est arrêter la RECONDUCTION, pas renoncer au temps déjà
+    // payé : subscriptionPeriod.service.ts le dit explicitement (« Un
+    // abonnement résilié conserve sa date de fin : ces jours-là ont été
+    // payés »), et cancelSubscription ne touche d'ailleurs jamais
+    // subscriptionEndsAt. Ce middleware coupait pourtant l'accès dès la
+    // résiliation : un gestionnaire ayant réglé une année entière perdait
+    // ses 11 mois restants en cliquant sur « annuler le renouvellement ».
+    it("autorise un abonnement résilié tant que la période déjà payée n'est pas écoulée", async () => {
       const manager = await createManager({
         subscriptionStatus: "CANCELLED",
         subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
+      const res = await request(app)
+        .get("/api/properties")
+        .set(authHeader(tokenFor(manager)));
+      expect(res.status).toBe(200);
+    });
+
+    it("bloque (402) un abonnement résilié dont la période payée est écoulée", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "CANCELLED",
+        trialEndsAt: null,
+        subscriptionEndsAt: new Date(Date.now() - 1000),
+      });
+      const res = await request(app)
+        .get("/api/properties")
+        .set(authHeader(tokenFor(manager)));
+      expect(res.status).toBe(402);
+    });
+
+    it("bloque (402) un abonnement résilié sans aucune période payée connue", async () => {
+      // Pas de date de fin = aucun jour acheté à honorer. Contrairement au
+      // cas ACTIVE (accès à vie, ci-dessus), l'absence de date ne vaut donc
+      // pas droit d'accès ici : résilié sans période payée = fermé.
+      const manager = await createManager({
+        subscriptionStatus: "CANCELLED",
+        trialEndsAt: null,
+        subscriptionEndsAt: null,
       });
       const res = await request(app)
         .get("/api/properties")

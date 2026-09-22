@@ -501,12 +501,37 @@ describe("POST /api/subscription/cancel", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    // computeSubscriptionInfo() renvoie "EXPIRED" dès que ni l'essai ni un
-    // abonnement ACTIVE ne sont valides — "CANCELLED" n'est donc jamais
-    // renvoyé tel quel dans le statut calculé, seulement en base.
+    // Aucune date de fin sur ce compte : il n'y a donc aucun jour déjà payé à
+    // honorer après la résiliation, et le statut calculé retombe à EXPIRED.
+    // Le cas d'une période payée encore en cours est couvert juste en dessous.
     expect(res.body.subscription.status).toBe("EXPIRED");
 
     const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(updated.subscriptionStatus).toBe("CANCELLED");
+  });
+
+  it("laisse l'abonnement résilié actif jusqu'au terme de la période déjà payée", async () => {
+    // Le cas qui coûtait cher : une année réglée d'avance, résiliée le
+    // lendemain. Le gestionnaire renonce à la reconduction, pas aux onze mois
+    // qu'il a payés — cancelSubscription ne touche d'ailleurs jamais
+    // subscriptionEndsAt.
+    const finPayee = new Date(Date.now() + 300 * 24 * 60 * 60 * 1000);
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "PRO",
+      trialEndsAt: null,
+      subscriptionEndsAt: finPayee,
+    });
+
+    const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.subscription.status).toBe("CANCELLED");
+    expect(res.body.subscription.isSubscriptionActive).toBe(true);
+    expect(res.body.subscription.isExpired).toBe(false);
+
+    // Et l'accès reste réellement ouvert, pas seulement l'affichage.
+    const acces = await request(app).get("/api/properties").set(authHeader(tokenFor(manager)));
+    expect(acces.status).toBe(200);
   });
 });

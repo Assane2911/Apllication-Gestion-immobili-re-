@@ -73,8 +73,17 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
   const subEnds = user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
 
   const isTrialValid = user.subscriptionStatus === "TRIAL" && trialEnds !== null && trialEnds > now;
+  // Un abonnement résilié garde ses droits jusqu'au terme de la période déjà
+  // payée : résilier arrête la RECONDUCTION, pas le temps acheté — c'est la
+  // règle qu'énonce subscriptionPeriod.service.ts et que cancelSubscription
+  // applique en laissant subscriptionEndsAt intact. Sans ce cas, une année
+  // réglée d'avance était perdue au clic sur « annuler le renouvellement ».
+  // L'absence de date de fin ne vaut en revanche accès que pour un abonnement
+  // ACTIVE (accès à vie) : résilié sans période payée connue, il n'y a aucun
+  // jour à honorer.
   const isSubscriptionValid =
-    user.subscriptionStatus === "ACTIVE" && (subEnds === null || subEnds > now);
+    (user.subscriptionStatus === "ACTIVE" && (subEnds === null || subEnds > now)) ||
+    (user.subscriptionStatus === "CANCELLED" && subEnds !== null && subEnds > now);
 
   if (!isTrialValid && !isSubscriptionValid) {
     return next(

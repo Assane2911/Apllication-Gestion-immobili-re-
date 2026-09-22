@@ -160,7 +160,7 @@ export default function OwnerCrgPage() {
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {crg.properties.map((row) => (
-              <div key={row.propertyId} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
+              <div key={`${row.propertyId}-${row.currency}`} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{row.propertyTitle}</p>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="text-right">

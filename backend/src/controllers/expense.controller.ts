@@ -13,7 +13,13 @@ const createExpenseSchema = z.object({
   category: z.enum(["MAINTENANCE", "TAX", "INSURANCE", "SYNDIC", "OTHER"]).default("MAINTENANCE"),
   title: z.string().min(1),
   amount: z.coerce.number().positive(),
-  currency: z.string().default("EUR"),
+  // Volontairement SANS .default("EUR") : un défaut ici remplirait toujours le
+  // champ et rendrait inatteignable le repli sur la devise du bien plus bas
+  // (l'interface n'envoie jamais de devise). Une dépense saisie sur un bien en
+  // francs CFA était ainsi enregistrée en euros, puis ressortait telle quelle
+  // dans le Grand Livre, la synthèse fiscale et le CRG. Même forme que
+  // contract.controller.ts, qui lui applique déjà la bonne règle.
+  currency: z.string().optional(),
   expenseDate: z.string().optional(),
   notes: z.string().optional(),
 });

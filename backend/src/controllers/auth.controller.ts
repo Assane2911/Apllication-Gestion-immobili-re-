@@ -71,8 +71,14 @@ export function computeSubscriptionInfo(user: typeof users.$inferSelect) {
   const subEnds = user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
 
   const isTrialActive = user.subscriptionStatus === "TRIAL" && trialEnds !== null && trialEnds > now;
+  // Même règle que requireActiveSubscription (middleware/auth.ts), et pour la
+  // même raison : un abonnement résilié reste actif jusqu'au terme de la
+  // période déjà payée. Les deux doivent rester d'accord — sinon l'interface
+  // annonce « expiré » à un gestionnaire que le serveur laisse travailler,
+  // ou l'inverse.
   const isSubscriptionActive =
-    user.subscriptionStatus === "ACTIVE" && (subEnds === null || subEnds > now);
+    (user.subscriptionStatus === "ACTIVE" && (subEnds === null || subEnds > now)) ||
+    (user.subscriptionStatus === "CANCELLED" && subEnds !== null && subEnds > now);
 
   const isExpired = !isTrialActive && !isSubscriptionActive;
 

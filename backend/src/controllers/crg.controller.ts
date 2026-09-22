@@ -124,29 +124,60 @@ async function computeCrg(owner: OwnerRow, month: number, year: number): Promise
   });
 
   type PropertyLine = CrgSynthesis["properties"][number];
-  const perProperty = new Map<string, PropertyLine>();
-  for (const p of ownerProperties) {
-    perProperty.set(p.id, {
-      propertyId: p.id,
-      propertyTitle: p.title,
-      currency: p.currency,
+
+  // Une ligne par couple (bien, devise), et non par bien : la devise d'un
+  // loyer vient de son CONTRAT et celle d'une charge de la DÉPENSE, or ni
+  // l'une ni l'autre n'est forcément celle du bien (contract.controller.ts
+  // autorise explicitement un contrat dans une autre devise). Compter tout
+  // sous la devise du bien revenait à déduire une assurance de 300 EUR comme
+  // 300 FCFA d'un loyer en FCFA — le propriétaire était alors payé près de
+  // 197 000 FCFA de trop. Dans le cas normal (tout dans la même devise), il
+  // n'y a qu'une seule ligne par bien, exactement comme avant.
+  const perPropertyCurrency = new Map<string, PropertyLine>();
+  const cle = (propertyId: string, currency: string) => `${propertyId}|${currency}`;
+
+  const titreParBien = new Map(
+    ownerProperties.map((p: typeof properties.$inferSelect) => [p.id, p.title] as const)
+  );
+
+  function ligne(propertyId: string, currency: string): PropertyLine | undefined {
+    const titre = titreParBien.get(propertyId);
+    if (titre === undefined) return undefined;
+
+    const existante = perPropertyCurrency.get(cle(propertyId, currency));
+    if (existante) return existante;
+
+    const nouvelle: PropertyLine = {
+      propertyId,
+      propertyTitle: titre,
+      currency,
       loyersEncaisses: 0,
       chargesDeduites: 0,
       commission: 0,
       netAReverser: 0,
-    });
+    };
+    perPropertyCurrency.set(cle(propertyId, currency), nouvelle);
+    return nouvelle;
+  }
+
+  // Un bien sans aucune activité ce mois-ci garde sa ligne à zéro, dans sa
+  // propre devise : le propriétaire doit pouvoir constater l'absence
+  // d'encaissement, pas voir le bien disparaître du rapport.
+  for (const p of ownerProperties) {
+    ligne(p.id, p.currency);
   }
   for (const inv of filteredInvoices) {
     const propertyId = contractIdToPropertyId.get(inv.contractId);
-    const entry = propertyId ? perProperty.get(propertyId) : undefined;
+    const entry = propertyId ? ligne(propertyId, inv.currency) : undefined;
     if (!entry) continue;
     entry.loyersEncaisses += inv.amount;
   }
   for (const exp of expenseRows) {
-    const entry = perProperty.get(exp.propertyId);
+    const entry = ligne(exp.propertyId, exp.currency);
     if (!entry) continue;
     entry.chargesDeduites += exp.amount;
   }
+  const perProperty = perPropertyCurrency;
 
   // Commission arrondie au centime (les montants sont stockés en unité
   // principale de la devise, pas en centimes — voir doublePrecision dans
@@ -157,8 +188,11 @@ async function computeCrg(owner: OwnerRow, month: number, year: number): Promise
     entry.netAReverser = Math.round((entry.loyersEncaisses - entry.chargesDeduites - entry.commission) * 100) / 100;
   }
 
-  const propertyLines = Array.from(perProperty.values()).sort((a, b) =>
-    a.propertyTitle.localeCompare(b.propertyTitle)
+  // Tri secondaire par devise : deux lignes d'un même bien (cas multi-devises)
+  // doivent sortir dans un ordre stable d'un appel à l'autre, sinon le PDF et
+  // l'écran pourraient les présenter différemment pour les mêmes données.
+  const propertyLines = Array.from(perProperty.values()).sort(
+    (a, b) => a.propertyTitle.localeCompare(b.propertyTitle) || a.currency.localeCompare(b.currency)
   );
 
   // Plateforme multi-devises (EUR/XOF/...) : chaque total reste ventilé par
