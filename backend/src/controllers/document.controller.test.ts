@@ -43,6 +43,57 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
     expect(res.text).toContain(tenant.firstName);
   });
 
+  it("annonce les jours réellement couverts quand le loyer est facturé au prorata", async () => {
+    // Une quittance atteste juridiquement d'un loyer réglé pour une période
+    // donnée. Depuis le passage au prorata, un bail démarrant en cours de mois
+    // ne paie que ses jours : annoncer « Juin 2026 » tout court rendrait le
+    // document faux.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 5, 16),
+      endDate: new Date(2027, 5, 15),
+    });
+    const invoice = await createInvoice(contract.id, {
+      periodMonth: 6,
+      periodYear: 2026,
+      amount: 250,
+      status: "PAID",
+      paidAt: new Date(2026, 5, 20),
+    });
+
+    const res = await request(app)
+      .get(`/api/documents/receipt/${invoice.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("du 16 au 30");
+  });
+
+  it("n'ajoute aucune mention de jours pour un mois entier", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 0, 1),
+      endDate: new Date(2026, 11, 31),
+    });
+    const invoice = await createInvoice(contract.id, {
+      periodMonth: 6,
+      periodYear: 2026,
+      status: "PAID",
+      paidAt: new Date(2026, 5, 20),
+    });
+
+    const res = await request(app)
+      .get(`/api/documents/receipt/${invoice.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain("du 1 au 30");
+  });
+
   it("refuse l'accès à un gestionnaire qui n'est pas propriétaire du bien", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);

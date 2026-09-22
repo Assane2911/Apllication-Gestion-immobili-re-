@@ -5,7 +5,7 @@ import { app } from "../app";
 import { env } from "../config/env";
 import { users } from "../db/schema";
 import { calculerJoursCredit, calculerPeriode } from "../services/subscriptionPeriod.service";
-import { authHeader, createManager, createPlatformSubscription, tokenFor } from "../test/authHelpers";
+import { authHeader, createManager, createPlatformSubscription, createProperty, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import {
   DEVISE_PAR_DEFAUT,
@@ -173,6 +173,66 @@ describe("GET /api/subscription/status", () => {
     expect(res.body.subscription.isTrialActive).toBe(true);
     expect(res.body.userEmail).toBe(manager.email);
     expect(res.body.history).toEqual([]);
+  });
+
+  it("signale le dépassement du plafond de biens après un passage à une formule inférieure", async () => {
+    // Le plafond n'est contrôlé qu'à la création d'un bien : un gestionnaire
+    // redescendu de PRO (25 biens) à STARTER (5) garde ses biens et continue
+    // de les exploiter sans que rien ne le lui signale. On ne lui retire pas
+    // l'accès à des biens réellement loués — on le lui dit.
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "STARTER",
+      trialEndsAt: null,
+      subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+    for (let i = 0; i < 6; i++) {
+      await createProperty(manager.id, { title: `Bien ${i + 1}` });
+    }
+
+    const res = await request(app).get("/api/subscription/status").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.propertyUsage).toEqual({ count: 6, max: 5, exceeded: true });
+  });
+
+  it("ne signale aucun dépassement tant que le plafond n'est pas franchi", async () => {
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "STARTER",
+      trialEndsAt: null,
+      subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+    await createProperty(manager.id);
+
+    const res = await request(app).get("/api/subscription/status").set(authHeader(tokenFor(manager)));
+
+    expect(res.body.propertyUsage).toEqual({ count: 1, max: 5, exceeded: false });
+  });
+
+  it("pendant l'essai, le plafond appliqué est celui de la formule PRO", async () => {
+    // Même règle qu'à la création d'un bien : l'essai donne les
+    // fonctionnalités PRO, quelle que soit la formule par défaut (STARTER).
+    const manager = await createManager({ subscriptionStatus: "TRIAL", subscriptionPlan: "STARTER" });
+
+    const res = await request(app).get("/api/subscription/status").set(authHeader(tokenFor(manager)));
+
+    expect(res.body.propertyUsage.max).toBe(25);
+    expect(res.body.propertyUsage.exceeded).toBe(false);
+  });
+
+  it("n'annonce aucun plafond pour la formule illimitée", async () => {
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "ENTERPRISE",
+      trialEndsAt: null,
+      subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+
+    const res = await request(app).get("/api/subscription/status").set(authHeader(tokenFor(manager)));
+
+    expect(res.body.propertyUsage.max).toBeNull();
+    expect(res.body.propertyUsage.exceeded).toBe(false);
   });
 });
 

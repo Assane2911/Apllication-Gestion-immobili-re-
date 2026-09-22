@@ -54,8 +54,13 @@ describe("generateInvoicesForContract", () => {
     }
     expect(byMonth.get(6)?.status).toBe("PENDING");
 
-    // Le montant de chaque facture doit reprendre le loyer du contrat.
-    expect(rows.every((r: typeof invoices.$inferSelect) => r.amount === 500)).toBe(true);
+    // Le bail démarre le 20 janvier : ce premier mois est facturé au prorata
+    // des 12 jours occupés (20 au 31 janvier), 500 × 12/31 = 193,55. Les mois
+    // entiers qui suivent valent le loyer exact du bail.
+    expect(byMonth.get(1)?.amount).toBe(193.55);
+    for (let month = 2; month <= 6; month++) {
+      expect(byMonth.get(month)?.amount).toBe(500);
+    }
   });
 
   it("est idempotent : un second appel ne recrée aucune facture déjà générée", async () => {
@@ -194,6 +199,174 @@ describe("generateInvoicesForContract", () => {
    * l'empêcher : il ne protège que contre un doublon au sein d'un même
    * contrat, jamais entre deux contrats successifs du même bien.
    */
+  it("facture au prorata le premier mois d'un bail démarrant en cours de mois", async () => {
+    // Un bail démarrant le 25 juin coûtait un mois plein. Il doit coûter les
+    // 6 jours réellement occupés (25 au 30 juin) : 500 × 6/30 = 100.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+
+    const [contract] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: new Date(2026, 5, 25),
+        endDate: new Date(2027, 5, 24),
+      })
+      .returning();
+
+    await generateInvoicesForContract(contract, testDb);
+
+    const rows = await testDb.select().from(invoices).where(eq(invoices.contractId, contract.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].periodMonth).toBe(6);
+    expect(rows[0].amount).toBe(100);
+  });
+
+  it("facture au prorata le dernier mois d'un bail se terminant en cours de mois", async () => {
+    // Bail du 1er avril au 10 juin : avril et mai pleins, juin au prorata
+    // (10 jours sur 30) — 600 × 10/30 = 200.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+
+    const [contract] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 600,
+        deposit: 1200,
+        status: "ENDED",
+        startDate: new Date(2026, 3, 1),
+        endDate: new Date(2026, 5, 10),
+      })
+      .returning();
+
+    await generateInvoicesForContract(contract, testDb);
+
+    const rows = await testDb.select().from(invoices).where(eq(invoices.contractId, contract.id));
+    const parMois = new Map<number, typeof invoices.$inferSelect>(
+      rows.map((r: typeof invoices.$inferSelect) => [r.periodMonth, r])
+    );
+    expect(parMois.get(4)?.amount).toBe(600);
+    expect(parMois.get(5)?.amount).toBe(600);
+    expect(parMois.get(6)?.amount).toBe(200);
+  });
+
+  it("laisse les mois entiers au loyer exact, sans dérive d'arrondi", async () => {
+    // Un loyer qui tombe mal en division (1000 / 31) ne doit pas être
+    // recalculé sur un mois complet : le bail dit 1000, la facture dit 1000.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+
+    const [contract] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 1000,
+        deposit: 2000,
+        startDate: new Date(2026, 2, 1), // mars, 31 jours
+        endDate: new Date(2027, 1, 28),
+      })
+      .returning();
+
+    await generateInvoicesForContract(contract, testDb);
+
+    const rows = await testDb.select().from(invoices).where(eq(invoices.contractId, contract.id));
+    expect(rows.every((r: typeof invoices.$inferSelect) => r.amount === 1000)).toBe(true);
+  });
+
+  it("partage le mois de transition entre les deux locataires, chacun pour ses jours", async () => {
+    // Ancien bail jusqu'au 15 février, nouveau à partir du 16 : février se
+    // partage 15/28 et 13/28 au lieu de revenir en entier au premier.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const ancienLocataire = await createTenant(manager.id);
+    const nouveauLocataire = await createTenant(manager.id);
+
+    const [ancienContrat] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: ancienLocataire.id,
+        rent: 560, // 560 / 28 = 20 par jour, des montants ronds pour la lecture
+        deposit: 1000,
+        status: "ENDED",
+        startDate: new Date(2026, 0, 1),
+        endDate: new Date(2026, 1, 15),
+      })
+      .returning();
+    await generateInvoicesForContract(ancienContrat, testDb);
+
+    const [nouveauContrat] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: nouveauLocataire.id,
+        rent: 560,
+        deposit: 1000,
+        startDate: new Date(2026, 1, 16),
+        endDate: new Date(2027, 1, 15),
+      })
+      .returning();
+    await generateInvoicesForContract(nouveauContrat, testDb);
+
+    const fevrierAncien = (
+      await testDb.select().from(invoices).where(eq(invoices.contractId, ancienContrat.id))
+    ).find((f: typeof invoices.$inferSelect) => f.periodMonth === 2);
+    const fevrierNouveau = (
+      await testDb.select().from(invoices).where(eq(invoices.contractId, nouveauContrat.id))
+    ).find((f: typeof invoices.$inferSelect) => f.periodMonth === 2);
+
+    expect(fevrierAncien?.amount).toBe(300); // 15 jours × 20
+    expect(fevrierNouveau?.amount).toBe(260); // 13 jours × 20
+    // Ensemble, les deux locataires règlent exactement un mois de loyer.
+    expect((fevrierAncien?.amount ?? 0) + (fevrierNouveau?.amount ?? 0)).toBe(560);
+  });
+
+  it("ne facture rien à un contrat dont les jours sont déjà couverts par un autre contrat du bien", async () => {
+    // Deux contrats qui se chevauchent est une anomalie de dates : on
+    // s'abstient plutôt que de facturer deux fois les mêmes jours.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const locataireA = await createTenant(manager.id);
+    const locataireB = await createTenant(manager.id);
+
+    const [contratA] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: locataireA.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: new Date(2026, 4, 1),
+        endDate: new Date(2027, 3, 30),
+      })
+      .returning();
+    await generateInvoicesForContract(contratA, testDb);
+
+    const [contratB] = await testDb
+      .insert(contracts)
+      .values({
+        propertyId: property.id,
+        tenantId: locataireB.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: new Date(2026, 4, 10), // chevauche le contrat A
+        endDate: new Date(2027, 3, 30),
+      })
+      .returning();
+    const creees = await generateInvoicesForContract(contratB, testDb);
+
+    expect(creees).toHaveLength(0);
+  });
+
   it("ne refacture pas un mois déjà facturé par un AUTRE contrat du même bien (renouvellement mi-mois)", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
@@ -233,14 +406,29 @@ describe("generateInvoicesForContract", () => {
     await generateInvoicesForContract(nouveauContrat, testDb);
 
     const facturesNouveau = await testDb.select().from(invoices).where(eq(invoices.contractId, nouveauContrat.id));
-    // Février est déjà réglé par l'ancien contrat : le nouveau ne doit PAS le refacturer.
-    expect(
-      facturesNouveau.some((f: typeof invoices.$inferSelect) => f.periodMonth === 2 && f.periodYear === 2026)
-    ).toBe(false);
-    // Mars, en revanche, n'a jamais été facturé par personne : il doit apparaître.
-    expect(
-      facturesNouveau.some((f: typeof invoices.$inferSelect) => f.periodMonth === 3 && f.periodYear === 2026)
-    ).toBe(true);
+    const fevrierNouveau = facturesNouveau.find(
+      (f: typeof invoices.$inferSelect) => f.periodMonth === 2 && f.periodYear === 2026
+    );
+    const fevrierAncien = (
+      await testDb.select().from(invoices).where(eq(invoices.contractId, ancienContrat.id))
+    ).find((f: typeof invoices.$inferSelect) => f.periodMonth === 2 && f.periodYear === 2026);
+
+    // Ce test protégeait à l'origine contre une DOUBLE facturation PLEINE du
+    // mois de transition (l'ancien ET le nouveau contrat réclamant chacun un
+    // mois entier). Depuis le passage au prorata, l'invariant s'exprime
+    // autrement : chacun facture ses propres jours, et les deux ensemble ne
+    // dépassent jamais un mois de loyer. Le nouveau contrat facture donc bien
+    // février — pour ses 13 jours seulement, et non plus zéro.
+    expect(fevrierNouveau).toBeDefined();
+    expect(fevrierAncien!.amount).toBeLessThan(500); // 15 jours sur 28, pas un mois plein
+    expect(fevrierNouveau!.amount).toBeLessThan(550);
+    // Les deux parts, rapportées à leur loyer respectif, couvrent le mois
+    // entier — à l'arrondi au centime près de chaque facture.
+    expect(fevrierAncien!.amount / 500 + fevrierNouveau!.amount / 550).toBeCloseTo(1, 3);
+
+    // Mars, lui, revient entièrement au nouveau contrat.
+    const mars = facturesNouveau.find((f: typeof invoices.$inferSelect) => f.periodMonth === 3);
+    expect(mars?.amount).toBe(550);
   });
 
   it("refacture un mois dont la seule facture, émise par un autre contrat du bien, a été annulée", async () => {

@@ -355,6 +355,31 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByText(/pas encore facturés dans votre devise/)).not.toBeInTheDocument();
   });
 
+  it("avertit le gestionnaire quand il dépasse le plafond de biens de sa formule", async () => {
+    // Le plafond n'est vérifié qu'à la création d'un bien : un gestionnaire
+    // redescendu de PRO à STARTER garde ses 25 biens et continue de les
+    // exploiter. On ne lui retire rien — ses locataires sont réels — mais il
+    // doit le savoir, et depuis l'écran où il peut corriger.
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [], propertyUsage: { count: 25, max: 5, exceeded: true } } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText(/Vous gérez 25 biens/)).toBeInTheDocument());
+  });
+
+  it("n'affiche aucun avertissement de plafond quand la formule couvre les biens gérés", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [], propertyUsage: { count: 3, max: 5, exceeded: false } } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Starter")).toBeInTheDocument());
+    expect(screen.queryByText(/Vous gérez/)).not.toBeInTheDocument();
+  });
+
   it("affiche le statut d'essai et les formules disponibles", async () => {
     seedUser(authUser());
     queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro", monthlyPrice: 39 })] });

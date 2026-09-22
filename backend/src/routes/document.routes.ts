@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { getContractLease, getInspectionReport, getInvoiceReceipt, getScannedLease } from "../controllers/document.controller";
-import { authenticate } from "../middleware/auth";
+import { authenticate, requireActiveSubscription } from "../middleware/auth";
 
 const router = Router();
 
-router.use(authenticate);
+// Même règle que les biens, contrats et factures : un gestionnaire dont
+// l'abonnement est terminé n'émet plus de documents — une quittance est un
+// document légal, produit par un service qui n'est plus payé. Ces routes
+// servent AUSSI les locataires et les propriétaires : le middleware les
+// laisse passer sans condition (voir requireActiveSubscription), ils ne sont
+// donc jamais pénalisés par l'abonnement de leur gestionnaire.
+router.use(authenticate, requireActiveSubscription);
 
 router.get("/receipt/:invoiceId", getInvoiceReceipt);
 router.get("/lease/:contractId", getContractLease);

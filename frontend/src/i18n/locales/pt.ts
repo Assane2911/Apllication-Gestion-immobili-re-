@@ -1063,6 +1063,7 @@ const pt: TranslationSchema = {
       perMonth: "/ mês",
       billedAnnually: "(faturado {{amount}} / ano)",
       unsupportedCurrencyNotice: "As subscrições ainda não são faturadas na sua moeda de visualização. Os seus planos são por isso apresentados abaixo em {{currency}}.",
+      propertyCapExceeded: "Gere {{count}} imóveis, mas o seu plano permite {{max}}. Os imóveis existentes continuam acessíveis, mas não poderá adicionar mais enquanto não mudar para um plano superior.",
       includedInPlan: "Incluído no plano:",
       currentPlanBtn: "O seu plano atual",
       choosePlanBtn: "Escolher {{plan}}",

@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
+import { periodeCouverte } from "../services/invoice.service";
 import { loadInspectionForExport } from "./inspection.controller";
 import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
@@ -44,6 +45,8 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
     ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId))
     : [];
 
+  const periodeFacturee = periodeCouverte(contract, invoice.periodMonth, invoice.periodYear);
+
   const receiptHtml = generateReceiptHtml({
     receiptNumber: `QUITT-${invoice.periodYear}-${String(invoice.periodMonth).padStart(2, "0")}-${invoice.id.slice(-6).toUpperCase()}`,
     agency: {
@@ -68,6 +71,10 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
     invoice: {
       periodMonth: invoice.periodMonth,
       periodYear: invoice.periodYear,
+      // Voir receipt.service.ts : même période couverte que la quittance
+      // envoyée par email, pour que les deux documents concordent.
+      periodStartDay: periodeFacturee.premierJour || null,
+      periodEndDay: periodeFacturee.dernierJour || null,
       amount: invoice.amount,
       currency: invoice.currency || "EUR",
       paidAt: invoice.paidAt || invoice.createdAt,

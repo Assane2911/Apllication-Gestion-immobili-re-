@@ -43,6 +43,14 @@ export interface ReceiptData {
   invoice: {
     periodMonth: number;
     periodYear: number;
+    /**
+     * Jours du mois réellement couverts, quand la période est partielle
+     * (entrée ou sortie en cours de mois, facturée au prorata — voir
+     * invoice.service.ts). Absents pour un mois entier : la quittance
+     * indique alors le mois seul, comme auparavant.
+     */
+    periodStartDay?: number | null;
+    periodEndDay?: number | null;
     amount: number;
     currency: string;
     paidAt: Date;
@@ -66,8 +74,25 @@ const monthNames = [
   "Décembre",
 ];
 
+/**
+ * « Mars 2026 » pour un mois entier, « Mars 2026 (du 16 au 31) » pour une
+ * période partielle. Une quittance atteste d'un loyer réglé pour une période
+ * précise : annoncer un mois complet alors que seuls quelques jours ont été
+ * facturés au prorata rendrait le document faux.
+ */
+function libellePeriode(data: ReceiptData): string {
+  const mois = `${monthNames[data.invoice.periodMonth - 1]} ${data.invoice.periodYear}`;
+  const { periodStartDay, periodEndDay } = data.invoice;
+  if (!periodStartDay || !periodEndDay) return mois;
+
+  const joursDuMois = new Date(data.invoice.periodYear, data.invoice.periodMonth, 0).getDate();
+  if (periodStartDay === 1 && periodEndDay >= joursDuMois) return mois;
+
+  return `${mois} (du ${periodStartDay} au ${periodEndDay})`;
+}
+
 export function generateReceiptHtml(data: ReceiptData): string {
-  const periodLabel = `${monthNames[data.invoice.periodMonth - 1]} ${data.invoice.periodYear}`;
+  const periodLabel = libellePeriode(data);
   const paidDateFormatted = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(
     new Date(data.invoice.paidAt)
   );
@@ -307,7 +332,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      const periodLabel = `${monthNames[data.invoice.periodMonth - 1]} ${data.invoice.periodYear}`;
+      const periodLabel = libellePeriode(data);
       const paidDateFormatted = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(
         new Date(data.invoice.paidAt)
       );

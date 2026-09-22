@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
 import { sendEmail } from "./email.service";
+import { periodeCouverte } from "./invoice.service";
 import { generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
 
 const monthNames = [
@@ -34,6 +35,8 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
       ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId))
       : [];
 
+    const periode = periodeCouverte(contract, invoice.periodMonth, invoice.periodYear);
+
     const receiptData: ReceiptData = {
       receiptNumber: `QUITT-${invoice.periodYear}-${String(invoice.periodMonth).padStart(2, "0")}-${invoice.id
         .slice(-6)
@@ -60,6 +63,11 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
       invoice: {
         periodMonth: invoice.periodMonth,
         periodYear: invoice.periodYear,
+        // Période réellement couverte : une facture au prorata (entrée ou
+        // sortie en cours de mois) ne doit pas donner une quittance annonçant
+        // un mois entier.
+        periodStartDay: periode.premierJour || null,
+        periodEndDay: periode.dernierJour || null,
         amount: invoice.amount,
         currency: invoice.currency || "EUR",
         paidAt: invoice.paidAt || new Date(),

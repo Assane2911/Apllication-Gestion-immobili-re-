@@ -1,8 +1,8 @@
-import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
-import { platformSubscriptions, users } from "../db/schema";
+import { platformSubscriptions, properties, users } from "../db/schema";
 import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
 import { calculerPeriodeActivation } from "../services/subscriptionPeriod.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -195,16 +195,41 @@ export const getStatus = asyncHandler(async (req: Request, res: Response) => {
 
   const subscriptionInfo = computeSubscriptionInfo(user);
 
-  const history = await db
-    .select()
-    .from(platformSubscriptions)
-    .where(eq(platformSubscriptions.userId, user.id))
-    .orderBy(desc(platformSubscriptions.createdAt));
+  const [history, [{ count: propertyCount }]] = await Promise.all([
+    db
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.userId, user.id))
+      .orderBy(desc(platformSubscriptions.createdAt)),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties)
+      .where(eq(properties.managerId, user.id)),
+  ]);
+
+  // Consommation du plafond de biens de la formule. Le plafond n'est vérifié
+  // qu'à la CRÉATION d'un bien (property.controller.ts) : un gestionnaire
+  // passé d'une formule supérieure à une formule inférieure conserve donc
+  // tous ses biens existants et continue de les exploiter, sans que rien ne
+  // le lui signale. Plutôt que de lui retirer l'accès à des biens réellement
+  // loués — ce qui casserait une gestion en cours —, l'interface l'informe du
+  // dépassement et le laisse décider de remonter de formule.
+  //
+  // Pendant l'essai, la formule effective est PRO (promis par les CGU), même
+  // règle qu'à la création d'un bien.
+  const formuleEffective = subscriptionInfo?.isTrialActive ? "PRO" : user.subscriptionPlan;
+  const plafondBiens = maxPropertiesForPlan(formuleEffective);
 
   res.json({
     subscription: subscriptionInfo,
     userEmail: user.email,
     history,
+    propertyUsage: {
+      count: propertyCount,
+      // null = illimité (formule Entreprise).
+      max: plafondBiens,
+      exceeded: plafondBiens !== null && propertyCount > plafondBiens,
+    },
   });
 });
 

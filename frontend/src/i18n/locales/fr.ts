@@ -1064,6 +1064,7 @@ const fr = {
       perMonth: "/ mois",
       billedAnnually: "(facturé {{amount}} / an)",
       unsupportedCurrencyNotice: "Les abonnements ne sont pas encore facturés dans votre devise d'affichage. Vos formules sont donc affichées ci-dessous en {{currency}}.",
+      propertyCapExceeded: "Vous gérez {{count}} biens alors que votre formule en autorise {{max}}. Vos biens existants restent accessibles, mais vous ne pouvez plus en ajouter tant que vous n'êtes pas passé à une formule supérieure.",
       includedInPlan: "Inclus dans l'offre :",
       currentPlanBtn: "Votre formule actuelle",
       choosePlanBtn: "Choisir {{plan}}",

@@ -24,12 +24,23 @@ interface SubscriptionHistoryRecord {
   createdAt: string;
 }
 
+/**
+ * Consommation du plafond de biens de la formule (voir getStatus côté
+ * serveur). `max` vaut null pour la formule illimitée.
+ */
+interface PropertyUsage {
+  count: number;
+  max: number | null;
+  exceeded: boolean;
+}
+
 export default function SubscriptionPage() {
   const { t, i18n } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { currency, formatMoney } = useCurrency();
   const [plans, setPlans] = useState<SubscriptionPlanDetail[]>([]);
   const [history, setHistory] = useState<SubscriptionHistoryRecord[]>([]);
+  const [propertyUsage, setPropertyUsage] = useState<PropertyUsage | null>(null);
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanDetail | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("PAYDUNYA");
@@ -75,7 +86,7 @@ export default function SubscriptionPage() {
     setLoading(true);
     Promise.all([
       api.get<SubscriptionPlanDetail[]>(`/subscription/plans?currency=${encodeURIComponent(currency)}`),
-      api.get<{ history: SubscriptionHistoryRecord[] }>("/subscription/status"),
+      api.get<{ history: SubscriptionHistoryRecord[]; propertyUsage?: PropertyUsage }>("/subscription/status"),
     ])
       .then(([plansRes, statusRes]) => {
         // Un corps de réponse inattendu (204, réponse vide, proxy qui tronque)
@@ -85,6 +96,7 @@ export default function SubscriptionPage() {
         // en erreur. L'état reste donc toujours un tableau.
         setPlans(Array.isArray(plansRes.data) ? plansRes.data : []);
         setHistory(Array.isArray(statusRes.data?.history) ? statusRes.data.history : []);
+        setPropertyUsage(statusRes.data?.propertyUsage ?? null);
       })
       .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
@@ -190,6 +202,23 @@ export default function SubscriptionPage() {
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl flex items-center gap-2">
           <span>⚠️</span>
           <span className="text-sm">{error}</span>
+        </div>
+      )}
+
+      {/* Dépassement du plafond de biens : le plafond n'est vérifié qu'à la
+          création (property.controller.ts), donc un gestionnaire redescendu de
+          formule conserve ses biens et continue de les exploiter. On ne lui
+          retire rien — ses locataires sont réels — mais il doit savoir où il
+          en est, et depuis quel écran corriger. */}
+      {propertyUsage?.exceeded && propertyUsage.max !== null && (
+        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl flex items-start gap-2">
+          <span>⚠️</span>
+          <span className="text-sm">
+            {t("manager.subscription.propertyCapExceeded", {
+              count: propertyUsage.count,
+              max: propertyUsage.max,
+            })}
+          </span>
         </div>
       )}
 

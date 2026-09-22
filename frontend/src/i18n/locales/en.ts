@@ -1063,6 +1063,7 @@ const en: TranslationSchema = {
       perMonth: "/ month",
       billedAnnually: "(billed {{amount}} / year)",
       unsupportedCurrencyNotice: "Subscriptions are not billed in your display currency yet. Your plans below are therefore shown in {{currency}}.",
+      propertyCapExceeded: "You manage {{count}} properties while your plan allows {{max}}. Your existing properties stay available, but you cannot add any more until you move to a higher plan.",
       includedInPlan: "Included in this plan:",
       currentPlanBtn: "Your current plan",
       choosePlanBtn: "Choose {{plan}}",

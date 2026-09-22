@@ -4,11 +4,66 @@ import { contracts, invoices } from "../db/schema";
 
 type Contract = typeof contracts.$inferSelect;
 
+/** Jours d'un mois réellement couverts par une période contractuelle. */
+export interface PeriodeCouverte {
+  /** Premier jour du mois couvert par le contrat (1-31), 0 si aucun. */
+  premierJour: number;
+  /** Dernier jour du mois couvert par le contrat (1-31), 0 si aucun. */
+  dernierJour: number;
+  /** Nombre de jours couverts, bornes incluses. */
+  jours: number;
+  /** Nombre de jours que compte ce mois. */
+  joursDuMois: number;
+  /** Le contrat couvre-t-il le mois entier ? */
+  complet: boolean;
+}
+
+/**
+ * Jours du mois (periodMonth/periodYear) réellement couverts par un bail.
+ *
+ * Le calcul se fait en NUMÉROS DE JOUR, jamais en différence de timestamps :
+ * les bornes du contrat portent une heure, et un écart de fuseau ou un
+ * changement d'heure d'été suffirait à faire basculer un jour entier.
+ */
+export function periodeCouverte(
+  bornes: { startDate: Date | string; endDate: Date | string },
+  periodMonth: number,
+  periodYear: number
+): PeriodeCouverte {
+  const debut = new Date(bornes.startDate);
+  const fin = new Date(bornes.endDate);
+  const joursDuMois = new Date(periodYear, periodMonth, 0).getDate();
+
+  const indexDuMois = periodYear * 12 + (periodMonth - 1);
+  const indexDebut = debut.getFullYear() * 12 + debut.getMonth();
+  const indexFin = fin.getFullYear() * 12 + fin.getMonth();
+
+  if (indexDuMois < indexDebut || indexDuMois > indexFin) {
+    return { premierJour: 0, dernierJour: 0, jours: 0, joursDuMois, complet: false };
+  }
+
+  const premierJour = indexDuMois === indexDebut ? Math.max(1, debut.getDate()) : 1;
+  const dernierJour = indexDuMois === indexFin ? Math.min(joursDuMois, fin.getDate()) : joursDuMois;
+  const jours = Math.max(0, dernierJour - premierJour + 1);
+
+  return { premierJour, dernierJour, jours, joursDuMois, complet: jours >= joursDuMois };
+}
+
 /**
  * Génère les factures de loyer manquantes pour un contrat actif, du mois de
  * début du contrat jusqu'au mois courant (ou jusqu'à la fin du contrat si
  * elle est déjà passée). Idempotent grâce à l'index unique
  * (contractId, mois, année) — sûr à appeler plusieurs fois.
+ *
+ * Le premier et le dernier mois d'un bail sont facturés AU PRORATA des jours
+ * réellement occupés, comme le veut l'usage en gestion locative : un bail
+ * démarrant le 25 ne doit pas coûter un mois entier. Les mois intermédiaires
+ * valent le loyer plein, au centime près (aucun arrondi ne s'y applique).
+ *
+ * La règle qui en découle tient en une phrase : CHAQUE LOCATAIRE PAIE SES
+ * PROPRES JOURS. Deux baux qui se succèdent en cours de mois facturent donc
+ * chacun sa part, là où le mois de transition revenait auparavant en entier
+ * au premier et rien au second.
  */
 export async function generateInvoicesForContract(contract: Contract, dbClient: DbClient = db) {
   const start = new Date(contract.startDate);
@@ -41,19 +96,36 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
       periodMonth: invoices.periodMonth,
       periodYear: invoices.periodYear,
       status: invoices.status,
+      contractStart: contracts.startDate,
+      contractEnd: contracts.endDate,
     })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .where(eq(contracts.propertyId, contract.propertyId));
 
-  type LigneExistante = { contractId: string; periodMonth: number; periodYear: number; status: string };
+  type LigneExistante = {
+    contractId: string;
+    periodMonth: number;
+    periodYear: number;
+    status: string;
+    contractStart: Date;
+    contractEnd: Date;
+  };
 
-  // Mois déjà couverts par une facture VIVANTE, quel que soit le contrat du
-  // bien : c'est le garde anti-double-facturation décrit ci-dessus.
-  const existingKeys = new Set(
-    existingInvoices
-      .filter((i: LigneExistante) => i.status !== "CANCELLED")
-      .map((i: LigneExistante) => `${i.periodMonth}-${i.periodYear}`)
+  // Factures VIVANTES des AUTRES contrats du bien : le garde ci-dessus opère
+  // désormais sur les JOURS et non sur le mois entier, puisque chaque contrat
+  // ne facture que sa propre période. Deux baux successifs couvrent des jours
+  // disjoints par construction ; un chevauchement signale une anomalie de
+  // dates, et on s'abstient alors plutôt que de facturer deux fois.
+  //
+  // Conséquence assumée sur les données antérieures au prorata : une facture
+  // de mois PLEIN émise par un contrat qui s'arrêtait en cours de mois est
+  // relue ici comme ne couvrant que les jours de SON contrat. Le successeur
+  // facturera donc ses propres jours, et ce mois-là aura été sur-facturé au
+  // premier locataire — anomalie héritée de l'ancienne règle, que le
+  // gestionnaire peut corriger en annulant la facture concernée.
+  const facturesDesAutresContrats = existingInvoices.filter(
+    (i: LigneExistante) => i.contractId !== contract.id && i.status !== "CANCELLED"
   );
 
   // Mois déjà présents pour CE contrat, annulations comprises : l'index unique
@@ -81,14 +153,36 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
     const dueDate = new Date(periodYear, periodMonth - 1, Math.min(desiredDay, lastDayOfPeriodMonth));
 
     const cle = `${periodMonth}-${periodYear}`;
-    if (!existingKeys.has(cle) && !clesDeCeContrat.has(cle)) {
+    const notrePeriode = periodeCouverte(contract, periodMonth, periodYear);
+
+    // Un autre contrat du bien couvre-t-il un seul des jours que nous
+    // facturerions ? Les bornes sont inclusives des deux côtés.
+    const chevauchement = facturesDesAutresContrats.some((autre: LigneExistante) => {
+      if (autre.periodMonth !== periodMonth || autre.periodYear !== periodYear) return false;
+      const sienne = periodeCouverte(
+        { startDate: autre.contractStart, endDate: autre.contractEnd },
+        periodMonth,
+        periodYear
+      );
+      if (sienne.jours === 0) return false;
+      return notrePeriode.premierJour <= sienne.dernierJour && sienne.premierJour <= notrePeriode.dernierJour;
+    });
+
+    if (notrePeriode.jours > 0 && !chevauchement && !clesDeCeContrat.has(cle)) {
+      // Mois entier : le loyer tel quel, sans passer par le calcul au prorata
+      // — un arrondi sur un mois complet ferait dériver le montant de
+      // quelques centimes par rapport au loyer inscrit au bail.
+      const montant = notrePeriode.complet
+        ? contract.rent
+        : Math.round(((contract.rent * notrePeriode.jours) / notrePeriode.joursDuMois) * 100) / 100;
+
       const [invoice] = await dbClient
         .insert(invoices)
         .values({
           contractId: contract.id,
           periodMonth,
           periodYear,
-          amount: contract.rent,
+          amount: montant,
           currency: contract.currency ?? "EUR",
           dueDate,
           status: dueDate < today ? "LATE" : "PENDING",

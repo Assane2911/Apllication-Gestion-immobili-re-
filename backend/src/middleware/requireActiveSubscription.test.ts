@@ -118,6 +118,40 @@ describe("requireActiveSubscription", () => {
       expect(res.status).toBe(402);
     });
 
+    it("ferme aussi les documents et la messagerie à un gestionnaire expiré", async () => {
+      // Ces deux zones n'avaient aucune vérification d'abonnement,
+      // contrairement aux biens, contrats et factures : un gestionnaire dont
+      // l'abonnement était terminé continuait d'émettre des quittances — un
+      // document légal — et d'échanger avec ses locataires.
+      const manager = await createManager({
+        subscriptionStatus: "TRIAL",
+        trialEndsAt: new Date(Date.now() - 1000),
+      });
+      const entete = authHeader(tokenFor(manager));
+
+      const documents = await request(app).get("/api/documents/receipt/peu-importe").set(entete);
+      expect(documents.status).toBe(402);
+
+      const messages = await request(app).get("/api/messages/conversations").set(entete);
+      expect(messages.status).toBe(402);
+    });
+
+    it("laisse un locataire accéder aux documents et à la messagerie, quel que soit l'abonnement de son gestionnaire", async () => {
+      // Le locataire ne paie rien : il ne doit jamais être privé de ses
+      // quittances ni de sa messagerie parce que son gestionnaire a cessé de
+      // régler son abonnement.
+      const manager = await createManager({
+        subscriptionStatus: "TRIAL",
+        trialEndsAt: new Date(Date.now() - 1000),
+      });
+      const tenant = await createTenant(manager.id);
+      const portail = await createTenantPortalUser(tenant);
+      const entete = authHeader(tokenFor(portail, tenant.id));
+
+      const messages = await request(app).get("/api/messages/conversations").set(entete);
+      expect(messages.status).not.toBe(402);
+    });
+
     it("bloque (402) un abonnement EXPIRED", async () => {
       const manager = await createManager({
         subscriptionStatus: "EXPIRED",
