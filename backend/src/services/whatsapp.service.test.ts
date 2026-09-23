@@ -12,7 +12,7 @@ describe("envoyerMessageWhatsapp", () => {
     vi.unstubAllGlobals();
   });
 
-  it("simule l'envoi (ne fait aucun appel rÃ©seau) quand l'API Meta n'est pas configurÃ©e", async () => {
+  it("simule l'envoi (ne fait aucun appel réseau) quand l'API Meta n'est pas configurée", async () => {
     env.whatsapp.accessToken = "";
     env.whatsapp.phoneNumberId = "";
     const fetchMock = vi.fn();
@@ -24,14 +24,14 @@ describe("envoyerMessageWhatsapp", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  describe("une fois l'API Meta configurÃ©e", () => {
+  describe("une fois l'API Meta configurée", () => {
     beforeEach(() => {
       env.whatsapp.accessToken = "un_token_permanent_meta";
       env.whatsapp.phoneNumberId = "123456789012345";
       env.whatsapp.templateLanguage = "fr";
     });
 
-    it("simule l'envoi (sans appel rÃ©seau) quand le modÃ¨le (Message Template Meta) n'est pas configurÃ©", async () => {
+    it("simule l'envoi (sans appel réseau) quand le modèle (Message Template Meta) n'est pas configuré", async () => {
       const fetchMock = vi.fn();
       vi.stubGlobal("fetch", fetchMock);
 
@@ -41,7 +41,7 @@ describe("envoyerMessageWhatsapp", () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it("refuse (sans appel rÃ©seau) un numÃ©ro sans indicatif pays reconnaissable", async () => {
+    it("refuse (sans appel réseau) un numéro sans indicatif pays reconnaissable", async () => {
       const fetchMock = vi.fn();
       vi.stubGlobal("fetch", fetchMock);
 
@@ -51,7 +51,7 @@ describe("envoyerMessageWhatsapp", () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it("appelle l'API Meta WhatsApp Cloud avec les bons paramÃ¨tres (URL Graph, Bearer, modÃ¨le/langue/paramÃ¨tres positionnels)", async () => {
+    it("appelle l'API Meta WhatsApp Cloud avec les bons paramètres (URL Graph, Bearer, modèle/langue/paramètres positionnels)", async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -93,12 +93,12 @@ describe("envoyerMessageWhatsapp", () => {
       });
     });
 
-    it("ordonne les paramÃ¨tres positionnellement mÃªme si les clÃ©s des variables sont fournies dans le dÃ©sordre", async () => {
+    it("ordonne les paramètres positionnellement même si les clés des variables sont fournies dans le désordre", async () => {
       const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
       vi.stubGlobal("fetch", fetchMock);
 
       await envoyerMessageWhatsapp("+221771234567", "rappel_avant_echeance_loyer", {
-        "3": "Studio meublÃ©",
+        "3": "Studio meublé",
         "1": "Amine",
         "2": "septembre 2026",
       });
@@ -107,11 +107,11 @@ describe("envoyerMessageWhatsapp", () => {
       expect(corps.template.components[0].parameters.map((p: { text: string }) => p.text)).toEqual([
         "Amine",
         "septembre 2026",
-        "Studio meublÃ©",
+        "Studio meublé",
       ]);
     });
 
-    it("renvoie une erreur (sans lever) quand Meta rÃ©pond en Ã©chec", async () => {
+    it("renvoie une erreur (sans lever) quand Meta répond en échec", async () => {
       const fetchMock = vi
         .fn()
         .mockResolvedValue({ ok: false, status: 400, text: async () => '{"error":{"message":"Template not found"}}' });
@@ -122,7 +122,7 @@ describe("envoyerMessageWhatsapp", () => {
       expect(resultat).toEqual({ simulated: false, error: true, raison: "erreur_api" });
     });
 
-    it("renvoie une erreur (sans lever) en cas d'Ã©chec rÃ©seau", async () => {
+    it("renvoie une erreur (sans lever) en cas d'échec réseau", async () => {
       const fetchMock = vi.fn().mockRejectedValue(new Error("ECONNRESET"));
       vi.stubGlobal("fetch", fetchMock);
 
@@ -133,11 +133,11 @@ describe("envoyerMessageWhatsapp", () => {
   });
 });
 
-describe("variables des modÃ¨les WhatsApp (Message Templates)", () => {
-  it("rentDueReminderWhatsappVariables fournit le nom, le mois/annÃ©e, le bien, le montant et le lien de paiement", () => {
+describe("variables des modèles WhatsApp (Message Templates)", () => {
+  it("rentDueReminderWhatsappVariables fournit le nom, le mois/année, le bien, le montant et le lien de paiement", () => {
     const variables = rentDueReminderWhatsappVariables({
       tenantName: "Amine Silva",
-      propertyTitle: "Studio meublÃ©",
+      propertyTitle: "Studio meublé",
       amount: 180,
       currency: "EUR",
       periodMonth: 9,
@@ -148,8 +148,8 @@ describe("variables des modÃ¨les WhatsApp (Message Templates)", () => {
     expect(variables).toEqual({
       "1": "Amine Silva",
       "2": "septembre 2026",
-      "3": "Studio meublÃ©",
-      "4": "180 â‚¬",
+      "3": "Studio meublé",
+      "4": "180 €",
       "5": "https://app.example.com/portail/paiements",
     });
   });
