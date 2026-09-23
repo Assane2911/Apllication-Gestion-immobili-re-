@@ -1,10 +1,10 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { contracts } from "../db/schema";
+import { contracts, invoices } from "../db/schema";
 import { createContract, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 const CRON_ROUTES = ["/api/cron/daily", "/api/cron/contract-reminders", "/api/cron/rent-due-reminders", "/api/cron/rent-due-soon-reminders"];
 
@@ -120,6 +120,60 @@ describe("GET /api/cron/daily", () => {
     expect(res.status).toBe(200);
     expect(typeof res.body.contractEndingRemindersSent).toBe("number");
     expect(typeof res.body.upcomingRentDueRemindersSent).toBe("number");
+  });
+
+  /**
+   * La génération des factures ne dépendait que du cron MENSUEL. Cette unique
+   * invocation échouant — fonction en erreur, déploiement en cours, base
+   * indisponible — aucune facture n'était émise du mois, et rien ne
+   * réessayait avant trente jours : le job quotidien, lui, ne générait rien.
+   * La route quotidienne fait désormais ce travail elle-même, ce qui ramène
+   * le délai de reprise d'un mois à un jour.
+   */
+  it("génère aussi les factures du mois : le mensuel n'est plus le seul recours", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      status: "ACTIVE",
+      startDate: new Date(2020, 0, 1),
+      endDate: new Date(2030, 0, 1),
+    });
+
+    const res = await request(app).get("/api/cron/daily").set({ Authorization: `Bearer ${CRON_SECRET}` });
+
+    expect(res.status).toBe(200);
+    const aujourdhui = new Date();
+    const facturesDuMois = await testDb
+      .select()
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.contractId, contract.id),
+          eq(invoices.periodMonth, aujourdhui.getMonth() + 1),
+          eq(invoices.periodYear, aujourdhui.getFullYear())
+        )
+      );
+    expect(facturesDuMois).toHaveLength(1);
+    expect(res.body.rentDueRemindersSent).toBe(1);
+  });
+
+  it("ne prévient pas deux fois le locataire quand la route tourne deux jours de suite", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      status: "ACTIVE",
+      startDate: new Date(2020, 0, 1),
+      endDate: new Date(2030, 0, 1),
+    });
+
+    const premier = await request(app).get("/api/cron/daily").set({ Authorization: `Bearer ${CRON_SECRET}` });
+    const second = await request(app).get("/api/cron/daily").set({ Authorization: `Bearer ${CRON_SECRET}` });
+
+    expect(premier.body.rentDueRemindersSent).toBe(1);
+    // C'est `reminderSentAt` qui rend l'exécution quotidienne sans danger.
+    expect(second.body.rentDueRemindersSent).toBe(0);
   });
 });
 

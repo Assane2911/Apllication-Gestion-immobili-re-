@@ -4,6 +4,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
+import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
@@ -22,7 +23,7 @@ import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonRe
  * recevait le rappel de ses propres baux et l'exploitant les recevait tous,
  * nom du locataire et intitulé du bien compris.
  */
-export async function runContractEndingReminders() {
+export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMITE) {
   const daysBefore = env.reminder.daysBefore;
 
   const now = new Date();
@@ -57,7 +58,16 @@ export async function runContractEndingReminders() {
     );
 
   let sent = 0;
+  let interrompu = false;
   for (const row of rows) {
+    // Le budget se consulte AVANT de réclamer la ligne : s'arrêter ici la
+    // laisse non marquée, donc reprenable telle quelle par l'exécution
+    // suivante (voir utils/budgetTemps.ts).
+    if (budget.epuise()) {
+      interrompu = true;
+      break;
+    }
+
     // Réclamation atomique AVANT l'envoi (même principe que
     // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : la
     // requête SELECT ci-dessus charge un instantané des contrats sans
@@ -92,20 +102,34 @@ export async function runContractEndingReminders() {
   if (sent > 0) {
     console.log(`[reminder] ${sent} rappel(s) de fin de contrat envoyé(s).`);
   }
-  return sent;
+  if (interrompu) {
+    console.warn(
+      `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) de fin de contrat reportés à la prochaine exécution.`
+    );
+  }
+  return { sent, interrompu };
 }
 
 /**
- * Envoie automatiquement un avis d'échéance / rappel de loyer aux locataires
- * le 1er de chaque mois pour leur rappeler de régler leur loyer au plus tard
- * le 5 du mois.
+ * Génère les factures du mois en cours pour les contrats actifs, puis envoie
+ * à chaque locataire concerné l'avis d'échéance de son loyer.
+ *
+ * Cette fonction est appelée QUOTIDIENNEMENT et non plus seulement le 1er du
+ * mois. La génération des factures n'avait auparavant qu'un seul déclencheur
+ * — le cron mensuel — et son échec (fonction en erreur, déploiement en cours,
+ * base indisponible) privait tout le mois de facturation, sans reprise avant
+ * trente jours. Une exécution quotidienne supprime ce point unique de
+ * défaillance sans rien envoyer en double : chaque facture ne reçoit son avis
+ * qu'une fois, `reminderSentAt` en répond, et le corps de l'email ne
+ * mentionne aucune date d'émission. Conséquence voulue : un bail créé en
+ * cours de mois reçoit enfin son avis, au lieu d'attendre le mois suivant.
  *
  * `managerId` : quand fourni (déclenchement manuel par un gestionnaire depuis
  * son tableau de bord), restreint l'envoi aux seuls locataires de ce
  * gestionnaire. Laissé vide pour le job planifié (cron), qui couvre toute
  * la plateforme.
  */
-export async function runRentDueReminders(managerId?: string) {
+export async function runRentDueReminders(managerId?: string, budget: BudgetTemps = SANS_LIMITE) {
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
@@ -121,7 +145,12 @@ export async function runRentDueReminders(managerId?: string) {
     : db.select({ contract: contracts }).from(contracts).where(eq(contracts.status, "ACTIVE"));
 
   const activeContractRows = await activeContractsQuery;
+  let interrompu = false;
   for (const { contract } of activeContractRows) {
+    if (budget.epuise()) {
+      interrompu = true;
+      break;
+    }
     await generateInvoicesForContract(contract);
   }
 
@@ -160,6 +189,11 @@ export async function runRentDueReminders(managerId?: string) {
   const details = [];
 
   for (const row of rows) {
+    if (budget.epuise()) {
+      interrompu = true;
+      break;
+    }
+
     // Réclamation atomique AVANT l'envoi (même principe que
     // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : le
     // SELECT ci-dessus charge un instantané des factures sans rappel
@@ -220,8 +254,11 @@ export async function runRentDueReminders(managerId?: string) {
     });
   }
 
-  console.log(`[reminder] 📢 ${sent} avis d'échéance du 1er du mois envoyé(s) aux locataires (échéance au plus tard le 5).`);
-  return { sent, details };
+  console.log(`[reminder] 📢 ${sent} avis d'échéance envoyé(s) aux locataires pour ${currentMonth}/${currentYear}.`);
+  if (interrompu) {
+    console.warn("[reminder] Budget de temps épuisé : avis d'échéance restants reportés à la prochaine exécution.");
+  }
+  return { sent, details, interrompu };
 }
 
 /**
@@ -230,7 +267,7 @@ export async function runRentDueReminders(managerId?: string) {
  * encore impayée (PENDING ou LATE) — en plus de l'avis du 1er du mois.
  * Idempotent via `dueSoonReminderSentAt` (distinct de `reminderSentAt`).
  */
-export async function runUpcomingRentDueReminders() {
+export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIMITE) {
   // Repasse d'abord en LATE les factures PENDING dont l'échéance est déjà
   // dépassée — sans cet appel (auparavant jamais déclenché nulle part),
   // une facture en retard ne changeait jamais de statut automatiquement et
@@ -266,9 +303,15 @@ export async function runUpcomingRentDueReminders() {
     );
 
   let sent = 0;
+  let interrompu = false;
   const details = [];
 
   for (const row of rows) {
+    if (budget.epuise()) {
+      interrompu = true;
+      break;
+    }
+
     // Réclamation atomique AVANT l'envoi — même course concurrentielle que
     // runRentDueReminders ci-dessus (chevauchement du cron quotidien si un
     // envoi précédent traîne encore).
@@ -326,7 +369,12 @@ export async function runUpcomingRentDueReminders() {
   if (sent > 0) {
     console.log(`[reminder] ⏰ ${sent} rappel(s) "avant échéance" (J-${daysBefore}) envoyé(s) aux locataires.`);
   }
-  return { sent, details };
+  if (interrompu) {
+    console.warn(
+      `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) "avant échéance" reportés à la prochaine exécution.`
+    );
+  }
+  return { sent, details, interrompu };
 }
 
 // Fenêtre de réclamation pour l'envoi manuel d'un rappel individuel : assez
@@ -426,11 +474,14 @@ export function scheduleContractEndingReminders() {
     runContractEndingReminders().catch((err) => console.error("[reminder] erreur fin contrat:", err));
   });
 
-  // Tâche planifiée automatique : le 1er de chaque mois à 8h00 du matin
-  const rentDueCron = "0 8 1 * *";
-  console.log(`[reminder] 📢 Job avis d'échéance du 1er du mois (date limite le 5) planifié avec "${rentDueCron}"`);
+  // Quotidien, et non plus mensuel : même politique que la route /api/cron/daily
+  // du déploiement serverless (voir cron.controller.ts). La génération des
+  // factures ne dépend ainsi plus d'une exécution unique dont l'échec
+  // coûterait un mois entier de facturation.
+  const rentDueCron = "0 8 * * *";
+  console.log(`[reminder] 📢 Job factures du mois + avis d'échéance planifié avec "${rentDueCron}"`);
   cron.schedule(rentDueCron, () => {
-    runRentDueReminders().catch((err) => console.error("[reminder] erreur avis loyer du 1er:", err));
+    runRentDueReminders().catch((err) => console.error("[reminder] erreur avis d'échéance:", err));
   });
 
   // Tâche planifiée automatique : tous les jours à 9h00, rappel complémentaire

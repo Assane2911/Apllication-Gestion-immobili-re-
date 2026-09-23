@@ -90,8 +90,18 @@ export const env = {
   },
 
   // Secret partagé avec Vercel (variable d'env CRON_SECRET sur le projet)
-  // pour authentifier les appels à /api/cron/contract-reminders.
+  // pour authentifier les appels aux routes /api/cron/*.
   cronSecret: process.env.CRON_SECRET ?? "",
+
+  // Temps qu'une route cron s'autorise à consommer avant de s'arrêter d'elle-
+  // même (voir utils/budgetTemps.ts). Vercel tue une fonction au-delà de sa
+  // durée maximale — 300 s par défaut, plan Hobby compris — et une exécution
+  // tuée l'est au milieu d'un envoi, sans rien en conserver. On s'arrête donc
+  // avant, en gardant de la marge pour rendre la réponse HTTP : le reste est
+  // repris par l'exécution suivante, puisqu'aucune ligne non traitée n'a été
+  // réclamée. À ajuster de pair avec `maxDuration` si elle est un jour
+  // configurée dans vercel.json.
+  cronBudgetMs: parseInt(process.env.CRON_BUDGET_SECONDS ?? "240", 10) * 1000,
 
   // En local/dev, le scheduler node-cron interne tourne automatiquement.
   // Sur Vercel (serverless, pas de processus persistant), il est désactivé :

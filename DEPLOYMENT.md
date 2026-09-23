@@ -91,7 +91,8 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
    - `JWT_SECRET` (générez une vraie valeur aléatoire, différente de celle de dev)
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_APP_PASSWORD`, `EMAIL_FROM`, `CONTRACT_REMINDER_DAYS`
    - `CRON_SECRET` : générez une valeur aléatoire (16+ caractères) — Vercel l'enverra automatiquement en en-tête `Authorization` lors de l'appel du Cron Job
-   - `ENABLE_INTERNAL_CRON=false` (important : sur Vercel, le scheduler interne node-cron ne doit pas tourner — c'est le Vercel Cron Job, défini dans `backend/vercel.json`, qui appelle `/api/cron/contract-reminders` une fois par jour)
+   - `ENABLE_INTERNAL_CRON=false` (important : sur Vercel, le scheduler interne node-cron ne doit pas tourner — ce sont les Vercel Cron Jobs déclarés dans `backend/vercel.json` qui appellent `/api/cron/daily` chaque jour et `/api/cron/rent-due-reminders` le 1er du mois)
+   - `CRON_BUDGET_SECONDS` (facultatif, 240 par défaut) : temps qu'une route cron s'autorise avant de s'arrêter d'elle-même. Vercel tue une fonction au-delà de sa durée maximale (300 s par défaut) ; en s'arrêtant avant, la tâche laisse le reliquat non réclamé, et l'exécution du lendemain le reprend. À augmenter seulement de pair avec `maxDuration`.
    - `FRONTEND_URL` : à renseigner une fois le frontend déployé (étape suivante), pour l'autorisation CORS
 5. Déployez. Notez l'URL générée (ex: `https://gestion-immo-api.vercel.app`).
 6. Une fois déployé, vérifiez dans **Project Settings → Cron Jobs** que `contract-reminders` apparaît bien planifié.
@@ -116,9 +117,9 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 - `https://votre-backend.vercel.app/api/health` → doit répondre `{"status":"ok"}`.
 - Connectez-vous sur le frontend déployé avec le compte gestionnaire créé par le seed (ou créez-en un via `POST /api/auth/register`).
 - Testez un paiement en mode démo depuis le portail locataire.
-- Testez manuellement le rappel de fin de contrat avant d'attendre le lendemain :
+- Testez manuellement les tâches planifiées avant d'attendre le lendemain — `interrompu: true` dans la réponse signale que le budget de temps a été atteint et qu'un reliquat sera repris à l'exécution suivante :
   ```bash
-  curl -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-backend.vercel.app/api/cron/contract-reminders
+  curl -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-backend.vercel.app/api/cron/daily
   ```
 - Vérifiez dans Supabase → Storage que les fichiers uploadés (image d'un bien, photo d'incident) apparaissent bien dans `public-uploads`.
 
@@ -128,5 +129,7 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 
 - **Base de données** : `better-sqlite3` → `postgres-js` + Drizzle en dialecte `postgresql` (`backend/src/db/`).
 - **Fichiers** : plus de disque local (`backend/uploads/` a été supprimé) — tout passe par `backend/src/services/storage.service.ts` vers Supabase Storage. Les pièces d'identité (bucket privé) sont servies via URL signée générée à la demande (`GET /api/tenants/:id/id-document-url`), jamais via un lien public permanent.
-- **Rappels planifiés** : `node-cron` reste actif en développement local (`ENABLE_INTERNAL_CRON=true`) mais est désactivé en production ; `backend/vercel.json` déclare un Vercel Cron Job quotidien qui appelle `GET /api/cron/contract-reminders`, protégé par le header `Authorization: Bearer $CRON_SECRET` que Vercel envoie automatiquement.
+- **Rappels planifiés** : `node-cron` reste actif en développement local (`ENABLE_INTERNAL_CRON=true`) mais est désactivé en production ; `backend/vercel.json` déclare deux Vercel Cron Jobs, protégés par le header `Authorization: Bearer $CRON_SECRET` que Vercel envoie automatiquement :
+  - `GET /api/cron/daily` (`0 8 * * *`) enchaîne les trois travaux quotidiens : rappel de fin de bail au gestionnaire, rappel « avant échéance » au locataire (avec passage en retard des factures dépassées), et génération des factures du mois suivie de l'avis d'échéance ;
+  - `GET /api/cron/rent-due-reminders` (`0 8 1 * *`) refait ce dernier travail le 1er du mois. Ce n'est plus son unique déclencheur : la route quotidienne le couvre aussi, pour qu'un échec ponctuel ne coûte pas un mois entier de facturation. Les deux ne font jamais double emploi — une facture déjà traitée porte son `reminderSentAt`.
 - **Frontend** : `frontend/vercel.json` ajoute une règle de réécriture pour que le routage côté client (React Router) fonctionne aussi sur un rechargement de page ou un lien direct (ex: `/portail/paiements`).

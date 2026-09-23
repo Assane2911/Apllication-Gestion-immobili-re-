@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "../services/reminder.service";
+import { budgetTemps } from "../utils/budgetTemps";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 /**
@@ -69,45 +70,67 @@ function assertCronAuthorized(req: Request) {
 export const triggerContractEndingReminders = asyncHandler(async (req: Request, res: Response) => {
   assertCronAuthorized(req);
 
-  const sent = await runContractEndingReminders();
-  res.json({ success: true, remindersSent: sent });
+  const { sent, interrompu } = await runContractEndingReminders(budgetTemps(env.cronBudgetMs));
+  res.json({ success: true, remindersSent: sent, interrompu });
 });
 
 /**
- * Combine en un seul appel les deux tâches planifiées QUOTIDIENNES (rappel de
- * fin de contrat + rappel "avant échéance"/passage en retard) afin de tenir
- * dans la limite de 2 cron jobs par projet du plan Vercel Hobby — voir
- * vercel.json, qui ne déclare que cette route (quotidienne) et
- * /rent-due-reminders (mensuelle) plutôt que les 3 routes séparément.
- * Chaque route individuelle reste disponible ci-dessous pour un
- * déclenchement manuel/ponctuel.
+ * LA tâche planifiée quotidienne : c'est la seule route que vercel.json
+ * déclare en fréquence journalière, et elle enchaîne tout ce qui doit être
+ * fait chaque jour.
+ *
+ * Elle inclut désormais runRentDueReminders — génération des factures du mois
+ * et avis d'échéance — qui ne dépendait jusqu'ici que du cron mensuel. Un
+ * échec de cette unique invocation privait tout le mois de facturation sans
+ * aucune reprise ; l'appel quotidien supprime ce point unique de défaillance,
+ * et l'idempotence par facture (`reminderSentAt`) garantit qu'aucun locataire
+ * n'est prévenu deux fois.
+ *
+ * Les trois travaux se partagent UN SEUL budget de temps : ils s'exécutent
+ * dans la même fonction serverless, donc dans la même limite de durée. Le
+ * budget est consulté avant chaque élément et ce qui n'a pas été traité est
+ * repris le lendemain (voir utils/budgetTemps.ts).
+ *
+ * Chaque route individuelle reste disponible ci-dessous pour un déclenchement
+ * manuel ou ponctuel.
  */
 export const triggerDailyReminders = asyncHandler(async (req: Request, res: Response) => {
   assertCronAuthorized(req);
 
-  const contractEndingRemindersSent = await runContractEndingReminders();
-  const upcoming = await runUpcomingRentDueReminders();
+  const budget = budgetTemps(env.cronBudgetMs);
+  const contractEnding = await runContractEndingReminders(budget);
+  const upcoming = await runUpcomingRentDueReminders(budget);
+  const rentDue = await runRentDueReminders(undefined, budget);
 
   res.json({
     success: true,
-    contractEndingRemindersSent,
+    contractEndingRemindersSent: contractEnding.sent,
     upcomingRentDueRemindersSent: upcoming.sent,
+    rentDueRemindersSent: rentDue.sent,
+    // Vrai dès qu'un des trois travaux s'est arrêté faute de temps : le
+    // reliquat n'est pas perdu, il sera traité à la prochaine exécution.
+    interrompu: contractEnding.interrompu || upcoming.interrompu || rentDue.interrompu,
     details: upcoming.details,
   });
 });
 
 /**
- * Déclenché par Vercel Cron Jobs le 1er de chaque mois pour envoyer
- * les alertes d'échéance de loyer aux locataires (délai de règlement : au plus tard le 5).
+ * Génération des factures du mois et avis d'échéance aux locataires.
+ *
+ * Toujours déclenchée par le cron mensuel déclaré dans vercel.json, mais ce
+ * n'en est plus l'unique déclencheur : /daily fait le même travail chaque
+ * jour (voir triggerDailyReminders). Les deux peuvent coexister sans rien
+ * envoyer en double — la facture déjà traitée porte son `reminderSentAt`.
  */
 export const triggerRentDueReminders = asyncHandler(async (req: Request, res: Response) => {
   assertCronAuthorized(req);
 
-  const result = await runRentDueReminders();
+  const result = await runRentDueReminders(undefined, budgetTemps(env.cronBudgetMs));
   res.json({
     success: true,
-    message: `${result.sent} rappel(s) de loyer du 1er du mois envoyé(s)`,
+    message: `${result.sent} avis d'échéance de loyer envoyé(s)`,
     remindersSent: result.sent,
+    interrompu: result.interrompu,
     details: result.details,
   });
 });
@@ -120,11 +143,12 @@ export const triggerRentDueReminders = asyncHandler(async (req: Request, res: Re
 export const triggerUpcomingRentDueReminders = asyncHandler(async (req: Request, res: Response) => {
   assertCronAuthorized(req);
 
-  const result = await runUpcomingRentDueReminders();
+  const result = await runUpcomingRentDueReminders(budgetTemps(env.cronBudgetMs));
   res.json({
     success: true,
     message: `${result.sent} rappel(s) "avant échéance" envoyé(s)`,
     remindersSent: result.sent,
+    interrompu: result.interrompu,
     details: result.details,
   });
 });

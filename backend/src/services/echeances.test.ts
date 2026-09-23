@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { contracts, invoices } from "../db/schema";
 import {
@@ -9,9 +9,10 @@ import {
   createTenant,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+import { budgetTemps } from "../utils/budgetTemps";
 import * as emailService from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
-import { runContractEndingReminders, runUpcomingRentDueReminders } from "./reminder.service";
+import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "./reminder.service";
 
 /**
  * « En retard » est une accusation portée à un locataire : elle doit être
@@ -194,7 +195,7 @@ describe("Rattrapage des rappels après une exécution manquée", () => {
       status: "ACTIVE",
     });
 
-    const sent = await runContractEndingReminders();
+    const { sent } = await runContractEndingReminders();
 
     expect(sent).toBe(1);
   });
@@ -209,11 +210,11 @@ describe("Rattrapage des rappels après une exécution manquée", () => {
       status: "ACTIVE",
     });
 
-    expect(await runContractEndingReminders()).toBe(1);
+    expect((await runContractEndingReminders()).sent).toBe(1);
     // Le lendemain, le contrat est toujours dans la fenêtre : c'est
     // reminderSentAt, et lui seul, qui doit empêcher le second envoi.
     vi.setSystemTime(new Date(2026, 7, 11, 8, 0, 0));
-    expect(await runContractEndingReminders()).toBe(0);
+    expect((await runContractEndingReminders()).sent).toBe(0);
   });
 
   it("ignore un bail déjà expiré", async () => {
@@ -226,7 +227,7 @@ describe("Rattrapage des rappels après une exécution manquée", () => {
       status: "ACTIVE",
     });
 
-    expect(await runContractEndingReminders()).toBe(0);
+    expect((await runContractEndingReminders()).sent).toBe(0);
   });
 });
 
@@ -272,7 +273,7 @@ describe("Destinataire du rappel de fin de bail", () => {
     const envois = vi.spyOn(emailService, "sendEmail");
     await bailQuiSAcheve("agence-nord@test.local");
 
-    const sent = await runContractEndingReminders();
+    const { sent } = await runContractEndingReminders();
 
     expect(sent).toBe(1);
     const destinataires = envois.mock.calls.map((appel) => appel[0]);
@@ -287,10 +288,101 @@ describe("Destinataire du rappel de fin de bail", () => {
     await bailQuiSAcheve("agence-nord@test.local");
     await bailQuiSAcheve("agence-sud@test.local");
 
-    const sent = await runContractEndingReminders();
+    const { sent } = await runContractEndingReminders();
 
     expect(sent).toBe(2);
     const destinataires = envois.mock.calls.map((appel) => appel[0]).sort();
     expect(destinataires).toEqual(["agence-nord@test.local", "agence-sud@test.local"]);
+  });
+});
+
+/**
+ * Une fonction serverless est tuée net à 300 secondes. Les tâches planifiées
+ * parcourent toute la plateforme — générer les factures, puis un email et un
+ * message WhatsApp par locataire — et finiront par franchir ce mur à mesure
+ * que le nombre de locataires augmente.
+ *
+ * Être tué est bien pire que s'arrêter : l'exécution est coupée au milieu
+ * d'un envoi, une partie des locataires est prévenue, l'autre ne l'est pas,
+ * et rien n'en garde trace. Le budget de temps transforme cette coupure
+ * subie en arrêt choisi, et la reprise est assurée sans mécanisme nouveau :
+ * un élément non traité n'a pas été réclamé, donc l'exécution suivante le
+ * retrouve.
+ */
+describe("Budget de temps des tâches planifiées", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 7, 10, 8, 0, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  async function deuxBauxQuiSAchevent() {
+    for (const suffixe of ["a", "b"]) {
+      const manager = await createManager({ email: `agence-${suffixe}@test.local` });
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      await createContract(property.id, tenant.id, {
+        startDate: new Date(2025, 7, 20),
+        endDate: new Date(2026, 7, 20),
+        status: "ACTIVE",
+      });
+    }
+  }
+
+  it("s'arrête sans rien envoyer quand le temps est déjà écoulé, et le signale", async () => {
+    const envois = vi.spyOn(emailService, "sendEmail");
+    await deuxBauxQuiSAchevent();
+
+    const resultat = await runContractEndingReminders(budgetTemps(0));
+
+    expect(resultat.sent).toBe(0);
+    expect(resultat.interrompu).toBe(true);
+    expect(envois).not.toHaveBeenCalled();
+  });
+
+  it("laisse les contrats non traités reprenables par l'exécution suivante", async () => {
+    await deuxBauxQuiSAchevent();
+
+    const interrompue = await runContractEndingReminders(budgetTemps(0));
+    expect(interrompue.sent).toBe(0);
+
+    // Aucun contrat n'a été réclamé : rien n'est marqué, donc tout est repris.
+    const restants = await testDb.select().from(contracts).where(isNull(contracts.reminderSentAt));
+    expect(restants).toHaveLength(2);
+
+    const reprise = await runContractEndingReminders();
+    expect(reprise.sent).toBe(2);
+    expect(reprise.interrompu).toBe(false);
+  });
+
+  it("n'interrompt rien quand aucun budget n'est imposé", async () => {
+    await deuxBauxQuiSAchevent();
+
+    const resultat = await runContractEndingReminders();
+
+    expect(resultat.sent).toBe(2);
+    expect(resultat.interrompu).toBe(false);
+  });
+
+  it("interrompt aussi l'avis d'échéance du mois, en laissant les factures non réclamées", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+
+    const interrompue = await runRentDueReminders(undefined, budgetTemps(0));
+    expect(interrompue.sent).toBe(0);
+    expect(interrompue.interrompu).toBe(true);
+
+    const reprise = await runRentDueReminders();
+    expect(reprise.sent).toBe(1);
+    expect(reprise.interrompu).toBe(false);
   });
 });
