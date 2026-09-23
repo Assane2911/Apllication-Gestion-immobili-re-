@@ -179,6 +179,12 @@ export default function PolitiqueConfidentialitePage() {
           code applicatif à chaque lecture comme à chaque écriture.
         </p>
         <p>
+          La base de données n'est par ailleurs joignable que par le serveur du Service : l'accès direct par
+          l'interface de programmation publique de l'hébergeur est refusé au niveau de la base elle-même, pour
+          toutes les tables sans exception. Une requête qui tenterait de contourner le Service pour lire
+          directement une table n'obtiendrait aucune donnée, quel que soit son auteur.
+        </p>
+        <p>
           Les documents sensibles (pièces d'identité des locataires, baux scannés, photographies d'incidents)
           sont déposés dans un espace de stockage privé : ils ne sont accessibles que par une URL signée
           temporaire, valable une heure, délivrée à un utilisateur autorisé. Les photographies des biens et
