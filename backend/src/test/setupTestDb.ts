@@ -74,10 +74,11 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret-do-not-use-in-pr
 // Neutralise tout service externe réel qui pourrait autrement être appelé
 // avec de vraies clés si le fichier .env local en contient (SMTP, Sentry) :
 // en test, on ne doit jamais envoyer de vrais emails ni de vrais événements.
-// SMTP_USER est fixé à une valeur factice (non vide) car reminder.service.ts
-// l'utilise directement comme adresse destinataire des rappels de fin de
-// contrat et n'envoie (et ne marque `reminderSentAt`) que si elle est
-// renseignée. SMTP_APP_PASSWORD reste vide : email.service.ts exige les DEUX
+// SMTP_USER est fixé à une valeur factice (non vide) car email.service.ts
+// s'en sert pour décider si un transporteur SMTP doit être créé — il ne
+// désigne JAMAIS un destinataire (c'est la boîte qui envoie ; voir le
+// destinataire réel des rappels de fin de bail dans reminder.service.ts,
+// users.email via properties.managerId). SMTP_APP_PASSWORD reste vide : email.service.ts exige les DEUX
 // variables pour créer un vrai transporteur SMTP, donc l'envoi reste toujours
 // simulé (aucun email réel n'est jamais envoyé en test).
 process.env.SMTP_USER = "test-manager@example.com";

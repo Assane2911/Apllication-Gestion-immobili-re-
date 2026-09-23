@@ -2,7 +2,7 @@ import { SQL, and, desc, eq, gte, isNull, lt, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, invoices, properties, tenants } from "../db/schema";
+import { contracts, invoices, properties, tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
@@ -10,10 +10,17 @@ import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.serv
 import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonReminderWhatsappVariables } from "./whatsapp.service";
 
 /**
- * Recherche les contrats ACTIFS dont la date de fin tombe exactement dans
- * `daysBefore` jours et qui n'ont pas encore reçu de rappel, puis envoie un
- * email au gestionnaire (SMTP_USER) et marque `reminderSentAt` pour éviter
- * les envois en double.
+ * Recherche les contrats ACTIFS dont la date de fin approche et qui n'ont pas
+ * encore reçu de rappel, puis prévient le gestionnaire propriétaire du bien
+ * et marque `reminderSentAt` pour éviter les envois en double.
+ *
+ * Le destinataire est l'adresse du COMPTE du gestionnaire (users.email),
+ * atteinte via properties.managerId. Le rappel partait auparavant vers
+ * `env.smtp.user`, c'est-à-dire la boîte qui ENVOIE les messages : celle de
+ * l'exploitant de la plateforme. Sur une plateforme mono-utilisateur la
+ * confusion passait inaperçue ; dès le deuxième gestionnaire, aucun d'eux ne
+ * recevait le rappel de ses propres baux et l'exploitant les recevait tous,
+ * nom du locataire et intitulé du bien compris.
  */
 export async function runContractEndingReminders() {
   const daysBefore = env.reminder.daysBefore;
@@ -34,10 +41,12 @@ export async function runContractEndingReminders() {
       contract: contracts,
       tenant: tenants,
       property: properties,
+      managerEmail: users.email,
     })
     .from(contracts)
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .innerJoin(users, eq(properties.managerId, users.id))
     .where(
       and(
         eq(contracts.status, "ACTIVE"),
@@ -49,12 +58,6 @@ export async function runContractEndingReminders() {
 
   let sent = 0;
   for (const row of rows) {
-    const managerEmail = env.smtp.user;
-    if (!managerEmail) {
-      console.warn("[reminder] SMTP_USER non configuré, rappel non envoyé pour le contrat", row.contract.id);
-      continue;
-    }
-
     // Réclamation atomique AVANT l'envoi (même principe que
     // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : la
     // requête SELECT ci-dessus charge un instantané des contrats sans
@@ -82,7 +85,7 @@ export async function runContractEndingReminders() {
       daysLeft: joursEntre(now, new Date(row.contract.endDate)),
     });
 
-    await sendEmail(managerEmail, subject, html);
+    await sendEmail(row.managerEmail, subject, html);
     sent += 1;
   }
 

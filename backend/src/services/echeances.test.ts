@@ -229,3 +229,68 @@ describe("Rattrapage des rappels après une exécution manquée", () => {
     expect(await runContractEndingReminders()).toBe(0);
   });
 });
+
+/**
+ * Le rappel de fin de bail partait vers `env.smtp.user` — l'adresse du compte
+ * SMTP qui ENVOIE les messages, c'est-à-dire la boîte de l'exploitant de la
+ * plateforme, et non celle du gestionnaire concerné.
+ *
+ * Sur une plateforme mono-utilisateur, la confusion passait inaperçue. Dès le
+ * deuxième gestionnaire, elle a deux conséquences : aucun gestionnaire ne
+ * reçoit jamais le rappel de ses propres baux, et l'exploitant les reçoit
+ * tous — avec le nom du locataire et l'intitulé du bien à l'intérieur, soit
+ * une divulgation de données d'une agence vers un tiers.
+ *
+ * Le destinataire correct est l'adresse du COMPTE du gestionnaire
+ * (users.email) : celle que la plateforme utilise déjà pour tout ce qui
+ * concerne son compte, et la seule qui soit vérifiée.
+ */
+describe("Destinataire du rappel de fin de bail", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 7, 10, 8, 0, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  async function bailQuiSAcheve(emailDuGestionnaire: string) {
+    const manager = await createManager({ email: emailDuGestionnaire });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      startDate: new Date(2025, 7, 20),
+      endDate: new Date(2026, 7, 20),
+      status: "ACTIVE",
+    });
+    return manager;
+  }
+
+  it("écrit au gestionnaire propriétaire du bien, pas à la boîte d'envoi de la plateforme", async () => {
+    const envois = vi.spyOn(emailService, "sendEmail");
+    await bailQuiSAcheve("agence-nord@test.local");
+
+    const sent = await runContractEndingReminders();
+
+    expect(sent).toBe(1);
+    const destinataires = envois.mock.calls.map((appel) => appel[0]);
+    expect(destinataires).toEqual(["agence-nord@test.local"]);
+    // SMTP_USER vaut "test-manager@example.com" (voir setupTestDb.ts) :
+    // c'est l'adresse qui recevait le rappel avant correction.
+    expect(destinataires).not.toContain(process.env.SMTP_USER);
+  });
+
+  it("n'envoie à chaque gestionnaire que le rappel de ses propres baux", async () => {
+    const envois = vi.spyOn(emailService, "sendEmail");
+    await bailQuiSAcheve("agence-nord@test.local");
+    await bailQuiSAcheve("agence-sud@test.local");
+
+    const sent = await runContractEndingReminders();
+
+    expect(sent).toBe(2);
+    const destinataires = envois.mock.calls.map((appel) => appel[0]).sort();
+    expect(destinataires).toEqual(["agence-nord@test.local", "agence-sud@test.local"]);
+  });
+});
