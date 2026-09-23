@@ -550,6 +550,10 @@ const es: TranslationSchema = {
       confirmDelete: '¿Eliminar la propiedad "{{title}}"?',
     },
     tenants: {
+      anonymize: "Anonimizar",
+      anonymized: "Anonimizado",
+      confirmAnonymize:
+        "¿Borrar los datos identificativos de {{name}}?\n\nSu nombre, correo, teléfono, documento de identidad y acceso al portal se borrarán definitivamente. Sus contratos, facturas y recibos se conservan, como exige la normativa contable: quedarán vinculados a una ficha anónima.\n\nEsta acción es irreversible y ya no podrás contactarle desde el Servicio.",
       title: "Inquilinos",
       count: "{{count}} inquilino(s) registrado(s)",
       addBtn: "+ Añadir inquilino",

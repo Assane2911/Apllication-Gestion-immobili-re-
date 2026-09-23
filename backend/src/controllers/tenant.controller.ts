@@ -127,6 +127,91 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
   res.json(tenant);
 });
 
+/**
+ * Exercice du droit à l'effacement (RGPD art. 17) pour un locataire qui a un
+ * historique.
+ *
+ * `deleteTenant` refuse — à juste titre — toute suppression dès qu'un contrat
+ * existe : on ne détruit pas les quittances d'un loyer réellement encaissé,
+ * que le gestionnaire a l'obligation de conserver. Le locataire qui demandait
+ * l'effacement n'avait donc aucune issue. L'anonymisation en est une : ce qui
+ * l'IDENTIFIE disparaît — nom, email, téléphone, pièce d'identité, compte
+ * d'accès au portail — et les écritures restent, rattachées à une fiche
+ * devenue anonyme.
+ *
+ * L'adresse de remplacement vise le domaine `.invalid`, réservé par la
+ * RFC 2606 et garanti sans existence : même une erreur de code ne pourrait
+ * plus atteindre qui que ce soit. Elle reste unique par agence, la contrainte
+ * composite (manager_id, email) continuant de s'appliquer.
+ *
+ * Le geste est déclenché par le Gestionnaire, qui est le responsable de
+ * traitement pour les données de ses locataires (voir la politique de
+ * confidentialité) : c'est à lui que le locataire adresse sa demande.
+ *
+ * Limite connue et assumée : les messages échangés via la messagerie
+ * intégrée ne sont pas touchés. Leur contenu appartient à l'échange entre les
+ * deux parties et peut servir de preuve au gestionnaire ; s'il contient des
+ * éléments identifiants, ils doivent être traités au cas par cas.
+ */
+export const anonymiserTenant = asyncHandler(async (req: Request, res: Response) => {
+  const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
+
+  if (existing.anonymizedAt) {
+    throw new ApiError(409, "Ce locataire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.");
+  }
+
+  const nomAffiche = `${existing.firstName} ${existing.lastName}`;
+  const pieceIdentite = existing.idDocument;
+  const comptePortail = existing.userId;
+
+  await db.transaction(async (tx: Transaction) => {
+    await tx
+      .update(tenants)
+      .set({
+        firstName: "Locataire",
+        lastName: "anonymisé",
+        email: `anonyme-${existing.id}@supprime.invalid`,
+        phone: "",
+        idDocument: null,
+        userId: null,
+        anonymizedAt: new Date(),
+      })
+      .where(eq(tenants.id, existing.id));
+
+    // Le compte d'accès au portail porte lui aussi une adresse email, et
+    // permet de se connecter : le laisser viderait l'anonymisation de son
+    // sens. tenants.userId est déjà remis à null ci-dessus, donc la
+    // suppression ne casse aucune référence.
+    if (comptePortail) {
+      await tx.delete(users).where(eq(users.id, comptePortail));
+    }
+  });
+
+  // Après la transaction, best-effort : un stockage indisponible ne doit pas
+  // annuler une anonymisation que la base a déjà enregistrée (même principe
+  // que les suppressions, voir nettoyageStockage.test.ts).
+  if (pieceIdentite) {
+    await deleteStorageObjectBestEffort(pieceIdentite).catch(() => undefined);
+  }
+
+  await logActivity({
+    req,
+    managerId: existing.managerId,
+    action: "tenant.anonymize",
+    entityType: "tenant",
+    entityId: existing.id,
+    entityLabel: nomAffiche,
+    details: `Données identifiantes de ${nomAffiche} effacées à sa demande (droit à l'effacement). L'historique locatif et comptable est conservé.`,
+  });
+
+  res.json({
+    success: true,
+    message:
+      "Les données identifiantes de ce locataire ont été effacées. Son historique de contrats et de paiements est conservé, comme l'exige la réglementation comptable.",
+  });
+});
+
 export const deleteTenant = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");

@@ -148,7 +148,7 @@ export default function PolitiqueConfidentialitePage() {
           items={[
             "Données de compte et données locatives (biens, locataires, baux, paiements, dépenses) : conservées pendant toute la durée de la relation contractuelle avec le Gestionnaire, et jusqu'à ce qu'il les supprime ou qu'il clôture son compte.",
             "Pièces d'identité des locataires et photographies (biens, annonces, incidents, baux scannés) : le fichier est supprimé du stockage en même temps que la fiche qui le référence — suppression du locataire, du bien, de l'annonce ou du contrat — et, en tout état de cause, à la clôture du compte du Gestionnaire.",
-            "Messages de la messagerie intégrée : conservés tant que le compte du Gestionnaire reste ouvert.",
+            "Messages de la messagerie intégrée : conservés tant que le compte du Gestionnaire reste ouvert. Ils ne sont pas effacés par l'anonymisation d'un locataire, leur contenu appartenant à l'échange entre les deux parties.",
             "Journal d'activité de l'agence (traçabilité des actions) : conservé pendant toute la durée de vie du compte, puis supprimé avec lui.",
             "Données d'abonnement et de facturation : conservées pendant la durée requise par les obligations comptables et fiscales applicables, y compris après la clôture du compte.",
           ]}
@@ -190,10 +190,14 @@ export default function PolitiqueConfidentialitePage() {
         <p>
           Ces droits s'exercent de la manière suivante. En tant que <strong className="text-slate-100">Locataire</strong>,
           adressez-vous d'abord à votre Gestionnaire (agence ou bailleur) : c'est lui qui est responsable des
-          données qu'il a saisies à votre sujet, lui seul peut les rectifier ou les supprimer depuis son
-          espace de gestion, et {COMPANY.tradeName} n'y intervient que sur son instruction. Le portail
-          Locataire vous permet de consulter votre bail, vos quittances et vos paiements, mais ne comporte
-          aujourd'hui ni export global de vos données ni suppression de votre fiche. En tant que{" "}
+          données qu'il a saisies à votre sujet, lui seul peut les rectifier ou les effacer depuis son
+          espace de gestion, et {COMPANY.tradeName} n'y intervient que sur son instruction. Pour l'effacement,
+          il dispose d'une fonction dédiée qui supprime définitivement les données vous identifiant — nom,
+          adresse email, téléphone, pièce d'identité et accès au portail. Vos contrats, factures et quittances
+          sont en revanche conservés, sans votre identité : la réglementation comptable impose au Gestionnaire
+          de garder ces pièces, et l'effacement ne peut pas primer sur cette obligation. Le portail Locataire
+          vous permet de consulter votre bail, vos quittances et vos paiements, mais ne comporte aujourd'hui
+          ni export global de vos données ni suppression de votre fiche à votre propre initiative. En tant que{" "}
           <strong className="text-slate-100">Gestionnaire</strong>, vous pouvez rectifier vos données à tout
           moment depuis votre espace, et supprimer définitivement votre compte et l'ensemble des données
           associées depuis les paramètres du Service.

@@ -222,4 +222,53 @@ describe("TenantsPage (manager)", () => {
       ).toBeInTheDocument()
     );
   });
+
+  /**
+   * Droit à l'effacement. L'API refuse de SUPPRIMER un locataire dès qu'un
+   * contrat existe — on ne détruit pas des pièces comptables — ce qui ne
+   * laissait au gestionnaire aucune réponse à donner au locataire qui le
+   * demande. L'anonymisation est cette réponse, et elle doit être clairement
+   * distincte de la suppression dans l'interface.
+   */
+  describe("anonymisation (droit à l'effacement)", () => {
+    it("appelle la route d'anonymisation après confirmation, puis recharge la liste", async () => {
+      mockedApi.get.mockResolvedValueOnce(paginated([tenant()]));
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+      mockedApi.get.mockResolvedValueOnce(paginated([tenant({ anonymizedAt: "2026-09-24T10:00:00.000Z" })]));
+      const confirmer = vi.spyOn(window, "confirm").mockReturnValue(true);
+      renderPage();
+      const user = userEvent.setup();
+
+      // La page rend le tableau (desktop) ET les cartes (mobile) : chaque
+      // locataire apparaît donc deux fois dans le DOM de test.
+      await screen.findAllByText("Awa Diallo");
+      await user.click(screen.getAllByRole("button", { name: "Anonymiser" })[0]);
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/tenants/ten-1/anonymiser"));
+      confirmer.mockRestore();
+    });
+
+    it("n'appelle rien si le gestionnaire annule la confirmation", async () => {
+      mockedApi.get.mockResolvedValueOnce(paginated([tenant()]));
+      const confirmer = vi.spyOn(window, "confirm").mockReturnValue(false);
+      renderPage();
+      const user = userEvent.setup();
+
+      // La page rend le tableau (desktop) ET les cartes (mobile) : chaque
+      // locataire apparaît donc deux fois dans le DOM de test.
+      await screen.findAllByText("Awa Diallo");
+      await user.click(screen.getAllByRole("button", { name: "Anonymiser" })[0]);
+
+      expect(mockedApi.post).not.toHaveBeenCalled();
+      confirmer.mockRestore();
+    });
+
+    it("n'offre plus l'action sur une fiche déjà anonymisée", async () => {
+      mockedApi.get.mockResolvedValueOnce(paginated([tenant({ anonymizedAt: "2026-09-24T10:00:00.000Z" })]));
+      renderPage();
+
+      await screen.findAllByText("Anonymisé");
+      expect(screen.queryByRole("button", { name: "Anonymiser" })).not.toBeInTheDocument();
+    });
+  });
 });

@@ -112,6 +112,8 @@ export interface Tenant {
   email: string;
   idDocument?: string | null;
   userId?: string | null;
+  /** Date d'exercice du droit à l'effacement — voir anonymiserTenant côté API. */
+  anonymizedAt?: string | null;
   createdAt: string;
 }
 

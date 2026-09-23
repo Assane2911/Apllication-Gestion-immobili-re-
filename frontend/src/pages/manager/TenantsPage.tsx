@@ -101,6 +101,22 @@ export default function TenantsPage() {
     }
   }
 
+  /**
+   * Droit à l'effacement. La suppression pure est refusée par l'API dès qu'un
+   * contrat existe — on ne détruit pas des pièces comptables — ce qui ne
+   * laissait aucune réponse à donner au locataire qui la demande.
+   * L'anonymisation efface ce qui l'identifie et conserve les écritures.
+   */
+  async function handleAnonymize(tenant: Tenant) {
+    if (!confirm(t("manager.tenants.confirmAnonymize", { name: `${tenant.firstName} ${tenant.lastName}` }))) return;
+    try {
+      await api.post(`/tenants/${tenant.id}/anonymiser`);
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
   async function handleCreatePortal(e: React.FormEvent) {
     e.preventDefault();
     if (!portalTenant) return;
@@ -245,6 +261,11 @@ export default function TenantsPage() {
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
                   <button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button>
+                  {tenant.anonymizedAt ? (
+                    <span className="text-slate-400 dark:text-slate-500 text-xs">{t("manager.tenants.anonymized")}</span>
+                  ) : (
+                    <button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline text-xs">{t("manager.tenants.anonymize")}</button>
+                  )}
                   <button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button>
                 </td>
               </tr>
@@ -289,6 +310,11 @@ export default function TenantsPage() {
                   )}
                   <div className="space-x-3">
                     <button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button>
+                    {tenant.anonymizedAt ? (
+                      <span className="text-slate-400 dark:text-slate-500">{t("manager.tenants.anonymized")}</span>
+                    ) : (
+                      <button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline">{t("manager.tenants.anonymize")}</button>
+                    )}
                     <button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button>
                   </div>
                 </div>

@@ -309,6 +309,15 @@ export const tenants = pgTable(
     // jamais une URL publique — voir storage.service.ts pour la génération d'URL signée.
     idDocument: text("id_document"),
     userId: text("user_id").unique().references(() => users.id, { onDelete: "set null" }),
+    // Date d'exercice du droit à l'effacement (RGPD art. 17) par ce locataire.
+    // La fiche n'est pas supprimée : les écritures comptables qui s'y
+    // rattachent doivent être conservées, et `deleteTenant` refuse d'ailleurs
+    // toute suppression dès qu'un contrat existe. Ce sont les données
+    // IDENTIFIANTES qui disparaissent — voir anonymiserTenant. La date sert à
+    // deux choses : montrer au gestionnaire que la fiche a été anonymisée
+    // plutôt qu'improprement saisie, et exclure ce locataire de tout envoi
+    // ultérieur (voir reminder.service.ts).
+    anonymizedAt: timestamp("anonymized_at", { mode: "date" }),
     ...timestamps,
   },
   (table) => ({

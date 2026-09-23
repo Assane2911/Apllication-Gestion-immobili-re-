@@ -548,6 +548,10 @@ const fr = {
       confirmDelete: 'Supprimer le bien "{{title}}" ?',
     },
     tenants: {
+      anonymize: "Anonymiser",
+      anonymized: "Anonymisé",
+      confirmAnonymize:
+        "Effacer les données identifiantes de {{name}} ?\n\nSon nom, son email, son téléphone, sa pièce d'identité et son accès au portail seront effacés définitivement. Ses contrats, factures et quittances sont conservés, comme l'exige la réglementation comptable — ils resteront rattachés à une fiche anonyme.\n\nCette action est irréversible et vous ne pourrez plus le contacter depuis le Service.",
       title: "Locataires",
       count: "{{count}} locataire(s) enregistré(s)",
       addBtn: "+ Ajouter un locataire",

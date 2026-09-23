@@ -549,6 +549,10 @@ const en: TranslationSchema = {
       confirmDelete: 'Delete the property "{{title}}"?',
     },
     tenants: {
+      anonymize: "Anonymise",
+      anonymized: "Anonymised",
+      confirmAnonymize:
+        "Erase {{name}}'s identifying data?\n\nTheir name, email, phone, ID document and portal access will be permanently erased. Their contracts, invoices and receipts are kept, as accounting rules require — they will remain attached to an anonymous record.\n\nThis cannot be undone, and you will no longer be able to contact them from the Service.",
       title: "Tenants",
       count: "{{count}} tenant(s) registered",
       addBtn: "+ Add a tenant",

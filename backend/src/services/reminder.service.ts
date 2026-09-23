@@ -51,6 +51,10 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
     .where(
       and(
         eq(contracts.status, "ACTIVE"),
+        // Un locataire qui a exercé son droit à l'effacement n'est plus
+        // destinataire de rien : son adresse pointe vers un domaine
+        // inexistant, et surtout le traitement n'est plus autorisé.
+        isNull(tenants.anonymizedAt),
         isNull(contracts.reminderSentAt),
         gte(contracts.endDate, targetStart),
         lte(contracts.endDate, targetEnd)
@@ -165,6 +169,8 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   // leur propre champ d'idempotence, celui-ci ne le faisait pas.
   const conditions: SQL[] = [
     eq(contracts.status, "ACTIVE"),
+    // Voir runContractEndingReminders : un locataire anonymisé ne reçoit plus rien.
+    isNull(tenants.anonymizedAt),
     eq(invoices.periodMonth, currentMonth),
     eq(invoices.periodYear, currentYear),
     or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE"))!,
@@ -295,6 +301,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
     .where(
       and(
         eq(contracts.status, "ACTIVE"),
+        isNull(tenants.anonymizedAt),
         isNull(invoices.dueSoonReminderSentAt),
         or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE")),
         gte(invoices.dueDate, targetStart),
