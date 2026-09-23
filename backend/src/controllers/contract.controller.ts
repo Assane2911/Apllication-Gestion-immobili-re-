@@ -9,6 +9,7 @@ import { generateInvoicesForContract } from "../services/invoice.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
+import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 
 const contractSchema = z.object({
@@ -171,6 +172,26 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     assertOwnership(newTenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
   }
 
+  // Une signature électronique n'a de valeur probatoire que si elle porte sur
+  // un contenu figé. Une fois le bail signé par le LOCATAIRE, son contenu
+  // contractuel ne bouge donc plus : sans ce garde-fou, le gestionnaire
+  // pouvait modifier le loyer, les dates ou les clauses après coup, pendant
+  // que tenantSignatureUrl/signedByTenantAt restaient en place — le bail PDF
+  // affichait alors la signature du locataire sous des clauses qu'il n'avait
+  // jamais acceptées. updateInspection pose exactement le même verrou sur son
+  // propre contenu, et pour la même raison.
+  //
+  // Le statut reste modifiable : résilier ou clore un bail ne réécrit rien de
+  // ce qui a été signé, et doit rester possible à tout moment.
+  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms"] as const;
+  const toucheAuContenu = CHAMPS_CONTRACTUELS.some((champ) => body[champ] !== undefined);
+  if (existing.signedByTenantAt && toucheAuContenu) {
+    throw new ApiError(
+      409,
+      "Ce bail a été signé par le locataire : son contenu ne peut plus être modifié. Résiliez-le et créez un avenant si nécessaire."
+    );
+  }
+
   // Valeurs EFFECTIVES après la modification (partielle) demandée : c'est sur
   // elles, et non sur les seuls champs envoyés, que les contrôles suivants
   // doivent porter.
@@ -319,6 +340,28 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
     );
   }
 
+  // Références des fichiers à nettoyer, relevées AVANT la suppression : une
+  // fois les lignes parties, plus rien ne permet de retrouver ces objets dans
+  // le stockage pour les purger. Les signalements d'incidents disparaissent en
+  // cascade avec le contrat, leurs photos doivent suivre.
+  const signalements = await db
+    .select({ photoUrl: issueReports.photoUrl, additionalPhotos: issueReports.additionalPhotos })
+    .from(issueReports)
+    .where(eq(issueReports.contractId, req.params.id));
+
+  const fichiersANettoyer: (string | null | undefined)[] = [existing.scannedContractUrl];
+  for (const signalement of signalements) {
+    fichiersANettoyer.push(signalement.photoUrl);
+    // additionalPhotos est un tableau JSON stocké en texte : une valeur
+    // illisible ne doit pas faire échouer la suppression du contrat.
+    try {
+      const supplementaires = signalement.additionalPhotos ? JSON.parse(signalement.additionalPhotos) : [];
+      if (Array.isArray(supplementaires)) fichiersANettoyer.push(...supplementaires);
+    } catch {
+      // Photos supplémentaires illisibles : rien à nettoyer de ce côté.
+    }
+  }
+
   // Suppression en cascade + mise à jour du statut du bien : tout ou rien,
   // pour ne jamais laisser un contrat supprimé avec un bien resté OCCUPIED
   // (ou l'inverse) si une étape échoue en cours de route.
@@ -333,6 +376,10 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
       await tx.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, existing.propertyId));
     }
   });
+
+  // Best-effort et après le commit : un stockage indisponible ne doit jamais
+  // faire échouer une suppression déjà enregistrée en base.
+  await Promise.allSettled(fichiersANettoyer.map((fichier) => deleteStorageObjectBestEffort(fichier)));
 
   await logActivity({
     req,

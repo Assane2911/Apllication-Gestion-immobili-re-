@@ -505,3 +505,91 @@ describe("POST /api/contracts/:id/sign", () => {
   });
 });
 
+
+describe("PUT /api/contracts/:id — un bail signé n'est plus modifiable", () => {
+  /**
+   * Une signature électronique n'a de valeur probatoire que si elle porte sur
+   * un contenu figé. updateInspection pose ce garde-fou depuis longtemps, avec
+   * le commentaire qui l'explique ; updateContract, lui, ne l'avait pas :
+   * loyer, dates et clauses restaient modifiables après la signature du
+   * locataire, tandis que tenantSignatureUrl/signedByTenantAt restaient en
+   * place. Le bail PDF affichait alors la signature du locataire sous des
+   * clauses qu'il n'avait jamais acceptées.
+   */
+  it("refuse de modifier le loyer d'un bail déjà signé par le locataire", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      rent: 500,
+      signedByTenantAt: new Date(),
+      tenantSignatureUrl: SIGNATURE_DATA_URL,
+    });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ rent: 900 });
+
+    expect(res.status).toBe(409);
+
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(apres.rent).toBe(500);
+  });
+
+  it("refuse aussi de modifier les clauses et les dates d'un bail signé", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      signedByTenantAt: new Date(),
+      tenantSignatureUrl: SIGNATURE_DATA_URL,
+    });
+
+    const clauses = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ terms: "Nouvelle clause ajoutée après signature" });
+    expect(clauses.status).toBe(409);
+
+    const dates = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ endDate: new Date(2028, 0, 1).toISOString() });
+    expect(dates.status).toBe(409);
+  });
+
+  it("laisse résilier un bail signé : seul le contenu contractuel est figé", async () => {
+    // Figer le contenu ne doit pas empêcher la vie du bail : une résiliation
+    // ou une fin de bail reste indispensable, et ne réécrit rien de ce que le
+    // locataire a signé.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, {
+      signedByTenantAt: new Date(),
+      tenantSignatureUrl: SIGNATURE_DATA_URL,
+    });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "TERMINATED" });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("laisse modifier librement un bail que le locataire n'a pas encore signé", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { rent: 500 });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ rent: 900 });
+
+    expect(res.status).toBe(200);
+  });
+});

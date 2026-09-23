@@ -19,6 +19,10 @@ import { testDb } from "../test/setupTestDb";
 vi.mock("../services/storage.service", () => ({
   uploadPrivateFile: vi.fn().mockResolvedValue("tenants/mock-document.pdf"),
   getSignedUrl: vi.fn().mockResolvedValue("http://test.local/signed/mock-document.pdf"),
+  // Ajouté quand la suppression s'est mise à nettoyer le stockage : un mock
+  // partiel doit exposer TOUS les exports que le contrôleur utilise, sinon
+  // l'accès à l'export manquant lève une erreur au lieu d'être neutre.
+  deleteStorageObjectBestEffort: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("POST /api/tenants", () => {

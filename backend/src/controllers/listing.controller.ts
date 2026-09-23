@@ -7,6 +7,7 @@ import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
@@ -289,6 +290,16 @@ export const deleteListing = asyncHandler(async (req: Request, res: Response) =>
   // "cascade", voir schema.ts) sans qu'il soit nécessaire de bloquer la
   // suppression de l'annonce.
   await db.delete(listings).where(eq(listings.id, existing.id));
+
+  // Le fichier doit partir avec la ligne qui le référence : une fois celle-ci
+  // supprimée, plus rien ne permet de le retrouver pour le purger ensuite.
+  // Nettoyage best-effort et APRÈS la suppression en base (voir
+  // deleteStorageObjectBestEffort) : un stockage indisponible ne doit jamais
+  // faire échouer une suppression demandée par l'utilisateur.
+  // Le `catch` est ici, et pas seulement dans le service : best-effort
+  // signifie que la suppression déjà enregistrée en base doit répondre
+  // succès même si le stockage est indisponible.
+  await deleteStorageObjectBestEffort(existing.imageUrl).catch(() => undefined);
 
   await logActivity({
     req,

@@ -18,6 +18,10 @@ import { testDb } from "../test/setupTestDb";
 // de propriété échoue (voir la régression ci-dessous).
 vi.mock("../services/storage.service", () => ({
   uploadPublicFile: vi.fn().mockResolvedValue("http://test.local/mock-image.png"),
+  // Ajouté quand la suppression s'est mise à nettoyer le stockage : un mock
+  // partiel doit exposer TOUS les exports que le contrôleur utilise, sinon
+  // l'accès à l'export manquant lève une erreur au lieu d'être neutre.
+  deleteStorageObjectBestEffort: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("POST /api/properties — devise", () => {
