@@ -1,6 +1,7 @@
 import { and, eq, lt } from "drizzle-orm";
 import { db, DbClient } from "../db/client";
 import { contracts, invoices } from "../db/schema";
+import { debutDeLaJournee } from "../utils/dates";
 
 type Contract = typeof contracts.$inferSelect;
 
@@ -185,7 +186,12 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
           amount: montant,
           currency: contract.currency ?? "EUR",
           dueDate,
-          status: dueDate < today ? "LATE" : "PENDING",
+          // Une facture due AUJOURD'HUI n'est pas en retard : le locataire a
+          // jusqu'à la fin de la journée. Comparer `dueDate` (minuit) à
+          // l'heure courante la faisait naître en LATE dès lors que la
+          // génération avait lieu après minuit — or le job planifié tourne à
+          // 8h, donc systématiquement.
+          status: dueDate < debutDeLaJournee(today) ? "LATE" : "PENDING",
         })
         .returning();
       created.push(invoice.id);
@@ -197,12 +203,16 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
   return created;
 }
 
-/** Repasse en LATE les factures PENDING dont la date d'échéance est dépassée. */
+/**
+ * Repasse en LATE les factures PENDING dont la date d'échéance est dépassée.
+ * « Dépassée » signifie : antérieure au jour courant — une facture due
+ * aujourd'hui reste PENDING jusqu'à demain (voir debutDeLaJournee).
+ */
 export async function markOverdueInvoices() {
   const result = await db
     .update(invoices)
     .set({ status: "LATE" })
-    .where(and(eq(invoices.status, "PENDING"), lt(invoices.dueDate, new Date())))
+    .where(and(eq(invoices.status, "PENDING"), lt(invoices.dueDate, debutDeLaJournee())))
     .returning();
   return result.length;
 }

@@ -4,6 +4,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
+import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonReminderWhatsappVariables } from "./whatsapp.service";
@@ -18,8 +19,15 @@ export async function runContractEndingReminders() {
   const daysBefore = env.reminder.daysBefore;
 
   const now = new Date();
-  const targetStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 0, 0, 0);
-  const targetEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 23, 59, 59);
+  // Fenêtre GLISSANTE, d'aujourd'hui à J+daysBefore inclus, et non le seul
+  // jour J+daysBefore : une exécution manquée (déploiement en cours,
+  // fonction serverless en échec, incident de plateforme) faisait sortir le
+  // contrat de la fenêtre dès le lendemain, et son rappel n'était alors plus
+  // jamais envoyé — silencieusement, puisque reminderSentAt restait vide.
+  // C'est reminderSentAt, et lui seul, qui empêche le doublon pendant les
+  // jours où le contrat reste dans la fenêtre.
+  const targetStart = debutDeLaJournee(now);
+  const targetEnd = finDeLaJournee(jourDecale(daysBefore, now));
 
   const rows = await db
     .select({
@@ -68,7 +76,10 @@ export async function runContractEndingReminders() {
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       propertyTitle: row.property.title,
       endDate: row.contract.endDate,
-      daysLeft: daysBefore,
+      // Jours réellement restants pour CE bail, et non la constante de
+      // configuration : dans une fenêtre glissante, annoncer « dans 14 jours »
+      // à un bail qui s'achève dans 5 serait faux.
+      daysLeft: joursEntre(now, new Date(row.contract.endDate)),
     });
 
     await sendEmail(managerEmail, subject, html);
@@ -228,8 +239,12 @@ export async function runUpcomingRentDueReminders() {
 
   const daysBefore = env.reminder.rentDueSoonDays;
   const now = new Date();
-  const targetStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 0, 0, 0);
-  const targetEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 23, 59, 59);
+  // Même fenêtre glissante que runContractEndingReminders : d'aujourd'hui à
+  // J+daysBefore. La borne basse reste AUJOURD'HUI et ne recule pas — un
+  // impayé dont l'échéance est passée relève du rappel de retard, pas d'un
+  // message annonçant « il vous reste quelques jours ».
+  const targetStart = debutDeLaJournee(now);
+  const targetEnd = finDeLaJournee(jourDecale(daysBefore, now));
 
   const rows = await db
     .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
@@ -261,6 +276,10 @@ export async function runUpcomingRentDueReminders() {
       .returning();
     if (!reclamee) continue;
 
+    // Jours réellement restants pour CETTE facture (voir la fenêtre
+    // glissante ci-dessus) : 0 signifie « à régler aujourd'hui ».
+    const joursRestants = joursEntre(now, new Date(row.invoice.dueDate));
+
     const { subject, html } = rentDueSoonReminderEmail({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       propertyTitle: row.property.title,
@@ -268,7 +287,7 @@ export async function runUpcomingRentDueReminders() {
       currency: row.invoice.currency || "EUR",
       periodMonth: row.invoice.periodMonth,
       periodYear: row.invoice.periodYear,
-      daysLeft: daysBefore,
+      daysLeft: joursRestants,
       dueDate: new Date(row.invoice.dueDate),
       frontendUrl: env.frontendUrl,
     });
@@ -285,7 +304,7 @@ export async function runUpcomingRentDueReminders() {
         currency: row.invoice.currency || "EUR",
         periodMonth: row.invoice.periodMonth,
         periodYear: row.invoice.periodYear,
-        daysLeft: daysBefore,
+        daysLeft: joursRestants,
         frontendUrl: env.frontendUrl,
       })
     );
