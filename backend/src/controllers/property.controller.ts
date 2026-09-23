@@ -8,7 +8,7 @@ import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
-import { assertOwnership } from "../utils/authorization";
+import { assertOwnership, chargerCompteCourant } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
 import { maxPropertiesForPlan } from "./subscription.controller";
@@ -85,8 +85,7 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
   // Sans cet héritage, un bien restait en EUR par défaut et toute la cascade
   // avec lui — un gestionnaire réglé en XOF voyait ses loyers, ses quittances
   // et ses baux libellés en euros.
-  const [manager] = await db.select().from(users).where(eq(users.id, req.user!.userId));
-  if (!manager) throw new ApiError(404, "Gestionnaire introuvable");
+  const manager = await chargerCompteCourant(req.user!.userId);
 
   // Plafond de biens de la formule (audit sept. 2026 : jamais vérifié
   // jusqu'ici, alors que les CGU l'annoncent — Starter 5 / Pro 25 /

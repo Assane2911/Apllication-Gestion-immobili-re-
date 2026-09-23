@@ -63,9 +63,13 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
     return next();
   }
 
+  // 401 et non 404 : l'identifiant vient du jeton, donc « introuvable » ne
+  // peut vouloir dire qu'une chose — le compte a été supprimé et le jeton lui
+  // survit. C'est le seul code que l'intercepteur du frontend sait traiter en
+  // vidant la session (voir utils/authorization.ts::chargerCompteCourant).
   const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));
   if (!user) {
-    return next(new ApiError(404, "Utilisateur introuvable"));
+    return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
   }
 
   const now = new Date();

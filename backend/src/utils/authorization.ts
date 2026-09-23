@@ -1,5 +1,36 @@
+import { eq } from "drizzle-orm";
+import { db } from "../db/client";
+import { users } from "../db/schema";
 import { AuthPayload } from "../middleware/auth";
 import { ApiError } from "./asyncHandler";
+
+/**
+ * Charge le compte désigné par le jeton, ou refuse la requête en 401.
+ *
+ * Un JWT reste valide jusqu'à son expiration : rien, dans un jeton signé, ne
+ * dit que le compte existe encore. Depuis que le gestionnaire peut supprimer
+ * son compte lui-même (deleteMyAccount), le cas n'a plus rien de théorique —
+ * le jeton présent dans son navigateur lui survit.
+ *
+ * Deux traitements s'en tiraient mal. updateCurrency et cancelSubscription
+ * mettaient à jour la ligne `users` puis lisaient le résultat sans vérifier
+ * qu'une ligne avait été touchée : `undefined.currency` levait une erreur, et
+ * le client recevait un 500 pour une situation parfaitement prévisible. Les
+ * autres répondaient 404, ce qui n'est pas faux mais ne sert à rien :
+ * l'intercepteur du frontend ne vide la session que sur un 401 (voir
+ * api/client.ts), donc l'utilisateur restait devant une application qui le
+ * croyait connecté, sans aucun moyen d'en sortir sinon vider son navigateur.
+ *
+ * 401 est la seule réponse utile : le jeton ne vaut plus rien, et c'est le
+ * seul code que le frontend sait traiter.
+ */
+export async function chargerCompteCourant(userId: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  if (!user) {
+    throw new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.");
+  }
+  return user;
+}
 
 /**
  * Vérifie qu'un utilisateur authentifié a le droit d'accéder à une ressource

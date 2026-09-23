@@ -16,6 +16,7 @@ import {
 } from "../services/email.service";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { chargerCompteCourant } from "../utils/authorization";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
 // Durée de validité du lien de confirmation d'email envoyé à l'inscription.
@@ -472,8 +473,7 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
-  const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));
-  if (!user) throw new ApiError(404, "Utilisateur introuvable");
+  const user = await chargerCompteCourant(req.user.userId);
 
   let tenant: typeof tenants.$inferSelect | undefined;
   if (user.role === "TENANT") {
@@ -578,6 +578,12 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
     currency: z.string().min(1).max(10),
   });
   const { currency } = currencySchema.parse(req.body);
+
+  // Le compte est chargé AVANT l'écriture : sans cela, l'UPDATE ne touchait
+  // aucune ligne pour un jeton dont le compte a été supprimé, et la lecture
+  // de `updated.currency` sur `undefined` transformait ce cas prévisible en
+  // erreur 500 (voir chargerCompteCourant).
+  await chargerCompteCourant(req.user.userId);
 
   const [updated] = await db
     .update(users)

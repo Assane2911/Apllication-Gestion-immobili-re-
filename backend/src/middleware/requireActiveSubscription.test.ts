@@ -164,11 +164,18 @@ describe("requireActiveSubscription", () => {
       expect(res.status).toBe(402);
     });
 
-    it("renvoie 404 si l'utilisateur du token n'existe plus en base", async () => {
+    // Ce cas répondait 404 jusqu'au correctif « jeton valide dont le compte
+    // n'existe plus » (voir controllers/compteSupprime.test.ts). L'identifiant
+    // venant du jeton, « introuvable » ne peut vouloir dire qu'une chose : le
+    // compte a été supprimé et le jeton lui survit. 404 le décrivait sans
+    // servir à rien — l'intercepteur du frontend ne vide la session que sur un
+    // 401, donc l'utilisateur restait devant une application qui le croyait
+    // connecté.
+    it("renvoie 401 si l'utilisateur du token n'existe plus en base", async () => {
       const manager = await createManager();
       const token = tokenFor({ id: "utilisateur-supprime", role: "MANAGER" });
       const res = await request(app).get("/api/properties").set(authHeader(token));
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(401);
       // Le manager créé ne doit pas interférer : on vérifie juste qu'on ne
       // retombe pas sur un 200 accidentel via un mauvais filtrage.
       expect(manager.id).not.toBe("utilisateur-supprime");
