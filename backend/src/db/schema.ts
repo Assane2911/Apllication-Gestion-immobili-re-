@@ -45,6 +45,16 @@ export const users = pgTable("users", {
   // de passe.
   hasPassword: boolean("has_password").notNull().default(true),
   role: roleEnum("role").notNull(),
+  // Contre-signature des jetons d'accès. Un JWT est autoporteur : le serveur
+  // le croit sur signature, sans rien consulter, donc un jeton volé reste
+  // utilisable jusqu'à son expiration — et changer son mot de passe n'y
+  // changeait rien, précisément dans la situation où la victime croit avoir
+  // repris la main. Ce numéro est recopié dans le jeton à l'émission et
+  // comparé à chaque requête (voir middleware/auth.ts) : l'incrémenter
+  // invalide d'un coup tous les jetons émis auparavant, sur tous les
+  // appareils. Il l'est à la réinitialisation du mot de passe et sur demande
+  // explicite de déconnexion globale.
+  tokenVersion: integer("token_version").notNull().default(0),
   currency: text("currency").notNull().default("EUR"),
   // SaaS & Période d'essai (15 jours offerts à l'inscription pour les gestionnaires)
   subscriptionStatus: subscriptionStatusEnum("subscription_status").notNull().default("TRIAL"),

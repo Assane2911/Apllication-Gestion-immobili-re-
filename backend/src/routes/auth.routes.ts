@@ -8,6 +8,7 @@ import {
   registerManager,
   resendVerification,
   resetPassword,
+  logoutAllDevices,
   updateCurrency,
   verifyEmail,
 } from "../controllers/auth.controller";
@@ -36,6 +37,7 @@ router.post("/forgot-password", authIpLimiter, authEmailLimiter, forgotPassword)
 router.post("/reset-password", authIpLimiter, resetPassword);
 router.get("/me", authenticate, me);
 router.patch("/currency", authenticate, updateCurrency);
+router.post("/logout-all", authenticate, logoutAllDevices);
 router.delete("/account", authenticate, requireRole("MANAGER"), deleteMyAccount);
 
 export default router;

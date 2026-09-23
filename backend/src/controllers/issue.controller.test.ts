@@ -10,11 +10,14 @@ import {
   createProperty,
   createTenant,
   fakeJpegBuffer,
+  createPortalUser,
   tokenFor,
 } from "../test/authHelpers";
 
-function tenantToken(tenantId: string, userId = "tenant-user") {
-  return authHeader(tokenFor({ id: userId, role: "TENANT" }, tenantId));
+// Le compte est créé en base : depuis le contrôle de révocation, un jeton
+// forgé sur un identifiant inventé est refusé en 401 (voir authenticate).
+async function tenantToken(tenantId: string) {
+  return authHeader(tokenFor(await createPortalUser("TENANT"), tenantId));
 }
 
 describe("POST /api/issues", () => {
@@ -26,7 +29,7 @@ describe("POST /api/issues", () => {
 
     const res = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Fuite sous l'évier de la cuisine");
@@ -42,7 +45,7 @@ describe("POST /api/issues", () => {
 
     const res = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Fuite sous l'évier de la cuisine")
@@ -62,7 +65,7 @@ describe("POST /api/issues", () => {
 
     const res = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Fuite sous l'évier de la cuisine")
@@ -80,7 +83,7 @@ describe("POST /api/issues", () => {
 
     const res = await request(app)
       .post("/api/issues")
-      .set(tenantToken(otherTenant.id))
+      .set(await tenantToken(otherTenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Fuite sous l'évier de la cuisine")
@@ -107,20 +110,20 @@ describe("GET /api/issues/mine", () => {
 
     await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Mon incident")
       .field("description", "Description de mon incident")
       .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
     await request(app)
       .post("/api/issues")
-      .set(tenantToken(otherTenant.id))
+      .set(await tenantToken(otherTenant.id))
       .field("contractId", otherContract.id)
       .field("title", "Incident d'un autre")
       .field("description", "Description d'un autre incident")
       .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "b.jpg", contentType: "image/jpeg" });
 
-    const res = await request(app).get("/api/issues/mine").set(tenantToken(tenant.id));
+    const res = await request(app).get("/api/issues/mine").set(await tenantToken(tenant.id));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
@@ -130,7 +133,7 @@ describe("GET /api/issues/mine", () => {
 
 describe("GET /api/issues", () => {
   it("refuse l'accès à un locataire", async () => {
-    const res = await request(app).get("/api/issues").set(tenantToken("some-tenant-id"));
+    const res = await request(app).get("/api/issues").set(await tenantToken("some-tenant-id"));
     expect(res.status).toBe(403);
   });
 
@@ -141,7 +144,7 @@ describe("GET /api/issues", () => {
     const contract = await createContract(property.id, tenant.id);
     await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Incident chez moi")
       .field("description", "Description de l'incident")
@@ -153,7 +156,7 @@ describe("GET /api/issues", () => {
     const otherContract = await createContract(otherProperty.id, otherTenant.id);
     await request(app)
       .post("/api/issues")
-      .set(tenantToken(otherTenant.id))
+      .set(await tenantToken(otherTenant.id))
       .field("contractId", otherContract.id)
       .field("title", "Incident chez un autre")
       .field("description", "Description")
@@ -173,7 +176,7 @@ describe("GET /api/issues", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Incident à traiter")
       .field("description", "Description")
@@ -202,7 +205,7 @@ describe("PUT /api/issues/:id/status", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -225,7 +228,7 @@ describe("PUT /api/issues/:id/status", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -247,7 +250,7 @@ describe("PUT /api/issues/:id/status", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -270,7 +273,7 @@ describe("POST /api/issues/:id/photo", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -278,7 +281,7 @@ describe("POST /api/issues/:id/photo", () => {
 
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(200);
@@ -293,7 +296,7 @@ describe("POST /api/issues/:id/photo", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -314,7 +317,7 @@ describe("POST /api/issues/:id/photo", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -323,7 +326,7 @@ describe("POST /api/issues/:id/photo", () => {
     const otherTenant = await createTenant(manager.id);
     const res = await request(app)
       .post(`/api/issues/${createRes.body.id}/photo`)
-      .set(tenantToken(otherTenant.id))
+      .set(await tenantToken(otherTenant.id))
       .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(403);
@@ -336,7 +339,7 @@ describe("POST /api/issues/:id/photo", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -367,7 +370,7 @@ describe("POST /api/issues/:id/photo", () => {
     const contract = await createContract(property.id, tenant.id);
     const createRes = await request(app)
       .post("/api/issues")
-      .set(tenantToken(tenant.id))
+      .set(await tenantToken(tenant.id))
       .field("contractId", contract.id)
       .field("title", "Fuite d'eau")
       .field("description", "Description")
@@ -405,7 +408,7 @@ describe("POST /api/issues/:id/photo", () => {
       const contract = await createContract(property.id, tenant.id);
       const createRes = await request(app)
         .post("/api/issues")
-        .set(tenantToken(tenant.id))
+        .set(await tenantToken(tenant.id))
         .field("contractId", contract.id)
         .field("title", "Fuite d'eau")
         .field("description", "Description")
@@ -437,7 +440,7 @@ describe("POST /api/issues/:id/photo", () => {
       // bloquer ici en l'attendant tout de suite.
       const requetePremiere = request(app)
         .post(`/api/issues/${issueId}/photo`)
-        .set(tenantToken(tenant.id))
+        .set(await tenantToken(tenant.id))
         .attach("photo", fakeJpegBuffer("photo-a"), { filename: "a2.jpg", contentType: "image/jpeg" })
         .then((res) => res);
 

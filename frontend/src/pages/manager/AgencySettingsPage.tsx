@@ -20,6 +20,24 @@ export default function AgencySettingsPage() {
     navigate("/login", { replace: true });
   }
 
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
+  const [logoutAllError, setLogoutAllError] = useState("");
+
+  async function handleLogoutAll() {
+    setLoggingOutAll(true);
+    setLogoutAllError("");
+    try {
+      await api.post("/auth/logout-all");
+      // Le jeton courant vient d'être invalidé côté serveur : rester sur la
+      // page afficherait une application qui se croit connectée et dont chaque
+      // requête repartirait en 401.
+      handleAccountDeleted();
+    } catch (err) {
+      setLogoutAllError(apiErrorMessage(err) || t("manager.agencySettings.security.logoutAllError"));
+      setLoggingOutAll(false);
+    }
+  }
+
   const [form, setForm] = useState({
     agencyName: "",
     siretOrId: "",
@@ -216,6 +234,36 @@ export default function AgencySettingsPage() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/*
+        Fermer toutes les sessions est le seul recours quand on soupçonne
+        qu'un jeton circule — ordinateur partagé, téléphone perdu. La demande
+        invalide aussi la session courante (voir logoutAllDevices côté
+        backend), d'où la déconnexion locale immédiate qui suit.
+      */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+          {t("manager.agencySettings.security.title")}
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+          {t("manager.agencySettings.security.description")}
+        </p>
+        {logoutAllError && (
+          <p className="text-sm text-red-600 dark:text-red-400 mt-3" role="alert">
+            {logoutAllError}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleLogoutAll}
+          disabled={loggingOutAll}
+          className="mt-4 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+        >
+          {loggingOutAll
+            ? t("manager.agencySettings.security.logoutAllPending")
+            : t("manager.agencySettings.security.logoutAllButton")}
+        </button>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm p-6">

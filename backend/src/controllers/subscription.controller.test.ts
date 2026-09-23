@@ -5,7 +5,9 @@ import { app } from "../app";
 import { env } from "../config/env";
 import { users } from "../db/schema";
 import { calculerJoursCredit, calculerPeriode } from "../services/subscriptionPeriod.service";
-import { authHeader, createManager, createPlatformSubscription, createProperty, tokenFor } from "../test/authHelpers";
+import { authHeader, createManager, createPlatformSubscription, createProperty, tokenFor,
+  createPortalUser,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import {
   DEVISE_PAR_DEFAUT,
@@ -159,7 +161,7 @@ describe("GET /api/subscription/status", () => {
   it("refuse l'accès à un locataire", async () => {
     const res = await request(app)
       .get("/api/subscription/status")
-      .set(authHeader(tokenFor({ id: "t1", role: "TENANT" }, "tenant-1")));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), "tenant-1")));
     expect(res.status).toBe(403);
   });
 

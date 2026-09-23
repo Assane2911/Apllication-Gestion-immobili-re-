@@ -265,10 +265,18 @@ describe("DELETE /api/auth/account — comptes Google-only (sans mot de passe r�
     const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(updated.hasPassword).toBe(true);
 
-    const token = tokenFor(manager);
+    // Réinitialiser son mot de passe ferme les sessions ouvertes (voir
+    // users.tokenVersion) : le jeton d'avant ne vaut plus rien, exactement
+    // comme pour l'utilisateur réel, qui doit se reconnecter avec son nouveau
+    // mot de passe. C'est ce jeton-là que la suite du test doit employer.
+    const connexion = await request(app)
+      .post("/api/auth/login")
+      .send({ email: manager.email, password: "NouveauMotDePasse123!" });
+    expect(connexion.status).toBe(200);
+
     const res = await request(app)
       .delete("/api/auth/account")
-      .set(authHeader(token))
+      .set(authHeader(connexion.body.token))
       .send({ password: "NouveauMotDePasse123!" });
 
     expect(res.status).toBe(204);

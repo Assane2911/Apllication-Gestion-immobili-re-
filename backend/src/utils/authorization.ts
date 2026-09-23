@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { Request } from "express";
 import { db } from "../db/client";
 import { users } from "../db/schema";
 import { AuthPayload } from "../middleware/auth";
@@ -24,8 +25,18 @@ import { ApiError } from "./asyncHandler";
  * 401 est la seule réponse utile : le jeton ne vaut plus rien, et c'est le
  * seul code que le frontend sait traiter.
  */
-export async function chargerCompteCourant(userId: string) {
-  const [user] = await db.select().from(users).where(eq(users.id, userId));
+export async function chargerCompteCourant(req: Request) {
+  if (!req.user) {
+    throw new ApiError(401, "Authentification requise");
+  }
+  // `authenticate` a déjà chargé la ligne et refusé la requête si le compte
+  // n'existe plus : on la reprend telle quelle plutôt que de relire la même
+  // ligne une deuxième fois dans la même requête. Le repli n'existe que pour
+  // un appel hors de cette chaîne de middlewares.
+  if (req.compteCourant) {
+    return req.compteCourant;
+  }
+  const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));
   if (!user) {
     throw new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.");
   }

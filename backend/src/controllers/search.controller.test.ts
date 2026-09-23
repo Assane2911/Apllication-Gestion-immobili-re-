@@ -9,6 +9,7 @@ import {
   createProperty,
   createTenant,
   tokenFor,
+  createPortalUser,
 } from "../test/authHelpers";
 
 describe("GET /api/search", () => {
@@ -21,7 +22,7 @@ describe("GET /api/search", () => {
     const res = await request(app)
       .get("/api/search")
       .query({ q: "Dupont" })
-      .set(authHeader(tokenFor({ id: "t1", role: "TENANT" }, "tenant-1")));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), "tenant-1")));
     expect(res.status).toBe(403);
   });
 

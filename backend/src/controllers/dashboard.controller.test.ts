@@ -10,6 +10,7 @@ import {
   createProperty,
   createTenant,
   tokenFor,
+  createPortalUser,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -22,7 +23,7 @@ describe("GET /api/dashboard/stats", () => {
   it("refuse l'accès à un locataire", async () => {
     const res = await request(app)
       .get("/api/dashboard/stats")
-      .set(authHeader(tokenFor({ id: "t1", role: "TENANT" }, "tenant-1")));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), "tenant-1")));
     expect(res.status).toBe(403);
   });
 

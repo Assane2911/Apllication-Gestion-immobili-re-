@@ -11,6 +11,7 @@ import {
   createProperty,
   createTenant,
   tokenFor,
+  createPortalUser,
 } from "../test/authHelpers";
 
 describe("GET /api/documents/receipt/:invoiceId", () => {
@@ -118,7 +119,7 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
 
     const res = await request(app)
       .get(`/api/documents/receipt/${invoice.id}`)
-      .set(authHeader(tokenFor({ id: "tenant-user", role: "TENANT" }, tenant.id)));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), tenant.id)));
 
     expect(res.status).toBe(200);
   });
@@ -133,7 +134,7 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
     const otherTenant = await createTenant(manager.id);
     const res = await request(app)
       .get(`/api/documents/receipt/${invoice.id}`)
-      .set(authHeader(tokenFor({ id: "other-user", role: "TENANT" }, otherTenant.id)));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), otherTenant.id)));
 
     expect(res.status).toBe(403);
   });
@@ -220,7 +221,7 @@ describe("GET /api/documents/lease/:contractId", () => {
 
     const res = await request(app)
       .get(`/api/documents/lease/${contract.id}`)
-      .set(authHeader(tokenFor({ id: "tenant-user", role: "TENANT" }, tenant.id)));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), tenant.id)));
 
     expect(res.status).toBe(200);
   });
@@ -234,7 +235,7 @@ describe("GET /api/documents/lease/:contractId", () => {
     const otherTenant = await createTenant(manager.id);
     const res = await request(app)
       .get(`/api/documents/lease/${contract.id}`)
-      .set(authHeader(tokenFor({ id: "other-user", role: "TENANT" }, otherTenant.id)));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), otherTenant.id)));
 
     expect(res.status).toBe(403);
   });
@@ -294,7 +295,7 @@ describe("GET /api/documents/lease-scan/:contractId", () => {
 
     const res = await request(app)
       .get(`/api/documents/lease-scan/${contract.id}`)
-      .set(authHeader(tokenFor({ id: "tenant-user", role: "TENANT" }, tenant.id)));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), tenant.id)));
 
     expect(res.status).toBe(200);
     expect(res.body.url).toBeDefined();
@@ -377,7 +378,7 @@ describe("GET /api/documents/inspection/:inspectionId", () => {
 
     const res = await request(app)
       .get(`/api/documents/inspection/${inspection.id}`)
-      .set(authHeader(tokenFor({ id: "tenant-user", role: "TENANT" }, tenant.id)));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), tenant.id)));
 
     expect(res.status).toBe(200);
   });

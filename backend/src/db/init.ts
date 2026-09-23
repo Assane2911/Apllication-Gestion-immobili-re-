@@ -11,6 +11,7 @@ export async function initDb() {
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
         role TEXT NOT NULL CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN')),
+        token_version INTEGER NOT NULL DEFAULT 0,
         subscription_status TEXT NOT NULL DEFAULT 'TRIAL' CHECK (subscription_status IN ('TRIAL', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
         subscription_plan TEXT NOT NULL DEFAULT 'STARTER' CHECK (subscription_plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
         trial_ends_at TIMESTAMP,
@@ -332,6 +333,7 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_soon_reminder_sent_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_attempt_started_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_attempt_started_at TIMESTAMP`); } catch {}
     try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id TEXT REFERENCES owners(id) ON DELETE SET NULL`); } catch {}

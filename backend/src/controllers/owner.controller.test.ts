@@ -13,6 +13,7 @@ import {
   createProperty,
   createTenant,
   tokenFor,
+  createPortalUser,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -320,7 +321,7 @@ describe("GET /api/owners/mine/dashboard — Espace propriétaire (résumé fina
 
     const res = await request(app)
       .get("/api/owners/mine/dashboard")
-      .set(authHeader(tokenFor({ id: "irrelevant-user-id", role: "OWNER" }, null, owner.id)));
+      .set(authHeader(tokenFor(await createPortalUser("OWNER"), null, owner.id)));
 
     expect(res.status).toBe(200);
     expect(res.body.ownerName).toBe(`${owner.firstName} ${owner.lastName}`);
@@ -338,7 +339,7 @@ describe("GET /api/owners/mine/dashboard — Espace propriétaire (résumé fina
 
     const res = await request(app)
       .get("/api/owners/mine/dashboard")
-      .set(authHeader(tokenFor({ id: "irrelevant-user-id", role: "OWNER" }, null, owner.id)));
+      .set(authHeader(tokenFor(await createPortalUser("OWNER"), null, owner.id)));
 
     expect(res.status).toBe(200);
     expect(res.body.properties).toHaveLength(0);
@@ -355,7 +356,7 @@ describe("GET /api/owners/mine/dashboard — Espace propriétaire (résumé fina
   it("refuse si le token OWNER ne porte aucun ownerId", async () => {
     const res = await request(app)
       .get("/api/owners/mine/dashboard")
-      .set(authHeader(tokenFor({ id: "irrelevant-user-id", role: "OWNER" })));
+      .set(authHeader(tokenFor(await createPortalUser("OWNER"))));
 
     expect(res.status).toBe(404);
   });

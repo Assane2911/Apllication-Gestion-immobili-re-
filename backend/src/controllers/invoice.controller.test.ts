@@ -3,7 +3,16 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import { activityLogs, invoices } from "../db/schema";
-import { authHeader, createContract, createInvoice, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
+import {
+  authHeader,
+  createContract,
+  createInvoice,
+  createManager,
+  createPortalUser,
+  createProperty,
+  createTenant,
+  tokenFor,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 /**
@@ -227,7 +236,7 @@ describe("GET /api/invoices — isolation entre gestionnaires", () => {
 describe("POST /api/invoices/:id/pay (portail locataire)", () => {
   it("confirme instantanément un paiement en mode DEMO", async () => {
     const { tenant, invoice } = await setupManagerWithInvoice();
-    const tenantToken = tokenFor({ id: tenant.userId ?? tenant.id, role: "TENANT" }, tenant.id);
+    const tenantToken = tokenFor(await createPortalUser("TENANT"), tenant.id);
 
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/pay`)
@@ -243,10 +252,7 @@ describe("POST /api/invoices/:id/pay (portail locataire)", () => {
   it("refuse qu'un locataire paie la facture d'un autre locataire", async () => {
     const { invoice } = await setupManagerWithInvoice();
     const { tenant: otherTenant } = await setupManagerWithInvoice();
-    const otherTenantToken = tokenFor(
-      { id: otherTenant.userId ?? otherTenant.id, role: "TENANT" },
-      otherTenant.id
-    );
+    const otherTenantToken = tokenFor(await createPortalUser("TENANT"), otherTenant.id);
 
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/pay`)
@@ -258,7 +264,7 @@ describe("POST /api/invoices/:id/pay (portail locataire)", () => {
 
   it("refuse de payer une facture déjà réglée", async () => {
     const { tenant, invoice } = await setupManagerWithInvoice({ status: "PAID", paidAt: new Date() });
-    const tenantToken = tokenFor({ id: tenant.userId ?? tenant.id, role: "TENANT" }, tenant.id);
+    const tenantToken = tokenFor(await createPortalUser("TENANT"), tenant.id);
 
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/pay`)

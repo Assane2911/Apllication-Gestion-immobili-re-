@@ -3,7 +3,9 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import { activityLogs } from "../db/schema";
-import { authHeader, createManager, tokenFor } from "../test/authHelpers";
+import { authHeader, createManager, tokenFor,
+  createPortalUser,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 async function createActivityLog(
@@ -34,7 +36,7 @@ describe("GET /api/activity-log", () => {
   it("refuse l'accès à un locataire", async () => {
     const res = await request(app)
       .get("/api/activity-log")
-      .set(authHeader(tokenFor({ id: "t1", role: "TENANT" }, "tenant-1")));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), "tenant-1")));
     expect(res.status).toBe(403);
   });
 

@@ -91,6 +91,33 @@ export async function createTenant(managerId: string, overrides: Partial<typeof 
   return tenant;
 }
 
+/**
+ * Compte utilisateur minimal, sans fiche associée.
+ *
+ * Depuis que `authenticate` relit la ligne `users` à chaque requête (contrôle
+ * de révocation, voir middleware/auth.ts), un jeton forgé sur un identifiant
+ * inventé est refusé en 401 — ce qui est le comportement voulu, mais rendait
+ * muets les tests qui ne s'intéressaient qu'au rôle porté par le jeton et
+ * fabriquaient un id au hasard. Ce helper donne à ces tests un compte qui
+ * existe vraiment, comme en production où le jeton est toujours émis à partir
+ * d'une ligne lue en base.
+ */
+export async function createPortalUser(role: "MANAGER" | "TENANT" | "ADMIN" | "OWNER") {
+  const id = createId();
+  const passwordHash = await bcrypt.hash("Password123!", 10);
+  const [user] = await testDb
+    .insert(users)
+    .values({
+      id,
+      email: `portail-${id}@test.local`,
+      passwordHash,
+      role,
+      emailVerifiedAt: new Date(),
+    })
+    .returning();
+  return user;
+}
+
 /** Crée une fiche propriétaire (Espace propriétaire) pour un gestionnaire donné. */
 export async function createOwner(managerId: string, overrides: Partial<typeof owners.$inferInsert> = {}) {
   const id = overrides.id ?? createId();
@@ -110,6 +137,14 @@ export async function createOwner(managerId: string, overrides: Partial<typeof o
 }
 
 /** Émet un JWT valide pour les tests, avec le même secret que l'app en mode test. */
+/**
+ * `tokenVersion` est volontairement ABSENT du jeton produit ici : c'est la
+ * forme qu'ont les jetons émis avant l'introduction du mécanisme de
+ * révocation, et `authenticate` les lit comme la version 0. Les tests
+ * couvrent ainsi, sans rien faire de particulier, la compatibilité que ce
+ * mécanisme promet — et un test qui veut provoquer une révocation n'a qu'à
+ * incrémenter users.tokenVersion (voir controllers/revocationJetons.test.ts).
+ */
 export function tokenFor(
   user: { id: string; role: "MANAGER" | "TENANT" | "ADMIN" | "OWNER" },
   tenantId: string | null = null,

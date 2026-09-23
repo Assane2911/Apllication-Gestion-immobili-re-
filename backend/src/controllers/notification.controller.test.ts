@@ -10,12 +10,19 @@ import {
   createProperty,
   createTenant,
   createTenantPortalUser,
+  createPortalUser,
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
-function tenantToken(tenantId: string, userId = "tenant-user") {
-  return authHeader(tokenFor({ id: userId, role: "TENANT" }, tenantId));
+// Le compte est créé en base : depuis le contrôle de révocation, un jeton
+// forgé sur un identifiant inventé est refusé en 401 (voir authenticate).
+// `userId` permet aux tests qui ont déjà un compte de portail (créé par
+// createTenantPortalUser) de signer le jeton avec CE compte-là, quand
+// l'identité de l'auteur du message compte pour ce qu'ils vérifient.
+async function tenantToken(tenantId: string, userId?: string) {
+  const user = userId ? { id: userId, role: "TENANT" as const } : await createPortalUser("TENANT");
+  return authHeader(tokenFor(user, tenantId));
 }
 
 describe("GET /api/notifications", () => {
@@ -25,7 +32,7 @@ describe("GET /api/notifications", () => {
   });
 
   it("refuse l'accès à un locataire", async () => {
-    const res = await request(app).get("/api/notifications").set(tenantToken("t1"));
+    const res = await request(app).get("/api/notifications").set(await tenantToken("t1"));
     expect(res.status).toBe(403);
   });
 
@@ -47,7 +54,7 @@ describe("GET /api/notifications", () => {
 
     await request(app)
       .post(`/api/messages/${contract.id}`)
-      .set(tenantToken(tenant.id, portalUser.id))
+      .set(await tenantToken(tenant.id, portalUser.id))
       .send({ content: "Bonjour, une question" });
 
     const res = await request(app).get("/api/notifications").set(authHeader(tokenFor(manager)));

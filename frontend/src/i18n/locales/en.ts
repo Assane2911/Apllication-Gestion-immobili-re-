@@ -1035,6 +1035,14 @@ const en: TranslationSchema = {
       },
       save: "Save settings",
       saving: "Saving...",
+      security: {
+        title: "Security",
+        description:
+          "Closes every session open on your devices, including this one. Use it if you have left an account signed in somewhere, or lost a phone. You will have to sign in again.",
+        logoutAllButton: "Sign out of all my devices",
+        logoutAllPending: "Closing sessions…",
+        logoutAllError: "Could not close the sessions. Please try again in a moment.",
+      },
       dangerZone: {
         title: "⚠️ Danger zone",
         description:

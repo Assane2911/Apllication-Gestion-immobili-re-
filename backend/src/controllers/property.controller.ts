@@ -85,7 +85,7 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
   // Sans cet héritage, un bien restait en EUR par défaut et toute la cascade
   // avec lui — un gestionnaire réglé en XOF voyait ses loyers, ses quittances
   // et ses baux libellés en euros.
-  const manager = await chargerCompteCourant(req.user!.userId);
+  const manager = await chargerCompteCourant(req);
 
   // Plafond de biens de la formule (audit sept. 2026 : jamais vérifié
   // jusqu'ici, alors que les CGU l'annoncent — Starter 5 / Pro 25 /

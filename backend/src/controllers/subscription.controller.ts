@@ -191,7 +191,7 @@ export const getStatus = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(403, "Espace réservé aux gestionnaires");
   }
 
-  const user = await chargerCompteCourant(req.user.userId);
+  const user = await chargerCompteCourant(req);
 
   const subscriptionInfo = computeSubscriptionInfo(user);
 
@@ -256,7 +256,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const body = subscribeSchema.parse(req.body);
-  const user = await chargerCompteCourant(req.user.userId);
+  const user = await chargerCompteCourant(req);
 
   const planDef = SUBSCRIPTION_PLANS.find((p) => p.id === body.plan);
   if (!planDef) throw new ApiError(400, "Plan invalide");
@@ -443,7 +443,7 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
 
   // Même raison qu'updateCurrency : sans ce contrôle, un jeton dont le compte
   // n'existe plus produisait un 500 sur computeSubscriptionInfo(undefined).
-  await chargerCompteCourant(req.user.userId);
+  await chargerCompteCourant(req);
 
   const [updatedUser] = await db
     .update(users)

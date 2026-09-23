@@ -3,7 +3,9 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import { agencySettings } from "../db/schema";
-import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
+import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor,
+  createPortalUser,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 describe("GET /api/agency", () => {
@@ -15,7 +17,7 @@ describe("GET /api/agency", () => {
   it("refuse l'accès à un locataire", async () => {
     const res = await request(app)
       .get("/api/agency")
-      .set(authHeader(tokenFor({ id: "t1", role: "TENANT" }, "tenant-1")));
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), "tenant-1")));
     expect(res.status).toBe(403);
   });
 
@@ -102,7 +104,7 @@ describe("PUT /api/agency", () => {
   it("refuse l'accès à un locataire", async () => {
     const res = await request(app)
       .put("/api/agency")
-      .set(authHeader(tokenFor({ id: "t1", role: "TENANT" }, "tenant-1")))
+      .set(authHeader(tokenFor(await createPortalUser("TENANT"), "tenant-1")))
       .send({ agencyName: "Tentative" });
     expect(res.status).toBe(403);
   });
@@ -183,7 +185,7 @@ describe("GET /api/agency/mine (portail locataire)", () => {
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
     await createContract(property.id, tenant.id);
-    const tenantToken = tokenFor({ id: tenant.userId ?? tenant.id, role: "TENANT" }, tenant.id);
+    const tenantToken = tokenFor(await createPortalUser("TENANT"), tenant.id);
     return { manager, tenant, tenantToken };
   }
 

@@ -1036,6 +1036,14 @@ const fr = {
       },
       save: "Enregistrer les paramètres",
       saving: "Sauvegarde en cours...",
+      security: {
+        title: "Sécurité",
+        description:
+          "Ferme toutes les sessions ouvertes sur vos appareils, y compris celui-ci. À utiliser si vous avez laissé un compte connecté quelque part, ou perdu un téléphone. Vous devrez vous reconnecter.",
+        logoutAllButton: "Déconnecter tous mes appareils",
+        logoutAllPending: "Fermeture des sessions…",
+        logoutAllError: "Impossible de fermer les sessions. Réessayez dans un instant.",
+      },
       dangerZone: {
         title: "⚠️ Zone de danger",
         description:

@@ -9,7 +9,7 @@ import AgencySettingsPage from "./AgencySettingsPage";
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
-  return { ...actual, api: { get: vi.fn(), put: vi.fn(), delete: vi.fn() } };
+  return { ...actual, api: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() } };
 });
 
 const mockedApi = vi.mocked(api, { deep: true });
@@ -46,6 +46,7 @@ describe("AgencySettingsPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.put.mockReset();
+    mockedApi.post.mockReset();
     mockedApi.delete.mockReset();
     localStorage.clear();
   });
@@ -189,6 +190,49 @@ describe("AgencySettingsPage", () => {
       );
       // La déconnexion vide le stockage local — signe que logout() a bien été appelé.
       await waitFor(() => expect(localStorage.getItem("token")).toBeNull());
+    });
+
+    /**
+     * Fermer toutes les sessions invalide AUSSI le jeton courant (voir
+     * logoutAllDevices côté backend) : rester sur la page laisserait une
+     * application qui se croit connectée et dont chaque requête repartirait
+     * en 401. La déconnexion locale fait donc partie du geste, elle n'en est
+     * pas une conséquence accessoire.
+     */
+    it("ferme toutes les sessions puis déconnecte l'appareil courant", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+      localStorage.setItem("token", "fake-token");
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ id: "mgr-1", email: "manager@test.local", role: "MANAGER" })
+      );
+      renderPage();
+      const user = userEvent.setup();
+
+      await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+      await user.click(screen.getByRole("button", { name: "Déconnecter tous mes appareils" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/auth/logout-all"));
+      await waitFor(() => expect(localStorage.getItem("token")).toBeNull());
+    });
+
+    it("garde la session ouverte et affiche l'erreur si la fermeture des sessions échoue", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      mockedApi.post.mockRejectedValueOnce({
+        response: { data: { error: "Service indisponible" } },
+        isAxiosError: true,
+      });
+      localStorage.setItem("token", "fake-token");
+      renderPage();
+      const user = userEvent.setup();
+
+      await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+      await user.click(screen.getByRole("button", { name: "Déconnecter tous mes appareils" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Service indisponible");
+      // L'échec ne doit pas déconnecter : les sessions sont toujours ouvertes.
+      expect(localStorage.getItem("token")).toBe("fake-token");
     });
 
     it("affiche l'erreur du serveur si le mot de passe est incorrect, sans déconnecter", async () => {

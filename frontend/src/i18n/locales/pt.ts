@@ -1035,6 +1035,14 @@ const pt: TranslationSchema = {
       },
       save: "Guardar as definições",
       saving: "A guardar...",
+      security: {
+        title: "Segurança",
+        description:
+          "Fecha todas as sessões abertas nos seus dispositivos, incluindo este. Utilize-o se deixou uma conta ligada algures ou perdeu um telemóvel. Terá de iniciar sessão novamente.",
+        logoutAllButton: "Terminar sessão em todos os dispositivos",
+        logoutAllPending: "A fechar as sessões…",
+        logoutAllError: "Não foi possível fechar as sessões. Tente novamente dentro de instantes.",
+      },
       dangerZone: {
         title: "⚠️ Zona de perigo",
         description:

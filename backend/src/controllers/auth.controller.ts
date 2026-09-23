@@ -53,11 +53,19 @@ const googleClient = new OAuth2Client();
  */
 const EMPREINTE_FACTICE = "$2b$10$C6UzMDM.H6dfI/f/IKcEe.PjF5Qs7lQEJ7c4yQ0sVn5b6CYXcTQlS";
 
+/**
+ * `tokenVersion` est recopié depuis la ligne `users` : c'est lui que
+ * `authenticate` compare à chaque requête pour savoir si le jeton a été
+ * révoqué depuis son émission (voir middleware/auth.ts et
+ * users.tokenVersion). Tout appel qui émet un jeton doit donc partir d'une
+ * ligne fraîchement lue — sans quoi il délivrerait un jeton déjà périmé.
+ */
 function signToken(payload: {
   userId: string;
   role: "MANAGER" | "TENANT" | "ADMIN" | "OWNER";
   tenantId?: string | null;
   ownerId?: string | null;
+  tokenVersion: number;
 }) {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
 }
@@ -231,6 +239,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     role: user.role as "MANAGER" | "TENANT" | "ADMIN" | "OWNER",
     tenantId: tenant?.id ?? null,
     ownerId: owner?.id ?? null,
+    tokenVersion: user.tokenVersion,
   });
 
   const subscription = computeSubscriptionInfo(user);
@@ -353,7 +362,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
     }
   }
 
-  const token = signToken({ userId: user.id, role: user.role as "MANAGER" });
+  const token = signToken({ userId: user.id, role: user.role as "MANAGER", tokenVersion: user.tokenVersion });
   const subscription = computeSubscriptionInfo(user);
 
   res.json({
@@ -405,7 +414,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(users.id, user.id))
     .returning();
 
-  const token = signToken({ userId: updated.id, role: "MANAGER" });
+  const token = signToken({ userId: updated.id, role: "MANAGER", tokenVersion: updated.tokenVersion });
   const subscription = computeSubscriptionInfo(updated);
 
   res.json({
@@ -473,7 +482,7 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
-  const user = await chargerCompteCourant(req.user.userId);
+  const user = await chargerCompteCourant(req);
 
   let tenant: typeof tenants.$inferSelect | undefined;
   if (user.role === "TENANT") {
@@ -565,10 +574,22 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
     // nul) qui vient, via ce flux, de se définir un vrai mot de passe pour la
     // première fois : deleteMyAccount doit désormais lui proposer la
     // confirmation par mot de passe plutôt que par reconnexion Google.
-    .set({ passwordHash, hasPassword: true, resetPasswordTokenHash: null, resetPasswordExpiresAt: null })
+    .set({
+      passwordHash,
+      hasPassword: true,
+      resetPasswordTokenHash: null,
+      resetPasswordExpiresAt: null,
+      // Changer son mot de passe doit couper les accès en cours, sinon le
+      // geste est vide de sens : quelqu'un qui détenait déjà un jeton le
+      // gardait valable une semaine, précisément dans la situation où la
+      // victime croit avoir repris la main (voir users.tokenVersion).
+      tokenVersion: user.tokenVersion + 1,
+    })
     .where(eq(users.id, user.id));
 
-  res.json({ message: "Mot de passe mis à jour avec succès" });
+  res.json({
+    message: "Mot de passe mis à jour avec succès. Les sessions ouvertes sur vos autres appareils ont été fermées.",
+  });
 });
 
 /** Mise à jour de la devise préférée de l'utilisateur. */
@@ -583,7 +604,7 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
   // aucune ligne pour un jeton dont le compte a été supprimé, et la lecture
   // de `updated.currency` sur `undefined` transformait ce cas prévisible en
   // erreur 500 (voir chargerCompteCourant).
-  await chargerCompteCourant(req.user.userId);
+  await chargerCompteCourant(req);
 
   const [updated] = await db
     .update(users)
@@ -592,6 +613,33 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
     .returning();
 
   res.json({ success: true, currency: updated.currency });
+});
+
+/**
+ * Ferme toutes les sessions du compte, y compris celle qui en fait la demande.
+ *
+ * C'est le seul recours quand on soupçonne qu'un jeton circule — ordinateur
+ * partagé, téléphone perdu, session oubliée quelque part. Incrémenter le
+ * numéro de version suffit : tous les jetons émis jusque-là cessent d'être
+ * acceptés à la requête suivante (voir middleware/auth.ts).
+ *
+ * L'appareil qui formule la demande est déconnecté comme les autres. C'est
+ * voulu : « partout » sans exception est une promesse vérifiable, alors
+ * qu'épargner la session courante obligerait à réémettre un jeton et à
+ * expliquer une exception.
+ */
+export const logoutAllDevices = asyncHandler(async (req: Request, res: Response) => {
+  const user = await chargerCompteCourant(req);
+
+  await db
+    .update(users)
+    .set({ tokenVersion: user.tokenVersion + 1 })
+    .where(eq(users.id, user.id));
+
+  res.json({
+    success: true,
+    message: "Toutes vos sessions ont été fermées, y compris celle-ci. Veuillez vous reconnecter.",
+  });
 });
 
 const deleteAccountSchema = z.object({
