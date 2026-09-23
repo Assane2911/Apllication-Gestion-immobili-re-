@@ -7,7 +7,8 @@ export default function PolitiqueConfidentialitePage() {
       <LegalSection title="1. Responsable du traitement">
         <p>
           Le responsable du traitement des données personnelles collectées via {COMPANY.tradeName} est{" "}
-          {COMPANY.fullName} ({COMPANY.legalStatus}), {COMPANY.address}, joignable à {COMPANY.contactEmail}.
+          {COMPANY.fullName} ({COMPANY.legalStatus}), joignable à {COMPANY.contactEmail}. Son adresse postale
+          est {COMPANY.address}.
         </p>
         <p>
           Pour les données de ses propres Locataires, le Gestionnaire (l'agence ou le bailleur utilisant le

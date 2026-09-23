@@ -6,8 +6,14 @@
  * EIN attendu ~nov. 2026). Ces informations seront mises à jour dès que la LLC sera
  * juridiquement finalisée (nom social, EIN, adresse officielle).
  *
- * ⚠️ À COMPLÉTER : "address" reste un placeholder tant que la société n'est pas
- * finalisée (voir ci-dessus) — les autres champs sont à jour.
+ * ⚠️ "address" porte une formulation TRANSITOIRE, pas une adresse. La mention
+ * d'une adresse est obligatoire pour un éditeur de service en ligne, et elle
+ * n'est pas encore connue : plutôt que d'afficher un « [À COMPLÉTER] » — qui
+ * donnait au visiteur un chantier inachevé là où il vient précisément vérifier
+ * à qui il confie ses données — on indique par quel moyen l'obtenir, ce qui est
+ * l'objet même de l'obligation. À remplacer par l'adresse réelle (registered
+ * agent de la LLC, ou domiciliation) dès qu'elle existe : c'est la seule ligne
+ * à changer, les 3 pages légales lisent ce fichier.
  *
  * Une fois complétées, ce fichier est la seule source à modifier : les 3 pages
  * légales (mentions-legales, cgu, confidentialite) l'importent toutes.
@@ -22,15 +28,14 @@ export const COMPANY = {
     "Personne physique, société en cours de formation (future entité américaine ImmoPlatform Pro LLC, Wyoming, en cours d'immatriculation)",
   /** Numéro SIRET (14 chiffres) — non applicable, la structure en formation est une LLC américaine. */
   siret: "Non applicable (entité en cours de formation aux États-Unis)",
-  /** Adresse professionnelle ou, à défaut, personnelle. */
-  address:
-    "[À COMPLÉTER — adresse à définir une fois la société finalisée (LLC en cours d'immatriculation, EIN attendu ~nov. 2026)]",
+  /** Adresse professionnelle — voir l'avertissement en tête de fichier. */
+  address: "communiquée sur demande à l'adresse email de contact (société en cours d'immatriculation)",
   /** Email de contact pour les questions légales, contractuelles et RGPD. */
   contactEmail: "assane@immoplatformpro.com",
   /** Pays et droit applicable. */
   country: "France",
   /** Date de dernière mise à jour des documents légaux (à mettre à jour à chaque révision). */
-  lastUpdated: "23 septembre 2026",
+  lastUpdated: "24 septembre 2026",
 };
 
 /** Sous-traitants techniques mentionnés dans la politique de confidentialité. */
