@@ -4,6 +4,8 @@ import {
   createTenant,
   createTenantPortalAccount,
   deleteTenant,
+  exporterMesDonnees,
+  exporterTenant,
   getTenant,
   getTenantIdDocumentUrl,
   listTenants,
@@ -13,6 +15,12 @@ import { authenticate, requireActiveSubscription, requireRole } from "../middlew
 import { uploadTenantDocument } from "../middleware/upload";
 
 const router = Router();
+
+// Déclarée AVANT le router.use ci-dessous, qui réserve tout le reste du
+// routeur aux gestionnaires : c'est la seule route de ce fichier destinée au
+// locataire lui-même, qui exerce son droit d'accès sans avoir personne à
+// solliciter. Elle porte donc ses propres middlewares.
+router.get("/mine/export", authenticate, requireRole("TENANT"), exporterMesDonnees);
 
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 
@@ -24,6 +32,8 @@ router.delete("/:id", deleteTenant);
 router.post("/:id/portal-account", createTenantPortalAccount);
 // Droit à l'effacement : la seule issue quand un historique interdit la suppression.
 router.post("/:id/anonymiser", anonymiserTenant);
+// Droit d'accès et portabilité : le dossier complet, en un fichier.
+router.get("/:id/export", exporterTenant);
 router.get("/:id/id-document-url", getTenantIdDocumentUrl);
 
 export default router;

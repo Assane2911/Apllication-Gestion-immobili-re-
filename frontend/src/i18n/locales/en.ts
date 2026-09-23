@@ -549,6 +549,7 @@ const en: TranslationSchema = {
       confirmDelete: 'Delete the property "{{title}}"?',
     },
     tenants: {
+      exportData: "Export their data",
       anonymize: "Anonymise",
       anonymized: "Anonymised",
       confirmAnonymize:
@@ -1118,6 +1119,13 @@ const en: TranslationSchema = {
 
   tenant: {
     dashboard: {
+      privacy: {
+        title: "My personal data",
+        description:
+          "You can obtain a copy of all the data held about you at any time: your record, your leases, your invoices, your reports and your messages. To have this data corrected or erased, contact your property manager, who is responsible for it.",
+        download: "Download my data",
+        downloading: "Preparing the file…",
+      },
       noContract: "No lease contract is currently associated with your account.",
       title: "My Home & My Lease",
       monthlyRent: "Monthly rent",

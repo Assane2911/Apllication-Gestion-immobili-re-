@@ -550,6 +550,7 @@ const es: TranslationSchema = {
       confirmDelete: '¿Eliminar la propiedad "{{title}}"?',
     },
     tenants: {
+      exportData: "Exportar sus datos",
       anonymize: "Anonimizar",
       anonymized: "Anonimizado",
       confirmAnonymize:
@@ -1120,6 +1121,13 @@ const es: TranslationSchema = {
 
   tenant: {
     dashboard: {
+      privacy: {
+        title: "Mis datos personales",
+        description:
+          "Puedes obtener en cualquier momento una copia de todos los datos que se conservan sobre ti: tu ficha, tus contratos, tus facturas, tus incidencias y tus mensajes. Para corregir o borrar estos datos, dirígete a tu gestor, que es el responsable.",
+        download: "Descargar mis datos",
+        downloading: "Preparando el archivo…",
+      },
       noContract: "Actualmente no hay ningún contrato de alquiler asociado a tu cuenta.",
       title: "Mi vivienda y Mi Contrato",
       monthlyRent: "Alquiler mensual",

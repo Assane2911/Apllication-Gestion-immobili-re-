@@ -548,6 +548,7 @@ const fr = {
       confirmDelete: 'Supprimer le bien "{{title}}" ?',
     },
     tenants: {
+      exportData: "Exporter ses données",
       anonymize: "Anonymiser",
       anonymized: "Anonymisé",
       confirmAnonymize:
@@ -1119,6 +1120,13 @@ const fr = {
 
   tenant: {
     dashboard: {
+      privacy: {
+        title: "Mes données personnelles",
+        description:
+          "Vous pouvez à tout moment obtenir une copie de l'ensemble des données détenues à votre sujet : votre fiche, vos baux, vos factures, vos signalements et vos messages. Pour faire corriger ou effacer ces données, adressez-vous à votre gestionnaire, qui en est responsable.",
+        download: "Télécharger mes données",
+        downloading: "Préparation du fichier…",
+      },
       noContract: "Aucun contrat de location n'est associé à votre compte pour le moment.",
       title: "Mon logement & Mon Bail",
       monthlyRent: "Loyer mensuel",

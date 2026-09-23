@@ -102,6 +102,25 @@ export default function TenantsPage() {
   }
 
   /**
+   * Droit d'accès et portabilité. Le locataire adresse sa demande au
+   * gestionnaire, responsable de traitement pour les données qu'il a saisies :
+   * c'est donc d'ici que le dossier complet se récupère, en un fichier.
+   */
+  async function handleExport(tenant: Tenant) {
+    try {
+      const res = await api.get(`/tenants/${tenant.id}/export`, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `donnees-${tenant.firstName}-${tenant.lastName}.json`.toLowerCase();
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
+  /**
    * Droit à l'effacement. La suppression pure est refusée par l'API dès qu'un
    * contrat existe — on ne détruit pas des pièces comptables — ce qui ne
    * laissait aucune réponse à donner au locataire qui la demande.
@@ -261,6 +280,7 @@ export default function TenantsPage() {
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
                   <button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button>
+                  <button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">{t("manager.tenants.exportData")}</button>
                   {tenant.anonymizedAt ? (
                     <span className="text-slate-400 dark:text-slate-500 text-xs">{t("manager.tenants.anonymized")}</span>
                   ) : (
@@ -310,6 +330,7 @@ export default function TenantsPage() {
                   )}
                   <div className="space-x-3">
                     <button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button>
+                    <button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline">{t("manager.tenants.exportData")}</button>
                     {tenant.anonymizedAt ? (
                       <span className="text-slate-400 dark:text-slate-500">{t("manager.tenants.anonymized")}</span>
                     ) : (

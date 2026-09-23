@@ -6,6 +6,7 @@ import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, issueReports, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
+import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
@@ -126,6 +127,53 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
 
   res.json(tenant);
 });
+
+/**
+ * Droit d'accès (art. 15) et portabilité (art. 20), côté Gestionnaire : il
+ * est responsable de traitement pour les données de ses locataires, c'est
+ * donc à lui que la demande est normalement adressée.
+ */
+export const exporterTenant = asyncHandler(async (req: Request, res: Response) => {
+  const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
+
+  await envoyerExport(res, existing.id, existing);
+});
+
+/**
+ * Le même droit, exercé par le locataire lui-même depuis son portail.
+ *
+ * La fiche est résolue par le COMPTE (tenants.userId), jamais par le
+ * `tenantId` que porte le jeton. Les deux coïncident aujourd'hui, le jeton
+ * étant émis à partir de cette même jointure — mais faire dépendre la
+ * livraison d'un dossier personnel d'une valeur recopiée dans le jeton
+ * signifierait qu'une erreur d'émission, un jour, livrerait le dossier de
+ * quelqu'un d'autre. La base tranche, pas le jeton.
+ */
+export const exporterMesDonnees = asyncHandler(async (req: Request, res: Response) => {
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.userId, req.user!.userId));
+  if (!tenant) {
+    throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
+  }
+
+  await envoyerExport(res, tenant.id, tenant);
+});
+
+async function envoyerExport(
+  res: Response,
+  tenantId: string,
+  tenant: { firstName: string; lastName: string }
+) {
+  const donnees = await construireExportLocataire(tenantId);
+  if (!donnees) throw new ApiError(404, "Locataire introuvable");
+
+  // En pièce jointe, et non affiché dans le navigateur : c'est un document
+  // qu'on remet à quelqu'un, qu'il doit pouvoir conserver et rouvrir
+  // ailleurs — c'est le sens même de la portabilité.
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${nomFichierExport(tenant)}"`);
+  res.send(JSON.stringify(donnees, null, 2));
+}
 
 /**
  * Exercice du droit à l'effacement (RGPD art. 17) pour un locataire qui a un

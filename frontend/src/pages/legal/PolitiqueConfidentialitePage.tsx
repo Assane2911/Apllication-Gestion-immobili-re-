@@ -197,16 +197,17 @@ export default function PolitiqueConfidentialitePage() {
           sont en revanche conservés, sans votre identité : la réglementation comptable impose au Gestionnaire
           de garder ces pièces, et l'effacement ne peut pas primer sur cette obligation. Le portail Locataire
           vous permet de consulter votre bail, vos quittances et vos paiements, mais ne comporte aujourd'hui
-          ni export global de vos données ni suppression de votre fiche à votre propre initiative. En tant que{" "}
+          une suppression de votre fiche à votre propre initiative — celle-ci relève de votre Gestionnaire — mais il
+          vous permet de télécharger, à tout moment et sans demande préalable, une copie complète des données
+          détenues à votre sujet, dans un format lisible par machine. En tant que{" "}
           <strong className="text-slate-100">Gestionnaire</strong>, vous pouvez rectifier vos données à tout
           moment depuis votre espace, et supprimer définitivement votre compte et l'ensemble des données
           associées depuis les paramètres du Service.
         </p>
         <p>
-          Pour toute autre demande — notamment l'accès à l'ensemble de vos données ou leur portabilité dans un
-          format lisible par machine, qui ne sont pas encore automatisés dans le Service et sont traités
-          manuellement — écrivez à {COMPANY.contactEmail} ; une réponse vous sera apportée dans le délai d'un
-          mois prévu par le RGPD. Vous disposez également du droit d'introduire une réclamation auprès de
+          Pour toute autre demande — limitation du traitement, opposition, ou toute question qui ne trouve pas
+          sa réponse dans les fonctions décrites ci-dessus — écrivez à {COMPANY.contactEmail} ; une réponse vous
+          sera apportée dans le délai d'un mois prévu par le RGPD. Vous disposez également du droit d'introduire une réclamation auprès de
           l'autorité de contrôle compétente (en France, la CNIL — www.cnil.fr).
         </p>
       </LegalSection>

@@ -135,4 +135,33 @@ describe("TenantDashboardPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument());
   });
+
+  /**
+   * Droit d'accès et portabilité exercés par le locataire lui-même. Le test
+   * vérifie l'appel ET le fait que le fichier soit bien proposé au
+   * téléchargement : un export qu'on ne peut pas emporter n'est pas de la
+   * portabilité.
+   */
+  it("télécharge les données personnelles du locataire", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: [] });
+    renderPage();
+    await screen.findByText("Mes données personnelles");
+
+    mockedApi.get.mockResolvedValueOnce({ data: new Blob(["{}"], { type: "application/json" }) });
+    // jsdom n'implémente pas ces deux fonctions : on les pose nous-mêmes
+    // plutôt que d'espionner un objet qui n'existe pas (voir FiscalPage.test).
+    const creerUrl = vi.fn().mockReturnValue("blob:faux");
+    const revoquerUrl = vi.fn();
+    URL.createObjectURL = creerUrl;
+    URL.revokeObjectURL = revoquerUrl;
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Télécharger mes données" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenCalledWith("/tenants/mine/export", { responseType: "blob" })
+    );
+    await waitFor(() => expect(creerUrl).toHaveBeenCalled());
+    expect(revoquerUrl).toHaveBeenCalled();
+  });
 });

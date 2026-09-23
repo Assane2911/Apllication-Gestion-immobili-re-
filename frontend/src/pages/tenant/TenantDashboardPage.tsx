@@ -21,6 +21,24 @@ export default function TenantDashboardPage() {
   const [signingInspection, setSigningInspection] = useState<Inspection | null>(null);
   const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exportingData, setExportingData] = useState(false);
+
+  async function handleExportMyData() {
+    setExportingData(true);
+    try {
+      const res = await api.get("/tenants/mine/export", { responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "mes-donnees.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    } finally {
+      setExportingData(false);
+    }
+  }
 
   function load() {
     Promise.all([api.get<Contract[]>("/contracts/mine"), api.get<Inspection[]>("/inspections/mine")])
@@ -50,16 +68,50 @@ export default function TenantDashboardPage() {
     );
   }
 
+  /*
+    Droit d'accès (RGPD art. 15) et portabilité (art. 20) exercés directement
+    par le locataire : la politique de confidentialité les annonçait comme
+    traités manuellement, ce qui supposait qu'il sache à qui écrire et qu'on
+    lui réponde. La section dit aussi, explicitement, ce que ce bouton ne fait
+    PAS — rectifier et effacer relèvent du gestionnaire, responsable de
+    traitement.
+
+    Elle est rendue dans les DEUX états de la page : un locataire dont aucun
+    bail n'a encore été rattaché a le même droit d'accès que les autres, et
+    c'est justement l'état où il n'a personne à qui parler dans le Service.
+  */
+  const sectionDonneesPersonnelles = (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-6 shadow-xs">
+      <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+        {t("tenant.dashboard.privacy.title")}
+      </h3>
+      <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+        {t("tenant.dashboard.privacy.description")}
+      </p>
+      <button
+        type="button"
+        onClick={handleExportMyData}
+        disabled={exportingData}
+        className="mt-4 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+      >
+        {exportingData ? t("tenant.dashboard.privacy.downloading") : t("tenant.dashboard.privacy.download")}
+      </button>
+    </div>
+  );
+
   if (contracts.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-8 text-center shadow-xs">
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-8 text-center shadow-xs">
         <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3 text-2xl">
           🏠
         </div>
         <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t("tenant.dashboard.noContract")}</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Votre gestionnaire n'a pas encore rattaché de bail à votre compte.
-        </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Votre gestionnaire n'a pas encore rattaché de bail à votre compte.
+          </p>
+        </div>
+        {sectionDonneesPersonnelles}
       </div>
     );
   }
@@ -303,6 +355,8 @@ export default function TenantDashboardPage() {
           onClose={() => setSigningContract(null)}
         />
       )}
+
+      {sectionDonneesPersonnelles}
 
       {viewingLeaseContract && (
         <DocumentModal
