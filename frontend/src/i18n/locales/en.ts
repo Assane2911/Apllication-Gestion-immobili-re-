@@ -1048,6 +1048,16 @@ const en: TranslationSchema = {
         logoutAllPending: "Closing sessions…",
         logoutAllError: "Could not close the sessions. Please try again in a moment.",
       },
+      retention: {
+        title: "Data past its retention period",
+        description:
+          "The recommended retention periods (French CNIL rental-management reference) flag the records below. The decision is yours: only you know whether an ongoing dispute justifies keeping them. Anonymising erases identifying data and keeps contracts, invoices and receipts.",
+        none: "No data has reached its retention period.",
+        noBail: "Record with no lease, open for more than {{days}} days",
+        leaseEnded: "Last lease ended more than {{years}} years ago",
+        error: "Could not load the retention list.",
+        seeTenants: "Open the tenant list",
+      },
       dangerZone: {
         title: "⚠️ Danger zone",
         description:

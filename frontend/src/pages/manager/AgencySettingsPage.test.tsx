@@ -18,6 +18,16 @@ const mockedApi = vi.mocked(api, { deep: true });
 // suppression du compte) et useNavigate() (redirection vers /login) : elle a
 // donc besoin d'un AuthProvider et d'un Router autour d'elle, comme
 // SubscriptionPage.test.tsx le fait déjà pour les mêmes raisons.
+function echeancesVides() {
+  return {
+    calculeLe: "2026-09-24T00:00:00.000Z",
+    durees: { journauxJours: 365, ficheSansBailJours: 90, apresFinDeBailJours: 1825 },
+    fichesSansBail: [],
+    bauxClosDepuisLongtemps: [],
+    total: 0,
+  };
+}
+
 function renderPage() {
   return render(
     <AuthProvider>
@@ -48,6 +58,11 @@ describe("AgencySettingsPage", () => {
     mockedApi.put.mockReset();
     mockedApi.post.mockReset();
     mockedApi.delete.mockReset();
+    // La page charge DEUX ressources au montage : les paramètres d'agence
+    // d'abord, puis les échéances de conservation. Les tests posent la
+    // première avec mockResolvedValueOnce ; celle-ci sert de réponse par
+    // défaut à la seconde, pour qu'ils n'aient pas tous à s'en occuper.
+    mockedApi.get.mockResolvedValue({ data: echeancesVides() });
     localStorage.clear();
   });
 
@@ -253,6 +268,58 @@ describe("AgencySettingsPage", () => {
 
       await waitFor(() => expect(screen.getByText("Mot de passe incorrect")).toBeInTheDocument());
       expect(localStorage.getItem("token")).toBe("fake-token");
+    });
+  });
+
+  /**
+   * Le Service ne détruit pas les données locatives de ses clients : pour
+   * elles, le gestionnaire est responsable de traitement et le Service
+   * sous-traitant, et lui seul sait si un litige en cours justifie de
+   * conserver un dossier. L'écran SIGNALE donc, et ne propose aucun bouton
+   * qui efface — c'est ce que ces deux tests verrouillent.
+   */
+  describe("données arrivées à échéance", () => {
+    it("liste les fiches signalées, avec la raison", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() }).mockResolvedValueOnce({
+        data: {
+          ...echeancesVides(),
+          fichesSansBail: [
+            { id: "t1", firstName: "Awa", lastName: "Diallo", phone: "", email: "", createdAt: "2026-01-01" },
+          ],
+          total: 1,
+        },
+      });
+      renderPage();
+
+      expect(await screen.findByText(/Awa Diallo/)).toBeInTheDocument();
+      expect(screen.getByText(/Fiche sans aucun bail/)).toBeInTheDocument();
+    });
+
+    it("n'offre aucune action de suppression, seulement un renvoi vers les fiches", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() }).mockResolvedValueOnce({
+        data: {
+          ...echeancesVides(),
+          fichesSansBail: [
+            { id: "t1", firstName: "Awa", lastName: "Diallo", phone: "", email: "", createdAt: "2026-01-01" },
+          ],
+          total: 1,
+        },
+      });
+      renderPage();
+
+      await screen.findByText(/Awa Diallo/);
+      expect(screen.getByRole("button", { name: "Ouvrir la liste des locataires" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /purger/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /anonymiser/i })).not.toBeInTheDocument();
+    });
+
+    it("annonce qu'il n'y a rien à traiter quand aucune durée n'est atteinte", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      renderPage();
+
+      expect(
+        await screen.findByText("Aucune donnée n'a atteint sa durée de conservation.")
+      ).toBeInTheDocument();
     });
   });
 });

@@ -28,6 +28,7 @@ import paymentRoutes from "./routes/payment.routes";
 import stripeRoutes from "./routes/stripe.routes";
 import propertyRoutes from "./routes/property.routes";
 import searchRoutes from "./routes/search.routes";
+import conservationRoutes from "./routes/conservation.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
 
@@ -95,6 +96,7 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/conservation", conservationRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/tenants", tenantRoutes);
 app.use("/api/owners", ownerRoutes);

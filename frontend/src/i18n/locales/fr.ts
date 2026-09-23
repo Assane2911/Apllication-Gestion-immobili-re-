@@ -1049,6 +1049,16 @@ const fr = {
         logoutAllPending: "Fermeture des sessions…",
         logoutAllError: "Impossible de fermer les sessions. Réessayez dans un instant.",
       },
+      retention: {
+        title: "Données arrivées à échéance",
+        description:
+          "Les durées de conservation recommandées (référentiel CNIL « gestion locative ») désignent les fiches ci-dessous. C'est à vous de décider : vous seul savez si un litige en cours justifie de les garder. Anonymiser efface les données identifiantes et conserve contrats, factures et quittances.",
+        none: "Aucune donnée n'a atteint sa durée de conservation.",
+        noBail: "Fiche sans aucun bail, ouverte depuis plus de {{days}} jours",
+        leaseEnded: "Dernier bail achevé il y a plus de {{years}} ans",
+        error: "Impossible de charger les échéances.",
+        seeTenants: "Ouvrir la liste des locataires",
+      },
       dangerZone: {
         title: "⚠️ Zone de danger",
         description:

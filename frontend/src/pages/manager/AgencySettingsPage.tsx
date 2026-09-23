@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import { useAuth } from "../../context/auth";
-import type { AgencySettings } from "../../types";
+import type { AgencySettings, RetentionEcheances } from "../../types";
 
 export default function AgencySettingsPage() {
   const { t } = useTranslation();
@@ -63,6 +63,25 @@ export default function AgencySettingsPage() {
       });
     });
   }, []);
+
+  /**
+   * Données arrivées à échéance.
+   *
+   * Le Service ne les détruit pas de lui-même : pour les données locatives, le
+   * gestionnaire est responsable de traitement et le Service sous-traitant, et
+   * lui seul sait si un litige en cours justifie de conserver un dossier. La
+   * plateforme signale, il décide — d'où une liste et un lien vers les fiches,
+   * jamais un bouton « tout purger ».
+   */
+  const [echeances, setEcheances] = useState<RetentionEcheances | null>(null);
+  const [echeancesError, setEcheancesError] = useState("");
+
+  useEffect(() => {
+    api
+      .get<RetentionEcheances>("/conservation/echeances")
+      .then((res) => setEcheances(res.data))
+      .catch(() => setEcheancesError(t("manager.agencySettings.retention.error")));
+  }, [t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -234,6 +253,57 @@ export default function AgencySettingsPage() {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+          {t("manager.agencySettings.retention.title")}
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+          {t("manager.agencySettings.retention.description")}
+        </p>
+        {echeancesError && (
+          <p className="text-sm text-red-600 dark:text-red-400 mt-3" role="alert">
+            {echeancesError}
+          </p>
+        )}
+        {echeances && echeances.total === 0 && (
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">
+            {t("manager.agencySettings.retention.none")}
+          </p>
+        )}
+        {echeances && echeances.total > 0 && (
+          <>
+            <ul className="mt-4 space-y-2">
+              {echeances.fichesSansBail.map((fiche) => (
+                <li key={fiche.id} className="text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-semibold">
+                    {fiche.firstName} {fiche.lastName}
+                  </span>{" "}
+                  — {t("manager.agencySettings.retention.noBail", { days: echeances.durees.ficheSansBailJours })}
+                </li>
+              ))}
+              {echeances.bauxClosDepuisLongtemps.map((fiche) => (
+                <li key={fiche.id} className="text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-semibold">
+                    {fiche.firstName} {fiche.lastName}
+                  </span>{" "}
+                  —{" "}
+                  {t("manager.agencySettings.retention.leaseEnded", {
+                    years: Math.round(echeances.durees.apresFinDeBailJours / 365),
+                  })}
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => navigate("/tenants")}
+              className="mt-4 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              {t("manager.agencySettings.retention.seeTenants")}
+            </button>
+          </>
+        )}
       </div>
 
       {/*

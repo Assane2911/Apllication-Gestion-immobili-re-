@@ -512,3 +512,16 @@ export interface PaginatedResponse<T> {
   total: number;
   totalPages: number;
 }
+
+/**
+ * Données dont la durée de conservation est atteinte, telles que le Service
+ * les SIGNALE au gestionnaire — il ne les efface jamais de lui-même (voir
+ * conservation.service.ts côté API).
+ */
+export interface RetentionEcheances {
+  calculeLe: string;
+  durees: { journauxJours: number; ficheSansBailJours: number; apresFinDeBailJours: number };
+  fichesSansBail: Tenant[];
+  bauxClosDepuisLongtemps: Tenant[];
+  total: number;
+}

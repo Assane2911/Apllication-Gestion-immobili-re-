@@ -140,16 +140,23 @@ export default function PolitiqueConfidentialitePage() {
       <LegalSection title="6. Durée de conservation">
         <p>
           Les données saisies dans le Service sont conservées tant que le compte du Gestionnaire qui les
-          détient reste ouvert : le Service n'applique pas de purge automatique à l'expiration d'un délai. La
-          conservation est donc commandée par deux événements — la suppression d'un élément par le
-          Gestionnaire, et la clôture de son compte.
+          détient reste ouvert : le Service ne détruit pas de lui-même les données locatives à l'expiration
+          d'un délai. Il signale en revanche au Gestionnaire, dans son espace, les fiches dont la durée de
+          conservation recommandée est atteinte, à charge pour lui de les anonymiser ou de justifier leur
+          conservation — lui seul sait si un litige en cours l'impose. La conservation est donc commandée par
+          deux événements : la décision du Gestionnaire, et la clôture de son compte.
+        </p>
+        <p>
+          Les données propres au fonctionnement du Service, elles, sont purgées automatiquement : les jetons
+          de réinitialisation de mot de passe et de confirmation d'adresse sont effacés dès leur expiration,
+          et les entrées du journal d'activité au-delà d'un an.
         </p>
         <LegalList
           items={[
             "Données de compte et données locatives (biens, locataires, baux, paiements, dépenses) : conservées pendant toute la durée de la relation contractuelle avec le Gestionnaire, et jusqu'à ce qu'il les supprime ou qu'il clôture son compte.",
             "Pièces d'identité des locataires et photographies (biens, annonces, incidents, baux scannés) : le fichier est supprimé du stockage en même temps que la fiche qui le référence — suppression du locataire, du bien, de l'annonce ou du contrat — et, en tout état de cause, à la clôture du compte du Gestionnaire.",
             "Messages de la messagerie intégrée : conservés tant que le compte du Gestionnaire reste ouvert. Ils ne sont pas effacés par l'anonymisation d'un locataire, leur contenu appartenant à l'échange entre les deux parties.",
-            "Journal d'activité de l'agence (traçabilité des actions) : conservé pendant toute la durée de vie du compte, puis supprimé avec lui.",
+            "Journal d'activité de l'agence (traçabilité des actions) : conservé un an, puis effacé automatiquement — et en tout état de cause supprimé avec le compte.",
             "Données d'abonnement et de facturation : conservées pendant la durée requise par les obligations comptables et fiscales applicables, y compris après la clôture du compte.",
           ]}
         />

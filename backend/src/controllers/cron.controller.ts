@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "../services/reminder.service";
+import { purgerDonneesDeLaPlateforme } from "../services/conservation.service";
 import { budgetTemps } from "../utils/budgetTemps";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -98,12 +99,19 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   assertCronAuthorized(req);
 
   const budget = budgetTemps(env.cronBudgetMs);
+
+  // Purge des données de la PLATEFORME uniquement — jetons périmés, vieux
+  // journaux. Deux requêtes d'ensemble, donc hors budget de temps. Aucune
+  // donnée locative n'est touchée ici : voir conservation.service.ts.
+  const purge = await purgerDonneesDeLaPlateforme();
+
   const contractEnding = await runContractEndingReminders(budget);
   const upcoming = await runUpcomingRentDueReminders(budget);
   const rentDue = await runRentDueReminders(undefined, budget);
 
   res.json({
     success: true,
+    purge,
     contractEndingRemindersSent: contractEnding.sent,
     upcomingRentDueRemindersSent: upcoming.sent,
     rentDueRemindersSent: rentDue.sent,

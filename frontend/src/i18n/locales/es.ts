@@ -1050,6 +1050,16 @@ const es: TranslationSchema = {
         logoutAllPending: "Cerrando sesiones…",
         logoutAllError: "No se han podido cerrar las sesiones. Inténtalo de nuevo en un momento.",
       },
+      retention: {
+        title: "Datos que han alcanzado su plazo de conservación",
+        description:
+          "Los plazos de conservación recomendados (referencial CNIL de gestión de alquileres) señalan las fichas siguientes. La decisión es tuya: solo tú sabes si un litigio en curso justifica conservarlas. Anonimizar borra los datos identificativos y conserva contratos, facturas y recibos.",
+        none: "Ningún dato ha alcanzado su plazo de conservación.",
+        noBail: "Ficha sin ningún contrato, abierta desde hace más de {{days}} días",
+        leaseEnded: "Último contrato finalizado hace más de {{years}} años",
+        error: "No se han podido cargar los plazos.",
+        seeTenants: "Abrir la lista de inquilinos",
+      },
       dangerZone: {
         title: "⚠️ Zona de peligro",
         description:
