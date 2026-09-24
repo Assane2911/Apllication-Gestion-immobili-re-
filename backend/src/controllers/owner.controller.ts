@@ -11,6 +11,7 @@ import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
 // Champs déjà présents en base (voir schema.ts) — créés directement en SQL en
@@ -23,7 +24,12 @@ const ownerSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   companyName: z.string().optional(),
-  phone: z.string().min(6),
+  // Même exigence que pour les locataires : format international à
+  // l'enregistrement, voir tenant.controller.ts.
+  phone: z
+    .string()
+    .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
+    .transform((v) => versE164(v)!),
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
   address: z.string().optional(),
   iban: z.string().optional(),

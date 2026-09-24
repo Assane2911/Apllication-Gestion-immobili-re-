@@ -10,6 +10,14 @@
  * quel pays, et lui inventer un indicatif enverrait le message à quelqu'un
  * d'autre. On refuse donc (renvoie null) plutôt que de deviner.
  */
+/**
+ * Message unique pour un numéro que `versE164` ne sait pas lire. Il nomme la
+ * cause (l'indicatif manquant) et montre la forme attendue : « invalide » tout
+ * court laisserait chercher, alors que l'oubli est presque toujours le même.
+ */
+export const MESSAGE_TELEPHONE_INVALIDE =
+  "Numéro de téléphone invalide : indiquez l'indicatif du pays, par exemple +221 77 123 45 67.";
+
 export function versE164(brut: string): string | null {
   const nettoye = brut.replace(/[\s().-]/g, "");
 

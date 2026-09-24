@@ -12,12 +12,22 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
+import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { resolveScannedUrl } from "./contract.controller";
 
 const tenantSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  phone: z.string().min(6),
+  // Le numéro est enregistré au format international, et pas seulement
+  // contrôlé : c'est le seul format que l'API WhatsApp accepte, et le laisser
+  // en texte libre revenait à découvrir des mois plus tard qu'un rappel n'est
+  // jamais parti. `versE164` refuse de deviner l'indicatif d'un numéro qui n'en
+  // porte pas — c'est au gestionnaire de le choisir, ce que le champ de saisie
+  // lui demande désormais explicitement.
+  phone: z
+    .string()
+    .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
+    .transform((v) => versE164(v)!),
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
 });
 

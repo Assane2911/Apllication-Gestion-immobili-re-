@@ -28,7 +28,7 @@ describe("POST /api/owners", () => {
         firstName: "Fatou",
         lastName: "Diop",
         companyName: "SCI Les Baobabs",
-        phone: "0612345678",
+        phone: "+33 6 12 34 56 78",
         email: "fatou@test.local",
         address: "12 avenue des Palmiers",
         iban: "FR7630006000011234567890189",
@@ -50,7 +50,7 @@ describe("POST /api/owners", () => {
     const res = await request(app)
       .post("/api/owners")
       .set(authHeader(tokenFor(manager)))
-      .send({ firstName: "Awa", lastName: "Ndiaye", phone: "0600000000", email: "awa@test.local" });
+      .send({ firstName: "Awa", lastName: "Ndiaye", phone: "+221778422993", email: "awa@test.local" });
 
     expect(res.status).toBe(201);
     expect(res.body.managementFeeRate).toBe(8);
@@ -63,7 +63,7 @@ describe("POST /api/owners", () => {
     const res = await request(app)
       .post("/api/owners")
       .set(authHeader(tokenFor(manager)))
-      .send({ firstName: "Bis", lastName: "Repetita", phone: "0600000000", email: "dup@test.local" });
+      .send({ firstName: "Bis", lastName: "Repetita", phone: "+221778422993", email: "dup@test.local" });
 
     expect(res.status).toBe(409);
   });
@@ -76,7 +76,7 @@ describe("POST /api/owners", () => {
     const res = await request(app)
       .post("/api/owners")
       .set(authHeader(tokenFor(managerB)))
-      .send({ firstName: "Autre", lastName: "Agence", phone: "0611111111", email: "partage@test.local" });
+      .send({ firstName: "Autre", lastName: "Agence", phone: "+221771111111", email: "partage@test.local" });
 
     expect(res.status).toBe(201);
   });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, liste } from "../../api/client";
+import ChampTelephone from "../../components/ChampTelephone";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
@@ -184,7 +185,7 @@ export default function TenantsPage() {
             </div>
             <div>
               <label htmlFor="tenant-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.phone")}</label>
-              <input id="tenant-phone" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <ChampTelephone id="tenant-phone" required value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
             <div>
               <label htmlFor="tenant-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.email")}</label>

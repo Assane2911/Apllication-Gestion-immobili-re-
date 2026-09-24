@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, liste } from "../../api/client";
+import ChampTelephone from "../../components/ChampTelephone";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
@@ -176,7 +177,7 @@ export default function OwnersPage() {
             </div>
             <div>
               <label htmlFor="owner-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.phone")}</label>
-              <input id="owner-phone" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <ChampTelephone id="owner-phone" required value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
             <div>
               <label htmlFor="owner-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.email")}</label>

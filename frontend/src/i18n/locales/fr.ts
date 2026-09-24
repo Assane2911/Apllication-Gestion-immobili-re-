@@ -5,6 +5,13 @@ const fr = {
       cancelled: "Paiement annulé. Aucun montant n'a été débité.",
     },
     appName: "ImmoPlatform Pro",
+    phoneField: {
+      countryLabel: "Indicatif du pays",
+      chooseCountry: "Choisir l'indicatif",
+      willBeSaved: "Sera enregistré : {{numero}}",
+      incomplete: "Numéro incomplet : {{numero}}",
+      missingCountry: "Ce numéro n'indique aucun pays. Choisissez l'indicatif pour qu'il puisse recevoir les rappels WhatsApp.",
+    },
     actions: {
       save: "Enregistrer",
       saving: "Enregistrement...",

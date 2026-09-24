@@ -72,7 +72,16 @@ describe("AgencySettingsPage", () => {
 
     await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
     expect(screen.getByLabelText("Email de contact officiel *")).toHaveValue("contact@agenceduport.com");
-    expect(screen.getByLabelText("Téléphone de l'agence")).toHaveValue("+33 1 40 00 00 00");
+    // Le champ téléphone se relit en deux parties depuis la valeur stockée :
+    // l'indicatif dans la liste, le reste dans la saisie. Un numéro déjà
+    // enregistré au format international revient donc sans son « +33 ».
+    //
+    // `waitFor` et non une assertion directe : les autres champs sont liés
+    // à l'état du formulaire, celui-ci le DÉRIVE dans un effet. Il se peuple
+    // donc un rendu plus tard que les autres — ce qui n'a aucun effet visible
+    // à l'écran, mais se voit dans un test qui n'attend pas.
+    await waitFor(() => expect(screen.getByLabelText("Téléphone de l'agence")).toHaveValue("140000000"));
+    expect(screen.getByLabelText("Indicatif du pays")).toHaveValue("FR");
   });
 
   it("pré-remplit aussi l'IBAN et le BIC quand ils sont déjà renseignés", async () => {

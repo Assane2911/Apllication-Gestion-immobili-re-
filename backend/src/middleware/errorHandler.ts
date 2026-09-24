@@ -18,6 +18,16 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   // (qui, en plus de mentir sur la nature de l'erreur, la faisait remonter à
   // Sentry comme si l'application était en défaut).
   if (err instanceof ZodError) {
+    // Quand un schéma porte un message écrit ici — ceux de `.refine()`, que
+    // zod marque `custom` — on le renvoie tel quel : il nomme la cause ET la
+    // correction (« indiquez l'indicatif du pays »), là où la formule générique
+    // se contente de désigner le champ et laisse chercher. Les messages par
+    // défaut de zod restent masqués : ils sont en anglais et parlent de types.
+    const explicites = err.errors.filter((issue) => issue.code === "custom").map((issue) => issue.message);
+    if (explicites.length > 0) {
+      return res.status(400).json({ error: explicites.join(" "), code: "VALIDATION_ERROR" });
+    }
+
     const fields = err.errors.map((issue) => issue.path.join(".")).filter(Boolean);
     const suffix = fields.length > 0 ? ` (champ${fields.length > 1 ? "s" : ""} concerné${fields.length > 1 ? "s" : ""} : ${fields.join(", ")})` : "";
     return res.status(400).json({

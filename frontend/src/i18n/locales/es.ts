@@ -7,6 +7,13 @@ const es: TranslationSchema = {
       cancelled: "Pago cancelado. No se ha cobrado ningún importe.",
     },
     appName: "ImmoPlatform Pro",
+    phoneField: {
+      countryLabel: "Prefijo del país",
+      chooseCountry: "Elegir el prefijo",
+      willBeSaved: "Se guardará como: {{numero}}",
+      incomplete: "Número incompleto: {{numero}}",
+      missingCountry: "Este número no indica ningún país. Elija el prefijo para que pueda recibir los recordatorios de WhatsApp.",
+    },
     actions: {
       save: "Guardar",
       saving: "Guardando...",

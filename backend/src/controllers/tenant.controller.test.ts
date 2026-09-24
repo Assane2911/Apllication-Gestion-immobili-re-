@@ -32,11 +32,43 @@ describe("POST /api/tenants", () => {
     const res = await request(app)
       .post("/api/tenants")
       .set(authHeader(tokenFor(manager)))
-      .send({ firstName: "Alice", lastName: "Martin", phone: "0612345678", email: "alice@test.local" });
+      .send({ firstName: "Alice", lastName: "Martin", phone: "+33 6 12 34 56 78", email: "alice@test.local" });
 
     expect(res.status).toBe(201);
     expect(res.body.email).toBe("alice@test.local");
     expect(res.body.managerId).toBe(manager.id);
+  });
+
+  it("enregistre le numéro au format international, espaces retirés", async () => {
+    // Ce n'est pas de la cosmétique : c'est le seul format que l'API WhatsApp
+    // accepte. Le normaliser à l'entrée, plutôt qu'à chaque envoi, évite que
+    // deux fiches saisies différemment se comportent différemment.
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/tenants")
+      .set(authHeader(tokenFor(manager)))
+      .send({ firstName: "Awa", lastName: "Diallo", phone: "+221 77 842 29 93", email: "awa@test.local" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.phone).toBe("+221778422993");
+  });
+
+  it("refuse un numéro sans indicatif de pays, plutôt que d'en inventer un", async () => {
+    // « 0612345678 » a longtemps été accepté, puis silencieusement ignoré au
+    // moment d'envoyer le rappel WhatsApp : le locataire ne recevait rien et
+    // personne ne savait pourquoi. Refuser à la saisie rend la cause visible
+    // là où elle se corrige. Deviner « France » parce que le numéro commence
+    // par 06 enverrait le rappel à un inconnu.
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/tenants")
+      .set(authHeader(tokenFor(manager)))
+      .send({ firstName: "Sans", lastName: "Indicatif", phone: "0612345678", email: "sans@test.local" });
+
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toMatch(/indicatif/i);
   });
 
   it("refuse deux locataires avec le même email chez le même gestionnaire", async () => {
@@ -46,7 +78,7 @@ describe("POST /api/tenants", () => {
     const res = await request(app)
       .post("/api/tenants")
       .set(authHeader(tokenFor(manager)))
-      .send({ firstName: "Bis", lastName: "Repetita", phone: "0600000000", email: "dup@test.local" });
+      .send({ firstName: "Bis", lastName: "Repetita", phone: "+221778422993", email: "dup@test.local" });
 
     expect(res.status).toBe(409);
   });
@@ -59,7 +91,7 @@ describe("POST /api/tenants", () => {
     const res = await request(app)
       .post("/api/tenants")
       .set(authHeader(tokenFor(managerB)))
-      .send({ firstName: "Autre", lastName: "Agence", phone: "0611111111", email: "partage@test.local" });
+      .send({ firstName: "Autre", lastName: "Agence", phone: "+221771111111", email: "partage@test.local" });
 
     expect(res.status).toBe(201);
   });

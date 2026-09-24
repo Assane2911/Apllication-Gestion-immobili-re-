@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
+import ChampTelephone from "../../components/ChampTelephone";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import { useAuth } from "../../context/auth";
 import type { AgencySettings, RetentionEcheances } from "../../types";
@@ -171,13 +172,7 @@ export default function AgencySettingsPage() {
               <label htmlFor="agency-phone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("manager.agencySettings.fields.phone")}
               </label>
-              <input
-                id="agency-phone"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder={t("manager.agencySettings.fields.phonePlaceholder")}
-                className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
-              />
+              <ChampTelephone id="agency-phone" value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
           </div>
 

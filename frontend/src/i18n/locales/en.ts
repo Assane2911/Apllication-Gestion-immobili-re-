@@ -7,6 +7,13 @@ const en: TranslationSchema = {
       cancelled: "Payment cancelled. No amount was charged.",
     },
     appName: "ImmoPlatform Pro",
+    phoneField: {
+      countryLabel: "Country code",
+      chooseCountry: "Choose the country code",
+      willBeSaved: "Will be saved as: {{numero}}",
+      incomplete: "Incomplete number: {{numero}}",
+      missingCountry: "This number names no country. Choose the country code so it can receive WhatsApp reminders.",
+    },
     actions: {
       save: "Save",
       saving: "Saving...",

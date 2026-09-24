@@ -114,7 +114,7 @@ describe("TenantsPage (manager)", () => {
     const fields = getFormFields();
     await user.type(fields.firstName, "Moussa");
     await user.type(fields.lastName, "Traoré");
-    await user.type(fields.phone, "0611223344");
+    await user.type(fields.phone, "77 122 33 44");
     await user.type(fields.email, "moussa@example.com");
 
     const file = new File(["fake-id-content"], "carte-identite.pdf", { type: "application/pdf" });
@@ -129,7 +129,10 @@ describe("TenantsPage (manager)", () => {
     const entries = formDataEntries(formData as FormData);
     expect(entries.firstName).toBe("Moussa");
     expect(entries.lastName).toBe("Traoré");
-    expect(entries.phone).toBe("0611223344");
+    // Le champ téléphone joint désormais l'indicatif du pays sélectionné (le
+    // Sénégal par défaut) : c'est ce numéro international, et non la saisie
+    // locale, qui part au serveur — le seul format que WhatsApp accepte.
+    expect(entries.phone).toBe("+221771223344");
     expect(entries.email).toBe("moussa@example.com");
     expect((entries.idDocument as File).name).toBe("carte-identite.pdf");
 

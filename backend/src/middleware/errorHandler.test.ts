@@ -77,6 +77,34 @@ describe("errorHandler", () => {
     expect(body.error).toContain("champs concernés : email, rent");
   });
 
+  it("renvoie le message du schéma quand il en porte un, plutôt que la formule générique", async () => {
+    // Un `.refine()` est écrit quand la règle mérite une explication : dire
+    // seulement « champ concerné : phone » perdrait précisément ce qu'il y
+    // avait à dire, et laisserait l'utilisateur corriger au hasard.
+    const schema = z.object({
+      phone: z.string().refine((v) => v.startsWith("+"), "Indiquez l'indicatif du pays."),
+    });
+    const res = fakeRes();
+
+    await errorHandler(zodErrorFor(schema, { phone: "0612345678" }), fakeReq, res, noop);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    const body = res.json.mock.calls[0][0];
+    expect(body.error).toBe("Indiquez l'indicatif du pays.");
+    expect(body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("garde la formule générique pour les messages par défaut de Zod, rédigés en anglais", async () => {
+    // Contre-épreuve de la règle ci-dessus : « String must contain at least 1
+    // character(s) » n'aiderait personne dans une interface francophone.
+    const schema = z.object({ email: z.string().email() });
+    const res = fakeRes();
+
+    await errorHandler(zodErrorFor(schema, { email: "pas-un-email" }), fakeReq, res, noop);
+
+    expect(res.json.mock.calls[0][0].error).toContain("Requête invalide");
+  });
+
   it("n'ajoute aucun suffixe de champ quand l'erreur Zod ne porte sur aucun champ nommé", async () => {
     const schema = z.string();
     const res = fakeRes();
