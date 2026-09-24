@@ -2,6 +2,7 @@ import { LogOut, Menu, Moon, Sun, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
+import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
@@ -109,8 +110,11 @@ export default function ManagerLayout() {
         </div>
         <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1" onClick={() => setMobileNavOpen(false)}>
           {navItems.map((item) => (
+            // La bulle s'ouvre à DROITE : dans une barre latérale, au-dessus
+            // recouvrirait l'entrée précédente, c'est-à-dire une autre cible
+            // cliquable.
+            <Bulle key={item.to} texte={t(`nav.tips.${item.key}`)} position="droite" className="block">
             <NavLink
-              key={item.to}
               to={item.to}
               end={item.to === "/dashboard"}
               className={({ isActive }) =>
@@ -124,6 +128,7 @@ export default function ManagerLayout() {
               <span className="text-base">{item.icon}</span>
               <span className="truncate">{t(`nav.manager.${item.key}`)}</span>
             </NavLink>
+            </Bulle>
           ))}
         </nav>
         <div className="shrink-0 px-4 py-4 border-t border-slate-800/80 bg-slate-950/40">

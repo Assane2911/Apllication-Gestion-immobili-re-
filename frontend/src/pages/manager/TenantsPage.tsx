@@ -6,6 +6,7 @@ import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { PaginatedResponse, Tenant } from "../../types";
+import Bulle from "../../components/Bulle";
 
 const emptyForm = { civility: "", firstName: "", lastName: "", phone: "", email: "" };
 const PAGE_SIZE = 20;
@@ -277,9 +278,9 @@ export default function TenantsPage() {
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{tenant.email}</td>
                 <td className="px-4 py-3">
                   {tenant.idDocument ? (
-                    <button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">
+                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">
                       {t("manager.tenants.viewIdDocument")}
-                    </button>
+                    </button></Bulle>
                   ) : (
                     <span className="text-slate-300 dark:text-slate-600">—</span>
                   )}
@@ -294,14 +295,14 @@ export default function TenantsPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
-                  <button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button>
-                  <button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">{t("manager.tenants.exportData")}</button>
+                  <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">{t("manager.tenants.exportData")}</button></Bulle>
                   {tenant.anonymizedAt ? (
                     <span className="text-slate-400 dark:text-slate-500 text-xs">{t("manager.tenants.anonymized")}</span>
                   ) : (
-                    <button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline text-xs">{t("manager.tenants.anonymize")}</button>
+                    <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline text-xs">{t("manager.tenants.anonymize")}</button></Bulle>
                   )}
-                  <button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button>
+                  <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
                 </td>
               </tr>
             ))
@@ -337,21 +338,21 @@ export default function TenantsPage() {
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
                   {tenant.idDocument ? (
-                    <button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">
+                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">
                       {t("manager.tenants.viewIdDocumentMobile")}
-                    </button>
+                    </button></Bulle>
                   ) : (
                     <span className="text-slate-300 dark:text-slate-600">{t("manager.tenants.noIdDocument")}</span>
                   )}
                   <div className="space-x-3">
-                    <button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button>
-                    <button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline">{t("manager.tenants.exportData")}</button>
+                    <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline">{t("manager.tenants.exportData")}</button></Bulle>
                     {tenant.anonymizedAt ? (
                       <span className="text-slate-400 dark:text-slate-500">{t("manager.tenants.anonymized")}</span>
                     ) : (
-                      <button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline">{t("manager.tenants.anonymize")}</button>
+                      <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline">{t("manager.tenants.anonymize")}</button></Bulle>
                     )}
-                    <button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button>
+                    <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button></Bulle>
                   </div>
                 </div>
               </div>

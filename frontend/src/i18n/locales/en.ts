@@ -81,6 +81,24 @@ const en: TranslationSchema = {
   },
 
   nav: {
+    tips: {
+      dashboard: "Overview: rent collected, arrears and this month's due dates.",
+      properties: "Your properties: create a record, set the rent, track occupancy.",
+      tenants: "Your tenants: contact details, ID document and portal access.",
+      owners: "The landlords you manage for, and their commission.",
+      contracts: "Current and ended leases, with electronic signature.",
+      inspections: "Move-in and move-out reports, backed by photos.",
+      invoices: "Rent called in: send reminders, record payments, issue receipts.",
+      listings: "Your adverts published on the public showcase.",
+      leads: "Enquiries received from the showcase, to qualify and follow up.",
+      expenses: "Costs and works per property, and the resulting profitability.",
+      fiscal: "Yearly summary of income and costs, ready to declare.",
+      messages: "Your exchanges with tenants, lease by lease.",
+      issues: "Problems reported by your tenants and how they are handled.",
+      activityLog: "Who did what, and when, on your workspace.",
+      agency: "Agency identity: details, logo and the wording on receipts.",
+      subscription: "Your plan, your invoices and the state of your trial.",
+    },
     manager: {
       dashboard: "Dashboard",
       properties: "Properties",
@@ -560,6 +578,18 @@ const en: TranslationSchema = {
       emptyTitle: "No properties yet",
       emptyDesc: "Add your first property (with photo, surface area and rent) to start tracking its rental.",
       confirmDelete: 'Delete the property "{{title}}"?',
+    },
+    tips: {
+      tenantIdDocument: "Opens the ID document in a new tab, through a temporary link.",
+      tenantEdit: "Edit the record: title, name, phone, email, ID document.",
+      tenantExport: "Download everything the Service holds about this tenant (GDPR right of access).",
+      tenantAnonymize: "Permanently erases identifying details. Invoices and receipts are kept.",
+      tenantDelete: "Deletes the record. Not possible while a lease is attached.",
+      ownerEdit: "Edit the record: contact details, IBAN, commission rate.",
+      ownerDelete: "Deletes the record. Not possible while a property is attached.",
+      invoiceReceipt: "Opens the receipt as a PDF, ready to send or print.",
+      invoiceRemind: "Sends the tenant a reminder, by email and WhatsApp.",
+      invoiceMarkPaid: "Records the payment and issues the matching receipt.",
     },
     tenants: {
       exportData: "Export their data",

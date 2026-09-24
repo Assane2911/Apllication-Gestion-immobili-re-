@@ -79,6 +79,24 @@ const fr = {
   },
 
   nav: {
+    tips: {
+      dashboard: "Vue d'ensemble : loyers encaissés, impayés et échéances du mois.",
+      properties: "Vos biens : créer une fiche, fixer le loyer, suivre l'occupation.",
+      tenants: "Vos locataires : coordonnées, pièce d'identité et accès au portail.",
+      owners: "Les propriétaires pour qui vous gérez, et leur commission.",
+      contracts: "Les baux en cours et terminés, avec signature électronique.",
+      inspections: "États des lieux d'entrée et de sortie, photos à l'appui.",
+      invoices: "Les loyers appelés : relancer, encaisser, éditer les quittances.",
+      listings: "Vos annonces publiées sur la vitrine publique.",
+      leads: "Les demandes reçues depuis la vitrine, à qualifier et relancer.",
+      expenses: "Charges et travaux par bien, et la rentabilité qui en découle.",
+      fiscal: "Récapitulatif annuel des recettes et des charges, prêt à déclarer.",
+      messages: "Vos échanges avec les locataires, bail par bail.",
+      issues: "Les problèmes signalés par vos locataires et leur suivi.",
+      activityLog: "Qui a fait quoi, et quand, sur votre espace.",
+      agency: "Identité de l'agence : coordonnées, logo et mentions des quittances.",
+      subscription: "Votre formule, vos factures et l'état de votre essai.",
+    },
     manager: {
       dashboard: "Tableau de bord",
       properties: "Biens",
@@ -559,6 +577,18 @@ const fr = {
       emptyDesc:
         "Ajoutez votre premier bien immobilier (avec photo, surface et loyer) pour commencer à suivre sa location.",
       confirmDelete: 'Supprimer le bien "{{title}}" ?',
+    },
+    tips: {
+      tenantIdDocument: "Ouvre la pièce d'identité dans un nouvel onglet, via un lien temporaire.",
+      tenantEdit: "Modifie la fiche : civilité, nom, téléphone, email, pièce d'identité.",
+      tenantExport: "Télécharge tout ce que le Service détient sur ce locataire (droit d'accès RGPD).",
+      tenantAnonymize: "Efface définitivement ce qui l'identifie. Les factures et quittances sont conservées.",
+      tenantDelete: "Supprime la fiche. Impossible si un contrat y est rattaché.",
+      ownerEdit: "Modifie la fiche : coordonnées, IBAN, taux de commission.",
+      ownerDelete: "Supprime la fiche. Impossible si un bien lui est rattaché.",
+      invoiceReceipt: "Ouvre la quittance en PDF, prête à être envoyée ou imprimée.",
+      invoiceRemind: "Envoie un rappel au locataire, par email et par WhatsApp.",
+      invoiceMarkPaid: "Enregistre le paiement et génère la quittance correspondante.",
     },
     tenants: {
       exportData: "Exporter ses données",

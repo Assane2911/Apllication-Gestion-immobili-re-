@@ -7,6 +7,7 @@ import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { Owner, PaginatedResponse } from "../../types";
+import Bulle from "../../components/Bulle";
 
 const emptyForm = {
   civility: "",
@@ -293,8 +294,8 @@ export default function OwnersPage() {
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
                   <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("manager.owners.viewCrg")}</Link>
-                  <button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button>
-                  <button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button>
+                  <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
                 </td>
               </tr>
             ))
@@ -343,8 +344,8 @@ export default function OwnersPage() {
                   </div>
                   <div className="space-x-3">
                     <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline">{t("manager.owners.viewCrg")}</Link>
-                    <button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button>
-                    <button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button>
+                    <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button></Bulle>
                   </div>
                 </div>
                 {inviteMsg?.ownerId === owner.id && (

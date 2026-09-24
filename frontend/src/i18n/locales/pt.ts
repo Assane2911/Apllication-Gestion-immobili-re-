@@ -81,6 +81,24 @@ const pt: TranslationSchema = {
   },
 
   nav: {
+    tips: {
+      dashboard: "Visão geral: rendas recebidas, dívidas e vencimentos do mês.",
+      properties: "Os seus imóveis: criar uma ficha, definir a renda, seguir a ocupação.",
+      tenants: "Os seus inquilinos: contactos, documento de identidade e acesso ao portal.",
+      owners: "Os proprietários para quem gere, e a respetiva comissão.",
+      contracts: "Os contratos em curso e terminados, com assinatura eletrónica.",
+      inspections: "Autos de entrada e de saída, com fotografias.",
+      invoices: "As rendas emitidas: lembrar, receber, emitir os recibos.",
+      listings: "Os seus anúncios publicados na montra pública.",
+      leads: "Os pedidos recebidos pela montra, a qualificar e a acompanhar.",
+      expenses: "Despesas e obras por imóvel, e a rentabilidade daí resultante.",
+      fiscal: "Resumo anual das receitas e das despesas, pronto a declarar.",
+      messages: "As suas trocas com os inquilinos, contrato a contrato.",
+      issues: "Os problemas comunicados pelos inquilinos e o seu acompanhamento.",
+      activityLog: "Quem fez o quê, e quando, no seu espaço.",
+      agency: "Identidade da agência: contactos, logótipo e menções dos recibos.",
+      subscription: "O seu plano, as suas faturas e o estado do seu período de teste.",
+    },
     manager: {
       dashboard: "Painel",
       properties: "Imóveis",
@@ -560,6 +578,18 @@ const pt: TranslationSchema = {
       emptyTitle: "Ainda não há imóveis",
       emptyDesc: "Adicione o seu primeiro imóvel (com foto, área e renda) para começar a gerir o arrendamento.",
       confirmDelete: 'Eliminar o imóvel "{{title}}"?',
+    },
+    tips: {
+      tenantIdDocument: "Abre o documento de identidade num novo separador, através de uma ligação temporária.",
+      tenantEdit: "Altera a ficha: tratamento, nome, telefone, email, documento de identidade.",
+      tenantExport: "Descarrega tudo o que o Serviço detém sobre este inquilino (direito de acesso RGPD).",
+      tenantAnonymize: "Apaga definitivamente o que o identifica. As faturas e recibos são conservados.",
+      tenantDelete: "Elimina a ficha. Impossível se houver um contrato associado.",
+      ownerEdit: "Altera a ficha: contactos, IBAN, taxa de comissão.",
+      ownerDelete: "Elimina a ficha. Impossível se houver um imóvel associado.",
+      invoiceReceipt: "Abre o recibo em PDF, pronto a enviar ou a imprimir.",
+      invoiceRemind: "Envia um lembrete ao inquilino, por email e por WhatsApp.",
+      invoiceMarkPaid: "Regista o pagamento e gera o recibo correspondente.",
     },
     tenants: {
       exportData: "Exportar os seus dados",

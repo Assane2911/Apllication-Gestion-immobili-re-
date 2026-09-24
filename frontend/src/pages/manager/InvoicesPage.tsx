@@ -6,6 +6,7 @@ import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
 import { useCurrency } from "../../context/currency";
 import type { Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
+import Bulle from "../../components/Bulle";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "short" }).format(new Date(2000, monthIndex1to12 - 1, 1));
@@ -193,29 +194,28 @@ export default function InvoicesPage() {
                 </td>
                 <td className="px-4 py-3.5 text-right space-x-2 whitespace-nowrap">
                   {inv.status === "PAID" && (
-                    <button
+                    <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                       onClick={() => setActiveReceiptInvoice(inv)}
                       className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 transition-colors inline-flex items-center gap-1"
                     >
                       <span>📄</span> {t("manager.invoices.receiptPdf")}
-                    </button>
+                    </button></Bulle>
                   )}
                   {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
                     <>
-                      <button
+                      <Bulle texte={t("manager.tips.invoiceRemind")}><button
                         onClick={() => handleSendSingleReminder(inv)}
                         disabled={sendingSingleId === inv.id}
                         className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
-                        title={t("manager.invoices.remind")}
                       >
                         {sendingSingleId === inv.id ? t("manager.invoices.sendingReminder") : `📧 ${t("manager.invoices.remind")}`}
-                      </button>
-                      <button
+                      </button></Bulle>
+                      <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                         onClick={() => markPaid(inv)}
                         className="text-xs bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium transition-colors"
                       >
                         {t("manager.invoices.markPaid")}
-                      </button>
+                      </button></Bulle>
                     </>
                   )}
                 </td>
@@ -264,28 +264,28 @@ export default function InvoicesPage() {
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
                 {inv.status === "PAID" && (
-                  <button
+                  <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                     onClick={() => setActiveReceiptInvoice(inv)}
                     className="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30"
                   >
                     📄 {t("manager.invoices.receiptPdf")}
-                  </button>
+                  </button></Bulle>
                 )}
                 {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
                   <>
-                    <button
+                    <Bulle texte={t("manager.tips.invoiceRemind")}><button
                       onClick={() => handleSendSingleReminder(inv)}
                       disabled={sendingSingleId === inv.id}
                       className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
                     >
                       {sendingSingleId === inv.id ? t("manager.invoices.sendingReminder") : `📧 ${t("manager.invoices.remind")}`}
-                    </button>
-                    <button
+                    </button></Bulle>
+                    <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                       onClick={() => markPaid(inv)}
                       className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium"
                     >
                       {t("manager.invoices.markPaid")}
-                    </button>
+                    </button></Bulle>
                   </>
                 )}
               </div>

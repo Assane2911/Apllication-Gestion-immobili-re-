@@ -81,6 +81,24 @@ const es: TranslationSchema = {
   },
 
   nav: {
+    tips: {
+      dashboard: "Visión general: alquileres cobrados, impagos y vencimientos del mes.",
+      properties: "Sus inmuebles: crear una ficha, fijar el alquiler, seguir la ocupación.",
+      tenants: "Sus inquilinos: datos de contacto, documento de identidad y acceso al portal.",
+      owners: "Los propietarios para los que gestiona, y su comisión.",
+      contracts: "Los contratos vigentes y finalizados, con firma electrónica.",
+      inspections: "Actas de entrada y de salida, con fotos.",
+      invoices: "Los alquileres emitidos: reclamar, cobrar, emitir los recibos.",
+      listings: "Sus anuncios publicados en el escaparate público.",
+      leads: "Las solicitudes recibidas desde el escaparate, a calificar y seguir.",
+      expenses: "Gastos y obras por inmueble, y la rentabilidad resultante.",
+      fiscal: "Resumen anual de ingresos y gastos, listo para declarar.",
+      messages: "Sus conversaciones con los inquilinos, contrato por contrato.",
+      issues: "Los problemas comunicados por sus inquilinos y su seguimiento.",
+      activityLog: "Quién hizo qué, y cuándo, en su espacio.",
+      agency: "Identidad de la agencia: datos, logotipo y menciones de los recibos.",
+      subscription: "Su plan, sus facturas y el estado de su prueba.",
+    },
     manager: {
       dashboard: "Panel de control",
       properties: "Propiedades",
@@ -561,6 +579,18 @@ const es: TranslationSchema = {
       emptyDesc:
         "Añade tu primera propiedad inmobiliaria (con foto, superficie y alquiler) para empezar a gestionar su alquiler.",
       confirmDelete: '¿Eliminar la propiedad "{{title}}"?',
+    },
+    tips: {
+      tenantIdDocument: "Abre el documento de identidad en una pestaña nueva, mediante un enlace temporal.",
+      tenantEdit: "Modifica la ficha: tratamiento, nombre, teléfono, correo, documento de identidad.",
+      tenantExport: "Descarga todo lo que el Servicio guarda sobre este inquilino (derecho de acceso RGPD).",
+      tenantAnonymize: "Borra definitivamente lo que lo identifica. Las facturas y recibos se conservan.",
+      tenantDelete: "Elimina la ficha. Imposible si tiene un contrato asociado.",
+      ownerEdit: "Modifica la ficha: datos de contacto, IBAN, tasa de comisión.",
+      ownerDelete: "Elimina la ficha. Imposible si tiene un inmueble asociado.",
+      invoiceReceipt: "Abre el recibo en PDF, listo para enviar o imprimir.",
+      invoiceRemind: "Envía un recordatorio al inquilino, por correo y por WhatsApp.",
+      invoiceMarkPaid: "Registra el pago y genera el recibo correspondiente.",
     },
     tenants: {
       exportData: "Exportar sus datos",
