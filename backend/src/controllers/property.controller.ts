@@ -12,6 +12,7 @@ import { assertOwnership, chargerCompteCourant } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
 import { maxPropertiesForPlan } from "./subscription.controller";
+import { deviseSchema } from "../utils/devises";
 
 const propertySchema = z.object({
   title: z.string().min(2),
@@ -20,7 +21,7 @@ const propertySchema = z.object({
   rent: z.coerce.number().positive(),
   status: z.enum(["AVAILABLE", "OCCUPIED", "MAINTENANCE"]).optional(),
   description: z.string().optional(),
-  currency: z.string().min(1).max(10).optional(),
+  currency: deviseSchema.optional(),
   // Propriétaire réel du bien (Espace propriétaire) — nullable pour pouvoir
   // retirer explicitement l'association (dissocier un bien de son propriétaire).
   ownerId: z.string().min(1).nullable().optional(),

@@ -54,6 +54,23 @@ describe("POST /api/properties — devise", () => {
     expect(res.body.currency).toBe("EUR");
   });
 
+  it("refuse une devise que la plateforme ne connaît pas", async () => {
+    // Le serveur ne peut pas supposer que ses appels viennent de son propre
+    // sélecteur. `z.string().min(1).max(10)` acceptait « XYZ » — le bien, puis
+    // le contrat, puis les factures en héritaient, et les montants
+    // s'affichaient avec un symbole choisi par défaut : faux sans en avoir
+    // l'air. Un refus à l'entrée vaut mieux qu'un montant douteux en aval.
+    const manager = await createManager({ currency: "XOF" });
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "Villa", address: "Almadies", surface: 120, rent: 500000, currency: "XYZ" });
+
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toMatch(/devise/i);
+  });
+
   it("retombe sur EUR si la devise du gestionnaire est vide", async () => {
     // users.currency est NOT NULL : une devise nulle est impossible en base,
     // et la contrainte rejette l'insertion. Le repli `|| "EUR"` n'est donc

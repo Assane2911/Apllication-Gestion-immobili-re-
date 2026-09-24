@@ -10,6 +10,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { deviseSchema } from "../utils/devises";
 
 /**
  * Module "CRM Leads & Visites" + vitrine publique : annonces (listings)
@@ -46,7 +47,7 @@ const listingSchema = z.object({
   title: z.string().min(2),
   description: z.string().min(2),
   price: z.coerce.number().positive(),
-  currency: z.string().min(1).max(10).optional(),
+  currency: deviseSchema.optional(),
   pricePeriod: z.enum(PRICE_PERIODS).optional(),
   surface: z.coerce.number().positive().optional(),
   rooms: z.coerce.number().int().positive().optional(),

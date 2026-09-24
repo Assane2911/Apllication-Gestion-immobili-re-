@@ -7,6 +7,7 @@ import { contracts, expenses, invoices, properties, tenants } from "../db/schema
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
+import { deviseSchema } from "../utils/devises";
 
 const createExpenseSchema = z.object({
   propertyId: z.string().min(1),
@@ -19,7 +20,7 @@ const createExpenseSchema = z.object({
   // francs CFA était ainsi enregistrée en euros, puis ressortait telle quelle
   // dans le Grand Livre, la synthèse fiscale et le CRG. Même forme que
   // contract.controller.ts, qui lui applique déjà la bonne règle.
-  currency: z.string().optional(),
+  currency: deviseSchema.optional(),
   expenseDate: z.string().optional(),
   notes: z.string().optional(),
 });

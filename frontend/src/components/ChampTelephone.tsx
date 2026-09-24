@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { Pays } from "../data/pays";
 import { countryLabel } from "../utils/countries";
-import {
-  composer,
-  decomposer,
-  estE164Valide,
-  PAYS_TELEPHONE,
-  type IndicatifPays,
-} from "../utils/telephone";
+import { composer, decomposer, estE164Valide, PAYS_TELEPHONE } from "../utils/telephone";
 
 interface Props {
   id: string;
@@ -41,7 +36,7 @@ interface Props {
 export default function ChampTelephone({ id, value, onChange, required, disabled }: Props) {
   const { t, i18n } = useTranslation();
   const initial = decomposer(value);
-  const [pays, setPays] = useState<IndicatifPays | null>(initial.pays);
+  const [pays, setPays] = useState<Pays | null>(initial.pays);
   const [national, setNational] = useState(initial.national);
 
   // Ce que le champ a lui-même émis en dernier. Sans ce repère, la valeur qui
@@ -57,7 +52,7 @@ export default function ChampTelephone({ id, value, onChange, required, disabled
     setNational(relu.national);
   }, [value]);
 
-  function emettre(nouveauPays: IndicatifPays | null, nouveauNational: string) {
+  function emettre(nouveauPays: Pays | null, nouveauNational: string) {
     setPays(nouveauPays);
     setNational(nouveauNational);
     const compose = composer(nouveauPays, nouveauNational);
@@ -92,7 +87,7 @@ export default function ChampTelephone({ id, value, onChange, required, disabled
           required={required}
           disabled={disabled}
           value={national}
-          placeholder={pays?.exemple}
+          placeholder={pays?.exempleTelephone}
           onChange={(e) => emettre(pays, e.target.value)}
           className="flex-1 min-w-0 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
         />

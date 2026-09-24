@@ -11,13 +11,14 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
+import { deviseSchema } from "../utils/devises";
 
 const contractSchema = z.object({
   propertyId: z.string().min(1),
   tenantId: z.string().min(1),
   rent: z.coerce.number().positive(),
   deposit: z.coerce.number().nonnegative(),
-  currency: z.string().optional(),
+  currency: deviseSchema.optional(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
   status: z.enum(["ACTIVE", "ENDED", "TERMINATED"]).optional(),

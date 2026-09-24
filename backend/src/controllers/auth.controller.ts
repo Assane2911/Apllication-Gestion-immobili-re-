@@ -18,6 +18,7 @@ import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
+import { deviseSchema } from "../utils/devises";
 
 // Durée de validité du lien de confirmation d'email envoyé à l'inscription.
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
@@ -596,7 +597,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 export const updateCurrency = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
   const currencySchema = z.object({
-    currency: z.string().min(1).max(10),
+    currency: deviseSchema,
   });
   const { currency } = currencySchema.parse(req.body);
 
