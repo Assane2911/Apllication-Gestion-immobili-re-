@@ -68,7 +68,10 @@ describe("envoyerMessageWhatsapp", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
 
       const [url, options] = fetchMock.mock.calls[0];
-      expect(url).toBe(`https://graph.facebook.com/v21.0/${env.whatsapp.phoneNumberId}/messages`);
+      // La version fait partie du contrat d'appel : la voir écrite ici oblige
+      // à passer par ce test le jour où on la change, plutôt que de la faire
+      // dériver sans s'en apercevoir (voir META_GRAPH_API_VERSION).
+      expect(url).toBe(`https://graph.facebook.com/v25.0/${env.whatsapp.phoneNumberId}/messages`);
       expect(options.headers.Authorization).toBe(`Bearer ${env.whatsapp.accessToken}`);
       expect(options.headers["Content-Type"]).toBe("application/json");
 

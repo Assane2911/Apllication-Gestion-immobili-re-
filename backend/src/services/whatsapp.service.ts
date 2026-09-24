@@ -26,8 +26,21 @@
 import { env } from "../config/env";
 import { versE164 } from "../utils/phone";
 
-/** Version de l'API Graph de Meta utilisée pour l'envoi (WhatsApp Cloud API). */
-const META_GRAPH_API_VERSION = "v21.0";
+/**
+ * Version de l'API Graph de Meta utilisée pour l'envoi (WhatsApp Cloud API).
+ *
+ * À garder proche de la version courante, et pas seulement par hygiène : une
+ * version expirée ne provoque AUCUNE erreur chez Meta. Les appels sont
+ * silencieusement redirigés vers la plus ancienne version encore utilisable,
+ * donc le code continuerait de « fonctionner » en parlant une version qu'il
+ * n'a pas choisie, avec un comportement susceptible d'avoir changé et rien
+ * pour le signaler. Un décalage se découvre alors des mois plus tard, par un
+ * symptôme sans rapport apparent.
+ *
+ * La console Meta propose v25.0 (sept. 2026) ; le format de la requête
+ * d'envoi de modèle est inchangé depuis la v21.
+ */
+const META_GRAPH_API_VERSION = "v25.0";
 
 /** Masque un numéro destiné aux journaux — même principe que email.service.ts::masquer. */
 function masquerNumero(numero: string): string {
