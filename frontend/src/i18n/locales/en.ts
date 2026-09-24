@@ -810,6 +810,7 @@ const en: TranslationSchema = {
       title: "Expenses & Real Profitability",
       subtitle: "Track charges, work invoices and automatic net cash-flow calculation",
       exportCsv: "Export CSV for accounting",
+      exportingCsv: "Exporting...",
       addExpense: "+ Record an expense",
       categories: {
         MAINTENANCE: "🛠️ Maintenance & Works",
@@ -1212,6 +1213,7 @@ const en: TranslationSchema = {
       receiptPdf: "My Receipt PDF",
       pay: "Pay",
       chooseMethod: "Choose this method",
+      paying: "Processing...",
       bankRefPlaceholder: "Transfer reference",
       noInvoices: "No invoices yet",
       receiptTitle: "Rent receipt - {{period}}",

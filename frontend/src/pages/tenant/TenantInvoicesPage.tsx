@@ -58,9 +58,17 @@ export default function TenantInvoicesPage() {
       .catch(() => setBankInfo(null));
   }, []);
 
+  const [enCoursDePaiement, setEnCoursDePaiement] = useState(false);
+
   const retourPaiement = useRetourDePaiement(load);
 
   async function pay(invoiceId: string, method: PaymentMethod) {
+    // Le seul geste irréversible du portail locataire n'avait aucun garde-fou :
+    // ni bouton grisé, ni indication de progression. Rien ne bougeant à
+    // l'écran, recliquer était le réflexe naturel — et déclarait le virement
+    // deux fois, ou créait deux intentions de paiement avant la redirection.
+    if (enCoursDePaiement) return;
+    setEnCoursDePaiement(true);
     setError(null);
     setMessage(null);
     try {
@@ -77,6 +85,12 @@ export default function TenantInvoicesPage() {
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
+    } finally {
+      // Volontairement dans un `finally` : sur le chemin de redirection on ne
+      // revient jamais ici, mais sur tous les autres — succès comme échec — le
+      // bouton doit redevenir cliquable, sans quoi un échec réseau
+      // condamnerait le paiement jusqu'au rechargement de la page.
+      setEnCoursDePaiement(false);
     }
   }
 
@@ -250,9 +264,10 @@ export default function TenantInvoicesPage() {
                         )}
                         <button
                           onClick={() => pay(inv.id, m.key)}
-                          className="mt-3.5 w-full text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg py-2 transition-colors cursor-pointer shadow-2xs"
+                          disabled={enCoursDePaiement}
+                          className="mt-3.5 w-full text-xs font-semibold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg py-2 transition-colors cursor-pointer shadow-2xs"
                         >
-                          {t("tenant.invoices.chooseMethod")}
+                          {enCoursDePaiement ? t("tenant.invoices.paying") : t("tenant.invoices.chooseMethod")}
                         </button>
                       </div>
                     ))}

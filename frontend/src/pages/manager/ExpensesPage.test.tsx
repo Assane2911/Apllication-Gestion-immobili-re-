@@ -223,24 +223,42 @@ describe("ExpensesPage", () => {
     await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/expenses/exp-1"));
   });
 
-  it("exporte le CSV des dépenses affichées", async () => {
+  /**
+   * L'export sérialisait la PAGE affichée. Le gestionnaire lisait « 147 lignes
+   * de dépense » juste au-dessus du bouton, cliquait sur « Export Comptable
+   * CSV », obtenait vingt lignes sans le moindre avertissement, et
+   * transmettait le fichier à son comptable.
+   */
+  it("exporte toutes les dépenses du filtre, pas seulement la page affichée", async () => {
     const user = userEvent.setup();
     const createObjectURL = vi.fn().mockReturnValue("blob:fake-url");
-    const revokeObjectURL = vi.fn();
     URL.createObjectURL = createObjectURL;
-    URL.revokeObjectURL = revokeObjectURL;
+    URL.revokeObjectURL = vi.fn();
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 
-    queueLoad([property()], summary(), [expense()]);
+    // La page n'en montre qu'une, mais le serveur en compte deux.
+    const visible = expense();
+    const horsPage = expense({ id: "exp-2", title: "Ravalement de façade" });
+    mockedApi.get.mockResolvedValueOnce(paginated([property()]));
+    mockedApi.get.mockResolvedValueOnce({ data: summary() });
+    mockedApi.get.mockResolvedValueOnce({
+      data: { items: [visible], page: 1, pageSize: 1, total: 2, totalPages: 2 },
+    });
     renderPage();
     await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
 
+    // Ce que l'export va chercher lui-même.
+    mockedApi.get.mockResolvedValueOnce(paginated([visible, horsPage]));
+
     await user.click(screen.getByRole("button", { name: /Export Comptable CSV/ }));
 
-    expect(createObjectURL).toHaveBeenCalledTimes(1);
-    expect(createObjectURL.mock.calls[0][0]).toBeInstanceOf(Blob);
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob).toBeInstanceOf(Blob);
+    const contenu = await blob.text();
+    expect(contenu).toContain("Remplacement chauffe-eau");
+    expect(contenu).toContain("Ravalement de façade");
     expect(clickSpy).toHaveBeenCalledTimes(1);
-    expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake-url");
   });
 
   it("génère le rapport financier complet sur la période sélectionnée", async () => {

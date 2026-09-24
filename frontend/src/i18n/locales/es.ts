@@ -812,6 +812,7 @@ const es: TranslationSchema = {
       title: "Gastos y Rentabilidad Real",
       subtitle: "Seguimiento de gastos, facturas de obras y cálculo automático del flujo de caja neto",
       exportCsv: "Exportar contabilidad CSV",
+      exportingCsv: "Exportando...",
       addExpense: "+ Registrar un gasto",
       categories: {
         MAINTENANCE: "🛠️ Mantenimiento y obras",
@@ -1214,6 +1215,7 @@ const es: TranslationSchema = {
       receiptPdf: "Mi Recibo PDF",
       pay: "Pagar",
       chooseMethod: "Elegir este método",
+      paying: "Procesando...",
       bankRefPlaceholder: "Referencia de la transferencia",
       noInvoices: "Aún no hay facturas",
       receiptTitle: "Recibo de alquiler - {{period}}",

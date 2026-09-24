@@ -17,6 +17,15 @@ import { eq } from "drizzle-orm";
  * /forgot-password était déjà muet. Deux autres chemins parlaient encore :
  * l'inscription, par son message d'erreur, et la connexion, par sa DURÉE.
  */
+/** Attend que le mock d'envoi ait été appelé, sans parier sur un délai fixe. */
+async function attendreEnvoi(lire: () => (() => void) | undefined) {
+  for (let i = 0; i < 200; i += 1) {
+    if (lire()) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error("L'envoi d'email n'a jamais été engagé");
+}
+
 describe("énumération des comptes", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -83,32 +92,66 @@ describe("énumération des comptes", () => {
     });
 
     /**
-     * Régression : les deux chemins (adresse libre ou déjà prise) attendaient
-     * l'envoi SMTP réel avant de répondre — une opération réseau bien plus
-     * variable que tout calcul local. Si le code attend encore l'un des deux
-     * envois, ce test expire (timeout) au lieu d'aboutir.
+     * Cette propriété a CHANGÉ, et le changement est délibéré.
+     *
+     * Les deux chemins détachaient l'envoi pour que la réponse ne dépende pas
+     * de la durée SMTP. Sur Vercel, l'exécution peut s'arrêter dès la réponse
+     * envoyée : la promesse en vol était alors perdue, et un compte créé sans
+     * email de confirmation devient inutilisable, `login` refusant tout
+     * gestionnaire non confirmé.
+     *
+     * Ce qui protège de l'énumération n'est pas l'absence d'attente, c'est la
+     * SYMÉTRIE : les deux chemins envoient exactement un email à la même
+     * adresse. Le temps de réponse ne distingue donc plus une adresse prise
+     * d'une adresse libre, même en attendant. C'est cette symétrie que le test
+     * vérifie désormais.
+     *
+     * (Distinction avec forgotPassword et resendVerification, plus bas : là,
+     * une adresse inconnue n'a rien à envoyer. L'attente y créerait un écart
+     * réel, donc l'envoi y reste détaché.)
      */
-    it("répond sans attendre l'envoi de l'email, adresse prise ou libre", async () => {
+    it("attend l'envoi de la même façon, adresse prise ou libre", async () => {
       const existant = await createManager();
-      const envoiBloque = new Promise<void>(() => {
-        /* volontairement jamais résolue */
+      let resoudre: (() => void) | undefined;
+      const envoiSuspendu = () =>
+        new Promise<void>((r) => {
+          resoudre = r;
+        }) as unknown as ReturnType<typeof emailService.sendEmail>;
+      const espion = vi.spyOn(emailService, "sendEmail").mockImplementation(envoiSuspendu);
+
+      // Adresse déjà prise : la réponse ne doit pas arriver avant l'envoi.
+      const surPrise = request(app)
+        .post("/api/auth/register")
+        .send({ email: existant.email, password: "UnAutreMotDePasse123" })
+        .then((r) => r.status);
+      let termine = false;
+      void surPrise.then(() => {
+        termine = true;
       });
-      const espion = vi
-        .spyOn(emailService, "sendEmail")
-        .mockReturnValue(envoiBloque as unknown as ReturnType<typeof emailService.sendEmail>);
+      // bcrypt hache avant d'en arriver à l'email : on attend que l'envoi soit
+      // réellement engagé plutôt que de parier sur un délai fixe.
+      await attendreEnvoi(() => resoudre);
+      expect(termine).toBe(false);
+      resoudre!();
+      expect(await surPrise).toBe(201);
 
-      const surPrise = await request(app)
+      // Adresse libre : exactement le même comportement.
+      resoudre = undefined;
+      const surLibre = request(app)
         .post("/api/auth/register")
-        .send({ email: existant.email, password: "UnAutreMotDePasse123" });
-      expect(surPrise.status).toBe(201);
-
-      const surLibre = await request(app)
-        .post("/api/auth/register")
-        .send({ email: `libre-${Date.now()}@exemple.fr`, password: "UnAutreMotDePasse123" });
-      expect(surLibre.status).toBe(201);
+        .send({ email: `libre-${Date.now()}@exemple.fr`, password: "UnAutreMotDePasse123" })
+        .then((r) => r.status);
+      let termine2 = false;
+      void surLibre.then(() => {
+        termine2 = true;
+      });
+      await attendreEnvoi(() => resoudre);
+      expect(termine2).toBe(false);
+      resoudre!();
+      expect(await surLibre).toBe(201);
 
       expect(espion).toHaveBeenCalledTimes(2);
-    }, 1000);
+    }, 5000);
   });
 
   describe("POST /api/auth/login", () => {

@@ -55,6 +55,7 @@ export default function ExpensesPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState(currentYearRange());
   const [exportingReport, setExportingReport] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -140,10 +141,41 @@ export default function ExpensesPage() {
     }
   }
 
-  function exportCSV() {
+  /**
+   * Export comptable de TOUTES les dépenses du filtre courant.
+   *
+   * Il sérialisait `expenses`, c'est-à-dire la page affichée. Le gestionnaire
+   * lisait « 147 lignes de dépense » juste au-dessus du bouton, cliquait, et
+   * obtenait un fichier de vingt lignes — sans le moindre avertissement — qu'il
+   * transmettait à son comptable. On va donc chercher les pages suivantes
+   * avant de construire le fichier.
+   */
+  async function exportCSV() {
     if (expenses.length === 0) {
       alert(t("manager.expenses.noExpensesToExport"));
       return;
+    }
+
+    setExportingCsv(true);
+    let toutes: Expense[] = [];
+    try {
+      // Le serveur plafonne une page à 100 lignes (MAX_PAGE_SIZE) : demander
+      // « tout d'un coup » ne marcherait pas, on pagine donc explicitement.
+      const TAILLE = 100;
+      const MAX_PAGES = 50; // 5 000 lignes : au-delà, l'export serveur est le bon outil.
+      for (let p = 1; p <= MAX_PAGES; p += 1) {
+        const res = await api.get<PaginatedResponse<Expense>>("/expenses", {
+          params: { page: p, pageSize: TAILLE, ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {}) },
+        });
+        toutes = toutes.concat(liste<Expense>(res.data, "items"));
+        if (toutes.length >= res.data.total || res.data.items.length === 0) break;
+      }
+    } catch (err) {
+      alert(apiErrorMessage(err));
+      setExportingCsv(false);
+      return;
+    } finally {
+      setExportingCsv(false);
     }
 
     const headers = [
@@ -155,7 +187,7 @@ export default function ExpensesPage() {
       t("manager.expenses.csvHeaders.currency"),
       t("manager.expenses.csvHeaders.notes"),
     ];
-    const rows = expenses.map((e) => [
+    const rows = toutes.map((e) => [
       new Date(e.expenseDate).toLocaleDateString(i18n.language),
       csvEscape(e.property?.title || ""),
       csvEscape(categoryLabels[e.category] || e.category),
@@ -213,9 +245,10 @@ export default function ExpensesPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={exportCSV}
-            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 transition-colors"
+            disabled={exportingCsv}
+            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-60 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 transition-colors"
           >
-            <span>📥</span> {t("manager.expenses.exportCsv")}
+            <span>📥</span> {exportingCsv ? t("manager.expenses.exportingCsv") : t("manager.expenses.exportCsv")}
           </button>
           <button
             onClick={() => setShowModal(true)}

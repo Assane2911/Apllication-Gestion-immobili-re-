@@ -811,6 +811,7 @@ const fr = {
       title: "Dépenses & Rentabilité Réelle",
       subtitle: "Suivi des charges, factures de travaux et calcul automatique du Cash-Flow net",
       exportCsv: "Export Comptable CSV",
+      exportingCsv: "Export en cours...",
       addExpense: "+ Enregistrer une dépense",
       categories: {
         MAINTENANCE: "🛠️ Entretien & Travaux",
@@ -1213,6 +1214,7 @@ const fr = {
       receiptPdf: "Ma Quittance PDF",
       pay: "Payer",
       chooseMethod: "Choisir ce moyen",
+      paying: "Paiement en cours...",
       bankRefPlaceholder: "Référence du virement",
       noInvoices: "Aucune facture pour le moment",
       receiptTitle: "Quittance de loyer - {{period}}",

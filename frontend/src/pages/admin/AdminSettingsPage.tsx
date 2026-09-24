@@ -8,16 +8,24 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [form, setForm] = useState({ iban: "", bic: "" });
 
   useEffect(() => {
-    api.get<PlatformSettings>("/admin/settings").then((res) => {
-      setForm({
-        iban: res.data.iban || "",
-        bic: res.data.bic || "",
-      });
-    });
+    // Même correctif que les paramètres d'agence : un chargement échoué
+    // affichait un RIB vide, qu'un enregistrement aurait écrasé. Celui-ci est
+    // le compte sur lequel les gestionnaires virent leurs abonnements.
+    api
+      .get<PlatformSettings>("/admin/settings")
+      .then((res) => {
+        setForm({
+          iban: res.data.iban || "",
+          bic: res.data.bic || "",
+        });
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(apiErrorMessage(err)));
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -43,6 +51,22 @@ export default function AdminSettingsPage() {
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("admin.settings.subtitle")}</p>
       </div>
 
+      {loadError ? (
+        // Le formulaire n'est PAS rendu tant que l'état initial est inconnu :
+        // c'est ce qui empêche d'enregistrer du vide par-dessus des données
+        // qu'on n'a simplement pas réussi à lire.
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-300 text-sm px-4 py-3 rounded-xl">
+          <p>{loadError}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-2 text-xs font-semibold underline"
+          >
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      ) : (
+      <>
       {success && (
         <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
           <span>✅</span> {t("admin.settings.success")}
@@ -96,6 +120,8 @@ export default function AdminSettingsPage() {
           </div>
         </form>
       </div>
+      </>
+      )}
     </div>
   );
 }

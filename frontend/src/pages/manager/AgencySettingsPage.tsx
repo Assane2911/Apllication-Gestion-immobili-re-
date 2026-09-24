@@ -14,6 +14,7 @@ export default function AgencySettingsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   function handleAccountDeleted() {
@@ -51,18 +52,27 @@ export default function AgencySettingsPage() {
   });
 
   useEffect(() => {
-    api.get<AgencySettings>("/agency").then((res) => {
-      setForm({
-        agencyName: res.data.agencyName || "",
-        siretOrId: res.data.siretOrId || "",
-        address: res.data.address || "",
-        phone: res.data.phone || "",
-        email: res.data.email || "",
-        legalNotice: res.data.legalNotice || "",
-        iban: res.data.iban || "",
-        bic: res.data.bic || "",
-      });
-    });
+    // Sans ce `catch`, un échec de chargement affichait un formulaire VIDE,
+    // indiscernable d'une agence jamais renseignée. Le gestionnaire retapait
+    // les deux champs obligatoires, enregistrait, et le PUT écrasait IBAN,
+    // BIC, adresse et mentions légales par des chaînes vides. Une perte de
+    // données silencieuse, causée par une panne réseau passagère.
+    api
+      .get<AgencySettings>("/agency")
+      .then((res) => {
+        setForm({
+          agencyName: res.data.agencyName || "",
+          siretOrId: res.data.siretOrId || "",
+          address: res.data.address || "",
+          phone: res.data.phone || "",
+          email: res.data.email || "",
+          legalNotice: res.data.legalNotice || "",
+          iban: res.data.iban || "",
+          bic: res.data.bic || "",
+        });
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(apiErrorMessage(err)));
   }, []);
 
   /**
@@ -109,6 +119,22 @@ export default function AgencySettingsPage() {
         </p>
       </div>
 
+      {loadError ? (
+        // Le formulaire n'est PAS rendu tant que l'état initial est inconnu :
+        // c'est ce qui empêche d'enregistrer du vide par-dessus des données
+        // qu'on n'a simplement pas réussi à lire.
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-300 text-sm px-4 py-3 rounded-xl">
+          <p>{loadError}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-2 text-xs font-semibold underline"
+          >
+            {t("common.actions.retry")}
+          </button>
+        </div>
+      ) : (
+      <>
       {success && (
         <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
           <span>✅</span> {t("manager.agencySettings.success")}
@@ -349,6 +375,8 @@ export default function AgencySettingsPage() {
 
       {showDeleteModal && (
         <DeleteAccountModal onSuccess={handleAccountDeleted} onClose={() => setShowDeleteModal(false)} />
+      )}
+      </>
       )}
     </div>
   );

@@ -467,6 +467,27 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   // doivent réussir ensemble : sans transaction, un échec en cours de route
   // pouvait laisser DEUX contrats ACTIFS simultanément sur le même bien.
   const newContract = await db.transaction(async (tx: Transaction) => {
+    // On CLÔT d'abord, et sous condition de statut. Le contrôle plus haut est
+    // une lecture : elle dit ce qu'était le bail il y a un instant, pas ce
+    // qu'il est au moment d'écrire. Deux requêtes simultanées — double-clic,
+    // ou retentative du navigateur sur latence — lisaient donc toutes les deux
+    // « ACTIVE » et créaient chacune leur contrat : deux baux actifs sur le
+    // même bien, et deux jeux de factures pour la même période, donc un loyer
+    // réclamé deux fois par mois au locataire.
+    //
+    // Conditionner la clôture au statut fait trancher la base : la seconde
+    // transaction attend le verrou de ligne, trouve ENDED, ne met rien à jour
+    // et repart en 409. C'est le motif déjà employé par payInvoice et par la
+    // réclamation des rappels.
+    const [ferme] = await tx
+      .update(contracts)
+      .set({ status: "ENDED" })
+      .where(and(eq(contracts.id, existing.id), eq(contracts.status, "ACTIVE")))
+      .returning();
+    if (!ferme) {
+      throw new ApiError(409, "Ce bail vient d'être renouvelé ou clôturé. Rechargez la page avant de réessayer.");
+    }
+
     const [created] = await tx
       .insert(contracts)
       .values({
@@ -481,7 +502,6 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
       })
       .returning();
 
-    await tx.update(contracts).set({ status: "ENDED" }).where(eq(contracts.id, existing.id));
     await generateInvoicesForContract(created, tx);
     return created;
   });

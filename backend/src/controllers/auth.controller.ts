@@ -156,12 +156,9 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
       loginUrl: `${env.frontendUrl}/login`,
       resetUrl: `${env.frontendUrl}/mot-de-passe-oublie`,
     });
-    // Même correctif que forgotPassword/resendVerification : la réponse ne
-    // doit plus dépendre de l'envoi SMTP, dont la durée réseau varie bien
-    // plus que tout calcul local et créerait à elle seule un écart mesurable.
-    sendEmail(existing.email, subject, html).catch((err) => {
-      console.error("[auth] Échec de l'envoi de l'email « compte déjà existant » :", err);
-    });
+    // Attendu, comme dans l'autre branche — voir l'explication au moment de
+    // créer le compte, plus bas.
+    await sendEmail(existing.email, subject, html);
     return res.status(201).json(REPONSE_INSCRIPTION);
   }
 
@@ -192,9 +189,27 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
 
   const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
   const { subject, html } = emailVerificationEmail({ verifyUrl });
-  sendEmail(user.email, subject, html).catch((err) => {
-    console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
-  });
+
+  // Cet `await` revient sur une décision antérieure, et la raison mérite
+  // d'être écrite.
+  //
+  // L'envoi avait été détaché pour que la réponse ne dépende pas de la durée
+  // SMTP — protection contre l'énumération des comptes par le temps de
+  // réponse. Mais sur Vercel, l'exécution peut s'arrêter dès la réponse
+  // envoyée : la promesse en vol est alors perdue. Le compte existait, sans
+  // email de confirmation, et `login` refuse tout gestionnaire dont
+  // `emailVerifiedAt` est nul. Un compte créé puis inutilisable, sans aucune
+  // trace — le `console.error` du `.catch()` ne s'exécutait pas non plus.
+  //
+  // Attendre ici ne rouvre pas la faille d'énumération, parce que les DEUX
+  // chemins envoient exactement un email à la même adresse : adresse déjà
+  // prise ou libre, le travail réseau est le même, donc le temps de réponse
+  // ne distingue plus rien. C'est ce qui différencie cette route de
+  // forgotPassword et resendVerification, où une adresse inconnue n'a
+  // strictement rien à envoyer — là, l'envoi détaché reste nécessaire, et son
+  // risque de perte est acceptable puisque l'utilisateur peut simplement
+  // redemander le lien.
+  await sendEmail(user.email, subject, html);
 
   res.status(201).json(REPONSE_INSCRIPTION);
 });

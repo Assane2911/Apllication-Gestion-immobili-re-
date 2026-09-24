@@ -810,6 +810,7 @@ const pt: TranslationSchema = {
       title: "Despesas & Rentabilidade Real",
       subtitle: "Acompanhamento de encargos, faturas de obras e cálculo automático do cash-flow líquido",
       exportCsv: "Exportação Contabilística CSV",
+      exportingCsv: "A exportar...",
       addExpense: "+ Registar uma despesa",
       categories: {
         MAINTENANCE: "🛠️ Manutenção & Obras",
@@ -1212,6 +1213,7 @@ const pt: TranslationSchema = {
       receiptPdf: "O Meu Recibo PDF",
       pay: "Pagar",
       chooseMethod: "Escolher este método",
+      paying: "A processar...",
       bankRefPlaceholder: "Referência da transferência",
       noInvoices: "Nenhuma fatura por enquanto",
       receiptTitle: "Recibo de renda - {{period}}",
