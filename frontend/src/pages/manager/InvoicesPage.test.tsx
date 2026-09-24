@@ -185,3 +185,60 @@ describe("InvoicesPage (manager)", () => {
     expect(mockedApi.post).not.toHaveBeenCalled();
   });
 });
+
+describe("InvoicesPage — marquer une facture réglée", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  /**
+   * Le geste est SANS RETOUR : `PAID` est un état terminal côté serveur,
+   * `cancelInvoice` refuse une facture réglée, et aucun chemin ne ramène
+   * jamais une facture à `PENDING`. Il déclenche en outre l'envoi immédiat de
+   * la quittance au locataire — une pièce qui atteste du paiement. Le bouton
+   * n'avait pourtant aucune confirmation, alors qu'il est voisin immédiat du
+   * bouton « Relancer ».
+   */
+  it("demande confirmation avant de marquer une facture réglée", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    mockedApi.get.mockResolvedValue(paginated([invoice()]));
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+
+    await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("envoie la requête une fois la confirmation donnée", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    mockedApi.get.mockResolvedValue(paginated([invoice()]));
+    mockedApi.post.mockResolvedValue({ data: {} });
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+
+    await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", { paymentMethod: "BANK_TRANSFER" }));
+  });
+
+  it("nomme le locataire et le montant dans la demande de confirmation", async () => {
+    // Une confirmation qui dirait seulement « Êtes-vous sûr ? » se clique
+    // sans lire. Celle-ci doit rappeler QUI et COMBIEN.
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    mockedApi.get.mockResolvedValue(paginated([invoice()]));
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+
+    await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
+
+    const message = confirmSpy.mock.calls[0][0] as string;
+    expect(message).toContain("Awa Diallo");
+    expect(message).toContain("500");
+  });
+});

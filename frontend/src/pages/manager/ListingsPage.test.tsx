@@ -107,6 +107,29 @@ describe("ListingsPage (manager)", () => {
     await waitFor(() => expect(screen.getByText("Appartement 2 pièces vue mer")).toBeInTheDocument());
   });
 
+  it("propose la devise du pays choisi, sans l'imposer", async () => {
+    // `data/pays.ts` porte la devise de chaque pays : une annonce à Dakar
+    // s'affiche en FCFA sans qu'on ait à y penser. La devise reste modifiable
+    // juste à côté — un bien peut être libellé dans une autre monnaie que
+    // celle du lieu.
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValue(paginated([]));
+
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "+ Nouvelle annonce" }).length).toBeGreaterThan(0));
+    await user.click(screen.getAllByRole("button", { name: "+ Nouvelle annonce" })[0]);
+
+    const devise = screen.getByLabelText("Devise") as HTMLSelectElement;
+    expect(devise.tagName).toBe("SELECT");
+    expect(devise.value).toBe("EUR");
+
+    await user.selectOptions(screen.getByLabelText("Pays"), "SN");
+    expect(devise.value).toBe("XOF");
+
+    await user.selectOptions(devise, "USD");
+    expect(devise.value).toBe("USD");
+  });
+
   it("crée une annonce : envoie un FormData avec les bons champs, y compris featured et l'image", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce(paginated([]));
@@ -119,9 +142,9 @@ describe("ListingsPage (manager)", () => {
 
     await user.type(screen.getByLabelText("Titre"), "Studio meublé centre-ville");
     await user.type(screen.getByLabelText("Prix"), "300");
-    await user.clear(screen.getByLabelText("Devise"));
-    await user.type(screen.getByLabelText("Devise"), "XOF");
     await user.type(screen.getByLabelText("Localisation"), "Abidjan, Cocody");
+    // La devise n'est plus un champ libre mais une liste : choisir la Côte
+    // d'Ivoire propose le franc CFA, ce que le test vérifie plus bas.
     await user.selectOptions(screen.getByLabelText("Pays"), "CI");
     await user.click(screen.getByLabelText("Mettre en avant (à la une de la vitrine)"));
     await user.type(screen.getByLabelText("Description"), "Studio calme et sécurisé.");

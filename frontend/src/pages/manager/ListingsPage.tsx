@@ -10,6 +10,9 @@ import { PropertyCardSkeleton } from "../../components/Skeleton";
 import { useCurrency } from "../../context/currency";
 import type { Listing, ListingStatus, ListingType, PaginatedResponse, PricePeriod } from "../../types";
 import { SUPPORTED_COUNTRY_CODES, countryLabel } from "../../utils/countries";
+import ChampTelephone from "../../components/ChampTelephone";
+import { CURRENCIES } from "../../context/currency";
+import { PAYS } from "../../data/pays";
 
 const LISTING_TYPES: ListingType[] = ["RENT", "SALE", "PROMOTION", "LAND", "OTHER"];
 const PRICE_PERIODS: PricePeriod[] = ["MONTH", "ONE_TIME"];
@@ -36,7 +39,7 @@ const PAGE_SIZE = 20;
 
 export default function ListingsPage() {
   const { t, i18n } = useTranslation();
-  const { formatMoney } = useCurrency();
+  const { formatMoney, availableCurrencies } = useCurrency();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -64,6 +67,23 @@ export default function ListingsPage() {
   }
 
   useEffect(load, [page]);
+
+  /**
+   * Choisir un pays propose sa devise.
+   *
+   * `data/pays.ts` porte déjà la devise de chaque pays : une annonce à Dakar
+   * s'affiche donc en FCFA sans qu'on ait à y penser. La proposition n'est pas
+   * imposée — le gestionnaire reste libre de la changer juste à côté, un bien
+   * pouvant être libellé dans une autre monnaie que celle du lieu.
+   */
+  function choisirPays(code: string) {
+    const pays = PAYS.find((p) => p.code === code);
+    setForm((precedent) => ({
+      ...precedent,
+      country: code,
+      currency: pays && CURRENCIES[pays.devise] ? pays.devise : precedent.currency,
+    }));
+  }
 
   function openCreate() {
     setEditing(null);
@@ -204,7 +224,19 @@ export default function ListingsPage() {
             </div>
             <div>
               <label htmlFor="listing-currency" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.currency")}</label>
-              <input id="listing-currency" required value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              {/*
+                C'était un champ texte libre pré-rempli à « EUR ». Depuis que
+                le serveur valide la devise, y taper « FCFA » au lieu de
+                « XOF » faisait échouer la création avec une erreur 400 : le
+                champ tendait un piège au lieu de proposer un choix.
+              */}
+              <select id="listing-currency" required value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+                {availableCurrencies.map((devise) => (
+                  <option key={devise.code} value={devise.code}>
+                    {devise.name} ({devise.symbol})
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label htmlFor="listing-pricePeriod" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.pricePeriod")}</label>
@@ -228,7 +260,7 @@ export default function ListingsPage() {
             </div>
             <div>
               <label htmlFor="listing-country" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.country")}</label>
-              <select id="listing-country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <select id="listing-country" value={form.country} onChange={(e) => choisirPays(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
                 <option value="">{t("manager.listings.fields.noCountry")}</option>
                 {SUPPORTED_COUNTRY_CODES.map((code) => (
                   <option key={code} value={code}>{countryLabel(code, i18n.language)}</option>
@@ -245,11 +277,16 @@ export default function ListingsPage() {
             </div>
             <div>
               <label htmlFor="listing-contactPhone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.contactPhone")}</label>
-              <input id="listing-contactPhone" value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <ChampTelephone id="listing-contactPhone" value={form.contactPhone} onChange={(contactPhone) => setForm({ ...form, contactPhone })} />
             </div>
             <div>
               <label htmlFor="listing-contactWhatsapp" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.contactWhatsapp")}</label>
-              <input id="listing-contactWhatsapp" value={form.contactWhatsapp} onChange={(e) => setForm({ ...form, contactWhatsapp: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              {/*
+                Celui-ci surtout : WhatsApp n'accepte QUE le format
+                international, et un numéro local sans indicatif était
+                enregistré tel quel, silencieusement inutilisable.
+              */}
+              <ChampTelephone id="listing-contactWhatsapp" value={form.contactWhatsapp} onChange={(contactWhatsapp) => setForm({ ...form, contactWhatsapp })} />
             </div>
             <div>
               <label htmlFor="listing-contactEmail" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.contactEmail")}</label>

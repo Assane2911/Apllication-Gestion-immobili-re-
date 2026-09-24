@@ -805,6 +805,9 @@ const pt: TranslationSchema = {
       remind: "Lembrar",
       sendingReminder: "A enviar...",
       markPaid: "Marcar como pago",
+      markingPaid: "A registar...",
+      confirmMarkPaid:
+        "Marcar a renda de {{name}} como paga ({{amount}})?\n\nO recibo será enviado de imediato por email ao inquilino, e esta ação é DEFINITIVA: uma fatura paga não pode voltar a pendente.",
       noInvoicesForFilter: "Nenhuma fatura para este filtro",
       receiptTitle: "Recibo de renda - {{period}}",
     },

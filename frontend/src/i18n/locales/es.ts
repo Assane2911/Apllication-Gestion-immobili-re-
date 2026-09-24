@@ -807,6 +807,9 @@ const es: TranslationSchema = {
       remind: "Recordar",
       sendingReminder: "Enviando...",
       markPaid: "Marcar como pagada",
+      markingPaid: "Registrando...",
+      confirmMarkPaid:
+        "¿Marcar el alquiler de {{name}} como pagado ({{amount}})?\n\nEl recibo se enviará de inmediato por correo al inquilino, y esta acción es DEFINITIVA: una factura pagada no puede volver a estar pendiente.",
       noInvoicesForFilter: "Ninguna factura para este filtro",
       receiptTitle: "Recibo de alquiler - {{period}}",
     },

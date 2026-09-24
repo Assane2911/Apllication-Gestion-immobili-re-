@@ -21,6 +21,7 @@ export default function InvoicesPage() {
   const [filter, setFilter] = useState<InvoiceStatus | "ALL">("ALL");
   const [sendingMonthly, setSendingMonthly] = useState(false);
   const [sendingSingleId, setSendingSingleId] = useState<string | null>(null);
+  const [marquageEnCours, setMarquageEnCours] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
@@ -55,12 +56,40 @@ export default function InvoicesPage() {
     setPage(1);
   }
 
+  /**
+   * Marquer une facture réglée à la main.
+   *
+   * Le geste est SANS RETOUR, et il l'est par décision : `PAID` est un état
+   * terminal, `cancelInvoice` refuse explicitement une facture réglée, et
+   * aucun chemin du serveur ne ramène jamais une facture à `PENDING`. Il
+   * déclenche en outre l'envoi immédiat de la quittance au locataire — un
+   * document qui, en droit, atteste du paiement. Une fois parti, rien ne le
+   * rappelle.
+   *
+   * Le bouton n'avait pourtant ni confirmation ni verrou, alors que l'envoi
+   * groupé de rappels, juste en dessous, en demande une. Il est de surcroît
+   * voisin immédiat du bouton « Relancer » : le clic de travers est réaliste,
+   * et son prix est un loyer jamais perçu qui compte dans les encaissements,
+   * fausse le bilan fiscal et le compte-rendu du propriétaire, et sort le
+   * locataire des relances.
+   */
   async function markPaid(inv: Invoice) {
+    if (marquageEnCours) return;
+    const locataire = inv.contract?.tenant;
+    const nom = locataire ? `${locataire.firstName} ${locataire.lastName}` : "";
+    if (!window.confirm(t("manager.invoices.confirmMarkPaid", { name: nom, amount: formatMoney(inv.amount, inv.currency) }))) {
+      return;
+    }
+
+    setMarquageEnCours(inv.id);
     try {
       await api.post(`/invoices/${inv.id}/mark-paid`, { paymentMethod: "BANK_TRANSFER" });
+      setError(null);
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
+    } finally {
+      setMarquageEnCours(null);
     }
   }
 
@@ -212,9 +241,10 @@ export default function InvoicesPage() {
                       </button></Bulle>
                       <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                         onClick={() => markPaid(inv)}
-                        className="text-xs bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium transition-colors"
+                        disabled={marquageEnCours === inv.id}
+                        className="text-xs bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 disabled:opacity-60 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium transition-colors"
                       >
-                        {t("manager.invoices.markPaid")}
+                        {marquageEnCours === inv.id ? t("manager.invoices.markingPaid") : t("manager.invoices.markPaid")}
                       </button></Bulle>
                     </>
                   )}
@@ -282,9 +312,10 @@ export default function InvoicesPage() {
                     </button></Bulle>
                     <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                       onClick={() => markPaid(inv)}
-                      className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium"
+                      disabled={marquageEnCours === inv.id}
+                      className="text-xs bg-brand-50 dark:bg-brand-500/10 disabled:opacity-60 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium"
                     >
-                      {t("manager.invoices.markPaid")}
+                      {marquageEnCours === inv.id ? t("manager.invoices.markingPaid") : t("manager.invoices.markPaid")}
                     </button></Bulle>
                   </>
                 )}

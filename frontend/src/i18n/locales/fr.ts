@@ -806,6 +806,9 @@ const fr = {
       remind: "Relancer",
       sendingReminder: "Envoi...",
       markPaid: "Marquer réglée",
+      markingPaid: "Enregistrement...",
+      confirmMarkPaid:
+        "Marquer le loyer de {{name}} comme réglé ({{amount}}) ?\n\nLa quittance partira immédiatement par email au locataire, et cette action est DÉFINITIVE : une facture réglée ne peut plus revenir en attente.",
       noInvoicesForFilter: "Aucune facture pour ce filtre",
       receiptTitle: "Quittance de loyer - {{period}}",
     },

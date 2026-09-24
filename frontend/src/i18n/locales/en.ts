@@ -805,6 +805,9 @@ const en: TranslationSchema = {
       remind: "Send reminder",
       sendingReminder: "Sending...",
       markPaid: "Mark as paid",
+      markingPaid: "Recording...",
+      confirmMarkPaid:
+        "Mark {{name}}'s rent as paid ({{amount}})?\n\nThe receipt will be emailed to the tenant straight away, and this cannot be undone: a paid invoice cannot go back to pending.",
       noInvoicesForFilter: "No invoices for this filter",
       receiptTitle: "Rent receipt - {{period}}",
     },
