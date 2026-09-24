@@ -23,12 +23,19 @@ export const DEVISE_PAR_DEFAUT = "EUR";
  * annonce — invariant verrouillé par un test paramétré
  * (subscription.controller.test.ts) qui échoue si un prix futur le rompt.
  *
- * Les neuf devises proposées par le sélecteur de l'interface
- * (frontend/src/context/currency.ts) sont toutes tarifées : parité pour les
- * marchés à pouvoir d'achat comparable (USD, GBP, CAD, CHF), ajustement à la
- * baisse pour les autres (MAD, STN), au même niveau que le choix déjà fait
- * pour le XOF. Le XAF partage la parité fixe du XOF avec l'euro et le même
- * marché : mêmes montants, délibérément.
+ * TOUTES les devises proposées par le sélecteur de l'interface
+ * (frontend/src/context/currency.ts) doivent être tarifées ici : parité pour
+ * les marchés à pouvoir d'achat comparable (USD, GBP, CAD, CHF), ajustement à
+ * la baisse pour les autres (MAD, STN, GNF, MRU, CDF), au même niveau que le
+ * choix déjà fait pour le XOF. Le XAF partage la parité fixe du XOF avec
+ * l'euro et le même marché : mêmes montants, délibérément.
+ *
+ * RÉGRESSION à ne pas rejouer : GNF, MRU et CDF ont été ajoutées au sélecteur
+ * sans l'être ici. `deviseFacturee` retombant silencieusement sur l'euro, le
+ * gestionnaire voyait ses prix en euros alors que son sélecteur affichait sa
+ * devise — et aurait été RÉELLEMENT débité en euros. Le test de couverture
+ * lit désormais la liste du frontend au lieu de la recopier, de sorte qu'une
+ * devise ajoutée à l'écran et oubliée ici fasse échouer la CI.
  *
  * Attention, tarifer n'est pas encaisser : le paiement par carte refuse toute
  * devise absente de STRIPE_CURRENCIES (voir .env.example et
@@ -50,6 +57,9 @@ const TARIFS: Record<string, Record<string, { monthly: number; annual: number }>
     XOF: { monthly: 5000, annual: 48000 },
     XAF: { monthly: 5000, annual: 48000 },
     STN: { monthly: 179, annual: 1718 },
+    GNF: { monthly: 75000, annual: 720000 },
+    MRU: { monthly: 300, annual: 2880 },
+    CDF: { monthly: 18000, annual: 172800 },
   },
   PRO: {
     EUR: { monthly: 29, annual: 278 },
@@ -61,6 +71,9 @@ const TARIFS: Record<string, Record<string, { monthly: number; annual: number }>
     XOF: { monthly: 15000, annual: 144000 },
     XAF: { monthly: 15000, annual: 144000 },
     STN: { monthly: 579, annual: 5558 },
+    GNF: { monthly: 225000, annual: 2160000 },
+    MRU: { monthly: 900, annual: 8640 },
+    CDF: { monthly: 54000, annual: 518400 },
   },
   ENTERPRISE: {
     EUR: { monthly: 49, annual: 470 },
@@ -72,6 +85,9 @@ const TARIFS: Record<string, Record<string, { monthly: number; annual: number }>
     XOF: { monthly: 25000, annual: 240000 },
     XAF: { monthly: 25000, annual: 240000 },
     STN: { monthly: 979, annual: 9398 },
+    GNF: { monthly: 375000, annual: 3600000 },
+    MRU: { monthly: 1500, annual: 14400 },
+    CDF: { monthly: 90000, annual: 864000 },
   },
 };
 

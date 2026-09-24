@@ -153,6 +153,15 @@ export default function ListingsPage() {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.listings.count", { count: listings.length })}</p>
         </div>
         <div className="flex items-center gap-3">
+          {/*
+            Sans ce lien, le gestionnaire n'avait aucun moyen de voir ce que
+            ses annonces donnent une fois publiées : la vitrine n'était reliée
+            à rien. Publier sans pouvoir regarder le résultat, c'est publier à
+            l'aveugle.
+          */}
+          <Link to="/vitrine" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">
+            {t("manager.listings.viewVitrine")}
+          </Link>
           <Link to="/leads" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">
             {t("manager.listings.viewLeads")}
           </Link>

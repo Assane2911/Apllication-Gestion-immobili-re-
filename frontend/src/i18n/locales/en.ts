@@ -244,6 +244,7 @@ const en: TranslationSchema = {
   landing: {
     nav: {
       features: "Features",
+      vitrine: "Our properties",
       receipts: "Receipts & Signature",
       pricing: "Pricing",
       currencies: "Multi-Currency",
@@ -439,6 +440,7 @@ const en: TranslationSchema = {
     documentModal: {
       subtitle: "Official certified preview & Download / Print",
       print: "Print / Save as PDF",
+      printFailed: "Printing is not available from this window. Use your browser's print menu.",
       loading: "Loading the official document...",
     },
     signatureModal: {
@@ -949,6 +951,7 @@ const en: TranslationSchema = {
       count: "{{count}} listing(s)",
       addBtn: "+ New listing",
       viewLeads: "View incoming leads →",
+      viewVitrine: "View the public showcase",
       formTitleEdit: "Edit listing",
       formTitleNew: "New listing",
       fields: {

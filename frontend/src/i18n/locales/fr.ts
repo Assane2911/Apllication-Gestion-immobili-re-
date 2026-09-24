@@ -242,6 +242,7 @@ const fr = {
   landing: {
     nav: {
       features: "Fonctionnalités",
+      vitrine: "Nos biens",
       receipts: "Quittances & Signature",
       pricing: "Tarifs",
       currencies: "Multi-Devises",
@@ -437,6 +438,7 @@ const fr = {
     documentModal: {
       subtitle: "Aperçu officiel certifié & Téléchargement / Impression",
       print: "Imprimer / Enregistrer PDF",
+      printFailed: "Impression impossible depuis cette fenêtre. Utilisez le menu d'impression de votre navigateur.",
       loading: "Chargement du document officiel...",
     },
     signatureModal: {
@@ -950,6 +952,7 @@ const fr = {
       count: "{{count}} annonce(s)",
       addBtn: "+ Nouvelle annonce",
       viewLeads: "Voir les demandes reçues →",
+      viewVitrine: "Voir la vitrine publique",
       formTitleEdit: "Modifier l'annonce",
       formTitleNew: "Nouvelle annonce",
       fields: {

@@ -17,8 +17,19 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
 
   const isPdf = /\.pdf(\?.*)?$/i.test(fileUrl) || fileUrl.includes("application/pdf");
 
+  /**
+   * Le contrat scanné vit dans le stockage Supabase, donc sur une AUTRE
+   * origine que l'application. `window.open(url).print()` était condamné deux
+   * fois : le navigateur refuse `print()` sur une fenêtre d'une autre origine,
+   * et l'appel partait de toute façon avant que le document soit chargé — il
+   * n'y aurait rien eu à imprimer.
+   *
+   * On ouvre donc l'onglet et on laisse l'utilisateur imprimer depuis son
+   * propre navigateur, ce qu'il sait faire. Un bouton qui ouvre honnêtement le
+   * document vaut mieux qu'un bouton qui prétend imprimer et ne fait rien.
+   */
   function handlePrint() {
-    window.open(fileUrl, "_blank")?.print();
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
   }
 
   return (

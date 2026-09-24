@@ -18,6 +18,7 @@ function TestConsumer() {
       <span data-testid="loading">{String(loading)}</span>
       <span data-testid="user-email">{user?.email ?? "aucun"}</span>
       <span data-testid="tenant-name">{user?.tenantName ?? "aucun"}</span>
+      <span data-testid="devise">{user?.currency ?? "aucune"}</span>
       <button
         type="button"
         data-testid="login-btn"
@@ -129,5 +130,45 @@ describe("AuthProvider", () => {
 
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId("user-email").textContent).toBe("aucun");
+  });
+});
+
+describe("AuthProvider — la devise du profil survit au rafraîchissement", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    localStorage.clear();
+  });
+
+  /**
+   * `refreshUser` reconstruisait l'objet utilisateur champ par champ et
+   * OUBLIAIT `currency`, alors que /auth/me le renvoie. `AuthUser.currency`
+   * étant optionnel, TypeScript ne disait rien.
+   *
+   * Conséquence : au premier rafraîchissement, la devise disparaissait de
+   * l'objet ET du stockage local réécrit dans la foulée. La synchronisation
+   * profil -> affichage de CurrencyContext (`if (user?.currency && ...)`)
+   * devenait définitivement morte, et plus rien ne pouvait rétablir le choix
+   * depuis le serveur : sur un autre appareil ou après un vidage de cache, le
+   * gestionnaire retombait sur l'euro sans recours.
+   */
+  it("conserve la devise renvoyée par le serveur", async () => {
+    localStorage.setItem("token", "jeton-valide");
+    mockedApi.get.mockResolvedValue({
+      data: {
+        id: "u1",
+        email: "alice@test.local",
+        role: "MANAGER",
+        currency: "GNF",
+        hasPassword: true,
+        subscription: null,
+      },
+    });
+
+    renderAuth();
+
+    await waitFor(() => expect(screen.getByTestId("user-email").textContent).toBe("alice@test.local"));
+    expect(screen.getByTestId("devise").textContent).toBe("GNF");
+    expect(JSON.parse(localStorage.getItem("user")!).currency).toBe("GNF");
   });
 });

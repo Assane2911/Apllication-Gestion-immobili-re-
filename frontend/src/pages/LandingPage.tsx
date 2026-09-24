@@ -228,6 +228,19 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-300">
+            {/*
+              La vitrine publique existait — route, page, API — mais AUCUN
+              écran n'y menait : `/vitrine` n'apparaissait qu'une fois dans
+              tout le frontend, dans sa propre déclaration de route. Les
+              annonces étaient donc publiées et servies correctement, et
+              simplement invisibles pour qui ne tapait pas l'adresse à la main.
+            */}
+            <Link
+              to="/vitrine"
+              className="relative hover:text-white transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-brand-400 after:transition-all after:duration-300 hover:after:w-full"
+            >
+              {t("landing.nav.vitrine")}
+            </Link>
             {[
               { href: "#features", label: t("landing.nav.features") },
               { href: "#pdf", label: t("landing.nav.receipts") },
@@ -723,6 +736,9 @@ export default function LandingPage() {
         <p>{t("landing.footer.rights")}</p>
         <p className="mt-2">{t("landing.footer.tagline")}</p>
         <div className="mt-4 flex items-center justify-center gap-4">
+          <Link to="/vitrine" className="hover:text-slate-300 transition-colors">
+            {t("landing.nav.vitrine")}
+          </Link>
           <Link to="/mentions-legales" className="hover:text-slate-300 transition-colors">
             Mentions légales
           </Link>

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -16,6 +18,17 @@ import {
   devisesTarifees,
   tarifPourDevise,
 } from "./subscription.controller";
+
+
+const CHEMIN_SELECTEUR = path.resolve(__dirname, "../../../frontend/src/context/currency.ts");
+
+/** Les codes réellement proposés par le sélecteur de l'interface. */
+function devisesDuSelecteurFrontend(): string[] {
+  const source = fs.readFileSync(CHEMIN_SELECTEUR, "utf-8");
+  const bloc = source.match(/export const CURRENCIES[^{]*\{([\s\S]*?)\n\};/);
+  if (!bloc) throw new Error(`Bloc CURRENCIES introuvable dans ${CHEMIN_SELECTEUR}`);
+  return Array.from(bloc[1].matchAll(/^\s{2}([A-Z]{3}):\s*\{/gm)).map((m) => m[1]);
+}
 
 describe("GET /api/subscription/plans", () => {
   it("est accessible sans authentification et renvoie les 3 formules", async () => {
@@ -47,12 +60,15 @@ describe("GET /api/subscription/plans", () => {
   });
 
   it("tarife chacune des devises proposées par le sélecteur de l'interface", async () => {
-    // Le sélecteur de devise du frontend (frontend/src/context/currency.ts)
-    // propose ces neuf codes. Une devise proposée à l'écran mais absente de
-    // TARIFS retomberait sur l'euro : l'utilisateur choisirait une devise et
-    // verrait ses prix dans une autre. Ce test échoue si l'une d'elles perd
-    // sa tarification.
-    const devisesDuSelecteur = ["EUR", "USD", "XOF", "XAF", "STN", "GBP", "CAD", "CHF", "MAD"];
+    // La liste était écrite à la main ici, et c'est exactement ce qui a permis
+    // au trou de s'ouvrir : trois devises ont été ajoutées au sélecteur sans
+    // l'être à TARIFS, et ce test — qui ne connaissait que les neuf anciennes
+    // — est resté vert pendant que l'utilisateur voyait ses prix en euros.
+    // On lit donc le fichier du frontend, comme le fait déjà
+    // utils/devises.test.ts. Une devise proposée à l'écran mais non tarifée
+    // fait désormais échouer ce test le jour où elle est ajoutée.
+    const devisesDuSelecteur = devisesDuSelecteurFrontend();
+    expect(devisesDuSelecteur.length).toBeGreaterThan(0);
 
     for (const devise of devisesDuSelecteur) {
       const res = await request(app).get(`/api/subscription/plans?currency=${devise}`);

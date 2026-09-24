@@ -244,6 +244,7 @@ const pt: TranslationSchema = {
   landing: {
     nav: {
       features: "Funcionalidades",
+      vitrine: "Os nossos imóveis",
       receipts: "Recibos & Assinatura",
       pricing: "Preços",
       currencies: "Multi-Moedas",
@@ -439,6 +440,7 @@ const pt: TranslationSchema = {
     documentModal: {
       subtitle: "Pré-visualização oficial certificada & Descarregamento / Impressão",
       print: "Imprimir / Guardar como PDF",
+      printFailed: "Não é possível imprimir a partir desta janela. Utilize o menu de impressão do seu navegador.",
       loading: "A carregar o documento oficial...",
     },
     signatureModal: {
@@ -949,6 +951,7 @@ const pt: TranslationSchema = {
       count: "{{count}} anúncio(s)",
       addBtn: "+ Novo anúncio",
       viewLeads: "Ver pedidos recebidos →",
+      viewVitrine: "Ver a montra pública",
       formTitleEdit: "Editar anúncio",
       formTitleNew: "Novo anúncio",
       fields: {

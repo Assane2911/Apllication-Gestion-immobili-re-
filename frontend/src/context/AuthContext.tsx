@@ -21,6 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: data.email,
         role: data.role,
         hasPassword: data.hasPassword,
+        // Champ facultatif dans AuthUser, donc son oubli ne se voyait pas à la
+        // compilation : la devise disparaissait de l'objet ET du stockage
+        // local réécrit juste en dessous, rendant morte la synchronisation
+        // profil -> affichage de CurrencyContext. Plus rien ne pouvait alors
+        // rétablir le choix depuis le serveur.
+        currency: data.currency,
         tenantId: data.tenant?.id ?? null,
         tenantName: data.tenant ? `${data.tenant.firstName} ${data.tenant.lastName}` : null,
         ownerId: data.owner?.id ?? null,

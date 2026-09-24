@@ -37,9 +37,36 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
       });
   }, [docUrl]);
 
+  const [erreurImpression, setErreurImpression] = useState(false);
+
+  /**
+   * Impression du document affiché dans l'iframe.
+   *
+   * L'iframe portait `sandbox=""`. Une chaîne vide n'est pas « pas de bac à
+   * sable » : c'est TOUTES les restrictions activées. L'iframe recevait donc
+   * une origine opaque, depuis laquelle `contentWindow.print` n'existe
+   * simplement pas — la liste blanche cross-origin ne l'expose pas. L'appel
+   * levait, rien ne l'attrapait, et le clic ne produisait absolument rien :
+   * ni impression, ni message. Le document, lui, s'affichait parfaitement,
+   * ce qui rendait la panne incompréhensible.
+   *
+   * `allow-same-origin allow-modals` rétablit l'accès et la boîte de dialogue
+   * d'impression. `allow-scripts` reste volontairement absent : le document
+   * vient de notre propre serveur, il est statique, et sans cette permission
+   * aucun script ne peut s'exécuter dans l'iframe quoi qu'il contienne.
+   *
+   * Le try/catch n'est pas de la prudence décorative : c'est ce qui manquait
+   * pour que la panne se voie au lieu de se taire.
+   */
   function handlePrint() {
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.print();
+    try {
+      const fenetre = iframeRef.current?.contentWindow;
+      if (!fenetre) throw new Error("Document non chargé");
+      fenetre.focus();
+      fenetre.print();
+      setErreurImpression(false);
+    } catch {
+      setErreurImpression(true);
     }
   }
 
@@ -57,7 +84,11 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t("components.documentModal.subtitle")}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {erreurImpression
+                ? t("components.documentModal.printFailed")
+                : t("components.documentModal.subtitle")}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -92,7 +123,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
               ref={iframeRef}
               srcDoc={htmlContent}
               title={title}
-              sandbox=""
+              sandbox="allow-same-origin allow-modals"
               className="w-full h-full bg-white rounded-xl shadow border border-slate-200 dark:border-slate-700"
             />
           )}
