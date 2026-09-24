@@ -5,7 +5,7 @@ import { db } from "../db/client";
 import { contracts, inspections, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertOwnership } from "../utils/authorization";
+import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 // État des lieux volontairement simplifié à un triplet nom/état/notes par
@@ -96,13 +96,13 @@ export const getInspection = asyncHandler(async (req: Request, res: Response) =>
 
 /** Pour le locataire : ses propres états des lieux (liste à plat, comme myContracts). */
 export const myInspections = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
+  const fiche = await chargerLocataireDuCompte(req);
 
   const rows = await db
     .select({ inspection: inspections, property: properties })
     .from(inspections)
     .innerJoin(properties, eq(inspections.propertyId, properties.id))
-    .where(eq(inspections.tenantId, req.user.tenantId))
+    .where(eq(inspections.tenantId, fiche.id))
     .orderBy(desc(inspections.createdAt));
 
   res.json(rows.map((r: { inspection: typeof inspections.$inferSelect; property: typeof properties.$inferSelect }) => ({
@@ -218,7 +218,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
   }
 
   if (req.user.role === "TENANT") {
-    if (inspection.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
+    if (inspection.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
     const [updated] = await db
       .update(inspections)
       .set({ signedByTenantAt: new Date(), tenantSignatureUrl: signatureDataUrl })

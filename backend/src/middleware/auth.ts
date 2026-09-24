@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { users } from "../db/schema";
+import { tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 
 export interface AuthPayload {
@@ -31,6 +31,13 @@ declare global {
        * fois dans la même requête.
        */
       compteCourant?: typeof users.$inferSelect;
+      /**
+       * Fiche locataire RATTACHÉE AU COMPTE, résolue à la demande par
+       * ficheLocataireDuCompte et mise en cache ici : plusieurs contrôles
+       * peuvent la consulter dans une même requête, et `null` est une réponse
+       * aussi valable qu'une fiche (un gestionnaire n'en a pas).
+       */
+      ficheLocataire?: typeof tenants.$inferSelect | null;
     }
   }
 }

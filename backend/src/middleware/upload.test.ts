@@ -10,6 +10,7 @@ import {
   fakeJpegBuffer,
   tokenFor,
   createPortalUser,
+  tokenLocataire,
 } from "../test/authHelpers";
 import { MAX_UPLOAD_SIZE_MB } from "./upload";
 
@@ -26,7 +27,7 @@ async function tenantWithContract() {
   const property = await createProperty(manager.id);
   const tenant = await createTenant(manager.id);
   const contract = await createContract(property.id, tenant.id);
-  return { contract, token: authHeader(tokenFor(await createPortalUser("TENANT"), tenant.id)) };
+  return { contract, token: authHeader(await tokenLocataire(tenant.id)) };
 }
 
 function postIssueWith(contractId: string, token: Record<string, string>) {

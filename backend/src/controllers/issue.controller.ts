@@ -8,7 +8,7 @@ import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertAccesLocataireOuGestionnaire, assertOwnership } from "../utils/authorization";
+import { assertAccesLocataireOuGestionnaire, assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
@@ -153,13 +153,12 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
 
 /** Signalements du locataire connecté (portail locataire). */
 export const myIssues = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
   const rows = await db
     .select({ issue: issueReports, contract: contracts, property: properties })
     .from(issueReports)
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(issueReports.tenantId, req.user.tenantId))
+    .where(eq(issueReports.tenantId, (await chargerLocataireDuCompte(req)).id))
     .orderBy(desc(issueReports.createdAt));
 
   const signed = await Promise.all(
@@ -179,13 +178,12 @@ const createIssueSchema = z.object({
 
 /** Le locataire connecté signale un problème avec une photo prise/uploadée. */
 export const createIssue = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
   const body = createIssueSchema.parse(req.body);
   if (!req.file) throw new ApiError(400, "Une photo du problème est requise");
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
-  if (contract.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
+  if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
   if (contract.status !== "ACTIVE") {
     throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif");
   }
@@ -197,7 +195,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
     .insert(issueReports)
     .values({
       contractId: body.contractId,
-      tenantId: req.user.tenantId,
+      tenantId: (await chargerLocataireDuCompte(req)).id,
       title: body.title,
       description: body.description,
       photoUrl,
@@ -222,7 +220,7 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    issue.tenantId === req.user.tenantId,
+    issue.tenantId === (await idLocataireDuCompte(req)),
     row.property.managerId === req.user.userId
   );
 

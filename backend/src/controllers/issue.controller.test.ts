@@ -12,11 +12,17 @@ import {
   fakeJpegBuffer,
   createPortalUser,
   tokenFor,
+  tokenLocataire,
 } from "../test/authHelpers";
 
 // Le compte est créé en base : depuis le contrôle de révocation, un jeton
 // forgé sur un identifiant inventé est refusé en 401 (voir authenticate).
 async function tenantToken(tenantId: string) {
+  return authHeader(await tokenLocataire(tenantId));
+}
+
+/** Un compte locataire qui n'est rattaché à AUCUNE fiche : l'intrus. */
+async function tokenIntrus(tenantId: string) {
   return authHeader(tokenFor(await createPortalUser("TENANT"), tenantId));
 }
 

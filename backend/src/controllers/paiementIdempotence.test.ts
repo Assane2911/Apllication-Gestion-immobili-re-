@@ -13,6 +13,7 @@ import {
   createProperty,
   createTenant,
   tokenFor,
+  tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -49,7 +50,7 @@ describe("payInvoice — idempotence PayDunya", () => {
     // PAYDUNYA passe le contrôle de devise de indisponibilite() et parte
     // réellement en réseau au lieu d'être refusé en amont.
     const invoice = await createInvoice(contract.id, { currency: "XOF", amount: 25000 });
-    const tenantToken = tokenFor(await createPortalUser("TENANT"), tenant.id);
+    const tenantToken = await tokenLocataire(tenant.id);
 
     env.payments.demoMode = false;
     env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk" };

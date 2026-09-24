@@ -12,6 +12,7 @@ import {
   createProperty,
   createTenant,
   tokenFor,
+  createPortalUser,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -249,13 +250,15 @@ describe("GET /api/crg/mine (propriétaire)", () => {
   });
 
   it("refuse l'accès à un compte sans fiche propriétaire associée", async () => {
-    const manager = await createManager();
-    const owner = await createOwner(manager.id);
-    const ownerUser = await createOwnerPortalUser(owner);
+    // `createOwnerPortalUser` RATTACHE le compte à la fiche : ce compte-là en
+    // a bien une, et le jeton sans ownerId ne change plus rien puisque c'est
+    // la base qui tranche. Le cas à éconduire est donc celui d'un compte
+    // OWNER que rien ne rattache.
+    const orphelin = await createPortalUser("OWNER");
 
-    const res = await request(app).get("/api/crg/mine").set(authHeader(tokenFor(ownerUser, null, null)));
+    const res = await request(app).get("/api/crg/mine").set(authHeader(tokenFor(orphelin, null, null)));
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
   });
 
   it("refuse l'accès à un gestionnaire", async () => {

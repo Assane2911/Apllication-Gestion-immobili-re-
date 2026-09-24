@@ -14,6 +14,7 @@ import {
   createTenant,
   tokenFor,
   createPortalUser,
+  tokenProprietaire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -321,7 +322,7 @@ describe("GET /api/owners/mine/dashboard — Espace propriétaire (résumé fina
 
     const res = await request(app)
       .get("/api/owners/mine/dashboard")
-      .set(authHeader(tokenFor(await createPortalUser("OWNER"), null, owner.id)));
+      .set(authHeader(await tokenProprietaire(owner)));
 
     expect(res.status).toBe(200);
     expect(res.body.ownerName).toBe(`${owner.firstName} ${owner.lastName}`);
@@ -339,7 +340,7 @@ describe("GET /api/owners/mine/dashboard — Espace propriétaire (résumé fina
 
     const res = await request(app)
       .get("/api/owners/mine/dashboard")
-      .set(authHeader(tokenFor(await createPortalUser("OWNER"), null, owner.id)));
+      .set(authHeader(await tokenProprietaire(owner)));
 
     expect(res.status).toBe(200);
     expect(res.body.properties).toHaveLength(0);
@@ -353,11 +354,17 @@ describe("GET /api/owners/mine/dashboard — Espace propriétaire (résumé fina
     expect(res.status).toBe(403);
   });
 
-  it("refuse si le token OWNER ne porte aucun ownerId", async () => {
+  it("refuse un compte OWNER qui n'est rattaché à aucune fiche", async () => {
+    // La question a changé de nature. Elle portait sur le JETON — « porte-t-il
+    // un ownerId ? » — alors que ce qui compte est le COMPTE : une fiche lui
+    // est-elle rattachée ? Un jeton sans ownerId dont le compte a bien une
+    // fiche est désormais servi (voir portailProprietaire.test.ts), et c'est
+    // celui-ci, sans fiche, qui doit être éconduit. 403 et non 404 : le
+    // demandeur est authentifié et il n'y a aucune existence à dissimuler.
     const res = await request(app)
       .get("/api/owners/mine/dashboard")
       .set(authHeader(tokenFor(await createPortalUser("OWNER"))));
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
   });
 });

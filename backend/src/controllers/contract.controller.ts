@@ -10,7 +10,7 @@ import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
-import { assertOwnership } from "../utils/authorization";
+import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { deviseSchema } from "../utils/devises";
 
 const contractSchema = z.object({
@@ -397,12 +397,11 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
 
 /** Contrat(s) actif(s) du locataire connecté (portail locataire). */
 export const myContracts = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
   const rows = await db
     .select({ contract: contracts, property: properties })
     .from(contracts)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(contracts.tenantId, req.user.tenantId))
+    .where(eq(contracts.tenantId, (await chargerLocataireDuCompte(req)).id))
     .orderBy(desc(contracts.createdAt));
 
   if (rows.length === 0) return res.json([]);
@@ -541,7 +540,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
   if (req.user.role === "TENANT") {
-    if (contract.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
+    if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
     const [updated] = await db
       .update(contracts)
       .set({

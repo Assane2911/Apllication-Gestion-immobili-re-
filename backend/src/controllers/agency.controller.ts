@@ -5,6 +5,7 @@ import { db } from "../db/client";
 import { agencySettings, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bicSchema, ibanSchema } from "../utils/iban";
+import { chargerLocataireDuCompte } from "../utils/authorization";
 
 export const getAgencySettings = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -84,12 +85,11 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
  * envoyer son virement, pas d'accéder aux réglages de l'agence.
  */
 export const getAgencyBankInfoForTenant = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
 
   const [tenant] = await db
     .select({ managerId: tenants.managerId })
     .from(tenants)
-    .where(eq(tenants.id, req.user.tenantId));
+    .where(eq(tenants.id, (await chargerLocataireDuCompte(req)).id));
   if (!tenant) throw new ApiError(404, "Locataire introuvable");
 
   const [settings] = await db

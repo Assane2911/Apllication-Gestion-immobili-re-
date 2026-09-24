@@ -5,6 +5,7 @@ import { app } from "../app";
 import { agencySettings } from "../db/schema";
 import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor,
   createPortalUser,
+  tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -185,7 +186,7 @@ describe("GET /api/agency/mine (portail locataire)", () => {
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
     await createContract(property.id, tenant.id);
-    const tenantToken = tokenFor(await createPortalUser("TENANT"), tenant.id);
+    const tenantToken = await tokenLocataire(tenant.id);
     return { manager, tenant, tenantToken };
   }
 

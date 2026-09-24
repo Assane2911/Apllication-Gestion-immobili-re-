@@ -12,6 +12,7 @@ import {
   createTenant,
   tokenFor,
   createPortalUser,
+  tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -438,7 +439,7 @@ describe("POST /api/contracts/:id/sign", () => {
 
     const res = await request(app)
       .post(`/api/contracts/${contract.id}/sign`)
-      .set(authHeader(tokenFor(await createPortalUser("TENANT"), tenant.id)))
+      .set(authHeader(await tokenLocataire(tenant.id)))
       .send({ signatureDataUrl: SIGNATURE_DATA_URL });
 
     expect(res.status).toBe(200);
@@ -499,7 +500,7 @@ describe("POST /api/contracts/:id/sign", () => {
 
     const res = await request(app)
       .post(`/api/contracts/${contract.id}/sign`)
-      .set(authHeader(tokenFor(await createPortalUser("TENANT"), autreTenant.id)))
+      .set(authHeader(await tokenLocataire(autreTenant.id)))
       .send({ signatureDataUrl: SIGNATURE_DATA_URL });
 
     expect(res.status).toBe(403);

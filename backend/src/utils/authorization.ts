@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { Request } from "express";
 import { db } from "../db/client";
-import { owners, users } from "../db/schema";
+import { owners, tenants, users } from "../db/schema";
 import { AuthPayload } from "../middleware/auth";
 import { ApiError } from "./asyncHandler";
 
@@ -132,4 +132,48 @@ export async function chargerProprietaireDuCompte(req: Request) {
     throw new ApiError(403, "Aucune fiche propriétaire n'est rattachée à ce compte.");
   }
   return owner;
+}
+
+/**
+ * Fiche locataire rattachée au compte connecté, ou `null`.
+ *
+ * Le jeton porte un `tenantId`, et une douzaine de routes du portail s'en
+ * contentaient. Il est signé, donc infalsifiable — mais il reste valable sept
+ * jours, et `tokenVersion` n'est pas incrémenté quand une agence réaffecte ou
+ * détache une fiche. Son porteur continuait de lire baux, quittances,
+ * factures et messagerie de la fiche visée, fût-elle celle d'une autre
+ * agence.
+ *
+ * `null` plutôt qu'une erreur : plusieurs routes servent AUSSI le
+ * gestionnaire, qui n'a évidemment pas de fiche locataire. Le résultat est mis
+ * en cache sur la requête, ces routes pouvant le consulter deux fois.
+ */
+export async function ficheLocataireDuCompte(req: Request) {
+  if (req.ficheLocataire !== undefined) return req.ficheLocataire;
+
+  if (req.user?.role !== "TENANT") {
+    req.ficheLocataire = null;
+    return null;
+  }
+
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.userId, req.user.userId));
+  req.ficheLocataire = tenant ?? null;
+  return req.ficheLocataire;
+}
+
+/** Même chose, pour les routes réservées aux locataires : l'absence est un refus. */
+export async function chargerLocataireDuCompte(req: Request) {
+  const fiche = await ficheLocataireDuCompte(req);
+  if (!fiche) {
+    throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
+  }
+  return fiche;
+}
+
+/**
+ * Identifiant de la fiche du compte, ou `null`. Pour les contrôles de la forme
+ * `ressource.tenantId === <moi>` sur les routes ouvertes aux deux rôles.
+ */
+export async function idLocataireDuCompte(req: Request): Promise<string | null> {
+  return (await ficheLocataireDuCompte(req))?.id ?? null;
 }

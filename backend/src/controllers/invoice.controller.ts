@@ -10,6 +10,7 @@ import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../servi
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 
 function isInvoiceStatus(value: unknown): value is (typeof invoiceStatusEnum.enumValues)[number] {
   return typeof value === "string" && (invoiceStatusEnum.enumValues as readonly string[]).includes(value);
@@ -232,13 +233,12 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
 
 /** Factures du locataire connecté (portail locataire). */
 export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
   const rows = await db
     .select({ invoice: invoices, contract: contracts, property: properties })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(contracts.tenantId, req.user.tenantId))
+    .where(eq(contracts.tenantId, (await chargerLocataireDuCompte(req)).id))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
 
   res.json(
@@ -259,7 +259,6 @@ const paySchema = z.object({
 
 /** Le locataire connecté initie le paiement d'une de ses factures. */
 export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.tenantId) throw new ApiError(403, "Réservé aux locataires");
   const body = paySchema.parse(req.body);
 
   const [row] = await db
@@ -270,7 +269,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(invoices.id, req.params.id));
 
   if (!row) throw new ApiError(404, "Facture introuvable");
-  if (row.contract.tenantId !== req.user.tenantId) throw new ApiError(403, "Accès refusé");
+  if (row.contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
   if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée");
   if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée");
 

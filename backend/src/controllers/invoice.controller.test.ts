@@ -12,6 +12,7 @@ import {
   createProperty,
   createTenant,
   tokenFor,
+  tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -236,7 +237,7 @@ describe("GET /api/invoices — isolation entre gestionnaires", () => {
 describe("POST /api/invoices/:id/pay (portail locataire)", () => {
   it("confirme instantanément un paiement en mode DEMO", async () => {
     const { tenant, invoice } = await setupManagerWithInvoice();
-    const tenantToken = tokenFor(await createPortalUser("TENANT"), tenant.id);
+    const tenantToken = await tokenLocataire(tenant.id);
 
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/pay`)
@@ -252,7 +253,7 @@ describe("POST /api/invoices/:id/pay (portail locataire)", () => {
   it("refuse qu'un locataire paie la facture d'un autre locataire", async () => {
     const { invoice } = await setupManagerWithInvoice();
     const { tenant: otherTenant } = await setupManagerWithInvoice();
-    const otherTenantToken = tokenFor(await createPortalUser("TENANT"), otherTenant.id);
+    const otherTenantToken = await tokenLocataire(otherTenant.id);
 
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/pay`)
@@ -264,7 +265,7 @@ describe("POST /api/invoices/:id/pay (portail locataire)", () => {
 
   it("refuse de payer une facture déjà réglée", async () => {
     const { tenant, invoice } = await setupManagerWithInvoice({ status: "PAID", paidAt: new Date() });
-    const tenantToken = tokenFor(await createPortalUser("TENANT"), tenant.id);
+    const tenantToken = await tokenLocataire(tenant.id);
 
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/pay`)

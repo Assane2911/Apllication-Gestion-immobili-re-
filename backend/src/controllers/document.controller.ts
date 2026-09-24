@@ -7,7 +7,7 @@ import { loadInspectionForExport } from "./inspection.controller";
 import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
+import { assertAccesLocataireOuGestionnaire, idLocataireDuCompte } from "../utils/authorization";
 import { nomAvecCivilite } from "../utils/nom";
 
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
@@ -29,7 +29,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
   // tout autre rôle, y compris ADMIN, est refusé par défaut.
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === req.user.tenantId,
+    contract.tenantId === (await idLocataireDuCompte(req)),
     property?.managerId === req.user.userId
   );
 
@@ -103,7 +103,7 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   // pouvait lire n'importe quel bail de la plateforme.
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === req.user.tenantId,
+    contract.tenantId === (await idLocataireDuCompte(req)),
     property?.managerId === req.user.userId
   );
 
@@ -137,7 +137,7 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
   // concerné et le gestionnaire propriétaire du bien y ont accès.
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    inspection.tenantId === req.user.tenantId,
+    inspection.tenantId === (await idLocataireDuCompte(req)),
     inspection.managerId === req.user.userId
   );
 
@@ -188,7 +188,7 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === req.user.tenantId,
+    contract.tenantId === (await idLocataireDuCompte(req)),
     property?.managerId === req.user.userId
   );
 

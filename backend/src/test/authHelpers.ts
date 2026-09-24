@@ -290,3 +290,30 @@ export async function createOwnerPortalUser(owner: { id: string; email: string }
   await testDb.update(owners).set({ userId: user.id }).where(eq(owners.id, owner.id));
   return user;
 }
+
+/**
+ * Jeton d'un locataire RÉELLEMENT rattaché à la fiche.
+ *
+ * Les tests forgeaient jusqu'ici un jeton portant un `tenantId` sur un compte
+ * qui n'était lié à rien. Depuis que le portail résout la fiche par le compte
+ * et non par le jeton (voir chargerLocataireDuCompte), c'est exactement la
+ * situation qu'il refuse — et c'est tant mieux : un test qui met en scène un
+ * cas impossible en production ne prouve rien.
+ *
+ * Pour le cas inverse, celui de l'intrus, on garde délibérément un compte non
+ * rattaché : c'est lui que le service doit éconduire.
+ */
+export async function tokenLocataire(tenantId: string) {
+  const compte = await createTenantPortalUser({ id: tenantId });
+  return tokenFor(compte, tenantId);
+}
+
+/**
+ * Jeton d'un propriétaire RÉELLEMENT rattaché à la fiche — pendant de
+ * tokenLocataire, pour la même raison : le portail propriétaire résout
+ * désormais la fiche par le compte.
+ */
+export async function tokenProprietaire(owner: { id: string; email: string }) {
+  const compte = await createOwnerPortalUser(owner);
+  return tokenFor(compte, null, owner.id);
+}

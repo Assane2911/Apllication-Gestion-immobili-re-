@@ -6,14 +6,13 @@ import { db } from "../db/client";
 import { contracts, messages, properties, tenants, users } from "../db/schema";
 import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
+import { assertAccesLocataireOuGestionnaire, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 
 export const listConversations = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
 
   let contractList = [];
   if (req.user.role === "TENANT") {
-    if (!req.user.tenantId) throw new ApiError(403, "Profil locataire manquant");
     contractList = await db
       .select({
         contract: contracts,
@@ -23,7 +22,7 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
       .from(contracts)
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
-      .where(eq(contracts.tenantId, req.user.tenantId));
+      .where(eq(contracts.tenantId, (await chargerLocataireDuCompte(req)).id));
   } else if (req.user.role === "MANAGER") {
     contractList = await db
       .select({
@@ -94,7 +93,7 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.contract.tenantId === req.user.tenantId,
+    contract.contract.tenantId === (await idLocataireDuCompte(req)),
     contract.property.managerId === req.user.userId
   );
 
@@ -152,7 +151,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === req.user.tenantId,
+    contract.tenantId === (await idLocataireDuCompte(req)),
     row.property.managerId === req.user.userId
   );
 
