@@ -5,6 +5,7 @@ import { db } from "../db/client";
 import { agencySettings, contracts, expenses, invoices, owners, properties } from "../db/schema";
 import { generateCrgHtml } from "../services/pdf.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { nomAvecCivilite } from "../utils/nom";
 
 /**
  * Module "CRG" (Compte-Rendu de Gestion) : synthèse mensuelle par
@@ -211,7 +212,7 @@ async function computeCrg(owner: OwnerRow, month: number, year: number): Promise
 
   return {
     ownerId: owner.id,
-    ownerName: `${owner.firstName} ${owner.lastName}`,
+    ownerName: nomAvecCivilite(owner),
     ownerCompanyName: owner.companyName,
     iban: owner.iban,
     bic: owner.bic,

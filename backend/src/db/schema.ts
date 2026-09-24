@@ -158,6 +158,16 @@ export const owners = pgTable(
     managerId: text("manager_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // Civilité, pour que les documents officiels s'adressent à la personne
+    // — « Monsieur ALIOU THIAM » sur une quittance, un bail, une mise en
+    // demeure. On enregistre « M » ou « MME », jamais le libellé : c'est une
+    // forme d'adresse, et le libellé se traduit à l'affichage.
+    //
+    // Facultative et volontairement distincte du sexe, qui ne sert à rien ici
+    // et que la minimisation des données proscrirait (RGPD art. 5.1.c) : une
+    // société propriétaire n'a pas de civilité, et une personne peut refuser
+    // d'en donner une sans que le bail en pâtisse.
+    civility: text("civility"),
     firstName: text("first_name").notNull(),
     lastName: text("last_name").notNull(),
     // Raison sociale, si le propriétaire est une société (ex: SCI) plutôt qu'un particulier.
@@ -297,6 +307,16 @@ export const tenants = pgTable(
     managerId: text("manager_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // Civilité, pour que les documents officiels s'adressent à la personne
+    // — « Monsieur ALIOU THIAM » sur une quittance, un bail, une mise en
+    // demeure. On enregistre « M » ou « MME », jamais le libellé : c'est une
+    // forme d'adresse, et le libellé se traduit à l'affichage.
+    //
+    // Facultative et volontairement distincte du sexe, qui ne sert à rien ici
+    // et que la minimisation des données proscrirait (RGPD art. 5.1.c) : une
+    // société propriétaire n'a pas de civilité, et une personne peut refuser
+    // d'en donner une sans que le bail en pâtisse.
+    civility: text("civility"),
     firstName: text("first_name").notNull(),
     lastName: text("last_name").notNull(),
     phone: text("phone").notNull(),

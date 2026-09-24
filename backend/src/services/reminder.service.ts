@@ -9,6 +9,7 @@ import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../uti
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonReminderWhatsappVariables } from "./whatsapp.service";
+import { nomAvecCivilite, nomComplet } from "../utils/nom";
 
 /**
  * Recherche les contrats ACTIFS dont la date de fin approche et qui n'ont pas
@@ -90,7 +91,7 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
     if (!reclame) continue;
 
     const { subject, html } = contractEndingReminderEmail({
-      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantName: nomAvecCivilite(row.tenant),
       propertyTitle: row.property.title,
       endDate: row.contract.endDate,
       // Jours réellement restants pour CE bail, et non la constante de
@@ -219,7 +220,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     if (!reclamee) continue;
 
     const { subject, html } = rentDueReminderEmail({
-      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantName: nomAvecCivilite(row.tenant),
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
       currency: row.invoice.currency || "EUR",
@@ -239,7 +240,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       row.tenant.phone,
       env.whatsapp.templateNameRentDue,
       rentDueReminderWhatsappVariables({
-        tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+        tenantName: nomAvecCivilite(row.tenant),
         propertyTitle: row.property.title,
         amount: row.invoice.amount,
         currency: row.invoice.currency || "EUR",
@@ -251,7 +252,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
 
     sent += 1;
     details.push({
-      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantName: nomComplet(row.tenant),
       tenantEmail: row.tenant.email,
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
@@ -334,7 +335,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
     const joursRestants = joursEntre(now, new Date(row.invoice.dueDate));
 
     const { subject, html } = rentDueSoonReminderEmail({
-      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantName: nomAvecCivilite(row.tenant),
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
       currency: row.invoice.currency || "EUR",
@@ -351,7 +352,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       row.tenant.phone,
       env.whatsapp.templateNameRentDueSoon,
       rentDueSoonReminderWhatsappVariables({
-        tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+        tenantName: nomAvecCivilite(row.tenant),
         propertyTitle: row.property.title,
         amount: row.invoice.amount,
         currency: row.invoice.currency || "EUR",
@@ -364,7 +365,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
 
     sent += 1;
     details.push({
-      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantName: nomComplet(row.tenant),
       tenantEmail: row.tenant.email,
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
@@ -440,7 +441,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   }
 
   const { subject, html } = rentDueReminderEmail({
-    tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+    tenantName: nomAvecCivilite(row.tenant),
     propertyTitle: row.property.title,
     amount: row.invoice.amount,
     currency: row.invoice.currency || "EUR",
@@ -456,7 +457,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     row.tenant.phone,
     env.whatsapp.templateNameRentDue,
     rentDueReminderWhatsappVariables({
-      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      tenantName: nomAvecCivilite(row.tenant),
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
       currency: row.invoice.currency || "EUR",
@@ -469,7 +470,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   return {
     success: true,
     tenantEmail: row.tenant.email,
-    tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+    tenantName: nomComplet(row.tenant),
     simulated: emailResult.simulated,
     whatsappSimulated: whatsappResult.simulated,
   };

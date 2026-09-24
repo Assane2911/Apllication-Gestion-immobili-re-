@@ -11,6 +11,7 @@ import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
@@ -21,6 +22,9 @@ import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 // téléphone), pour ne pas perdre ce qui existe déjà (coordonnées bancaires,
 // taux de commission...).
 const ownerSchema = z.object({
+  // Facultative : un propriétaire peut être une société (voir companyName),
+  // auquel cas « Monsieur » n'a aucun sens.
+  civility: z.enum(CIVILITES).optional().nullable(),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   companyName: z.string().optional(),
@@ -240,7 +244,7 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
 
   const inviteUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
   const { subject, html } = ownerInvitationEmail({
-    ownerName: `${owner.firstName} ${owner.lastName}`,
+    ownerName: nomAvecCivilite(owner),
     agencyName: settings?.agencyName || "Votre agence",
     inviteUrl,
   });
@@ -368,7 +372,7 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
   }
 
   res.json({
-    ownerName: `${owner.firstName} ${owner.lastName}`,
+    ownerName: nomAvecCivilite(owner),
     managementFeeRate: owner.managementFeeRate,
     properties: Array.from(perProperty.values()),
     collectedThisMonthByCurrency,

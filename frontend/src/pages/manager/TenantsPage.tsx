@@ -7,7 +7,7 @@ import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { PaginatedResponse, Tenant } from "../../types";
 
-const emptyForm = { firstName: "", lastName: "", phone: "", email: "" };
+const emptyForm = { civility: "", firstName: "", lastName: "", phone: "", email: "" };
 const PAGE_SIZE = 20;
 
 export default function TenantsPage() {
@@ -52,7 +52,7 @@ export default function TenantsPage() {
 
   function openEdit(t: Tenant) {
     setEditing(t);
-    setForm({ firstName: t.firstName, lastName: t.lastName, phone: t.phone, email: t.email });
+    setForm({ civility: t.civility ?? "", firstName: t.firstName, lastName: t.lastName, phone: t.phone, email: t.email });
     setIdDocument(null);
     setShowForm(true);
   }
@@ -63,7 +63,13 @@ export default function TenantsPage() {
     setError(null);
     try {
       const data = new FormData();
-      Object.entries(form).forEach(([k, v]) => data.append(k, v));
+      // Un champ laissé vide est OMIS, et non envoyé comme chaîne vide : le
+      // serveur attend « M », « MME » ou rien du tout, et « » n'est pas rien
+      // — c'est une valeur qu'il refuse. La civilité étant facultative, ne pas
+      // la renseigner doit rester possible.
+      Object.entries(form).forEach(([k, v]) => {
+        if (v !== "") data.append(k, v);
+      });
       if (idDocument) data.append("idDocument", idDocument);
 
       if (editing) {
@@ -175,6 +181,14 @@ export default function TenantsPage() {
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.tenants.formTitleEdit") : t("manager.tenants.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label htmlFor="tenant-civility" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("common.civility.label")}</label>
+              <select id="tenant-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className="w-full md:w-56 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+                <option value="">{t("common.civility.none")}</option>
+                <option value="M">{t("common.civility.M")}</option>
+                <option value="MME">{t("common.civility.MME")}</option>
+              </select>
+            </div>
             <div>
               <label htmlFor="tenant-firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.firstName")}</label>
               <input id="tenant-firstName" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />

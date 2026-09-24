@@ -9,6 +9,7 @@ import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { Owner, PaginatedResponse } from "../../types";
 
 const emptyForm = {
+  civility: "",
   firstName: "",
   lastName: "",
   companyName: "",
@@ -66,6 +67,7 @@ export default function OwnersPage() {
       lastName: owner.lastName,
       companyName: owner.companyName ?? "",
       phone: owner.phone,
+      civility: owner.civility ?? "",
       email: owner.email,
       address: owner.address ?? "",
       iban: owner.iban ?? "",
@@ -82,6 +84,9 @@ export default function OwnersPage() {
     setError(null);
     try {
       const body = {
+        // `undefined` et non `""` : la civilité est facultative, et le serveur
+        // n'accepte que « M », « MME » ou l'absence du champ.
+        civility: form.civility || undefined,
         firstName: form.firstName,
         lastName: form.lastName,
         companyName: form.companyName || undefined,
@@ -163,6 +168,14 @@ export default function OwnersPage() {
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.owners.formTitleEdit") : t("manager.owners.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label htmlFor="owner-civility" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("common.civility.label")}</label>
+              <select id="owner-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className="w-full md:w-56 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+                <option value="">{t("common.civility.none")}</option>
+                <option value="M">{t("common.civility.M")}</option>
+                <option value="MME">{t("common.civility.MME")}</option>
+              </select>
+            </div>
             <div>
               <label htmlFor="owner-firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.firstName")}</label>
               <input id="owner-firstName" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />

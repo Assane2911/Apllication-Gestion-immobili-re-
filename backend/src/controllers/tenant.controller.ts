@@ -12,10 +12,14 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
+import { CIVILITES } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { resolveScannedUrl } from "./contract.controller";
 
 const tenantSchema = z.object({
+  // Facultative, et c'est le point : une personne peut ne pas vouloir en
+  // donner, et le document reste correct sans (voir utils/nom.ts).
+  civility: z.enum(CIVILITES).optional().nullable(),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   // Le numéro est enregistré au format international, et pas seulement
@@ -227,6 +231,7 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
     await tx
       .update(tenants)
       .set({
+        civility: null,
         firstName: "Locataire",
         lastName: "anonymisé",
         email: `anonyme-${existing.id}@supprime.invalid`,

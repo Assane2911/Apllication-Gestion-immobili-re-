@@ -68,6 +68,12 @@ export type OwnerPortalStatus = "NONE" | "PENDING" | "ACTIVE";
 /** Fiche propriétaire (Espace propriétaire) — voir owner.controller.ts. */
 export interface Owner {
   id: string;
+  /**
+   * Civilité (« M » ou « MME »), facultative : elle sert aux documents
+   * officiels — bail, quittance — qui s'adressent à la personne. Distincte du
+   * sexe, qui n'aurait aucune finalité ici.
+   */
+  civility?: "M" | "MME" | null;
   firstName: string;
   lastName: string;
   companyName?: string | null;
@@ -106,6 +112,12 @@ export interface OwnerDashboard {
 
 export interface Tenant {
   id: string;
+  /**
+   * Civilité (« M » ou « MME »), facultative : elle sert aux documents
+   * officiels — bail, quittance — qui s'adressent à la personne. Distincte du
+   * sexe, qui n'aurait aucune finalité ici.
+   */
+  civility?: "M" | "MME" | null;
   firstName: string;
   lastName: string;
   phone: string;

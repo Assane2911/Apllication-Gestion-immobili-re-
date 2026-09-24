@@ -83,6 +83,7 @@ export async function construireExportLocataire(tenantId: string) {
     },
     locataire: {
       id: tenant.id,
+      civility: tenant.civility,
       firstName: tenant.firstName,
       lastName: tenant.lastName,
       email: tenant.email,

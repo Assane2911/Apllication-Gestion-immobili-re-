@@ -7,6 +7,12 @@ const es: TranslationSchema = {
       cancelled: "Pago cancelado. No se ha cobrado ningún importe.",
     },
     appName: "ImmoPlatform Pro",
+    civility: {
+      label: "Tratamiento",
+      none: "Sin especificar",
+      M: "Señor",
+      MME: "Señora",
+    },
     phoneField: {
       countryLabel: "Prefijo del país",
       chooseCountry: "Elegir el prefijo",

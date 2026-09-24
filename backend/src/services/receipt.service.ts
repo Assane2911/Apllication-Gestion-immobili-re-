@@ -4,6 +4,7 @@ import { agencySettings, contracts, invoices, properties, tenants } from "../db/
 import { sendEmail } from "./email.service";
 import { periodeCouverte } from "./invoice.service";
 import { generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
+import { nomAvecCivilite } from "../utils/nom";
 
 const monthNames = [
   "janvier", "février", "mars", "avril", "mai", "juin",
@@ -51,7 +52,7 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
         legalNotice: agency?.legalNotice,
       },
       tenant: {
-        fullName: `${tenant.firstName} ${tenant.lastName}`,
+        fullName: nomAvecCivilite(tenant),
         email: tenant.email,
         phone: tenant.phone,
       },

@@ -5,6 +5,12 @@ const fr = {
       cancelled: "Paiement annulé. Aucun montant n'a été débité.",
     },
     appName: "ImmoPlatform Pro",
+    civility: {
+      label: "Civilité",
+      none: "Non précisée",
+      M: "Monsieur",
+      MME: "Madame",
+    },
     phoneField: {
       countryLabel: "Indicatif du pays",
       chooseCountry: "Choisir l'indicatif",

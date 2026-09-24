@@ -7,6 +7,12 @@ const pt: TranslationSchema = {
       cancelled: "Pagamento cancelado. Nenhum valor foi cobrado.",
     },
     appName: "ImmoPlatform Pro",
+    civility: {
+      label: "Tratamento",
+      none: "Não especificado",
+      M: "Senhor",
+      MME: "Senhora",
+    },
     phoneField: {
       countryLabel: "Indicativo do país",
       chooseCountry: "Escolher o indicativo",

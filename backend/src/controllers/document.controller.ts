@@ -8,6 +8,7 @@ import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml } from "
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire } from "../utils/authorization";
+import { nomAvecCivilite } from "../utils/nom";
 
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -59,7 +60,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
       legalNotice: agency?.legalNotice,
     },
     tenant: {
-      fullName: `${tenant?.firstName || "Locataire"} ${tenant?.lastName || ""}`,
+      fullName: tenant ? nomAvecCivilite(tenant) : "Locataire",
       email: tenant?.email || "",
       phone: tenant?.phone || "",
     },
@@ -157,7 +158,7 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
     inspectionDate: inspection.inspectionDate,
     agencyName: agency?.agencyName || "Agence Immobilière",
     property: { title: inspection.property?.title || "", address: inspection.property?.address || "" },
-    tenant: { fullName: `${inspection.tenant?.firstName || ""} ${inspection.tenant?.lastName || ""}`.trim() },
+    tenant: { fullName: inspection.tenant ? nomAvecCivilite(inspection.tenant) : "" },
     rooms: inspection.rooms,
     meters: inspection.meters,
     keys: inspection.keys,
