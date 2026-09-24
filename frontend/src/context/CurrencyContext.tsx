@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { useAuth } from "./auth";
-import { CURRENCIES, CurrencyContext, useCurrency } from "./currency";
+import { CURRENCIES, CurrencyContext, configDevise, useCurrency } from "./currency";
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -41,8 +41,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   function formatMoney(amount: number | null | undefined, overrideCurrency?: string | null): string {
     if (amount === null || amount === undefined || isNaN(amount)) return "—";
 
-    const currCode = overrideCurrency && CURRENCIES[overrideCurrency] ? overrideCurrency : currency;
-    const config = CURRENCIES[currCode] || CURRENCIES.EUR;
+    // `overrideCurrency` est la devise inscrite sur la pièce elle-même (une
+    // facture, un contrat) : elle prime toujours sur la devise d'affichage du
+    // gestionnaire, y compris — et surtout — quand elle est inconnue. L'ancien
+    // test `&& CURRENCIES[overrideCurrency]` faisait l'inverse : un montant
+    // dans une devise absente de la liste était réétiqueté avec le symbole du
+    // gestionnaire, ce qui changeait le sens du montant sans rien signaler.
+    const currCode = overrideCurrency || currency;
+    const config = configDevise(currCode);
 
     const formattedNumber = new Intl.NumberFormat("fr-FR", {
       minimumFractionDigits: 0,
@@ -55,7 +61,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return `${formattedNumber} ${config.symbol}`;
   }
 
-  const currentCurrencyConfig = CURRENCIES[currency] || CURRENCIES.EUR;
+  const currentCurrencyConfig = configDevise(currency);
   const availableCurrencies = Object.values(CURRENCIES);
 
   return (
