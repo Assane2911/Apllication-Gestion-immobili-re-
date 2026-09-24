@@ -366,13 +366,17 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
     changeDePlan,
     finActuelle: user.subscriptionEndsAt,
     nouveauMontant: amount,
+    nouvelleDevise: currency,
     dernierPaiement: dernierPaiement
       ? {
           amount: dernierPaiement.amount,
           startDate: dernierPaiement.startDate,
           billingCycle: dernierPaiement.billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+          currency: dernierPaiement.currency,
+          plan: dernierPaiement.plan,
         }
       : null,
+    tarifPourDevise,
   });
 
   // N'active RÉELLEMENT l'abonnement (droits d'accès) que si le paiement est

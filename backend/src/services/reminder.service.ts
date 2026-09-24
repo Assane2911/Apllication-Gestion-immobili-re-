@@ -12,6 +12,34 @@ import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonRe
 import { nomAvecCivilite, nomComplet } from "../utils/nom";
 
 /**
+ * Le destinataire a-t-il été joint ?
+ *
+ * `sendEmail` et `envoyerMessageWhatsapp` ne lèvent jamais : ils journalisent
+ * et renvoient leur verdict. Personne ne le relisait, et le marqueur
+ * anti-doublon — posé AVANT l'envoi — restait en place même quand rien
+ * n'était parti. Une panne SMTP de quelques minutes pendant le cron suffisait
+ * donc à priver définitivement des locataires de leur avis : le lendemain, le
+ * filtre `isNull(reminderSentAt)` les excluait.
+ *
+ * Un seul canal suffit. Si le WhatsApp est arrivé, le locataire est au
+ * courant : relâcher le marqueur lui renverrait le lendemain un message qu'il
+ * a déjà lu.
+ *
+ * L'email est le canal de référence — WhatsApp s'y AJOUTE, il ne le remplace
+ * pas — et seul son échec RÉEL compte. Un envoi simulé (service non
+ * configuré, environnement de test) n'est pas un échec : c'est le système qui
+ * fait ce qu'on lui a demandé, et le traiter comme une panne ferait retenter
+ * chaque jour, indéfiniment, une configuration absente.
+ */
+function aEteJoint(
+  email: { simulated: boolean; error?: boolean },
+  whatsapp: { simulated: boolean; error?: boolean }
+): boolean {
+  if (!email.error) return true;
+  return !whatsapp.simulated && !whatsapp.error;
+}
+
+/**
  * Recherche les contrats ACTIFS dont la date de fin approche et qui n'ont pas
  * encore reçu de rappel, puis prévient le gestionnaire propriétaire du bien
  * et marque `reminderSentAt` pour éviter les envois en double.
@@ -63,6 +91,7 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
     );
 
   let sent = 0;
+  let echecs = 0;
   let interrompu = false;
   for (const row of rows) {
     // Le budget se consulte AVANT de réclamer la ligne : s'arrêter ici la
@@ -100,7 +129,14 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
       daysLeft: joursEntre(now, new Date(row.contract.endDate)),
     });
 
-    await sendEmail(row.managerEmail, subject, html);
+    const emailResult = await sendEmail(row.managerEmail, subject, html);
+    if (!aEteJoint(emailResult, { simulated: true })) {
+      // Marqueur relâché : le rappel repartira à la prochaine exécution
+      // plutôt que d'être perdu pour ce bail.
+      await db.update(contracts).set({ reminderSentAt: null }).where(eq(contracts.id, row.contract.id));
+      echecs += 1;
+      continue;
+    }
     sent += 1;
   }
 
@@ -112,7 +148,7 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
       `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) de fin de contrat reportés à la prochaine exécution.`
     );
   }
-  return { sent, interrompu };
+  return { sent, echecs, interrompu };
 }
 
 /**
@@ -193,6 +229,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     .where(and(...conditions));
 
   let sent = 0;
+  let echecs = 0;
   const details = [];
 
   for (const row of rows) {
@@ -250,6 +287,18 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       })
     );
 
+    if (!aEteJoint(emailResult, whatsappResult)) {
+      await db.update(invoices).set({ reminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
+      echecs += 1;
+      continue;
+    }
+
+    if (!aEteJoint(emailResult, whatsappResult)) {
+      await db.update(invoices).set({ dueSoonReminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
+      echecs += 1;
+      continue;
+    }
+
     sent += 1;
     details.push({
       tenantName: nomComplet(row.tenant),
@@ -265,7 +314,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   if (interrompu) {
     console.warn("[reminder] Budget de temps épuisé : avis d'échéance restants reportés à la prochaine exécution.");
   }
-  return { sent, details, interrompu };
+  return { sent, echecs, details, interrompu };
 }
 
 /**
@@ -311,6 +360,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
     );
 
   let sent = 0;
+  let echecs = 0;
   let interrompu = false;
   const details = [];
 
@@ -382,7 +432,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) "avant échéance" reportés à la prochaine exécution.`
     );
   }
-  return { sent, details, interrompu };
+  return { sent, echecs, details, interrompu };
 }
 
 // Fenêtre de réclamation pour l'envoi manuel d'un rappel individuel : assez
@@ -467,8 +517,18 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     })
   );
 
+  // Le rappel manuel affirmait « envoyé » quoi qu'il arrive : `success` était
+  // un littéral et le verdict de sendEmail n'était jamais relu. Le
+  // gestionnaire lisait « Rappel envoyé à Jean Dupont » alors que rien n'était
+  // parti — et la facture, déjà marquée, était désormais ignorée par le job
+  // automatique du mois. Le locataire ne recevait donc ni l'un ni l'autre.
+  const joint = aEteJoint(emailResult, whatsappResult);
+  if (!joint) {
+    await db.update(invoices).set({ reminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
+  }
+
   return {
-    success: true,
+    success: joint,
     tenantEmail: row.tenant.email,
     tenantName: nomComplet(row.tenant),
     simulated: emailResult.simulated,

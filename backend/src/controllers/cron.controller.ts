@@ -71,8 +71,8 @@ function assertCronAuthorized(req: Request) {
 export const triggerContractEndingReminders = asyncHandler(async (req: Request, res: Response) => {
   assertCronAuthorized(req);
 
-  const { sent, interrompu } = await runContractEndingReminders(budgetTemps(env.cronBudgetMs));
-  res.json({ success: true, remindersSent: sent, interrompu });
+  const { sent, echecs, interrompu } = await runContractEndingReminders(budgetTemps(env.cronBudgetMs));
+  res.json({ success: true, remindersSent: sent, echecs, interrompu });
 });
 
 /**
@@ -115,6 +115,10 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
     contractEndingRemindersSent: contractEnding.sent,
     upcomingRentDueRemindersSent: upcoming.sent,
     rentDueRemindersSent: rentDue.sent,
+    // Les envois qui ont VRAIMENT échoué. Leur marqueur a été relâché, donc
+    // ils repartiront demain — mais un cron qui annonce « 40 envoyés » sans
+    // dire que 40 ont échoué ne se distingue pas d'un cron qui a réussi.
+    echecs: contractEnding.echecs + upcoming.echecs + rentDue.echecs,
     // Vrai dès qu'un des trois travaux s'est arrêté faute de temps : le
     // reliquat n'est pas perdu, il sera traité à la prochaine exécution.
     interrompu: contractEnding.interrompu || upcoming.interrompu || rentDue.interrompu,
@@ -138,6 +142,7 @@ export const triggerRentDueReminders = asyncHandler(async (req: Request, res: Re
     success: true,
     message: `${result.sent} avis d'échéance de loyer envoyé(s)`,
     remindersSent: result.sent,
+    echecs: result.echecs,
     interrompu: result.interrompu,
     details: result.details,
   });
@@ -156,6 +161,7 @@ export const triggerUpcomingRentDueReminders = asyncHandler(async (req: Request,
     success: true,
     message: `${result.sent} rappel(s) "avant échéance" envoyé(s)`,
     remindersSent: result.sent,
+    echecs: result.echecs,
     interrompu: result.interrompu,
     details: result.details,
   });

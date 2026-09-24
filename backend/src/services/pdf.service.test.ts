@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { generateLeaseHtml, generateReceiptHtml, generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
 
+// fr-FR sépare les milliers par une espace fine insécable (U+202F). Les
+// documents contractuels — quittance, bail — écrivaient jusqu'ici le montant
+// brut et le code ISO (« 250000 XOF ») alors que le portail, les emails de
+// rappel et WhatsApp affichaient « 250 000 FCFA ». Un locataire qui compare sa
+// quittance à son espace doutait du montant, pas de la mise en page.
+const ESPACE_FINE = "\u202f";
+
+
 // pdf.service.ts produit les deux documents contractuels de l'application :
 // la quittance de loyer (HTML + PDF réel) et le contrat de bail (HTML). Ces
 // templates HTML sont servis tels quels en text/html (voir
@@ -53,7 +61,7 @@ describe("generateReceiptHtml", () => {
     expect(html).toContain("3 rue des Almadies");
     expect(html).toContain("Surface : 120 m²");
     expect(html).toContain("Juin 2026");
-    expect(html).toContain("250000 XOF");
+    expect(html).toContain(`250${ESPACE_FINE}000 FCFA`);
     expect(html).toContain("PAYDUNYA");
     expect(html).toContain("Agence agréée n° 42");
   });
@@ -168,8 +176,8 @@ describe("generateLeaseHtml", () => {
     expect(html).toContain("Aminata");
     expect(html).toContain("Ba");
     expect(html).toContain("Villa Ngor");
-    expect(html).toContain("250000 XOF");
-    expect(html).toContain("500000 XOF");
+    expect(html).toContain(`250${ESPACE_FINE}000 FCFA`);
+    expect(html).toContain(`500${ESPACE_FINE}000 FCFA`);
     expect(html).toContain("01/01/2026");
     expect(html).toContain("01/01/2027");
   });
@@ -198,7 +206,7 @@ describe("generateLeaseHtml", () => {
       { agencyName: null, address: null }
     );
 
-    expect(html).toContain("250000 EUR");
+    expect(html).toContain(`250${ESPACE_FINE}000 €`);
     expect(html).toContain("L'Agence");
   });
 

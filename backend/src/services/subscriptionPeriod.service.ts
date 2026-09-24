@@ -124,9 +124,26 @@ export function calculerPeriodeActivation(params: {
   changeDePlan: boolean;
   finActuelle: Date | null;
   nouveauMontant: number;
-  dernierPaiement: { amount: number; startDate: Date; billingCycle: BillingCycle } | null;
+  /** Devise dans laquelle le NOUVEAU plan est facturé (voir deviseFacturee). */
+  nouvelleDevise: string;
+  dernierPaiement: {
+    amount: number;
+    startDate: Date;
+    billingCycle: BillingCycle;
+    /** Devise réellement payée à l'époque — pas forcément celle d'aujourd'hui. */
+    currency: string;
+    plan: string;
+  } | null;
+  /**
+   * Accès au catalogue tarifaire, injecté plutôt qu'importé : le catalogue vit
+   * dans subscription.controller.ts, qui appelle cette fonction. L'importer
+   * ici fermerait le cycle, et ce service resterait alors intestable sans
+   * monter tout un contrôleur.
+   */
+  tarifPourDevise: (plan: string, devise: string) => { monthly: number; annual: number } | null;
 }): { startDate: Date; endDate: Date } {
-  const { maintenant, cycle, changeDePlan, finActuelle, nouveauMontant, dernierPaiement } = params;
+  const { maintenant, cycle, changeDePlan, finActuelle, nouveauMontant, nouvelleDevise, dernierPaiement, tarifPourDevise } =
+    params;
   const joursRestants = finActuelle ? (finActuelle.getTime() - maintenant.getTime()) / 86_400_000 : 0;
 
   if (changeDePlan && joursRestants > 0) {
@@ -159,8 +176,23 @@ export function calculerPeriodeActivation(params: {
       Math.round((ancienNominal.endDate.getTime() - ancienNominal.startDate.getTime()) / 86_400_000)
     );
     const nouveauCycleJours = Math.max(1, Math.round((base.endDate.getTime() - base.startDate.getTime()) / 86_400_000));
+
+    // Les deux montants doivent parler la même langue. `PATCH /auth/currency`
+    // laisse un gestionnaire changer de devise quand il veut : diviser
+    // 5 000 FCFA par un tarif journalier en euros ne compare pas deux durées,
+    // ça compare deux unités — et donnait 3 448 jours de crédit, soit neuf ans
+    // d'abonnement offerts. Le défaut symétrique (euro vers FCFA) faisait
+    // perdre au client l'intégralité de ce qu'il avait payé.
+    const ancienMontant = convertirVersDevise(dernierPaiement, nouvelleDevise, tarifPourDevise);
+    if (ancienMontant === null) {
+      // Devise retirée du catalogue, plan renommé : plutôt qu'un chiffre
+      // fabriqué, une période neuve. Créditer trop peu se rattrape à la main ;
+      // offrir neuf ans, non.
+      return base;
+    }
+
     const joursCredit = calculerJoursCredit({
-      ancienMontant: dernierPaiement.amount,
+      ancienMontant,
       ancienCycleJours,
       joursRestants,
       nouveauMontant,
@@ -170,6 +202,35 @@ export function calculerPeriodeActivation(params: {
   }
 
   return calculerPeriode({ maintenant, cycle, finActuelle });
+}
+
+/**
+ * Exprime un montant déjà payé dans la devise de facturation d'aujourd'hui.
+ *
+ * Il n'y a pas de taux de change à aller chercher : le catalogue tarife le
+ * même plan dans chaque devise, et le rapport entre ces deux tarifs EST le
+ * taux que la plateforme s'est elle-même donné. Passer par lui plutôt que par
+ * un taux du marché a un avantage : une remise consentie à l'époque reste une
+ * remise de la même proportion après conversion.
+ *
+ * `null` quand l'un des deux tarifs manque — le seul cas où mieux vaut ne rien
+ * créditer que créditer au hasard.
+ */
+function convertirVersDevise(
+  paiement: { amount: number; currency: string; plan: string; billingCycle: BillingCycle },
+  deviseCible: string,
+  tarifPourDevise: (plan: string, devise: string) => { monthly: number; annual: number } | null
+): number | null {
+  if (paiement.currency === deviseCible) return paiement.amount;
+
+  const source = tarifPourDevise(paiement.plan, paiement.currency);
+  const cible = tarifPourDevise(paiement.plan, deviseCible);
+  if (!source || !cible) return null;
+
+  const cle = paiement.billingCycle === "ANNUAL" ? "annual" : "monthly";
+  if (!source[cle]) return null;
+
+  return paiement.amount * (cible[cle] / source[cle]);
 }
 
 /**

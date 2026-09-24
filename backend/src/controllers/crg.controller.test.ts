@@ -297,7 +297,12 @@ describe("GET /api/crg/:ownerId/export et /api/crg/mine/export", () => {
     expect(res.text).toContain("COMPTE-RENDU DE GESTION");
     expect(res.text).toContain("Villa Ngor");
     expect(res.text).toContain("FR7630006000011234567890189");
-    expect(res.text).toContain("900 EUR");
+    // Le compte-rendu emploie désormais la même écriture que le reste du
+    // Service (voir utils/montant.ts) : « 900 € » et non « 900 EUR ». Ce
+    // n'est pas que cosmétique — les totaux cumulés y traînaient des résidus
+    // de flottants imprimés tels quels au propriétaire, du type
+    // « 1870.4699999999998 EUR », juste à côté de son IBAN.
+    expect(res.text).toContain("900 €");
   });
 
   it("neutralise un titre de bien contenant du HTML (XSS stockée)", async () => {

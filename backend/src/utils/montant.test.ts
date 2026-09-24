@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { rentDueReminderEmail } from "../services/email.service";
+import { generateReceiptHtml } from "../services/pdf.service";
 import { rentDueReminderWhatsappVariables } from "../services/whatsapp.service";
 import { formaterMontant } from "./montant";
 
@@ -45,6 +46,28 @@ describe("Mise en forme d'un montant", () => {
   it("traite une devise absente comme un euro, valeur par défaut en base", () => {
     expect(formaterMontant(100, undefined)).toBe("100 €");
     expect(formaterMontant(100, null)).toBe("100 €");
+  });
+
+  it("écrit la même somme sur la quittance que dans l'email et le message", () => {
+    // La quittance est le document que le locataire garde. Elle affichait
+    // « 35000 XOF » quand son portail affichait « 35 000 FCFA » : comparer les
+    // deux faisait douter du montant, pas de la mise en page.
+    const html = generateReceiptHtml({
+      receiptNumber: "Q-2026-09-0001",
+      agency: { name: "Agence du Port", address: null, phone: null, email: null, siretOrId: null, legalNotice: null },
+      tenant: { fullName: "Monsieur ALIOU THIAM", email: "aliou@test.local", phone: "+221778422993" },
+      property: { title: "APPT MEUBLÉ", address: "Almadies", surface: 80 },
+      invoice: {
+        periodMonth: 9,
+        periodYear: 2026,
+        amount: 35000,
+        currency: "XOF",
+        paidAt: new Date(2026, 8, 24),
+        paymentMethod: "BANK_TRANSFER",
+      },
+    });
+
+    expect(html).toContain(formaterMontant(35000, "XOF"));
   });
 
   it("écrit la même somme dans l'email et dans le message WhatsApp", () => {

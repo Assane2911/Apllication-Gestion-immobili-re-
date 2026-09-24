@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { formaterMontant } from "../utils/montant";
 
 /**
  * Échappe les caractères HTML spéciaux avant interpolation dans les templates
@@ -265,7 +266,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
 
   <div class="main-statement">
     Je soussigné, gestionnaire pour le compte du bailleur, certifie avoir reçu de <strong>${escapeHtml(data.tenant.fullName)}</strong>
-    la somme de <strong>${data.invoice.amount} ${escapeHtml(data.invoice.currency)}</strong> au titre du paiement du loyer et des charges pour la période du mois de <strong>${periodLabel}</strong>, et lui en donne quittance sous réserve de tous droits.
+    la somme de <strong>${escapeHtml(formaterMontant(data.invoice.amount, data.invoice.currency))}</strong> au titre du paiement du loyer et des charges pour la période du mois de <strong>${periodLabel}</strong>, et lui en donne quittance sous réserve de tous droits.
   </div>
 
   <table>
@@ -282,11 +283,11 @@ export function generateReceiptHtml(data: ReceiptData): string {
         <td>Loyer mensuel & charges locatives</td>
         <td>${periodLabel}</td>
         <td>${escapeHtml(data.invoice.paymentMethod)}</td>
-        <td style="text-align:right; font-weight:600;">${data.invoice.amount} ${escapeHtml(data.invoice.currency)}</td>
+        <td style="text-align:right; font-weight:600;">${escapeHtml(formaterMontant(data.invoice.amount, data.invoice.currency))}</td>
       </tr>
       <tr class="total-row">
         <td colspan="3" style="text-align:right;">TOTAL REÇU :</td>
-        <td style="text-align:right;">${data.invoice.amount} ${escapeHtml(data.invoice.currency)}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.invoice.amount, data.invoice.currency))}</td>
       </tr>
     </tbody>
   </table>
@@ -420,7 +421,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
         .font("Helvetica")
         .fontSize(10)
         .text(
-          `Je soussigné, gestionnaire pour le compte du bailleur, certifie avoir reçu de ${data.tenant.fullName} la somme de ${data.invoice.amount} ${data.invoice.currency} au titre du paiement du loyer et des charges pour la période de ${periodLabel}, et lui en donne quittance sous réserve de tous droits.`,
+          `Je soussigné, gestionnaire pour le compte du bailleur, certifie avoir reçu de ${data.tenant.fullName} la somme de ${formaterMontant(data.invoice.amount, data.invoice.currency)} au titre du paiement du loyer et des charges pour la période de ${periodLabel}, et lui en donne quittance sous réserve de tous droits.`,
           doc.page.margins.left + 12,
           statementY + 10,
           { width: pageWidth - 24 }
@@ -454,7 +455,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
         .text(periodLabel, col2, rowTop + 8, { width: col3 - col2 - 10 })
         .text(data.invoice.paymentMethod, col3, rowTop + 8, { width: col4w })
         .font("Helvetica-Bold")
-        .text(`${data.invoice.amount} ${data.invoice.currency}`, col1, rowTop + 8, {
+        .text(formaterMontant(data.invoice.amount, data.invoice.currency), col1, rowTop + 8, {
           width: pageWidth - 10,
           align: "right",
         });
@@ -471,7 +472,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
         .fontSize(11)
         .fillColor(dark)
         .text("TOTAL REÇU :", col1, totalTop + 8, { width: pageWidth - 130, align: "right" })
-        .text(`${data.invoice.amount} ${data.invoice.currency}`, col1, totalTop + 8, {
+        .text(formaterMontant(data.invoice.amount, data.invoice.currency), col1, totalTop + 8, {
           width: pageWidth,
           align: "right",
         });
@@ -608,8 +609,8 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="section-title">3. Durée & Conditions Financières</div>
     <div class="box">
       <strong>Date de prise d'effet :</strong> ${startDate} | <strong>Date de fin :</strong> ${endDate}<br>
-      <strong>Loyer mensuel :</strong> ${contract.rent} ${escapeHtml(contract.currency) || "EUR"} (payable mensuellement avant le 5)<br>
-      <strong>Dépôt de garantie :</strong> ${contract.deposit} ${escapeHtml(contract.currency) || "EUR"}
+      <strong>Loyer mensuel :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))} (payable mensuellement avant le 5)<br>
+      <strong>Dépôt de garantie :</strong> ${escapeHtml(formaterMontant(contract.deposit, contract.currency))}
     </div>
   </div>
 
@@ -835,10 +836,10 @@ export function generateCrgHtml(data: CrgExportData): string {
           (p) => `
       <tr>
         <td>${escapeHtml(p.propertyTitle)}</td>
-        <td style="text-align:right;">${p.loyersEncaisses} ${escapeHtml(p.currency)}</td>
-        <td style="text-align:right;">${p.chargesDeduites} ${escapeHtml(p.currency)}</td>
-        <td style="text-align:right;">${p.commission} ${escapeHtml(p.currency)}</td>
-        <td style="text-align:right; font-weight:700;">${p.netAReverser} ${escapeHtml(p.currency)}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(p.loyersEncaisses, p.currency))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(p.chargesDeduites, p.currency))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(p.commission, p.currency))}</td>
+        <td style="text-align:right; font-weight:700;">${escapeHtml(formaterMontant(p.netAReverser, p.currency))}</td>
       </tr>`
         )
         .join("")
@@ -859,10 +860,10 @@ export function generateCrgHtml(data: CrgExportData): string {
           (currency) => `
       <tr class="total-row">
         <td>Total ${escapeHtml(currency)}</td>
-        <td style="text-align:right;">${data.totalLoyersByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalLoyersByCurrency[currency] ?? 0, currency))}</td>
         <td style="text-align:right;">${data.totalChargesByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
         <td style="text-align:right;">${data.totalCommissionByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
-        <td style="text-align:right;">${data.totalNetByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalNetByCurrency[currency] ?? 0, currency))}</td>
       </tr>`
         )
         .join("")

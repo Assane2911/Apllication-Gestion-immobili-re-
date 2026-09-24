@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { ajouterJours, calculerJoursCredit, calculerPeriode, calculerPeriodeActivation } from "./subscriptionPeriod.service";
 
+/**
+ * Le catalogue réduit à ce qui sert ici. Injecté plutôt qu'importé : le vrai
+ * vit dans subscription.controller.ts, qu'on ne veut pas monter pour tester
+ * une fonction de calcul.
+ */
+const tarifsTest = (plan: string, devise: string) => {
+  const table: Record<string, Record<string, { monthly: number; annual: number }>> = {
+    STARTER: { EUR: { monthly: 9, annual: 86 }, XOF: { monthly: 5000, annual: 48000 } },
+    PRO: { EUR: { monthly: 29, annual: 278 }, XOF: { monthly: 15000, annual: 144000 } },
+  };
+  return table[plan]?.[devise] ?? null;
+};
+
 /** Écriture lisible d'une date locale, pour que l'intention des cas reste évidente. */
 function d(annee: number, mois: number, jour: number): Date {
   return new Date(annee, mois - 1, jour);
@@ -209,7 +222,9 @@ describe("calculerPeriodeActivation", () => {
       changeDePlan: true,
       finActuelle: d(2026, 9, 30), // 10 jours restants
       nouveauMontant: 29,
-      dernierPaiement: { amount: 9, startDate: d(2026, 8, 30), billingCycle: "MONTHLY" },
+      nouvelleDevise: "EUR",
+      dernierPaiement: { amount: 9, startDate: d(2026, 8, 30), billingCycle: "MONTHLY", currency: "EUR", plan: "STARTER" },
+      tarifPourDevise: tarifsTest,
     });
 
     const base = calculerPeriode({ maintenant: d(2026, 9, 20), cycle: "MONTHLY", finActuelle: null });
@@ -231,7 +246,9 @@ describe("calculerPeriodeActivation", () => {
       changeDePlan: false,
       finActuelle: d(2026, 9, 30),
       nouveauMontant: 9,
+      nouvelleDevise: "EUR",
       dernierPaiement: null,
+      tarifPourDevise: tarifsTest,
     });
 
     expect(resultat.startDate).toEqual(d(2026, 9, 30));
@@ -252,7 +269,9 @@ describe("calculerPeriodeActivation", () => {
       changeDePlan: true,
       finActuelle: d(2026, 4, 1), // 6 jours restants
       nouveauMontant: 29,
-      dernierPaiement: { amount: 9, startDate: d(2026, 3, 1), billingCycle: "MONTHLY" },
+      nouvelleDevise: "EUR",
+      dernierPaiement: { amount: 9, startDate: d(2026, 3, 1), billingCycle: "MONTHLY", currency: "EUR", plan: "STARTER" },
+      tarifPourDevise: tarifsTest,
     });
 
     const base = calculerPeriode({ maintenant: d(2026, 3, 25), cycle: "MONTHLY", finActuelle: null });
@@ -265,6 +284,132 @@ describe("calculerPeriodeActivation", () => {
     });
 
     expect(resultat.endDate).toEqual(ajouterJours(base.endDate, joursCreditAttendu));
+  });
+});
+
+describe("calculerPeriodeActivation — changement de devise", () => {
+  /**
+   * Le catalogue tarife chaque plan dans neuf devises (voir TARIFS dans
+   * subscription.controller.ts). Le montant d'un paiement n'a donc de sens
+   * qu'avec sa devise, et `PATCH /auth/currency` laisse un gestionnaire
+   * changer la sienne quand il veut. Proratiser en divisant 5 000 FCFA par un
+   * tarif journalier en euros ne compare pas deux durées : ça compare deux
+   * unités différentes, et le résultat n'a aucun sens.
+   */
+
+  it("ne crédite pas neuf ans de PRO à qui passe du FCFA à l'euro", () => {
+    // Sans conversion : 5000 × (20/30) ÷ (29/30) = 3 448 jours de crédit.
+    // Avec conversion, les 20 jours de STARTER valent ~6 jours de PRO, comme
+    // pour un gestionnaire qui serait resté en euros.
+    const resultat = calculerPeriodeActivation({
+      maintenant: d(2026, 9, 10),
+      cycle: "MONTHLY",
+      changeDePlan: true,
+      finActuelle: d(2026, 9, 30),
+      nouveauMontant: 29,
+      nouvelleDevise: "EUR",
+      dernierPaiement: {
+        amount: 5000,
+        startDate: d(2026, 8, 31),
+        billingCycle: "MONTHLY",
+        currency: "XOF",
+        plan: "STARTER",
+      },
+      tarifPourDevise: tarifsTest,
+    });
+
+    const base = calculerPeriode({ maintenant: d(2026, 9, 10), cycle: "MONTHLY", finActuelle: null });
+    const credit = Math.round((resultat.endDate.getTime() - base.endDate.getTime()) / 86_400_000);
+    expect(credit).toBeLessThan(15);
+    expect(credit).toBeGreaterThan(0);
+  });
+
+  it("ne fait pas perdre ses jours à qui passe de l'euro au FCFA", () => {
+    // Le défaut symétrique : 29 × (20/30) ÷ (5000/30) = 0,116 jour, arrondi à
+    // zéro. Le gestionnaire perdait intégralement ce qu'il avait payé.
+    const resultat = calculerPeriodeActivation({
+      maintenant: d(2026, 9, 10),
+      cycle: "MONTHLY",
+      changeDePlan: true,
+      finActuelle: d(2026, 9, 30),
+      nouveauMontant: 15000,
+      nouvelleDevise: "XOF",
+      dernierPaiement: {
+        amount: 9,
+        startDate: d(2026, 8, 31),
+        billingCycle: "MONTHLY",
+        currency: "EUR",
+        plan: "STARTER",
+      },
+      tarifPourDevise: tarifsTest,
+    });
+
+    const base = calculerPeriode({ maintenant: d(2026, 9, 10), cycle: "MONTHLY", finActuelle: null });
+    const credit = Math.round((resultat.endDate.getTime() - base.endDate.getTime()) / 86_400_000);
+    expect(credit).toBeGreaterThan(0);
+  });
+
+  it("crédite presque autant en FCFA qu'en euros pour un changement de plan équivalent", () => {
+    // La preuve que la conversion est bien une conversion : deux
+    // gestionnaires dans la même situation, facturés dans deux devises,
+    // sortent avec le même nombre de jours à un jour près.
+    //
+    // Pourquoi « à un jour près » et non « exactement » : le catalogue tarife
+    // chaque marché séparément, avec un ajustement délibéré pour certains
+    // (9 €/29 € contre 5 000/15 000 FCFA). Les rapports STARTER/PRO ne sont
+    // donc pas identiques d'une devise à l'autre, et cet écart-là est une
+    // décision commerciale, pas un défaut de calcul. Ce que le test refuse,
+    // c'est l'écart d'un facteur mille qu'on avait avant.
+    const commun = {
+      maintenant: d(2026, 9, 10),
+      cycle: "MONTHLY" as const,
+      changeDePlan: true,
+      finActuelle: d(2026, 9, 30),
+      tarifPourDevise: tarifsTest,
+    };
+    const base = calculerPeriode({ maintenant: d(2026, 9, 10), cycle: "MONTHLY", finActuelle: null });
+    const jours = (fin: Date) => Math.round((fin.getTime() - base.endDate.getTime()) / 86_400_000);
+
+    const enEuros = calculerPeriodeActivation({
+      ...commun,
+      nouveauMontant: 29,
+      nouvelleDevise: "EUR",
+      dernierPaiement: { amount: 9, startDate: d(2026, 8, 31), billingCycle: "MONTHLY", currency: "EUR", plan: "STARTER" },
+    });
+    const enFcfa = calculerPeriodeActivation({
+      ...commun,
+      nouveauMontant: 15000,
+      nouvelleDevise: "XOF",
+      dernierPaiement: { amount: 5000, startDate: d(2026, 8, 31), billingCycle: "MONTHLY", currency: "XOF", plan: "STARTER" },
+    });
+
+    expect(Math.abs(jours(enFcfa.endDate) - jours(enEuros.endDate))).toBeLessThanOrEqual(1);
+    expect(jours(enEuros.endDate)).toBeGreaterThan(0);
+  });
+
+  it("n'invente aucun crédit quand le tarif de conversion est introuvable", () => {
+    // Une devise retirée du catalogue, un plan renommé : plutôt qu'un chiffre
+    // fabriqué, on repart sur une période neuve. Signaler trop peu se corrige
+    // à la main ; offrir neuf ans, non.
+    const resultat = calculerPeriodeActivation({
+      maintenant: d(2026, 9, 10),
+      cycle: "MONTHLY",
+      changeDePlan: true,
+      finActuelle: d(2026, 9, 30),
+      nouveauMontant: 29,
+      nouvelleDevise: "EUR",
+      dernierPaiement: {
+        amount: 5000,
+        startDate: d(2026, 8, 31),
+        billingCycle: "MONTHLY",
+        currency: "ZZZ",
+        plan: "STARTER",
+      },
+      tarifPourDevise: tarifsTest,
+    });
+
+    const base = calculerPeriode({ maintenant: d(2026, 9, 10), cycle: "MONTHLY", finActuelle: null });
+    expect(resultat.endDate).toEqual(base.endDate);
   });
 });
 

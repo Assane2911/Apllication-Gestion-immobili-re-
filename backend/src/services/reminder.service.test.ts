@@ -319,3 +319,108 @@ describe("runUpcomingRentDueReminders", () => {
     expect(updated.status).toBe("LATE");
   });
 });
+
+describe("Un rappel qui n'est pas parti ne doit pas être compté comme envoyé", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 7, 1));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /**
+   * Le marqueur `reminderSentAt` est posé AVANT l'envoi pour empêcher le
+   * doublon. Mais `sendEmail` ne lève jamais : il journalise et renvoie
+   * `{ error: true }`. Sans relâcher le marqueur, une panne SMTP de quelques
+   * minutes pendant le cron marque toutes les factures du jour comme
+   * relancées sans qu'un seul message ne parte, et le filtre
+   * `isNull(reminderSentAt)` les exclut définitivement le lendemain. Le
+   * locataire n'apprend jamais que son loyer est dû, et le journal annonce
+   * « 40 avis envoyés ».
+   */
+  async function facture() {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id, { phone: "+221778422993" });
+    const contract = await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 6, 31),
+    });
+    return { manager, contract };
+  }
+
+  it("relâche le marqueur quand ni l'email ni WhatsApp ne sont partis", async () => {
+    const { manager } = await facture();
+    const email = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false, error: true });
+    const whatsapp = vi
+      .spyOn(whatsappService, "envoyerMessageWhatsapp")
+      .mockResolvedValue({ simulated: false, error: true, raison: "erreur_api" });
+
+    const premier = await runRentDueReminders(manager.id);
+
+    expect(premier.sent).toBe(0);
+    const [apres] = await testDb.select().from(invoices);
+    expect(apres.reminderSentAt).toBeNull();
+
+    // Et surtout : le lendemain, l'avis part pour de bon.
+    email.mockResolvedValue({ simulated: false });
+    whatsapp.mockResolvedValue({ simulated: false });
+    const second = await runRentDueReminders(manager.id);
+    expect(second.sent).toBe(1);
+
+    email.mockRestore();
+    whatsapp.mockRestore();
+  });
+
+  it("garde le marqueur si WhatsApp a livré, même quand l'email a échoué", async () => {
+    // Contre-épreuve : relâcher ici renverrait le lendemain un WhatsApp que
+    // le locataire a déjà reçu. Il a été joint, c'est ce qui compte.
+    const { manager } = await facture();
+    const email = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false, error: true });
+    const whatsapp = vi.spyOn(whatsappService, "envoyerMessageWhatsapp").mockResolvedValue({ simulated: false });
+
+    const resultat = await runRentDueReminders(manager.id);
+
+    expect(resultat.sent).toBe(1);
+    const [apres] = await testDb.select().from(invoices);
+    expect(apres.reminderSentAt).not.toBeNull();
+
+    email.mockRestore();
+    whatsapp.mockRestore();
+  });
+
+  it("compte les échecs et les annonce, au lieu de les taire", async () => {
+    const { manager } = await facture();
+    const email = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false, error: true });
+    const whatsapp = vi
+      .spyOn(whatsappService, "envoyerMessageWhatsapp")
+      .mockResolvedValue({ simulated: false, error: true, raison: "erreur_api" });
+
+    const resultat = await runRentDueReminders(manager.id);
+
+    expect(resultat.echecs).toBe(1);
+
+    email.mockRestore();
+    whatsapp.mockRestore();
+  });
+
+  it("n'affirme pas qu'un rappel manuel est parti quand il a échoué", async () => {
+    const { manager, contract } = await facture();
+    const inv = await createInvoice(contract.id, { status: "PENDING" });
+    const email = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false, error: true });
+    const whatsapp = vi
+      .spyOn(whatsappService, "envoyerMessageWhatsapp")
+      .mockResolvedValue({ simulated: false, error: true, raison: "erreur_api" });
+
+    const resultat = await sendSingleInvoiceReminder(inv.id, manager.id);
+
+    expect(resultat.success).toBe(false);
+    const [apres] = await testDb.select().from(invoices);
+    expect(apres.reminderSentAt).toBeNull();
+
+    email.mockRestore();
+    whatsapp.mockRestore();
+  });
+});

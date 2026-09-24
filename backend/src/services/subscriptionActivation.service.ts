@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db, DbClient, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
+import { tarifPourDevise } from "../controllers/subscription.controller";
 import { calculerPeriodeActivation } from "./subscriptionPeriod.service";
 
 /**
@@ -105,13 +106,19 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
     changeDePlan,
     finActuelle: compte.subscriptionEndsAt,
     nouveauMontant: record.amount,
+    // La devise de l'enregistrement, pas celle du compte aujourd'hui : c'est
+    // dans celle-là que le montant a été fixé au moment de la souscription.
+    nouvelleDevise: record.currency,
     dernierPaiement: dernierPaiement
       ? {
           amount: dernierPaiement.amount,
           startDate: dernierPaiement.startDate,
           billingCycle: dernierPaiement.billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+          currency: dernierPaiement.currency,
+          plan: dernierPaiement.plan,
         }
       : null,
+    tarifPourDevise,
   });
 
   // Réclamation atomique : la transition PENDING → PAID est conditionnée au

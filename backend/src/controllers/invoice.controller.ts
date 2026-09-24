@@ -353,8 +353,12 @@ export const sendMonthlyReminders = asyncHandler(async (req: Request, res: Respo
   const result = await runRentDueReminders(req.user!.userId);
   res.json({
     success: true,
-    message: `${result.sent} avis d'échéance envoyé(s) avec succès aux locataires.`,
+    message:
+      result.echecs > 0
+        ? `${result.sent} avis d'échéance envoyé(s), ${result.echecs} en échec — ils seront retentés automatiquement.`
+        : `${result.sent} avis d'échéance envoyé(s) avec succès aux locataires.`,
     sent: result.sent,
+    echecs: result.echecs,
     details: result.details,
   });
 });
@@ -363,7 +367,9 @@ export const sendMonthlyReminders = asyncHandler(async (req: Request, res: Respo
 export const sendInvoiceReminder = asyncHandler(async (req: Request, res: Response) => {
   const result = await sendSingleInvoiceReminder(req.params.id, req.user!.userId);
   res.json({
-    message: `Rappel d'échéance envoyé à ${result.tenantName} (${result.tenantEmail}).`,
+    message: result.success
+      ? `Rappel d'échéance envoyé à ${result.tenantName} (${result.tenantEmail}).`
+      : `L'envoi vers ${result.tenantEmail} a échoué. Vérifiez l'adresse du locataire, puis réessayez.`,
     ...result,
   });
 });

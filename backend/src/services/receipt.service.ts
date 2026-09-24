@@ -4,6 +4,7 @@ import { agencySettings, contracts, invoices, properties, tenants } from "../db/
 import { sendEmail } from "./email.service";
 import { periodeCouverte } from "./invoice.service";
 import { generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
+import { formaterMontant } from "../utils/montant";
 import { nomAvecCivilite } from "../utils/nom";
 
 const monthNames = [
@@ -88,7 +89,7 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
           Nous confirmons la bonne réception de votre paiement de loyer pour
           <strong>${monthLabel} ${invoice.periodYear}</strong> concernant le logement
           <strong>${receiptData.property.title}</strong>, d'un montant de
-          <strong>${invoice.amount} ${receiptData.invoice.currency}</strong>.
+          <strong>${formaterMontant(invoice.amount, receiptData.invoice.currency)}</strong>.
         </p>
         <p>Votre quittance de loyer est jointe à cet email au format PDF.</p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
