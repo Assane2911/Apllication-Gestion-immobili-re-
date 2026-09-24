@@ -9,7 +9,7 @@ import { agencySettings, contracts, invoices, owners, properties, users } from "
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertOwnership } from "../utils/authorization";
+import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
@@ -278,11 +278,8 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
  * partout ailleurs dans l'app).
  */
 export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.ownerId;
-  if (!ownerId) throw new ApiError(404, "Aucune fiche propriétaire associée à ce compte");
-
-  const [owner] = await db.select().from(owners).where(eq(owners.id, ownerId));
-  if (!owner) throw new ApiError(404, "Fiche propriétaire introuvable");
+  const owner = await chargerProprietaireDuCompte(req);
+  const ownerId = owner.id;
 
   const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, ownerId));
   const propertyIds = ownerProperties.map((p: typeof properties.$inferSelect) => p.id);

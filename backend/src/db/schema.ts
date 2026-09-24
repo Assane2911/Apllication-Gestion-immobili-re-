@@ -143,11 +143,15 @@ export const properties = pgTable(
 // Claude Code sur la machine de l'utilisateur, en parallèle de ce chantier —
 // ce fichier ne fait donc que refléter fidèlement ce qui existe déjà en
 // production (colonnes, index, FK, valeurs par défaut), sans rien inventer.
-// Contrairement à tenants.userId, owners.userId n'a PAS de contrainte unique
-// en base (un même compte utilisateur pourrait donc être lié à plusieurs
-// fiches propriétaire) et sa FK vers users n'a pas de ON DELETE (par défaut
-// NO ACTION, donc RESTRICT implicite) — à la différence de tenants.userId
-// (onDelete: "set null"). Idem, il n'existe pas ici de contrainte unique
+// owners.userId porte désormais une contrainte UNIQUE, comme tenants.userId :
+// sans elle, « la fiche propriétaire du compte » n'aurait pas de sens unique,
+// et c'est pourtant ce que le portail interroge depuis que la fiche est
+// résolue par le compte et non par le jeton (voir
+// chargerProprietaireDuCompte). Un même compte lié à deux fiches de deux
+// agences aurait laissé la base en choisir une sans ordre défini. Sa FK vers
+// users n'a toujours pas de ON DELETE (par défaut NO ACTION, donc RESTRICT
+// implicite) — à la différence de tenants.userId (onDelete: "set null").
+// Idem, il n'existe pas ici de contrainte unique
 // (managerId, email) comme sur tenants : deux propriétaires de la même
 // agence peuvent donc partager le même email sans être bloqués.
 export const owners = pgTable(
@@ -183,7 +187,7 @@ export const owners = pgTable(
     // Taux de commission de l'agence sur les loyers de ce propriétaire (en %).
     managementFeeRate: doublePrecision("management_fee_rate").notNull().default(8.0),
     notes: text("notes"),
-    userId: text("user_id").references(() => users.id),
+    userId: text("user_id").unique().references(() => users.id),
     ...timestamps,
   },
   (table) => ({

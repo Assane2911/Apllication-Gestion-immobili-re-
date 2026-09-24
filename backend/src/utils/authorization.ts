@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { Request } from "express";
 import { db } from "../db/client";
-import { users } from "../db/schema";
+import { owners, users } from "../db/schema";
 import { AuthPayload } from "../middleware/auth";
 import { ApiError } from "./asyncHandler";
 
@@ -107,4 +107,29 @@ export function assertOwnership<T>(
   if (!entity || getManagerId(entity as NonNullable<T>) !== managerId) {
     throw new ApiError(statusCode, message);
   }
+}
+
+/**
+ * Charge la fiche propriétaire RATTACHÉE AU COMPTE connecté.
+ *
+ * Le jeton porte bien un `ownerId`, mais il ne fait pas foi : il est signé,
+ * donc infalsifiable, et pourtant il peut avoir cessé d'être vrai. Il reste
+ * valable sept jours, et sa version n'est pas incrémentée quand une agence
+ * retire un accès ou réaffecte une fiche. Le porteur d'un jeton devenu
+ * obsolète continuait donc de lire le compte-rendu de gestion qu'il désigne —
+ * IBAN, taux de commission, loyers encaissés bien par bien.
+ *
+ * C'est la règle que le portail locataire applique déjà (voir
+ * `exporterMesDonnees`) : la base tranche, pas le jeton. On la reporte ici.
+ *
+ * 403 et non 404 : la question n'est pas de savoir si une fiche existe
+ * quelque part — le demandeur est authentifié et sa propre fiche, elle, est
+ * simplement absente. Il n'y a donc aucune existence à dissimuler.
+ */
+export async function chargerProprietaireDuCompte(req: Request) {
+  const [owner] = await db.select().from(owners).where(eq(owners.userId, req.user!.userId));
+  if (!owner) {
+    throw new ApiError(403, "Aucune fiche propriétaire n'est rattachée à ce compte.");
+  }
+  return owner;
 }

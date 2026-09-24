@@ -6,6 +6,7 @@ import { agencySettings, contracts, expenses, invoices, owners, properties } fro
 import { generateCrgHtml } from "../services/pdf.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { nomAvecCivilite } from "../utils/nom";
+import { chargerProprietaireDuCompte } from "../utils/authorization";
 
 /**
  * Module "CRG" (Compte-Rendu de Gestion) : synthèse mensuelle par
@@ -242,11 +243,7 @@ export const getCrgForOwner = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const getMyCrg = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.ownerId;
-  if (!ownerId) throw new ApiError(404, "Aucune fiche propriétaire associée à ce compte");
-
-  const [owner] = await db.select().from(owners).where(eq(owners.id, ownerId));
-  if (!owner) throw new ApiError(404, "Fiche propriétaire introuvable");
+  const owner = await chargerProprietaireDuCompte(req);
 
   const { month, year } = resolveMonthYear(req);
   res.json(await computeCrg(owner, month, year));
@@ -264,11 +261,7 @@ export const exportCrgForOwner = asyncHandler(async (req: Request, res: Response
 });
 
 export const exportMyCrg = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.ownerId;
-  if (!ownerId) throw new ApiError(404, "Aucune fiche propriétaire associée à ce compte");
-
-  const [owner] = await db.select().from(owners).where(eq(owners.id, ownerId));
-  if (!owner) throw new ApiError(404, "Fiche propriétaire introuvable");
+  const owner = await chargerProprietaireDuCompte(req);
 
   const { month, year } = resolveMonthYear(req);
   const crg = await computeCrg(owner, month, year);
