@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { DEVISES_ACCEPTEES, estDeviseAcceptee } from "./devises";
+import { DEVISES, DEVISES_ACCEPTEES, estDeviseAcceptee } from "./devises";
 
 /**
  * Le pont entre les deux paquets.
@@ -18,12 +18,26 @@ import { DEVISES_ACCEPTEES, estDeviseAcceptee } from "./devises";
  */
 const CHEMIN_FRONTEND = path.resolve(__dirname, "../../../frontend/src/context/currency.ts");
 
-function devisesDuFrontend(): string[] {
+interface DeviseDuFrontend {
+  code: string;
+  symbole: string;
+  position: "avant" | "apres";
+}
+
+function devisesDuFrontend(): DeviseDuFrontend[] {
   const source = fs.readFileSync(CHEMIN_FRONTEND, "utf-8");
   const bloc = source.match(/export const CURRENCIES[^{]*\{([\s\S]*?)\n\};/);
   if (!bloc) throw new Error(`Bloc CURRENCIES introuvable dans ${CHEMIN_FRONTEND}`);
 
-  return Array.from(bloc[1].matchAll(/^\s{2}([A-Z]{3}):\s*\{/gm)).map((m) => m[1]);
+  const lignes = Array.from(
+    bloc[1].matchAll(/^\s{2}([A-Z]{3}):\s*\{[^}]*symbol:\s*"([^"]*)"[^}]*symbolPosition:\s*"(before|after)"/gm)
+  );
+
+  return lignes.map((m) => ({
+    code: m[1],
+    symbole: m[2],
+    position: m[3] === "before" ? "avant" : "apres",
+  }));
 }
 
 describe("Devises acceptées par le serveur", () => {
@@ -31,7 +45,20 @@ describe("Devises acceptées par le serveur", () => {
     const attendues = devisesDuFrontend();
 
     expect(attendues.length).toBeGreaterThan(0);
-    expect([...DEVISES_ACCEPTEES].sort()).toEqual([...attendues].sort());
+    expect([...DEVISES_ACCEPTEES].sort()).toEqual(attendues.map((d) => d.code).sort());
+  });
+
+  it("écrit chaque devise avec le même symbole et du même côté que le portail", () => {
+    // Le serveur met désormais les montants en forme lui aussi, pour les
+    // emails et les messages WhatsApp. Deux symboles divergents donneraient un
+    // « 35 000 FCFA » à l'écran et un « 35 000 F » dans le message reçu : le
+    // locataire douterait du montant plutôt que de la mise en page.
+    for (const attendue of devisesDuFrontend()) {
+      expect(DEVISES[attendue.code], `devise absente du serveur : ${attendue.code}`).toEqual({
+        symbole: attendue.symbole,
+        position: attendue.position,
+      });
+    }
   });
 
   it("refuse un code absent de la liste", () => {

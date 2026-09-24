@@ -16,27 +16,40 @@ import { z } from "zod";
  * `z.string().min(1).max(10)` acceptait « XYZ » — puis un montant s'affichait
  * avec un symbole choisi par défaut, donc faux sans en avoir l'air.
  */
-export const DEVISES_ACCEPTEES = [
-  "EUR",
-  "USD",
-  "XOF",
-  "XAF",
-  "STN",
-  "GBP",
-  "CAD",
-  "CHF",
-  "MAD",
-  "GNF",
-  "MRU",
-  "CDF",
-] as const;
+export interface PresentationDevise {
+  /** Ce qui s'écrit à côté du nombre : « FCFA », « € », « $ »… */
+  symbole: string;
+  /**
+   * Côté du nombre où se place le symbole. L'usage n'est pas le même partout
+   * — « 450 € » mais « $1 200 » — et se tromper donne immédiatement l'air
+   * d'un message mal fabriqué.
+   */
+  position: "avant" | "apres";
+}
 
-export type DeviseAcceptee = (typeof DEVISES_ACCEPTEES)[number];
+export const DEVISES: Record<string, PresentationDevise> = {
+  EUR: { symbole: "€", position: "apres" },
+  USD: { symbole: "$", position: "avant" },
+  XOF: { symbole: "FCFA", position: "apres" },
+  XAF: { symbole: "FCFA", position: "apres" },
+  STN: { symbole: "Db", position: "apres" },
+  GBP: { symbole: "£", position: "avant" },
+  CAD: { symbole: "$CA", position: "avant" },
+  CHF: { symbole: "CHF", position: "apres" },
+  MAD: { symbole: "DH", position: "apres" },
+  GNF: { symbole: "FG", position: "apres" },
+  MRU: { symbole: "UM", position: "apres" },
+  CDF: { symbole: "FC", position: "apres" },
+};
+
+export const DEVISES_ACCEPTEES = Object.keys(DEVISES);
+
+export type DeviseAcceptee = string;
 
 export const MESSAGE_DEVISE_INVALIDE = `Devise non prise en charge. Devises disponibles : ${DEVISES_ACCEPTEES.join(", ")}.`;
 
 export function estDeviseAcceptee(code: string): boolean {
-  return (DEVISES_ACCEPTEES as readonly string[]).includes(code);
+  return Object.prototype.hasOwnProperty.call(DEVISES, code);
 }
 
 /**

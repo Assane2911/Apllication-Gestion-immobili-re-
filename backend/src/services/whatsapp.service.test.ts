@@ -174,7 +174,7 @@ describe("variables des modèles WhatsApp (Message Templates)", () => {
       "2": "septembre 2026",
       "3": "Villa avec jardin",
       "4": "3",
-      "5": "650 XOF",
+      "5": "650 FCFA",
       "6": "https://app.example.com/portail/paiements",
     });
   });

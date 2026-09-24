@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
+import { formaterMontant } from "../utils/montant";
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -369,7 +370,10 @@ export function rentDueReminderEmail(params: {
     "juillet", "août", "septembre", "octobre", "novembre", "décembre"
   ];
   const monthName = monthNames[periodMonth - 1] || `${periodMonth}`;
-  const currencyDisplay = currency === "EUR" ? "€" : escapeHtml(currency);
+  // Le montant est mis en forme comme au portail (séparateur de milliers,
+  // symbole local) : le locataire ne doit pas lire deux écritures de la même
+  // somme selon qu'il regarde son espace ou sa boîte aux lettres.
+  const montantAffiche = escapeHtml(formaterMontant(amount, currency));
 
   return {
     subject: `📢 Échéance de loyer ${monthName} ${periodYear} — Règlement attendu avant le 5`,
@@ -387,7 +391,7 @@ export function rentDueReminderEmail(params: {
           
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
             <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Montant à régler</span>
-            <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0;">${amount} ${currencyDisplay}</div>
+            <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0;">${montantAffiche}</div>
             <div style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: bold; padding: 6px 14px; border-radius: 20px; border: 1px solid #fde68a;">
               ⏰ Date limite de règlement : au plus tard le 5 ${monthName} ${periodYear}
             </div>
@@ -453,7 +457,7 @@ export function rentDueSoonReminderEmail(params: {
             <strong>${escapeHtml(formattedDueDate)}</strong> (dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}).
           </p>
           <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px; margin: 16px 0; text-align: center;">
-            <span style="font-size: 24px; font-weight: 900; color: #92400e;">${amount} ${escapeHtml(currency)}</span>
+            <span style="font-size: 24px; font-weight: 900; color: #92400e;">${escapeHtml(formaterMontant(amount, currency))}</span>
           </div>
           <div style="text-align: center; margin: 20px 0;">
             <a href="${frontendUrl}/portail/paiements" style="background: #2563eb; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block;">

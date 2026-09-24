@@ -24,6 +24,7 @@
  * plutôt que de tenter un appel voué à l'échec.
  */
 import { env } from "../config/env";
+import { formaterMontant } from "../utils/montant";
 import { versE164 } from "../utils/phone";
 
 /**
@@ -133,11 +134,6 @@ export async function envoyerMessageWhatsapp(
   }
 
   return { simulated: false };
-}
-
-function formaterMontant(amount: number, currency: string): string {
-  const currencyDisplay = currency === "EUR" ? "€" : currency;
-  return `${amount} ${currencyDisplay}`;
 }
 
 const MONTH_NAMES = [

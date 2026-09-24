@@ -79,6 +79,12 @@ describe("sendEmail", () => {
   });
 });
 
+// fr-FR sépare les milliers par une espace fine insécable (U+202F). Les
+// montants des emails sont désormais mis en forme comme au portail — séparateur
+// et symbole local — parce qu'un locataire lisant « 35 000 FCFA » sur son espace
+// et « 35000 XOF » dans son email doute du montant, pas de la mise en page.
+const ESPACE_FINE = "\u202f";
+
 describe("templates d'emails", () => {
   it("passwordResetEmail : intègre l'URL de réinitialisation fournie", () => {
     const { subject, html } = passwordResetEmail({ resetUrl: "https://app.test/reset?token=abc123" });
@@ -167,7 +173,7 @@ describe("templates d'emails", () => {
     });
     expect(subject).toContain("mars 2026");
     expect(html).toContain("Ibrahima Diop");
-    expect(html).toContain("150000 €");
+    expect(html).toContain(`150${ESPACE_FINE}000 €`);
   });
 
   it("rentDueReminderEmail : affiche la devise personnalisée et assainit le HTML", () => {
@@ -181,7 +187,7 @@ describe("templates d'emails", () => {
       dueDate: new Date(2026, 3, 5),
       frontendUrl: "https://app.test",
     });
-    expect(html).toContain("450000 XOF");
+    expect(html).toContain(`450${ESPACE_FINE}000 FCFA`);
     expect(html).toContain("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;Amadou");
     expect(html).not.toContain("<script>");
   });
@@ -200,7 +206,7 @@ describe("templates d'emails", () => {
     });
     expect(subject).toContain("dans 1 jour(s)");
     expect(html).toContain("(dans 1 jour)"); // singulier, pas "1 jours"
-    expect(html).toContain("150000 XOF");
+    expect(html).toContain(`150${ESPACE_FINE}000 FCFA`);
   });
 
   it("rentDueSoonReminderEmail : accorde 'jours' au pluriel quand daysLeft > 1", () => {
