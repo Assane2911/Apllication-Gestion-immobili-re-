@@ -149,9 +149,9 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Payer" }));
 
-    expect(screen.queryByText("🧪 Mode démo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Mode démo")).not.toBeInTheDocument();
     // Les moyens légitimes restent proposés.
-    expect(screen.getByText("🌍 PayDunya")).toBeInTheDocument();
+    expect(screen.getByText("PayDunya")).toBeInTheDocument();
   });
 
   it("paiement en ligne : envoie la bonne requête, affiche la confirmation et recharge la liste", async () => {
@@ -169,7 +169,7 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
 
     await user.click(screen.getByRole("button", { name: "Payer" }));
-    const paydunyaCard = screen.getByText("🌍 PayDunya").closest("div")!;
+    const paydunyaCard = screen.getByText("PayDunya").closest("div")!;
     await user.click(within(paydunyaCard).getByRole("button", { name: "Choisir ce moyen" }));
 
     await waitFor(() => expect(screen.getByText("Paiement de 500 confirmé.")).toBeInTheDocument());
@@ -198,7 +198,7 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Payer" }));
 
-    const bankCard = screen.getByText("🏦 Virement bancaire").closest("div")!;
+    const bankCard = screen.getByText("Virement bancaire").closest("div")!;
     await user.type(within(bankCard).getByPlaceholderText("Référence du virement"), "VIR-2026-06-001");
     await user.click(within(bankCard).getByRole("button", { name: "Choisir ce moyen" }));
 
@@ -228,7 +228,7 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Payer" }));
 
-    const bankCard = screen.getByText("🏦 Virement bancaire").closest("div")!;
+    const bankCard = screen.getByText("Virement bancaire").closest("div")!;
     expect(within(bankCard).getByText("FR7630006000011234567890189")).toBeInTheDocument();
     expect(within(bankCard).getByText("BNPAFRPPXXX")).toBeInTheDocument();
 
@@ -246,7 +246,7 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Payer" }));
 
-    const bankCard = screen.getByText("🏦 Virement bancaire").closest("div")!;
+    const bankCard = screen.getByText("Virement bancaire").closest("div")!;
     expect(
       within(bankCard).getByText(/n'a pas encore renseigné ses coordonnées bancaires/)
     ).toBeInTheDocument();
@@ -271,7 +271,7 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Payer" }));
 
-    const paydunyaCard = screen.getByText("🌍 PayDunya").closest("div")!;
+    const paydunyaCard = screen.getByText("PayDunya").closest("div")!;
     await user.click(within(paydunyaCard).getByRole("button", { name: "Choisir ce moyen" }));
 
     await waitFor(() => expect(assignSpy).toHaveBeenCalledWith("https://paydunya.example/checkout"));
