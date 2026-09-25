@@ -1,6 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
-import { doublePrecision, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, doublePrecision, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 const id = () => text("id").primaryKey().$defaultFn(() => createId());
 const timestamps = {
@@ -328,6 +328,13 @@ export const agencySettings = pgTable("agency_settings", {
   // déclaration ne fait alors que masquer l'absence réelle de paiement.
   iban: text("iban"),
   bic: text("bic"),
+  // Rappels de loyer par SMS/WhatsApp (voir sms.service.ts et
+  // reminder.service.ts) : désactivés par défaut car chaque envoi via Twilio
+  // est facturé, contrairement à l'email — l'agence doit les activer
+  // explicitement. Envoyés au numéro déjà enregistré sur la fiche locataire
+  // (tenants.phone), en plus de l'email existant, jamais à sa place.
+  smsRemindersEnabled: boolean("sms_reminders_enabled").notNull().default(false),
+  whatsappRemindersEnabled: boolean("whatsapp_reminders_enabled").notNull().default(false),
   ...timestamps,
 });
 

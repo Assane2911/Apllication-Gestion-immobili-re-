@@ -18,6 +18,8 @@ export default function AgencySettingsPage() {
     legalNotice: "",
     iban: "",
     bic: "",
+    smsRemindersEnabled: false,
+    whatsappRemindersEnabled: false,
   });
 
   useEffect(() => {
@@ -31,6 +33,8 @@ export default function AgencySettingsPage() {
         legalNotice: res.data.legalNotice || "",
         iban: res.data.iban || "",
         bic: res.data.bic || "",
+        smsRemindersEnabled: res.data.smsRemindersEnabled ?? false,
+        whatsappRemindersEnabled: res.data.whatsappRemindersEnabled ?? false,
       });
     });
   }, []);
@@ -179,6 +183,35 @@ export default function AgencySettingsPage() {
                 className="w-full text-sm font-mono border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                {t("manager.agencySettings.fields.rentRemindersSectionTitle")}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {t("manager.agencySettings.fields.rentRemindersSectionHint")}
+              </p>
+            </div>
+            <label className="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.smsRemindersEnabled}
+                onChange={(e) => setForm({ ...form, smsRemindersEnabled: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500"
+              />
+              {t("manager.agencySettings.fields.smsRemindersEnabled")}
+            </label>
+            <label className="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.whatsappRemindersEnabled}
+                onChange={(e) => setForm({ ...form, whatsappRemindersEnabled: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500"
+              />
+              {t("manager.agencySettings.fields.whatsappRemindersEnabled")}
+            </label>
           </div>
 
           <div>

@@ -2,10 +2,29 @@ import { SQL, and, desc, eq, gte, isNull, lt, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, invoices, properties, tenants } from "../db/schema";
+import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
+import { rentDueReminderText, rentDueSoonReminderText, sendTextMessage } from "./sms.service";
+
+/**
+ * Envoie, en plus de l'email de rappel de loyer, un SMS et/ou un WhatsApp au
+ * locataire si l'agence a activé ces canaux (agencySettings). N'affecte
+ * jamais le statut d'envoi de la facture : ces canaux sont un complément à
+ * l'email, jamais un remplacement, et un échec Twilio ne doit pas empêcher
+ * l'avis d'être considéré comme envoyé (la réclamation `reminderSentAt` /
+ * `dueSoonReminderSentAt` a déjà eu lieu avant l'appel à cette fonction).
+ */
+async function sendRentReminderTextMessages(
+  agency: typeof agencySettings.$inferSelect | null,
+  phone: string,
+  body: string
+) {
+  if (!agency) return;
+  if (agency.smsRemindersEnabled) await sendTextMessage(phone, body, "sms");
+  if (agency.whatsappRemindersEnabled) await sendTextMessage(phone, body, "whatsapp");
+}
 
 /**
  * Recherche les contrats ACTIFS dont la date de fin tombe exactement dans
@@ -134,11 +153,13 @@ export async function runRentDueReminders(managerId?: string) {
       contract: contracts,
       tenant: tenants,
       property: properties,
+      agency: agencySettings,
     })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .leftJoin(agencySettings, eq(properties.managerId, agencySettings.userId))
     .where(and(...conditions));
 
   let sent = 0;
@@ -176,6 +197,19 @@ export async function runRentDueReminders(managerId?: string) {
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
 
+    await sendRentReminderTextMessages(
+      row.agency,
+      row.tenant.phone,
+      rentDueReminderText({
+        tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+        propertyTitle: row.property.title,
+        amount: row.invoice.amount,
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+      })
+    );
+
     sent += 1;
     details.push({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
@@ -212,11 +246,12 @@ export async function runUpcomingRentDueReminders() {
   const targetEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysBefore, 23, 59, 59);
 
   const rows = await db
-    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties, agency: agencySettings })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .leftJoin(agencySettings, eq(properties.managerId, agencySettings.userId))
     .where(
       and(
         eq(contracts.status, "ACTIVE"),
@@ -241,6 +276,7 @@ export async function runUpcomingRentDueReminders() {
       .returning();
     if (!reclamee) continue;
 
+    const dueDate = new Date(row.invoice.dueDate);
     const { subject, html } = rentDueSoonReminderEmail({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       propertyTitle: row.property.title,
@@ -249,11 +285,26 @@ export async function runUpcomingRentDueReminders() {
       periodMonth: row.invoice.periodMonth,
       periodYear: row.invoice.periodYear,
       daysLeft: daysBefore,
-      dueDate: new Date(row.invoice.dueDate),
+      dueDate,
       frontendUrl: env.frontendUrl,
     });
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
+
+    await sendRentReminderTextMessages(
+      row.agency,
+      row.tenant.phone,
+      rentDueSoonReminderText({
+        tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+        propertyTitle: row.property.title,
+        amount: row.invoice.amount,
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+        daysLeft: daysBefore,
+        dueDate,
+      })
+    );
 
     sent += 1;
     details.push({
@@ -294,11 +345,13 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
       contract: contracts,
       tenant: tenants,
       property: properties,
+      agency: agencySettings,
     })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .leftJoin(agencySettings, eq(properties.managerId, agencySettings.userId))
     .where(eq(invoices.id, invoiceId));
 
   if (!row || row.property.managerId !== managerId) {
@@ -338,6 +391,19 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   });
 
   const emailResult = await sendEmail(row.tenant.email, subject, html);
+
+  await sendRentReminderTextMessages(
+    row.agency,
+    row.tenant.phone,
+    rentDueReminderText({
+      tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
+      propertyTitle: row.property.title,
+      amount: row.invoice.amount,
+      currency: row.invoice.currency || "EUR",
+      periodMonth: row.invoice.periodMonth,
+      periodYear: row.invoice.periodYear,
+    })
+  );
 
   return {
     success: true,

@@ -42,6 +42,8 @@ const updateAgencySettingsSchema = z.object({
   stampOrSignatureUrl: z.string().optional().nullable(),
   iban: ibanSchema,
   bic: bicSchema,
+  smsRemindersEnabled: z.boolean().optional(),
+  whatsappRemindersEnabled: z.boolean().optional(),
 });
 
 export const updateAgencySettings = asyncHandler(async (req: Request, res: Response) => {

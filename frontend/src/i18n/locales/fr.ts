@@ -766,6 +766,11 @@ const fr = {
         legalNotice: "Mentions légales du pied de page des quittances",
         legalNoticePlaceholder:
           "Ex: Société de gestion immobilière SARL au capital de 50 000€. Carte professionnelle Transaction et Gestion Immobilière n°CPI 7501 délivrée par la CCI...",
+        rentRemindersSectionTitle: "Rappels de loyer par SMS / WhatsApp",
+        rentRemindersSectionHint:
+          "Envoyés en complément de l'email, au numéro de téléphone déjà enregistré sur la fiche de chaque locataire.",
+        smsRemindersEnabled: "Envoyer aussi les rappels de loyer par SMS",
+        whatsappRemindersEnabled: "Envoyer aussi les rappels de loyer par WhatsApp",
       },
       save: "Enregistrer les paramètres",
       saving: "Sauvegarde en cours...",

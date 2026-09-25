@@ -46,6 +46,20 @@ export const env = {
     from: process.env.EMAIL_FROM ?? "Gestion Immobilière <no-reply@example.com>",
   },
 
+  // Twilio (SMS + WhatsApp) pour les rappels de loyer aux locataires — voir
+  // sms.service.ts. Tant que accountSid/authToken (ou le numéro "from" du
+  // canal utilisé) ne sont pas renseignés, l'envoi retombe sur une
+  // simulation journalisée, comme pour l'email (voir email.service.ts).
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID ?? "",
+    authToken: process.env.TWILIO_AUTH_TOKEN ?? "",
+    // Numéro Twilio classique, format E.164 (ex: +33756000000).
+    smsFrom: process.env.TWILIO_SMS_FROM ?? "",
+    // Numéro Twilio activé pour l'API WhatsApp, format E.164 SANS le préfixe
+    // "whatsapp:" (ajouté automatiquement par sms.service.ts).
+    whatsappFrom: process.env.TWILIO_WHATSAPP_FROM ?? "",
+  },
+
   reminder: {
     daysBefore: parseInt(process.env.CONTRACT_REMINDER_DAYS ?? "14", 10),
     cron: process.env.REMINDER_CRON ?? "0 8 * * *",
