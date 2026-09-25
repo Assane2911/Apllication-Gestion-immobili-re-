@@ -50,13 +50,24 @@ export const env = {
   // locataires — voir whatsapp.service.ts. Tant qu'accessToken/phoneNumberId
   // ne sont pas renseignés, l'envoi retombe sur une simulation journalisée,
   // comme pour l'email (voir email.service.ts).
+  //
+  // Envoi obligatoirement via des templates PRÉ-APPROUVÉS par Meta (et non du
+  // texte libre) : au-delà de 24h sans message du locataire, la Cloud API
+  // refuse tout message business-initiated hors template (erreur 131047).
   whatsapp: {
     // Business Manager Meta → WhatsApp → API Setup → "Temporary access token"
     // (ou un token permanent via une app System User pour la production).
-    accessToken: process.env.WHATSAPP_ACCESS_TOKEN ?? "",
+    accessToken: process.env.META_WHATSAPP_ACCESS_TOKEN ?? "",
     // Identifiant du numéro expéditeur WhatsApp Business (pas le numéro lui-même).
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ?? "",
-    apiVersion: process.env.WHATSAPP_API_VERSION ?? "v21.0",
+    phoneNumberId: process.env.META_WHATSAPP_PHONE_NUMBER_ID ?? "",
+    apiVersion: process.env.META_WHATSAPP_API_VERSION ?? "v21.0",
+    // Noms des templates approuvés dans WhatsApp Manager (catégorie Utilitaire) :
+    // corps exact attendu par chacun, voir rentDueTemplateParams/rentDueSoonTemplateParams
+    // dans whatsapp.service.ts — l'ordre des paramètres envoyés DOIT correspondre
+    // exactement aux {{n}} du template approuvé, sinon l'envoi est rejeté.
+    templateRentDue: process.env.META_WHATSAPP_TEMPLATE_RENT_DUE ?? "avis_echeance_loyer",
+    templateRentDueSoon: process.env.META_WHATSAPP_TEMPLATE_RENT_DUE_SOON ?? "rappel_avant_echeance_loyer",
+    templateLanguage: process.env.META_WHATSAPP_TEMPLATE_LANGUAGE ?? "fr",
   },
 
   reminder: {

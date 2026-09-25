@@ -6,19 +6,30 @@ import { agencySettings, contracts, invoices, properties, tenants } from "../db/
 import { ApiError } from "../utils/asyncHandler";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
-import { rentDueReminderText, rentDueSoonReminderText, sendWhatsAppMessage } from "./whatsapp.service";
+import { rentDueSoonTemplateParams, rentDueTemplateParams, sendWhatsAppTemplate } from "./whatsapp.service";
 
 /**
- * Envoie, en plus de l'email de rappel de loyer, un message WhatsApp au
- * locataire si l'agence a activé ce canal (agencySettings). N'affecte jamais
- * le statut d'envoi de la facture : WhatsApp est un complément à l'email,
- * jamais un remplacement, et un échec de la Cloud API ne doit pas empêcher
- * l'avis d'être considéré comme envoyé (la réclamation `reminderSentAt` /
- * `dueSoonReminderSentAt` a déjà eu lieu avant l'appel à cette fonction).
+ * Envoie, en plus de l'email de rappel de loyer, un message WhatsApp (via
+ * template pré-approuvé Meta) au locataire si l'agence a activé ce canal
+ * (agencySettings). N'affecte jamais le statut d'envoi de la facture :
+ * WhatsApp est un complément à l'email, jamais un remplacement, et un échec
+ * de la Cloud API ne doit pas empêcher l'avis d'être considéré comme envoyé
+ * (la réclamation `reminderSentAt` / `dueSoonReminderSentAt` a déjà eu lieu
+ * avant l'appel à cette fonction).
  */
-async function sendRentReminderWhatsApp(agency: typeof agencySettings.$inferSelect | null, phone: string, body: string) {
+async function sendRentReminderWhatsApp(
+  agency: typeof agencySettings.$inferSelect | null,
+  phone: string,
+  templateName: string,
+  parameters: string[]
+) {
   if (!agency?.whatsappRemindersEnabled) return;
-  await sendWhatsAppMessage(phone, body);
+  await sendWhatsAppTemplate(phone, templateName, parameters);
+}
+
+/** URL de la page de paiement du locataire, passée en dernier paramètre des deux templates WhatsApp. */
+function paymentPortalUrl(): string {
+  return `${env.frontendUrl}/portail/paiements`;
 }
 
 /**
@@ -195,13 +206,15 @@ export async function runRentDueReminders(managerId?: string) {
     await sendRentReminderWhatsApp(
       row.agency,
       row.tenant.phone,
-      rentDueReminderText({
+      env.whatsapp.templateRentDue,
+      rentDueTemplateParams({
         tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
         propertyTitle: row.property.title,
         amount: row.invoice.amount,
         currency: row.invoice.currency || "EUR",
         periodMonth: row.invoice.periodMonth,
         periodYear: row.invoice.periodYear,
+        paymentUrl: paymentPortalUrl(),
       })
     );
 
@@ -289,7 +302,8 @@ export async function runUpcomingRentDueReminders() {
     await sendRentReminderWhatsApp(
       row.agency,
       row.tenant.phone,
-      rentDueSoonReminderText({
+      env.whatsapp.templateRentDueSoon,
+      rentDueSoonTemplateParams({
         tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
         propertyTitle: row.property.title,
         amount: row.invoice.amount,
@@ -297,7 +311,7 @@ export async function runUpcomingRentDueReminders() {
         periodMonth: row.invoice.periodMonth,
         periodYear: row.invoice.periodYear,
         daysLeft: daysBefore,
-        dueDate,
+        paymentUrl: paymentPortalUrl(),
       })
     );
 
@@ -390,13 +404,15 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   await sendRentReminderWhatsApp(
     row.agency,
     row.tenant.phone,
-    rentDueReminderText({
+    env.whatsapp.templateRentDue,
+    rentDueTemplateParams({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       propertyTitle: row.property.title,
       amount: row.invoice.amount,
       currency: row.invoice.currency || "EUR",
       periodMonth: row.invoice.periodMonth,
       periodYear: row.invoice.periodYear,
+      paymentUrl: paymentPortalUrl(),
     })
   );
 
