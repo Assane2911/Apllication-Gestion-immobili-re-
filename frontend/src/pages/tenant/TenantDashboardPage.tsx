@@ -1,4 +1,17 @@
-import { Building2, Calendar, CheckCircle2, Clock, CreditCard, FileCheck, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  Calendar,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  CreditCard,
+  Download,
+  FileCheck,
+  Home,
+  PenLine,
+  ShieldCheck,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -106,8 +119,8 @@ export default function TenantDashboardPage() {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-8 text-center shadow-xs">
-        <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3 text-2xl">
-          🏠
+        <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3">
+          <Home size={22} strokeWidth={1.75} aria-hidden="true" />
         </div>
         <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t("tenant.dashboard.noContract")}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -152,8 +165,8 @@ export default function TenantDashboardPage() {
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600 text-5xl">
-                  🏠
+                <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                  <Home size={48} strokeWidth={1.5} aria-hidden="true" />
                 </div>
               )}
               {/* Gradient Overlay */}
@@ -216,7 +229,7 @@ export default function TenantDashboardPage() {
               <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3.5 shadow-2xs">
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base ${c.signedByTenantAt ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400" : "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"}`}>
-                    {c.signedByTenantAt ? <CheckCircle2 size={18} /> : "✍️"}
+                    {c.signedByTenantAt ? <CheckCircle2 size={18} /> : <PenLine size={16} aria-hidden="true" />}
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t("tenant.dashboard.signatureTitle")}</p>
@@ -239,7 +252,7 @@ export default function TenantDashboardPage() {
                       onClick={() => setSigningContract(c)}
                       className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                     >
-                      ✍️ {t("tenant.dashboard.signMyLease")}
+                      <PenLine size={13} className="inline shrink-0 -mt-0.5" aria-hidden="true" /> {t("tenant.dashboard.signMyLease")}
                     </button>
                     </Bulle>
                   )}
@@ -248,7 +261,7 @@ export default function TenantDashboardPage() {
                     onClick={() => setViewingLeaseContract(c)}
                     className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
                   >
-                    <span>📄</span> {t("tenant.dashboard.viewLeasePdf")}
+                    <Download size={13} aria-hidden="true" /> {t("tenant.dashboard.viewLeasePdf")}
                   </button>
                   </Bulle>
 
@@ -316,7 +329,7 @@ export default function TenantDashboardPage() {
                                 onClick={() => setSigningInspection(insp)}
                                 className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer"
                               >
-                                ✍️ {t("tenant.dashboard.inspectionSignMine")}
+                                <PenLine size={13} className="inline shrink-0 -mt-0.5" aria-hidden="true" /> {t("tenant.dashboard.inspectionSignMine")}
                               </button>
                               </Bulle>
                             )}
@@ -325,7 +338,7 @@ export default function TenantDashboardPage() {
                               onClick={() => setViewingReportInspection(insp)}
                               className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer"
                             >
-                              📋 {t("tenant.dashboard.inspectionViewReport")}
+                              <ClipboardList size={13} className="inline shrink-0 -mt-0.5" aria-hidden="true" /> {t("tenant.dashboard.inspectionViewReport")}
                             </button>
                             </Bulle>
                           </div>
@@ -339,7 +352,7 @@ export default function TenantDashboardPage() {
               {unpaid.length > 0 && (
                 <div className="bg-gradient-to-r from-amber-50 to-amber-100/60 dark:from-amber-500/10 dark:to-amber-500/5 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs rounded-xl p-4 flex items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-2 font-medium">
-                    <span className="text-base">⚠️</span>
+                    <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
                     <span>{t("tenant.dashboard.unpaidWarning", { count: unpaid.length })}</span>
                   </div>
                   <Link

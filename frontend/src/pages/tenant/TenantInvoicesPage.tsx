@@ -149,8 +149,8 @@ export default function TenantInvoicesPage() {
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               En attente de règlement
             </p>
-            <span className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center text-sm">
-              ⏳
+            <span className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <Clock size={15} aria-hidden="true" />
             </span>
           </div>
           <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
@@ -162,8 +162,8 @@ export default function TenantInvoicesPage() {
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Quittances disponibles
             </p>
-            <span className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-sm">
-              📄
+            <span className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <Download size={15} aria-hidden="true" />
             </span>
           </div>
           <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
