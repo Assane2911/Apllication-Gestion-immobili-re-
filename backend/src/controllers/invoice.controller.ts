@@ -350,14 +350,25 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
 /** Déclenchement manuel des avis d'échéance du 1er du mois par le gestionnaire. */
 export const sendMonthlyReminders = asyncHandler(async (req: Request, res: Response) => {
   const result = await runRentDueReminders(req.user!.userId);
+  // L'email est le canal de référence : un échec WhatsApp seul (numéro
+  // invalide, modèle rejeté par Meta) ne compte pas dans `echecs` (voir
+  // reminder.service.ts::aEteJoint), donc sans cette clause le gestionnaire
+  // lisait "envoyé avec succès" alors qu'une partie de ses locataires
+  // n'avait rien reçu sur WhatsApp — voir aussi le journal d'activité, qui
+  // reçoit le détail (numéro concerné) pour chaque échec de ce type.
+  const whatsappNote =
+    result.whatsappEchecs > 0
+      ? ` (${result.whatsappEchecs} message${result.whatsappEchecs > 1 ? "s" : ""} WhatsApp non délivré${result.whatsappEchecs > 1 ? "s" : ""} — voir le journal d'activité)`
+      : "";
   res.json({
     success: true,
     message:
       result.echecs > 0
-        ? `${result.sent} avis d'échéance envoyé(s), ${result.echecs} en échec — ils seront retentés automatiquement.`
-        : `${result.sent} avis d'échéance envoyé(s) avec succès aux locataires.`,
+        ? `${result.sent} avis d'échéance envoyé(s), ${result.echecs} en échec — ils seront retentés automatiquement.${whatsappNote}`
+        : `${result.sent} avis d'échéance envoyé(s) avec succès aux locataires.${whatsappNote}`,
     sent: result.sent,
     echecs: result.echecs,
+    whatsappEchecs: result.whatsappEchecs,
     details: result.details,
   });
 });
@@ -367,7 +378,9 @@ export const sendInvoiceReminder = asyncHandler(async (req: Request, res: Respon
   const result = await sendSingleInvoiceReminder(req.params.id, req.user!.userId);
   res.json({
     message: result.success
-      ? `Rappel d'échéance envoyé à ${result.tenantName} (${result.tenantEmail}).`
+      ? result.whatsappError
+        ? `Rappel envoyé par email à ${result.tenantName} (${result.tenantEmail}), mais le message WhatsApp n'a pas pu être délivré.`
+        : `Rappel d'échéance envoyé à ${result.tenantName} (${result.tenantEmail}).`
       : `L'envoi vers ${result.tenantEmail} a échoué. Vérifiez l'adresse du locataire, puis réessayez.`,
     ...result,
   });

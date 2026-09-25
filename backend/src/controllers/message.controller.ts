@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -111,11 +111,14 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
     .where(eq(messages.contractId, contractId))
     .orderBy(asc(messages.createdAt));
 
-  // Marquer les messages reçus comme lus
+  // Marquer comme lus seulement les messages reçus, pas ceux envoyés par
+  // l'utilisateur courant : sinon un locataire qui ouvre sa propre
+  // conversation marque son propre message comme lu, ce qui vide à tort le
+  // badge "non lu" du gestionnaire avant qu'il ne l'ait vu.
   await db
     .update(messages)
     .set({ isRead: "true" })
-    .where(eq(messages.contractId, contractId));
+    .where(and(eq(messages.contractId, contractId), ne(messages.senderId, req.user.userId)));
 
   res.json({
     contract: {

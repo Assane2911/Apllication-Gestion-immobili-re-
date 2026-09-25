@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { invoices } from "../db/schema";
+import { activityLogs, invoices } from "../db/schema";
 import * as emailService from "./email.service";
 import * as whatsappService from "./whatsapp.service";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
@@ -101,6 +101,45 @@ describe("runRentDueReminders", () => {
 
     whatsappSpy.mockRestore();
     sendEmailSpy.mockRestore();
+  });
+
+  /**
+   * Régression : `aEteJoint` ne compte un rappel en échec que si l'email
+   * l'est AUSSI (un seul canal suffit). Un vrai échec WhatsApp alors que
+   * l'email est bien parti passait donc entièrement sous silence — ni
+   * `echecs`, ni `whatsappSimulated` (qui vaut `false` aussi bien pour "vrai
+   * échec" que pour "vraiment envoyé") ne le distinguait. Le gestionnaire
+   * lisait "N avis envoyés avec succès" sans savoir qu'une partie de ses
+   * locataires n'avait rien reçu sur WhatsApp.
+   */
+  it("signale un vrai échec WhatsApp (whatsappEchecs, details.whatsappError) même quand l'email a réussi, et le journalise", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+
+    const whatsappSpy = vi
+      .spyOn(whatsappService, "envoyerMessageWhatsapp")
+      .mockResolvedValue({ simulated: false, error: true, raison: "numero_invalide" });
+
+    const result = await runRentDueReminders();
+
+    expect(result.sent).toBe(1);
+    expect(result.echecs).toBe(0);
+    expect(result.whatsappEchecs).toBe(1);
+    expect(result.details[0].whatsappError).toBe(true);
+
+    const [logEntry] = await testDb
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.managerId, manager.id));
+    expect(logEntry).toBeDefined();
+    expect(logEntry.action).toBe("reminder.whatsapp_failed");
+
+    whatsappSpy.mockRestore();
   });
 
   /**
@@ -299,6 +338,48 @@ describe("runUpcomingRentDueReminders", () => {
     expect(result.details[0].whatsappSimulated).toBe(true);
 
     whatsappSpy.mockRestore();
+  });
+
+  /**
+   * Régression : contrairement à runRentDueReminders, cette fonction ne
+   * vérifiait jamais `aEteJoint` avant ce correctif — `sent += 1` était
+   * inconditionnel et `dueSoonReminderSentAt` restait posé même quand RIEN
+   * n'était parti. Une panne SMTP pendant le cron privait alors
+   * définitivement le locataire de son rappel "avant échéance" (le filtre
+   * `isNull(dueSoonReminderSentAt)` l'excluait dès le lendemain), tout en
+   * laissant croire que l'envoi avait réussi.
+   */
+  it("relâche le marqueur et ne compte rien comme envoyé quand ni l'email ni WhatsApp ne sont partis, puis retente avec succès", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id, { phone: "+221778422993" });
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, {
+      periodMonth: 8,
+      periodYear: 2026,
+      dueDate: new Date(2026, 7, 4),
+      status: "PENDING",
+    });
+
+    const email = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false, error: true });
+    const whatsapp = vi
+      .spyOn(whatsappService, "envoyerMessageWhatsapp")
+      .mockResolvedValue({ simulated: false, error: true, raison: "erreur_api" });
+
+    const premier = await runUpcomingRentDueReminders();
+    expect(premier.sent).toBe(0);
+    expect(premier.echecs).toBe(1);
+    const [apres] = await testDb.select().from(invoices);
+    expect(apres.dueSoonReminderSentAt).toBeNull();
+
+    // Le lendemain, une fois les canaux rétablis, le rappel part pour de bon.
+    email.mockResolvedValue({ simulated: false });
+    whatsapp.mockResolvedValue({ simulated: false });
+    const second = await runUpcomingRentDueReminders();
+    expect(second.sent).toBe(1);
+
+    email.mockRestore();
+    whatsapp.mockRestore();
   });
 
   it("bascule automatiquement en retard (LATE) les factures PENDING dont l'échéance est déjà dépassée", async () => {

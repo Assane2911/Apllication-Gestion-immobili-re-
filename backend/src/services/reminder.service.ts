@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants, users } from "../db/schema";
+import { logActivity } from "./activity.service";
 import { ApiError } from "../utils/asyncHandler";
 import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
@@ -37,6 +38,34 @@ function aEteJoint(
 ): boolean {
   if (!email.error) return true;
   return !whatsapp.simulated && !whatsapp.error;
+}
+
+/**
+ * `aEteJoint` ne compte l'envoi WhatsApp en échec que si l'email l'est AUSSI
+ * (un seul canal suffit, voir plus haut). Un vrai échec WhatsApp (numéro
+ * invalide, modèle rejeté par Meta, jeton expiré) alors que l'email est
+ * bien parti passait donc entièrement sous silence : ni compté dans
+ * `echecs`, ni visible ailleurs que dans un log serveur — le gestionnaire
+ * lisait « N avis envoyés » sans savoir qu'une partie de ses locataires
+ * n'avait rien reçu sur WhatsApp. On ne journalise ici QUE les vrais échecs
+ * (`error: true` — numéro invalide, erreur API, erreur réseau), jamais une
+ * simulation (WhatsApp non configuré) : ce cas-là n'est pas une panne, et le
+ * journaliser à chaque exécution du cron spammerait le journal d'activité
+ * d'une agence qui n'a simplement pas encore activé WhatsApp.
+ */
+async function signalerEchecsWhatsapp(
+  echecsParManager: Map<string, { count: number; dernierMotif: string }>,
+  contexte: string
+) {
+  for (const [managerId, { count, dernierMotif }] of echecsParManager) {
+    await logActivity({
+      managerId,
+      action: "reminder.whatsapp_failed",
+      entityType: "reminder",
+      entityLabel: contexte,
+      details: `${count} message${count > 1 ? "s" : ""} WhatsApp non délivré${count > 1 ? "s" : ""} (${contexte}) — l'email a bien été envoyé, mais vérifiez le numéro du locataire et la configuration WhatsApp (dernier motif : ${dernierMotif}).`,
+    });
+  }
 }
 
 /**
@@ -230,7 +259,9 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
 
   let sent = 0;
   let echecs = 0;
+  let whatsappEchecs = 0;
   const details = [];
+  const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
 
   for (const row of rows) {
     if (budget.epuise()) {
@@ -293,10 +324,18 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       continue;
     }
 
-    if (!aEteJoint(emailResult, whatsappResult)) {
-      await db.update(invoices).set({ dueSoonReminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
-      echecs += 1;
-      continue;
+    // Voir signalerEchecsWhatsapp : l'email a réussi (sinon on serait déjà
+    // sorti via aEteJoint ci-dessus), mais WhatsApp peut avoir vraiment
+    // échoué sans que ça compte comme un échec global — on le trace quand
+    // même pour le journal d'activité du gestionnaire concerné.
+    if (whatsappResult.error) {
+      whatsappEchecs += 1;
+      const managerId = row.property.managerId;
+      const courant = whatsappEchecsParManager.get(managerId);
+      whatsappEchecsParManager.set(managerId, {
+        count: (courant?.count ?? 0) + 1,
+        dernierMotif: whatsappResult.raison ?? "erreur_api",
+      });
     }
 
     sent += 1;
@@ -307,14 +346,17 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       amount: row.invoice.amount,
       simulated: emailResult.simulated,
       whatsappSimulated: whatsappResult.simulated,
+      whatsappError: whatsappResult.error === true,
     });
   }
+
+  await signalerEchecsWhatsapp(whatsappEchecsParManager, "avis d'échéance du mois");
 
   console.log(`[reminder] 📢 ${sent} avis d'échéance envoyé(s) aux locataires pour ${currentMonth}/${currentYear}.`);
   if (interrompu) {
     console.warn("[reminder] Budget de temps épuisé : avis d'échéance restants reportés à la prochaine exécution.");
   }
-  return { sent, echecs, details, interrompu };
+  return { sent, echecs, whatsappEchecs, details, interrompu };
 }
 
 /**
@@ -361,8 +403,10 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
 
   let sent = 0;
   let echecs = 0;
+  let whatsappEchecs = 0;
   let interrompu = false;
   const details = [];
+  const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
 
   for (const row of rows) {
     if (budget.epuise()) {
@@ -413,6 +457,27 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       })
     );
 
+    // Voir runRentDueReminders : sans cette vérification (absente ici avant
+    // ce correctif), un échec d'email laissait `dueSoonReminderSentAt` posé
+    // en permanence — le rappel "avant échéance" de cette facture n'était
+    // alors JAMAIS retenté, et la fonction se déclarait pourtant 100 %
+    // réussie (sent += 1 inconditionnel).
+    if (!aEteJoint(emailResult, whatsappResult)) {
+      await db.update(invoices).set({ dueSoonReminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
+      echecs += 1;
+      continue;
+    }
+
+    if (whatsappResult.error) {
+      whatsappEchecs += 1;
+      const managerId = row.property.managerId;
+      const courant = whatsappEchecsParManager.get(managerId);
+      whatsappEchecsParManager.set(managerId, {
+        count: (courant?.count ?? 0) + 1,
+        dernierMotif: whatsappResult.raison ?? "erreur_api",
+      });
+    }
+
     sent += 1;
     details.push({
       tenantName: nomComplet(row.tenant),
@@ -421,8 +486,11 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       amount: row.invoice.amount,
       simulated: emailResult.simulated,
       whatsappSimulated: whatsappResult.simulated,
+      whatsappError: whatsappResult.error === true,
     });
   }
+
+  await signalerEchecsWhatsapp(whatsappEchecsParManager, 'rappel "avant échéance"');
 
   if (sent > 0) {
     console.log(`[reminder] ⏰ ${sent} rappel(s) "avant échéance" (J-${daysBefore}) envoyé(s) aux locataires.`);
@@ -432,7 +500,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) "avant échéance" reportés à la prochaine exécution.`
     );
   }
-  return { sent, echecs, details, interrompu };
+  return { sent, echecs, whatsappEchecs, details, interrompu };
 }
 
 // Fenêtre de réclamation pour l'envoi manuel d'un rappel individuel : assez
@@ -527,12 +595,27 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     await db.update(invoices).set({ reminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
   }
 
+  // Voir signalerEchecsWhatsapp : quand l'email a réussi, `joint` est vrai
+  // même si WhatsApp a vraiment échoué — sans `whatsappError`, le
+  // gestionnaire n'avait aucun moyen de le savoir depuis ce rappel manuel.
+  if (joint && whatsappResult.error) {
+    await logActivity({
+      managerId,
+      action: "reminder.whatsapp_failed",
+      entityType: "invoice",
+      entityId: row.invoice.id,
+      entityLabel: `${nomComplet(row.tenant)} — ${row.property.title}`,
+      details: `Le rappel WhatsApp n'a pas été délivré (${whatsappResult.raison ?? "erreur_api"}) — l'email, lui, est bien parti.`,
+    });
+  }
+
   return {
     success: joint,
     tenantEmail: row.tenant.email,
     tenantName: nomComplet(row.tenant),
     simulated: emailResult.simulated,
     whatsappSimulated: whatsappResult.simulated,
+    whatsappError: whatsappResult.error === true,
   };
 }
 
