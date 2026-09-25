@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
@@ -131,8 +132,12 @@ export default function SignatureModal({ signUrl, title, onSuccess, onClose }: S
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.signatureModal.title")}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{title}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-semibold">
-            ✕
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            aria-label={t("common.actions.close")}
+          >
+            <X size={18} />
           </button>
         </div>
 

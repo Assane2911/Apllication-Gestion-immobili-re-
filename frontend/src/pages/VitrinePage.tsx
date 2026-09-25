@@ -1,3 +1,4 @@
+import { Building2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -186,7 +187,9 @@ export default function VitrinePage() {
                 {listing.imageUrl ? (
                   <img src={fileUrl(listing.imageUrl) ?? undefined} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600 text-4xl">🏘️</div>
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                    <Building2 size={40} strokeWidth={1.5} aria-hidden="true" />
+                  </div>
                 )}
                 {listing.featured && (
                   <span className="absolute top-3 right-3 text-[10px] font-bold text-white bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">
@@ -245,14 +248,16 @@ export default function VitrinePage() {
               {selected.imageUrl ? (
                 <img src={fileUrl(selected.imageUrl) ?? undefined} alt={selected.title} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600 text-5xl">🏘️</div>
+                <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                  <Building2 size={48} strokeWidth={1.5} aria-hidden="true" />
+                </div>
               )}
               <button
                 onClick={() => setSelected(null)}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-900/70 text-white flex items-center justify-center text-sm hover:bg-slate-900"
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-900/70 text-white flex items-center justify-center hover:bg-slate-900"
                 aria-label={t("common.actions.close")}
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
             <div className="p-6 space-y-4">

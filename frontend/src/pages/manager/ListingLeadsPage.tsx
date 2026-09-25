@@ -1,3 +1,4 @@
+import { PhoneCall } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -135,7 +136,7 @@ export default function ListingLeadsPage() {
 
       {!loading && leads.length === 0 ? (
         <EmptyState
-          icon="📞"
+          icon={PhoneCall}
           title={t("manager.listingLeads.emptyTitle")}
           description={t("manager.listingLeads.emptyDesc")}
         />

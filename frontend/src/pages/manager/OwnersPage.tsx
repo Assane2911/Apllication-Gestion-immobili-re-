@@ -1,3 +1,4 @@
+import { Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -242,7 +243,7 @@ export default function OwnersPage() {
 
       {!loading && owners.length === 0 && !showForm ? (
         <EmptyState
-          icon="🧑‍💼"
+          icon={Briefcase}
           title={t("manager.owners.emptyTitle")}
           description={t("manager.owners.emptyDesc")}
           action={{ label: t("manager.owners.addBtn"), onClick: openCreate }}

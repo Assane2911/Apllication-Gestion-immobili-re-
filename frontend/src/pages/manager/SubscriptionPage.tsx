@@ -1,3 +1,4 @@
+import { AlertTriangle, Check, CheckCircle2, Clock, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
@@ -183,25 +184,25 @@ export default function SubscriptionPage() {
           navigateur — d'où un message distinct du succès immédiat. */}
       {retourPaiement === "succes" && (
         <div className="bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-sky-800 dark:text-sky-300 px-4 py-3 rounded-xl flex items-center gap-2">
-          <span>⏳</span>
+          <Clock size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{t("common.payment.returned")}</span>
         </div>
       )}
       {retourPaiement === "annule" && (
         <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl flex items-center gap-2">
-          <span>↩️</span>
+          <Undo2 size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{t("common.payment.cancelled")}</span>
         </div>
       )}
       {successMessage && (
         <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl flex items-center gap-2">
-          <span>🎉</span>
+          <CheckCircle2 size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{successMessage}</span>
         </div>
       )}
       {error && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl flex items-center gap-2">
-          <span>⚠️</span>
+          <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm">{error}</span>
         </div>
       )}
@@ -213,7 +214,7 @@ export default function SubscriptionPage() {
           en est, et depuis quel écran corriger. */}
       {propertyUsage?.exceeded && propertyUsage.max !== null && (
         <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl flex items-start gap-2">
-          <span>⚠️</span>
+          <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm">
             {t("manager.subscription.propertyCapExceeded", {
               count: propertyUsage.count,
@@ -368,7 +369,7 @@ export default function SubscriptionPage() {
                 <p className="font-semibold text-slate-900 dark:text-slate-100">{t("manager.subscription.includedInPlan")}</p>
                 {plan.features.map((feat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <span className="text-emerald-500 dark:text-emerald-400 font-bold">✓</span>
+                    <Check size={14} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
                     <span>{feat}</span>
                   </div>
                 ))}
@@ -417,9 +418,10 @@ export default function SubscriptionPage() {
               </div>
               <button
                 onClick={() => setSelectedPlan(null)}
-                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-lg leading-none"
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label={t("common.actions.close")}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 

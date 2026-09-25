@@ -129,7 +129,7 @@ describe("ExpensesPage", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
-    expect(screen.getByText("🛠️ Entretien & Travaux")).toBeInTheDocument();
+    expect(screen.getByText("Entretien & Travaux")).toBeInTheDocument();
     expect(screen.getByText("-250 €")).toBeInTheDocument();
     expect(screen.getByText("Artisan plombier")).toBeInTheDocument();
   });

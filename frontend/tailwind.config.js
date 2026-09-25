@@ -4,6 +4,15 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        // Remplace la pile système par défaut de Tailwind (font-sans) — texte
+        // courant et tableaux. Le fallback système reste actif tant que la
+        // police Google Fonts (chargée dans index.html) n'a pas fini de charger.
+        sans: ['"Public Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+        // Réservée aux titres (h1-h3, voir index.css) — plus de caractère que
+        // le corps de texte, sans devenir un second style à gérer page par page.
+        display: ['"Manrope"', "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
         brand: {
           50: "#eff6ff",
@@ -16,6 +25,16 @@ export default {
           700: "#1d4ed8",
           800: "#1e40af",
           900: "#1e3a8a",
+        },
+        // Bleu-nuit affiné pour les surfaces toujours sombres (barre latérale,
+        // en-tête locataire) — mêmes usages que le slate par défaut, en plus
+        // riche : évite le gris plat sans introduire une nouvelle palette
+        // dans chaque page.
+        ink: {
+          950: "#0a0e1a",
+          900: "#0f1524",
+          800: "#151b2c",
+          700: "#232b3f",
         },
       },
       keyframes: {

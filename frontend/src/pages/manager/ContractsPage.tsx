@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, FileCheck } from "lucide-react";
+import { Camera, CheckCircle2, Clock, Download, FileCheck, Hourglass, PenLine, RefreshCw } from "lucide-react";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
@@ -287,7 +287,8 @@ export default function ContractsPage() {
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
                   {showRenewal && (
                     <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold">
-                      ⏰ {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
+                      <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
+                      {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                     </span>
                   )}
                 </td>
@@ -295,14 +296,16 @@ export default function ContractsPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.contracts.agency")}</span>
                     {c.signedByManagerAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                        <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
+                      </span>
                     ) : (
                       <Bulle texte={t("manager.tips.contractSign")}>
                       <button
                         onClick={() => setSigningContract(c)}
-                        className="text-brand-600 dark:text-brand-400 font-semibold hover:underline"
+                        className="text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1"
                       >
-                        ✍️ {t("manager.contracts.sign")}
+                        <PenLine size={13} aria-hidden="true" /> {t("manager.contracts.sign")}
                       </button>
                       </Bulle>
                     )}
@@ -310,9 +313,13 @@ export default function ContractsPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.contracts.tenantLabel")}</span>
                     {c.signedByTenantAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                        <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
+                      </span>
                     ) : (
-                      <span className="text-amber-600 dark:text-amber-400">⏳ {t("manager.contracts.pendingSignature")}</span>
+                      <span className="text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                        <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
+                      </span>
                     )}
                   </div>
                 </td>
@@ -323,7 +330,7 @@ export default function ContractsPage() {
                     onClick={() => setViewingLeaseContract(c)}
                     className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                   >
-                    <span>📄</span> {t("manager.contracts.leasePdf")}
+                    <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                   </button>
                   </Bulle>
 
@@ -366,7 +373,7 @@ export default function ContractsPage() {
                         onClick={() => handleRenew(c)}
                         className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                       >
-                        🔄 {t("manager.contracts.renew")}
+                        <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renew")}
                       </button>
                       </Bulle>
                       <Bulle texte={t("manager.tips.contractEnd")}>
@@ -421,26 +428,33 @@ export default function ContractsPage() {
               </div>
               {showRenewal && (
                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                  ⏰ {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
+                  <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
+                  {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                 </p>
               )}
               <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
                 <span>
                   {t("manager.contracts.agency")} {c.signedByManagerAt ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                      <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
+                    </span>
                   ) : (
                     <Bulle texte={t("manager.tips.contractSign")}>
-                    <button onClick={() => setSigningContract(c)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline">
-                      ✍️ {t("manager.contracts.sign")}
+                    <button onClick={() => setSigningContract(c)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1">
+                      <PenLine size={13} aria-hidden="true" /> {t("manager.contracts.sign")}
                     </button>
                     </Bulle>
                   )}
                 </span>
                 <span>
                   {t("manager.contracts.tenantLabel")} {c.signedByTenantAt ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                      <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
+                    </span>
                   ) : (
-                    <span className="text-amber-600 dark:text-amber-400">⏳ {t("manager.contracts.pendingSignature")}</span>
+                    <span className="text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                      <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
+                    </span>
                   )}
                 </span>
               </div>
@@ -450,7 +464,7 @@ export default function ContractsPage() {
                   onClick={() => setViewingLeaseContract(c)}
                   className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                 >
-                  <span>📄</span> {t("manager.contracts.leasePdf")}
+                  <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                 </button>
                 </Bulle>
 
@@ -490,7 +504,7 @@ export default function ContractsPage() {
                       onClick={() => handleRenew(c)}
                       className="text-xs bg-emerald-600 text-white font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                     >
-                      🔄 {t("manager.contracts.renewShort")}
+                      <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renewShort")}
                     </button>
                     </Bulle>
                     <Bulle texte={t("manager.tips.contractEnd")}>

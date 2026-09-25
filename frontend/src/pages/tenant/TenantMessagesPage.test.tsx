@@ -90,7 +90,7 @@ describe("TenantMessagesPage", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText("👋 Vous n'avez pas encore d'échanges. Posez une question à votre gestionnaire ci-dessous.")
+        screen.getByText("Vous n'avez pas encore d'échanges. Posez une question à votre gestionnaire ci-dessous.")
       ).toBeInTheDocument()
     );
   });
@@ -118,7 +118,7 @@ describe("TenantMessagesPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() =>
       expect(
-        screen.getByText("👋 Vous n'avez pas encore d'échanges. Posez une question à votre gestionnaire ci-dessous.")
+        screen.getByText("Vous n'avez pas encore d'échanges. Posez une question à votre gestionnaire ci-dessous.")
       ).toBeInTheDocument()
     );
   });

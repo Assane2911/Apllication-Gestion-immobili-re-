@@ -1,3 +1,4 @@
+import { AlertTriangle, Hourglass } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/auth";
@@ -16,7 +17,7 @@ export default function TrialBanner() {
     return (
       <div className="bg-gradient-to-r from-red-600 to-rose-700 text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 animate-pulse">
         <div className="flex items-center gap-2">
-          <span className="text-xl">⚠️</span>
+          <AlertTriangle size={20} className="shrink-0" aria-hidden="true" />
           <div>
             <p className="font-semibold text-sm">{t("components.trialBanner.expiredTitle")}</p>
             <p className="text-xs text-red-100">
@@ -47,8 +48,8 @@ export default function TrialBanner() {
     return (
       <div className={`bg-gradient-to-r ${bgGradient} text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 border border-white/10`}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm shrink-0">
-            ⏳
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Hourglass size={15} aria-hidden="true" />
           </div>
           <div>
             <div className="flex items-center gap-2">

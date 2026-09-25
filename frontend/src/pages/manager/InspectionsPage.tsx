@@ -1,3 +1,4 @@
+import { CheckCircle2, Hourglass, KeyRound, PenLine, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
@@ -240,7 +241,13 @@ export default function InspectionsPage() {
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-slate-900 dark:text-slate-100">{t("manager.inspections.editTitle")}</h3>
-            <button onClick={() => setEditingInspection(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-semibold">✕</button>
+            <button
+              onClick={() => setEditingInspection(null)}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              aria-label={t("common.actions.close")}
+            >
+              <X size={18} />
+            </button>
           </div>
 
           <div>
@@ -361,7 +368,7 @@ export default function InspectionsPage() {
 
       {!loading && inspections.length === 0 && !showCreateForm ? (
         <EmptyState
-          icon="🔑"
+          icon={KeyRound}
           title={t("manager.inspections.emptyTitle")}
           description={t("manager.inspections.emptyDesc")}
           action={{ label: t("manager.inspections.addBtn"), onClick: openCreate }}
@@ -396,11 +403,13 @@ export default function InspectionsPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.inspections.agency")}</span>
                     {insp.signedByManagerAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.inspections.signed")}</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                        <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.inspections.signed")}
+                      </span>
                     ) : insp.status === "COMPLETED" ? (
                       <Bulle texte={t("manager.tips.inspectionSign")}>
-                      <button onClick={() => setSigningInspection(insp)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline">
-                        ✍️ {t("manager.inspections.sign")}
+                      <button onClick={() => setSigningInspection(insp)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1">
+                        <PenLine size={13} aria-hidden="true" /> {t("manager.inspections.sign")}
                       </button>
                       </Bulle>
                     ) : (
@@ -410,9 +419,13 @@ export default function InspectionsPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.inspections.tenantLabel")}</span>
                     {insp.signedByTenantAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.inspections.signed")}</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                        <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.inspections.signed")}
+                      </span>
                     ) : (
-                      <span className="text-amber-600 dark:text-amber-400">⏳ {t("manager.inspections.pendingSignature")}</span>
+                      <span className="text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                        <Hourglass size={12} aria-hidden="true" /> {t("manager.inspections.pendingSignature")}
+                      </span>
                     )}
                   </div>
                 </td>
@@ -470,8 +483,8 @@ export default function InspectionsPage() {
               )}
               {insp.status === "COMPLETED" && !insp.signedByManagerAt && (
                 <Bulle texte={t("manager.tips.inspectionSign")}>
-                <button onClick={() => setSigningInspection(insp)} className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg">
-                  ✍️ {t("manager.inspections.sign")}
+                <button onClick={() => setSigningInspection(insp)} className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                  <PenLine size={12} aria-hidden="true" /> {t("manager.inspections.sign")}
                 </button>
                 </Bulle>
               )}

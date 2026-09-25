@@ -1,3 +1,4 @@
+import { Camera } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste } from "../../api/client";
@@ -314,7 +315,7 @@ export default function TenantIssuesPage() {
                       onClick={() => setAddingPhotoToId(issue.id)}
                       className="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-semibold py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5"
                     >
-                      <span>📷</span> {t("tenant.issues.addPhoto")}
+                      <Camera size={13} aria-hidden="true" /> {t("tenant.issues.addPhoto")}
                     </button>
                     </Bulle>
                   )}

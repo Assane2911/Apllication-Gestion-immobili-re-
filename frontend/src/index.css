@@ -13,6 +13,12 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  /* Manrope sur les titres, appliqué une fois ici plutôt que dans chaque page —
+     seul le poids/la taille restent à la charge de chaque composant. */
+  h1, h2, h3 {
+    font-family: '"Manrope"', ui-sans-serif, system-ui, sans-serif;
+  }
+
   /* Custom sleek scrollbar */
   ::-webkit-scrollbar {
     width: 6px;

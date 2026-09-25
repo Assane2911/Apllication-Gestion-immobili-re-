@@ -1,4 +1,4 @@
-import { Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { FileText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
@@ -131,7 +131,7 @@ export default function OwnerCrgPage() {
           onClick={() => setShowExport(true)}
           className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
         >
-          <span>🧾</span> {t("owner.crg.exportHtml")}
+          <FileText size={13} aria-hidden="true" /> {t("owner.crg.exportHtml")}
         </button>
         </Bulle>
       </div>
