@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
@@ -71,9 +72,10 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
             type="button"
             onClick={onClose}
             disabled={deleting}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-semibold"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            aria-label={t("common.actions.close")}
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
