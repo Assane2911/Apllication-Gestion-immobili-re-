@@ -1,3 +1,4 @@
+import { CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
@@ -69,7 +70,7 @@ export default function AdminSettingsPage() {
       <>
       {success && (
         <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
-          <span>✅</span> {t("admin.settings.success")}
+          <CheckCircle2 size={15} aria-hidden="true" /> {t("admin.settings.success")}
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { Megaphone } from "lucide-react";
+import { Building2, Megaphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -349,8 +349,8 @@ export default function ListingsPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600 text-4xl">
-                    🏘️
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                    <Building2 size={40} strokeWidth={1.5} aria-hidden="true" />
                   </div>
                 )}
                 <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">

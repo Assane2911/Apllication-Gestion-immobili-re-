@@ -1,4 +1,4 @@
-import { Building2 } from "lucide-react";
+import { Building2, Home } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste } from "../../api/client";
@@ -232,8 +232,8 @@ export default function PropertiesPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600 text-4xl">
-                    🏠
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                    <Home size={40} strokeWidth={1.5} aria-hidden="true" />
                   </div>
                 )}
                 <div className="absolute top-3 right-3 z-10">

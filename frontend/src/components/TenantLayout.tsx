@@ -1,4 +1,4 @@
-import { LogOut, Moon, Sun } from "lucide-react";
+import { CreditCard, Home, LogOut, MessageCircle, Moon, Sun, Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
@@ -9,10 +9,10 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import BoutonSuggestion from "./BoutonSuggestion";
 
 const navItems = [
-  { to: "/portail", key: "home", icon: "🏠" },
-  { to: "/portail/paiements", key: "payments", icon: "💳" },
-  { to: "/portail/messages", key: "messages", icon: "💬" },
-  { to: "/portail/incidents", key: "issues", icon: "📷" },
+  { to: "/portail", key: "home", icon: Home },
+  { to: "/portail/paiements", key: "payments", icon: CreditCard },
+  { to: "/portail/messages", key: "messages", icon: MessageCircle },
+  { to: "/portail/incidents", key: "issues", icon: Wrench },
 ] as const;
 
 export default function TenantLayout() {
@@ -90,7 +90,7 @@ export default function TenantLayout() {
                 }`
               }
             >
-              <span>{item.icon}</span>
+              <item.icon size={15} strokeWidth={1.9} className="shrink-0" aria-hidden="true" />
               <span>{t(`nav.tenant.${item.key}`)}</span>
             </NavLink>
             </Bulle>

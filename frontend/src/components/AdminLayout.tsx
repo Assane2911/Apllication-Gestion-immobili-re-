@@ -1,4 +1,4 @@
-import { Moon, Sun } from "lucide-react";
+import { Landmark, LayoutDashboard, Lightbulb, Moon, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
@@ -7,10 +7,10 @@ import Bulle from "./Bulle";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const navItems = [
-  { to: "/admin", key: "dashboard", icon: "📊" },
-  { to: "/admin/virements", key: "transfers", icon: "🏦" },
-  { to: "/admin/suggestions", key: "suggestions", icon: "💡" },
-  { to: "/admin/parametres", key: "settings", icon: "⚙️" },
+  { to: "/admin", key: "dashboard", icon: LayoutDashboard },
+  { to: "/admin/virements", key: "transfers", icon: Landmark },
+  { to: "/admin/suggestions", key: "suggestions", icon: Lightbulb },
+  { to: "/admin/parametres", key: "settings", icon: Settings },
 ] as const;
 
 /** Layout de l'espace administration de la plateforme (distinct du gestionnaire/locataire). */
@@ -60,7 +60,10 @@ export default function AdminLayout() {
                 }`
               }
             >
-              {item.icon} {t(`admin.nav.${item.key}`)}
+              <span className="inline-flex items-center gap-1.5">
+                <item.icon size={14} strokeWidth={1.9} aria-hidden="true" />
+                {t(`admin.nav.${item.key}`)}
+              </span>
             </NavLink>
             </Bulle>
           ))}

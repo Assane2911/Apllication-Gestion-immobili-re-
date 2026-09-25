@@ -1,3 +1,4 @@
+import { CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -5,15 +6,6 @@ import { apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import { useAuth } from "../context/auth";
-
-function CheckCircleIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M8 12.5 11 15.5 16 9" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 export default function VerifyEmailPage() {
   const { t } = useTranslation();
@@ -84,7 +76,7 @@ export default function VerifyEmailPage() {
         ) : status === "success" ? (
           <div className="text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
-              <CheckCircleIcon />
+              <CheckCircle2 size={24} strokeWidth={1.8} />
             </div>
             <h2 className="text-xl font-bold text-white">{t("auth.verifyEmail.successTitle")}</h2>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.successSubtitle")}</p>
@@ -92,7 +84,7 @@ export default function VerifyEmailPage() {
         ) : (
           <div className="text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center mb-4">
-              <span className="text-2xl">✕</span>
+              <XCircle size={24} strokeWidth={1.8} />
             </div>
             <h2 className="text-xl font-bold text-white">{t("auth.verifyEmail.errorTitle")}</h2>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{error ?? t("auth.verifyEmail.errorSubtitle")}</p>

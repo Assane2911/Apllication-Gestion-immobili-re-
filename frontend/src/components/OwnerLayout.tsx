@@ -1,4 +1,4 @@
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, LogOut, Moon, Receipt, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
@@ -9,8 +9,8 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import BoutonSuggestion from "./BoutonSuggestion";
 
 const navItems = [
-  { to: "/proprietaire", key: "home", icon: "📊" },
-  { to: "/proprietaire/crg", key: "crg", icon: "🧾" },
+  { to: "/proprietaire", key: "home", icon: LayoutDashboard },
+  { to: "/proprietaire/crg", key: "crg", icon: Receipt },
 ] as const;
 
 /**
@@ -89,7 +89,7 @@ export default function OwnerLayout() {
                 }`
               }
             >
-              <span>{item.icon}</span>
+              <item.icon size={15} strokeWidth={1.9} className="shrink-0" aria-hidden="true" />
               <span>{t(`nav.owner.${item.key}`)}</span>
             </NavLink>
             </Bulle>

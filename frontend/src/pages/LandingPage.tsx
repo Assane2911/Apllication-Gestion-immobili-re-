@@ -1,3 +1,21 @@
+import {
+  Building2,
+  Camera,
+  Check,
+  CheckCircle2,
+  Globe,
+  Home,
+  Languages,
+  LayoutDashboard,
+  Lock,
+  Megaphone,
+  PenLine,
+  Receipt,
+  Scale,
+  Sparkles,
+  Wallet,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -8,55 +26,55 @@ import { useAuth } from "../context/auth";
 import { homePathForRole } from "../utils/roleHome";
 
 const FEATURE_CARDS = [
-  { key: "receipts", icon: "📄", color: "bg-brand-600/20 text-brand-400" },
-  { key: "signature", icon: "✍️", color: "bg-indigo-600/20 text-indigo-400" },
-  { key: "reminders", icon: "📢", color: "bg-emerald-600/20 text-emerald-400" },
-  { key: "dashboard", icon: "📊", color: "bg-purple-600/20 text-purple-400" },
-  { key: "expenses", icon: "💰", color: "bg-amber-600/20 text-amber-400" },
-  { key: "tenantPortal", icon: "🏠", color: "bg-sky-600/20 text-sky-400" },
-  { key: "security", icon: "🔒", color: "bg-rose-600/20 text-rose-400" },
-  { key: "multiCurrency", icon: "🌍", color: "bg-teal-600/20 text-teal-400" },
-  { key: "multiLanguage", icon: "🗣️", color: "bg-fuchsia-600/20 text-fuchsia-400" },
+  { key: "receipts", icon: Receipt, color: "bg-brand-600/20 text-brand-400" },
+  { key: "signature", icon: PenLine, color: "bg-indigo-600/20 text-indigo-400" },
+  { key: "reminders", icon: Megaphone, color: "bg-emerald-600/20 text-emerald-400" },
+  { key: "dashboard", icon: LayoutDashboard, color: "bg-purple-600/20 text-purple-400" },
+  { key: "expenses", icon: Wallet, color: "bg-amber-600/20 text-amber-400" },
+  { key: "tenantPortal", icon: Home, color: "bg-sky-600/20 text-sky-400" },
+  { key: "security", icon: Lock, color: "bg-rose-600/20 text-rose-400" },
+  { key: "multiCurrency", icon: Globe, color: "bg-teal-600/20 text-teal-400" },
+  { key: "multiLanguage", icon: Languages, color: "bg-fuchsia-600/20 text-fuchsia-400" },
 ] as const;
 
 const COMPARE_ROWS = [
   {
-    icon: "📢",
+    icon: Megaphone,
     title: "Avis d'échéance & Relances de loyer",
     description: "Anticipation des paiements et réduction des impayés",
     traditional: "Oublis fréquents, appels gênants, messages WhatsApp éparpillés, retards de paiement réguliers.",
     immoplatform: "Alerte automatique chaque 1er du mois avec échéance stricte au 5. Factures instantanées avec statut en direct.",
   },
   {
-    icon: "📄",
+    icon: Receipt,
     title: "Quittances de loyer certifiées",
     description: "Génération et délivrance légale aux locataires",
     traditional: "Création manuelle sur Word/Excel, conversion PDF fastidieuse, envois par email souvent oubliés.",
     immoplatform: "Génération automatique en 1 clic au format officiel certifié avec cachet agence, QR/numéro unique et mentions légales.",
   },
   {
-    icon: "✍️",
+    icon: PenLine,
     title: "Signature des contrats de bail",
     description: "Validation juridique et conclusion des baux",
     traditional: "Impression papier, paraphage page par page, déplacements physiques obligatoires, baux égarés.",
     immoplatform: "Signature tactile électronique (ordinateur, tablette, mobile) avec horodatage certifié en 2 minutes.",
   },
   {
-    icon: "📷",
+    icon: Camera,
     title: "Signalement des pannes & Incidents",
     description: "Suivi des réparations et de la maintenance",
     traditional: "Appels téléphoniques d'urgence, descriptions vagues, photos non datées, historique inexistant.",
     immoplatform: "Prise de photo directe par le locataire, galerie haute résolution pour l'agence et suivi d'intervention en temps réel.",
   },
   {
-    icon: "💰",
+    icon: Wallet,
     title: "Suivi des dépenses & Cash-Flow Net",
     description: "Calcul de rentabilité réelle et comptabilité",
     traditional: "Factures d'artisans dispersées, calculs manuels de fin d'année, aucune visibilité sur le rendement net.",
     immoplatform: "Enregistrement des dépenses par catégorie, calcul automatique du Cash-Flow net et export comptable CSV en 1 clic.",
   },
   {
-    icon: "🏢",
+    icon: Building2,
     title: "Image de marque & Multi-devises",
     description: "Professionnalisme et dimension internationale",
     traditional: "Documents neutres ou non professionnels, conversion manuelle sujette aux erreurs de change.",
@@ -131,7 +149,7 @@ function ContractMockup() {
           }`}
           style={{ transitionDelay: "1.1s" }}
         >
-          ✓ Signé
+          <CheckCircle2 size={11} className="inline shrink-0 -mt-0.5" aria-hidden="true" /> Signé
         </span>
       </div>
     </div>
@@ -356,9 +374,9 @@ export default function LandingPage() {
             <Reveal key={card.key} delay={(i % 3) * 100} className="group">
               <div className="h-full bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-sm hover:border-slate-700 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
                 <div
-                  className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center text-2xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
+                  className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
                 >
-                  {card.icon}
+                  <card.icon size={24} strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">{t(`landing.features.${card.key}.title`)}</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">{t(`landing.features.${card.key}.desc`)}</p>
@@ -453,7 +471,7 @@ export default function LandingPage() {
       <section id="compare" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-800/80">
         <Reveal className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/30 rounded-full px-4 py-1.5 text-xs text-emerald-300 font-semibold mb-4 shadow-inner">
-            <span>⚖️ Comparatif & Valeur Ajoutée</span>
+            <Scale size={13} aria-hidden="true" /> <span>Comparatif & Valeur Ajoutée</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
             Gestion Traditionnelle vs{" "}
@@ -491,12 +509,12 @@ export default function LandingPage() {
                 Fonctionnalité & Processus
               </div>
               <div className="md:col-span-4 p-5 bg-rose-950/20 text-rose-300 border-t md:border-t-0 md:border-l border-slate-800 flex items-center gap-2">
-                <span className="text-base">❌</span>
+                <X size={16} className="shrink-0" aria-hidden="true" />
                 <span>Gestion Traditionnelle (Excel / Papier)</span>
               </div>
               <div className="md:col-span-4 p-5 bg-emerald-950/30 text-emerald-300 border-t md:border-t-0 md:border-l border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">✨</span>
+                  <Sparkles size={16} className="shrink-0" aria-hidden="true" />
                   <span>ImmoPlatform Pro</span>
                 </div>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-semibold">
@@ -514,7 +532,7 @@ export default function LandingPage() {
                 >
                   {/* Nom du critère */}
                   <div className="md:col-span-4 p-5 flex items-start gap-3">
-                    <span className="text-xl shrink-0 mt-0.5">{row.icon}</span>
+                    <row.icon size={20} strokeWidth={1.75} className="shrink-0 mt-0.5 text-slate-400" aria-hidden="true" />
                     <div>
                       <h4 className="font-bold text-white text-sm">{row.title}</h4>
                       <p className="text-xs text-slate-400 mt-0.5">{row.description}</p>
@@ -523,13 +541,13 @@ export default function LandingPage() {
 
                   {/* Gestion traditionnelle */}
                   <div className="md:col-span-4 p-5 bg-rose-950/10 border-t md:border-t-0 md:border-l border-slate-800/80 flex items-start gap-2.5">
-                    <span className="text-rose-400 shrink-0 font-bold text-sm">✕</span>
+                    <X size={15} className="text-rose-400 shrink-0" aria-hidden="true" />
                     <span className="text-xs text-slate-300 leading-relaxed">{row.traditional}</span>
                   </div>
 
                   {/* ImmoPlatform Pro */}
                   <div className="md:col-span-4 p-5 bg-emerald-950/15 border-t md:border-t-0 md:border-l border-slate-800/80 flex items-start gap-2.5">
-                    <span className="text-emerald-400 shrink-0 font-bold text-sm">✓</span>
+                    <Check size={15} strokeWidth={2.5} className="text-emerald-400 shrink-0" aria-hidden="true" />
                     <span className="text-xs text-emerald-200/90 font-medium leading-relaxed">
                       {row.immoplatform}
                     </span>
@@ -567,7 +585,7 @@ export default function LandingPage() {
           {trustItems.map((item, i) => (
             <Reveal key={i} delay={i * 80}>
               <div className="flex items-start gap-3 bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed hover:border-emerald-500/30 transition-colors">
-                <span className="text-emerald-400 shrink-0">✓</span>
+                <Check size={15} strokeWidth={2.5} className="text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>{item}</span>
               </div>
             </Reveal>
@@ -642,7 +660,10 @@ export default function LandingPage() {
                 <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.starter.desc")}</p>
                 <ul className="mt-6 space-y-3 text-xs text-slate-300">
                   {starterFeatures.map((feat, i) => (
-                    <li key={i}>✓ {feat}</li>
+                    <li key={i} className="flex items-start gap-1.5">
+                      <Check size={13} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-400" aria-hidden="true" />
+                      {feat}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -670,7 +691,10 @@ export default function LandingPage() {
                 <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.pro.desc")}</p>
                 <ul className="mt-6 space-y-3 text-xs text-slate-200">
                   {proFeatures.map((feat, i) => (
-                    <li key={i}>✓ {feat}</li>
+                    <li key={i} className="flex items-start gap-1.5">
+                      <Check size={13} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-400" aria-hidden="true" />
+                      {feat}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -695,7 +719,10 @@ export default function LandingPage() {
                 <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.enterprise.desc")}</p>
                 <ul className="mt-6 space-y-3 text-xs text-slate-300">
                   {enterpriseFeatures.map((feat, i) => (
-                    <li key={i}>✓ {feat}</li>
+                    <li key={i} className="flex items-start gap-1.5">
+                      <Check size={13} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-400" aria-hidden="true" />
+                      {feat}
+                    </li>
                   ))}
                 </ul>
               </div>

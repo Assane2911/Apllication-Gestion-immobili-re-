@@ -1,3 +1,4 @@
+import { Printer, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
@@ -96,13 +97,14 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
               disabled={!htmlContent}
               className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
-              <span>🖨️</span> {t("components.documentModal.print")}
+              <Printer size={14} aria-hidden="true" /> {t("components.documentModal.print")}
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 text-lg font-bold"
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2"
+              aria-label={t("common.actions.close")}
             >
-              ✕
+              <X size={18} />
             </button>
           </div>
         </div>
