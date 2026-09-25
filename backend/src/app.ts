@@ -7,6 +7,7 @@ import { env } from "./config/env";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import activityLogRoutes from "./routes/activityLog.routes";
 import adminRoutes from "./routes/admin.routes";
+import suggestionRoutes from "./routes/suggestion.routes";
 import agencyRoutes from "./routes/agency.routes";
 import authRoutes from "./routes/auth.routes";
 import contractRoutes from "./routes/contract.routes";
@@ -120,6 +121,7 @@ app.use("/api/payments/paydunya", paydunyaRoutes);
 app.use("/api/payments/stripe", stripeRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/suggestions", suggestionRoutes);
 
 app.use(notFoundHandler);
 

@@ -1393,10 +1393,30 @@ const pt: TranslationSchema = {
         dashboard: "A atividade da plataforma, todos os gestores incluídos.",
         transfers: "As transferências de subscrição a confirmar ou a rejeitar à mão.",
         settings: "Os dados bancários onde os gestores pagam a sua subscrição.",
+        suggestions: "As sugestões enviadas pelos gestores, inquilinos e proprietários.",
       },
       dashboard: "Painel",
       transfers: "Transferências bancárias",
       settings: "Definições",
+      suggestions: "Sugestões",
+    },
+    suggestions: {
+      title: "Sugestões dos utilizadores",
+      subtitle: "O que os utilizadores da plataforma pedem, da mais recente à mais antiga",
+      errorTitle: "Impossível carregar as sugestões",
+      loading: "A carregar as sugestões...",
+      emptyTitle: "Ainda sem sugestões",
+      emptyDescription: "O botão «Alguma sugestão?» está em todos os espaços: as primeiras observações chegarão aqui.",
+      fromPage: "A partir de {{page}}",
+      noPage: "Página não indicada",
+      deletedAuthor: "Conta eliminada desde então",
+      roles: {
+        MANAGER: "Gestor",
+        TENANT: "Inquilino",
+        OWNER: "Proprietário",
+        ADMIN: "Administração",
+        unknown: "Função desconhecida",
+      },
     },
     dashboard: {
       title: "Painel de controlo",
@@ -1465,6 +1485,17 @@ const pt: TranslationSchema = {
       save: "Guardar",
       saving: "A guardar...",
     },
+  },
+
+  suggestions: {
+    button: "Alguma sugestão?",
+    title: "A sua opinião melhora a plataforma",
+    subtitle: "Diga-nos o que lhe falta ou o que o incomoda. A página de onde escreve segue com a sua mensagem.",
+    placeholder: "O que eu gostaria de poder fazer aqui é…",
+    send: "Enviar",
+    sending: "A enviar…",
+    thanks: "Obrigado, chegou bem. Lemos tudo.",
+    another: "Acrescentar outra coisa",
   },
 
   vitrine: {

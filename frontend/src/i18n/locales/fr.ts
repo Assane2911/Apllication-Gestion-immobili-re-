@@ -1394,10 +1394,30 @@ const fr = {
         dashboard: "L'activité de la plateforme, tous gestionnaires confondus.",
         transfers: "Les virements d'abonnement à confirmer ou à rejeter à la main.",
         settings: "Coordonnées bancaires sur lesquelles les gestionnaires virent leur abonnement.",
+        suggestions: "Les suggestions envoyées par les gestionnaires, les locataires et les bailleurs.",
       },
       dashboard: "Tableau de bord",
       transfers: "Virements bancaires",
       settings: "Paramètres",
+      suggestions: "Suggestions",
+    },
+    suggestions: {
+      title: "Suggestions des utilisateurs",
+      subtitle: "Ce que les utilisateurs de la plateforme demandent, du plus récent au plus ancien",
+      errorTitle: "Impossible de charger les suggestions",
+      loading: "Chargement des suggestions...",
+      emptyTitle: "Aucune suggestion pour le moment",
+      emptyDescription: "Le bouton « Une suggestion ? » est présent sur tous les espaces : les premières remarques arriveront ici.",
+      fromPage: "Depuis {{page}}",
+      noPage: "Page non précisée",
+      deletedAuthor: "Compte supprimé depuis",
+      roles: {
+        MANAGER: "Gestionnaire",
+        TENANT: "Locataire",
+        OWNER: "Bailleur",
+        ADMIN: "Administration",
+        unknown: "Rôle inconnu",
+      },
     },
     dashboard: {
       title: "Tableau de bord",
@@ -1466,6 +1486,17 @@ const fr = {
       save: "Enregistrer",
       saving: "Enregistrement...",
     },
+  },
+
+  suggestions: {
+    button: "Une suggestion ?",
+    title: "Votre avis améliore la plateforme",
+    subtitle: "Dites-nous ce qui vous manque ou ce qui vous gêne. La page d'où vous écrivez part avec votre message.",
+    placeholder: "Ce que j'aimerais pouvoir faire ici, c'est…",
+    send: "Envoyer",
+    sending: "Envoi…",
+    thanks: "Merci, c'est bien arrivé. Nous lisons tout.",
+    another: "Ajouter autre chose",
   },
 
   vitrine: {

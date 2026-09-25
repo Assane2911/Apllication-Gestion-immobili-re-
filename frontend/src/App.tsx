@@ -47,6 +47,7 @@ const OwnerCrgPage = lazy(() => import("./pages/owner/OwnerCrgPage"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminSubscriptionsPage = lazy(() => import("./pages/admin/AdminSubscriptionsPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const AdminSuggestionsPage = lazy(() => import("./pages/admin/AdminSuggestionsPage"));
 const VitrinePage = lazy(() => import("./pages/VitrinePage"));
 
 /** Indicateur de chargement affiché pendant le téléchargement du chunk d'une page (React.lazy). */
@@ -143,6 +144,7 @@ function AppRoutes() {
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/virements" element={<AdminSubscriptionsPage />} />
           <Route path="/admin/parametres" element={<AdminSettingsPage />} />
+          <Route path="/admin/suggestions" element={<AdminSuggestionsPage />} />
         </Route>
 
         <Route path="*" element={<HomeRedirect />} />

@@ -1395,10 +1395,30 @@ const es: TranslationSchema = {
         dashboard: "La actividad de la plataforma, todos los gestores incluidos.",
         transfers: "Las transferencias de suscripción pendientes de confirmar o rechazar.",
         settings: "Los datos bancarios donde los gestores abonan su suscripción.",
+        suggestions: "Las sugerencias enviadas por gestores, inquilinos y propietarios.",
       },
       dashboard: "Panel",
       transfers: "Transferencias bancarias",
       settings: "Configuración",
+      suggestions: "Sugerencias",
+    },
+    suggestions: {
+      title: "Sugerencias de los usuarios",
+      subtitle: "Lo que piden los usuarios de la plataforma, de la más reciente a la más antigua",
+      errorTitle: "No se han podido cargar las sugerencias",
+      loading: "Cargando las sugerencias...",
+      emptyTitle: "Aún no hay sugerencias",
+      emptyDescription: "El botón «¿Alguna sugerencia?» está en todos los espacios: las primeras observaciones llegarán aquí.",
+      fromPage: "Desde {{page}}",
+      noPage: "Página no indicada",
+      deletedAuthor: "Cuenta eliminada desde entonces",
+      roles: {
+        MANAGER: "Gestor",
+        TENANT: "Inquilino",
+        OWNER: "Propietario",
+        ADMIN: "Administración",
+        unknown: "Rol desconocido",
+      },
     },
     dashboard: {
       title: "Panel de control",
@@ -1467,6 +1487,17 @@ const es: TranslationSchema = {
       save: "Guardar",
       saving: "Guardando...",
     },
+  },
+
+  suggestions: {
+    button: "¿Alguna sugerencia?",
+    title: "Su opinión mejora la plataforma",
+    subtitle: "Díganos qué le falta o qué le estorba. La página desde la que escribe viaja con su mensaje.",
+    placeholder: "Lo que me gustaría poder hacer aquí es…",
+    send: "Enviar",
+    sending: "Enviando…",
+    thanks: "Gracias, nos ha llegado. Lo leemos todo.",
+    another: "Añadir algo más",
   },
 
   vitrine: {

@@ -10,6 +10,7 @@ import GlobalSearch from "./GlobalSearch";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
+import BoutonSuggestion from "./BoutonSuggestion";
 
 const navItems = [
   { to: "/dashboard", key: "dashboard", icon: "📊" },
@@ -169,6 +170,11 @@ export default function ManagerLayout() {
         <TrialBanner />
         <Outlet />
       </main>
+
+      {/* Une idée arrive en travaillant, devant l'écran qui la provoque :
+          le bouton est donc présent sur tout l'espace, pas rangé dans une
+          page de contact. */}
+      <BoutonSuggestion />
     </div>
   );
 }

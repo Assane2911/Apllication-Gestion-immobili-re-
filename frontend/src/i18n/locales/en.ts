@@ -1393,10 +1393,30 @@ const en: TranslationSchema = {
         dashboard: "Platform activity, across every manager.",
         transfers: "Subscription transfers awaiting manual confirmation or rejection.",
         settings: "The bank details managers pay their subscription into.",
+        suggestions: "Suggestions sent in by managers, tenants and owners.",
       },
       dashboard: "Dashboard",
       transfers: "Bank transfers",
       settings: "Settings",
+      suggestions: "Suggestions",
+    },
+    suggestions: {
+      title: "User suggestions",
+      subtitle: "What the platform's users are asking for, newest first",
+      errorTitle: "Could not load the suggestions",
+      loading: "Loading suggestions...",
+      emptyTitle: "No suggestions yet",
+      emptyDescription: "The “Any suggestions?” button sits on every space: the first remarks will land here.",
+      fromPage: "From {{page}}",
+      noPage: "Page not recorded",
+      deletedAuthor: "Account deleted since",
+      roles: {
+        MANAGER: "Manager",
+        TENANT: "Tenant",
+        OWNER: "Owner",
+        ADMIN: "Administration",
+        unknown: "Unknown role",
+      },
     },
     dashboard: {
       title: "Dashboard",
@@ -1465,6 +1485,17 @@ const en: TranslationSchema = {
       save: "Save",
       saving: "Saving...",
     },
+  },
+
+  suggestions: {
+    button: "Any suggestions?",
+    title: "Your feedback shapes the platform",
+    subtitle: "Tell us what you are missing or what gets in your way. The page you are writing from travels with your message.",
+    placeholder: "What I would like to be able to do here is…",
+    send: "Send",
+    sending: "Sending…",
+    thanks: "Thank you, it reached us. We read everything.",
+    another: "Add something else",
   },
 
   vitrine: {

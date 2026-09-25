@@ -9,6 +9,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 const navItems = [
   { to: "/admin", key: "dashboard", icon: "📊" },
   { to: "/admin/virements", key: "transfers", icon: "🏦" },
+  { to: "/admin/suggestions", key: "suggestions", icon: "💡" },
   { to: "/admin/parametres", key: "settings", icon: "⚙️" },
 ] as const;
 

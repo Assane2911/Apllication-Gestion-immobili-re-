@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { confirmBankTransfer, getPlatformDashboardStats, listPendingBankTransfers, rejectBankTransfer } from "../controllers/admin.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
+import { listSuggestions } from "../controllers/suggestion.controller";
 import { authenticate, requireRole } from "../middleware/auth";
 
 const router = Router();
@@ -15,5 +16,6 @@ router.post("/subscriptions/:id/confirm-bank-transfer", confirmBankTransfer);
 router.post("/subscriptions/:id/reject-bank-transfer", rejectBankTransfer);
 router.get("/settings", getPlatformSettings);
 router.put("/settings", updatePlatformSettings);
+router.get("/suggestions", listSuggestions);
 
 export default router;

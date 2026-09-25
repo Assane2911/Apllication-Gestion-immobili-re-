@@ -6,6 +6,7 @@ import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import Bulle from "./Bulle";
 import LanguageSwitcher from "./LanguageSwitcher";
+import BoutonSuggestion from "./BoutonSuggestion";
 
 const navItems = [
   { to: "/proprietaire", key: "home", icon: "📊" },
@@ -99,6 +100,11 @@ export default function OwnerLayout() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Outlet />
       </main>
+
+      {/* Une idée arrive en travaillant, devant l'écran qui la provoque :
+          le bouton est donc présent sur tout l'espace, pas rangé dans une
+          page de contact. */}
+      <BoutonSuggestion />
     </div>
   );
 }

@@ -499,6 +499,39 @@ export const messages = pgTable(
   })
 );
 
+// --- Suggestions (retours des utilisateurs sur la plateforme) ---
+/**
+ * Ce que les utilisateurs proposent pour améliorer le Service.
+ *
+ * `authorId` peut devenir nul : un compte supprimé ne doit pas emporter la
+ * suggestion avec lui. L'idée reste utile même quand celui qui l'a eue s'en
+ * est allé — c'est d'ailleurs la raison d'être de ce registre. Pour la même
+ * raison on conserve `authorLabel`, l'email au moment de l'envoi : sans lui,
+ * une suggestion orpheline ne serait plus rattachable à rien, et `set null`
+ * sur la clé étrangère en ferait un texte anonyme. C'est aussi ce qui permet
+ * de répondre plus tard à son auteur si on décide de le faire.
+ *
+ * `page` est le chemin d'où part la suggestion (ex. « /invoices ») : une
+ * remarque sur les factures écrite depuis l'écran des factures se comprend
+ * sans explication ; la même, hors contexte, demande un aller-retour.
+ */
+export const suggestions = pgTable(
+  "suggestions",
+  {
+    id: id(),
+    authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
+    authorLabel: text("author_label").notNull(),
+    authorRole: roleEnum("author_role"),
+    page: text("page"),
+    message: text("message").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    createdAtIdx: index("suggestions_created_at_idx").on(table.createdAt),
+  })
+);
+
+
 // --- Activity Log (Journal d'activité / audit — qui a fait quoi, quand) ---
 export const activityLogs = pgTable(
   "activity_logs",
