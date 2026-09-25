@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import EmptyState from "../../components/EmptyState";
@@ -51,10 +51,10 @@ export default function InspectionsPage() {
   const [signingInspection, setSigningInspection] = useState<Inspection | null>(null);
   const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
 
-  function load() {
+  function load(signal?: AbortSignal) {
     Promise.all([
-      api.get<PaginatedResponse<Inspection>>("/inspections", { params: { page, pageSize: PAGE_SIZE } }),
-      api.get<PaginatedResponse<Contract>>("/contracts", { params: { pageSize: CONTRACTS_PAGE_SIZE } }),
+      api.get<PaginatedResponse<Inspection>>("/inspections", { params: { page, pageSize: PAGE_SIZE }, signal }),
+      api.get<PaginatedResponse<Contract>>("/contracts", { params: { pageSize: CONTRACTS_PAGE_SIZE }, signal }),
     ])
       .then(([inspectionsRes, contractsRes]) => {
         setInspections(liste<Inspection>(inspectionsRes.data, "items"));
@@ -62,12 +62,20 @@ export default function InspectionsPage() {
         setTotalPages(inspectionsRes.data.totalPages);
         setContracts(liste<Contract>(contractsRes.data, "items"));
         setLoadError(null);
+        setLoading(false);
       })
-      .catch((err) => setLoadError(apiErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setLoadError(apiErrorMessage(err));
+        setLoading(false);
+      });
   }
 
-  useEffect(load, [page]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [page]);
 
   function openCreate() {
     setCreateForm({ contractId: "", type: "ENTRY" });
@@ -187,7 +195,7 @@ export default function InspectionsPage() {
       {loadError && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
-          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
           </button>
         </div>

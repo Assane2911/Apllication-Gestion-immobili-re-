@@ -490,7 +490,7 @@ export const messages = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     senderRole: roleEnum("sender_role").notNull(),
     content: text("content").notNull(),
-    isRead: text("is_read").notNull().default("false"),
+    isRead: boolean("is_read").notNull().default(false),
     ...timestamps,
   },
   (table) => ({

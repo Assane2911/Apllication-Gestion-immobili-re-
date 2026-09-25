@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, apiErrorMessage, fileUrl, liste } from "../api/client";
+import { api, apiErrorMessage, fileUrl, isRequestCancelled, liste } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import type { Listing, ListingType, LeadRequestType, PaginatedResponse } from "../types";
 import { countryLabel } from "../utils/countries";
@@ -35,7 +35,7 @@ export default function VitrinePage() {
   const [leadError, setLeadError] = useState<string | null>(null);
   const [leadSuccess, setLeadSuccess] = useState(false);
 
-  function load() {
+  function load(signal?: AbortSignal) {
     setLoading(true);
     api
       .get<PaginatedResponse<Listing>>("/listings/public", {
@@ -45,17 +45,26 @@ export default function VitrinePage() {
           ...(countryFilter !== "ALL" ? { country: countryFilter } : {}),
           ...(typeFilter !== "ALL" ? { type: typeFilter } : {}),
         },
+        signal,
       })
       .then((res) => {
         setListings(liste<Listing>(res.data, "items"));
         setTotalPages(res.data.totalPages);
         setLoadError(null);
+        setLoading(false);
       })
-      .catch((err) => setLoadError(apiErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setLoadError(apiErrorMessage(err));
+        setLoading(false);
+      });
   }
 
-  useEffect(load, [page, countryFilter, typeFilter]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [page, countryFilter, typeFilter]);
 
   useEffect(() => {
     api
@@ -154,7 +163,7 @@ export default function VitrinePage() {
         {loadError && (
           <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
             <span>{loadError}</span>
-            <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+            <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
               {t("common.actions.retry")}
             </button>
           </div>

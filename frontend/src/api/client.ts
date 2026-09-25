@@ -65,6 +65,21 @@ export function apiErrorCode(err: unknown): string | undefined {
   }
   return undefined;
 }
+
+/**
+ * Une page de liste qui change de page ou de filtre rapidement (clics
+ * successifs, flèches du clavier sur un <select>) déclenchait autant de
+ * requêtes qui couraient en parallèle sans qu'aucune n'annule les
+ * précédentes : si la première réponse arrivait APRÈS la dernière (réseau
+ * plus lent, serveur plus chargé à cet instant), elle écrasait l'affichage
+ * avec des données déjà périmées. Chaque page annule désormais sa requête en
+ * cours avant d'en relancer une nouvelle (AbortController) ; ce garde
+ * distingue cette annulation volontaire d'une vraie erreur réseau, pour ne
+ * jamais afficher de message d'erreur sur une requête qu'on a soi-même coupée.
+ */
+export function isRequestCancelled(err: unknown): boolean {
+  return axios.isCancel(err);
+}
 /**
  * Extrait une liste d'une réponse d'API, en garantissant un tableau.
  *

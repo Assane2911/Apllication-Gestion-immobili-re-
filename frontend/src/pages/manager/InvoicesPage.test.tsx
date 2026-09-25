@@ -107,7 +107,10 @@ describe("InvoicesPage (manager)", () => {
 
     renderPage();
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
-    expect(mockedApi.get).toHaveBeenNthCalledWith(1, "/invoices", { params: { page: 1, pageSize: 20 } });
+    expect(mockedApi.get).toHaveBeenNthCalledWith(1, "/invoices", {
+      params: { page: 1, pageSize: 20 },
+      signal: expect.anything(),
+    });
 
     const select = screen.getByRole("combobox");
     await user.selectOptions(select, "LATE");
@@ -115,8 +118,45 @@ describe("InvoicesPage (manager)", () => {
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
     expect(mockedApi.get).toHaveBeenNthCalledWith(2, "/invoices", {
       params: { page: 1, pageSize: 20, status: "LATE" },
+      signal: expect.anything(),
     });
     await waitFor(() => expect(countNonOptionMatches("En retard")).toBeGreaterThan(0));
+  });
+
+  /**
+   * Régression : sans AbortController, changer rapidement de filtre lançait
+   * une nouvelle requête sans annuler la précédente. Si la première (page
+   * initiale, sans filtre) répondait APRÈS la seconde (filtre "LATE"), sa
+   * réponse — désormais périmée — écrasait l'affichage avec les mauvaises
+   * données. Ici la première requête ne se résout qu'après la seconde, et ne
+   * doit donc plus jamais aboutir : elle est annulée dès le changement de
+   * filtre.
+   */
+  it("annule la requête de la page précédente quand le filtre change avant qu'elle ne réponde", async () => {
+    const user = userEvent.setup();
+    let rejectFirst!: (err: unknown) => void;
+    const firstRequest = new Promise((_resolve, reject) => {
+      rejectFirst = reject;
+    });
+    mockedApi.get.mockImplementationOnce((_url: string, config?: { signal?: AbortSignal }) => {
+      config?.signal?.addEventListener("abort", () => rejectFirst({ __CANCEL__: true }));
+      return firstRequest;
+    });
+    mockedApi.get.mockResolvedValueOnce(paginated([invoice({ status: "LATE" })]));
+
+    renderPage();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
+
+    const select = screen.getByRole("combobox");
+    await user.selectOptions(select, "LATE");
+
+    // La requête filtrée aboutit et s'affiche normalement.
+    await waitFor(() => expect(countNonOptionMatches("En retard")).toBeGreaterThan(0));
+    // La requête de la page initiale a bien été annulée (jamais laissée
+    // pendante à écraser l'affichage si elle finissait par répondre).
+    await expect(firstRequest).rejects.toEqual({ __CANCEL__: true });
+    // Aucun message d'erreur ne doit apparaître pour cette annulation volontaire.
+    expect(screen.queryByText(/erreur/i)).not.toBeInTheDocument();
   });
 
   it("marquer une facture réglée : envoie la requête puis recharge la liste", async () => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, fileUrl, liste } from "../../api/client";
+import { api, apiErrorMessage, fileUrl, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import Pagination from "../../components/Pagination";
 import PhotoLightbox from "../../components/PhotoLightbox";
@@ -22,10 +22,11 @@ export default function IssuesPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  function load() {
+  function load(signal?: AbortSignal) {
     api
       .get<PaginatedResponse<IssueReport>>("/issues", {
         params: { page, pageSize: PAGE_SIZE, ...(filter !== "ALL" ? { status: filter } : {}) },
+        signal,
       })
       .then((res) => {
         setIssues(liste<IssueReport>(res.data, "items"));
@@ -33,10 +34,17 @@ export default function IssuesPage() {
         setTotalPages(res.data.totalPages);
         setLoadError(null);
       })
-      .catch((err) => setLoadError(apiErrorMessage(err)));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setLoadError(apiErrorMessage(err));
+      });
   }
 
-  useEffect(load, [page, filter]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [page, filter]);
 
   function handleFilterChange(value: IssueStatus | "ALL") {
     setFilter(value);
@@ -82,7 +90,7 @@ export default function IssuesPage() {
       {loadError && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
-          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
           </button>
         </div>

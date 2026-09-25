@@ -101,6 +101,7 @@ describe("IssuesPage (gestionnaire)", () => {
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/issues", {
         params: { page: 1, pageSize: 20, status: "RESOLVED" },
+        signal: expect.anything(),
       })
     );
   });

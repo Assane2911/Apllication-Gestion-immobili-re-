@@ -129,6 +129,7 @@ describe("VitrinePage (vitrine publique)", () => {
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/listings/public", {
         params: { page: 1, pageSize: 12, country: "CI" },
+        signal: expect.anything(),
       })
     );
   });

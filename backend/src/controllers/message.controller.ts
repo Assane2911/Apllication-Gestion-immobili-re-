@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -7,34 +7,17 @@ import { contracts, messages, properties, tenants, users } from "../db/schema";
 import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 export const listConversations = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
+  const pagination = parsePagination(req);
 
-  let contractList = [];
+  let whereClause;
   if (req.user.role === "TENANT") {
-    contractList = await db
-      .select({
-        contract: contracts,
-        property: properties,
-        tenant: tenants,
-      })
-      .from(contracts)
-      .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
-      .where(eq(contracts.tenantId, (await chargerLocataireDuCompte(req)).id));
+    whereClause = eq(contracts.tenantId, (await chargerLocataireDuCompte(req)).id);
   } else if (req.user.role === "MANAGER") {
-    contractList = await db
-      .select({
-        contract: contracts,
-        property: properties,
-        tenant: tenants,
-      })
-      .from(contracts)
-      .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
-      .where(eq(properties.managerId, req.user.userId))
-      .orderBy(desc(contracts.createdAt));
+    whereClause = eq(properties.managerId, req.user.userId);
   } else {
     // Un compte ADMIN promu depuis un ancien compte MANAGER (voir
     // scripts/createAdmin.ts, qui conserve le même id utilisateur) voyait
@@ -44,12 +27,34 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
     throw new ApiError(403, "Accès refusé");
   }
 
+  const [contractList, [{ count }]] = await Promise.all([
+    db
+      .select({
+        contract: contracts,
+        property: properties,
+        tenant: tenants,
+      })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+      .where(whereClause)
+      .orderBy(desc(contracts.createdAt))
+      .limit(pagination.pageSize)
+      .offset(pagination.offset),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(whereClause),
+  ]);
+
   if (contractList.length === 0) {
-    return res.json([]);
+    return res.json(buildPaginatedResult([], count, pagination));
   }
 
-  // Évite la requête N+1 : on charge tous les messages de ces contrats en une
-  // seule requête ordonnée par date décroissante, puis on conserve le plus récent.
+  // Évite la requête N+1 : on charge tous les messages de CETTE PAGE de
+  // contrats en une seule requête ordonnée par date décroissante, puis on
+  // conserve le plus récent.
   const contractIds = contractList.map((item) => item.contract.id);
   const allMessages = await db
     .select()
@@ -71,7 +76,7 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
     lastMessage: lastMessageByContract.get(item.contract.id) ?? null,
   }));
 
-  res.json(conversations);
+  res.json(buildPaginatedResult(conversations, count, pagination));
 });
 
 export const getMessagesByContract = asyncHandler(async (req: Request, res: Response) => {
@@ -117,7 +122,7 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
   // badge "non lu" du gestionnaire avant qu'il ne l'ait vu.
   await db
     .update(messages)
-    .set({ isRead: "true" })
+    .set({ isRead: true })
     .where(and(eq(messages.contractId, contractId), ne(messages.senderId, req.user.userId)));
 
   res.json({
@@ -165,7 +170,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
       senderId: req.user.userId,
       senderRole: req.user.role,
       content,
-      isRead: "false",
+      isRead: false,
     })
     .returning();
 

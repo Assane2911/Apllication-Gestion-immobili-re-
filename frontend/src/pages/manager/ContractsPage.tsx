@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, FileCheck } from "lucide-react";
-import { api, apiErrorMessage, DELAI_UPLOAD_MS, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
@@ -52,11 +52,11 @@ export default function ContractsPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  function load() {
+  function load(signal?: AbortSignal) {
     Promise.all([
-      api.get<PaginatedResponse<Contract>>("/contracts", { params: { page, pageSize: PAGE_SIZE } }),
-      api.get<PaginatedResponse<Property>>("/properties", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
-      api.get<PaginatedResponse<Tenant>>("/tenants", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
+      api.get<PaginatedResponse<Contract>>("/contracts", { params: { page, pageSize: PAGE_SIZE }, signal }),
+      api.get<PaginatedResponse<Property>>("/properties", { params: { pageSize: DROPDOWN_PAGE_SIZE }, signal }),
+      api.get<PaginatedResponse<Tenant>>("/tenants", { params: { pageSize: DROPDOWN_PAGE_SIZE }, signal }),
     ])
       .then(([contractsRes, propertiesRes, tenantsRes]) => {
         setContracts(liste<Contract>(contractsRes.data, "items"));
@@ -66,10 +66,17 @@ export default function ContractsPage() {
         setTenants(liste<Tenant>(tenantsRes.data, "items"));
         setLoadError(null);
       })
-      .catch((err) => setLoadError(apiErrorMessage(err)));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setLoadError(apiErrorMessage(err));
+      });
   }
 
-  useEffect(load, [page]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [page]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -193,7 +200,7 @@ export default function ContractsPage() {
       {loadError && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
-          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
           </button>
         </div>

@@ -189,6 +189,56 @@ describe("runRentDueReminders", () => {
 
     sendEmailSpy.mockRestore();
   });
+
+  /**
+   * Régression : pour éviter une requête par contrat (N+1) quand elle génère
+   * les factures du mois, runRentDueReminders précharge en une seule requête
+   * les factures existantes des biens qui n'ont, dans le lot traité, qu'UN
+   * SEUL contrat actif — et laisse volontairement les autres (plusieurs
+   * contrats actifs sur le même bien, cas d'un renouvellement créé sans
+   * clôturer l'ancien) faire leur propre requête fraîche par contrat. Ce
+   * test couvre justement ce second cas : deux contrats ACTIFS et non
+   * chevauchants sur le même bien doivent continuer à se partager le mois de
+   * transition au prorata, sans double facturation, exactement comme avant
+   * ce correctif de performance.
+   */
+  it("un bien avec deux contrats ACTIFS non chevauchants ne facture pas deux fois le mois de transition", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenantA = await createTenant(manager.id, { firstName: "Ancien" });
+    const tenantB = await createTenant(manager.id, { firstName: "Nouveau" });
+
+    const ancienContrat = await createContract(property.id, tenantA.id, {
+      rent: 500,
+      startDate: new Date(2026, 0, 1),
+      endDate: new Date(2026, 7, 15), // se termine le 15 août
+    });
+    const nouveauContrat = await createContract(property.id, tenantB.id, {
+      rent: 550,
+      startDate: new Date(2026, 7, 16), // démarre le lendemain, toujours ACTIVE (pas de renewContract ici)
+      endDate: new Date(2027, 7, 15),
+    });
+
+    await runRentDueReminders();
+
+    const facturesAncien = await testDb.select().from(invoices).where(eq(invoices.contractId, ancienContrat.id));
+    const facturesNouveau = await testDb.select().from(invoices).where(eq(invoices.contractId, nouveauContrat.id));
+
+    const aoutAncien = facturesAncien.find(
+      (f: typeof invoices.$inferSelect) => f.periodMonth === 8 && f.periodYear === 2026
+    );
+    const aoutNouveau = facturesNouveau.find(
+      (f: typeof invoices.$inferSelect) => f.periodMonth === 8 && f.periodYear === 2026
+    );
+
+    expect(aoutAncien).toBeDefined();
+    expect(aoutNouveau).toBeDefined();
+    // Chacun facture ses propres jours (15 sur 31 pour l'ancien, 16 sur 31
+    // pour le nouveau) : ni mois plein en double, ni mois manquant.
+    expect(aoutAncien!.amount).toBeLessThan(500);
+    expect(aoutNouveau!.amount).toBeLessThan(550);
+    expect(aoutAncien!.amount / 500 + aoutNouveau!.amount / 550).toBeCloseTo(1, 3);
+  });
 });
 
 describe("sendSingleInvoiceReminder", () => {

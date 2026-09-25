@@ -220,7 +220,7 @@ export interface Message {
   senderId: string;
   senderRole: Role;
   content: string;
-  isRead: string;
+  isRead: boolean;
   createdAt: string;
   sender?: {
     id: string;

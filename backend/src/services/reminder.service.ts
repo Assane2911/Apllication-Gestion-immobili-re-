@@ -1,4 +1,4 @@
-import { SQL, and, desc, eq, gte, isNull, lt, lte, or } from "drizzle-orm";
+import { SQL, and, desc, eq, gte, inArray, isNull, lt, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
@@ -8,7 +8,7 @@ import { ApiError } from "../utils/asyncHandler";
 import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
-import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
+import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonReminderWhatsappVariables } from "./whatsapp.service";
 import { nomAvecCivilite, nomComplet } from "../utils/nom";
 
@@ -215,13 +215,64 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     : db.select({ contract: contracts }).from(contracts).where(eq(contracts.status, "ACTIVE"));
 
   const activeContractRows = await activeContractsQuery;
+
+  // Évite une requête par contrat (N+1) : sur un portefeuille de plusieurs
+  // centaines de contrats actifs, generateInvoicesForContract interrogeait
+  // sinon la base une fois par contrat pour relire les factures existantes
+  // de son bien. La quasi-totalité des biens n'ont qu'UN SEUL contrat actif
+  // à la fois — pour ceux-là, un instantané chargé une bonne fois pour
+  // toutes AVANT la boucle est rigoureusement équivalent à une requête
+  // fraîche faite au moment de l'appel, puisqu'aucun AUTRE contrat de ce
+  // même lot ne peut avoir écrit de facture pour ce bien entretemps. Un bien
+  // qui a EXCEPTIONNELLEMENT plusieurs contrats actifs en même temps
+  // (transition de renouvellement) reste volontairement en dehors de cet
+  // instantané : generateInvoicesForContract doit alors voir, pour son 2e
+  // contrat, les factures que le 1er vient de créer DANS CETTE MÊME
+  // EXÉCUTION — un instantané pré-chargé ne peut pas le garantir, et s'en
+  // servir romprait la garde anti-double-facturation du mois de transition
+  // (voir le commentaire de generateInvoicesForContract). Ces biens-là
+  // continuent donc de faire leur propre requête fraîche, comme avant.
+  const contractsByProperty = new Map<string, typeof activeContractRows>();
+  for (const row of activeContractRows) {
+    const liste = contractsByProperty.get(row.contract.propertyId) ?? [];
+    liste.push(row);
+    contractsByProperty.set(row.contract.propertyId, liste);
+  }
+  const propertyIdsUnContratActif = [...contractsByProperty.entries()]
+    .filter(([, rows]) => rows.length === 1)
+    .map(([propertyId]) => propertyId);
+
+  const facturesPrechargees =
+    propertyIdsUnContratActif.length > 0
+      ? await db
+          .select({
+            contractId: invoices.contractId,
+            periodMonth: invoices.periodMonth,
+            periodYear: invoices.periodYear,
+            status: invoices.status,
+            contractStart: contracts.startDate,
+            contractEnd: contracts.endDate,
+            propertyId: contracts.propertyId,
+          })
+          .from(invoices)
+          .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+          .where(inArray(contracts.propertyId, propertyIdsUnContratActif))
+      : [];
+
+  const facturesParBien = new Map<string, FactureExistantePourGeneration[]>();
+  for (const f of facturesPrechargees) {
+    const liste = facturesParBien.get(f.propertyId) ?? [];
+    liste.push(f);
+    facturesParBien.set(f.propertyId, liste);
+  }
+
   let interrompu = false;
   for (const { contract } of activeContractRows) {
     if (budget.epuise()) {
       interrompu = true;
       break;
     }
-    await generateInvoicesForContract(contract);
+    await generateInvoicesForContract(contract, db, facturesParBien.get(contract.propertyId));
   }
 
   // 2. Recherche toutes les factures impayées du mois courant pour les contrats actifs

@@ -28,9 +28,10 @@ describe("Messages API (/api/messages)", () => {
       .get("/api/messages/conversations")
       .set(authHeader(managerToken));
     expect(initialRes.status).toBe(200);
-    expect(initialRes.body).toHaveLength(1);
-    expect(initialRes.body[0].contractId).toBe(contract.id);
-    expect(initialRes.body[0].lastMessage).toBeNull();
+    expect(initialRes.body.items).toHaveLength(1);
+    expect(initialRes.body.total).toBe(1);
+    expect(initialRes.body.items[0].contractId).toBe(contract.id);
+    expect(initialRes.body.items[0].lastMessage).toBeNull();
 
     // Envoi d'un premier message par le gestionnaire
     const sendRes = await request(app)
@@ -45,8 +46,8 @@ describe("Messages API (/api/messages)", () => {
       .get("/api/messages/conversations")
       .set(authHeader(managerToken));
     expect(updatedRes.status).toBe(200);
-    expect(updatedRes.body[0].lastMessage).not.toBeNull();
-    expect(updatedRes.body[0].lastMessage.content).toBe(
+    expect(updatedRes.body.items[0].lastMessage).not.toBeNull();
+    expect(updatedRes.body.items[0].lastMessage.content).toBe(
       "Bonjour Fatou, bienvenue dans votre nouveau logement."
     );
   });

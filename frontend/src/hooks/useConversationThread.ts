@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { api, apiErrorMessage, liste } from "../api/client";
+import { api, apiErrorMessage, isRequestCancelled, liste } from "../api/client";
 import { useAuth } from "../context/auth";
-import type { Conversation, Message, Role } from "../types";
+import type { Conversation, Message, PaginatedResponse, Role } from "../types";
+
+const CONVERSATIONS_PAGE_SIZE = 20;
 
 interface UseConversationThreadOptions {
   /**
@@ -25,6 +27,9 @@ export function useConversationThread(role: Role, options: UseConversationThread
   const { refreshOnSend = false } = options;
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeContract, setActiveContract] = useState<any>(null);
@@ -34,25 +39,38 @@ export function useConversationThread(role: Role, options: UseConversationThread
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function loadConversations() {
+  function loadConversations(signal?: AbortSignal) {
     return api
-      .get<Conversation[]>("/messages/conversations")
-      .then((res) => {
-        setConversations(liste<Conversation>(res.data));
-        setSelectedContractId((current) => current ?? (res.data.length > 0 ? res.data[0].contractId : null));
-        setError(null);
+      .get<PaginatedResponse<Conversation>>("/messages/conversations", {
+        params: { page, pageSize: CONVERSATIONS_PAGE_SIZE },
+        signal,
       })
-      .catch((err) => setError(apiErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        const items = liste<Conversation>(res.data, "items");
+        setConversations(items);
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+        setSelectedContractId((current) => current ?? (items.length > 0 ? items[0].contractId : null));
+        setError(null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setError(apiErrorMessage(err));
+        setLoading(false);
+      });
   }
 
   // loadConversations lit selectedContractId via un setter fonctionnel (voir ci-dessus) plutôt
   // qu'une closure directe ; l'ajouter aux deps de l'effet ci-dessous redéclencherait un
-  // rechargement à chaque sélection de conversation, alors qu'il ne doit tourner qu'au montage.
+  // rechargement à chaque sélection de conversation, alors qu'il ne doit tourner qu'au montage
+  // ou quand la page change.
   useEffect(() => {
-    loadConversations();
+    const controller = new AbortController();
+    loadConversations(controller.signal);
+    return () => controller.abort();
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     if (!selectedContractId) return;
@@ -91,6 +109,10 @@ export function useConversationThread(role: Role, options: UseConversationThread
 
   return {
     conversations,
+    page,
+    setPage,
+    total,
+    totalPages,
     selectedContractId,
     setSelectedContractId,
     messages,

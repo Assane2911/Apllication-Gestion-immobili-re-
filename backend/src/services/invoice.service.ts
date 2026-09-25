@@ -66,7 +66,35 @@ export function periodeCouverte(
  * chacun sa part, là où le mois de transition revenait auparavant en entier
  * au premier et rien au second.
  */
-export async function generateInvoicesForContract(contract: Contract, dbClient: DbClient = db) {
+export type FactureExistantePourGeneration = {
+  contractId: string;
+  periodMonth: number;
+  periodYear: number;
+  status: string;
+  contractStart: Date;
+  contractEnd: Date;
+};
+
+/**
+ * `existingInvoicesHint`, quand fourni, remplace la requête interne
+ * ci-dessous par ce jeu de données déjà chargé — utilisé par
+ * `runRentDueReminders` pour éviter une requête par contrat quand elle
+ * traite un grand nombre de contrats actifs d'un coup (voir son
+ * `facturesParBien`). Ne JAMAIS passer un instantané qui pourrait être
+ * périmé : ce paramètre n'existe que pour le cas où le bien n'a, dans le lot
+ * traité, qu'UN SEUL contrat actif — aucun autre appel de cette même
+ * exécution ne peut alors avoir inséré de facture pour ce bien entre le
+ * chargement de l'instantané et cet appel. Dès qu'un bien a plusieurs
+ * contrats actifs dans le même lot (transition de renouvellement), l'appelant
+ * doit omettre ce paramètre pour que chaque appel relise l'état réel — voir
+ * le commentaire sur `facturesDesAutresContrats` ci-dessous, qui explique
+ * pourquoi cette fraîcheur est indispensable à la correction du calcul.
+ */
+export async function generateInvoicesForContract(
+  contract: Contract,
+  dbClient: DbClient = db,
+  existingInvoicesHint?: FactureExistantePourGeneration[]
+) {
   const start = new Date(contract.startDate);
   const end = new Date(contract.endDate);
   const today = new Date();
@@ -91,27 +119,22 @@ export async function generateInvoicesForContract(contract: Contract, dbClient: 
   // réclamée à personne. Sans cette nuance, annuler une facture erronée gelait
   // son mois définitivement — le loyer ne pouvait plus jamais être facturé, ni
   // au même locataire ni à son successeur, et rien ne le signalait.
-  const existingInvoices = await dbClient
-    .select({
-      contractId: invoices.contractId,
-      periodMonth: invoices.periodMonth,
-      periodYear: invoices.periodYear,
-      status: invoices.status,
-      contractStart: contracts.startDate,
-      contractEnd: contracts.endDate,
-    })
-    .from(invoices)
-    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
-    .where(eq(contracts.propertyId, contract.propertyId));
+  const existingInvoices =
+    existingInvoicesHint ??
+    (await dbClient
+      .select({
+        contractId: invoices.contractId,
+        periodMonth: invoices.periodMonth,
+        periodYear: invoices.periodYear,
+        status: invoices.status,
+        contractStart: contracts.startDate,
+        contractEnd: contracts.endDate,
+      })
+      .from(invoices)
+      .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+      .where(eq(contracts.propertyId, contract.propertyId)));
 
-  type LigneExistante = {
-    contractId: string;
-    periodMonth: number;
-    periodYear: number;
-    status: string;
-    contractStart: Date;
-    contractEnd: Date;
-  };
+  type LigneExistante = FactureExistantePourGeneration;
 
   // Factures VIVANTES des AUTRES contrats du bien : le garde ci-dessus opère
   // désormais sur les JOURS et non sur le mois entier, puisque chaque contrat

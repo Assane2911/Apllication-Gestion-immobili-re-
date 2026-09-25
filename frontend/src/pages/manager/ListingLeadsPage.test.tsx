@@ -122,6 +122,7 @@ describe("ListingLeadsPage (manager)", () => {
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/listings/leads", {
         params: { page: 1, pageSize: 20, status: "CONVERTED" },
+        signal: expect.anything(),
       })
     );
   });
