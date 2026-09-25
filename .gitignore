@@ -4,6 +4,7 @@ node_modules/
 # Builds
 dist/
 build/
+*.tsbuildinfo
 
 # Variables d'environnement (secrets)
 .env
