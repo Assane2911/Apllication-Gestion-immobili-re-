@@ -1,3 +1,4 @@
+import { CheckCircle2, Clock, Download, Megaphone, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { api, apiErrorMessage, liste } from "../../api/client";
@@ -103,7 +104,7 @@ export default function InvoicesPage() {
 
     try {
       const { data } = await api.post<{ message: string; sent: number }>("/invoices/send-monthly-reminders");
-      setFeedback(`✅ ${data.message}`);
+      setFeedback(data.message);
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -119,7 +120,7 @@ export default function InvoicesPage() {
 
     try {
       const { data } = await api.post<{ message: string }>(`/invoices/${inv.id}/send-reminder`);
-      setFeedback(`✅ ${data.message}`);
+      setFeedback(data.message);
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -156,7 +157,7 @@ export default function InvoicesPage() {
             disabled={sendingMonthly}
             className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
           >
-            <span>📢</span>
+            <Megaphone size={14} className="shrink-0" aria-hidden="true" />
             <span>{sendingMonthly ? t("manager.invoices.sendingMonthly") : t("manager.invoices.sendMonthlyAlerts")}</span>
           </button>
           </Bulle>
@@ -165,7 +166,7 @@ export default function InvoicesPage() {
 
       {/* Bannière informationnelle sur le rappel automatique du 1er */}
       <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-200">
-        <span className="text-base leading-none">⏰</span>
+        <Clock size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
         <div className="space-y-0.5">
           <p className="font-semibold">{t("manager.invoices.infoBannerTitle")}</p>
           <p className="text-blue-700 dark:text-blue-300">
@@ -175,7 +176,8 @@ export default function InvoicesPage() {
       </div>
 
       {feedback && (
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl text-xs font-medium">
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2">
+          <CheckCircle2 size={15} className="shrink-0" aria-hidden="true" />
           {feedback}
         </div>
       )}
@@ -229,7 +231,7 @@ export default function InvoicesPage() {
                       onClick={() => setActiveReceiptInvoice(inv)}
                       className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 transition-colors inline-flex items-center gap-1"
                     >
-                      <span>📄</span> {t("manager.invoices.receiptPdf")}
+                      <Download size={12} aria-hidden="true" /> {t("manager.invoices.receiptPdf")}
                     </button></Bulle>
                   )}
                   {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
@@ -237,9 +239,15 @@ export default function InvoicesPage() {
                       <Bulle texte={t("manager.tips.invoiceRemind")}><button
                         onClick={() => handleSendSingleReminder(inv)}
                         disabled={sendingSingleId === inv.id}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
+                        className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-1"
                       >
-                        {sendingSingleId === inv.id ? t("manager.invoices.sendingReminder") : `📧 ${t("manager.invoices.remind")}`}
+                        {sendingSingleId === inv.id ? (
+                          t("manager.invoices.sendingReminder")
+                        ) : (
+                          <>
+                            <Send size={12} aria-hidden="true" /> {t("manager.invoices.remind")}
+                          </>
+                        )}
                       </button></Bulle>
                       <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                         onClick={() => markPaid(inv)}
@@ -298,9 +306,9 @@ export default function InvoicesPage() {
                 {inv.status === "PAID" && (
                   <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                     onClick={() => setActiveReceiptInvoice(inv)}
-                    className="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30"
+                    className="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 inline-flex items-center gap-1"
                   >
-                    📄 {t("manager.invoices.receiptPdf")}
+                    <Download size={12} aria-hidden="true" /> {t("manager.invoices.receiptPdf")}
                   </button></Bulle>
                 )}
                 {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
@@ -308,9 +316,15 @@ export default function InvoicesPage() {
                     <Bulle texte={t("manager.tips.invoiceRemind")}><button
                       onClick={() => handleSendSingleReminder(inv)}
                       disabled={sendingSingleId === inv.id}
-                      className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
+                      className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50 inline-flex items-center gap-1"
                     >
-                      {sendingSingleId === inv.id ? t("manager.invoices.sendingReminder") : `📧 ${t("manager.invoices.remind")}`}
+                      {sendingSingleId === inv.id ? (
+                        t("manager.invoices.sendingReminder")
+                      ) : (
+                        <>
+                          <Send size={12} aria-hidden="true" /> {t("manager.invoices.remind")}
+                        </>
+                      )}
                     </button></Bulle>
                     <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                       onClick={() => markPaid(inv)}
