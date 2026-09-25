@@ -9,6 +9,7 @@ import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { CrgSynthesis } from "../../types";
 import { formatByCurrency } from "../../utils/currencyFormat";
+import Bulle from "../../components/Bulle";
 
 /** Vrai si le montant est positif ou nul dans TOUTES les devises. */
 function allNonNegative(byCurrency: Record<string, number>): boolean {
@@ -143,12 +144,14 @@ export default function CrgPage() {
               </option>
             ))}
           </select>
+          <Bulle texte={t("manager.tips.crgExport")}>
           <button
             onClick={() => setShowExport(true)}
             className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
           >
             <span>🧾</span> {t("manager.crg.exportHtml")}
           </button>
+          </Bulle>
         </div>
       </div>
 

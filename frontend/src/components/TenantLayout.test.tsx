@@ -85,8 +85,17 @@ describe("TenantLayout — bouton de déconnexion", () => {
   it("permet aux contrôles (langue/devise/thème/déconnexion) de passer à la ligne au lieu de déborder hors de l'écran", () => {
     renderTenantLayout();
     const bouton = screen.getByRole("button", { name: /se déconnecter/i });
-    const conteneurControles = bouton.parentElement;
 
-    expect(conteneurControles?.className).toMatch(/flex-wrap/);
+    // On remonte jusqu'au conteneur qui gère le retour à la ligne, au lieu de
+    // supposer que c'est le parent IMMÉDIAT. Les bulles d'aide insèrent une
+    // enveloppe autour du bouton ; elle est en `display: contents`, donc
+    // invisible pour la mise en page — le bouton reste bien un enfant direct
+    // du flex aux yeux du navigateur — mais elle existe dans l'arbre DOM. Le
+    // test vérifie la propriété qui compte (les contrôles peuvent passer à la
+    // ligne), pas la profondeur exacte à laquelle elle est déclarée.
+    const conteneurControles = bouton.closest(".flex-wrap");
+
+    expect(conteneurControles).not.toBeNull();
+    expect(conteneurControles).toContainElement(bouton);
   });
 });

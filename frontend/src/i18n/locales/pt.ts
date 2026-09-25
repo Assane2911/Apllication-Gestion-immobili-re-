@@ -2,6 +2,9 @@ import type { TranslationSchema } from "./fr";
 
 const pt: TranslationSchema = {
   common: {
+    tips: {
+      logout: "Termina a sua sessão neste dispositivo.",
+    },
     payment: {
       returned: "Pagamento enviado. A confirmação chega dentro de instantes — esta página atualiza-se sozinha.",
       cancelled: "Pagamento cancelado. Nenhum valor foi cobrado.",
@@ -64,6 +67,7 @@ const pt: TranslationSchema = {
       DEMO: "Demonstração",
     },
     theme: {
+      tip: "Alterna entre a apresentação clara e a escura.",
       toLight: "Mudar para modo claro",
       toDark: "Mudar para modo escuro",
       toggleAria: "Alternar tema claro/escuro",
@@ -493,6 +497,7 @@ const pt: TranslationSchema = {
       },
     },
     notificationBell: {
+      tip: "Os seus alertas: rendas em atraso, contratos a terminar, incidentes abertos.",
       ariaLabel: "Notificações",
       title: "Notificações",
       itemCount: "{{count}} elemento(s) a exigir a sua atenção",
@@ -592,6 +597,29 @@ const pt: TranslationSchema = {
       confirmDelete: 'Eliminar o imóvel "{{title}}"?',
     },
     tips: {
+      contractSign: "Abre o painel de assinatura: a sua rubrica é aposta ao contrato e datada.",
+      contractViewLease: "Mostra o contrato gerado, pronto a imprimir ou a enviar.",
+      contractScan: "Junta ao contrato a fotografia ou o PDF do documento assinado em papel.",
+      contractViewScan: "Abre o contrato em papel já digitalizado para este arrendamento.",
+      contractCreate: "Abre o formulário de um novo contrato: imóvel, inquilino, renda e datas.",
+      inspectionSave: "Guarda sem bloquear: ainda poderá corrigir.",
+      inspectionSign: "Abre o painel de assinatura para validar o auto do lado da agência.",
+      inspectionView: "Mostra o relatório completo, fotografias incluídas.",
+      inspectionEdit: "Retoma o auto enquanto não estiver finalizado.",
+      tenantPortal: "Abre a criação de um acesso ao portal para este inquilino.",
+      tenantCreate: "Abre o formulário de uma nova ficha de inquilino.",
+      issueStatus: "Passa o incidente a este estado e informa o inquilino.",
+      leadStatus: "Classifica o pedido nesta fase do seu acompanhamento comercial.",
+      expenseExportCsv: "Descarrega todas as despesas do filtro em formato folha de cálculo.",
+      expenseReport: "Produz um relatório financeiro do período escolhido, pronto a enviar.",
+      expenseCreate: "Abre o formulário de uma nova despesa a imputar a um imóvel.",
+      fiscalGrandLivre: "Gera o livro razão do ano: todos os lançamentos, por ordem.",
+      crgExport: "Produz o relatório de gestão do mês, para enviar ao proprietário.",
+      propertyEdit: "Altera a ficha do imóvel: renda, área, proprietário, moeda.",
+      propertyCreate: "Abre o formulário de um novo imóvel a gerir.",
+      listingEdit: "Altera o anúncio tal como aparece na montra pública.",
+      listingCreate: "Redige um anúncio e publica-o na sua montra pública.",
+      ownerCreate: "Abre o formulário de um novo proprietário para quem gere.",
       invoiceSendMonthly: "Envia de uma vez um lembrete a TODOS os inquilinos com a renda em atraso, por email e WhatsApp.",
       agencyDeleteAccount: "Abre o procedimento de encerramento definitivo da agência e de todos os seus dados.",
       agencyLogoutAll: "Termina de imediato a sessão em todos os seus dispositivos. Terá de entrar novamente.",
@@ -1203,6 +1231,12 @@ const pt: TranslationSchema = {
 
   tenant: {
     tips: {
+      exportData: "Descarrega tudo o que o Serviço detém sobre si, num ficheiro legível.",
+      viewLease: "Mostra o seu contrato tal como foi gerado.",
+      viewInspection: "Mostra o relatório completo do auto, fotografias incluídas.",
+      viewReceipt: "Abre o recibo desta renda, pronto a imprimir.",
+      choosePayment: "Mostra os meios de pagamento aceites para esta renda.",
+      addPhoto: "Acrescenta uma fotografia ao incidente já comunicado.",
       pay: "Inicia o pagamento desta renda por este meio. O recibo segue assim que o pagamento for confirmado.",
       signContract: "Abre o painel de assinatura: a sua assinatura vincula o contrato e é datada.",
       signInspection: "Assina o auto. Depois não poderá ser acrescentada qualquer reserva.",
@@ -1312,6 +1346,9 @@ const pt: TranslationSchema = {
     },
   },
   owner: {
+    tips: {
+      crgExport: "Mostra o relatório de gestão do mês, para imprimir ou guardar.",
+    },
     dashboard: {
       title: "Meu painel financeiro",
       subtitle: "Acompanhe o aluguel recebido e pendente dos seus imóveis.",

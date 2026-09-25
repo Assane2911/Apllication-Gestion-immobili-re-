@@ -336,9 +336,11 @@ export default function InspectionsPage() {
           {editError && <p className="text-sm text-red-600">{editError}</p>}
 
           <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Bulle texte={t("manager.tips.inspectionSave")}>
             <button type="button" onClick={handleSave} disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
               {saving ? t("common.actions.saving") : t("common.actions.save")}
             </button>
+            </Bulle>
             <button type="button" onClick={handleFinalize} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
               {t("manager.inspections.finalize")}
             </button>
@@ -388,9 +390,11 @@ export default function InspectionsPage() {
                     {insp.signedByManagerAt ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.inspections.signed")}</span>
                     ) : insp.status === "COMPLETED" ? (
+                      <Bulle texte={t("manager.tips.inspectionSign")}>
                       <button onClick={() => setSigningInspection(insp)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline">
                         ✍️ {t("manager.inspections.sign")}
                       </button>
+                      </Bulle>
                     ) : (
                       <span className="text-slate-400 dark:text-slate-500">—</span>
                     )}
@@ -406,14 +410,18 @@ export default function InspectionsPage() {
                 </td>
                 <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                   {insp.status === "DRAFT" && (
+                    <Bulle texte={t("manager.tips.inspectionEdit")}>
                     <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg transition-colors">
                       {t("manager.inspections.edit")}
                     </button>
+                    </Bulle>
                   )}
                   {insp.status === "COMPLETED" && (
+                    <Bulle texte={t("manager.tips.inspectionView")}>
                     <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg transition-colors">
                       {t("manager.inspections.viewReport")}
                     </button>
+                    </Bulle>
                   )}
                   {insp.status === "DRAFT" && (
                     <Bulle texte={t("manager.tips.inspectionDelete")}>
@@ -446,19 +454,25 @@ export default function InspectionsPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               {insp.status === "DRAFT" && (
+                <Bulle texte={t("manager.tips.inspectionEdit")}>
                 <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg">
                   {t("manager.inspections.edit")}
                 </button>
+                </Bulle>
               )}
               {insp.status === "COMPLETED" && !insp.signedByManagerAt && (
+                <Bulle texte={t("manager.tips.inspectionSign")}>
                 <button onClick={() => setSigningInspection(insp)} className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg">
                   ✍️ {t("manager.inspections.sign")}
                 </button>
+                </Bulle>
               )}
               {insp.status === "COMPLETED" && (
+                <Bulle texte={t("manager.tips.inspectionView")}>
                 <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg">
                   {t("manager.inspections.viewReport")}
                 </button>
+                </Bulle>
               )}
               {insp.status === "DRAFT" && (
                 <Bulle texte={t("manager.tips.inspectionDelete")}>

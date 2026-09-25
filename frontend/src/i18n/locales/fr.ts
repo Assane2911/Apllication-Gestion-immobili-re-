@@ -1,5 +1,8 @@
 const fr = {
   common: {
+    tips: {
+      logout: "Ferme votre session sur cet appareil.",
+    },
     payment: {
       returned: "Paiement transmis. La confirmation arrive dans quelques instants — cette page se met à jour toute seule.",
       cancelled: "Paiement annulé. Aucun montant n'a été débité.",
@@ -62,6 +65,7 @@ const fr = {
       DEMO: "Démo",
     },
     theme: {
+      tip: "Bascule entre l'affichage clair et l'affichage sombre.",
       toLight: "Passer en mode clair",
       toDark: "Passer en mode sombre",
       toggleAria: "Basculer le thème clair/sombre",
@@ -491,6 +495,7 @@ const fr = {
       },
     },
     notificationBell: {
+      tip: "Vos alertes : loyers en retard, baux qui arrivent à échéance, incidents ouverts.",
       ariaLabel: "Notifications",
       title: "Notifications",
       itemCount: "{{count}} élément(s) nécessitant votre attention",
@@ -591,6 +596,29 @@ const fr = {
       confirmDelete: 'Supprimer le bien "{{title}}" ?',
     },
     tips: {
+      contractSign: "Ouvre le pavé de signature : votre paraphe est apposé au bail et horodaté.",
+      contractViewLease: "Affiche le bail généré, prêt à imprimer ou à transmettre.",
+      contractScan: "Joint au bail la photo ou le PDF du contrat signé sur papier.",
+      contractViewScan: "Ouvre le contrat papier déjà numérisé pour ce bail.",
+      contractCreate: "Ouvre le formulaire d'un nouveau bail : bien, locataire, loyer et dates.",
+      inspectionSave: "Enregistre sans verrouiller : vous pourrez encore corriger.",
+      inspectionSign: "Ouvre le pavé de signature pour valider l'état des lieux côté agence.",
+      inspectionView: "Affiche le rapport complet, photos comprises.",
+      inspectionEdit: "Reprend l'état des lieux tant qu'il n'est pas finalisé.",
+      tenantPortal: "Ouvre la création d'un accès au portail pour ce locataire.",
+      tenantCreate: "Ouvre le formulaire d'une nouvelle fiche locataire.",
+      issueStatus: "Fait passer l'incident à cet état et en informe le locataire.",
+      leadStatus: "Classe la demande à ce stade de votre suivi commercial.",
+      expenseExportCsv: "Télécharge toutes les dépenses du filtre au format tableur.",
+      expenseReport: "Produit un rapport financier sur la période choisie, prêt à transmettre.",
+      expenseCreate: "Ouvre le formulaire d'une nouvelle dépense à imputer à un bien.",
+      fiscalGrandLivre: "Génère le grand livre de l'année : toutes les écritures, dans l'ordre.",
+      crgExport: "Produit le compte-rendu de gestion du mois, à envoyer au propriétaire.",
+      propertyEdit: "Modifie la fiche du bien : loyer, surface, propriétaire, devise.",
+      propertyCreate: "Ouvre le formulaire d'un nouveau bien à mettre en gestion.",
+      listingEdit: "Modifie l'annonce telle qu'elle apparaît sur la vitrine publique.",
+      listingCreate: "Rédige une annonce et la publie sur votre vitrine publique.",
+      ownerCreate: "Ouvre le formulaire d'un nouveau propriétaire pour qui vous gérez.",
       invoiceSendMonthly: "Envoie en une fois un rappel à TOUS les locataires dont le loyer est impayé, par email et WhatsApp.",
       agencyDeleteAccount: "Ouvre la procédure de fermeture définitive de l'agence et de toutes ses données.",
       agencyLogoutAll: "Déconnecte immédiatement tous vos appareils. Il faudra vous reconnecter partout.",
@@ -1204,6 +1232,12 @@ const fr = {
 
   tenant: {
     tips: {
+      exportData: "Télécharge tout ce que le Service détient sur vous, dans un fichier lisible.",
+      viewLease: "Affiche votre bail tel qu'il a été généré.",
+      viewInspection: "Affiche le rapport complet de l'état des lieux, photos comprises.",
+      viewReceipt: "Ouvre la quittance de ce loyer, prête à imprimer.",
+      choosePayment: "Affiche les moyens de paiement acceptés pour ce loyer.",
+      addPhoto: "Ajoute une photo au signalement déjà transmis.",
       pay: "Lance le paiement de ce loyer par ce moyen. La quittance suit une fois l'encaissement confirmé.",
       signContract: "Ouvre le pavé de signature : votre paraphe engage le bail et est horodaté.",
       signInspection: "Signe l'état des lieux. Aucune réserve ne pourra être ajoutée après.",
@@ -1313,6 +1347,9 @@ const fr = {
     },
   },
   owner: {
+    tips: {
+      crgExport: "Affiche le compte-rendu de gestion du mois, à imprimer ou à conserver.",
+    },
     dashboard: {
       title: "Mon tableau de bord financier",
       subtitle: "Suivez le loyer perçu et en attente pour vos biens.",

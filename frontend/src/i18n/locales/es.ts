@@ -2,6 +2,9 @@ import type { TranslationSchema } from "./fr";
 
 const es: TranslationSchema = {
   common: {
+    tips: {
+      logout: "Cierra su sesión en este dispositivo.",
+    },
     payment: {
       returned: "Pago enviado. La confirmación llega en unos instantes: esta página se actualiza sola.",
       cancelled: "Pago cancelado. No se ha cobrado ningún importe.",
@@ -64,6 +67,7 @@ const es: TranslationSchema = {
       DEMO: "Demo",
     },
     theme: {
+      tip: "Alterna entre la visualización clara y la oscura.",
       toLight: "Cambiar a modo claro",
       toDark: "Cambiar a modo oscuro",
       toggleAria: "Alternar tema claro/oscuro",
@@ -493,6 +497,7 @@ const es: TranslationSchema = {
       },
     },
     notificationBell: {
+      tip: "Sus alertas: alquileres atrasados, contratos próximos a vencer, incidencias abiertas.",
       ariaLabel: "Notificaciones",
       title: "Notificaciones",
       itemCount: "{{count}} elemento(s) requieren tu atención",
@@ -593,6 +598,29 @@ const es: TranslationSchema = {
       confirmDelete: '¿Eliminar la propiedad "{{title}}"?',
     },
     tips: {
+      contractSign: "Abre el panel de firma: su rúbrica se añade al contrato y queda fechada.",
+      contractViewLease: "Muestra el contrato generado, listo para imprimir o enviar.",
+      contractScan: "Adjunta al contrato la foto o el PDF del documento firmado en papel.",
+      contractViewScan: "Abre el contrato en papel ya digitalizado para este arrendamiento.",
+      contractCreate: "Abre el formulario de un nuevo contrato: inmueble, inquilino, alquiler y fechas.",
+      inspectionSave: "Guarda sin bloquear: todavía podrá corregir.",
+      inspectionSign: "Abre el panel de firma para validar el acta por parte de la agencia.",
+      inspectionView: "Muestra el informe completo, fotos incluidas.",
+      inspectionEdit: "Retoma el acta mientras no esté finalizada.",
+      tenantPortal: "Abre la creación de un acceso al portal para este inquilino.",
+      tenantCreate: "Abre el formulario de una nueva ficha de inquilino.",
+      issueStatus: "Pasa la incidencia a este estado e informa al inquilino.",
+      leadStatus: "Clasifica la solicitud en esta fase de su seguimiento comercial.",
+      expenseExportCsv: "Descarga todos los gastos del filtro en formato hoja de cálculo.",
+      expenseReport: "Produce un informe financiero del periodo elegido, listo para enviar.",
+      expenseCreate: "Abre el formulario de un nuevo gasto a imputar a un inmueble.",
+      fiscalGrandLivre: "Genera el libro mayor del año: todos los asientos, en orden.",
+      crgExport: "Produce el informe de gestión del mes, para enviar al propietario.",
+      propertyEdit: "Modifica la ficha del inmueble: alquiler, superficie, propietario, divisa.",
+      propertyCreate: "Abre el formulario de un nuevo inmueble a gestionar.",
+      listingEdit: "Modifica el anuncio tal como aparece en el escaparate público.",
+      listingCreate: "Redacta un anuncio y lo publica en su escaparate público.",
+      ownerCreate: "Abre el formulario de un nuevo propietario para el que gestiona.",
       invoiceSendMonthly: "Envía de una vez un recordatorio a TODOS los inquilinos con el alquiler impagado, por correo y WhatsApp.",
       agencyDeleteAccount: "Abre el procedimiento de cierre definitivo de la agencia y de todos sus datos.",
       agencyLogoutAll: "Cierra de inmediato la sesión en todos sus dispositivos. Habrá que volver a entrar.",
@@ -1205,6 +1233,12 @@ const es: TranslationSchema = {
 
   tenant: {
     tips: {
+      exportData: "Descarga todo lo que el Servicio guarda sobre usted, en un archivo legible.",
+      viewLease: "Muestra su contrato tal como fue generado.",
+      viewInspection: "Muestra el informe completo del acta, fotos incluidas.",
+      viewReceipt: "Abre el recibo de este alquiler, listo para imprimir.",
+      choosePayment: "Muestra los medios de pago aceptados para este alquiler.",
+      addPhoto: "Añade una foto a la incidencia ya comunicada.",
       pay: "Inicia el pago de este alquiler por este medio. El recibo llega una vez confirmado el cobro.",
       signContract: "Abre el panel de firma: su firma compromete el contrato y queda fechada.",
       signInspection: "Firma el acta. Después no podrá añadirse ninguna reserva.",
@@ -1314,6 +1348,9 @@ const es: TranslationSchema = {
     },
   },
   owner: {
+    tips: {
+      crgExport: "Muestra el informe de gestión del mes, para imprimir o conservar.",
+    },
     dashboard: {
       title: "Mi panel financiero",
       subtitle: "Consulta el alquiler cobrado y pendiente de tus propiedades.",

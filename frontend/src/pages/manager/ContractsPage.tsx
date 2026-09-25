@@ -183,9 +183,11 @@ export default function ContractsPage() {
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.contracts.title")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
+        <Bulle texte={t("manager.tips.contractCreate")}>
         <button onClick={() => setShowForm(true)} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
           {t("manager.contracts.addBtn")}
         </button>
+        </Bulle>
       </div>
 
       {loadError && (
@@ -288,12 +290,14 @@ export default function ContractsPage() {
                     {c.signedByManagerAt ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
                     ) : (
+                      <Bulle texte={t("manager.tips.contractSign")}>
                       <button
                         onClick={() => setSigningContract(c)}
                         className="text-brand-600 dark:text-brand-400 font-semibold hover:underline"
                       >
                         ✍️ {t("manager.contracts.sign")}
                       </button>
+                      </Bulle>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
@@ -307,15 +311,18 @@ export default function ContractsPage() {
                 </td>
                 <td className="px-4 py-3"><Badge status={c.status} /></td>
                 <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                  <Bulle texte={t("manager.tips.contractViewLease")}>
                   <button
                     onClick={() => setViewingLeaseContract(c)}
                     className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                   >
                     <span>📄</span> {t("manager.contracts.leasePdf")}
                   </button>
+                  </Bulle>
 
                   {/* Boutons Scan Papier */}
                   {c.scannedContractUrl ? (
+                    <Bulle texte={t("manager.tips.contractViewScan")}>
                     <button
                       onClick={() => handleViewScannedContract(c)}
                       className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
@@ -324,8 +331,10 @@ export default function ContractsPage() {
                       <FileCheck size={13} />
                       <span>{t("manager.contracts.scanContractShort")}</span>
                     </button>
+                    </Bulle>
                   ) : null}
 
+                  <Bulle texte={t("manager.tips.contractScan")}>
                   <button
                     onClick={() => triggerScanUpload(c)}
                     disabled={uploadingScanContractId === c.id}
@@ -341,6 +350,7 @@ export default function ContractsPage() {
                         : t("manager.contracts.scanContractShort")}
                     </span>
                   </button>
+                  </Bulle>
 
                   {showRenewal && (
                     <>
@@ -412,9 +422,11 @@ export default function ContractsPage() {
                   {t("manager.contracts.agency")} {c.signedByManagerAt ? (
                     <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✅ {t("manager.contracts.signed")}</span>
                   ) : (
+                    <Bulle texte={t("manager.tips.contractSign")}>
                     <button onClick={() => setSigningContract(c)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline">
                       ✍️ {t("manager.contracts.sign")}
                     </button>
+                    </Bulle>
                   )}
                 </span>
                 <span>
@@ -426,14 +438,17 @@ export default function ContractsPage() {
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <Bulle texte={t("manager.tips.contractViewLease")}>
                 <button
                   onClick={() => setViewingLeaseContract(c)}
                   className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                 >
                   <span>📄</span> {t("manager.contracts.leasePdf")}
                 </button>
+                </Bulle>
 
                 {c.scannedContractUrl ? (
+                  <Bulle texte={t("manager.tips.contractViewScan")}>
                   <button
                     onClick={() => handleViewScannedContract(c)}
                     className="text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
@@ -441,8 +456,10 @@ export default function ContractsPage() {
                     <FileCheck size={13} />
                     <span>{t("manager.contracts.scanContractShort")}</span>
                   </button>
+                  </Bulle>
                 ) : null}
 
+                <Bulle texte={t("manager.tips.contractScan")}>
                 <button
                   onClick={() => triggerScanUpload(c)}
                   disabled={uploadingScanContractId === c.id}
@@ -457,6 +474,7 @@ export default function ContractsPage() {
                       : t("manager.contracts.scanContractShort")}
                   </span>
                 </button>
+                </Bulle>
 
                 {showRenewal && (
                   <>

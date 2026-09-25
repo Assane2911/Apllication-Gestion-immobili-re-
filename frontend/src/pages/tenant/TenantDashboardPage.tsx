@@ -89,6 +89,7 @@ export default function TenantDashboardPage() {
       <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
         {t("tenant.dashboard.privacy.description")}
       </p>
+      <Bulle texte={t("tenant.tips.exportData")}>
       <button
         type="button"
         onClick={handleExportMyData}
@@ -97,6 +98,7 @@ export default function TenantDashboardPage() {
       >
         {exportingData ? t("tenant.dashboard.privacy.downloading") : t("tenant.dashboard.privacy.download")}
       </button>
+      </Bulle>
     </div>
   );
 
@@ -241,12 +243,14 @@ export default function TenantDashboardPage() {
                     </button>
                     </Bulle>
                   )}
+                  <Bulle texte={t("tenant.tips.viewLease")}>
                   <button
                     onClick={() => setViewingLeaseContract(c)}
                     className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
                   >
                     <span>📄</span> {t("tenant.dashboard.viewLeasePdf")}
                   </button>
+                  </Bulle>
 
                   {c.scannedContractUrl && (
                     <button
@@ -316,12 +320,14 @@ export default function TenantDashboardPage() {
                               </button>
                               </Bulle>
                             )}
+                            <Bulle texte={t("tenant.tips.viewInspection")}>
                             <button
                               onClick={() => setViewingReportInspection(insp)}
                               className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer"
                             >
                               📋 {t("tenant.dashboard.inspectionViewReport")}
                             </button>
+                            </Bulle>
                           </div>
                         )}
                       </div>

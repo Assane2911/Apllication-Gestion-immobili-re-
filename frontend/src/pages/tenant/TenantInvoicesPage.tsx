@@ -211,6 +211,7 @@ export default function TenantInvoicesPage() {
                   </span>
                   <Badge status={inv.status} />
                   {isPaid && (
+                    <Bulle texte={t("tenant.tips.viewReceipt")}>
                     <button
                       onClick={() => setActiveReceiptInvoice(inv)}
                       className="bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
@@ -218,14 +219,17 @@ export default function TenantInvoicesPage() {
                       <Download size={13} />
                       <span>{t("tenant.invoices.receiptPdf")}</span>
                     </button>
+                    </Bulle>
                   )}
                   {!isPaid && inv.status !== "CANCELLED" && (
+                    <Bulle texte={t("tenant.tips.choosePayment")}>
                     <button
                       onClick={() => setPayingId(payingId === inv.id ? null : inv.id)}
                       className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs shadow-brand-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                     >
                       {t("tenant.invoices.pay")}
                     </button>
+                    </Bulle>
                   )}
                 </div>
               </div>

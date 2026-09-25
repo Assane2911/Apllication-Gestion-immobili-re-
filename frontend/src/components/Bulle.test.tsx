@@ -76,6 +76,24 @@ describe("Bulle d'information", () => {
     expect(declencheur.getAttribute("aria-describedby")).toBe(screen.getByRole("tooltip").id);
   });
 
+  it("s'efface de la mise en page quand on le lui demande", () => {
+    // `display: contents` permet d'envelopper un enfant de flex ou de grille
+    // sans que la bulle ne s'intercale dans la mise en page — le bouton reste
+    // un enfant direct aux yeux du navigateur. L'enveloppe n'ayant alors
+    // aucune boîte, c'est l'élément décrit que le composant doit mesurer.
+    render(
+      <Bulle texte="Bascule entre clair et sombre" className="contents">
+        <button type="button">Thème</button>
+      </Bulle>
+    );
+    const declencheur = screen.getByRole("button");
+
+    expect(declencheur.parentElement?.className).toBe("contents");
+
+    fireEvent.focus(declencheur);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Bascule entre clair et sombre");
+  });
+
   it("ne capte jamais le pointeur, pour ne pas gêner le clic qu'elle explique", () => {
     // Une bulle qui s'interpose entre le curseur et son bouton rend ce bouton
     // difficile à cliquer — défaut d'autant plus déroutant qu'il vient de

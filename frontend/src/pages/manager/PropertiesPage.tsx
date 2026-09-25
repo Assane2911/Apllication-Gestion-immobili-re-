@@ -126,9 +126,11 @@ export default function PropertiesPage() {
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.properties.title")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.properties.count", { count: properties.length })}</p>
         </div>
+        <Bulle texte={t("manager.tips.propertyCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
           {t("manager.properties.addBtn")}
         </button>
+        </Bulle>
       </div>
 
       {loadError && (
@@ -254,12 +256,14 @@ export default function PropertiesPage() {
               </div>
             </div>
             <div className="px-4 sm:px-5 pb-4 pt-1 flex items-center justify-end gap-2 border-t border-slate-50 dark:border-slate-800/40">
+              <Bulle texte={t("manager.tips.propertyEdit")}>
               <button
                 onClick={() => openEdit(p)}
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 {t("common.actions.edit")}
               </button>
+              </Bulle>
               <Bulle texte={t("manager.tips.propertyDelete")}>
               <button
                 onClick={() => handleDelete(p)}

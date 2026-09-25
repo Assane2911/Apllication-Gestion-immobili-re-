@@ -2,6 +2,9 @@ import type { TranslationSchema } from "./fr";
 
 const en: TranslationSchema = {
   common: {
+    tips: {
+      logout: "Closes your session on this device.",
+    },
     payment: {
       returned: "Payment submitted. Confirmation arrives in a few moments — this page updates on its own.",
       cancelled: "Payment cancelled. No amount was charged.",
@@ -64,6 +67,7 @@ const en: TranslationSchema = {
       DEMO: "Demo",
     },
     theme: {
+      tip: "Switches between the light and dark display.",
       toLight: "Switch to light mode",
       toDark: "Switch to dark mode",
       toggleAria: "Toggle light/dark theme",
@@ -493,6 +497,7 @@ const en: TranslationSchema = {
       },
     },
     notificationBell: {
+      tip: "Your alerts: rent in arrears, leases approaching their term, open issues.",
       ariaLabel: "Notifications",
       title: "Notifications",
       itemCount: "{{count}} item(s) requiring your attention",
@@ -592,6 +597,29 @@ const en: TranslationSchema = {
       confirmDelete: 'Delete the property "{{title}}"?',
     },
     tips: {
+      contractSign: "Opens the signature pad: your signature is added to the lease and time-stamped.",
+      contractViewLease: "Shows the generated lease, ready to print or send.",
+      contractScan: "Attaches the photo or PDF of the paper-signed contract to the lease.",
+      contractViewScan: "Opens the paper contract already scanned for this lease.",
+      contractCreate: "Opens the form for a new lease: property, tenant, rent and dates.",
+      inspectionSave: "Saves without locking: you can still make corrections.",
+      inspectionSign: "Opens the signature pad to validate the report on the agency's side.",
+      inspectionView: "Shows the full report, photos included.",
+      inspectionEdit: "Reopens the report as long as it has not been finalised.",
+      tenantPortal: "Opens the creation of a portal access for this tenant.",
+      tenantCreate: "Opens the form for a new tenant record.",
+      issueStatus: "Moves the issue to this state and notifies the tenant.",
+      leadStatus: "Files the enquiry at this stage of your sales follow-up.",
+      expenseExportCsv: "Downloads every cost in the current filter as a spreadsheet.",
+      expenseReport: "Produces a financial report over the chosen period, ready to send.",
+      expenseCreate: "Opens the form for a new cost to charge to a property.",
+      fiscalGrandLivre: "Generates the year's ledger: every entry, in order.",
+      crgExport: "Produces this month's management report, to send to the landlord.",
+      propertyEdit: "Edits the property record: rent, floor area, landlord, currency.",
+      propertyCreate: "Opens the form for a new property to manage.",
+      listingEdit: "Edits the advert as it appears on the public showcase.",
+      listingCreate: "Writes an advert and publishes it on your public showcase.",
+      ownerCreate: "Opens the form for a new landlord you manage for.",
       invoiceSendMonthly: "Sends one reminder to EVERY tenant whose rent is unpaid, by email and WhatsApp.",
       agencyDeleteAccount: "Opens the procedure to permanently close the agency and all its data.",
       agencyLogoutAll: "Signs out all your devices immediately. You will have to sign in again everywhere.",
@@ -1203,6 +1231,12 @@ const en: TranslationSchema = {
 
   tenant: {
     tips: {
+      exportData: "Downloads everything the Service holds about you, in a readable file.",
+      viewLease: "Shows your lease as it was generated.",
+      viewInspection: "Shows the full inspection report, photos included.",
+      viewReceipt: "Opens the receipt for this rent, ready to print.",
+      choosePayment: "Shows the payment methods accepted for this rent.",
+      addPhoto: "Adds a photo to the report you already sent.",
       pay: "Starts paying this rent by this method. The receipt follows once the payment is confirmed.",
       signContract: "Opens the signature pad: your signature commits the lease and is time-stamped.",
       signInspection: "Signs the report. No further reservations can be added afterwards.",
@@ -1312,6 +1346,9 @@ const en: TranslationSchema = {
     },
   },
   owner: {
+    tips: {
+      crgExport: "Shows this month's management report, to print or keep.",
+    },
     dashboard: {
       title: "My financial dashboard",
       subtitle: "Track rent collected and pending for your properties.",

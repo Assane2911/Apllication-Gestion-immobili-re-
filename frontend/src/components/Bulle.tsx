@@ -12,6 +12,11 @@ interface Props {
    * sans cela, elle imposerait `inline-flex` à un élément que sa mise en page
    * voulait en bloc — une entrée de menu cesserait de s'étendre sur toute la
    * largeur.
+   *
+   * `"contents"` est le choix à faire dans une grille ou un conteneur flex
+   * dont l'enfant doit rester un enfant DIRECT : l'enveloppe disparaît alors
+   * de la mise en page. C'est pour cela que `montrer` mesure l'élément décrit
+   * et non l'enveloppe, qui n'a dans ce cas aucune boîte.
    */
   className?: string;
 }
@@ -45,7 +50,13 @@ export default function Bulle({ texte, children, position = "haut", className = 
   const [coordonnees, setCoordonnees] = useState<{ top: number; left: number } | null>(null);
 
   const montrer = useCallback(() => {
-    const rect = ancre.current?.getBoundingClientRect();
+    // On mesure l'ÉLÉMENT DÉCRIT, pas l'enveloppe. Deux raisons : l'enveloppe
+    // peut être `display: contents` — nécessaire pour s'insérer dans une
+    // grille ou un flex sans en perturber la mise en page — et elle n'a alors
+    // aucune boîte, donc un rectangle de zéros ; et même sans cela, c'est bien
+    // le bouton que la bulle doit désigner.
+    const cible = ancre.current?.firstElementChild ?? ancre.current;
+    const rect = cible?.getBoundingClientRect();
     if (!rect) return;
     setCoordonnees(
       position === "droite"

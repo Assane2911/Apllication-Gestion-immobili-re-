@@ -6,7 +6,7 @@ import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { Expense, ExpenseCategory, PaginatedResponse, Property } from "../../types";
-import { formatByCurrency } from "../../utils/currencyFormat";
+import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
 
 function currentYearRange() {
@@ -234,6 +234,14 @@ export default function ExpensesPage() {
     }
   }
 
+  // Les trois tuiles décrivent la même période et les mêmes biens : elles
+  // doivent parler les mêmes monnaies, y compris celles dont le montant se
+  // trouve être nul. Sans cela, « 0 » s'affichait dans la devise d'affichage
+  // du gestionnaire à côté de totaux libellés dans celle des factures.
+  const devisesDeLEcran = summary
+    ? devisesPresentes(summary.totalRevenueByCurrency, summary.totalExpensesByCurrency, summary.netCashFlowByCurrency)
+    : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -244,6 +252,7 @@ export default function ExpensesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Bulle texte={t("manager.tips.expenseExportCsv")}>
           <button
             onClick={exportCSV}
             disabled={exportingCsv}
@@ -251,12 +260,15 @@ export default function ExpensesPage() {
           >
             <span>📥</span> {exportingCsv ? t("manager.expenses.exportingCsv") : t("manager.expenses.exportCsv")}
           </button>
+          </Bulle>
+          <Bulle texte={t("manager.tips.expenseCreate")}>
           <button
             onClick={() => setShowModal(true)}
             className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors"
           >
             {t("manager.expenses.addExpense")}
           </button>
+          </Bulle>
         </div>
       </div>
 
@@ -273,19 +285,19 @@ export default function ExpensesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
             label={t("manager.expenses.stats.revenueCollected")}
-            value={formatByCurrency(summary.totalRevenueByCurrency, formatMoney)}
+            value={formatByCurrency(summary.totalRevenueByCurrency, formatMoney, devisesDeLEcran)}
             hint={t("manager.expenses.stats.revenueHint", { count: summary.paidInvoiceCount })}
             accent="green"
           />
           <StatCard
             label={t("manager.expenses.stats.totalExpenses")}
-            value={formatByCurrency(summary.totalExpensesByCurrency, formatMoney)}
+            value={formatByCurrency(summary.totalExpensesByCurrency, formatMoney, devisesDeLEcran)}
             hint={t("manager.expenses.stats.expensesHint", { count: summary.expenseCount })}
             accent="red"
           />
           <StatCard
             label={t("manager.expenses.stats.netCashFlow")}
-            value={formatByCurrency(summary.netCashFlowByCurrency, formatMoney)}
+            value={formatByCurrency(summary.netCashFlowByCurrency, formatMoney, devisesDeLEcran)}
             hint={
               netCashFlowAllPositive(summary.netCashFlowByCurrency)
                 ? t("manager.expenses.stats.netCashFlowPositive")
@@ -335,6 +347,7 @@ export default function ExpensesPage() {
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
+        <Bulle texte={t("manager.tips.expenseReport")}>
         <button
           onClick={exportFinancialReport}
           disabled={exportingReport}
@@ -342,6 +355,7 @@ export default function ExpensesPage() {
         >
           <span>📊</span> {exportingReport ? t("manager.expenses.generatingReport") : t("manager.expenses.generateReport")}
         </button>
+        </Bulle>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">

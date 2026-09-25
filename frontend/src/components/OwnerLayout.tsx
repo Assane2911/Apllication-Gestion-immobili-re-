@@ -50,22 +50,24 @@ export default function OwnerLayout() {
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
             <LanguageSwitcher />
             <CurrencySelector />
+            <Bulle texte={t("common.theme.tip")} className="contents">
             <button
               onClick={toggleTheme}
               className="shrink-0 w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-              title={theme === "dark" ? t("common.theme.toLight") : t("common.theme.toDark")}
               aria-label={t("common.theme.toggleAria")}
             >
               {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
             </button>
+            </Bulle>
+            <Bulle texte={t("common.tips.logout")} className="contents">
             <button
               onClick={logout}
               className="shrink-0 inline-flex items-center gap-1.5 pl-2.5 sm:pl-2.5 ml-0.5 pr-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200/70 dark:border-rose-500/20 hover:bg-rose-100 dark:hover:bg-rose-500/20 hover:border-rose-300 dark:hover:border-rose-500/40 transition-all cursor-pointer"
-              title={t("nav.logout")}
             >
               <LogOut size={13} />
               <span>{t("nav.logout")}</span>
             </button>
+            </Bulle>
           </div>
         </div>
 

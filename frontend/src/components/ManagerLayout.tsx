@@ -66,14 +66,15 @@ export default function ManagerLayout() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
+              <Bulle texte={t("common.theme.tip")} className="contents">
               <button
                 onClick={toggleTheme}
                 className="shrink-0 w-8 h-8 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
-                title={theme === "dark" ? t("common.theme.toLight") : t("common.theme.toDark")}
                 aria-label={t("common.theme.toggleAria")}
               >
                 {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
               </button>
+              </Bulle>
               <button
                 onClick={() => setMobileNavOpen(false)}
                 className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, liste } from "../api/client";
 import type { NotificationItem, NotificationType } from "../types";
+import Bulle from "./Bulle";
 
 const iconByType: Record<NotificationType, typeof Bell> = {
   message: MessageSquare,
@@ -56,6 +57,7 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={containerRef}>
+      <Bulle texte={t("components.notificationBell.tip")}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
@@ -68,6 +70,7 @@ export default function NotificationBell() {
           </span>
         )}
       </button>
+      </Bulle>
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">

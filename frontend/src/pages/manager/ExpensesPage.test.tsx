@@ -297,4 +297,29 @@ describe("ExpensesPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
   });
+
+  it("exprime un total nul dans la devise des autres tuiles", async () => {
+    // Le symptôme rapporté : « Loyers encaissés 35 000 FCFA » à côté de
+    // « Total dépenses 0 FG ». Le total vide n'ayant aucune devise, il
+    // retombait sur la devise d'AFFICHAGE du gestionnaire — ici le franc
+    // guinéen — alors que les deux autres chiffres parlaient celle des
+    // factures. Trois chiffres de la même page, deux monnaies.
+    mockedApi.get.mockResolvedValueOnce(paginated([property()]));
+    mockedApi.get.mockResolvedValueOnce({
+      data: {
+        totalRevenueByCurrency: { XOF: 35000 },
+        totalExpensesByCurrency: {},
+        netCashFlowByCurrency: { XOF: 35000 },
+        expensesByCategory: {},
+        expenseCount: 0,
+      },
+    });
+    mockedApi.get.mockResolvedValueOnce(paginated([]));
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText(/35\s*000\s*FCFA/).length).toBeGreaterThan(0));
+    expect(screen.getByText(/^0\s*FCFA$/)).toBeInTheDocument();
+    expect(screen.queryByText(/FG/)).not.toBeInTheDocument();
+  });
 });

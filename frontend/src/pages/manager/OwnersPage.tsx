@@ -151,9 +151,11 @@ export default function OwnersPage() {
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.owners.title")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.owners.count", { count: owners.length })}</p>
         </div>
+        <Bulle texte={t("manager.tips.ownerCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
           {t("manager.owners.addBtn")}
         </button>
+        </Bulle>
       </div>
 
       {loadError && (

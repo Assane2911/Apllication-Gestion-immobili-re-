@@ -6,6 +6,7 @@ import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import type { Listing, LeadStatus, ListingLead, PaginatedResponse } from "../../types";
+import Bulle from "../../components/Bulle";
 
 const STATUS_OPTIONS: LeadStatus[] = ["NEW", "CONTACTED", "VISITED", "CONVERTED", "ARCHIVED"];
 const PAGE_SIZE = 20;
@@ -187,8 +188,8 @@ export default function ListingLeadsPage() {
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("manager.listingLeads.changeStatus")}</span>
               <div className="flex flex-wrap gap-1.5">
                 {STATUS_OPTIONS.map((s) => (
+                  <Bulle key={s} texte={t("manager.tips.leadStatus")}>
                   <button
-                    key={s}
                     onClick={() => updateStatus(lead, s)}
                     disabled={lead.status === s}
                     className={`text-xs px-3 py-1 rounded-full border font-medium transition-all ${
@@ -199,6 +200,7 @@ export default function ListingLeadsPage() {
                   >
                     <Badge status={s} />
                   </button>
+                  </Bulle>
                 ))}
               </div>
             </div>

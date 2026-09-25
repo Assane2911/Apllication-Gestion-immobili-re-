@@ -6,6 +6,7 @@ import Pagination from "../../components/Pagination";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { IssueReport, IssueStatus, PaginatedResponse } from "../../types";
 import { getAllIssuePhotos } from "../../utils/issuePhotos";
+import Bulle from "../../components/Bulle";
 
 const statusOptions: IssueStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"];
 const PAGE_SIZE = 20;
@@ -158,8 +159,8 @@ export default function IssuesPage() {
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("manager.issues.changeStatus")}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {statusOptions.map((s) => (
+                    <Bulle key={s} texte={t("manager.tips.issueStatus")}>
                     <button
-                      key={s}
                       onClick={() => updateStatus(issue, s)}
                       disabled={issue.status === s}
                       className={`text-xs px-3 py-1 rounded-full border font-medium transition-all ${
@@ -170,6 +171,7 @@ export default function IssuesPage() {
                     >
                       <Badge status={s} />
                     </button>
+                    </Bulle>
                   ))}
                 </div>
               </div>

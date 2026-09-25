@@ -7,7 +7,8 @@ import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { AnnualFiscalSynthesis, ExpenseCategory } from "../../types";
-import { formatByCurrency } from "../../utils/currencyFormat";
+import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
+import Bulle from "../../components/Bulle";
 
 // Mêmes couleurs que DashboardPage.tsx (revenus/dépenses par mois), pour que
 // le module Bilan Fiscal reste visuellement cohérent avec le tableau de bord.
@@ -140,6 +141,12 @@ export default function FiscalPage() {
 
   const categoryEntries = Object.entries(synthesis.expensesByCategory) as [ExpenseCategory, Record<string, number>][];
 
+  // Même raison que sur l'écran des dépenses : les trois totaux d'un même
+  // bilan doivent s'exprimer dans les mêmes monnaies.
+  const devisesDeLEcran = synthesis
+    ? devisesPresentes(synthesis.totalRevenueByCurrency, synthesis.totalExpensesByCurrency, synthesis.netResultByCurrency)
+    : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -163,6 +170,7 @@ export default function FiscalPage() {
               </option>
             ))}
           </select>
+          <Bulle texte={t("manager.tips.fiscalGrandLivre")}>
           <button
             onClick={downloadGrandLivre}
             disabled={downloading}
@@ -170,6 +178,7 @@ export default function FiscalPage() {
           >
             <span>📒</span> {downloading ? t("manager.fiscal.downloadingGrandLivre") : t("manager.fiscal.downloadGrandLivre")}
           </button>
+          </Bulle>
         </div>
       </div>
 
@@ -177,21 +186,21 @@ export default function FiscalPage() {
         <StatCard
           icon={Wallet}
           label={t("manager.fiscal.stats.totalRevenue")}
-          value={formatByCurrency(synthesis.totalRevenueByCurrency, formatMoney)}
+          value={formatByCurrency(synthesis.totalRevenueByCurrency, formatMoney, devisesDeLEcran)}
           hint={t("manager.fiscal.stats.totalRevenueHint", { year })}
           accent="green"
         />
         <StatCard
           icon={TrendingDown}
           label={t("manager.fiscal.stats.totalExpenses")}
-          value={formatByCurrency(synthesis.totalExpensesByCurrency, formatMoney)}
+          value={formatByCurrency(synthesis.totalExpensesByCurrency, formatMoney, devisesDeLEcran)}
           hint={t("manager.fiscal.stats.totalExpensesHint")}
           accent="red"
         />
         <StatCard
           icon={TrendingUp}
           label={t("manager.fiscal.stats.netResult")}
-          value={formatByCurrency(synthesis.netResultByCurrency, formatMoney)}
+          value={formatByCurrency(synthesis.netResultByCurrency, formatMoney, devisesDeLEcran)}
           hint={allPositive(synthesis.netResultByCurrency) ? t("manager.fiscal.stats.netResultPositive") : t("manager.fiscal.stats.netResultNegative")}
           accent={allPositive(synthesis.netResultByCurrency) ? "green" : "red"}
         />

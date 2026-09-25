@@ -5,6 +5,7 @@ import Badge from "../../components/Badge";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport } from "../../types";
 import { getAllIssuePhotos } from "../../utils/issuePhotos";
+import Bulle from "../../components/Bulle";
 
 export default function TenantIssuesPage() {
   const { t, i18n } = useTranslation();
@@ -308,12 +309,14 @@ export default function TenantIssuesPage() {
                       </div>
                     </div>
                   ) : (
+                    <Bulle texte={t("tenant.tips.addPhoto")}>
                     <button
                       onClick={() => setAddingPhotoToId(issue.id)}
                       className="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-semibold py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5"
                     >
                       <span>📷</span> {t("tenant.issues.addPhoto")}
                     </button>
+                    </Bulle>
                   )}
                 </div>
               </div>
