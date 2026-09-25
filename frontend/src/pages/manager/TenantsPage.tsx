@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, liste } from "../../api/client";
@@ -249,7 +250,7 @@ export default function TenantsPage() {
 
       {!loading && tenants.length === 0 && !showForm ? (
         <EmptyState
-          icon="👥"
+          icon={Users}
           title={t("manager.tenants.emptyTitle")}
           description={t("manager.tenants.emptyDesc")}
           action={{ label: t("manager.tenants.addBtn"), onClick: openCreate }}

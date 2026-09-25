@@ -121,14 +121,14 @@ describe("ContractsPage (manager)", () => {
     expect(screen.getAllByText("500 €").length).toBeGreaterThan(0);
     // Aucune signature encore posée : bouton "Signer" pour l'agence, mention "En attente" pour le locataire.
     expect(screen.getAllByRole("button", { name: /Signer/ }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("⏳ En attente").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("En attente").length).toBeGreaterThan(0);
   });
 
   it("affiche le bail comme signé quand signedByManagerAt/signedByTenantAt sont renseignés", async () => {
     queueLoad([contract({ signedByManagerAt: "2026-02-01T00:00:00.000Z", signedByTenantAt: "2026-02-02T00:00:00.000Z" })]);
     renderPage();
 
-    await waitFor(() => expect(screen.getAllByText("✅ Signé").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText("Signé").length).toBeGreaterThan(0));
     expect(screen.queryByRole("button", { name: /Signer/ })).not.toBeInTheDocument();
   });
 
