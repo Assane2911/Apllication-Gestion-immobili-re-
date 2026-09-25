@@ -766,10 +766,9 @@ const en: TranslationSchema = {
         legalNotice: "Legal notice for the receipts' footer",
         legalNoticePlaceholder:
           "E.g.: Real estate management company, registered agent license no. ...",
-        rentRemindersSectionTitle: "Rent reminders by SMS / WhatsApp",
+        rentRemindersSectionTitle: "Rent reminders by WhatsApp",
         rentRemindersSectionHint:
           "Sent in addition to the email, to the phone number already saved on each tenant's profile.",
-        smsRemindersEnabled: "Also send rent reminders by SMS",
         whatsappRemindersEnabled: "Also send rent reminders by WhatsApp",
       },
       save: "Save settings",

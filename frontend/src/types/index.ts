@@ -139,7 +139,6 @@ export interface AgencySettings {
   stampOrSignatureUrl?: string | null;
   iban?: string | null;
   bic?: string | null;
-  smsRemindersEnabled?: boolean;
   whatsappRemindersEnabled?: boolean;
 }
 

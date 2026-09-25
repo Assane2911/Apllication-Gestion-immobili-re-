@@ -6,24 +6,19 @@ import { agencySettings, contracts, invoices, properties, tenants } from "../db/
 import { ApiError } from "../utils/asyncHandler";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
-import { rentDueReminderText, rentDueSoonReminderText, sendTextMessage } from "./sms.service";
+import { rentDueReminderText, rentDueSoonReminderText, sendWhatsAppMessage } from "./whatsapp.service";
 
 /**
- * Envoie, en plus de l'email de rappel de loyer, un SMS et/ou un WhatsApp au
- * locataire si l'agence a activé ces canaux (agencySettings). N'affecte
- * jamais le statut d'envoi de la facture : ces canaux sont un complément à
- * l'email, jamais un remplacement, et un échec Twilio ne doit pas empêcher
+ * Envoie, en plus de l'email de rappel de loyer, un message WhatsApp au
+ * locataire si l'agence a activé ce canal (agencySettings). N'affecte jamais
+ * le statut d'envoi de la facture : WhatsApp est un complément à l'email,
+ * jamais un remplacement, et un échec de la Cloud API ne doit pas empêcher
  * l'avis d'être considéré comme envoyé (la réclamation `reminderSentAt` /
  * `dueSoonReminderSentAt` a déjà eu lieu avant l'appel à cette fonction).
  */
-async function sendRentReminderTextMessages(
-  agency: typeof agencySettings.$inferSelect | null,
-  phone: string,
-  body: string
-) {
-  if (!agency) return;
-  if (agency.smsRemindersEnabled) await sendTextMessage(phone, body, "sms");
-  if (agency.whatsappRemindersEnabled) await sendTextMessage(phone, body, "whatsapp");
+async function sendRentReminderWhatsApp(agency: typeof agencySettings.$inferSelect | null, phone: string, body: string) {
+  if (!agency?.whatsappRemindersEnabled) return;
+  await sendWhatsAppMessage(phone, body);
 }
 
 /**
@@ -197,7 +192,7 @@ export async function runRentDueReminders(managerId?: string) {
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
 
-    await sendRentReminderTextMessages(
+    await sendRentReminderWhatsApp(
       row.agency,
       row.tenant.phone,
       rentDueReminderText({
@@ -291,7 +286,7 @@ export async function runUpcomingRentDueReminders() {
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
 
-    await sendRentReminderTextMessages(
+    await sendRentReminderWhatsApp(
       row.agency,
       row.tenant.phone,
       rentDueSoonReminderText({
@@ -392,7 +387,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
 
   const emailResult = await sendEmail(row.tenant.email, subject, html);
 
-  await sendRentReminderTextMessages(
+  await sendRentReminderWhatsApp(
     row.agency,
     row.tenant.phone,
     rentDueReminderText({

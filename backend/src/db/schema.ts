@@ -328,12 +328,12 @@ export const agencySettings = pgTable("agency_settings", {
   // déclaration ne fait alors que masquer l'absence réelle de paiement.
   iban: text("iban"),
   bic: text("bic"),
-  // Rappels de loyer par SMS/WhatsApp (voir sms.service.ts et
-  // reminder.service.ts) : désactivés par défaut car chaque envoi via Twilio
-  // est facturé, contrairement à l'email — l'agence doit les activer
-  // explicitement. Envoyés au numéro déjà enregistré sur la fiche locataire
-  // (tenants.phone), en plus de l'email existant, jamais à sa place.
-  smsRemindersEnabled: boolean("sms_reminders_enabled").notNull().default(false),
+  // Rappel de loyer par WhatsApp (voir whatsapp.service.ts et
+  // reminder.service.ts) : désactivé par défaut car chaque envoi via la
+  // Cloud API WhatsApp est facturé au-delà d'un certain volume, contrairement
+  // à l'email — l'agence doit l'activer explicitement. Envoyé au numéro déjà
+  // enregistré sur la fiche locataire (tenants.phone), en plus de l'email
+  // existant, jamais à sa place.
   whatsappRemindersEnabled: boolean("whatsapp_reminders_enabled").notNull().default(false),
   ...timestamps,
 });

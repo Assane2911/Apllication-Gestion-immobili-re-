@@ -1,7 +1,5 @@
 import { env } from "../config/env";
 
-export type TextChannel = "sms" | "whatsapp";
-
 /**
  * Masque un numéro de téléphone destiné aux journaux — même logique que
  * masquer() dans email.service.ts : on ne garde que de quoi reconnaître un
@@ -13,48 +11,56 @@ function masquer(phone: string): string {
   return `${digits.slice(0, 3)}***${digits.slice(-2)}`;
 }
 
-function fromNumberFor(channel: TextChannel): string {
-  return channel === "whatsapp" ? env.twilio.whatsappFrom : env.twilio.smsFrom;
-}
-
 /**
- * Envoie un SMS ou un message WhatsApp via l'API REST Twilio (appel `fetch`
- * direct, sans SDK — même approche que payment.service.ts pour Stripe/PayDunya).
- * Retombe sur un envoi simulé (journalisé, pas de vraie requête) tant que les
- * identifiants Twilio ou le numéro "from" du canal choisi ne sont pas
- * configurés, pour ne jamais bloquer le job de rappel en dev/avant configuration.
+ * Envoie un message WhatsApp via la Cloud API officielle de Meta (appel
+ * `fetch` direct, sans SDK — même approche que payment.service.ts pour
+ * Stripe/PayDunya). Retombe sur un envoi simulé (journalisé, pas de vraie
+ * requête) tant que le token d'accès ou le Phone Number ID ne sont pas
+ * configurés, pour ne jamais bloquer le job de rappel en dev/avant
+ * configuration.
+ *
+ * Important : la Cloud API n'autorise un message texte libre que si le
+ * locataire a lui-même écrit à ce numéro WhatsApp Business dans les 24
+ * dernières heures ("fenêtre de service"). Passé ce délai, Meta exige un
+ * modèle de message (template) pré-approuvé — un envoi hors fenêtre sans
+ * template échoue côté API (erreur 24/131047). Ce point est à valider avec
+ * le compte WhatsApp Business Manager déjà configuré.
  */
-export async function sendTextMessage(to: string, body: string, channel: TextChannel) {
-  const from = fromNumberFor(channel);
-  if (!env.twilio.accountSid || !env.twilio.authToken || !from) {
-    console.warn(`[${channel}] Twilio non configuré — message simulé vers ${masquer(to)}`);
+export async function sendWhatsAppMessage(to: string, body: string) {
+  const { accessToken, phoneNumberId, apiVersion } = env.whatsapp;
+  if (!accessToken || !phoneNumberId) {
+    console.warn(`[whatsapp] Cloud API non configurée — message simulé vers ${masquer(to)}`);
     return { simulated: true };
   }
 
-  const destinataire = channel === "whatsapp" ? `whatsapp:${to}` : to;
-  const expediteur = channel === "whatsapp" ? `whatsapp:${from}` : from;
+  // La Cloud API attend le numéro au format E.164 SANS le "+".
+  const destinataire = to.replace(/[^\d]/g, "");
 
   try {
-    const auth = Buffer.from(`${env.twilio.accountSid}:${env.twilio.authToken}`).toString("base64");
-    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${env.twilio.accountSid}/Messages.json`, {
+    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-      body: new URLSearchParams({ To: destinataire, From: expediteur, Body: body }),
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: destinataire,
+        type: "text",
+        text: { body },
+      }),
     });
 
+    const data = (await response.json().catch(() => null)) as { messages?: { id?: string }[]; error?: unknown };
+
     if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      console.error(`[${channel}] Échec de l'envoi vers ${masquer(to)}:`, data);
+      console.error(`[whatsapp] Échec de l'envoi vers ${masquer(to)}:`, data?.error ?? data);
       return { simulated: false, error: true };
     }
 
-    const data = (await response.json()) as { sid?: string };
-    return { simulated: false, sid: data.sid };
+    return { simulated: false, messageId: data?.messages?.[0]?.id };
   } catch (err) {
-    console.error(`[${channel}] Échec réseau vers ${masquer(to)}:`, err instanceof Error ? err.message : err);
+    console.error(`[whatsapp] Échec réseau vers ${masquer(to)}:`, err instanceof Error ? err.message : err);
     return { simulated: false, error: true };
   }
 }
@@ -64,7 +70,7 @@ const monthNames = [
   "juillet", "août", "septembre", "octobre", "novembre", "décembre",
 ];
 
-/** Version texte courte de rentDueReminderEmail (email.service.ts), pour SMS/WhatsApp. */
+/** Version texte courte de rentDueReminderEmail (email.service.ts), pour WhatsApp. */
 export function rentDueReminderText(params: {
   tenantName: string;
   propertyTitle: string;
@@ -82,7 +88,7 @@ export function rentDueReminderText(params: {
   );
 }
 
-/** Version texte courte de rentDueSoonReminderEmail (email.service.ts), pour SMS/WhatsApp. */
+/** Version texte courte de rentDueSoonReminderEmail (email.service.ts), pour WhatsApp. */
 export function rentDueSoonReminderText(params: {
   tenantName: string;
   propertyTitle: string;

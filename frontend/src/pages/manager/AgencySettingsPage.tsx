@@ -18,7 +18,6 @@ export default function AgencySettingsPage() {
     legalNotice: "",
     iban: "",
     bic: "",
-    smsRemindersEnabled: false,
     whatsappRemindersEnabled: false,
   });
 
@@ -33,7 +32,6 @@ export default function AgencySettingsPage() {
         legalNotice: res.data.legalNotice || "",
         iban: res.data.iban || "",
         bic: res.data.bic || "",
-        smsRemindersEnabled: res.data.smsRemindersEnabled ?? false,
         whatsappRemindersEnabled: res.data.whatsappRemindersEnabled ?? false,
       });
     });
@@ -194,15 +192,6 @@ export default function AgencySettingsPage() {
                 {t("manager.agencySettings.fields.rentRemindersSectionHint")}
               </p>
             </div>
-            <label className="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.smsRemindersEnabled}
-                onChange={(e) => setForm({ ...form, smsRemindersEnabled: e.target.checked })}
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500"
-              />
-              {t("manager.agencySettings.fields.smsRemindersEnabled")}
-            </label>
             <label className="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
               <input
                 type="checkbox"

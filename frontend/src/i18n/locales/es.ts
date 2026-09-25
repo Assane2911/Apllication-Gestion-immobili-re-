@@ -768,10 +768,9 @@ const es: TranslationSchema = {
         legalNotice: "Menciones legales del pie de página de los recibos",
         legalNoticePlaceholder:
           "Ej: Sociedad de gestión inmobiliaria S.L. con capital de 50.000€. Tarjeta profesional de Transacción y Gestión Inmobiliaria n.º CPI 7501 expedida por la Cámara de Comercio...",
-        rentRemindersSectionTitle: "Recordatorios de alquiler por SMS / WhatsApp",
+        rentRemindersSectionTitle: "Recordatorios de alquiler por WhatsApp",
         rentRemindersSectionHint:
           "Enviados además del email, al número de teléfono ya registrado en la ficha de cada inquilino.",
-        smsRemindersEnabled: "Enviar también los recordatorios de alquiler por SMS",
         whatsappRemindersEnabled: "Enviar también los recordatorios de alquiler por WhatsApp",
       },
       save: "Guardar la configuración",

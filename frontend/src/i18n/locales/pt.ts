@@ -766,10 +766,9 @@ const pt: TranslationSchema = {
         legalNotice: "Menções legais do rodapé dos recibos",
         legalNoticePlaceholder:
           "Ex.: Sociedade de gestão imobiliária, capital social de 50.000€. Licença profissional n.º...",
-        rentRemindersSectionTitle: "Lembretes de aluguel por SMS / WhatsApp",
+        rentRemindersSectionTitle: "Lembretes de aluguel por WhatsApp",
         rentRemindersSectionHint:
           "Enviados em complemento ao email, para o número de telefone já registado na ficha de cada inquilino.",
-        smsRemindersEnabled: "Enviar também os lembretes de aluguel por SMS",
         whatsappRemindersEnabled: "Enviar também os lembretes de aluguel por WhatsApp",
       },
       save: "Guardar as definições",
