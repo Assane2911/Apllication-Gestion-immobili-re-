@@ -12,6 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/seed.ts",
     "create-admin": "tsx src/scripts/createAdmin.ts",
+    "test-whatsapp": "tsx src/scripts/testWhatsApp.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:check": "tsx src/scripts/checkDbSchema.ts"
