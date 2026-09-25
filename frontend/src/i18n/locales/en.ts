@@ -117,6 +117,16 @@ const en: TranslationSchema = {
       agency: "My Agency",
       subscription: "My Subscription",
     },
+    tipsTenant: {
+      home: "Your lease, your documents and the reports awaiting your signature.",
+      payments: "Rent called in: pay online and collect your receipts.",
+      messages: "Write to your property manager, lease by lease.",
+      issues: "Report a fault with a photo, and follow how it is handled.",
+    },
+    tipsOwner: {
+      home: "What your properties earned this month, read-only.",
+      crg: "Month by month: rent, costs, commission and the net due to you.",
+    },
     tenant: {
       home: "My home",
       payments: "My rent",
@@ -582,6 +592,20 @@ const en: TranslationSchema = {
       confirmDelete: 'Delete the property "{{title}}"?',
     },
     tips: {
+      invoiceSendMonthly: "Sends one reminder to EVERY tenant whose rent is unpaid, by email and WhatsApp.",
+      agencyDeleteAccount: "Opens the procedure to permanently close the agency and all its data.",
+      agencyLogoutAll: "Signs out all your devices immediately. You will have to sign in again everywhere.",
+      inspectionFinalize: "Locks the report and opens it for signature. It can no longer be edited.",
+      inspectionDelete: "Deletes the report and its photos. Nothing can be recovered afterwards.",
+      contractRenew: "Creates a new lease following this one, on the same terms, and closes the current one.",
+      contractTerminate: "Ends the lease before its term. Later rent calls stop.",
+      contractEnd: "Lets the lease lapse at its term, without renewal.",
+      contractDelete: "Deletes the lease and its history. Not possible while invoices are attached.",
+      expenseDelete: "Deletes the cost. The property's profitability and the tax summary are recalculated.",
+      listingDelete: "Removes the advert from the public showcase and deletes its record.",
+      propertyDelete: "Deletes the property. Not possible while a lease is still attached.",
+      ownerInvite: "Emails the landlord an invitation link to their space, valid for a few days.",
+      subscribe: "Confirms the chosen plan and starts the payment of the first term.",
       tenantIdDocument: "Opens the ID document in a new tab, through a temporary link.",
       tenantEdit: "Edit the record: title, name, phone, email, ID document.",
       tenantExport: "Download everything the Service holds about this tenant (GDPR right of access).",
@@ -1178,6 +1202,11 @@ const en: TranslationSchema = {
   },
 
   tenant: {
+    tips: {
+      pay: "Starts paying this rent by this method. The receipt follows once the payment is confirmed.",
+      signContract: "Opens the signature pad: your signature commits the lease and is time-stamped.",
+      signInspection: "Signs the report. No further reservations can be added afterwards.",
+    },
     dashboard: {
       privacy: {
         title: "My personal data",
@@ -1323,6 +1352,11 @@ const en: TranslationSchema = {
   },
   admin: {
     nav: {
+      tips: {
+        dashboard: "Platform activity, across every manager.",
+        transfers: "Subscription transfers awaiting manual confirmation or rejection.",
+        settings: "The bank details managers pay their subscription into.",
+      },
       dashboard: "Dashboard",
       transfers: "Bank transfers",
       settings: "Settings",

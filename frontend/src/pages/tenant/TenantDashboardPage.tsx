@@ -9,6 +9,7 @@ import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, Inspection } from "../../types";
+import Bulle from "../../components/Bulle";
 
 export default function TenantDashboardPage() {
   const { t, i18n } = useTranslation();
@@ -231,12 +232,14 @@ export default function TenantDashboardPage() {
 
                 <div className="flex items-center gap-2">
                   {!c.signedByTenantAt && (
+                    <Bulle texte={t("tenant.tips.signContract")}>
                     <button
                       onClick={() => setSigningContract(c)}
                       className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                     >
                       ✍️ {t("tenant.dashboard.signMyLease")}
                     </button>
+                    </Bulle>
                   )}
                   <button
                     onClick={() => setViewingLeaseContract(c)}
@@ -304,12 +307,14 @@ export default function TenantDashboardPage() {
                         {insp.status === "COMPLETED" && (
                           <div className="flex items-center gap-2">
                             {!insp.signedByTenantAt && (
+                              <Bulle texte={t("tenant.tips.signInspection")}>
                               <button
                                 onClick={() => setSigningInspection(insp)}
                                 className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer"
                               >
                                 ✍️ {t("tenant.dashboard.inspectionSignMine")}
                               </button>
+                              </Bulle>
                             )}
                             <button
                               onClick={() => setViewingReportInspection(insp)}

@@ -8,6 +8,7 @@ import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { PaymentMethod, PlatformBankInfo, SubscriptionPlanDetail } from "../../types";
+import Bulle from "../../components/Bulle";
 
 interface SubscriptionHistoryRecord {
   id: string;
@@ -484,6 +485,7 @@ export default function SubscriptionPage() {
               >
                 {t("common.actions.cancel")}
               </button>
+              <Bulle texte={t("manager.tips.subscribe")}>
               <button
                 type="button"
                 onClick={handleSubscribe}
@@ -492,6 +494,7 @@ export default function SubscriptionPage() {
               >
                 {subscribing ? t("manager.subscription.processing") : t("manager.subscription.confirmAndActivate")}
               </button>
+              </Bulle>
             </div>
           </div>
         </div>

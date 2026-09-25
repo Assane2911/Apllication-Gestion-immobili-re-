@@ -9,6 +9,7 @@ import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
+import Bulle from "../../components/Bulle";
 
 const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "" };
 
@@ -343,25 +344,33 @@ export default function ContractsPage() {
 
                   {showRenewal && (
                     <>
+                      <Bulle texte={t("manager.tips.contractRenew")}>
                       <button
                         onClick={() => handleRenew(c)}
                         className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                       >
                         🔄 {t("manager.contracts.renew")}
                       </button>
+                      </Bulle>
+                      <Bulle texte={t("manager.tips.contractEnd")}>
                       <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
                         {t("manager.contracts.doNotRenew")}
                       </button>
+                      </Bulle>
                     </>
                   )}
                   {c.status === "ACTIVE" && (
+                    <Bulle texte={t("manager.tips.contractTerminate")}>
                     <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
                       {t("manager.contracts.terminate")}
                     </button>
+                    </Bulle>
                   )}
+                  <Bulle texte={t("manager.tips.contractDelete")}>
                   <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
                     {t("common.actions.delete")}
                   </button>
+                  </Bulle>
                 </td>
               </tr>
               );
@@ -451,25 +460,33 @@ export default function ContractsPage() {
 
                 {showRenewal && (
                   <>
+                    <Bulle texte={t("manager.tips.contractRenew")}>
                     <button
                       onClick={() => handleRenew(c)}
                       className="text-xs bg-emerald-600 text-white font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                     >
                       🔄 {t("manager.contracts.renewShort")}
                     </button>
+                    </Bulle>
+                    <Bulle texte={t("manager.tips.contractEnd")}>
                     <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
                       {t("manager.contracts.doNotRenew")}
                     </button>
+                    </Bulle>
                   </>
                 )}
                 {c.status === "ACTIVE" && (
+                  <Bulle texte={t("manager.tips.contractTerminate")}>
                   <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
                     {t("manager.contracts.terminate")}
                   </button>
+                  </Bulle>
                 )}
+                <Bulle texte={t("manager.tips.contractDelete")}>
                 <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
                   {t("common.actions.delete")}
                 </button>
+                </Bulle>
               </div>
             </div>
           );

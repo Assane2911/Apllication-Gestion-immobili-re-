@@ -6,6 +6,7 @@ import ChampTelephone from "../../components/ChampTelephone";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import { useAuth } from "../../context/auth";
 import type { AgencySettings, RetentionEcheances } from "../../types";
+import Bulle from "../../components/Bulle";
 
 export default function AgencySettingsPage() {
   const { t } = useTranslation();
@@ -345,6 +346,7 @@ export default function AgencySettingsPage() {
             {logoutAllError}
           </p>
         )}
+        <Bulle texte={t("manager.tips.agencyLogoutAll")}>
         <button
           type="button"
           onClick={handleLogoutAll}
@@ -355,6 +357,7 @@ export default function AgencySettingsPage() {
             ? t("manager.agencySettings.security.logoutAllPending")
             : t("manager.agencySettings.security.logoutAllButton")}
         </button>
+        </Bulle>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm p-6">
@@ -364,6 +367,7 @@ export default function AgencySettingsPage() {
         <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
           {t("manager.agencySettings.dangerZone.description")}
         </p>
+        <Bulle texte={t("manager.tips.agencyDeleteAccount")}>
         <button
           type="button"
           onClick={() => setShowDeleteModal(true)}
@@ -371,6 +375,7 @@ export default function AgencySettingsPage() {
         >
           {t("manager.agencySettings.dangerZone.deleteButton")}
         </button>
+        </Bulle>
       </div>
 
       {showDeleteModal && (

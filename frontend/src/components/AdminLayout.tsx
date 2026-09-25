@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { useTheme } from "../context/theme";
+import Bulle from "./Bulle";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const navItems = [
@@ -42,8 +43,11 @@ export default function AdminLayout() {
         </div>
         <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-2">
           {navItems.map((item) => (
+            // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par
+            // défaut). C'est la barre latérale du gestionnaire qui fait
+            // exception avec « droite ».
+            <Bulle key={item.to} texte={t(`admin.nav.tips.${item.key}`)}>
             <NavLink
-              key={item.to}
               to={item.to}
               end
               className={({ isActive }) =>
@@ -56,6 +60,7 @@ export default function AdminLayout() {
             >
               {item.icon} {t(`admin.nav.${item.key}`)}
             </NavLink>
+            </Bulle>
           ))}
         </div>
       </header>

@@ -8,6 +8,7 @@ import Pagination from "../../components/Pagination";
 import { PropertyCardSkeleton } from "../../components/Skeleton";
 import { useCurrency } from "../../context/currency";
 import type { Owner, PaginatedResponse, Property, PropertyStatus } from "../../types";
+import Bulle from "../../components/Bulle";
 
 const emptyForm = { title: "", address: "", surface: "", rent: "", status: "AVAILABLE" as PropertyStatus, description: "", ownerId: "" };
 const PAGE_SIZE = 20;
@@ -259,12 +260,14 @@ export default function PropertiesPage() {
               >
                 {t("common.actions.edit")}
               </button>
+              <Bulle texte={t("manager.tips.propertyDelete")}>
               <button
                 onClick={() => handleDelete(p)}
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 {t("common.actions.delete")}
               </button>
+              </Bulle>
             </div>
           </div>
         ))}

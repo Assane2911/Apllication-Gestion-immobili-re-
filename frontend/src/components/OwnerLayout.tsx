@@ -4,6 +4,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
+import Bulle from "./Bulle";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const navItems = [
@@ -70,8 +71,11 @@ export default function OwnerLayout() {
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex gap-1.5 pb-2.5 overflow-x-auto no-scrollbar">
           {navItems.map((item) => (
+            // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par
+            // défaut). C'est la barre latérale du gestionnaire qui fait
+            // exception avec « droite ».
+            <Bulle key={item.to} texte={t(`nav.tipsOwner.${item.key}`)}>
             <NavLink
-              key={item.to}
               to={item.to}
               end
               className={({ isActive }) =>
@@ -85,6 +89,7 @@ export default function OwnerLayout() {
               <span>{item.icon}</span>
               <span>{t(`nav.owner.${item.key}`)}</span>
             </NavLink>
+            </Bulle>
           ))}
         </div>
       </header>

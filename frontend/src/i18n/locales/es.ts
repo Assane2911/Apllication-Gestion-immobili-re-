@@ -117,6 +117,16 @@ const es: TranslationSchema = {
       agency: "Mi Agencia",
       subscription: "Mi Suscripción",
     },
+    tipsTenant: {
+      home: "Su contrato, sus documentos y las actas pendientes de firma.",
+      payments: "Sus alquileres emitidos: pagar en línea y obtener sus recibos.",
+      messages: "Escribir a su gestor, contrato por contrato.",
+      issues: "Comunicar una avería con foto y seguir su tramitación.",
+    },
+    tipsOwner: {
+      home: "Lo que sus inmuebles han generado este mes, solo lectura.",
+      crg: "El detalle mes a mes: alquileres, gastos, comisión y neto a liquidar.",
+    },
     tenant: {
       home: "Mi vivienda",
       payments: "Mis alquileres",
@@ -583,6 +593,20 @@ const es: TranslationSchema = {
       confirmDelete: '¿Eliminar la propiedad "{{title}}"?',
     },
     tips: {
+      invoiceSendMonthly: "Envía de una vez un recordatorio a TODOS los inquilinos con el alquiler impagado, por correo y WhatsApp.",
+      agencyDeleteAccount: "Abre el procedimiento de cierre definitivo de la agencia y de todos sus datos.",
+      agencyLogoutAll: "Cierra de inmediato la sesión en todos sus dispositivos. Habrá que volver a entrar.",
+      inspectionFinalize: "Bloquea el acta y la abre a la firma. Ya no podrá modificarse.",
+      inspectionDelete: "Elimina el acta y sus fotos. Nada será recuperable después.",
+      contractRenew: "Crea un nuevo contrato a continuación, en las mismas condiciones, y cierra el actual.",
+      contractTerminate: "Rescinde el contrato antes de su término. Cesan los siguientes alquileres.",
+      contractEnd: "Deja que el contrato expire en su término, sin prórroga.",
+      contractDelete: "Elimina el contrato y su historial. Imposible si tiene facturas asociadas.",
+      expenseDelete: "Elimina el gasto. La rentabilidad del inmueble y el resumen fiscal se recalculan.",
+      listingDelete: "Retira el anuncio del escaparate público y elimina su ficha.",
+      propertyDelete: "Elimina el inmueble. Imposible si aún tiene un contrato asociado.",
+      ownerInvite: "Envía al propietario un enlace de invitación a su espacio, válido unos días.",
+      subscribe: "Valida el plan elegido y desencadena el pago del primer periodo.",
       tenantIdDocument: "Abre el documento de identidad en una pestaña nueva, mediante un enlace temporal.",
       tenantEdit: "Modifica la ficha: tratamiento, nombre, teléfono, correo, documento de identidad.",
       tenantExport: "Descarga todo lo que el Servicio guarda sobre este inquilino (derecho de acceso RGPD).",
@@ -1180,6 +1204,11 @@ const es: TranslationSchema = {
   },
 
   tenant: {
+    tips: {
+      pay: "Inicia el pago de este alquiler por este medio. El recibo llega una vez confirmado el cobro.",
+      signContract: "Abre el panel de firma: su firma compromete el contrato y queda fechada.",
+      signInspection: "Firma el acta. Después no podrá añadirse ninguna reserva.",
+    },
     dashboard: {
       privacy: {
         title: "Mis datos personales",
@@ -1325,6 +1354,11 @@ const es: TranslationSchema = {
   },
   admin: {
     nav: {
+      tips: {
+        dashboard: "La actividad de la plataforma, todos los gestores incluidos.",
+        transfers: "Las transferencias de suscripción pendientes de confirmar o rechazar.",
+        settings: "Los datos bancarios donde los gestores abonan su suscripción.",
+      },
       dashboard: "Panel",
       transfers: "Transferencias bancarias",
       settings: "Configuración",

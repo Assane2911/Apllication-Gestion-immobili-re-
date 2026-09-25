@@ -115,6 +115,16 @@ const fr = {
       agency: "Mon Agence",
       subscription: "Mon Abonnement",
     },
+    tipsTenant: {
+      home: "Votre bail, vos documents et vos états des lieux à signer.",
+      payments: "Vos loyers appelés : payer en ligne et récupérer vos quittances.",
+      messages: "Écrire à votre gestionnaire, bail par bail.",
+      issues: "Signaler une panne avec photo, et suivre sa prise en charge.",
+    },
+    tipsOwner: {
+      home: "Ce que vos biens ont rapporté ce mois-ci, en lecture seule.",
+      crg: "Le détail mois par mois : loyers, charges, commission et net à reverser.",
+    },
     tenant: {
       home: "Mon logement",
       payments: "Mes loyers",
@@ -581,6 +591,20 @@ const fr = {
       confirmDelete: 'Supprimer le bien "{{title}}" ?',
     },
     tips: {
+      invoiceSendMonthly: "Envoie en une fois un rappel à TOUS les locataires dont le loyer est impayé, par email et WhatsApp.",
+      agencyDeleteAccount: "Ouvre la procédure de fermeture définitive de l'agence et de toutes ses données.",
+      agencyLogoutAll: "Déconnecte immédiatement tous vos appareils. Il faudra vous reconnecter partout.",
+      inspectionFinalize: "Verrouille l'état des lieux et l'ouvre à la signature. Il ne sera plus modifiable.",
+      inspectionDelete: "Supprime l'état des lieux et ses photos. Rien n'est récupérable ensuite.",
+      contractRenew: "Crée un nouveau bail à la suite de celui-ci, aux mêmes conditions, et clôt l'actuel.",
+      contractTerminate: "Résilie le bail avant son terme. Les appels de loyer suivants cessent.",
+      contractEnd: "Laisse le bail s'éteindre à son échéance, sans reconduction.",
+      contractDelete: "Supprime le bail et son historique. Impossible si des factures y sont rattachées.",
+      expenseDelete: "Supprime la dépense. La rentabilité du bien et le bilan fiscal sont recalculés.",
+      listingDelete: "Retire l'annonce de la vitrine publique et supprime sa fiche.",
+      propertyDelete: "Supprime le bien. Impossible si un bail y est encore rattaché.",
+      ownerInvite: "Envoie au propriétaire un lien d'invitation à son espace, valable quelques jours.",
+      subscribe: "Valide la formule choisie et déclenche le paiement du premier terme.",
       tenantIdDocument: "Ouvre la pièce d'identité dans un nouvel onglet, via un lien temporaire.",
       tenantEdit: "Modifie la fiche : civilité, nom, téléphone, email, pièce d'identité.",
       tenantExport: "Télécharge tout ce que le Service détient sur ce locataire (droit d'accès RGPD).",
@@ -1179,6 +1203,11 @@ const fr = {
   },
 
   tenant: {
+    tips: {
+      pay: "Lance le paiement de ce loyer par ce moyen. La quittance suit une fois l'encaissement confirmé.",
+      signContract: "Ouvre le pavé de signature : votre paraphe engage le bail et est horodaté.",
+      signInspection: "Signe l'état des lieux. Aucune réserve ne pourra être ajoutée après.",
+    },
     dashboard: {
       privacy: {
         title: "Mes données personnelles",
@@ -1324,6 +1353,11 @@ const fr = {
   },
   admin: {
     nav: {
+      tips: {
+        dashboard: "L'activité de la plateforme, tous gestionnaires confondus.",
+        transfers: "Les virements d'abonnement à confirmer ou à rejeter à la main.",
+        settings: "Coordonnées bancaires sur lesquelles les gestionnaires virent leur abonnement.",
+      },
       dashboard: "Tableau de bord",
       transfers: "Virements bancaires",
       settings: "Paramètres",

@@ -6,6 +6,7 @@ import DocumentModal from "../../components/DocumentModal";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { TableRowSkeleton } from "../../components/Skeleton";
+import Bulle from "../../components/Bulle";
 import SignatureModal from "../../components/SignatureModal";
 import type {
   Contract,
@@ -415,9 +416,11 @@ export default function InspectionsPage() {
                     </button>
                   )}
                   {insp.status === "DRAFT" && (
+                    <Bulle texte={t("manager.tips.inspectionDelete")}>
                     <button onClick={() => handleDelete(insp)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
                       {t("common.actions.delete")}
                     </button>
+                    </Bulle>
                   )}
                 </td>
               </tr>
@@ -458,9 +461,11 @@ export default function InspectionsPage() {
                 </button>
               )}
               {insp.status === "DRAFT" && (
+                <Bulle texte={t("manager.tips.inspectionDelete")}>
                 <button onClick={() => handleDelete(insp)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
                   {t("common.actions.delete")}
                 </button>
+                </Bulle>
               )}
             </div>
           </div>

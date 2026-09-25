@@ -13,6 +13,7 @@ import { SUPPORTED_COUNTRY_CODES, countryLabel } from "../../utils/countries";
 import ChampTelephone from "../../components/ChampTelephone";
 import { CURRENCIES } from "../../context/currency";
 import { PAYS } from "../../data/pays";
+import Bulle from "../../components/Bulle";
 
 const LISTING_TYPES: ListingType[] = ["RENT", "SALE", "PROMOTION", "LAND", "OTHER"];
 const PRICE_PERIODS: PricePeriod[] = ["MONTH", "ONE_TIME"];
@@ -387,12 +388,14 @@ export default function ListingsPage() {
               >
                 {t("common.actions.edit")}
               </button>
+              <Bulle texte={t("manager.tips.listingDelete")}>
               <button
                 onClick={() => handleDelete(listing)}
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 {t("common.actions.delete")}
               </button>
+              </Bulle>
             </div>
           </div>
         ))}

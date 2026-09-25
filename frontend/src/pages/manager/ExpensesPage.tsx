@@ -7,6 +7,7 @@ import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { Expense, ExpenseCategory, PaginatedResponse, Property } from "../../types";
 import { formatByCurrency } from "../../utils/currencyFormat";
+import Bulle from "../../components/Bulle";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
@@ -376,12 +377,14 @@ export default function ExpensesPage() {
                 <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400">-{formatMoney(exp.amount, exp.currency)}</td>
                 <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
+                  <Bulle texte={t("manager.tips.expenseDelete")}>
                   <button
                     onClick={() => handleDelete(exp)}
                     className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline"
                   >
                     {t("common.actions.delete")}
                   </button>
+                  </Bulle>
                 </td>
               </tr>
             ))}

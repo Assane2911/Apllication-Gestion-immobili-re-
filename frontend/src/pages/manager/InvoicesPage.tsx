@@ -150,6 +150,7 @@ export default function InvoicesPage() {
             <option value="CANCELLED">{t("common.status.CANCELLED")}</option>
           </select>
 
+          <Bulle texte={t("manager.tips.invoiceSendMonthly")}>
           <button
             onClick={handleSendMonthlyReminders}
             disabled={sendingMonthly}
@@ -158,6 +159,7 @@ export default function InvoicesPage() {
             <span>📢</span>
             <span>{sendingMonthly ? t("manager.invoices.sendingMonthly") : t("manager.invoices.sendMonthlyAlerts")}</span>
           </button>
+          </Bulle>
         </div>
       </div>
 

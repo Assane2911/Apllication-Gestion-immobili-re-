@@ -9,6 +9,7 @@ import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { AgencyBankInfo, Invoice, PaymentMethod } from "../../types";
+import Bulle from "../../components/Bulle";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, monthIndex1to12 - 1, 1));
@@ -262,6 +263,7 @@ export default function TenantInvoicesPage() {
                             />
                           </>
                         )}
+                        <Bulle texte={t("tenant.tips.pay")}>
                         <button
                           onClick={() => pay(inv.id, m.key)}
                           disabled={enCoursDePaiement}
@@ -269,6 +271,7 @@ export default function TenantInvoicesPage() {
                         >
                           {enCoursDePaiement ? t("tenant.invoices.paying") : t("tenant.invoices.chooseMethod")}
                         </button>
+                        </Bulle>
                       </div>
                     ))}
                   </div>

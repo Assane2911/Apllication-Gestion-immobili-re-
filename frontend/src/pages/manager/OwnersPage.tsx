@@ -279,6 +279,7 @@ export default function OwnersPage() {
                       {portalStatusLabel(owner)}
                     </span>
                     {owner.portalStatus !== "ACTIVE" && (
+                      <Bulle texte={t("manager.tips.ownerInvite")}>
                       <button
                         onClick={() => handleInvite(owner)}
                         disabled={inviting === owner.id}
@@ -286,6 +287,7 @@ export default function OwnersPage() {
                       >
                         {owner.portalStatus === "PENDING" ? t("manager.owners.resendInvite") : t("manager.owners.invite")}
                       </button>
+                      </Bulle>
                     )}
                     {inviteMsg?.ownerId === owner.id && (
                       <span className="text-[11px] text-slate-500 dark:text-slate-400">{inviteMsg.text}</span>
@@ -337,9 +339,11 @@ export default function OwnersPage() {
                       {portalStatusLabel(owner)}
                     </span>
                     {owner.portalStatus !== "ACTIVE" && (
+                      <Bulle texte={t("manager.tips.ownerInvite")}>
                       <button onClick={() => handleInvite(owner)} disabled={inviting === owner.id} className="text-brand-600 dark:text-brand-400 hover:underline text-left disabled:opacity-60">
                         {owner.portalStatus === "PENDING" ? t("manager.owners.resendInvite") : t("manager.owners.invite")}
                       </button>
+                      </Bulle>
                     )}
                   </div>
                   <div className="space-x-3">
