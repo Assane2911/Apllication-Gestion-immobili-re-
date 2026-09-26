@@ -1066,6 +1066,7 @@ const fr = {
       changeStatus: "Changer le statut :",
       emptyTitle: "Aucune demande pour l'instant",
       emptyDesc: "Les demandes de visite ou d'information soumises par les visiteurs de la vitrine publique apparaîtront ici.",
+      confirmDelete: 'Supprimer la demande de contact de "{{name}}" ? Cette action est définitive.',
     },
     messages: {
       title: "Messagerie & Échanges",
@@ -1161,8 +1162,10 @@ const fr = {
         none: "Aucune donnée n'a atteint sa durée de conservation.",
         noBail: "Fiche sans aucun bail, ouverte depuis plus de {{days}} jours",
         leaseEnded: "Dernier bail achevé il y a plus de {{years}} ans",
+        oldLead: "Demande de contact reçue sur une annonce, il y a plus de {{years}} ans",
         error: "Impossible de charger les échéances.",
         seeTenants: "Ouvrir la liste des locataires",
+        seeLeads: "Ouvrir les demandes de contact",
       },
       dangerZone: {
         title: "Zone de danger",

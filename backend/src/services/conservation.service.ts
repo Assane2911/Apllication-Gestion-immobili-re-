@@ -1,6 +1,6 @@
 import { and, desc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { activityLogs, contracts, tenants, users } from "../db/schema";
+import { activityLogs, contracts, listingLeads, tenants, users } from "../db/schema";
 import { jourDecale } from "../utils/dates";
 
 /**
@@ -26,6 +26,13 @@ export const DUREES = {
    * tard se corrige ; effacer trop tôt, non.
    */
   apresFinDeBailJours: 5 * 365,
+  /**
+   * Demande de contact/visite (listingLeads) reçue sur une annonce vitrine :
+   * un prospect, pas un locataire — la recommandation CNIL en matière de
+   * prospection commerciale (3 ans sans contact) s'applique, plutôt que les
+   * durées propres au bail ci-dessus.
+   */
+  leadProspectionJours: 3 * 365,
 };
 
 /**
@@ -99,6 +106,7 @@ export async function donneesArriveesAEcheance(managerId: string) {
   const maintenant = new Date();
   const seuilFicheSansBail = jourDecale(-DUREES.ficheSansBailJours, maintenant);
   const seuilFinDeBail = jourDecale(-DUREES.apresFinDeBailJours, maintenant);
+  const seuilLead = jourDecale(-DUREES.leadProspectionJours, maintenant);
 
   const fiches = await db
     .select({
@@ -134,11 +142,24 @@ export async function donneesArriveesAEcheance(managerId: string) {
     }
   }
 
+  // Contrairement aux fiches locataire ci-dessus, aucun état n'écarte une
+  // échéance : un lead "NEW" oublié depuis 3 ans n'est pas moins un prospect
+  // qu'il faut cesser de démarcher qu'un lead "CONVERTED" du même âge — voir
+  // exportDonnees.service.ts pour l'équivalent côté locataire, dont ces
+  // demandes de contact ne relèvent pas (un prospect n'est jamais devenu
+  // locataire, donc jamais titulaire d'un compte).
+  const leadsAnciens = await db
+    .select()
+    .from(listingLeads)
+    .where(and(eq(listingLeads.managerId, managerId), lt(listingLeads.createdAt, seuilLead)))
+    .orderBy(desc(listingLeads.createdAt));
+
   return {
     calculeLe: maintenant.toISOString(),
     durees: DUREES,
     fichesSansBail,
     bauxClosDepuisLongtemps,
-    total: fichesSansBail.length + bauxClosDepuisLongtemps.length,
+    leadsAnciens,
+    total: fichesSansBail.length + bauxClosDepuisLongtemps.length + leadsAnciens.length,
   };
 }

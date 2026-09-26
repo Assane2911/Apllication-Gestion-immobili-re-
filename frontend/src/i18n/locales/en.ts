@@ -1065,6 +1065,7 @@ const en: TranslationSchema = {
       changeStatus: "Change status:",
       emptyTitle: "No leads yet",
       emptyDesc: "Visit or info requests submitted by visitors of the public storefront will appear here.",
+      confirmDelete: 'Delete the contact request from "{{name}}"? This cannot be undone.',
     },
     messages: {
       title: "Messages & Conversations",
@@ -1160,8 +1161,10 @@ const en: TranslationSchema = {
         none: "No data has reached its retention period.",
         noBail: "Record with no lease, open for more than {{days}} days",
         leaseEnded: "Last lease ended more than {{years}} years ago",
+        oldLead: "Contact request received on a listing, more than {{years}} years ago",
         error: "Could not load the retention list.",
         seeTenants: "Open the tenant list",
+        seeLeads: "Open the contact requests",
       },
       dangerZone: {
         title: "Danger zone",

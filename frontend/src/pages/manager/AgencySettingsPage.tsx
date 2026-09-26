@@ -318,14 +318,36 @@ export default function AgencySettingsPage() {
                   })}
                 </li>
               ))}
+              {echeances.leadsAnciens.map((lead) => (
+                <li key={lead.id} className="text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-semibold">{lead.prospectName}</span>{" "}
+                  —{" "}
+                  {t("manager.agencySettings.retention.oldLead", {
+                    years: Math.round(echeances.durees.leadProspectionJours / 365),
+                  })}
+                </li>
+              ))}
             </ul>
-            <button
-              type="button"
-              onClick={() => navigate("/tenants")}
-              className="mt-4 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
-            >
-              {t("manager.agencySettings.retention.seeTenants")}
-            </button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {(echeances.fichesSansBail.length > 0 || echeances.bauxClosDepuisLongtemps.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/tenants")}
+                  className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  {t("manager.agencySettings.retention.seeTenants")}
+                </button>
+              )}
+              {echeances.leadsAnciens.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/leads")}
+                  className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  {t("manager.agencySettings.retention.seeLeads")}
+                </button>
+              )}
+            </div>
           </>
         )}
       </div>

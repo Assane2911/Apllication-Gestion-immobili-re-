@@ -1,6 +1,6 @@
 import { eq, isNull } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { activityLogs, contracts, tenants, users } from "../db/schema";
+import { activityLogs, contracts, listingLeads, listings, tenants, users } from "../db/schema";
 import {
   createContract,
   createManager,
@@ -9,6 +9,40 @@ import {
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { donneesArriveesAEcheance, purgerDonneesDeLaPlateforme } from "./conservation.service";
+
+async function createListingRow(managerId: string) {
+  const [listing] = await testDb
+    .insert(listings)
+    .values({
+      managerId,
+      title: "Villa Ngor",
+      description: "Belle villa avec piscine, vue sur mer",
+      price: 250000,
+      location: "Ngor, Dakar",
+      country: "SN",
+    })
+    .returning();
+  return listing;
+}
+
+async function createLeadRow(
+  listingId: string,
+  managerId: string,
+  overrides: Partial<typeof listingLeads.$inferInsert> = {}
+) {
+  const [lead] = await testDb
+    .insert(listingLeads)
+    .values({
+      listingId,
+      managerId,
+      prospectName: "Awa Sow",
+      prospectEmail: "awa@test.local",
+      prospectPhone: "+221771234567",
+      ...overrides,
+    })
+    .returning();
+  return lead;
+}
 
 /**
  * Deux natures de données, deux traitements — c'est tout le principe de ce
@@ -176,6 +210,43 @@ describe("Signalement des données arrivées à échéance", () => {
 
     expect(echeances.bauxClosDepuisLongtemps).toHaveLength(0);
     expect(echeances.fichesSansBail).toHaveLength(0);
+  });
+
+  /**
+   * Régression : les demandes de contact/visite reçues sur la vitrine
+   * publique (listingLeads) n'étaient jusqu'ici jamais signalées, quelle que
+   * soit leur ancienneté — un angle mort RGPD pour des données de prospection
+   * commerciale que la recommandation CNIL limite à 3 ans sans contact.
+   */
+  it("signale une demande de contact reçue il y a plus de trois ans, quel que soit son statut", async () => {
+    const manager = await createManager();
+    const listing = await createListingRow(manager.id);
+    await createLeadRow(listing.id, manager.id, {
+      prospectName: "Prospect Ancien",
+      status: "ARCHIVED",
+      createdAt: new Date(2020, 0, 1),
+    });
+    await createLeadRow(listing.id, manager.id, {
+      prospectName: "Prospect Recent",
+      status: "NEW",
+      createdAt: new Date(2026, 8, 1),
+    });
+
+    const echeances = await donneesArriveesAEcheance(manager.id);
+
+    expect(echeances.leadsAnciens.map((l) => l.prospectName)).toEqual(["Prospect Ancien"]);
+    expect(echeances.total).toBe(1);
+  });
+
+  it("ne mélange jamais les demandes de contact de deux agences", async () => {
+    const manager = await createManager();
+    const autre = await createManager();
+    const autreListing = await createListingRow(autre.id);
+    await createLeadRow(autreListing.id, autre.id, { prospectName: "Fuite", createdAt: new Date(2020, 0, 1) });
+
+    const echeances = await donneesArriveesAEcheance(manager.id);
+
+    expect(echeances.leadsAnciens).toHaveLength(0);
   });
 
   it("ne mélange jamais les échéances de deux agences", async () => {

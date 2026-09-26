@@ -21,9 +21,10 @@ const mockedApi = vi.mocked(api, { deep: true });
 function echeancesVides() {
   return {
     calculeLe: "2026-09-24T00:00:00.000Z",
-    durees: { journauxJours: 365, ficheSansBailJours: 90, apresFinDeBailJours: 1825 },
+    durees: { journauxJours: 365, ficheSansBailJours: 90, apresFinDeBailJours: 1825, leadProspectionJours: 1095 },
     fichesSansBail: [],
     bauxClosDepuisLongtemps: [],
+    leadsAnciens: [],
     total: 0,
   };
 }
@@ -342,6 +343,41 @@ describe("AgencySettingsPage", () => {
       expect(screen.getByRole("button", { name: "Ouvrir la liste des locataires" })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /purger/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /anonymiser/i })).not.toBeInTheDocument();
+    });
+
+    /**
+     * Régression : les demandes de contact reçues sur la vitrine publique
+     * (listingLeads) n'étaient jusqu'ici signalées nulle part — seule leur
+     * suppression en cascade avec l'annonce entière existait (bien trop
+     * grossier pour honorer une demande d'effacement individuelle).
+     */
+    it("liste aussi les demandes de contact anciennes, avec un lien dédié vers le CRM", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() }).mockResolvedValueOnce({
+        data: {
+          ...echeancesVides(),
+          leadsAnciens: [
+            {
+              id: "lead-1",
+              listingId: "list-1",
+              managerId: "mgr-1",
+              prospectName: "Moussa Fall",
+              prospectEmail: "moussa@example.com",
+              prospectPhone: "+221 77 000 00 00",
+              requestType: "INFO",
+              status: "ARCHIVED",
+              createdAt: "2020-01-01",
+              updatedAt: "2020-01-01",
+            },
+          ],
+          total: 1,
+        },
+      });
+      renderPage();
+
+      expect(await screen.findByText(/Moussa Fall/)).toBeInTheDocument();
+      expect(screen.getByText(/Demande de contact reçue sur une annonce/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ouvrir les demandes de contact" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Ouvrir la liste des locataires" })).not.toBeInTheDocument();
     });
 
     it("annonce qu'il n'y a rien à traiter quand aucune durée n'est atteinte", async () => {

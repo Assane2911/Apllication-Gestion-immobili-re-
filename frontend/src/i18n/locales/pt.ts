@@ -1065,6 +1065,7 @@ const pt: TranslationSchema = {
       changeStatus: "Alterar o estado:",
       emptyTitle: "Nenhum pedido por enquanto",
       emptyDesc: "Os pedidos de visita ou informação submetidos pelos visitantes da vitrine pública aparecerão aqui.",
+      confirmDelete: 'Eliminar o pedido de contacto de "{{name}}"? Esta ação é definitiva.',
     },
     messages: {
       title: "Mensagens & Trocas",
@@ -1160,8 +1161,10 @@ const pt: TranslationSchema = {
         none: "Nenhum dado atingiu o seu prazo de conservação.",
         noBail: "Ficha sem qualquer contrato, aberta há mais de {{days}} dias",
         leaseEnded: "Último contrato terminado há mais de {{years}} anos",
+        oldLead: "Pedido de contacto recebido num anúncio, há mais de {{years}} anos",
         error: "Não foi possível carregar os prazos.",
         seeTenants: "Abrir a lista de inquilinos",
+        seeLeads: "Abrir os pedidos de contacto",
       },
       dangerZone: {
         title: "Zona de perigo",
