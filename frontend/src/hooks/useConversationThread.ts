@@ -72,17 +72,27 @@ export function useConversationThread(role: Role, options: UseConversationThread
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
+  // Sans AbortController, changer vite de conversation (clic sur A puis
+  // aussitôt sur B) pouvait afficher les messages de A par-dessus l'en-tête
+  // de B si la réponse de A arrivait après celle de B — trompeur dans un
+  // outil de messagerie, contrairement à un simple rechargement de liste.
   useEffect(() => {
     if (!selectedContractId) return;
+    const controller = new AbortController();
     setLoadingMessages(true);
     api
-      .get(`/messages/${selectedContractId}`)
+      .get(`/messages/${selectedContractId}`, { signal: controller.signal })
       .then((res) => {
         setMessages(liste<Message>(res.data, "messages"));
         setActiveContract(res.data.contract);
+        setLoadingMessages(false);
       })
-      .catch((err) => setError(apiErrorMessage(err)))
-      .finally(() => setLoadingMessages(false));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setError(apiErrorMessage(err));
+        setLoadingMessages(false);
+      });
+    return () => controller.abort();
   }, [selectedContractId]);
 
   async function handleSend(e: FormEvent) {

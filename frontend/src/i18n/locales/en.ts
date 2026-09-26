@@ -796,6 +796,7 @@ const en: TranslationSchema = {
       create: "Create contract",
       confirmDelete: "Delete this contract and all its related invoices?",
       confirmRenew: "Renew this contract for 12 more months (starting {{date}})?",
+      confirmTerminate: "Terminate this active contract? The tenant will no longer be billed and the property will become available again.",
       table: {
         property: "Property",
         tenant: "Tenant",

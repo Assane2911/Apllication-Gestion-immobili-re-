@@ -76,6 +76,56 @@ describe("MessagesPage (gestionnaire)", () => {
   });
 
   /**
+   * Régression : le chargement des messages d'une conversation n'annulait
+   * pas la requête précédente quand le gestionnaire changeait vite de
+   * conversation. Si la réponse de la première conversation arrivait après
+   * celle de la seconde, elle écrasait l'affichage — le gestionnaire lisait
+   * alors les messages d'un mauvais locataire sous l'en-tête d'un autre.
+   */
+  it("changer vite de conversation n'affiche pas les messages de l'ancienne, arrivés en retard", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(
+      conversationsPage([
+        conversation({ contractId: "c1" }),
+        conversation({
+          contractId: "c2",
+          tenant: { firstName: "Moussa", lastName: "Ndiaye" } as Conversation["tenant"],
+          property: { title: "Appartement Almadies" } as Conversation["property"],
+        }),
+      ])
+    );
+    // La requête de la conversation auto-sélectionnée (c1) ne se résout
+    // jamais avant la fin du test : elle simule une réponse tardive.
+    let rejectC1!: (err: unknown) => void;
+    const c1Request = new Promise((_resolve, reject) => {
+      rejectC1 = reject;
+    });
+    mockedApi.get.mockImplementationOnce((_url: string, config?: { signal?: AbortSignal }) => {
+      config?.signal?.addEventListener("abort", () => rejectC1({ __CANCEL__: true }));
+      return c1Request;
+    });
+    mockedApi.get.mockResolvedValueOnce({
+      data: {
+        messages: [message({ contractId: "c2", content: "Message de Moussa" })],
+        contract: { tenant: { firstName: "Moussa", lastName: "Ndiaye" }, property: { title: "Appartement Almadies" } },
+      },
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Moussa Ndiaye")).toBeInTheDocument());
+    await user.click(screen.getByText("Moussa Ndiaye"));
+
+    await waitFor(() => expect(screen.getByText("Message de Moussa")).toBeInTheDocument());
+
+    // La requête de c1 finit par "répondre" bien après — elle a été annulée
+    // au changement de sélection et ne doit donc plus jamais aboutir.
+    await expect(c1Request).rejects.toEqual({ __CANCEL__: true });
+    expect(screen.getByText("Message de Moussa")).toBeInTheDocument();
+    expect(screen.queryByText(/erreur/i)).not.toBeInTheDocument();
+  });
+
+  /**
    * Régression : la liste des conversations du gestionnaire renvoyait
    * autrefois TOUTES les conversations d'un coup, sans pagination — une
    * agence avec beaucoup de locataires chargeait donc une liste sans fin à

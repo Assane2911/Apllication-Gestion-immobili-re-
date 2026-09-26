@@ -103,6 +103,11 @@ export default function ContractsPage() {
     }
   }
 
+  async function handleTerminate(c: Contract) {
+    if (!confirm(t("manager.contracts.confirmTerminate"))) return;
+    await changeStatus(c, "TERMINATED");
+  }
+
   async function handleDelete(c: Contract) {
     if (!confirm(t("manager.contracts.confirmDelete"))) return;
     try {
@@ -385,7 +390,7 @@ export default function ContractsPage() {
                   )}
                   {c.status === "ACTIVE" && (
                     <Bulle texte={t("manager.tips.contractTerminate")}>
-                    <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
+                    <button onClick={() => handleTerminate(c)} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
                       {t("manager.contracts.terminate")}
                     </button>
                     </Bulle>
@@ -516,7 +521,7 @@ export default function ContractsPage() {
                 )}
                 {c.status === "ACTIVE" && (
                   <Bulle texte={t("manager.tips.contractTerminate")}>
-                  <button onClick={() => changeStatus(c, "TERMINATED")} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
+                  <button onClick={() => handleTerminate(c)} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
                     {t("manager.contracts.terminate")}
                   </button>
                   </Bulle>

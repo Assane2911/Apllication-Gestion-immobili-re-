@@ -797,6 +797,7 @@ const fr = {
       create: "Créer le contrat",
       confirmDelete: "Supprimer ce contrat et toutes ses factures associées ?",
       confirmRenew: "Renouveler ce contrat pour 12 mois de plus (à partir du {{date}}) ?",
+      confirmTerminate: "Résilier ce contrat actif ? Le locataire ne sera plus facturé et le bien redeviendra disponible.",
       table: {
         property: "Bien",
         tenant: "Locataire",
