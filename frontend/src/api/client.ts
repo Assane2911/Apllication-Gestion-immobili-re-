@@ -1,4 +1,5 @@
 import axios from "axios";
+import i18n from "../i18n";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
@@ -17,6 +18,9 @@ export const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 20_000 });
  * connexion mobile lente qu'un simple appel JSON.
  */
 export const DELAI_UPLOAD_MS = 60_000;
+
+/** Doit rester synchronisé avec MAX_UPLOAD_SIZE_MB (backend/src/middleware/upload.ts). */
+export const MAX_UPLOAD_SIZE_MB = 8;
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
@@ -54,7 +58,18 @@ export function fileUrl(path?: string | null) {
 
 export function apiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
-    return err.response?.data?.error ?? err.message;
+    if (err.response?.data?.error) return err.response.data.error;
+    // Sans ce contrôle, `err.message` retombait sur le texte brut d'axios
+    // ("Network Error", "timeout of 20000ms exceeded") — en anglais, quelle
+    // que soit la langue choisie par l'utilisateur, faute d'un message serveur
+    // à traduire (le serveur n'a jamais été atteint).
+    if (err.code === "ECONNABORTED" || /timeout/i.test(err.message)) {
+      return i18n.t("common.errors.timeout");
+    }
+    if (err.code === "ERR_NETWORK") {
+      return i18n.t("common.errors.network");
+    }
+    return err.message;
   }
   return "Une erreur inattendue est survenue";
 }

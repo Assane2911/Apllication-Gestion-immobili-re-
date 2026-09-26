@@ -5,6 +5,10 @@ const en: TranslationSchema = {
     tips: {
       logout: "Closes your session on this device.",
     },
+    errors: {
+      network: "Could not reach the server. Check your internet connection and try again.",
+      timeout: "The server is taking too long to respond. Check your connection and try again.",
+    },
     payment: {
       returned: "Payment submitted. Confirmation arrives in a few moments — this page updates on its own.",
       cancelled: "Payment cancelled. No amount was charged.",
@@ -1320,6 +1324,7 @@ const en: TranslationSchema = {
       photoHint: "On a smartphone, your camera opens directly to capture the issue.",
       photoReady: "Photo ready to send",
       errorPhotoRequired: "Please take or attach a photo of the problem",
+      photoTooLarge: "This photo is too large (max {{maxMb}} MB). Try again with a smaller photo.",
       submit: "Send the report to the agency",
       submitting: "Sending report...",
       historyTitle: "My Reports & Photos",

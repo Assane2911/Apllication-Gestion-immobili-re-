@@ -5,6 +5,10 @@ const es: TranslationSchema = {
     tips: {
       logout: "Cierra su sesión en este dispositivo.",
     },
+    errors: {
+      network: "No se ha podido contactar con el servidor. Comprueba tu conexión a internet e inténtalo de nuevo.",
+      timeout: "El servidor tarda demasiado en responder. Comprueba tu conexión e inténtalo de nuevo.",
+    },
     payment: {
       returned: "Pago enviado. La confirmación llega en unos instantes: esta página se actualiza sola.",
       cancelled: "Pago cancelado. No se ha cobrado ningún importe.",
@@ -1322,6 +1326,7 @@ const es: TranslationSchema = {
       photoHint: "En el móvil, tu cámara se abre directamente para capturar la incidencia.",
       photoReady: "Foto lista para enviar",
       errorPhotoRequired: "Por favor, toma o adjunta una foto del problema",
+      photoTooLarge: "Esta foto es demasiado grande (máx. {{maxMb}} MB). Inténtalo de nuevo con una foto más ligera.",
       submit: "Enviar el reporte a la agencia",
       submitting: "Enviando el reporte...",
       historyTitle: "Mis reportes y Fotos",

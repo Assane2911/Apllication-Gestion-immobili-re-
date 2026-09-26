@@ -170,6 +170,31 @@ describe("TenantIssuesPage", () => {
     expect((entries.photo as File).name).toBe("photo.jpg");
   });
 
+  /**
+   * Régression : rien ne vérifiait la taille du fichier avant l'envoi. Une
+   * photo trop volumineuse (fréquent depuis un téléphone récent) partait
+   * quand même vers le serveur, qui la refuse (MAX_UPLOAD_SIZE_MB côté
+   * backend) — jusqu'à 60s d'attente sur une connexion mobile lente pour un
+   * échec détectable instantanément côté client.
+   */
+  it("refuse une photo trop volumineuse avant même de l'envoyer", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ id: "c1" })] });
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Transmettre/ })).toBeInTheDocument());
+
+    const grosFichier = new File(["fake-photo"], "photo.jpg", { type: "image/jpeg" });
+    Object.defineProperty(grosFichier, "size", { value: 9 * 1024 * 1024 });
+    const photoInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(photoInput, grosFichier);
+
+    expect(screen.getByText("Cette photo est trop volumineuse (max 8 Mo). Réessayez avec une photo plus légère.")).toBeInTheDocument();
+    expect(screen.queryByAltText("Photo prête à l'envoi")).not.toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
   it("ajoute une photo supplémentaire à un incident existant", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce({ data: [issue({ id: "iss-1" })] });

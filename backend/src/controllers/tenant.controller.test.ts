@@ -187,6 +187,60 @@ describe("POST /api/tenants/:id/portal-account", () => {
 
     expect(res.status).toBe(404);
   });
+
+  /**
+   * Régression : deleteTenant ne supprime jamais le compte de connexion
+   * "portail" — voir deleteMyAccount (auth.controller.ts), c'est une identité
+   * qui appartient à la personne, pas à l'agence. Mais users.email est
+   * UNIQUE : sans ce correctif, ce compte laissé derrière squattait l'email
+   * pour toujours, et plus AUCUNE agence ne pouvait jamais recréer d'accès
+   * portail pour cette même personne — un vrai cul-de-sac opérationnel, pas
+   * juste une donnée orpheline inoffensive.
+   */
+  it("réutilise un compte TENANT orphelin (locataire précédent supprimé) plutôt que de bloquer l'email pour toujours", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id, { email: "reprise@test.local" });
+    const [ghost] = await testDb
+      .insert(users)
+      .values({ email: "reprise@test.local", passwordHash: "hash-ancien", role: "TENANT", tokenVersion: 3 })
+      .returning();
+
+    const res = await request(app)
+      .post(`/api/tenants/${tenant.id}/portal-account`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ password: "NouveauMotDePasse123!" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.userId).toBe(ghost.id);
+
+    const [updatedTenant] = await testDb.select().from(tenants).where(eq(tenants.id, tenant.id));
+    expect(updatedTenant.userId).toBe(ghost.id);
+
+    // L'ancienne session (jeton émis avant la réattribution) ne doit pas
+    // continuer à ouvrir l'accès à cette NOUVELLE relation locative.
+    const [updatedUser] = await testDb.select().from(users).where(eq(users.id, ghost.id));
+    expect(updatedUser.tokenVersion).toBe(4);
+    expect(updatedUser.passwordHash).not.toBe("hash-ancien");
+  });
+
+  it("refuse de réutiliser un compte TENANT encore rattaché à la fiche active d'une autre agence", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id, { email: "conflit@test.local" });
+    const autreManager = await createManager();
+    const autreTenant = await createTenant(autreManager.id);
+    const [autreUser] = await testDb
+      .insert(users)
+      .values({ email: "conflit@test.local", passwordHash: "hash", role: "TENANT" })
+      .returning();
+    await testDb.update(tenants).set({ userId: autreUser.id }).where(eq(tenants.id, autreTenant.id));
+
+    const res = await request(app)
+      .post(`/api/tenants/${tenant.id}/portal-account`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ password: "MotDePasse123!" });
+
+    expect(res.status).toBe(409);
+  });
 });
 
 describe("GET /api/tenants — isolation entre gestionnaires", () => {
@@ -222,6 +276,30 @@ describe("PUT /api/tenants/:id — ordre upload / vérification de propriété",
       .attach("idDocument", Buffer.from("contenu-document-factice"), "cni.pdf");
 
     expect(res.status).toBe(404);
+    expect(uploadPrivateFile).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Régression : createTenant appelait uploadPrivateFile AVANT de vérifier
+   * qu'aucun locataire n'existait déjà avec cet email chez ce gestionnaire.
+   * Soumettre deux fois la même fiche (double clic, ou simple erreur)
+   * stockait un fichier à chaque tentative, à nos frais, avant que le 409 ne
+   * survienne — un fichier jamais rattaché à aucune fiche, jamais nettoyé.
+   */
+  it("n'uploade jamais la pièce d'identité quand un locataire existe déjà avec cet email", async () => {
+    const manager = await createManager();
+    await createTenant(manager.id, { email: "doublon@test.local" });
+
+    const res = await request(app)
+      .post("/api/tenants")
+      .set(authHeader(tokenFor(manager)))
+      .field("firstName", "Bis")
+      .field("lastName", "Repetita")
+      .field("phone", "+221778422993")
+      .field("email", "doublon@test.local")
+      .attach("idDocument", Buffer.from("contenu-document-factice"), "cni.pdf");
+
+    expect(res.status).toBe(409);
     expect(uploadPrivateFile).not.toHaveBeenCalled();
   });
 });

@@ -227,6 +227,39 @@ describe("TenantsPage (manager)", () => {
   });
 
   /**
+   * Régression : le bouton "Créer l'accès" n'avait aucun état "en cours" —
+   * contrairement au formulaire principal (bouton "Enregistrer" désactivé
+   * via `saving`). Un double clic (ou un réseau lent) pouvait donc envoyer
+   * deux POST /portal-account pour le même locataire.
+   */
+  it("ne crée l'accès portail qu'une seule fois même en cas de double clic", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(paginated([tenant({ id: "ten-1", userId: null })]));
+    let resolvePost!: (value: { data: unknown }) => void;
+    mockedApi.post.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePost = resolve;
+      })
+    );
+
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Créer l'accès" }).length).toBeGreaterThan(0));
+    await user.click(screen.getAllByRole("button", { name: "Créer l'accès" })[0]);
+    await waitFor(() => expect(screen.getByText("Créer l'accès portail pour Awa Diallo")).toBeInTheDocument());
+    await user.type(screen.getByRole("textbox"), "temp1234");
+
+    const submitButton = screen.getAllByRole("button", { name: "Créer l'accès" })[0];
+    await user.click(submitButton);
+    // Le bouton passe en "Enregistrement..." et devient inatteignable : ce
+    // second clic, avant que la promesse ne se résolve, ne doit rien envoyer.
+    await user.click(submitButton);
+
+    resolvePost({ data: {} });
+    mockedApi.get.mockResolvedValueOnce(paginated([tenant({ id: "ten-1", userId: "user-1" })]));
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
+  });
+
+  /**
    * Droit à l'effacement. L'API refuse de SUPPRIMER un locataire dès qu'un
    * contrat existe — on ne détruit pas des pièces comptables — ce qui ne
    * laissait au gestionnaire aucune réponse à donner au locataire qui le

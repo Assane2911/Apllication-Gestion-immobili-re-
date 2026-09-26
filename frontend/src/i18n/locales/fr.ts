@@ -3,6 +3,10 @@ const fr = {
     tips: {
       logout: "Ferme votre session sur cet appareil.",
     },
+    errors: {
+      network: "Impossible de contacter le serveur. Vérifiez votre connexion internet et réessayez.",
+      timeout: "Le serveur met trop de temps à répondre. Vérifiez votre connexion et réessayez.",
+    },
     payment: {
       returned: "Paiement transmis. La confirmation arrive dans quelques instants — cette page se met à jour toute seule.",
       cancelled: "Paiement annulé. Aucun montant n'a été débité.",
@@ -1321,6 +1325,7 @@ const fr = {
       photoHint: "Sur smartphone, votre appareil photo s'ouvre directement pour capturer l'incident.",
       photoReady: "Photo prête à l'envoi",
       errorPhotoRequired: "Merci de prendre ou joindre une photo du problème",
+      photoTooLarge: "Cette photo est trop volumineuse (max {{maxMb}} Mo). Réessayez avec une photo plus légère.",
       submit: "Transmettre le signalement à l'agence",
       submitting: "Envoi du signalement...",
       historyTitle: "Mes signalements & Photos",
