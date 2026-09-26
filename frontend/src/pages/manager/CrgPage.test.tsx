@@ -114,7 +114,10 @@ describe("CrgPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: /Export HTML imprimable/ }));
 
     await waitFor(() =>
-      expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/owner-1/export?month=9&year=2026", { responseType: "text" })
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/owner-1/export?month=9&year=2026", {
+        responseType: "text",
+        signal: expect.anything(),
+      })
     );
   });
 });

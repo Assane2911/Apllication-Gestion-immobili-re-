@@ -62,7 +62,10 @@ describe("OwnerCrgPage", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
-    expect(mockedApi.get).toHaveBeenCalledWith("/crg/mine", { params: { month: 9, year: 2026 } });
+    expect(mockedApi.get).toHaveBeenCalledWith("/crg/mine", {
+      params: { month: 9, year: 2026 },
+      signal: expect.anything(),
+    });
     expect(screen.getByText("FR7630006000011234567890189")).toBeInTheDocument();
     expect(screen.getByText("AGRIFRPP")).toBeInTheDocument();
   });
@@ -108,7 +111,10 @@ describe("OwnerCrgPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: /Export HTML imprimable/ }));
 
     await waitFor(() =>
-      expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/mine/export?month=9&year=2026", { responseType: "text" })
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/mine/export?month=9&year=2026", {
+        responseType: "text",
+        signal: expect.anything(),
+      })
     );
   });
 });

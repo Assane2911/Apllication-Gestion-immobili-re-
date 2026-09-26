@@ -1,7 +1,7 @@
 import { FileText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, isRequestCancelled } from "../../api/client";
 import DocumentModal from "../../components/DocumentModal";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
@@ -35,20 +35,29 @@ export default function OwnerCrgPage() {
   const [loading, setLoading] = useState(true);
   const [showExport, setShowExport] = useState(false);
 
-  const loadData = useCallback((selectedMonth: number, selectedYear: number) => {
+  const loadData = useCallback((selectedMonth: number, selectedYear: number, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get<CrgSynthesis>("/crg/mine", { params: { month: selectedMonth, year: selectedYear } })
+      .get<CrgSynthesis>("/crg/mine", { params: { month: selectedMonth, year: selectedYear }, signal })
       .then((res) => {
         setCrg(res.data);
         setError(null);
+        setLoading(false);
       })
-      .catch((err) => setError(apiErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setError(apiErrorMessage(err));
+        setLoading(false);
+      });
   }, []);
 
+  // Sans AbortController, changer vite de mois/année pouvait afficher le CRG
+  // d'une mauvaise période si une réponse arrivait après une autre plus
+  // récente — même schéma que MessagesPage.tsx.
   useEffect(() => {
-    loadData(month, year);
+    const controller = new AbortController();
+    loadData(month, year, controller.signal);
+    return () => controller.abort();
   }, [loadData, month, year]);
 
   const monthOptions = Array.from({ length: 12 }, (_, i) => ({

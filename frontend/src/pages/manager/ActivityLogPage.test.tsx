@@ -58,7 +58,10 @@ describe("ActivityLogPage", () => {
     await userEvent.setup().selectOptions(screen.getByLabelText("Filtrer par catégorie"), "issue");
 
     await waitFor(() =>
-      expect(mockedApi.get).toHaveBeenLastCalledWith("/activity-log", { params: { entityType: "issue" } })
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/activity-log", {
+        params: { entityType: "issue" },
+        signal: expect.anything(),
+      })
     );
   });
 

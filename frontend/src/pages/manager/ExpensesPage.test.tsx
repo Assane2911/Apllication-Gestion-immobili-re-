@@ -163,6 +163,7 @@ describe("ExpensesPage", () => {
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenCalledWith("/expenses", {
         params: { page: 1, pageSize: 20, propertyId: "prop-1" },
+        signal: expect.anything(),
       })
     );
   });

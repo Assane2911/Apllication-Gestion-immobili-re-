@@ -1,7 +1,7 @@
 import { Printer, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage } from "../api/client";
+import { api, apiErrorMessage, isRequestCancelled } from "../api/client";
 
 interface DocumentModalProps {
   title: string;
@@ -22,20 +22,26 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // Sans AbortController, un changement de docUrl pendant que ce composant
+  // reste monté (ex. bascule mois/année sans fermer la modale) pouvait
+  // afficher un document périmé si l'ancienne requête répondait après la
+  // nouvelle — même schéma que MessagesPage.tsx.
   useEffect(() => {
     setLoading(true);
     setError(null);
+    const controller = new AbortController();
     api
-      .get(docUrl, { responseType: "text" })
+      .get(docUrl, { responseType: "text", signal: controller.signal })
       .then((res) => {
         setHtmlContent(res.data);
+        setLoading(false);
       })
       .catch((err) => {
+        if (isRequestCancelled(err)) return;
         setError(apiErrorMessage(err));
-      })
-      .finally(() => {
         setLoading(false);
       });
+    return () => controller.abort();
   }, [docUrl]);
 
   const [erreurImpression, setErreurImpression] = useState(false);

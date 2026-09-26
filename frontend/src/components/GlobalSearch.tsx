@@ -2,7 +2,7 @@ import { Building2, FileText, Receipt, Search, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { api, liste } from "../api/client";
+import { api, isRequestCancelled, liste } from "../api/client";
 import type { SearchResultItem, SearchResultType } from "../types";
 
 const iconByType: Record<SearchResultType, typeof Search> = {
@@ -23,6 +23,11 @@ export default function GlobalSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  // Sans AbortController, une requête lancée pour une saisie plus ancienne
+  // pouvait répondre APRÈS celle d'une saisie plus récente (débit réseau
+  // variable) et écraser des résultats plus pertinents par des résultats
+  // obsolètes — le debounce (setTimeout) protège seulement contre l'ENVOI de
+  // requêtes en trop, pas contre l'ordre d'arrivée de celles déjà envoyées.
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
@@ -30,14 +35,27 @@ export default function GlobalSearch() {
       return;
     }
     setLoading(true);
+    const controller = new AbortController();
     const handle = setTimeout(() => {
       api
-        .get<{ query: string; results: SearchResultItem[] }>("/search", { params: { q: query.trim() } })
-        .then((res) => setResults(liste<SearchResultItem>(res.data, "results")))
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false));
+        .get<{ query: string; results: SearchResultItem[] }>("/search", {
+          params: { q: query.trim() },
+          signal: controller.signal,
+        })
+        .then((res) => {
+          setResults(liste<SearchResultItem>(res.data, "results"));
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (isRequestCancelled(err)) return;
+          setResults([]);
+          setLoading(false);
+        });
     }, 300);
-    return () => clearTimeout(handle);
+    return () => {
+      clearTimeout(handle);
+      controller.abort();
+    };
   }, [query]);
 
   useEffect(() => {

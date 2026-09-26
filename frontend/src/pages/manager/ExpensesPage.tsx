@@ -2,7 +2,7 @@ import { BarChart3, Download, X } from "lucide-react";
 import { csvEscape, csvMontant, CSV_BOM } from "../../utils/csv";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
@@ -79,27 +79,39 @@ export default function ExpensesPage() {
     notes: "",
   });
 
-  const loadData = useCallback(() => {
-    Promise.all([
-      api.get<PaginatedResponse<Property>>("/properties", { params: { pageSize: DROPDOWN_PAGE_SIZE } }),
-      api.get<FinancialSummary>("/expenses/summary"),
-      api.get<PaginatedResponse<Expense>>("/expenses", {
-        params: { page, pageSize: PAGE_SIZE, ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {}) },
-      }),
-    ])
-      .then(([propertiesRes, summaryRes, expensesRes]) => {
-        setProperties(liste<Property>(propertiesRes.data, "items"));
-        setSummary(summaryRes.data);
-        setExpenses(liste<Expense>(expensesRes.data, "items"));
-        setTotal(expensesRes.data.total);
-        setTotalPages(expensesRes.data.totalPages);
-        setLoadError(null);
-      })
-      .catch((err) => setLoadError(apiErrorMessage(err)));
-  }, [page, selectedPropertyId]);
+  const loadData = useCallback(
+    (signal?: AbortSignal) => {
+      Promise.all([
+        api.get<PaginatedResponse<Property>>("/properties", { params: { pageSize: DROPDOWN_PAGE_SIZE }, signal }),
+        api.get<FinancialSummary>("/expenses/summary", { signal }),
+        api.get<PaginatedResponse<Expense>>("/expenses", {
+          params: { page, pageSize: PAGE_SIZE, ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {}) },
+          signal,
+        }),
+      ])
+        .then(([propertiesRes, summaryRes, expensesRes]) => {
+          setProperties(liste<Property>(propertiesRes.data, "items"));
+          setSummary(summaryRes.data);
+          setExpenses(liste<Expense>(expensesRes.data, "items"));
+          setTotal(expensesRes.data.total);
+          setTotalPages(expensesRes.data.totalPages);
+          setLoadError(null);
+        })
+        .catch((err) => {
+          if (isRequestCancelled(err)) return;
+          setLoadError(apiErrorMessage(err));
+        });
+    },
+    [page, selectedPropertyId]
+  );
 
+  // Sans AbortController, changer vite de filtre par bien pouvait afficher les
+  // dépenses d'un mauvais bien si une réponse arrivait après une autre plus
+  // récente — même schéma que MessagesPage.tsx / ActivityLogPage.tsx.
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, [loadData]);
 
   function handlePropertyFilterChange(value: string) {
@@ -285,7 +297,7 @@ export default function ExpensesPage() {
       {loadError && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
-          <button onClick={loadData} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => loadData()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
           </button>
         </div>
