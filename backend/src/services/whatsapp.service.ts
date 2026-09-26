@@ -141,6 +141,30 @@ const MONTH_NAMES = [
   "juillet", "août", "septembre", "octobre", "novembre", "décembre",
 ];
 
+/** Nom du mois en toutes lettres + année, tel qu'attendu par `{{2}}` dans les deux modèles ci-dessous. */
+function moisEtAnnee(periodMonth: number, periodYear: number): string {
+  const monthName = MONTH_NAMES[periodMonth - 1] || `${periodMonth}`;
+  return `${monthName} ${periodYear}`;
+}
+
+/**
+ * Préfixe `{{1}}`..`{{3}}` commun aux deux modèles de rappel de loyer
+ * (identité du locataire, période, bien concerné) — seule la suite diffère
+ * selon le modèle, voir chaque fonction ci-dessous.
+ */
+function prefixeCommunRappel(params: {
+  tenantName: string;
+  propertyTitle: string;
+  periodMonth: number;
+  periodYear: number;
+}): Record<string, string> {
+  return {
+    "1": params.tenantName,
+    "2": moisEtAnnee(params.periodMonth, params.periodYear),
+    "3": params.propertyTitle,
+  };
+}
+
 /**
  * Variables `{{1}}`..`{{5}}` du modèle Meta "avis_echeance_loyer" (voir
  * env.whatsapp.templateNameRentDue) :
@@ -157,13 +181,10 @@ export function rentDueReminderWhatsappVariables(params: {
   periodYear: number;
   frontendUrl: string;
 }): Record<string, string> {
-  const { tenantName, propertyTitle, amount, currency = "EUR", periodMonth, periodYear, frontendUrl } = params;
-  const monthName = MONTH_NAMES[periodMonth - 1] || `${periodMonth}`;
+  const { amount, currency = "EUR", frontendUrl } = params;
 
   return {
-    "1": tenantName,
-    "2": `${monthName} ${periodYear}`,
-    "3": propertyTitle,
+    ...prefixeCommunRappel(params),
     "4": formaterMontant(amount, currency),
     "5": `${frontendUrl}/portail/paiements`,
   };
@@ -186,13 +207,10 @@ export function rentDueSoonReminderWhatsappVariables(params: {
   daysLeft: number;
   frontendUrl: string;
 }): Record<string, string> {
-  const { tenantName, propertyTitle, amount, currency, periodMonth, periodYear, daysLeft, frontendUrl } = params;
-  const monthName = MONTH_NAMES[periodMonth - 1] || `${periodMonth}`;
+  const { amount, currency, daysLeft, frontendUrl } = params;
 
   return {
-    "1": tenantName,
-    "2": `${monthName} ${periodYear}`,
-    "3": propertyTitle,
+    ...prefixeCommunRappel(params),
     "4": `${daysLeft}`,
     "5": formaterMontant(amount, currency),
     "6": `${frontendUrl}/portail/paiements`,
