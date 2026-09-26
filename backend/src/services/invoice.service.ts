@@ -192,32 +192,42 @@ export async function generateInvoicesForContract(
       return notrePeriode.premierJour <= sienne.dernierJour && sienne.premierJour <= notrePeriode.dernierJour;
     });
 
-    if (notrePeriode.jours > 0 && !chevauchement && !clesDeCeContrat.has(cle)) {
-      // Mois entier : le loyer tel quel, sans passer par le calcul au prorata
-      // — un arrondi sur un mois complet ferait dériver le montant de
-      // quelques centimes par rapport au loyer inscrit au bail.
-      const montant = notrePeriode.complet
-        ? contract.rent
-        : Math.round(((contract.rent * notrePeriode.jours) / notrePeriode.joursDuMois) * 100) / 100;
+    if (notrePeriode.jours > 0 && !clesDeCeContrat.has(cle)) {
+      if (chevauchement) {
+        // Signalé plutôt que silencieux : sans ce warn, un mois de loyer dû
+        // n'apparaissait jamais nulle part — ni facture, ni trace — et rien ne
+        // distinguait « aucun loyer dû ce mois-là » d'une anomalie de dates
+        // entre deux contrats du même bien qu'un gestionnaire doit corriger.
+        console.warn(
+          `[invoice] Contrat ${contract.id} (bien ${contract.propertyId}) : facture ${periodMonth}/${periodYear} non générée — chevauchement de dates détecté avec un autre contrat actif du même bien sur cette période.`
+        );
+      } else {
+        // Mois entier : le loyer tel quel, sans passer par le calcul au prorata
+        // — un arrondi sur un mois complet ferait dériver le montant de
+        // quelques centimes par rapport au loyer inscrit au bail.
+        const montant = notrePeriode.complet
+          ? contract.rent
+          : Math.round(((contract.rent * notrePeriode.jours) / notrePeriode.joursDuMois) * 100) / 100;
 
-      const [invoice] = await dbClient
-        .insert(invoices)
-        .values({
-          contractId: contract.id,
-          periodMonth,
-          periodYear,
-          amount: montant,
-          currency: contract.currency ?? "EUR",
-          dueDate,
-          // Une facture due AUJOURD'HUI n'est pas en retard : le locataire a
-          // jusqu'à la fin de la journée. Comparer `dueDate` (minuit) à
-          // l'heure courante la faisait naître en LATE dès lors que la
-          // génération avait lieu après minuit — or le job planifié tourne à
-          // 8h, donc systématiquement.
-          status: dueDate < debutDeLaJournee(today) ? "LATE" : "PENDING",
-        })
-        .returning();
-      created.push(invoice.id);
+        const [invoice] = await dbClient
+          .insert(invoices)
+          .values({
+            contractId: contract.id,
+            periodMonth,
+            periodYear,
+            amount: montant,
+            currency: contract.currency ?? "EUR",
+            dueDate,
+            // Une facture due AUJOURD'HUI n'est pas en retard : le locataire a
+            // jusqu'à la fin de la journée. Comparer `dueDate` (minuit) à
+            // l'heure courante la faisait naître en LATE dès lors que la
+            // génération avait lieu après minuit — or le job planifié tourne à
+            // 8h, donc systématiquement.
+            status: dueDate < debutDeLaJournee(today) ? "LATE" : "PENDING",
+          })
+          .returning();
+        created.push(invoice.id);
+      }
     }
 
     cursor.setMonth(cursor.getMonth() + 1);
