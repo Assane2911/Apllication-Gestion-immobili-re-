@@ -330,9 +330,12 @@ describe("generateInvoicesForContract", () => {
     expect((fevrierAncien?.amount ?? 0) + (fevrierNouveau?.amount ?? 0)).toBe(560);
   });
 
-  it("ne facture rien à un contrat dont les jours sont déjà couverts par un autre contrat du bien", async () => {
+  it("ne facture rien à un contrat dont les jours sont déjà couverts par un autre contrat du bien, et le signale", async () => {
     // Deux contrats qui se chevauchent est une anomalie de dates : on
-    // s'abstient plutôt que de facturer deux fois les mêmes jours.
+    // s'abstient plutôt que de facturer deux fois les mêmes jours. Régression :
+    // cette abstention était auparavant totalement silencieuse — aucune facture,
+    // mais aucune trace non plus, indiscernable d'un mois sans loyer dû.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const locataireA = await createTenant(manager.id);
@@ -365,6 +368,8 @@ describe("generateInvoicesForContract", () => {
     const creees = await generateInvoicesForContract(contratB, testDb);
 
     expect(creees).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(contratB.id));
+    warnSpy.mockRestore();
   });
 
   it("ne refacture pas un mois déjà facturé par un AUTRE contrat du même bien (renouvellement mi-mois)", async () => {

@@ -10,7 +10,7 @@ export async function initDb() {
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN')),
+        role TEXT NOT NULL CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN', 'OWNER')),
         token_version INTEGER NOT NULL DEFAULT 0,
         subscription_status TEXT NOT NULL DEFAULT 'TRIAL' CHECK (subscription_status IN ('TRIAL', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
         subscription_plan TEXT NOT NULL DEFAULT 'STARTER' CHECK (subscription_plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
@@ -370,14 +370,21 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP`); } catch {}
 
-    // Les bases locales créées avant l'ajout du rôle ADMIN portent encore une
-    // contrainte CHECK qui ne l'autorise pas : un admin créé via
-    // « npm run create-admin » y serait refusé. On la remplace.
+    // Les bases locales créées avant l'ajout des rôles ADMIN et OWNER portent
+    // encore une contrainte CHECK qui ne les autorise pas : un admin créé via
+    // « npm run create-admin », ou un propriétaire créé par createOwnerAccount
+    // (owner.controller.ts), y serait refusé par la base elle-même. On la
+    // remplace.
     try {
       await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
-      await db.execute(sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN'))`);
+      await db.execute(sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN', 'OWNER'))`);
     } catch {}
-    try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '10 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
+    // 15 jours, pas 10 : même durée que celle réellement accordée à
+    // l'inscription (voir auth.controller.ts). Ce backfill ne visait que les
+    // comptes gestionnaire pré-existants sans date d'essai ; leur donner une
+    // durée différente de celle annoncée partout ailleurs dans l'application
+    // aurait été incohérent.
+    try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
 
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);
