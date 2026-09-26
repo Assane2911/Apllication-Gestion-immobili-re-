@@ -913,6 +913,7 @@ const fr = {
       noExpenses: "Aucune dépense enregistrée pour le moment.",
       confirmDelete: 'Supprimer la dépense "{{title}}" ({{amount}}) ?',
       noExpensesToExport: "Aucune dépense à exporter.",
+      amountMustBePositive: "Le montant doit être un nombre supérieur à zéro.",
       modalTitle: "Enregistrer une dépense / facture",
       fields: {
         property: "Bien concerné *",
@@ -1151,6 +1152,7 @@ const fr = {
         logoutAllButton: "Déconnecter tous mes appareils",
         logoutAllPending: "Fermeture des sessions…",
         logoutAllError: "Impossible de fermer les sessions. Réessayez dans un instant.",
+        confirmLogoutAll: "Fermer toutes les sessions ouvertes, y compris celle-ci ? Vous serez immédiatement déconnecté et devrez vous reconnecter.",
       },
       retention: {
         title: "Données arrivées à échéance",

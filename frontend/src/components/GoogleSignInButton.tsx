@@ -33,6 +33,17 @@ function loadGoogleScript(): Promise<void> {
       script.onerror = () => reject(new Error("google-script-failed"));
       document.head.appendChild(script);
     });
+    // Sans ce reset, un premier échec (coupure réseau, bloqueur de contenu)
+    // mettait cet échec en cache pour le reste de la page : Login ET
+    // Inscription perdaient alors le bouton Google jusqu'au prochain
+    // rechargement complet, même une fois le réseau revenu. La balise
+    // <script> en échec est aussi retirée : sinon une future tentative la
+    // retrouverait via `existing` et attendrait un second évènement "error"
+    // qu'un <script> ne redéclenche jamais, restant bloquée indéfiniment.
+    scriptLoadPromise.catch(() => {
+      scriptLoadPromise = null;
+      document.querySelector(`script[src="${GOOGLE_SCRIPT_SRC}"]`)?.remove();
+    });
   }
   return scriptLoadPromise;
 }

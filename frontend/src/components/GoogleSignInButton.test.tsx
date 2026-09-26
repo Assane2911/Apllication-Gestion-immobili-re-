@@ -69,4 +69,38 @@ describe("GoogleSignInButton", () => {
     await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
     expect(screen.queryByTestId("google-signin-button")).not.toBeInTheDocument();
   });
+
+  /**
+   * Régression : le cache module-level du chargement du script n'était
+   * jamais réinitialisé après un échec. Un premier échec (réseau, bloqueur de
+   * contenu) rendait donc le bouton Google indisponible pour le reste de la
+   * session, sur Login ET Inscription, même une fois le réseau revenu.
+   */
+  it("retente le chargement du script après un premier échec, au lieu de rester bloqué", async () => {
+    vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "test-client-id.apps.googleusercontent.com");
+
+    const { unmount } = render(<GoogleSignInButton onCredential={vi.fn()} onError={vi.fn()} />);
+    const firstScript = await waitFor(() => {
+      const el = document.head.querySelector(SCRIPT_SELECTOR);
+      if (!el) throw new Error("script pas encore injecté");
+      return el;
+    });
+    firstScript.dispatchEvent(new Event("error"));
+    await waitFor(() => expect(document.head.querySelector(SCRIPT_SELECTOR)).toBeNull());
+    unmount();
+
+    const initialize = vi.fn();
+    const renderButton = vi.fn();
+    render(<GoogleSignInButton onCredential={vi.fn()} onError={vi.fn()} />);
+    const secondScript = await waitFor(() => {
+      const el = document.head.querySelector(SCRIPT_SELECTOR);
+      if (!el) throw new Error("script pas encore réinjecté");
+      return el;
+    });
+    expect(secondScript).not.toBe(firstScript);
+    (window as unknown as { google: unknown }).google = { accounts: { id: { initialize, renderButton } } };
+    secondScript.dispatchEvent(new Event("load"));
+
+    await waitFor(() => expect(initialize).toHaveBeenCalledTimes(1));
+  });
 });

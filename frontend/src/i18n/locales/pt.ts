@@ -912,6 +912,7 @@ const pt: TranslationSchema = {
       noExpenses: "Ainda não há despesas registadas.",
       confirmDelete: 'Eliminar a despesa "{{title}}" ({{amount}})?',
       noExpensesToExport: "Nenhuma despesa para exportar.",
+      amountMustBePositive: "O valor deve ser um número superior a zero.",
       modalTitle: "Registar uma despesa / fatura",
       fields: {
         property: "Imóvel em causa *",
@@ -1150,6 +1151,7 @@ const pt: TranslationSchema = {
         logoutAllButton: "Terminar sessão em todos os dispositivos",
         logoutAllPending: "A fechar as sessões…",
         logoutAllError: "Não foi possível fechar as sessões. Tente novamente dentro de instantes.",
+        confirmLogoutAll: "Fechar todas as sessões abertas, incluindo esta? Será desligado imediatamente e terá de iniciar sessão novamente.",
       },
       retention: {
         title: "Dados que atingiram o prazo de conservação",
