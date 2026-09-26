@@ -798,6 +798,7 @@ const es: TranslationSchema = {
       create: "Crear el contrato",
       confirmDelete: "¿Eliminar este contrato y todas sus facturas asociadas?",
       confirmRenew: "¿Renovar este contrato por 12 meses más (a partir del {{date}})?",
+      confirmTerminate: "¿Rescindir este contrato activo? El inquilino ya no será facturado y el inmueble volverá a estar disponible.",
       table: {
         property: "Propiedad",
         tenant: "Inquilino",

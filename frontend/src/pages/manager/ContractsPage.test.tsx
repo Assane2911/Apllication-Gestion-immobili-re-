@@ -234,6 +234,26 @@ describe("ContractsPage (manager)", () => {
     await waitFor(() => expect(mockedApi.put).toHaveBeenCalledWith("/contracts/c1", { status: "TERMINATED" }));
   });
 
+  /**
+   * Régression : "Résilier" n'avait pas de confirmation, contrairement à
+   * "Supprimer" et "Renouveler" juste à côté — un clic malheureux résiliait
+   * immédiatement un bail actif (arrêt de la facturation du locataire).
+   */
+  it("résilier un contrat actif demande confirmation, et n'envoie rien si l'utilisateur refuse", async () => {
+    const user = userEvent.setup();
+    queueLoad([contract({ id: "c1", status: "ACTIVE" })]);
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Résilier" }).length).toBeGreaterThan(0));
+    const buttons = screen.getAllByRole("button", { name: "Résilier" });
+    await user.click(buttons[0]);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockedApi.put).not.toHaveBeenCalled();
+  });
+
   it("supprimer un contrat après confirmation", async () => {
     const user = userEvent.setup();
     queueLoad([contract({ id: "c1" })]);
