@@ -1,7 +1,7 @@
 import { CheckCircle2, Clock, Download, Megaphone, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
@@ -37,20 +37,28 @@ export default function InvoicesPage() {
     DEMO: t("common.paymentMethods.DEMO"),
   };
 
-  function load() {
+  function load(signal?: AbortSignal) {
     api
       .get<PaginatedResponse<Invoice>>("/invoices", {
         params: { page, pageSize: PAGE_SIZE, ...(filter !== "ALL" ? { status: filter } : {}) },
+        signal,
       })
       .then((res) => {
         setInvoices(liste<Invoice>(res.data, "items"));
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
       })
-      .catch((err) => setError(apiErrorMessage(err)));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setError(apiErrorMessage(err));
+      });
   }
 
-  useEffect(load, [page, filter]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [page, filter]);
 
   function handleFilterChange(value: InvoiceStatus | "ALL") {
     setFilter(value);

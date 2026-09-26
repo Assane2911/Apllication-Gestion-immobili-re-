@@ -1,10 +1,15 @@
 import { useTranslation } from "react-i18next";
+import Pagination from "../../components/Pagination";
 import { useConversationThread } from "../../hooks/useConversationThread";
 
 export default function MessagesPage() {
   const { t, i18n } = useTranslation();
   const {
     conversations,
+    page,
+    setPage,
+    total,
+    totalPages,
     selectedContractId,
     setSelectedContractId,
     messages,
@@ -28,7 +33,7 @@ export default function MessagesPage() {
       {error && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{error}</span>
-          <button onClick={loadConversations} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => loadConversations()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
           </button>
         </div>
@@ -43,7 +48,7 @@ export default function MessagesPage() {
         >
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200">{t("manager.messages.ongoingDiscussions")}</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500">{t("manager.messages.conversationCount", { count: conversations.length })}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{t("manager.messages.conversationCount", { count: total })}</p>
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
             {conversations.map((c) => (
@@ -74,6 +79,9 @@ export default function MessagesPage() {
             {conversations.length === 0 && (
               <p className="text-xs text-slate-400 dark:text-slate-500 p-6 text-center">{t("manager.messages.noActiveContracts")}</p>
             )}
+          </div>
+          <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import { PhoneCall } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -29,7 +29,7 @@ export default function ListingLeadsPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  function load() {
+  function load(signal?: AbortSignal) {
     api
       .get<PaginatedResponse<ListingLead>>("/listings/leads", {
         params: {
@@ -38,18 +38,27 @@ export default function ListingLeadsPage() {
           ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
           ...(listingFilter !== "ALL" ? { listingId: listingFilter } : {}),
         },
+        signal,
       })
       .then((res) => {
         setLeads(liste<ListingLead>(res.data, "items"));
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
         setLoadError(null);
+        setLoading(false);
       })
-      .catch((err) => setLoadError(apiErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setLoadError(apiErrorMessage(err));
+        setLoading(false);
+      });
   }
 
-  useEffect(load, [page, statusFilter, listingFilter]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [page, statusFilter, listingFilter]);
 
   useEffect(() => {
     api
@@ -119,7 +128,7 @@ export default function ListingLeadsPage() {
       {loadError && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
-          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
           </button>
         </div>

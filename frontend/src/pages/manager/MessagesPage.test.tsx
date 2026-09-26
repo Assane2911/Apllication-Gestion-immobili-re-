@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
-import type { Conversation, Message } from "../../types";
+import type { Conversation, Message, PaginatedResponse } from "../../types";
 import MessagesPage from "./MessagesPage";
 
 vi.mock("../../api/client", async () => {
@@ -23,6 +23,15 @@ function conversation(overrides: Partial<Conversation> = {}): Conversation {
   };
 }
 
+function conversationsPage(
+  items: Conversation[],
+  overrides: Partial<PaginatedResponse<Conversation>> = {}
+): { data: PaginatedResponse<Conversation> } {
+  return {
+    data: { items, page: 1, pageSize: 20, total: items.length, totalPages: 1, ...overrides },
+  };
+}
+
 function message(overrides: Partial<Message> = {}): Message {
   return {
     id: "msg-1",
@@ -30,7 +39,7 @@ function message(overrides: Partial<Message> = {}): Message {
     senderId: "ten-1",
     senderRole: "TENANT",
     content: "Bonjour, j'ai une question sur mon loyer.",
-    isRead: "true",
+    isRead: true,
     createdAt: "2026-06-15T10:00:00.000Z",
     ...overrides,
   };
@@ -51,7 +60,7 @@ describe("MessagesPage (gestionnaire)", () => {
   });
 
   it("affiche la liste des conversations et sélectionne la première automatiquement", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({
       data: { messages: [message()], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
     });
@@ -66,8 +75,43 @@ describe("MessagesPage (gestionnaire)", () => {
     expect(screen.getByText("1 conversation(s)")).toBeInTheDocument();
   });
 
+  /**
+   * Régression : la liste des conversations du gestionnaire renvoyait
+   * autrefois TOUTES les conversations d'un coup, sans pagination — une
+   * agence avec beaucoup de locataires chargeait donc une liste sans fin à
+   * chaque ouverture de la messagerie. Ce test vérifie que la pagination
+   * (identique aux autres listes de l'appli) est bien câblée de bout en
+   * bout : le contrôle de pagination s'affiche quand il y a plusieurs
+   * pages, et cliquer sur "Suivant" redemande bien la page 2 au serveur.
+   */
+  it("pagine la liste des conversations : le bouton Suivant redemande la page 2", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()], { total: 25, totalPages: 2 }));
+    mockedApi.get.mockResolvedValueOnce({
+      data: { messages: [message()], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
+    });
+    mockedApi.get.mockResolvedValueOnce(
+      conversationsPage([conversation({ contractId: "c2" })], { page: 2, total: 25, totalPages: 2 })
+    );
+    mockedApi.get.mockResolvedValueOnce({
+      data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("25 au total")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Suivant" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenCalledWith(
+        "/messages/conversations",
+        expect.objectContaining({ params: { page: 2, pageSize: 20 } })
+      )
+    );
+  });
+
   it("affiche un message dédié quand il n'y a aucune conversation", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([]));
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Aucun contrat ou locataire actif.")).toBeInTheDocument());
@@ -76,7 +120,7 @@ describe("MessagesPage (gestionnaire)", () => {
 
   it("envoie un message : POST vers /messages/:contractId et l'affiche immédiatement", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({
       data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
     });
@@ -87,7 +131,7 @@ describe("MessagesPage (gestionnaire)", () => {
         senderId: "mgr-1",
         senderRole: "MANAGER",
         content: "Bonjour, votre quittance est prête.",
-        isRead: "false",
+        isRead: false,
         createdAt: "2026-06-15T11:00:00.000Z",
       },
     });
@@ -113,7 +157,7 @@ describe("MessagesPage (gestionnaire)", () => {
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
 
-    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([]));
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getByText("Aucun contrat ou locataire actif.")).toBeInTheDocument());
   });

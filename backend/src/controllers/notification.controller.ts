@@ -71,7 +71,7 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
     { count: number; tenantName: string; propertyTitle: string; latest: Date }
   >();
   for (const r of unreadRows) {
-    if (r.message.isRead !== "false") continue;
+    if (r.message.isRead) continue;
     const key = r.contract.id;
     const createdAt = new Date(r.message.createdAt);
     const existing = unreadByContract.get(key);

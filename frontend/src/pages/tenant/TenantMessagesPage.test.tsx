@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
-import type { Conversation, Message } from "../../types";
+import type { Conversation, Message, PaginatedResponse } from "../../types";
 import TenantMessagesPage from "./TenantMessagesPage";
 
 vi.mock("../../api/client", async () => {
@@ -23,6 +23,15 @@ function conversation(overrides: Partial<Conversation> = {}): Conversation {
   };
 }
 
+function conversationsPage(
+  items: Conversation[],
+  overrides: Partial<PaginatedResponse<Conversation>> = {}
+): { data: PaginatedResponse<Conversation> } {
+  return {
+    data: { items, page: 1, pageSize: 20, total: items.length, totalPages: 1, ...overrides },
+  };
+}
+
 function message(overrides: Partial<Message> = {}): Message {
   return {
     id: "msg-1",
@@ -30,7 +39,7 @@ function message(overrides: Partial<Message> = {}): Message {
     senderId: "mgr-1",
     senderRole: "MANAGER",
     content: "Bonjour, comment puis-je vous aider ?",
-    isRead: "true",
+    isRead: true,
     createdAt: "2026-06-15T10:00:00.000Z",
     ...overrides,
   };
@@ -52,7 +61,7 @@ describe("TenantMessagesPage", () => {
   });
 
   it("affiche la conversation avec les messages du gestionnaire et du locataire", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({
       data: {
         messages: [message({ senderRole: "MANAGER", content: "Bonjour !" }), message({ id: "msg-2", senderRole: "TENANT", content: "Bonjour, j'ai une question." })],
@@ -74,7 +83,7 @@ describe("TenantMessagesPage", () => {
   });
 
   it("affiche un message quand la conversation ne contient aucun échange", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
 
     renderPage();
@@ -87,7 +96,7 @@ describe("TenantMessagesPage", () => {
   });
 
   it("affiche un message quand aucun contrat actif n'est associé", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([]));
     renderPage();
 
     await waitFor(() =>
@@ -104,7 +113,7 @@ describe("TenantMessagesPage", () => {
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
 
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() =>
@@ -115,7 +124,7 @@ describe("TenantMessagesPage", () => {
   });
 
   it("le bouton d'envoi est désactivé tant que le champ est vide", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
     renderPage();
 
@@ -125,10 +134,10 @@ describe("TenantMessagesPage", () => {
 
   it("envoie un message : POST vers /messages/:contractId et l'affiche immédiatement", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
     mockedApi.post.mockResolvedValueOnce({
-      data: { id: "msg-new", contractId: "c1", senderId: "ten-1", senderRole: "TENANT", content: "Merci pour votre réponse.", isRead: "false", createdAt: "2026-06-15T11:00:00.000Z" },
+      data: { id: "msg-new", contractId: "c1", senderId: "ten-1", senderRole: "TENANT", content: "Merci pour votre réponse.", isRead: false, createdAt: "2026-06-15T11:00:00.000Z" },
     });
 
     renderPage();
@@ -146,7 +155,7 @@ describe("TenantMessagesPage", () => {
 
   it("affiche une alerte si l'envoi du message échoue", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: [conversation()] });
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
     mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
     mockedApi.post.mockRejectedValueOnce({
       response: { data: { error: "Message refusé" } },

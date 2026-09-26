@@ -10,6 +10,7 @@ import {
   createManager,
   createProperty,
   createTenant,
+  createTenantPortalUser,
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -27,9 +28,10 @@ describe("Messages API (/api/messages)", () => {
       .get("/api/messages/conversations")
       .set(authHeader(managerToken));
     expect(initialRes.status).toBe(200);
-    expect(initialRes.body).toHaveLength(1);
-    expect(initialRes.body[0].contractId).toBe(contract.id);
-    expect(initialRes.body[0].lastMessage).toBeNull();
+    expect(initialRes.body.items).toHaveLength(1);
+    expect(initialRes.body.total).toBe(1);
+    expect(initialRes.body.items[0].contractId).toBe(contract.id);
+    expect(initialRes.body.items[0].lastMessage).toBeNull();
 
     // Envoi d'un premier message par le gestionnaire
     const sendRes = await request(app)
@@ -44,8 +46,8 @@ describe("Messages API (/api/messages)", () => {
       .get("/api/messages/conversations")
       .set(authHeader(managerToken));
     expect(updatedRes.status).toBe(200);
-    expect(updatedRes.body[0].lastMessage).not.toBeNull();
-    expect(updatedRes.body[0].lastMessage.content).toBe(
+    expect(updatedRes.body.items[0].lastMessage).not.toBeNull();
+    expect(updatedRes.body.items[0].lastMessage.content).toBe(
       "Bonjour Fatou, bienvenue dans votre nouveau logement."
     );
   });
@@ -69,6 +71,42 @@ describe("Messages API (/api/messages)", () => {
     expect(res.status).toBe(200);
     expect(res.body.messages).toHaveLength(1);
     expect(res.body.messages[0].content).toBe("Message test");
+  });
+
+  /**
+   * Régression : la mise à jour `isRead` de getMessagesByContract ne
+   * filtrait pas par expéditeur. Un locataire qui ouvrait sa propre
+   * conversation (juste après avoir envoyé un message, par ex.) marquait
+   * donc son propre message comme lu — ce qui viderait à tort le badge
+   * "non lu" du gestionnaire avant même qu'il n'ait ouvert la conversation.
+   */
+  it("GET /api/messages/:id (locataire) — ne marque pas comme lu le message que le locataire vient d'envoyer lui-même", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
+    const tenantToken = tokenFor(portalUser, tenant.id);
+
+    await request(app)
+      .post(`/api/messages/${contract.id}`)
+      .set(authHeader(tenantToken))
+      .send({ content: "J'ai une question sur mon loyer" });
+
+    // Le locataire ouvre sa propre conversation (ex : juste après l'envoi)
+    const viewRes = await request(app)
+      .get(`/api/messages/${contract.id}`)
+      .set(authHeader(tenantToken));
+    expect(viewRes.status).toBe(200);
+
+    // Le gestionnaire n'a jamais ouvert la conversation : son message
+    // reste bien "non lu" dans son centre de notifications.
+    const notifRes = await request(app)
+      .get("/api/notifications")
+      .set(authHeader(tokenFor(manager)));
+    expect(notifRes.status).toBe(200);
+    const messageNotif = notifRes.body.notifications.find((n: { type: string }) => n.type === "message");
+    expect(messageNotif).toBeDefined();
   });
 
   it("GET /api/messages/:id — interdit l'accès à un autre gestionnaire", async () => {
