@@ -1067,6 +1067,7 @@ const es: TranslationSchema = {
       changeStatus: "Cambiar el estado:",
       emptyTitle: "Ninguna solicitud por el momento",
       emptyDesc: "Las solicitudes de visita o información enviadas por los visitantes de la vitrina pública aparecerán aquí.",
+      confirmDelete: '¿Eliminar la solicitud de contacto de "{{name}}"? Esta acción es definitiva.',
     },
     messages: {
       title: "Mensajería y Comunicaciones",
@@ -1162,8 +1163,10 @@ const es: TranslationSchema = {
         none: "Ningún dato ha alcanzado su plazo de conservación.",
         noBail: "Ficha sin ningún contrato, abierta desde hace más de {{days}} días",
         leaseEnded: "Último contrato finalizado hace más de {{years}} años",
+        oldLead: "Solicitud de contacto recibida en un anuncio, hace más de {{years}} años",
         error: "No se han podido cargar los plazos.",
         seeTenants: "Abrir la lista de inquilinos",
+        seeLeads: "Abrir las solicitudes de contacto",
       },
       dangerZone: {
         title: "Zona de peligro",

@@ -367,3 +367,29 @@ export const updateListingLead = asyncHandler(async (req: Request, res: Response
 
   res.json(lead);
 });
+
+/**
+ * Seule voie d'effacement d'un prospect avant ce correctif : supprimer
+ * l'ANNONCE entière (cascade, voir deleteListing) — un moyen bien trop
+ * grossier pour honorer une simple demande d'effacement d'un prospect, ou
+ * pour agir sur le signal de conservation.service.ts (donneesArriveesAEcheance,
+ * `leadsAnciens`) sans supprimer au passage une annonce toujours publiée.
+ */
+export const deleteListingLead = asyncHandler(async (req: Request, res: Response) => {
+  const [existing] = await db.select().from(listingLeads).where(eq(listingLeads.id, req.params.id));
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Demande introuvable");
+
+  await db.delete(listingLeads).where(eq(listingLeads.id, existing.id));
+
+  await logActivity({
+    req,
+    managerId: existing.managerId,
+    action: "listing_lead.delete",
+    entityType: "listing_lead",
+    entityId: existing.id,
+    entityLabel: existing.prospectName,
+    details: `Demande supprimée : ${existing.prospectName}`,
+  });
+
+  res.status(204).send();
+});

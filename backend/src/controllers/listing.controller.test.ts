@@ -370,3 +370,39 @@ describe("PATCH /api/listings/leads/:id", () => {
     expect(res.status).toBe(404);
   });
 });
+
+/**
+ * Avant ce correctif, la seule façon d'effacer une demande de contact était de
+ * supprimer l'annonce ENTIÈRE (cascade, voir DELETE /api/listings/:id
+ * ci-dessus) — bien trop grossier pour honorer une demande d'effacement
+ * individuelle, ou pour agir sur le signal de conservation.service.ts
+ * (donneesArriveesAEcheance, `leadsAnciens`) sans supprimer au passage une
+ * annonce toujours publiée.
+ */
+describe("DELETE /api/listings/leads/:id", () => {
+  it("supprime la demande sans toucher à l'annonce ni aux autres demandes", async () => {
+    const manager = await createManager();
+    const listing = await createListingRow(manager.id);
+    const lead = await createLeadRow(listing.id, manager.id);
+    const autreLead = await createLeadRow(listing.id, manager.id, { prospectName: "Autre prospect" });
+
+    const res = await request(app).delete(`/api/listings/leads/${lead.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(204);
+    expect(await testDb.select().from(listingLeads).where(eq(listingLeads.id, lead.id))).toHaveLength(0);
+    expect(await testDb.select().from(listingLeads).where(eq(listingLeads.id, autreLead.id))).toHaveLength(1);
+    expect(await testDb.select().from(listings).where(eq(listings.id, listing.id))).toHaveLength(1);
+  });
+
+  it("refuse de supprimer la demande rattachée à l'annonce d'un autre gestionnaire", async () => {
+    const owner = await createManager();
+    const listing = await createListingRow(owner.id);
+    const lead = await createLeadRow(listing.id, owner.id);
+    const intrus = await createManager();
+
+    const res = await request(app).delete(`/api/listings/leads/${lead.id}`).set(authHeader(tokenFor(intrus)));
+
+    expect(res.status).toBe(404);
+    expect(await testDb.select().from(listingLeads).where(eq(listingLeads.id, lead.id))).toHaveLength(1);
+  });
+});

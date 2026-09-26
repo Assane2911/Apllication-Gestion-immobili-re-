@@ -532,8 +532,14 @@ export interface PaginatedResponse<T> {
  */
 export interface RetentionEcheances {
   calculeLe: string;
-  durees: { journauxJours: number; ficheSansBailJours: number; apresFinDeBailJours: number };
+  durees: {
+    journauxJours: number;
+    ficheSansBailJours: number;
+    apresFinDeBailJours: number;
+    leadProspectionJours: number;
+  };
   fichesSansBail: Tenant[];
   bauxClosDepuisLongtemps: Tenant[];
+  leadsAnciens: ListingLead[];
   total: number;
 }

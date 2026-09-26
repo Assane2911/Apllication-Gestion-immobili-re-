@@ -3,6 +3,7 @@ import {
   createListing,
   createPublicLead,
   deleteListing,
+  deleteListingLead,
   getListing,
   getPublicListing,
   listListingLeads,
@@ -32,6 +33,7 @@ router.post("/public/:id/leads", listingLeadLimiter, createPublicLead);
 // dynamique "/:id" (id="leads") — jamais atteinte, la route CRM Leads.
 router.get("/leads", authenticate, requireRole("MANAGER"), requireActiveSubscription, listListingLeads);
 router.patch("/leads/:id", authenticate, requireRole("MANAGER"), requireActiveSubscription, updateListingLead);
+router.delete("/leads/:id", authenticate, requireRole("MANAGER"), requireActiveSubscription, deleteListingLead);
 
 router.get("/", authenticate, requireRole("MANAGER"), requireActiveSubscription, listListings);
 router.get("/:id", authenticate, requireRole("MANAGER"), requireActiveSubscription, getListing);

@@ -89,6 +89,16 @@ export default function ListingLeadsPage() {
     }
   }
 
+  async function handleDelete(lead: ListingLead) {
+    if (!confirm(t("manager.listingLeads.confirmDelete", { name: lead.prospectName }))) return;
+    try {
+      await api.delete(`/listings/leads/${lead.id}`);
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -196,7 +206,7 @@ export default function ListingLeadsPage() {
 
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("manager.listingLeads.changeStatus")}</span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {STATUS_OPTIONS.map((s) => (
                   <Bulle key={s} texte={t("manager.tips.leadStatus")}>
                   <button
@@ -212,6 +222,12 @@ export default function ListingLeadsPage() {
                   </button>
                   </Bulle>
                 ))}
+                <button
+                  onClick={() => handleDelete(lead)}
+                  className="text-xs px-3 py-1 rounded-full border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 font-medium transition-all cursor-pointer"
+                >
+                  {t("common.actions.delete")}
+                </button>
               </div>
             </div>
           </div>

@@ -35,6 +35,47 @@ export async function resolveScannedUrl(value: string | null | undefined): Promi
   }
 }
 
+/**
+ * Sérialise les créations/modifications de contrat sur UN MÊME bien : sans ce
+ * verrou, deux requêtes concurrentes (deux onglets, un double clic réseau
+ * lent) pouvaient chacune lire "aucun contrat actif en conflit" avant que
+ * l'autre n'ait inséré le sien, et valider toutes les deux — double location
+ * du même bien, chacune persuadée d'être seule. `pg_advisory_xact_lock` fait
+ * attendre la seconde transaction jusqu'à ce que la première ait validé (ou
+ * annulé), la faisant relire un état à jour. Le verrou est automatiquement
+ * libéré à la fin de la transaction (COMMIT ou ROLLBACK) — jamais posé ni
+ * levé manuellement.
+ */
+async function verrouillerBienPourContrat(tx: Transaction, propertyId: string) {
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${propertyId}))`);
+}
+
+/** Doit être appelée APRÈS `verrouillerBienPourContrat`, sur la même transaction. */
+async function assertAucunChevauchementActif(
+  tx: Transaction,
+  propertyId: string,
+  startDate: Date,
+  endDate: Date,
+  excludeContractId?: string
+) {
+  const existingActive = await tx
+    .select()
+    .from(contracts)
+    .where(and(eq(contracts.propertyId, propertyId), eq(contracts.status, "ACTIVE")));
+
+  const hasOverlap = existingActive.some(
+    (c: typeof contracts.$inferSelect) =>
+      c.id !== excludeContractId && new Date(c.startDate) < endDate && new Date(c.endDate) > startDate
+  );
+
+  if (hasOverlap) {
+    throw new ApiError(
+      409,
+      "Ce bien fait déjà l'objet d'un contrat actif sur cette période. Clôturez le contrat en cours avant d'en créer un nouveau."
+    );
+  }
+}
+
 async function withRelations(contractId: string) {
   const [row] = await db
     .select({ contract: contracts, property: properties, tenant: tenants })
@@ -104,23 +145,6 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
 
   const contractStatus = body.status ?? "ACTIVE";
-  if (contractStatus === "ACTIVE") {
-    const existingActive = await db
-      .select()
-      .from(contracts)
-      .where(and(eq(contracts.propertyId, body.propertyId), eq(contracts.status, "ACTIVE")));
-
-    const hasOverlap = existingActive.some(
-      (c: typeof contracts.$inferSelect) => new Date(c.startDate) < body.endDate && new Date(c.endDate) > body.startDate
-    );
-
-    if (hasOverlap) {
-      throw new ApiError(
-        409,
-        "Ce bien fait déjà l'objet d'un contrat actif sur cette période. Clôturez le contrat en cours avant d'en créer un nouveau."
-      );
-    }
-  }
 
   // Hérite de la devise spécifiée ou de celle du bien par défaut.
   const contractValues = {
@@ -131,7 +155,15 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   // Ces trois écritures doivent rester cohérentes entre elles : si l'une
   // échoue, on ne veut ni contrat orphelin, ni bien marqué occupé sans
   // contrat, ni contrat actif sans aucune facture générée.
+  //
+  // Le contrôle de chevauchement est fait ICI, sous verrou, et non avant la
+  // transaction : lu en dehors, il pouvait dater d'avant l'insertion d'un
+  // contrat concurrent sur le même bien (voir verrouillerBienPourContrat).
   const contract = await db.transaction(async (tx: Transaction) => {
+    if (contractStatus === "ACTIVE") {
+      await verrouillerBienPourContrat(tx, body.propertyId);
+      await assertAucunChevauchementActif(tx, body.propertyId, body.startDate, body.endDate);
+    }
     const [created] = await tx.insert(contracts).values(contractValues).returning();
     await tx.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
     await generateInvoicesForContract(created, tx);
@@ -213,25 +245,9 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   // création (createContract) le faisait. Un contrat ACTIVE pouvait ainsi se
   // retrouver, après modification, à chevaucher un autre contrat ACTIVE sur
   // le même bien (double location silencieuse), ce qu'aucune requête ne
-  // détectait ni n'empêchait.
-  if (newStatus === "ACTIVE") {
-    const existingActive = await db
-      .select()
-      .from(contracts)
-      .where(and(eq(contracts.propertyId, newPropertyId), eq(contracts.status, "ACTIVE")));
-
-    const hasOverlap = existingActive.some(
-      (c: typeof contracts.$inferSelect) =>
-        c.id !== existing.id && new Date(c.startDate) < newEndDate && new Date(c.endDate) > newStartDate
-    );
-
-    if (hasOverlap) {
-      throw new ApiError(
-        409,
-        "Ce bien fait déjà l'objet d'un contrat actif sur cette période. Clôturez le contrat en cours avant d'en créer un nouveau."
-      );
-    }
-  }
+  // détectait ni n'empêchait. Ce contrôle est fait plus bas, SOUS VERROU et
+  // DANS la transaction (voir verrouillerBienPourContrat) — lu ici, en
+  // dehors, il resterait exposé à la même course qu'avant ce correctif.
 
   // Régression : updateProperty refuse déjà de changer la devise d'un BIEN
   // tant qu'un contrat actif existe (voir property.controller.ts), justement
@@ -267,6 +283,11 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   // dehors, elle pouvait dater d'avant une modification concurrente et
   // reliberer un bien encore loue.
   const contract = await db.transaction(async (tx: Transaction) => {
+    if (newStatus === "ACTIVE") {
+      await verrouillerBienPourContrat(tx, newPropertyId);
+      await assertAucunChevauchementActif(tx, newPropertyId, newStartDate, newEndDate, existing.id);
+    }
+
     const [contract] = await tx.update(contracts).set(body).where(eq(contracts.id, req.params.id)).returning();
 
     // Resynchronise l'occupation de TOUS les biens concernés — l'ancien (si le

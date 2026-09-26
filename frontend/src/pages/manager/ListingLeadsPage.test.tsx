@@ -8,7 +8,7 @@ import ListingLeadsPage from "./ListingLeadsPage";
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
-  return { ...actual, api: { get: vi.fn(), patch: vi.fn() } };
+  return { ...actual, api: { get: vi.fn(), patch: vi.fn(), delete: vi.fn() } };
 });
 
 const mockedApi = vi.mocked(api, { deep: true });
@@ -53,7 +53,9 @@ describe("ListingLeadsPage (manager)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.patch.mockReset();
+    mockedApi.delete.mockReset();
     vi.spyOn(window, "alert").mockImplementation(() => {});
+    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("affiche les demandes reçues avec l'annonce, le contact et le type de demande", async () => {
@@ -125,5 +127,39 @@ describe("ListingLeadsPage (manager)", () => {
         signal: expect.anything(),
       })
     );
+  });
+
+  /**
+   * Avant ce correctif, la seule façon d'effacer un prospect était de
+   * supprimer l'annonce ENTIÈRE (cascade) — bien trop grossier pour honorer
+   * une demande d'effacement individuelle ou agir sur le signal de
+   * conservation des données (AgencySettingsPage, "leadsAnciens").
+   */
+  it("supprime une demande après confirmation", async () => {
+    mockedApi.get.mockResolvedValueOnce(leadsPaginated([lead()]));
+    mockedApi.get.mockResolvedValueOnce(listingsPaginated());
+    mockedApi.delete.mockResolvedValueOnce({ data: {} });
+    mockedApi.get.mockResolvedValueOnce(leadsPaginated([]));
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Aïcha Ndiaye")).toBeInTheDocument());
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Supprimer" }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/listings/leads/lead-1"));
+  });
+
+  it("ne supprime rien si le gestionnaire annule la confirmation", async () => {
+    mockedApi.get.mockResolvedValueOnce(leadsPaginated([lead()]));
+    mockedApi.get.mockResolvedValueOnce(listingsPaginated());
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Aïcha Ndiaye")).toBeInTheDocument());
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Supprimer" }));
+
+    expect(mockedApi.delete).not.toHaveBeenCalled();
   });
 });
