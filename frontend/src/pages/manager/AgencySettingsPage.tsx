@@ -28,6 +28,7 @@ export default function AgencySettingsPage() {
   const [logoutAllError, setLogoutAllError] = useState("");
 
   async function handleLogoutAll() {
+    if (!confirm(t("manager.agencySettings.security.confirmLogoutAll"))) return;
     setLoggingOutAll(true);
     setLogoutAllError("");
     try {

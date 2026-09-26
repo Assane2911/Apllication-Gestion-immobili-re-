@@ -912,6 +912,7 @@ const en: TranslationSchema = {
       noExpenses: "No expenses recorded yet.",
       confirmDelete: 'Delete the expense "{{title}}" ({{amount}})?',
       noExpensesToExport: "No expenses to export.",
+      amountMustBePositive: "The amount must be a number greater than zero.",
       modalTitle: "Record an expense / invoice",
       fields: {
         property: "Related property *",
@@ -1150,6 +1151,7 @@ const en: TranslationSchema = {
         logoutAllButton: "Sign out of all my devices",
         logoutAllPending: "Closing sessions…",
         logoutAllError: "Could not close the sessions. Please try again in a moment.",
+        confirmLogoutAll: "Close every open session, including this one? You will be signed out immediately and will need to sign in again.",
       },
       retention: {
         title: "Data past its retention period",
@@ -1173,7 +1175,7 @@ const en: TranslationSchema = {
       subtitle: "Manage your property management plan and billing options.",
       currentStatus: "Your current status",
       planActive: "{{plan}} Plan Active",
-      trialStatus: "Free trial period (10 days)",
+      trialStatus: "Free trial period (15 days)",
       expiredStatus: "Subscription Expired",
       paid: "Paid",
       trialRemaining: "Trial: {{count}} day(s) left",

@@ -914,6 +914,7 @@ const es: TranslationSchema = {
       noExpenses: "Aún no hay gastos registrados.",
       confirmDelete: '¿Eliminar el gasto "{{title}}" ({{amount}})?',
       noExpensesToExport: "No hay gastos para exportar.",
+      amountMustBePositive: "El importe debe ser un número mayor que cero.",
       modalTitle: "Registrar un gasto / factura",
       fields: {
         property: "Propiedad afectada *",
@@ -1152,6 +1153,7 @@ const es: TranslationSchema = {
         logoutAllButton: "Cerrar sesión en todos mis dispositivos",
         logoutAllPending: "Cerrando sesiones…",
         logoutAllError: "No se han podido cerrar las sesiones. Inténtalo de nuevo en un momento.",
+        confirmLogoutAll: "¿Cerrar todas las sesiones abiertas, incluida esta? Se cerrará tu sesión de inmediato y tendrás que volver a iniciar sesión.",
       },
       retention: {
         title: "Datos que han alcanzado su plazo de conservación",

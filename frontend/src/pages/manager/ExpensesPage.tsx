@@ -109,6 +109,15 @@ export default function ExpensesPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    // Le champ number seul ne bloque pas la saisie d'un montant négatif (le
+    // "-" reste tapable, et coller une valeur contourne le spinner). Le
+    // serveur refuse déjà ces montants (createExpenseSchema, amount positif),
+    // mais laisser filer la requête affichait une erreur générique après un
+    // aller-retour réseau au lieu de guider tout de suite le gestionnaire.
+    if (!(Number(form.amount) > 0)) {
+      setError(t("manager.expenses.amountMustBePositive"));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -496,6 +505,7 @@ export default function ExpensesPage() {
                     id="expense-modal-amount"
                     type="number"
                     step="0.01"
+                    min="0.01"
                     required
                     placeholder="0.00"
                     value={form.amount}

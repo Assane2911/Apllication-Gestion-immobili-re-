@@ -209,6 +209,38 @@ describe("ExpensesPage", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Enregistrer la dépense" })).not.toBeInTheDocument());
   });
 
+  /**
+   * Régression : le formulaire acceptait un montant négatif sans le
+   * signaler. Le champ number seul ne bloque pas la saisie du signe "-", et
+   * une dépense négative aurait affiché un double signe moins dans le
+   * tableau (`-{formatMoney(exp.amount, ...)}`) et faussé le résultat net
+   * du CRG. Le serveur refuse déjà ces montants, mais ce test verrouille le
+   * garde-fou côté client : aucune requête ne doit partir.
+   */
+  it("refuse un montant négatif sans appeler l'API", async () => {
+    const user = userEvent.setup();
+    queueLoad([property({ id: "prop-1" })], summary(), []);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Enregistrer une dépense/ })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /Enregistrer une dépense/ }));
+
+    const selects = screen.getAllByRole("combobox");
+    await user.selectOptions(selects[1], "prop-1");
+    await user.type(screen.getByPlaceholderText("Ex: Remplacement chauffe-eau"), "Taxe foncière 2026");
+    fireEvent.change(screen.getByPlaceholderText("0.00"), { target: { value: "-100" } });
+
+    // fireEvent.submit (et non un clic utilisateur) : contourne volontairement
+    // la validation HTML5 native du navigateur sur `min="0.01"`, pour prouver
+    // que le garde-fou côté JavaScript de handleCreate protège même si la
+    // contrainte native était absente ou contournée (valeur collée, DOM
+    // manipulé...).
+    fireEvent.submit(container.querySelector("form")!);
+
+    expect(screen.getByText("Le montant doit être un nombre supérieur à zéro.")).toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
   it("supprime une dépense après confirmation", async () => {
     const user = userEvent.setup();
     queueLoad([property()], summary(), [expense({ id: "exp-1" })]);

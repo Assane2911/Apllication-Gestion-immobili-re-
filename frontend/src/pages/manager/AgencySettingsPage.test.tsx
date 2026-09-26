@@ -64,6 +64,7 @@ describe("AgencySettingsPage", () => {
     // défaut à la seconde, pour qu'ils n'aient pas tous à s'en occuper.
     mockedApi.get.mockResolvedValue({ data: echeancesVides() });
     localStorage.clear();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("pré-remplit le formulaire avec les coordonnées existantes de l'agence", async () => {
@@ -239,6 +240,27 @@ describe("AgencySettingsPage", () => {
 
       await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/auth/logout-all"));
       await waitFor(() => expect(localStorage.getItem("token")).toBeNull());
+    });
+
+    /**
+     * Régression : ce bouton déconnecte IMMÉDIATEMENT l'appareil courant, sans
+     * demander confirmation — un clic accidentel coupait la session en cours
+     * sans le moindre recours, contrairement aux autres actions destructrices
+     * de l'écran (suppression du compte, résiliation de contrat) qui en ont
+     * toutes une.
+     */
+    it("ne ferme aucune session si le gestionnaire annule la confirmation", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      localStorage.setItem("token", "fake-token");
+      renderPage();
+      const user = userEvent.setup();
+
+      await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+      await user.click(screen.getByRole("button", { name: "Déconnecter tous mes appareils" }));
+
+      expect(mockedApi.post).not.toHaveBeenCalled();
+      expect(localStorage.getItem("token")).toBe("fake-token");
     });
 
     it("garde la session ouverte et affiche l'erreur si la fermeture des sessions échoue", async () => {
