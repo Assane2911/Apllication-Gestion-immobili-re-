@@ -35,6 +35,20 @@ import tenantRoutes from "./routes/tenant.routes";
 
 export const app = express();
 
+// Sur Vercel, chaque requête traverse leur edge/proxy : sans ce réglage,
+// `req.ip` (et donc les limiteurs de fréquence par IP — voir rateLimit.ts)
+// valait toujours la même adresse interne côté proxy, jamais celle du
+// visiteur. Toutes les tentatives de connexion, quelle que soit leur
+// provenance réelle, partageaient donc le MÊME quota — un seul acharné
+// pouvait épuiser la limite de tout le monde, et une attaque distribuée sur
+// plusieurs IP réelles n'était jamais freinée. `1` fait confiance à
+// exactement UN saut (le edge Vercel lui-même) pour lire `X-Forwarded-For` —
+// jamais activé en local, où aucun proxy de confiance n'existe entre le
+// client et ce process.
+if (process.env.VERCEL === "1") {
+  app.set("trust proxy", 1);
+}
+
 // En-têtes de sécurité HTTP standards (anti-sniffing MIME, anti-clickjacking,
 // HSTS, suppression de "X-Powered-By"...). La Content-Security-Policy (CSP)
 // est configurée de manière stricte : 'script-src none' bloque toute exécution

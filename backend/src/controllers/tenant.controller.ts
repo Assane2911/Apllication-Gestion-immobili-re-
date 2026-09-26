@@ -82,14 +82,21 @@ export const getTenant = asyncHandler(async (req: Request, res: Response) => {
 
 export const createTenant = asyncHandler(async (req: Request, res: Response) => {
   const body = tenantSchema.parse(req.body);
-  assertFileContentMatchesDeclaredType(req.file);
-  const idDocument = req.file ? await uploadPrivateFile(req.file, "tenants") : undefined;
 
+  // Le contrôle d'unicité doit précéder l'upload : sinon, envoyer deux fois
+  // la même fiche (double clic, ou simple erreur) stockait un fichier à
+  // chaque fois sur notre infrastructure, à nos frais, avant que le 409 ne
+  // survienne — un fichier jamais rattaché à aucune ligne, jamais nettoyé.
+  // Même principe que updateTenant, qui fait précéder l'upload par SA propre
+  // vérification (de propriété, elle).
   const [existing] = await db
     .select()
     .from(tenants)
     .where(and(eq(tenants.managerId, req.user!.userId), eq(tenants.email, body.email)));
   if (existing) throw new ApiError(409, "Un locataire avec cet email existe déjà");
+
+  assertFileContentMatchesDeclaredType(req.file);
+  const idDocument = req.file ? await uploadPrivateFile(req.file, "tenants") : undefined;
 
   const [tenant] = await db
     .insert(tenants)
@@ -346,9 +353,34 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, tenant.email));
-  if (existingUser) throw new ApiError(409, "Un compte existe déjà pour cet email");
-
   const passwordHash = await bcrypt.hash(body.password, 10);
+
+  // `deleteTenant` ne supprime jamais le compte de connexion "portail" — voir
+  // deleteMyAccount (auth.controller.ts) : c'est une identité qui appartient
+  // à la personne, pas à l'agence qui gérait sa fiche. Mais `users.email` est
+  // UNIQUE : sans ce contrôle, le compte laissé derrière squattait l'email
+  // pour toujours, et plus AUCUNE agence (celle-ci ou une autre) ne pouvait
+  // jamais recréer d'accès portail pour cette même personne. On ne réutilise
+  // ce compte que s'il est effectivement orphelin (rôle TENANT, plus rattaché
+  // à aucune fiche) : sinon, c'est un vrai conflit (compte gestionnaire/admin/
+  // propriétaire, ou locataire actif d'une autre agence).
+  if (existingUser) {
+    const dejaRattachee = existingUser.role === "TENANT"
+      ? await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.userId, existingUser.id))
+      : [{ id: "conflit" }];
+    if (existingUser.role !== "TENANT" || dejaRattachee.length > 0) {
+      throw new ApiError(409, "Un compte existe déjà pour cet email");
+    }
+
+    await db
+      .update(users)
+      .set({ passwordHash, tokenVersion: existingUser.tokenVersion + 1 })
+      .where(eq(users.id, existingUser.id));
+    await db.update(tenants).set({ userId: existingUser.id }).where(eq(tenants.id, tenant.id));
+
+    res.status(201).json({ message: "Accès portail créé", userId: existingUser.id, email: existingUser.email });
+    return;
+  }
 
   // Les deux écritures doivent réussir ensemble : sans transaction, un échec
   // de la seconde laissait un compte de connexion valide mais jamais relié

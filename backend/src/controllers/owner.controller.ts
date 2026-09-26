@@ -11,6 +11,7 @@ import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { bicSchema, ibanSchema } from "../utils/iban";
 import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
@@ -36,8 +37,12 @@ const ownerSchema = z.object({
     .transform((v) => versE164(v)!),
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
   address: z.string().optional(),
-  iban: z.string().optional(),
-  bic: z.string().optional(),
+  // Même validation (structure + clé MOD 97-10) que agency.controller.ts :
+  // sans elle, une faute de frappe sur ces coordonnées — un VRAI virement de
+  // reversement au propriétaire, pas juste un affichage — n'était détectée
+  // qu'au premier virement resté sans suite.
+  iban: ibanSchema,
+  bic: bicSchema,
   managementFeeRate: z.coerce.number().min(0).max(100).optional(),
   notes: z.string().optional(),
 });
@@ -214,27 +219,54 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
     targetUserId = existingUser.id;
   } else {
     const [existingUserWithEmail] = await db.select().from(users).where(eq(users.email, owner.email));
+
+    // `deleteOwner` ne supprime jamais le compte de connexion "portail" — voir
+    // deleteMyAccount (auth.controller.ts) : c'est une identité qui appartient
+    // à la personne, pas à l'agence qui gérait sa fiche. Mais `users.email`
+    // est UNIQUE : sans ce contrôle, le compte laissé derrière squattait
+    // l'email pour toujours, et plus AUCUNE agence ne pouvait jamais réinviter
+    // cette même personne. On ne réutilise ce compte que s'il est
+    // effectivement orphelin (rôle OWNER, plus rattaché à aucune fiche) :
+    // sinon, c'est un vrai conflit (compte gestionnaire/admin/locataire, ou
+    // propriétaire actif d'une autre agence).
     if (existingUserWithEmail) {
-      throw new ApiError(409, "Un compte existe déjà avec cet email — impossible de créer l'accès portail");
+      const dejaRattachee =
+        existingUserWithEmail.role === "OWNER"
+          ? await db.select({ id: owners.id }).from(owners).where(eq(owners.userId, existingUserWithEmail.id))
+          : [{ id: "conflit" }];
+      if (existingUserWithEmail.role !== "OWNER" || dejaRattachee.length > 0) {
+        throw new ApiError(409, "Un compte existe déjà avec cet email — impossible de créer l'accès portail");
+      }
+
+      await db
+        .update(users)
+        .set({
+          resetPasswordTokenHash,
+          resetPasswordExpiresAt,
+          tokenVersion: existingUserWithEmail.tokenVersion + 1,
+        })
+        .where(eq(users.id, existingUserWithEmail.id));
+      await db.update(owners).set({ userId: existingUserWithEmail.id }).where(eq(owners.id, owner.id));
+      targetUserId = existingUserWithEmail.id;
+    } else {
+      // Mot de passe inutilisable en l'état (jamais communiqué) : seul le lien
+      // d'invitation (token à usage unique ci-dessus) permet d'en poser un
+      // vrai, via resetPassword — même principe que EMPREINTE_FACTICE côté login.
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+
+      // Les deux écritures doivent réussir ensemble, comme
+      // createTenantPortalAccount : sans transaction, un échec de la seconde
+      // laisserait un compte "OWNER" valide jamais relié à aucune fiche propriétaire.
+      const created = await db.transaction(async (tx: Transaction) => {
+        const [user] = await tx
+          .insert(users)
+          .values({ email: owner.email, passwordHash, role: "OWNER", resetPasswordTokenHash, resetPasswordExpiresAt })
+          .returning();
+        await tx.update(owners).set({ userId: user.id }).where(eq(owners.id, owner.id));
+        return user;
+      });
+      targetUserId = created.id;
     }
-
-    // Mot de passe inutilisable en l'état (jamais communiqué) : seul le lien
-    // d'invitation (token à usage unique ci-dessus) permet d'en poser un
-    // vrai, via resetPassword — même principe que EMPREINTE_FACTICE côté login.
-    const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
-
-    // Les deux écritures doivent réussir ensemble, comme
-    // createTenantPortalAccount : sans transaction, un échec de la seconde
-    // laisserait un compte "OWNER" valide jamais relié à aucune fiche propriétaire.
-    const created = await db.transaction(async (tx: Transaction) => {
-      const [user] = await tx
-        .insert(users)
-        .values({ email: owner.email, passwordHash, role: "OWNER", resetPasswordTokenHash, resetPasswordExpiresAt })
-        .returning();
-      await tx.update(owners).set({ userId: user.id }).where(eq(owners.id, owner.id));
-      return user;
-    });
-    targetUserId = created.id;
   }
 
   const [settings] = await db

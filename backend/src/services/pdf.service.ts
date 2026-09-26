@@ -861,8 +861,8 @@ export function generateCrgHtml(data: CrgExportData): string {
       <tr class="total-row">
         <td>Total ${escapeHtml(currency)}</td>
         <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalLoyersByCurrency[currency] ?? 0, currency))}</td>
-        <td style="text-align:right;">${data.totalChargesByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
-        <td style="text-align:right;">${data.totalCommissionByCurrency[currency] ?? 0} ${escapeHtml(currency)}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalChargesByCurrency[currency] ?? 0, currency))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalCommissionByCurrency[currency] ?? 0, currency))}</td>
         <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalNetByCurrency[currency] ?? 0, currency))}</td>
       </tr>`
         )

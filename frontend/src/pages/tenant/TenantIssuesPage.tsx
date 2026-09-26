@@ -1,7 +1,7 @@
 import { Camera } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
 import Badge from "../../components/Badge";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport } from "../../types";
@@ -44,7 +44,21 @@ export default function TenantIssuesPage() {
 
   useEffect(load, []);
 
+  // Sans ce contrôle, une photo trop volumineuse (fréquent depuis un
+  // téléphone récent, en pleine résolution) partait quand même vers le
+  // serveur, qui la refuse (MAX_UPLOAD_SIZE_MB, voir middleware/upload.ts
+  // côté backend) — jusqu'à DELAI_UPLOAD_MS (60s) d'attente sur une connexion
+  // mobile lente pour un échec qu'on pouvait détecter instantanément.
+  function fichierTropVolumineux(file: File): boolean {
+    return file.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024;
+  }
+
   function handlePhoto(file: File | null) {
+    if (file && fichierTropVolumineux(file)) {
+      setError(t("tenant.issues.photoTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
+      return;
+    }
+    setError(null);
     setPhoto(file);
     setPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -53,6 +67,13 @@ export default function TenantIssuesPage() {
   }
 
   function handleExtraPhoto(file: File | null) {
+    if (file && fichierTropVolumineux(file)) {
+      // alert() et non setError() : ce mini-formulaire (ajout d'une photo à
+      // un incident déjà existant) n'a pas de zone d'erreur dédiée — c'est le
+      // même choix que handleAddExtraPhoto ci-dessous pour ses propres échecs.
+      alert(t("tenant.issues.photoTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
+      return;
+    }
     setExtraPhoto(file);
     setExtraPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev);

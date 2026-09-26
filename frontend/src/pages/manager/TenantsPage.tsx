@@ -26,6 +26,7 @@ export default function TenantsPage() {
   const [portalTenant, setPortalTenant] = useState<Tenant | null>(null);
   const [portalPassword, setPortalPassword] = useState("");
   const [portalMsg, setPortalMsg] = useState<string | null>(null);
+  const [creatingPortal, setCreatingPortal] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -155,14 +156,17 @@ export default function TenantsPage() {
 
   async function handleCreatePortal(e: React.FormEvent) {
     e.preventDefault();
-    if (!portalTenant) return;
+    if (!portalTenant || creatingPortal) return;
     setPortalMsg(null);
+    setCreatingPortal(true);
     try {
       await api.post(`/tenants/${portalTenant.id}/portal-account`, { password: portalPassword });
       setPortalMsg(t("manager.tenants.portalSuccess"));
       load();
     } catch (err) {
       setPortalMsg(apiErrorMessage(err));
+    } finally {
+      setCreatingPortal(false);
     }
   }
 
@@ -245,8 +249,12 @@ export default function TenantsPage() {
               <label htmlFor="tenant-tempPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.tempPassword")}</label>
               <input id="tenant-tempPassword" required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
-            <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
-              {t("manager.tenants.createAccess")}
+            <button
+              type="submit"
+              disabled={creatingPortal}
+              className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg"
+            >
+              {creatingPortal ? t("common.actions.saving") : t("manager.tenants.createAccess")}
             </button>
             <button type="button" onClick={() => { setPortalTenant(null); setPortalMsg(null); }} className="text-sm text-slate-500 px-2 py-2">
               {t("common.actions.close")}

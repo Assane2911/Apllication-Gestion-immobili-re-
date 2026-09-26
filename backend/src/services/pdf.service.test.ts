@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { generateLeaseHtml, generateReceiptHtml, generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
+import { CrgExportData, generateCrgHtml, generateLeaseHtml, generateReceiptHtml, generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
+import { formaterMontant } from "../utils/montant";
 
 // fr-FR sépare les milliers par une espace fine insécable (U+202F). Les
 // documents contractuels — quittance, bail — écrivaient jusqu'ici le montant
@@ -247,5 +248,49 @@ describe("generateLeaseHtml", () => {
     // "sig-img" apparaît dans la feuille de style : on vérifie l'absence de la
     // balise elle-même, pas de la classe CSS.
     expect(html).not.toContain("<img");
+  });
+});
+
+describe("generateCrgHtml", () => {
+  const baseCrg: CrgExportData = {
+    agencyName: "Agence Teranga",
+    ownerName: "Fatou Diop",
+    managementFeeRate: 10,
+    month: 6,
+    year: 2026,
+    properties: [
+      {
+        propertyId: "prop-1",
+        propertyTitle: "Villa Ngor",
+        currency: "EUR",
+        loyersEncaisses: 250000,
+        chargesDeduites: 1234.5,
+        commission: 25000,
+        netAReverser: 223765.5,
+      },
+    ],
+    totalLoyersByCurrency: { EUR: 250000 },
+    totalChargesByCurrency: { EUR: 1234.5 },
+    totalCommissionByCurrency: { EUR: 25000 },
+    totalNetByCurrency: { EUR: 223765.5 },
+  };
+
+  /**
+   * Régression : la ligne de TOTAL (une par devise, en bas du tableau)
+   * concaténait charges et commission telles quelles (`1234.5 EUR`) alors que
+   * les lignes PAR BIEN juste au-dessus, et les colonnes loyers/net de cette
+   * même ligne de total, passaient déjà par formaterMontant (séparateur de
+   * milliers, symbole de devise) — un document envoyé aux propriétaires
+   * affichait donc un format différent selon la colonne.
+   */
+  it("formate la ligne de total (charges et commission) comme les lignes par bien, pas en chiffres bruts", () => {
+    const html = generateCrgHtml(baseCrg);
+
+    expect(html).toContain(formaterMontant(250000, "EUR"));
+    expect(html).toContain(formaterMontant(1234.5, "EUR"));
+    expect(html).toContain(formaterMontant(25000, "EUR"));
+    expect(html).toContain(formaterMontant(223765.5, "EUR"));
+    expect(html).not.toContain("1234.5 EUR");
+    expect(html).not.toContain("25000 EUR");
   });
 });

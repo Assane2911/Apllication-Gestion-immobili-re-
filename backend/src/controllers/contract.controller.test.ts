@@ -428,6 +428,47 @@ describe("PUT /api/contracts/:id — revalidation", () => {
     expect(res.status).toBe(200);
     expect(res.body.currency).toBe("XOF");
   });
+
+  /**
+   * Régression : generateInvoicesForContract calcule le montant de chaque
+   * facture au moment où elle est ÉMISE, à partir du loyer alors en
+   * vigueur — il ne revient jamais sur celles déjà émises. Corriger le loyer
+   * d'un bail pas encore signé laissait donc les factures déjà générées sur
+   * l'ANCIEN montant, sans qu'aucun signal n'alerte le gestionnaire. Même
+   * garde-fou que pour la devise ci-dessus, et pour la même raison.
+   */
+  it("refuse de modifier le loyer d'un contrat ayant déjà des factures", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { rent: 500 });
+    await createInvoice(contract.id, { amount: 500, status: "PENDING" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ rent: 800 });
+
+    expect(res.status).toBe(409);
+    const [inchangé] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(inchangé.rent).toBe(500);
+  });
+
+  it("autorise la correction du loyer tant qu'aucune facture (autre qu'annulée) n'existe", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { rent: 500 });
+    await createInvoice(contract.id, { amount: 500, status: "CANCELLED" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ rent: 800 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.rent).toBe(800);
+  });
 });
 
 describe("POST /api/contracts/:id/sign", () => {

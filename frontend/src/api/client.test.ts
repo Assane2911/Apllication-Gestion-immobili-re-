@@ -47,6 +47,26 @@ describe("apiErrorMessage", () => {
     expect(apiErrorMessage(new Error("boom"))).toBe("Une erreur inattendue est survenue");
     expect(apiErrorMessage("chaine quelconque")).toBe("Une erreur inattendue est survenue");
   });
+
+  /**
+   * Régression : sans réponse serveur (le serveur n'a jamais été atteint),
+   * `err.message` retombait sur le texte brut d'axios ("Network Error",
+   * "timeout of 20000ms exceeded") — en ANGLAIS, quelle que soit la langue
+   * choisie par l'utilisateur, faute de champ `error` serveur à traduire.
+   */
+  it("traduit une erreur réseau (serveur injoignable) plutôt que d'afficher le texte brut d'axios", () => {
+    const err = new AxiosError("Network Error", "ERR_NETWORK");
+    expect(apiErrorMessage(err)).toBe(
+      "Impossible de contacter le serveur. Vérifiez votre connexion internet et réessayez."
+    );
+  });
+
+  it("traduit un timeout plutôt que d'afficher le texte brut d'axios", () => {
+    const err = new AxiosError("timeout of 20000ms exceeded", "ECONNABORTED");
+    expect(apiErrorMessage(err)).toBe(
+      "Le serveur met trop de temps à répondre. Vérifiez votre connexion et réessayez."
+    );
+  });
 });
 
 describe("apiErrorCode", () => {

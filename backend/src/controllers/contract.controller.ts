@@ -272,6 +272,31 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     }
   }
 
+  // Même garde-fou que pour la devise ci-dessus, et pour la même raison :
+  // generateInvoicesForContract calcule le montant de chaque facture au
+  // moment où elle est ÉMISE, à partir du loyer alors en vigueur — il ne
+  // revient jamais sur celles déjà émises. Une correction de loyer sur un
+  // bail pas encore signé (seul cas atteignable ici, voir CHAMPS_CONTRACTUELS
+  // ci-dessus) laissait donc les factures déjà générées sur l'ANCIEN montant,
+  // sans qu'aucun signal n'alerte le gestionnaire. On refuse plutôt que de
+  // deviner (annuler puis régénérer relève d'une décision du gestionnaire,
+  // pas d'un recalcul automatique — même principe que le reste de ce
+  // contrôleur pour les données locatives).
+  const changeRent = body.rent !== undefined && body.rent !== existing.rent;
+  if (changeRent) {
+    const [factureExistante] = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(and(eq(invoices.contractId, existing.id), ne(invoices.status, "CANCELLED")))
+      .limit(1);
+    if (factureExistante) {
+      throw new ApiError(
+        409,
+        "Impossible de modifier le loyer d'un contrat ayant déjà des factures : elles resteraient calculées sur l'ancien montant. Annulez-les d'abord si elles ne sont pas encore payées, puis modifiez le loyer."
+      );
+    }
+  }
+
   // Tout ou rien, comme dans deleteContract. Clore un bail et reliberer le
   // bien sont UNE decision : en deux ecritures separees, l'echec de la seconde
   // laissait un contrat termine sur un bien qui reste OCCUPIED — donc invisible

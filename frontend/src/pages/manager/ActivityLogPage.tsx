@@ -1,7 +1,7 @@
 import { Building2, Clock, FileText, Receipt, Wrench, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { TableRowSkeleton } from "../../components/Skeleton";
 import type { ActivityLogEntry } from "../../types";
@@ -33,25 +33,37 @@ export default function ActivityLogPage() {
     });
   }
 
-  function load(type: string) {
+  function load(type: string, signal?: AbortSignal) {
     setLoading(true);
     api
       .get<ActivityLogEntry[]>("/activity-log", {
         params: type !== "ALL" ? { entityType: type } : {},
+        signal,
       })
       .then((res) => {
         setLogs(liste<ActivityLogEntry>(res.data));
         setLoadError(null);
+        setLoading(false);
       })
       // Sans ce .catch(), un échec réseau laissait logs à [] : l'utilisateur
       // voyait juste "aucune activité" sans savoir que le chargement avait
       // échoué (seule page manager dans ce cas — voir IssuesPage.tsx pour le
       // même schéma bandeau d'erreur + retry appliqué ici).
-      .catch((err) => setLoadError(apiErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
+        setLoadError(apiErrorMessage(err));
+        setLoading(false);
+      });
   }
 
-  useEffect(() => load(entityType), [entityType]);
+  // Sans AbortController, changer vite de filtre (ALL -> tenant -> contract)
+  // pouvait afficher les entrées d'un mauvais filtre si une réponse arrivait
+  // après une autre plus récente — même schéma que MessagesPage.tsx.
+  useEffect(() => {
+    const controller = new AbortController();
+    load(entityType, controller.signal);
+    return () => controller.abort();
+  }, [entityType]);
 
   return (
     <div className="space-y-6">

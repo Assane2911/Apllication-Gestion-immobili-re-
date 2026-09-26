@@ -83,6 +83,86 @@ describe("POST /api/owners", () => {
   });
 });
 
+/**
+ * Régression : ces coordonnées bancaires servent à un VRAI virement de
+ * reversement au propriétaire (voir CRG), pas à un simple affichage — la
+ * même validation existait déjà côté agence (agency.controller.ts) mais pas
+ * ici. Une faute de frappe (chiffre inversé, BIC tronqué) ne serait détectée
+ * qu'au premier virement resté sans suite.
+ */
+describe("POST/PUT /api/owners — IBAN / BIC", () => {
+  it("enregistre un IBAN/BIC valides, normalisés (espaces retirés, majuscules)", async () => {
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/owners")
+      .set(authHeader(tokenFor(manager)))
+      .send({
+        firstName: "Fatou",
+        lastName: "Diop",
+        phone: "+221778422993",
+        email: "fatou-iban@test.local",
+        iban: "fr76 3000 6000 0112 3456 7890 189",
+        bic: "agrifrpp",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.iban).toBe("FR7630006000011234567890189");
+    expect(res.body.bic).toBe("AGRIFRPP");
+  });
+
+  it("rejette (400) un IBAN dont la clé de contrôle est fausse", async () => {
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/owners")
+      .set(authHeader(tokenFor(manager)))
+      .send({
+        firstName: "Fatou",
+        lastName: "Diop",
+        phone: "+221778422993",
+        email: "fatou-badiban@test.local",
+        // Deux chiffres inversés au milieu par rapport à un IBAN réel.
+        iban: "FR76 3000 6000 0112 3456 7809 189",
+      });
+
+    expect(res.status).toBe(400);
+    const rows = await testDb.select().from(owners).where(eq(owners.email, "fatou-badiban@test.local"));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("rejette (400) un BIC de mauvaise longueur", async () => {
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/owners")
+      .set(authHeader(tokenFor(manager)))
+      .send({
+        firstName: "Fatou",
+        lastName: "Diop",
+        phone: "+221778422993",
+        email: "fatou-badbic@test.local",
+        bic: "AGRIFR",
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejette (400) un IBAN invalide lors d'une mise à jour", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { iban: "FR7630006000011234567890189" });
+
+    const res = await request(app)
+      .put(`/api/owners/${owner.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ iban: "FR76 3000 6000 0112 3456 7809 189" });
+
+    expect(res.status).toBe(400);
+    const [intact] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
+    expect(intact.iban).toBe("FR7630006000011234567890189");
+  });
+});
+
 describe("GET /api/owners/:id", () => {
   it("refuse l'accès à la fiche d'un propriétaire d'un autre gestionnaire", async () => {
     const owner = await createOwner((await createManager()).id);
@@ -260,6 +340,51 @@ describe("POST /api/owners/:id/invite", () => {
     const manager = await createManager();
     const owner = await createOwner(manager.id, { email: "deja-utilise@test.local" });
     await createManager({ email: "deja-utilise@test.local" });
+
+    const res = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+  });
+
+  /**
+   * Régression : deleteOwner ne supprime jamais le compte de connexion
+   * "portail" — voir deleteMyAccount (auth.controller.ts), c'est une identité
+   * qui appartient à la personne, pas à l'agence. Mais users.email est
+   * UNIQUE : sans ce correctif, ce compte laissé derrière squattait l'email
+   * pour toujours, et plus AUCUNE agence ne pouvait jamais réinviter cette
+   * même personne — un vrai cul-de-sac opérationnel.
+   */
+  it("réutilise un compte OWNER orphelin (propriétaire précédent supprimé) plutôt que de bloquer l'email pour toujours", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { email: "reprise-owner@test.local" });
+    const [ghost] = await testDb
+      .insert(users)
+      .values({ email: "reprise-owner@test.local", passwordHash: "hash-ancien", role: "OWNER", tokenVersion: 2 })
+      .returning();
+
+    const res = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    const [updatedOwner] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
+    expect(updatedOwner.userId).toBe(ghost.id);
+
+    // L'ancienne session (jeton émis avant la réattribution) ne doit pas
+    // continuer à ouvrir l'accès à cette NOUVELLE relation.
+    const [updatedUser] = await testDb.select().from(users).where(eq(users.id, ghost.id));
+    expect(updatedUser.tokenVersion).toBe(3);
+    expect(updatedUser.resetPasswordTokenHash).not.toBeNull();
+  });
+
+  it("refuse de réutiliser un compte OWNER encore rattaché à la fiche active d'une autre agence", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { email: "conflit-owner@test.local" });
+    const autreManager = await createManager();
+    const autreOwner = await createOwner(autreManager.id);
+    const [autreUser] = await testDb
+      .insert(users)
+      .values({ email: "conflit-owner@test.local", passwordHash: "hash", role: "OWNER" })
+      .returning();
+    await testDb.update(owners).set({ userId: autreUser.id }).where(eq(owners.id, autreOwner.id));
 
     const res = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
 
