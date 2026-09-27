@@ -158,7 +158,7 @@ export default function LoginPage() {
         <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
           <Link
             to="/landing"
-            className="text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
+            className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
           >
             {t("auth.login.backToHome")}
           </Link>
@@ -279,7 +279,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <p className="mt-6 text-center text-xs text-slate-500">
+          <p className="mt-6 text-center text-xs text-slate-400">
             {t("auth.login.noAccountText")}{" "}
             <Link to="/inscription" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
               {t("auth.login.registerLink")}

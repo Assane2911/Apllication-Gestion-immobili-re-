@@ -104,7 +104,7 @@ export default function ListingLeadsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.listingLeads.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.listingLeads.subtitle")}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.listingLeads.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Link to="/annonces" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline mr-2">
@@ -158,7 +158,7 @@ export default function ListingLeadsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base">{lead.prospectName}</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{lead.listingTitle}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{lead.listingTitle}</p>
                 </div>
                 <Badge status={lead.status} />
               </div>
@@ -173,7 +173,7 @@ export default function ListingLeadsPage() {
                   {t(`manager.listingLeads.requestTypes.${lead.requestType}`)}
                 </span>
                 {lead.preferredDate && (
-                  <span className="text-slate-500 dark:text-slate-400">
+                  <span className="text-slate-600 dark:text-slate-400">
                     {t("manager.listingLeads.preferredDate")} {new Date(lead.preferredDate).toLocaleDateString(i18n.language)}
                   </span>
                 )}
@@ -185,7 +185,7 @@ export default function ListingLeadsPage() {
                 </p>
               )}
 
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              <p className="text-[11px] text-slate-600 dark:text-slate-400">
                 {new Date(lead.createdAt).toLocaleDateString(i18n.language)}
               </p>
 
@@ -205,7 +205,7 @@ export default function ListingLeadsPage() {
             </div>
 
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("manager.listingLeads.changeStatus")}</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t("manager.listingLeads.changeStatus")}</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {STATUS_OPTIONS.map((s) => (
                   <Bulle key={s} texte={t("manager.tips.leadStatus")}>
@@ -214,7 +214,7 @@ export default function ListingLeadsPage() {
                     disabled={lead.status === s}
                     className={`text-xs px-3 py-1 rounded-full border font-medium transition-all ${
                       lead.status === s
-                        ? "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600 cursor-default"
+                        ? "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600 cursor-default"
                         : "border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-600 cursor-pointer"
                     }`}
                   >

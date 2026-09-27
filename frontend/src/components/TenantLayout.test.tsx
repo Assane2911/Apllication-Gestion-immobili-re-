@@ -78,7 +78,9 @@ describe("TenantLayout — bouton de déconnexion", () => {
     expect(bouton.querySelector(".hidden")).toBeNull();
     // Style rose visible au repos (pas uniquement via une classe `hover:`),
     // pour rester reconnaissable au doigt sans interaction préalable.
-    expect(bouton.className).toMatch(/text-rose-600/);
+    // text-rose-700 (et non -600) : contraste WCAG AA insuffisant sur le fond
+    // rose-50 (voir l'audit d'accessibilité axe-core).
+    expect(bouton.className).toMatch(/text-rose-700/);
     expect(bouton.className).toMatch(/bg-rose-50/);
   });
 

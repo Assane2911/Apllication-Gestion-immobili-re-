@@ -123,7 +123,7 @@ export default function TenantDashboardPage() {
           <Home size={22} strokeWidth={1.75} aria-hidden="true" />
         </div>
         <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t("tenant.dashboard.noContract")}</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             Votre gestionnaire n'a pas encore rattaché de bail à votre compte.
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function TenantDashboardPage() {
               {/* Key Figures Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs mb-1">
+                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <CreditCard size={13} />
                     <span>{t("tenant.dashboard.monthlyRent")}</span>
                   </div>
@@ -197,7 +197,7 @@ export default function TenantDashboardPage() {
                   </p>
                 </div>
                 <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs mb-1">
+                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <ShieldCheck size={13} />
                     <span>{t("tenant.dashboard.deposit")}</span>
                   </div>
@@ -206,7 +206,7 @@ export default function TenantDashboardPage() {
                   </p>
                 </div>
                 <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs mb-1">
+                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <Calendar size={13} />
                     <span>{t("tenant.dashboard.startDate")}</span>
                   </div>
@@ -215,7 +215,7 @@ export default function TenantDashboardPage() {
                   </p>
                 </div>
                 <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs mb-1">
+                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <Clock size={13} />
                     <span>{t("tenant.dashboard.endDate")}</span>
                   </div>
@@ -233,7 +233,7 @@ export default function TenantDashboardPage() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t("tenant.dashboard.signatureTitle")}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                       {c.signedByTenantAt ? (
                         <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                           {t("tenant.dashboard.signedOn", { date: new Date(c.signedByTenantAt).toLocaleDateString(i18n.language) })}
@@ -311,7 +311,7 @@ export default function TenantDashboardPage() {
                           </p>
                           <p className="text-xs mt-0.5">
                             {insp.status === "DRAFT" ? (
-                              <span className="text-slate-500 dark:text-slate-400">{t("tenant.dashboard.inspectionAwaitingCompletion")}</span>
+                              <span className="text-slate-600 dark:text-slate-400">{t("tenant.dashboard.inspectionAwaitingCompletion")}</span>
                             ) : insp.signedByTenantAt ? (
                               <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                                 {t("tenant.dashboard.inspectionSignedByYouOn", { date: new Date(insp.signedByTenantAt).toLocaleDateString(i18n.language) })}
@@ -357,7 +357,7 @@ export default function TenantDashboardPage() {
                   </div>
                   <Link
                     to="/portail/paiements"
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs shadow-2xs hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs shadow-2xs hover:scale-[1.02] active:scale-[0.98] transition-all"
                   >
                     {t("tenant.dashboard.payNow")}
                   </Link>

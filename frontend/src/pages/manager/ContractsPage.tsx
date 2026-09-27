@@ -193,7 +193,7 @@ export default function ContractsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.contracts.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.contractCreate")}>
         <button onClick={() => setShowForm(true)} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
@@ -257,7 +257,7 @@ export default function ContractsPage() {
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("manager.contracts.create")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -268,7 +268,7 @@ export default function ContractsPage() {
       {/* Vue tableau (écrans sm et plus) */}
       <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">{t("manager.contracts.table.property")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.contracts.table.tenant")}</th>
@@ -299,7 +299,7 @@ export default function ContractsPage() {
                 </td>
                 <td className="px-4 py-3 text-xs space-y-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.contracts.agency")}</span>
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400">{t("manager.contracts.agency")}</span>
                     {c.signedByManagerAt ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
@@ -316,13 +316,13 @@ export default function ContractsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{t("manager.contracts.tenantLabel")}</span>
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400">{t("manager.contracts.tenantLabel")}</span>
                     {c.signedByTenantAt ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                       </span>
                     ) : (
-                      <span className="text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                      <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
                         <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
                       </span>
                     )}
@@ -376,13 +376,13 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractRenew")}>
                       <button
                         onClick={() => handleRenew(c)}
-                        className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                        className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                       >
                         <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renew")}
                       </button>
                       </Bulle>
                       <Bulle texte={t("manager.tips.contractEnd")}>
-                      <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
+                      <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">
                         {t("manager.contracts.doNotRenew")}
                       </button>
                       </Bulle>
@@ -390,7 +390,7 @@ export default function ContractsPage() {
                   )}
                   {c.status === "ACTIVE" && (
                     <Bulle texte={t("manager.tips.contractTerminate")}>
-                    <button onClick={() => handleTerminate(c)} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
+                    <button onClick={() => handleTerminate(c)} className="text-amber-700 dark:text-amber-400 hover:underline text-xs">
                       {t("manager.contracts.terminate")}
                     </button>
                     </Bulle>
@@ -423,13 +423,13 @@ export default function ContractsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium text-slate-900 dark:text-slate-100">{c.property?.title}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{c.tenant?.firstName} {c.tenant?.lastName}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">{c.tenant?.firstName} {c.tenant?.lastName}</p>
                 </div>
                 <Badge status={c.status} />
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(c.rent, c.currency)}</span>
-                <span className="text-slate-500 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
+                <span className="text-slate-600 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
               </div>
               {showRenewal && (
                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
@@ -437,7 +437,7 @@ export default function ContractsPage() {
                   {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                 </p>
               )}
-              <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400">
                 <span>
                   {t("manager.contracts.agency")} {c.signedByManagerAt ? (
                     <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
@@ -457,7 +457,7 @@ export default function ContractsPage() {
                       <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                     </span>
                   ) : (
-                    <span className="text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                    <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
                       <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
                     </span>
                   )}
@@ -513,7 +513,7 @@ export default function ContractsPage() {
                     </button>
                     </Bulle>
                     <Bulle texte={t("manager.tips.contractEnd")}>
-                    <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
+                    <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">
                       {t("manager.contracts.doNotRenew")}
                     </button>
                     </Bulle>
@@ -521,7 +521,7 @@ export default function ContractsPage() {
                 )}
                 {c.status === "ACTIVE" && (
                   <Bulle texte={t("manager.tips.contractTerminate")}>
-                  <button onClick={() => handleTerminate(c)} className="text-amber-600 dark:text-amber-400 hover:underline text-xs">
+                  <button onClick={() => handleTerminate(c)} className="text-amber-700 dark:text-amber-400 hover:underline text-xs">
                     {t("manager.contracts.terminate")}
                   </button>
                   </Bulle>

@@ -72,7 +72,7 @@ export default function AdminSuggestionsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t("admin.suggestions.title")}</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t("admin.suggestions.subtitle")}</p>
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.suggestions.subtitle")}</p>
       </div>
 
       {erreur && (
@@ -84,7 +84,7 @@ export default function AdminSuggestionsPage() {
 
       {/* « Aucune suggestion » ne s'affiche qu'une fois la réponse reçue :
           l'annoncer pendant le chargement donnerait une réponse fausse. */}
-      {chargement && !donnees && <p className="text-xs text-slate-500 dark:text-slate-400">{t("admin.suggestions.loading")}</p>}
+      {chargement && !donnees && <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.suggestions.loading")}</p>}
 
       {donnees && donnees.items.length === 0 && !erreur && (
         <EmptyState
@@ -105,19 +105,19 @@ export default function AdminSuggestionsPage() {
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {s.authorLabel}
-                    <span className="ml-2 text-xs font-normal text-slate-500 dark:text-slate-400">{role(s.authorRole)}</span>
+                    <span className="ml-2 text-xs font-normal text-slate-600 dark:text-slate-400">{role(s.authorRole)}</span>
                     {s.authorId === null && (
                       <span className="ml-2 text-xs font-normal text-amber-700 dark:text-amber-400">
                         {t("admin.suggestions.deletedAuthor")}
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     {new Date(s.createdAt).toLocaleString(i18n.language)}
                   </p>
                 </div>
                 <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words">{s.message}</p>
-                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
                   {s.page ? t("admin.suggestions.fromPage", { page: s.page }) : t("admin.suggestions.noPage")}
                 </p>
               </li>

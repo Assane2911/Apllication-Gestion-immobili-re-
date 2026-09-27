@@ -179,7 +179,7 @@ export default function ListingsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.listings.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.listings.count", { count: listings.length })}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.listings.count", { count: listings.length })}</p>
         </div>
         <div className="flex items-center gap-3">
           {/*
@@ -320,7 +320,7 @@ export default function ListingsPage() {
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -374,18 +374,18 @@ export default function ListingsPage() {
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   {listing.title}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1">
                   {listing.location}
                   {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
                 </p>
                 <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <span className="font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
+                  <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
                     {t(`manager.listings.types.${listing.type}`)}
                   </span>
                   <span className="font-bold text-slate-900 dark:text-slate-100">
                     {formatMoney(listing.price, listing.currency)}{" "}
                     {listing.pricePeriod === "MONTH" && (
-                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{t("manager.listings.perMonth")}</span>
+                      <span className="text-xs font-normal text-slate-600 dark:text-slate-400">{t("manager.listings.perMonth")}</span>
                     )}
                   </span>
                 </div>
@@ -403,7 +403,7 @@ export default function ListingsPage() {
               <Bulle texte={t("manager.tips.listingDelete")}>
               <button
                 onClick={() => handleDelete(listing)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 {t("common.actions.delete")}
               </button>

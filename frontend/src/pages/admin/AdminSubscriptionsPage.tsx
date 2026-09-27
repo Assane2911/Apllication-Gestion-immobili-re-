@@ -80,7 +80,7 @@ export default function AdminSubscriptionsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("admin.subscriptions.title")}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("admin.subscriptions.subtitle")}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("admin.subscriptions.subtitle")}</p>
       </div>
 
       {loadError && (
@@ -105,7 +105,7 @@ export default function AdminSubscriptionsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 uppercase text-[10px]">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
                   <th className="py-2.5">{t("admin.subscriptions.table.manager")}</th>
                   <th className="py-2.5">{t("admin.subscriptions.table.plan")}</th>
                   <th className="py-2.5">{t("admin.subscriptions.table.cycle")}</th>
@@ -124,7 +124,7 @@ export default function AdminSubscriptionsPage() {
                       {row.billingCycle === "ANNUAL" ? t("admin.subscriptions.annual") : t("admin.subscriptions.monthly")}
                     </td>
                     <td className="py-3 font-bold">{formatMoney(row.amount, row.currency)}</td>
-                    <td className="py-3 text-slate-500 dark:text-slate-400">{row.paymentRef || "—"}</td>
+                    <td className="py-3 text-slate-600 dark:text-slate-400">{row.paymentRef || "—"}</td>
                     <td className="py-3">{new Date(row.createdAt).toLocaleDateString(i18n.language)}</td>
                     <td className="py-3 text-right whitespace-nowrap">
                       <button

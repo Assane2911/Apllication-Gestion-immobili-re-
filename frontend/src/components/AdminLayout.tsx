@@ -25,7 +25,7 @@ export default function AdminLayout() {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="font-semibold text-slate-900 dark:text-slate-100">{t("components.adminLayout.title")}</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{user?.email}</p>
           </div>
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
@@ -38,7 +38,7 @@ export default function AdminLayout() {
               {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
             </button>
             </Bulle>
-            <button onClick={logout} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 underline">
+            <button onClick={logout} className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 underline">
               {t("nav.logout")}
             </button>
           </div>

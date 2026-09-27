@@ -68,7 +68,7 @@ export default function IssuesPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.issues.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {t("manager.issues.subtitle")}
           </p>
         </div>
@@ -130,19 +130,19 @@ export default function IssuesPage() {
 
                   <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{issue.description}</p>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                     <div>
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {issue.tenant?.firstName} {issue.tenant?.lastName}
                       </span>{" "}
                       • {issue.tenant?.phone}
                     </div>
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                    <span className="text-[11px] text-slate-600 dark:text-slate-400">
                       {new Date(issue.createdAt).toLocaleDateString(i18n.language)}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                     {t("manager.issues.concernedProperty")} <span className="text-slate-800 dark:text-slate-200">{issue.contract?.property?.title}</span>
                   </p>
 
@@ -164,7 +164,7 @@ export default function IssuesPage() {
 
               {/* Boutons de changement de statut */}
               <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("manager.issues.changeStatus")}</span>
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t("manager.issues.changeStatus")}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {statusOptions.map((s) => (
                     <Bulle key={s} texte={t("manager.tips.issueStatus")}>
@@ -173,7 +173,7 @@ export default function IssuesPage() {
                       disabled={issue.status === s}
                       className={`text-xs px-3 py-1 rounded-full border font-medium transition-all ${
                         issue.status === s
-                          ? "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600 cursor-default"
+                          ? "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600 cursor-default"
                           : "border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-600 cursor-pointer"
                       }`}
                     >
@@ -188,7 +188,7 @@ export default function IssuesPage() {
         })}
 
         {issues.length === 0 && (
-          <p className="text-slate-400 dark:text-slate-500 text-sm col-span-2 text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <p className="text-slate-600 dark:text-slate-400 text-sm col-span-2 text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
             {t("manager.issues.noIssuesForFilter")}
           </p>
         )}

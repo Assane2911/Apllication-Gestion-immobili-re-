@@ -94,10 +94,10 @@ export default function ChampTelephone({ id, value, onChange, required, disabled
       </div>
 
       {!pays && national ? (
-        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{t("common.phoneField.missingCountry")}</p>
+        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{t("common.phoneField.missingCountry")}</p>
       ) : compose ? (
         <p
-          className={`mt-1 text-xs ${valide ? "text-slate-500 dark:text-slate-400" : "text-amber-600 dark:text-amber-400"}`}
+          className={`mt-1 text-xs ${valide ? "text-slate-600 dark:text-slate-400" : "text-amber-700 dark:text-amber-400"}`}
         >
           {valide
             ? t("common.phoneField.willBeSaved", { numero: compose })

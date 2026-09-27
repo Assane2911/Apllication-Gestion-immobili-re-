@@ -51,7 +51,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <AlertTriangle size={26} strokeWidth={1.75} />
           </div>
           <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1.5">Une erreur est survenue</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-5">
+          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
             Quelque chose s'est mal passé de notre côté. Rechargez la page pour réessayer — si le
             problème persiste, contactez notre support.
           </p>

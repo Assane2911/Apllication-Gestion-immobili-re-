@@ -29,7 +29,7 @@ export default function StatCard({ label, value, hint, accent = "blue", icon: Ic
       <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full bg-slate-100/40 dark:bg-slate-800/20 blur-xl pointer-events-none" />
 
       <div className="flex items-start justify-between gap-3 relative z-10">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">{label}</p>
         {Icon && (
           <div className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center shadow-2xs transition-transform duration-200 group-hover:scale-105 ${accentClasses[accent]}`}>
             <Icon size={19} strokeWidth={2.2} />
@@ -39,7 +39,7 @@ export default function StatCard({ label, value, hint, accent = "blue", icon: Ic
       <p className={`mt-3 text-2xl sm:text-3xl font-bold tracking-tight transition-colors ${valueTextClasses[accent]}`}>
         {value}
       </p>
-      {hint && <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">{hint}</p>}
+      {hint && <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">{hint}</p>}
     </div>
   );
 }

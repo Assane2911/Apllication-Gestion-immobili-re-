@@ -158,7 +158,7 @@ export default function OwnersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.owners.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.owners.count", { count: owners.length })}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.owners.count", { count: owners.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.ownerCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
@@ -233,7 +233,7 @@ export default function OwnersPage() {
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -253,7 +253,7 @@ export default function OwnersPage() {
       {/* Vue tableau (écrans sm et plus) */}
       <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">{t("manager.owners.table.name")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.owners.table.phone")}</th>
@@ -271,7 +271,7 @@ export default function OwnersPage() {
               <tr key={owner.id}>
                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                   {owner.firstName} {owner.lastName}
-                  {owner.companyName && <span className="block text-xs font-normal text-slate-400 dark:text-slate-500">{owner.companyName}</span>}
+                  {owner.companyName && <span className="block text-xs font-normal text-slate-600 dark:text-slate-400">{owner.companyName}</span>}
                 </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{owner.phone}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{owner.email}</td>
@@ -281,10 +281,10 @@ export default function OwnersPage() {
                     <span
                       className={`text-xs ${
                         owner.portalStatus === "ACTIVE"
-                          ? "text-emerald-600 dark:text-emerald-400"
+                          ? "text-emerald-700 dark:text-emerald-400"
                           : owner.portalStatus === "PENDING"
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-slate-400 dark:text-slate-500"
+                            ? "text-amber-700 dark:text-amber-400"
+                            : "text-slate-600 dark:text-slate-400"
                       }`}
                     >
                       {portalStatusLabel(owner)}
@@ -301,7 +301,7 @@ export default function OwnersPage() {
                       </Bulle>
                     )}
                     {inviteMsg?.ownerId === owner.id && (
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{inviteMsg.text}</span>
+                      <span className="text-[11px] text-slate-600 dark:text-slate-400">{inviteMsg.text}</span>
                     )}
                   </div>
                 </td>
@@ -330,9 +330,9 @@ export default function OwnersPage() {
               <div key={owner.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-slate-900 dark:text-slate-100">{owner.firstName} {owner.lastName}</p>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">{owner.managementFeeRate}%</span>
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400 shrink-0">{owner.managementFeeRate}%</span>
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                   <p>{owner.phone}</p>
                   <p>{owner.email}</p>
                 </div>
@@ -341,10 +341,10 @@ export default function OwnersPage() {
                     <span
                       className={
                         owner.portalStatus === "ACTIVE"
-                          ? "text-emerald-600 dark:text-emerald-400"
+                          ? "text-emerald-700 dark:text-emerald-400"
                           : owner.portalStatus === "PENDING"
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-slate-400 dark:text-slate-500"
+                            ? "text-amber-700 dark:text-amber-400"
+                            : "text-slate-600 dark:text-slate-400"
                       }
                     >
                       {portalStatusLabel(owner)}
@@ -364,7 +364,7 @@ export default function OwnersPage() {
                   </div>
                 </div>
                 {inviteMsg?.ownerId === owner.id && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{inviteMsg.text}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">{inviteMsg.text}</p>
                 )}
               </div>
             ))}

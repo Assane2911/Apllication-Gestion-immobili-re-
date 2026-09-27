@@ -117,7 +117,7 @@ export default function AgencySettingsPage() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.agencySettings.title")}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
           {t("manager.agencySettings.subtitle")}
         </p>
       </div>
@@ -223,7 +223,7 @@ export default function AgencySettingsPage() {
               <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 {t("manager.agencySettings.fields.bankSectionTitle")}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                 {t("manager.agencySettings.fields.bankSectionHint")}
               </p>
             </div>
@@ -292,7 +292,7 @@ export default function AgencySettingsPage() {
           </p>
         )}
         {echeances && echeances.total === 0 && (
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-3">
             {t("manager.agencySettings.retention.none")}
           </p>
         )}

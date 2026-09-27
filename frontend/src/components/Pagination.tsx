@@ -14,7 +14,7 @@ export default function Pagination({ page, totalPages, total, onPageChange }: Pa
 
   return (
     <div className="flex items-center justify-between gap-3 flex-wrap px-1">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{t("common.pagination.totalItems", { count: total })}</p>
+      <p className="text-xs text-slate-600 dark:text-slate-400">{t("common.pagination.totalItems", { count: total })}</p>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -24,7 +24,7 @@ export default function Pagination({ page, totalPages, total, onPageChange }: Pa
         >
           {t("common.pagination.previous")}
         </button>
-        <span className="text-xs text-slate-500 dark:text-slate-400 px-1 whitespace-nowrap">
+        <span className="text-xs text-slate-600 dark:text-slate-400 px-1 whitespace-nowrap">
           {t("common.pagination.pageOf", { page, totalPages })}
         </span>
         <button

@@ -147,7 +147,7 @@ export default function TenantIssuesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("tenant.issues.title")}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
           {t("tenant.issues.subtitle")}
         </p>
       </div>
@@ -223,7 +223,7 @@ export default function TenantIssuesPage() {
               onChange={(e) => handlePhoto(e.target.files?.[0] ?? null)}
               className="text-xs text-slate-700 dark:text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white hover:file:bg-brand-700 cursor-pointer"
             />
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] text-slate-600 dark:text-slate-400">
               {t("tenant.issues.photoHint")}
             </span>
           </div>
@@ -299,7 +299,7 @@ export default function TenantIssuesPage() {
                       </div>
                     )}
 
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 pt-1">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 pt-1">
                       {t("tenant.issues.reportedOn", {
                         date: new Date(issue.createdAt).toLocaleDateString(i18n.language),
                         time: new Date(issue.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" }),
@@ -333,7 +333,7 @@ export default function TenantIssuesPage() {
                             setExtraPhoto(null);
                             setExtraPreview(null);
                           }}
-                          className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-1"
+                          className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-1"
                         >
                           {t("common.actions.cancel")}
                         </button>
@@ -362,7 +362,7 @@ export default function TenantIssuesPage() {
             );
           })}
           {issues.length === 0 && (
-            <p className="text-slate-400 dark:text-slate-500 text-sm col-span-2 text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p className="text-slate-600 dark:text-slate-400 text-sm col-span-2 text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
               {t("tenant.issues.noIssues")}
             </p>
           )}

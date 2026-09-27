@@ -269,7 +269,7 @@ export default function ExpensesPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.expenses.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {t("manager.expenses.subtitle")}
           </p>
         </div>
@@ -347,7 +347,7 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.expenses.expenseLines", { count: total })}</p>
+        <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.expenses.expenseLines", { count: total })}</p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
@@ -360,7 +360,7 @@ export default function ExpensesPage() {
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
             className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
-          <span className="text-xs text-slate-500 dark:text-slate-400">{t("manager.expenses.to")}</span>
+          <span className="text-xs text-slate-600 dark:text-slate-400">{t("manager.expenses.to")}</span>
           <input
             type="date"
             aria-label={t("manager.expenses.fields.reportDateTo")}
@@ -382,7 +382,7 @@ export default function ExpensesPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">{t("manager.expenses.table.date")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.expenses.table.property")}</th>
@@ -411,7 +411,7 @@ export default function ExpensesPage() {
                 </td>
                 <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{exp.title}</td>
                 <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400">-{formatMoney(exp.amount, exp.currency)}</td>
-                <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
                   <Bulle texte={t("manager.tips.expenseDelete")}>
                   <button
@@ -426,7 +426,7 @@ export default function ExpensesPage() {
             ))}
             {expenses.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center text-slate-400 dark:text-slate-500 py-8 text-sm">
+                <td colSpan={7} className="text-center text-slate-600 dark:text-slate-400 py-8 text-sm">
                   {t("manager.expenses.noExpenses")}
                 </td>
               </tr>
@@ -444,7 +444,7 @@ export default function ExpensesPage() {
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.expenses.modalTitle")}</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                 aria-label={t("common.actions.close")}
               >
                 <X size={18} />
@@ -545,7 +545,7 @@ export default function ExpensesPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-2"
+                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-2"
                 >
                   {t("common.actions.cancel")}
                 </button>

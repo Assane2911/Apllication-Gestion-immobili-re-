@@ -91,7 +91,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               {erreurImpression
                 ? t("components.documentModal.printFailed")
                 : t("components.documentModal.subtitle")}
@@ -117,7 +117,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
 
         <div className="flex-1 bg-slate-100 dark:bg-slate-950 p-4 relative overflow-hidden">
           {loading && (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm">
+            <div className="absolute inset-0 flex items-center justify-center text-slate-600 dark:text-slate-400 text-sm">
               {t("components.documentModal.loading")}
             </div>
           )}

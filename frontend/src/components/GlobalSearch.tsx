@@ -105,9 +105,9 @@ export default function GlobalSearch() {
       {open && query.trim().length >= 2 && (
         <div className="absolute left-0 right-0 mt-2 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">
           {loading ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">{t("components.globalSearch.searching")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-6">{t("components.globalSearch.searching")}</p>
           ) : results.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">{t("components.globalSearch.noResults", { query })}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-6">{t("components.globalSearch.noResults", { query })}</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {results.map((r) => {
@@ -121,7 +121,7 @@ export default function GlobalSearch() {
                       <Icon size={16} className="mt-0.5 text-brand-600 dark:text-brand-400 shrink-0" />
                       <span className="min-w-0">
                         <span className="block text-sm text-slate-900 dark:text-slate-100 font-medium truncate">{r.title}</span>
-                        <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">
+                        <span className="block text-xs text-slate-600 dark:text-slate-400 truncate">
                           {t(`components.globalSearch.types.${r.type}`)} • {r.subtitle}
                         </span>
                       </span>

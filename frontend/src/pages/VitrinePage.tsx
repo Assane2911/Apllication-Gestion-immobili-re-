@@ -133,7 +133,7 @@ export default function VitrinePage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t("vitrine.title")}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">{t("vitrine.subtitle")}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-2xl">{t("vitrine.subtitle")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -171,7 +171,7 @@ export default function VitrinePage() {
         )}
 
         {!loading && listings.length === 0 && !loadError && (
-          <p className="text-center py-16 text-sm text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+          <p className="text-center py-16 text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
             {t("vitrine.empty")}
           </p>
         )}
@@ -201,12 +201,12 @@ export default function VitrinePage() {
                 <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-1">
                   {listing.title}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1">
                   {listing.location}
                   {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
                 </p>
                 <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <span className="font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
+                  <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
                     {t(`manager.listings.types.${listing.type}`)}
                   </span>
                   <span className="font-bold text-slate-900 dark:text-slate-100">
@@ -228,7 +228,7 @@ export default function VitrinePage() {
             >
               {t("common.pagination.previous")}
             </button>
-            <span className="text-xs text-slate-500 dark:text-slate-400 px-1">{t("common.pagination.pageOf", { page, totalPages })}</span>
+            <span className="text-xs text-slate-600 dark:text-slate-400 px-1">{t("common.pagination.pageOf", { page, totalPages })}</span>
             <button
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -263,7 +263,7 @@ export default function VitrinePage() {
             <div className="p-6 space-y-4">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{selected.title}</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                   {selected.location}
                   {selected.country ? ` · ${countryLabel(selected.country, i18n.language)}` : ""}
                 </p>
@@ -286,14 +286,14 @@ export default function VitrinePage() {
                 <span className="ml-auto font-bold text-lg text-slate-900 dark:text-slate-100">
                   {new Intl.NumberFormat("fr-FR").format(selected.price)} {selected.currency}
                   {selected.pricePeriod === "MONTH" && (
-                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400"> {t("manager.listings.perMonth")}</span>
+                    <span className="text-xs font-normal text-slate-600 dark:text-slate-400"> {t("manager.listings.perMonth")}</span>
                   )}
                 </span>
               </div>
 
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
                 {leadSuccess ? (
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium text-center py-4">{t("vitrine.leadForm.success")}</p>
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium text-center py-4">{t("vitrine.leadForm.success")}</p>
                 ) : (
                   <form onSubmit={handleLeadSubmit} className="space-y-3">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t("vitrine.leadForm.title")}</h3>

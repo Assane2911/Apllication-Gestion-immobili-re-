@@ -130,7 +130,7 @@ export default function SignatureModal({ signUrl, title, onSuccess, onClose }: S
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.signatureModal.title")}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{title}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{title}</p>
           </div>
           <button
             onClick={onClose}

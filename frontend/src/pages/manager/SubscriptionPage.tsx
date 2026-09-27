@@ -173,7 +173,7 @@ export default function SubscriptionPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.subscription.title")}</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
           {t("manager.subscription.subtitle")}
         </p>
       </div>
@@ -227,7 +227,7 @@ export default function SubscriptionPage() {
       {/* État actuel de l'abonnement */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <span className="text-xs uppercase font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
+          <span className="text-xs uppercase font-semibold text-slate-600 dark:text-slate-400 tracking-wider">
             {t("manager.subscription.currentStatus")}
           </span>
           <div className="flex items-center gap-3 mt-1">
@@ -254,7 +254,7 @@ export default function SubscriptionPage() {
                 : t("manager.subscription.expired")}
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             {sub?.isTrialActive && sub.trialEndsAt
               ? t("manager.subscription.trialEndsAt", {
                   date: new Date(sub.trialEndsAt).toLocaleDateString(i18n.language, {
@@ -277,7 +277,7 @@ export default function SubscriptionPage() {
 
         {sub?.status === "TRIAL" && (
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center md:text-right">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.subscription.evaluationTime")}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.subscription.evaluationTime")}</p>
             <p className="text-2xl font-black text-brand-600 dark:text-brand-400">
               {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{t("manager.subscription.days")}</span>
             </p>
@@ -322,7 +322,7 @@ export default function SubscriptionPage() {
             silencieusement sur l'une des deux — ce message évite que ça
             passe pour une erreur d'affichage. */}
         {planReference && planReference.currency !== currency && (
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400 max-w-md">
+          <p className="text-center text-xs text-slate-600 dark:text-slate-400 max-w-md">
             {t("manager.subscription.unsupportedCurrencyNotice", { currency: planReference.currency })}
           </p>
         )}
@@ -352,14 +352,14 @@ export default function SubscriptionPage() {
 
               <div className="mb-4">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{plan.name}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 min-h-[32px]">{plan.description}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 min-h-[32px]">{plan.description}</p>
               </div>
 
               <div className="mb-6 flex items-baseline gap-1">
                 <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{formatMoney(price, plan.currency)}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t("manager.subscription.perMonth")}</span>
+                <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("manager.subscription.perMonth")}</span>
                 {billingCycle === "ANNUAL" && (
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-1">
+                  <span className="text-[11px] text-slate-600 dark:text-slate-400 ml-1">
                     {t("manager.subscription.billedAnnually", { amount: formatMoney(plan.annualPrice, plan.currency) })}
                   </span>
                 )}
@@ -380,7 +380,7 @@ export default function SubscriptionPage() {
                 disabled={isCurrentPlan}
                 className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm ${
                   isCurrentPlan
-                    ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                    ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
                     : plan.popular
                     ? "bg-brand-600 hover:bg-brand-700 text-white hover:shadow"
                     : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white hover:shadow"
@@ -407,7 +407,7 @@ export default function SubscriptionPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: selectedPlan.name })}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                   {t("manager.subscription.amountToPay")}{" "}
                   <strong>
                     {billingCycle === "ANNUAL"
@@ -418,7 +418,7 @@ export default function SubscriptionPage() {
               </div>
               <button
                 onClick={() => setSelectedPlan(null)}
-                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                 aria-label={t("common.actions.close")}
               >
                 <X size={18} />
@@ -448,7 +448,7 @@ export default function SubscriptionPage() {
                     />
                     <div>
                       <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{m.label}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{m.hint}</p>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">{m.hint}</p>
                     </div>
                   </label>
                 ))}
@@ -509,7 +509,7 @@ export default function SubscriptionPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 uppercase text-[10px]">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
                   <th className="py-2.5">{t("manager.subscription.historyTable.date")}</th>
                   <th className="py-2.5">{t("manager.subscription.historyTable.plan")}</th>
                   <th className="py-2.5">{t("manager.subscription.historyTable.cycle")}</th>

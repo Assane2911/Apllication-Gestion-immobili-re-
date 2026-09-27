@@ -64,7 +64,7 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
             <h3 className="text-lg font-bold text-red-700 dark:text-red-400">
               {t("components.deleteAccountModal.title")}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
               {t("components.deleteAccountModal.subtitle")}
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("components.deleteAccountModal.googleLabel")}
               </label>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                 {t("components.deleteAccountModal.googleHint")}
               </p>
               <GoogleSignInButton
@@ -123,7 +123,7 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
                 locale={i18n.language}
               />
               {googleCredential && (
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
                   {t("components.deleteAccountModal.googleConfirmed")}
                 </p>
               )}

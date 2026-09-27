@@ -150,7 +150,7 @@ export default function RegisterPage() {
         <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
           <Link
             to="/landing"
-            className="text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
+            className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
           >
             {t("auth.register.backToHome")}
           </Link>
@@ -226,7 +226,7 @@ export default function RegisterPage() {
                       <EyeIcon off={showPassword} />
                     </button>
                   </div>
-                  <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
+                  <p className="mt-1.5 text-[11px] text-slate-400">{t("auth.register.passwordHint")}</p>
                 </div>
 
                 <div>
@@ -280,7 +280,7 @@ export default function RegisterPage() {
                       locale={i18n.language}
                     />
                   </div>
-                  {googleLoading && <p className="mt-3 text-center text-xs text-slate-500">{t("auth.register.submitting")}</p>}
+                  {googleLoading && <p className="mt-3 text-center text-xs text-slate-400">{t("auth.register.submitting")}</p>}
                   {googleError && (
                     <p className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                       {googleError}
@@ -289,7 +289,7 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              <p className="mt-5 text-[11px] text-slate-500 text-center leading-relaxed">
+              <p className="mt-5 text-[11px] text-slate-400 text-center leading-relaxed">
                 {t("auth.register.legalPrefix")}{" "}
                 <Link to="/cgu" className="text-brand-400 hover:text-brand-300 transition-colors">
                   {t("auth.register.legalTerms")}
@@ -301,7 +301,7 @@ export default function RegisterPage() {
                 {t("auth.register.legalSuffix")}
               </p>
 
-              <p className="mt-6 text-center text-xs text-slate-500">
+              <p className="mt-6 text-center text-xs text-slate-400">
                 {t("auth.register.alreadyHaveAccount")}{" "}
                 <Link to="/login" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
                   {t("auth.register.loginLink")}

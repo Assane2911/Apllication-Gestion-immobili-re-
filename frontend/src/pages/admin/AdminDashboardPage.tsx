@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("admin.dashboard.title")}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("admin.dashboard.subtitle")}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("admin.dashboard.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -142,7 +142,7 @@ export default function AdminDashboardPage() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("admin.dashboard.mrrByPlan.title")}</h3>
           {mrr.contributors === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 py-10 text-center">{t("admin.dashboard.mrrByPlan.empty")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 py-10 text-center">{t("admin.dashboard.mrrByPlan.empty")}</p>
           ) : (
             <div className="space-y-6">
               {blocsDevises.map((bloc) => {
@@ -153,7 +153,7 @@ export default function AdminDashboardPage() {
                 return (
                   <div key={bloc.currency} className="space-y-4">
                     {blocsDevises.length > 1 && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                         {bloc.currency}
                       </p>
                     )}
@@ -164,7 +164,7 @@ export default function AdminDashboardPage() {
                         <div key={plan}>
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="font-semibold text-slate-700 dark:text-slate-300">{plan}</span>
-                            <span className="text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+                            <span className="text-slate-600 dark:text-slate-400 font-mono tabular-nums">
                               {formatMontant(amount, bloc.currency)}
                             </span>
                           </div>
@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("admin.dashboard.trialsEndingSoon.title")}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t("admin.dashboard.trialsEndingSoon.subtitle")}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.dashboard.trialsEndingSoon.subtitle")}</p>
           </div>
           {trialsEndingSoon.length === 0 ? (
             <EmptyState icon={Clock3} title={t("admin.dashboard.trialsEndingSoon.empty")} />
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 uppercase text-[10px]">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
                     <th className="py-2.5">{t("admin.dashboard.trialsEndingSoon.manager")}</th>
                     <th className="py-2.5 text-right" />
                   </tr>
@@ -205,7 +205,7 @@ export default function AdminDashboardPage() {
                     <tr key={trial.userId} className="text-slate-700 dark:text-slate-300">
                       <td className="py-3">
                         <p className="font-semibold">{trial.agencyName ?? t("admin.dashboard.trialsEndingSoon.noAgencyName")}</p>
-                        <p className="text-slate-500 dark:text-slate-400">{trial.email}</p>
+                        <p className="text-slate-600 dark:text-slate-400">{trial.email}</p>
                       </td>
                       <td className="py-3 text-right">
                         <span

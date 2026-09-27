@@ -18,7 +18,7 @@ export default function TenantMessagesPage() {
   } = useConversationThread("TENANT");
 
   if (loading) {
-    return <p className="text-slate-500 dark:text-slate-400 text-sm">{t("tenant.messages.loading")}</p>;
+    return <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.messages.loading")}</p>;
   }
 
   if (error) {
@@ -38,7 +38,7 @@ export default function TenantMessagesPage() {
   if (conversations.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-8 text-center">
-        <p className="text-slate-500 dark:text-slate-400 text-sm">{t("tenant.messages.noActiveContract")}</p>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.messages.noActiveContract")}</p>
       </div>
     );
   }
@@ -47,7 +47,7 @@ export default function TenantMessagesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("tenant.messages.title")}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("tenant.messages.subtitle")}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("tenant.messages.subtitle")}</p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-[600px] flex flex-col">
@@ -55,7 +55,7 @@ export default function TenantMessagesPage() {
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("tenant.messages.headerTitle")}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               {t("tenant.messages.housing", { property: activeContract?.property?.title || t("tenant.messages.yourApartment") })}
             </p>
           </div>
@@ -68,13 +68,13 @@ export default function TenantMessagesPage() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30 dark:bg-slate-950/20">
           {loadingMessages && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">{t("tenant.messages.loadingMessages")}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-4">{t("tenant.messages.loadingMessages")}</p>
           )}
           {messages.map((m) => {
             const isMe = m.senderRole === "TENANT";
             return (
               <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 mb-1">
+                <span className="text-[10px] text-slate-600 dark:text-slate-400 mb-1">
                   {isMe ? t("tenant.messages.you") : t("tenant.messages.manager")} •{" "}
                   {new Date(m.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}
                 </span>
@@ -91,7 +91,7 @@ export default function TenantMessagesPage() {
             );
           })}
           {!loadingMessages && messages.length === 0 && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-12">
+            <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-12">
               {t("tenant.messages.noMessagesYet")}
             </p>
           )}

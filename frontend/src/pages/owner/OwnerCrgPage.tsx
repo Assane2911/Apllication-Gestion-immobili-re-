@@ -168,7 +168,7 @@ export default function OwnerCrgPage() {
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t("owner.crg.table.title")}</h3>
         </div>
         {crg.properties.length === 0 ? (
-          <p className="p-4 sm:p-5 text-xs text-slate-500 dark:text-slate-400">{t("owner.crg.empty")}</p>
+          <p className="p-4 sm:p-5 text-xs text-slate-600 dark:text-slate-400">{t("owner.crg.empty")}</p>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {crg.properties.map((row) => (
@@ -176,19 +176,19 @@ export default function OwnerCrgPage() {
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{row.propertyTitle}</p>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="text-right">
-                    <p className="text-slate-400 dark:text-slate-500">{t("owner.crg.table.loyers")}</p>
-                    <p className="font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(row.loyersEncaisses, row.currency)}</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t("owner.crg.table.loyers")}</p>
+                    <p className="font-bold text-emerald-700 dark:text-emerald-400">{formatMoney(row.loyersEncaisses, row.currency)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-slate-400 dark:text-slate-500">{t("owner.crg.table.charges")}</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t("owner.crg.table.charges")}</p>
                     <p className="font-bold text-red-600 dark:text-red-400">-{formatMoney(row.chargesDeduites, row.currency)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-slate-400 dark:text-slate-500">{t("owner.crg.table.commission")}</p>
-                    <p className="font-bold text-amber-600 dark:text-amber-400">-{formatMoney(row.commission, row.currency)}</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t("owner.crg.table.commission")}</p>
+                    <p className="font-bold text-amber-700 dark:text-amber-400">-{formatMoney(row.commission, row.currency)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-slate-400 dark:text-slate-500">{t("owner.crg.table.net")}</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t("owner.crg.table.net")}</p>
                     <p className={`font-bold ${row.netAReverser >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>
                       {formatMoney(row.netAReverser, row.currency)}
                     </p>
@@ -213,7 +213,7 @@ export default function OwnerCrgPage() {
             )}
           </p>
         ) : (
-          <p className="text-xs text-slate-400 dark:text-slate-500">{t("owner.crg.noBankDetails")}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">{t("owner.crg.noBankDetails")}</p>
         )}
       </div>
 

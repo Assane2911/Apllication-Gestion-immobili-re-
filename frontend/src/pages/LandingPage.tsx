@@ -761,7 +761,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 py-12 px-6 bg-slate-950 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-800/80 py-12 px-6 bg-slate-950 text-center text-xs text-slate-400">
         <p>{t("landing.footer.rights")}</p>
         <p className="mt-2">{t("landing.footer.tagline")}</p>
         <div className="mt-4 flex items-center justify-center gap-4">
