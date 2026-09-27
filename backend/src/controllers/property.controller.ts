@@ -76,8 +76,6 @@ export const getProperty = asyncHandler(async (req: Request, res: Response) => {
 export const createProperty = asyncHandler(async (req: Request, res: Response) => {
   const body = propertySchema.parse(req.body);
   if (body.ownerId) await assertOwnerBelongsToManager(body.ownerId, req.user!.userId);
-  assertFileContentMatchesDeclaredType(req.file);
-  const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   // Le bien hérite de la devise de règlement choisie par le gestionnaire, à
   // moins qu'une devise soit explicitement fournie. C'est le premier maillon
@@ -93,6 +91,11 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
   // Entreprise illimité). Pendant l'essai gratuit, la formule effective est
   // Pro (promis par les CGU), quelle que soit la formule par défaut
   // (Starter) attribuée à l'inscription.
+  //
+  // Ce contrôle doit précéder l'upload de l'image : sinon, un gestionnaire
+  // au plafond atteint faisait quand même stocker (sur notre infrastructure,
+  // à nos frais) l'image jointe à chaque tentative, avant que le 403
+  // n'arrive — un fichier jamais rattaché à aucun bien, jamais nettoyé.
   const subscription = computeSubscriptionInfo(manager);
   const effectivePlan = subscription?.isTrialActive ? "PRO" : manager.subscriptionPlan;
   const maxProperties = maxPropertiesForPlan(effectivePlan);
@@ -108,6 +111,9 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
       );
     }
   }
+
+  assertFileContentMatchesDeclaredType(req.file);
+  const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   const [property] = await db
     .insert(properties)

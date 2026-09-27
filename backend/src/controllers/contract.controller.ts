@@ -570,9 +570,19 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
 // min(10) laissait passer n'importe quelle chaîne, y compris un payload XSS
 // réinjecté tel quel dans l'attribut src du bail (voir pdf.service.ts) ;
 // on impose désormais le format attendu.
+//
+// La chaîne est stockée telle quelle dans contracts.tenantSignatureUrl /
+// managerSignatureUrl (pas d'upload vers le stockage objet, contrairement
+// aux autres fichiers de l'application) : sans plafond de taille, rien
+// n'empêchait d'y écrire plusieurs mégaoctets — un simple tracé de signature
+// tient en quelques dizaines de kilooctets au format PNG. 500 Ko de base64
+// laisse une marge confortable pour un canvas haute résolution tout en
+// écartant un abus qui alourdirait chaque lecture de la table contracts.
+const TAILLE_MAX_SIGNATURE = 500_000;
 const signContractSchema = z.object({
   signatureDataUrl: z
     .string()
+    .max(TAILLE_MAX_SIGNATURE, `Signature trop volumineuse (max ${TAILLE_MAX_SIGNATURE / 1000} Ko)`)
     .regex(/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+={0,2}$/, "Signature invalide"),
 });
 

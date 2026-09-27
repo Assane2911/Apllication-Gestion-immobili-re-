@@ -64,6 +64,27 @@ describe("POST /api/expenses", () => {
     expect(enBase.currency).toBe("XOF");
   });
 
+  /**
+   * Régression : expenseDate n'était validée qu'en tant que chaîne de
+   * caractères quelconque. Une date invalide (faute de frappe, calendrier
+   * impossible) devenait un Invalid Date silencieux écrit tel quel en base
+   * — un timestamp NaN qui ne redonnait plus jamais de vraie date (tri,
+   * filtre par période, Grand Livre), plutôt qu'un 400 clair à la saisie.
+   */
+  it("refuse (400) une date de dépense invalide plutôt que d'enregistrer un Invalid Date", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+
+    const res = await request(app)
+      .post("/api/expenses")
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: property.id, title: "Plomberie", amount: 150, expenseDate: "32/13/2026" });
+
+    expect(res.status).toBe(400);
+    const rows = await testDb.select().from(expenses).where(eq(expenses.propertyId, property.id));
+    expect(rows).toHaveLength(0);
+  });
+
   it("respecte la devise explicitement demandée", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id, { currency: "XOF" });

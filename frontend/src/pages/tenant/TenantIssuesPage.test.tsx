@@ -171,6 +171,31 @@ describe("TenantIssuesPage", () => {
   });
 
   /**
+   * Régression : handlePhoto révoquait déjà l'URL blob au remplacement d'une
+   * photo par une autre, mais rien ne le faisait en quittant la page avec
+   * une photo encore sélectionnée (formulaire abandonné sans envoi ni
+   * effacement) — l'URL, et son blob en mémoire, restaient valides jusqu'à
+   * la fermeture de l'onglet.
+   */
+  it("révoque l'URL blob de la prévisualisation en quittant la page", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ id: "c1" })] });
+
+    const { container, unmount } = renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Transmettre/ })).toBeInTheDocument());
+
+    const file = new File(["fake-photo"], "photo.jpg", { type: "image/jpeg" });
+    const photoInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(photoInput, file);
+    await waitFor(() => expect(screen.getByAltText("Photo prête à l'envoi")).toBeInTheDocument());
+
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    unmount();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:fake-preview");
+  });
+
+  /**
    * Régression : rien ne vérifiait la taille du fichier avant l'envoi. Une
    * photo trop volumineuse (fréquent depuis un téléphone récent) partait
    * quand même vers le serveur, qui la refuse (MAX_UPLOAD_SIZE_MB côté

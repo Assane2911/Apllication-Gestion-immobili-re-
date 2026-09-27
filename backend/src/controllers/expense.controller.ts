@@ -21,7 +21,12 @@ const createExpenseSchema = z.object({
   // dans le Grand Livre, la synthèse fiscale et le CRG. Même forme que
   // contract.controller.ts, qui lui applique déjà la bonne règle.
   currency: deviseSchema.optional(),
-  expenseDate: z.string().optional(),
+  // z.coerce.date() et non z.string() : une date invalide ("32/13/2026", une
+  // faute de frappe) devenait un Invalid Date silencieux, écrit tel quel en
+  // base par `new Date(...)` plus bas — un timestamp NaN qui ne redonnait
+  // ensuite plus jamais de vraie date (tri, filtre par période, Grand
+  // Livre) plutôt qu'un 400 clair au moment de la saisie.
+  expenseDate: z.coerce.date().optional(),
   notes: z.string().optional(),
 });
 
@@ -85,7 +90,7 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
       title: body.title,
       amount: body.amount,
       currency: body.currency || prop.currency || "EUR",
-      expenseDate: body.expenseDate ? new Date(body.expenseDate) : new Date(),
+      expenseDate: body.expenseDate ?? new Date(),
       notes: body.notes,
     })
     .returning();

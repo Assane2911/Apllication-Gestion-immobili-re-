@@ -44,6 +44,23 @@ export default function TenantIssuesPage() {
 
   useEffect(load, []);
 
+  // handlePhoto/handleExtraPhoto révoquent déjà l'URL blob au REMPLACEMENT
+  // d'une photo par une autre, mais rien ne le faisait en quittant la page
+  // avec une photo encore sélectionnée (formulaire abandonné sans envoi ni
+  // effacement) : l'URL restait valide, et son blob en mémoire, jusqu'à la
+  // fermeture de l'onglet.
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  useEffect(() => {
+    return () => {
+      if (extraPreview) URL.revokeObjectURL(extraPreview);
+    };
+  }, [extraPreview]);
+
   // Sans ce contrôle, une photo trop volumineuse (fréquent depuis un
   // téléphone récent, en pleine résolution) partait quand même vers le
   // serveur, qui la refuse (MAX_UPLOAD_SIZE_MB, voir middleware/upload.ts
