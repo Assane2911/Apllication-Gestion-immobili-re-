@@ -16,6 +16,68 @@ interface PaydunyaIpnPayload {
   custom_data?: { reference?: string };
 }
 
+interface PaydunyaConfirmResponse {
+  response_code?: string;
+  status?: string;
+  invoice?: { total_amount?: string | number };
+  custom_data?: { reference?: string };
+}
+
+/**
+ * Confirmation serveur-à-serveur : le hash de l'IPN (voir isAuthentic)
+ * prouve seulement la connaissance de la master key, jamais que CE montant
+ * ni CE statut viennent réellement de PayDunya — c'est le corps POSTé, que
+ * n'importe qui connaissant le hash pourrait fabriquer de toutes pièces,
+ * avec n'importe quel montant ou statut (voir
+ * https://developers.paydunya.com/doc/EN/http_json, "Confirm an invoice").
+ * On revérifie donc directement auprès de PayDunya, avec nos propres clés,
+ * le statut et le montant de CE token précis avant de faire confiance à
+ * quoi que ce soit du corps de l'IPN pour créditer une facture ou un
+ * abonnement. `null` signifie que PayDunya n'a pas pu être contacté ou a
+ * répondu de façon inexploitable — dans ce cas l'appelant ne doit RIEN
+ * créditer (il vaut mieux laisser PayDunya rejouer l'IPN plus tard que de
+ * retomber sur le corps POSTé, non fiable à lui seul).
+ */
+async function confirmerAupresDePaydunya(
+  token: string
+): Promise<{ status: string; totalAmount: number; reference?: string } | null> {
+  const { masterKey, privateKey, token: apiToken, mode } = env.payments.paydunya;
+  const baseUrl = mode === "live" ? "https://app.paydunya.com/api/v1" : "https://app.paydunya.com/sandbox-api/v1";
+
+  let response: globalThis.Response;
+  try {
+    response = await fetch(`${baseUrl}/checkout-invoice/confirm/${encodeURIComponent(token)}`, {
+      headers: {
+        "PAYDUNYA-MASTER-KEY": masterKey,
+        "PAYDUNYA-PRIVATE-KEY": privateKey,
+        "PAYDUNYA-TOKEN": apiToken,
+      },
+    });
+  } catch (err) {
+    console.error(`[paydunya] Échec réseau lors de la confirmation du token ${token}:`, err);
+    return null;
+  }
+
+  let data: PaydunyaConfirmResponse;
+  try {
+    data = (await response.json()) as PaydunyaConfirmResponse;
+  } catch (err) {
+    console.error(`[paydunya] Réponse de confirmation illisible pour le token ${token}:`, err);
+    return null;
+  }
+
+  if (!response.ok || data.response_code !== "00" || !data.status) {
+    console.error(`[paydunya] Confirmation refusée par PayDunya pour le token ${token}:`, data);
+    return null;
+  }
+
+  return {
+    status: data.status,
+    totalAmount: data.invoice?.total_amount !== undefined ? Number(data.invoice.total_amount) : NaN,
+    reference: data.custom_data?.reference,
+  };
+}
+
 /**
  * Notification IPN envoyée par PayDunya une fois le paiement traité (voir
  * https://developers.paydunya.com/doc/EN/http_json). Route volontairement
@@ -55,18 +117,38 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
     return res.json({ success: true });
   }
 
-  if (data.status !== "completed") {
-    console.log(`[paydunya] IPN pour ${paydunyaToken} : statut '${data.status}', aucune mise à jour nécessaire.`);
+  // Le hash prouve seulement la connaissance de la master key, jamais que CE
+  // statut ni CE montant viennent réellement de PayDunya — data.status et
+  // data.invoice.total_amount sont le corps POSTÉ, que n'importe qui
+  // connaissant le hash pourrait fabriquer avec n'importe quelle valeur (voir
+  // confirmerAupresDePaydunya ci-dessus). On revérifie donc directement
+  // auprès de PayDunya, avec nos propres clés, avant de faire confiance à
+  // quoi que ce soit du corps pour créditer une facture ou un abonnement.
+  const confirmation = await confirmerAupresDePaydunya(paydunyaToken);
+  if (!confirmation) {
+    // Impossible de confirmer : ne rien créditer sur la seule foi du corps
+    // POSTé. 502 fait rejouer l'IPN plus tard par PayDunya, comme pour tout
+    // problème réseau ordinaire.
+    return res.status(502).json({ error: "Confirmation indisponible" });
+  }
+
+  if (confirmation.reference && confirmation.reference !== ourReference) {
+    console.warn(
+      `[paydunya] Confirmation pour ${paydunyaToken} : référence PayDunya '${confirmation.reference}' ≠ référence reçue '${ourReference}' — IPN ignorée.`
+    );
     return res.json({ success: true });
   }
 
-  // Le hash prouve seulement que l'appelant est bien PayDunya, jamais que le
-  // montant réellement réglé correspond à la facture/l'abonnement visé — une
-  // IPN authentique mais liée à un paiement partiel/incorrect soldait quand
-  // même l'intégralité de la facture. On compare donc systématiquement
-  // invoice.total_amount (montant réellement confirmé par PayDunya) au
-  // montant attendu en base avant toute mise à jour de statut.
-  const paidAmount = data.invoice?.total_amount !== undefined ? Number(data.invoice.total_amount) : NaN;
+  if (confirmation.status !== "completed") {
+    console.log(`[paydunya] Confirmation pour ${paydunyaToken} : statut '${confirmation.status}', aucune mise à jour nécessaire.`);
+    return res.json({ success: true });
+  }
+
+  // Montant réellement confirmé par PayDunya (jamais celui du corps POSTÉ,
+  // voir plus haut) comparé au montant attendu en base avant toute mise à
+  // jour de statut — une confirmation authentique mais liée à un paiement
+  // partiel/incorrect ne doit pas solder l'intégralité de la facture.
+  const paidAmount = confirmation.totalAmount;
 
   if (ourReference.startsWith("sub_")) {
     const [subscriptionRow] = await db
