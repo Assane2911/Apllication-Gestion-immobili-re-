@@ -3,11 +3,15 @@ import { and, eq, inArray } from "drizzle-orm";
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { invoices, platformSubscriptions } from "../db/schema";
+import { invoices, platformSubscriptions, users } from "../db/schema";
 import { ETATS_MODIFIABLES } from "./invoice.controller";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { depuisPlusPetiteUnite } from "../services/payment.service";
-import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
+import {
+  activateSubscriptionRecord,
+  expireStripeSubscription,
+  renewSubscriptionFromStripeInvoice,
+} from "../services/subscriptionActivation.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
 /** Tolérance d'horloge acceptée entre l'émission de l'événement et sa réception. */
@@ -20,6 +24,27 @@ interface SessionCheckout {
   currency?: string;
   client_reference_id?: string | null;
   metadata?: { reference?: string };
+  /** Présents seulement pour une session créée en mode "subscription" (renouvellement automatique réel). */
+  customer?: string | null;
+  subscription?: string | null;
+}
+
+/** Facture Stripe (objet "invoice") — reçue sur chaque cycle de renouvellement d'un abonnement réel. */
+interface StripeInvoice {
+  id?: string;
+  subscription?: string | null;
+  amount_paid?: number;
+  currency?: string;
+  // "subscription_create" pour la toute première facture (déjà traitée via
+  // checkout.session.completed ci-dessous) ; "subscription_cycle" pour
+  // chaque renouvellement automatique suivant — le seul cas qui nous
+  // intéresse ici.
+  billing_reason?: string;
+}
+
+/** Objet "subscription" Stripe — reçu quand un abonnement cesse d'exister côté Stripe. */
+interface StripeSubscriptionObject {
+  id?: string;
 }
 
 /**
@@ -54,8 +79,20 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
     return res.status(400).json({ error: "Requête invalide" });
   }
 
-  // Stripe envoie des dizaines de types d'événements ; un seul nous intéresse.
+  // Stripe envoie des dizaines de types d'événements ; seuls ceux liés au
+  // paiement ponctuel et au renouvellement automatique réel nous intéressent.
   // On répond 200 aux autres, sinon Stripe les rejouerait indéfiniment.
+  if (evenement.type === "invoice.paid") {
+    await traiterFactureRenouvellement((evenement.data?.object ?? {}) as StripeInvoice);
+    return res.json({ received: true });
+  }
+
+  if (evenement.type === "customer.subscription.deleted") {
+    const abonnementStripe = (evenement.data?.object ?? {}) as StripeSubscriptionObject;
+    if (abonnementStripe.id) await expireStripeSubscription(abonnementStripe.id);
+    return res.json({ received: true });
+  }
+
   if (evenement.type !== "checkout.session.completed") {
     return res.json({ received: true });
   }
@@ -100,6 +137,19 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
       // rejoue ses webhooks en cas de doute, et un double clic ne doit pas
       // prolonger l'abonnement deux fois.
       await activateSubscriptionRecord(abonnement.id);
+
+      // Renouvellement automatique réel (session créée en mode
+      // "subscription", voir payment.service.ts::initiateStripePayment) :
+      // Stripe renvoie alors un Customer et une Subscription, qu'on
+      // rattache au compte pour pouvoir les résilier plus tard
+      // (cancelSubscription) et reconnaître ses renouvellements
+      // (traiterFactureRenouvellement ci-dessous).
+      if (session.customer && session.subscription) {
+        await db
+          .update(users)
+          .set({ stripeCustomerId: session.customer, stripeSubscriptionId: session.subscription })
+          .where(eq(users.id, abonnement.userId));
+      }
     }
   } else {
     // Rapprochement restreint aux factures réglées PAR STRIPE : paymentRef
@@ -156,6 +206,36 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
 
   res.json({ received: true });
 });
+
+/**
+ * Traite une facture Stripe de renouvellement automatique (`invoice.paid`).
+ * Ignore silencieusement tout ce qui n'est pas un cycle de reconduction
+ * (`billing_reason !== "subscription_cycle"`, facture sans `subscription`,
+ * ou événement incomplet) — la toute première facture d'un abonnement est
+ * déjà traitée via `checkout.session.completed` ci-dessus.
+ */
+async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<void> {
+  if (facture.billing_reason !== "subscription_cycle" || !facture.subscription || !facture.id) {
+    return;
+  }
+
+  const devise = (facture.currency ?? "").toUpperCase();
+  const montantPaye = typeof facture.amount_paid === "number" ? depuisPlusPetiteUnite(facture.amount_paid, devise) : NaN;
+  if (!Number.isFinite(montantPaye)) {
+    console.warn(`[stripe] Facture de renouvellement ${facture.id} sans montant exploitable, ignorée.`);
+    return;
+  }
+
+  const resultat = await renewSubscriptionFromStripeInvoice({
+    stripeSubscriptionId: facture.subscription,
+    stripeInvoiceId: facture.id,
+    montantPaye,
+    devise,
+  });
+  if (!resultat) {
+    console.warn(`[stripe] Renouvellement non appliqué pour la facture ${facture.id} (abonnement introuvable ou montant/devise incohérents).`);
+  }
+}
 
 /** Tolère un léger écart d'arrondi (montants en `doublePrecision`). */
 function montantCorrespond(montantPaye: number, montantAttendu: number): boolean {

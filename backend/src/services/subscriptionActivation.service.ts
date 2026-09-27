@@ -3,7 +3,7 @@ import { db, DbClient, Transaction } from "../db/client";
 import { platformSubscriptions, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { tarifPourDevise } from "../controllers/subscription.controller";
-import { calculerPeriodeActivation } from "./subscriptionPeriod.service";
+import { BillingCycle, calculerPeriodeActivation } from "./subscriptionPeriod.service";
 
 /**
  * Active réellement l'abonnement d'un utilisateur à partir d'un enregistrement
@@ -157,4 +157,112 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
     .where(eq(users.id, record.userId));
 
   return updatedRecord;
+}
+
+/**
+ * Prolonge un abonnement RÉELLEMENT reconduit par Stripe (renouvellement
+ * automatique — voir subscription.controller.ts::subscribe), à réception du
+ * webhook `invoice.paid` d'un cycle de renouvellement (stripe.controller.ts).
+ *
+ * Distincte d'activateSubscriptionRecord : il n'existe ici aucun
+ * enregistrement PENDING préexistant à faire passer PAID — Stripe prélève et
+ * facture de lui-même, sans que subscribe() n'ait jamais été rappelé pour ce
+ * cycle. Chaque renouvellement crée donc directement une nouvelle ligne PAID
+ * dans platform_subscriptions, au même plan/devise/périodicité que le dernier
+ * paiement connu de ce compte.
+ *
+ * Idempotente par `paymentRef` (l'id de facture Stripe) : Stripe rejoue ses
+ * webhooks, un second appel pour la même facture ne doit pas prolonger
+ * l'abonnement deux fois.
+ */
+export async function renewSubscriptionFromStripeInvoice(params: {
+  stripeSubscriptionId: string;
+  stripeInvoiceId: string;
+  montantPaye: number;
+  devise: string;
+}): Promise<typeof platformSubscriptions.$inferSelect | null> {
+  const { stripeSubscriptionId, stripeInvoiceId, montantPaye, devise } = params;
+
+  return db.transaction(async (tx: Transaction) => {
+    const [dejaTraite] = await tx
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.paymentRef, stripeInvoiceId));
+    if (dejaTraite) return dejaTraite;
+
+    const [compte] = await tx.select().from(users).where(eq(users.stripeSubscriptionId, stripeSubscriptionId));
+    if (!compte) return null;
+
+    const [dernierPaiement] = await tx
+      .select()
+      .from(platformSubscriptions)
+      .where(and(eq(platformSubscriptions.userId, compte.id), eq(platformSubscriptions.status, "PAID")))
+      .orderBy(desc(platformSubscriptions.createdAt))
+      .limit(1);
+    if (!dernierPaiement) return null;
+
+    // Même montant et même devise attendus qu'au paiement précédent — un
+    // écart signalerait soit un changement de prix côté Stripe non répercuté
+    // ici, soit une facture qui ne concerne pas ce cycle. Dans le doute, on
+    // n'étend pas l'accès plutôt que de l'étendre sur un montant faux.
+    if (Math.abs(montantPaye - dernierPaiement.amount) >= 0.01 || devise.toUpperCase() !== dernierPaiement.currency.toUpperCase()) {
+      console.warn(
+        `[stripe] Renouvellement rejeté pour l'abonnement Stripe ${stripeSubscriptionId} : montant/devise confirmés (${montantPaye} ${devise}) ≠ attendus (${dernierPaiement.amount} ${dernierPaiement.currency}).`
+      );
+      return null;
+    }
+
+    const cycle: BillingCycle = dernierPaiement.billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY";
+    const { startDate, endDate } = calculerPeriodeActivation({
+      maintenant: new Date(),
+      cycle,
+      changeDePlan: false,
+      finActuelle: compte.subscriptionEndsAt,
+      nouveauMontant: dernierPaiement.amount,
+      nouvelleDevise: dernierPaiement.currency,
+      dernierPaiement: null,
+      tarifPourDevise,
+    });
+
+    const [nouvelEnregistrement] = await tx
+      .insert(platformSubscriptions)
+      .values({
+        userId: compte.id,
+        plan: dernierPaiement.plan,
+        amount: dernierPaiement.amount,
+        currency: dernierPaiement.currency,
+        billingCycle: cycle,
+        status: "PAID",
+        paymentMethod: "STRIPE",
+        paymentRef: stripeInvoiceId,
+        startDate,
+        endDate,
+      })
+      .returning();
+
+    await tx
+      .update(users)
+      .set({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: endDate })
+      .where(eq(users.id, compte.id));
+
+    return nouvelEnregistrement;
+  });
+}
+
+/**
+ * Efface la référence à un abonnement Stripe qui n'existe plus côté
+ * prestataire (webhook `customer.subscription.deleted` — fin du
+ * `cancel_at_period_end` posé par cancelSubscription, ou résiliation après
+ * échec de prélèvement répété). Ne touche jamais `subscriptionStatus` :
+ * l'accès reste déterminé par `subscriptionEndsAt` (voir
+ * computeSubscriptionInfo, auth.controller.ts), qui a déjà cessé d'avancer
+ * puisqu'aucun nouveau renouvellement ne sera plus jamais confirmé pour cet
+ * abonnement. `stripeCustomerId` est conservé : le Customer Stripe reste
+ * valide et réutilisable si ce gestionnaire se réabonne un jour.
+ */
+export async function expireStripeSubscription(stripeSubscriptionId: string): Promise<void> {
+  await db
+    .update(users)
+    .set({ stripeSubscriptionId: null })
+    .where(eq(users.stripeSubscriptionId, stripeSubscriptionId));
 }

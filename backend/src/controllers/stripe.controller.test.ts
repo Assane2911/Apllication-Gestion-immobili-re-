@@ -24,6 +24,8 @@ function evenementSession(overrides: {
   paymentStatus?: string;
   amountTotal?: number;
   currency?: string;
+  customer?: string;
+  subscription?: string;
 }) {
   return JSON.stringify({
     type: overrides.type ?? "checkout.session.completed",
@@ -34,8 +36,40 @@ function evenementSession(overrides: {
         amount_total: overrides.amountTotal,
         currency: overrides.currency ?? "eur",
         client_reference_id: overrides.reference ?? "",
+        customer: overrides.customer,
+        subscription: overrides.subscription,
       },
     },
+  });
+}
+
+/** Facture Stripe (webhook `invoice.paid`) — un cycle de renouvellement automatique. */
+function evenementFacture(overrides: {
+  id?: string;
+  subscription?: string;
+  amountPaid?: number;
+  currency?: string;
+  billingReason?: string;
+}) {
+  return JSON.stringify({
+    type: "invoice.paid",
+    data: {
+      object: {
+        id: overrides.id ?? "in_test_default",
+        subscription: overrides.subscription,
+        amount_paid: overrides.amountPaid,
+        currency: overrides.currency ?? "eur",
+        billing_reason: overrides.billingReason ?? "subscription_cycle",
+      },
+    },
+  });
+}
+
+/** Objet "subscription" Stripe supprimé (webhook `customer.subscription.deleted`). */
+function evenementAbonnementSupprime(subscriptionId: string) {
+  return JSON.stringify({
+    type: "customer.subscription.deleted",
+    data: { object: { id: subscriptionId } },
   });
 }
 
@@ -323,5 +357,195 @@ describe("POST /api/payments/stripe/webhook", () => {
     const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
     expect(apres.status).toBe("CANCELLED");
     expect(apres.paidAt).toBeNull();
+  });
+
+  /**
+   * Renouvellement automatique réel (Stripe Subscriptions) : la session créée
+   * en mode "subscription" (autoRenew, voir payment.service.ts) renvoie un
+   * Customer et une Subscription Stripe, rattachés au compte à l'activation.
+   */
+  it("rattache le Customer et la Subscription Stripe au compte lors de l'activation initiale", async () => {
+    const manager = await createManager({ subscriptionStatus: "EXPIRED" });
+    await testDb.insert(platformSubscriptions).values({
+      userId: manager.id,
+      plan: "PRO",
+      amount: 29,
+      currency: "EUR",
+      status: "PENDING",
+      paymentMethod: "STRIPE",
+      paymentRef: "cs_test_abo_recurrent",
+      startDate: new Date(2026, 8, 1),
+      endDate: new Date(2026, 9, 1),
+    });
+
+    const corps = evenementSession({
+      id: "cs_test_abo_recurrent",
+      reference: `sub_${manager.id}_123`,
+      amountTotal: 2900,
+      customer: "cus_test_123",
+      subscription: "sub_stripe_test_123",
+    });
+    const res = await envoyer(corps, signer(corps));
+
+    expect(res.status).toBe(200);
+    const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(compte.subscriptionStatus).toBe("ACTIVE");
+    expect(compte.stripeCustomerId).toBe("cus_test_123");
+    expect(compte.stripeSubscriptionId).toBe("sub_stripe_test_123");
+  });
+
+  describe("invoice.paid — renouvellement automatique d'un cycle suivant", () => {
+    it("prolonge l'abonnement et enregistre une nouvelle ligne payée", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        subscriptionPlan: "PRO",
+        subscriptionEndsAt: new Date(2026, 8, 1),
+        stripeSubscriptionId: "sub_stripe_renouv",
+      });
+      await testDb.insert(platformSubscriptions).values({
+        userId: manager.id,
+        plan: "PRO",
+        amount: 29,
+        currency: "EUR",
+        status: "PAID",
+        paymentMethod: "STRIPE",
+        paymentRef: "cs_test_premier_cycle",
+        startDate: new Date(2026, 7, 1),
+        endDate: new Date(2026, 8, 1),
+      });
+
+      const corps = evenementFacture({
+        id: "in_test_renouv",
+        subscription: "sub_stripe_renouv",
+        amountPaid: 2900,
+      });
+      const res = await envoyer(corps, signer(corps));
+
+      expect(res.status).toBe(200);
+      const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(compte.subscriptionStatus).toBe("ACTIVE");
+      // Prolongé d'un mois au-delà de la fin déjà payée (1er septembre → 1er octobre 2026).
+      expect(compte.subscriptionEndsAt?.getFullYear()).toBe(2026);
+      expect(compte.subscriptionEndsAt?.getMonth()).toBe(9);
+
+      const nouvellesLignes = await testDb
+        .select()
+        .from(platformSubscriptions)
+        .where(eq(platformSubscriptions.paymentRef, "in_test_renouv"));
+      expect(nouvellesLignes).toHaveLength(1);
+      expect(nouvellesLignes[0].status).toBe("PAID");
+    });
+
+    it("est idempotent : la même facture rejouée ne prolonge pas deux fois", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        subscriptionPlan: "PRO",
+        subscriptionEndsAt: new Date(2026, 8, 1),
+        stripeSubscriptionId: "sub_stripe_idem",
+      });
+      await testDb.insert(platformSubscriptions).values({
+        userId: manager.id,
+        plan: "PRO",
+        amount: 29,
+        currency: "EUR",
+        status: "PAID",
+        paymentMethod: "STRIPE",
+        paymentRef: "cs_test_premier_cycle_idem",
+        startDate: new Date(2026, 7, 1),
+        endDate: new Date(2026, 8, 1),
+      });
+
+      const corps = evenementFacture({ id: "in_test_idem", subscription: "sub_stripe_idem", amountPaid: 2900 });
+      await envoyer(corps, signer(corps));
+      const [premier] = await testDb.select().from(users).where(eq(users.id, manager.id));
+
+      await envoyer(corps, signer(corps));
+      const [second] = await testDb.select().from(users).where(eq(users.id, manager.id));
+
+      expect(second.subscriptionEndsAt?.getTime()).toBe(premier.subscriptionEndsAt?.getTime());
+      const lignes = await testDb
+        .select()
+        .from(platformSubscriptions)
+        .where(eq(platformSubscriptions.paymentRef, "in_test_idem"));
+      expect(lignes).toHaveLength(1);
+    });
+
+    it("ne prolonge pas l'abonnement si le montant confirmé diffère du montant habituellement payé", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        subscriptionPlan: "PRO",
+        subscriptionEndsAt: new Date(2026, 8, 1),
+        stripeSubscriptionId: "sub_stripe_montant_faux",
+      });
+      await testDb.insert(platformSubscriptions).values({
+        userId: manager.id,
+        plan: "PRO",
+        amount: 29,
+        currency: "EUR",
+        status: "PAID",
+        paymentMethod: "STRIPE",
+        paymentRef: "cs_test_premier_cycle_montant",
+        startDate: new Date(2026, 7, 1),
+        endDate: new Date(2026, 8, 1),
+      });
+
+      // 5 EUR confirmés au lieu des 29 EUR habituels.
+      const corps = evenementFacture({ id: "in_test_montant_faux", subscription: "sub_stripe_montant_faux", amountPaid: 500 });
+      const res = await envoyer(corps, signer(corps));
+
+      expect(res.status).toBe(200);
+      const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(compte.subscriptionEndsAt?.getTime()).toBe(new Date(2026, 8, 1).getTime());
+    });
+
+    it("ignore la toute première facture d'un abonnement (déjà activée via checkout.session.completed)", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        subscriptionEndsAt: new Date(2026, 8, 1),
+        stripeSubscriptionId: "sub_stripe_premiere",
+      });
+
+      const corps = evenementFacture({
+        id: "in_test_premiere",
+        subscription: "sub_stripe_premiere",
+        amountPaid: 2900,
+        billingReason: "subscription_create",
+      });
+      const res = await envoyer(corps, signer(corps));
+
+      expect(res.status).toBe(200);
+      const lignes = await testDb
+        .select()
+        .from(platformSubscriptions)
+        .where(eq(platformSubscriptions.paymentRef, "in_test_premiere"));
+      expect(lignes).toHaveLength(0);
+    });
+  });
+
+  describe("customer.subscription.deleted", () => {
+    it("efface la référence à l'abonnement Stripe, sans toucher au statut d'accès", async () => {
+      const finPayee = new Date(2026, 8, 1);
+      const manager = await createManager({
+        subscriptionStatus: "CANCELLED",
+        subscriptionEndsAt: finPayee,
+        stripeCustomerId: "cus_test_conserve",
+        stripeSubscriptionId: "sub_stripe_a_effacer",
+      });
+
+      const res = await envoyer(
+        evenementAbonnementSupprime("sub_stripe_a_effacer"),
+        signer(evenementAbonnementSupprime("sub_stripe_a_effacer"))
+      );
+
+      expect(res.status).toBe(200);
+      const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(compte.stripeSubscriptionId).toBeNull();
+      // Le Customer Stripe reste réutilisable pour un futur réabonnement.
+      expect(compte.stripeCustomerId).toBe("cus_test_conserve");
+      // subscriptionStatus/subscriptionEndsAt ne sont jamais touchés par cet
+      // événement : c'est déjà subscriptionEndsAt qui détermine l'accès.
+      expect(compte.subscriptionStatus).toBe("CANCELLED");
+      expect(compte.subscriptionEndsAt?.getTime()).toBe(finPayee.getTime());
+    });
   });
 });

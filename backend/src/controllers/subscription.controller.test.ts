@@ -566,6 +566,88 @@ describe("POST /api/subscription/subscribe — anti-double-paiement", () => {
   });
 });
 
+/**
+ * Renouvellement automatique réel (Stripe Subscriptions) : réservé au
+ * paiement par carte via Stripe — voir CGU §4 ("quand ce mode de reconduction
+ * est explicitement proposé dans l'interface"). PayDunya et le virement
+ * restent des paiements ponctuels, inchangés.
+ */
+describe("POST /api/subscription/subscribe — renouvellement automatique (Stripe)", () => {
+  const original = { stripeSecretKey: env.payments.stripeSecretKey, stripeWebhookSecret: env.payments.stripeWebhookSecret };
+
+  afterEach(() => {
+    env.payments.demoMode = true;
+    env.payments.stripeSecretKey = original.stripeSecretKey;
+    env.payments.stripeWebhookSecret = original.stripeWebhookSecret;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function activerStripe() {
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "sk_test_123";
+    env.payments.stripeWebhookSecret = "whsec_123";
+  }
+
+  function reponseStripeCheckoutOk() {
+    return { ok: true, json: async () => ({ id: "cs_test_abonnement", url: "https://checkout.stripe.test/abc" }) };
+  }
+
+  it("crée une session Stripe en mode abonnement quand autoRenew est demandé, avec l'intervalle de la périodicité choisie", async () => {
+    const manager = await createManager();
+    activerStripe();
+    const fetchMock = vi.fn().mockResolvedValue(reponseStripeCheckoutOk());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", billingCycle: "ANNUAL", paymentMethod: "STRIPE", autoRenew: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.payment.redirectUrl).toBe("https://checkout.stripe.test/abc");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const corpsEnvoye = fetchMock.mock.calls[0][1].body as string;
+    const params = new URLSearchParams(corpsEnvoye);
+    expect(params.get("mode")).toBe("subscription");
+    expect(params.get("line_items[0][price_data][recurring][interval]")).toBe("year");
+  });
+
+  it("crée une session Stripe en mode paiement ponctuel (pas d'abonnement Stripe réel) quand autoRenew n'est pas demandé", async () => {
+    const manager = await createManager();
+    activerStripe();
+    const fetchMock = vi.fn().mockResolvedValue(reponseStripeCheckoutOk());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", paymentMethod: "STRIPE" });
+
+    expect(res.status).toBe(200);
+    const corpsEnvoye = fetchMock.mock.calls[0][1].body as string;
+    const params = new URLSearchParams(corpsEnvoye);
+    expect(params.get("mode")).toBe("payment");
+    expect(params.has("line_items[0][price_data][recurring][interval]")).toBe(false);
+  });
+
+  it("refuse l'auto-renouvellement pour un moyen de paiement autre que Stripe", async () => {
+    const manager = await createManager({ currency: "XOF" });
+    activerStripe();
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ response_code: "00", response_text: "https://paydunya.test/abc", token: "tok" }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", paymentMethod: "PAYDUNYA", autoRenew: true });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Stripe");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /api/subscription/cancel", () => {
   it("refuse l'accès sans authentification", async () => {
     const res = await request(app).post("/api/subscription/cancel").send({});
@@ -586,6 +668,66 @@ describe("POST /api/subscription/cancel", () => {
 
     const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(updated.subscriptionStatus).toBe("CANCELLED");
+  });
+
+  /**
+   * Régression : le message affirmait "le renouvellement automatique a été
+   * annulé" pour TOUT paiement, y compris ponctuel (PayDunya, virement, ou
+   * Stripe sans reconduction) — alors qu'aucun renouvellement automatique
+   * n'avait jamais existé pour ces comptes-là (voir cancelStripeSubscriptionAtPeriodEnd).
+   */
+  describe("résiliation d'un abonnement Stripe réel (renouvellement automatique)", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    });
+
+    it("résilie l'abonnement Stripe (cancel_at_period_end) quand le compte en a un réel", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        stripeSubscriptionId: "sub_test_reel",
+      });
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toContain("renouvellement automatique de votre abonnement a été annulé");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock.mock.calls[0][0]).toBe("https://api.stripe.com/v1/subscriptions/sub_test_reel");
+      const corpsEnvoye = fetchMock.mock.calls[0][1].body as string;
+      expect(new URLSearchParams(corpsEnvoye).get("cancel_at_period_end")).toBe("true");
+    });
+
+    it("n'appelle jamais Stripe pour un abonnement sans renouvellement automatique réel", async () => {
+      const manager = await createManager({ subscriptionStatus: "ACTIVE" });
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+
+      const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toContain("ne sera pas reconduit");
+      expect(res.body.message).not.toContain("renouvellement automatique");
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("résilie quand même localement si l'appel à Stripe échoue", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        stripeSubscriptionId: "sub_test_echec",
+      });
+      const fetchMock = vi.fn().mockRejectedValue(new Error("réseau indisponible"));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(updated.subscriptionStatus).toBe("CANCELLED");
+    });
   });
 
   it("laisse l'abonnement résilié actif jusqu'au terme de la période déjà payée", async () => {

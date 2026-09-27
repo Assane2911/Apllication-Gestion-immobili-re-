@@ -1240,6 +1240,11 @@ const pt: TranslationSchema = {
       },
       confirmAndActivate: "Confirmar e Ativar a Assinatura",
       processing: "A processar...",
+      autoRenewLabel: "Ativar a renovação automática",
+      autoRenewHint: "O seu cartão será debitado automaticamente em cada vencimento, até ao cancelamento.",
+      cancelButton: "Cancelar a minha assinatura",
+      cancelling: "A cancelar...",
+      confirmCancel: "Cancelar a sua assinatura? Deixará de ser cobrado no próximo vencimento, mas o seu acesso permanece ativo até ao fim do período já pago.",
       historyTitle: "Histórico das suas faturas de assinatura",
       historyTable: {
         date: "Data",

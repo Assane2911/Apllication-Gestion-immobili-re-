@@ -1242,6 +1242,11 @@ const es: TranslationSchema = {
       },
       confirmAndActivate: "Confirmar y Activar la Suscripción",
       processing: "Procesando...",
+      autoRenewLabel: "Activar la renovación automática",
+      autoRenewHint: "Se cobrará automáticamente en su tarjeta en cada vencimiento, hasta que cancele.",
+      cancelButton: "Cancelar mi suscripción",
+      cancelling: "Cancelando...",
+      confirmCancel: "¿Cancelar su suscripción? No se le cobrará en el próximo vencimiento, pero su acceso permanece activo hasta el final del período ya pagado.",
       historyTitle: "Historial de tus facturas de suscripción",
       historyTable: {
         date: "Fecha",
