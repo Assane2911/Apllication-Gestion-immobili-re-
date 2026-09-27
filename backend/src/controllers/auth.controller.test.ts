@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
+import { env } from "../config/env";
 import { contracts, invoices, owners, properties, tenants, users } from "../db/schema";
 import {
   authHeader,
@@ -149,6 +150,79 @@ describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
   it("POST /api/auth/logout répond 204 même sans cookie (rien à effacer)", async () => {
     const res = await request(app).post("/api/auth/logout");
     expect(res.status).toBe(204);
+  });
+
+  /**
+   * Régression : Vercel NE positionne PAS NODE_ENV à l'exécution (seule
+   * VERCEL=1 fait partie de ses "System Environment Variables" documentées —
+   * voir aussi trust proxy dans app.ts, qui teste déjà VERCEL et pas NODE_ENV
+   * pour la même raison). Un cookie posé sans `Secure`/`SameSite=None` en
+   * production réelle ne serait jamais renvoyé par le navigateur sur la
+   * requête cross-site vers le backend (frontend et backend sont sur des
+   * origines distinctes, y compris en preview) : l'authentification web
+   * serait alors cassée dès le premier déploiement, silencieusement.
+   */
+  it("pose un cookie Secure + SameSite=None sur Vercel, même si NODE_ENV retombe sur 'development' (déploiement serverless réel)", async () => {
+    const originalNodeEnv = env.nodeEnv;
+    const originalVercel = process.env.VERCEL;
+    env.nodeEnv = "development";
+    process.env.VERCEL = "1";
+    try {
+      await request(app)
+        .post("/api/auth/register")
+        .send({ email: "cookie-vercel@test.local", password: "Password123!" });
+      await testDb
+        .update(users)
+        .set({ emailVerifiedAt: new Date() })
+        .where(eq(users.email, "cookie-vercel@test.local"));
+
+      const loginRes = await request(app)
+        .post("/api/auth/login")
+        .send({ email: "cookie-vercel@test.local", password: "Password123!" });
+
+      const setCookie = (loginRes.headers["set-cookie"] ?? []) as unknown as string[];
+      const tokenCookie = setCookie.find((c) => c.startsWith("token="));
+      expect(tokenCookie).toBeDefined();
+      expect(tokenCookie).toMatch(/Secure/i);
+      expect(tokenCookie).toMatch(/SameSite=None/i);
+    } finally {
+      env.nodeEnv = originalNodeEnv;
+      if (originalVercel === undefined) {
+        delete process.env.VERCEL;
+      } else {
+        process.env.VERCEL = originalVercel;
+      }
+    }
+  });
+
+  it("pose un cookie sans Secure, SameSite=Lax en développement local réel (hors Vercel)", async () => {
+    const originalVercel = process.env.VERCEL;
+    delete process.env.VERCEL;
+    try {
+      await request(app)
+        .post("/api/auth/register")
+        .send({ email: "cookie-local@test.local", password: "Password123!" });
+      await testDb
+        .update(users)
+        .set({ emailVerifiedAt: new Date() })
+        .where(eq(users.email, "cookie-local@test.local"));
+
+      const loginRes = await request(app)
+        .post("/api/auth/login")
+        .send({ email: "cookie-local@test.local", password: "Password123!" });
+
+      const setCookie = (loginRes.headers["set-cookie"] ?? []) as unknown as string[];
+      const tokenCookie = setCookie.find((c) => c.startsWith("token="));
+      expect(tokenCookie).toBeDefined();
+      expect(tokenCookie).not.toMatch(/Secure/i);
+      expect(tokenCookie).toMatch(/SameSite=Lax/i);
+    } finally {
+      if (originalVercel === undefined) {
+        delete process.env.VERCEL;
+      } else {
+        process.env.VERCEL = originalVercel;
+      }
+    }
   });
 });
 
