@@ -192,6 +192,42 @@ describe("POST /api/listings/public/:id/leads", () => {
 
     expect(res.status).toBe(400);
   });
+
+  /**
+   * Régression : prospectPhone n'était validé qu'en longueur (min 6) — un
+   * texte quelconque comme "bonjour" passait. Sans le sélecteur d'indicatif
+   * pays utilisé ailleurs (ChampTelephone), ce formulaire public ne peut pas
+   * imposer le format E.164 complet, mais doit au moins ressembler à un
+   * numéro : sinon le gestionnaire découvre un prospect injoignable au
+   * moment de l'appeler, la seule donnée de contact ayant été un texte libre.
+   */
+  it("rejette un numéro de téléphone qui n'en est manifestement pas un", async () => {
+    const manager = await createManager();
+    const listing = await createListingRow(manager.id);
+
+    const res = await request(app).post(`/api/listings/public/${listing.id}/leads`).send({
+      prospectName: "Awa Sow",
+      prospectEmail: "awa@test.local",
+      prospectPhone: "bonjour",
+    });
+
+    expect(res.status).toBe(400);
+    const leads = await testDb.select().from(listingLeads).where(eq(listingLeads.listingId, listing.id));
+    expect(leads).toHaveLength(0);
+  });
+
+  it("accepte un numéro local sans indicatif pays (le formulaire public n'en impose pas)", async () => {
+    const manager = await createManager();
+    const listing = await createListingRow(manager.id);
+
+    const res = await request(app).post(`/api/listings/public/${listing.id}/leads`).send({
+      prospectName: "Awa Sow",
+      prospectEmail: "awa@test.local",
+      prospectPhone: "77 123 45 67",
+    });
+
+    expect(res.status).toBe(201);
+  });
 });
 
 describe("POST /api/listings — CRM gestionnaire", () => {

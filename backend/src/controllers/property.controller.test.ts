@@ -383,6 +383,31 @@ describe("POST /api/properties — plafond de biens par formule", () => {
     expect(res.body.error).toMatch(/limite/i);
   });
 
+  /**
+   * Régression : createProperty uploadait l'image AVANT de vérifier le
+   * plafond de biens de la formule. Une tentative au-delà de la limite
+   * stockait quand même l'image jointe, à nos frais, avant que le 403
+   * n'arrive — un fichier jamais rattaché à aucun bien, jamais nettoyé.
+   */
+  it("n'uploade jamais l'image d'un bien refusé pour dépassement de la limite", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    for (let i = 0; i < 5; i++) {
+      await createProperty(manager.id, { title: `Bien ${i}` });
+    }
+
+    const res = await request(app)
+      .post("/api/properties")
+      .set(authHeader(tokenFor(manager)))
+      .field("title", "Bien de trop")
+      .field("address", "1 rue du Test")
+      .field("surface", "30")
+      .field("rent", "400")
+      .attach("image", Buffer.from("contenu-image-factice"), "photo.png");
+
+    expect(res.status).toBe(403);
+    expect(uploadPublicFile).not.toHaveBeenCalled();
+  });
+
   it("autorise la création tant que la limite Starter n'est pas atteinte", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
     for (let i = 0; i < 4; i++) {

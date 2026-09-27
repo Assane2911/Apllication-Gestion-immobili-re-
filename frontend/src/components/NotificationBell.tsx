@@ -2,7 +2,7 @@ import { AlertTriangle, Bell, CalendarClock, MessageSquare, Wrench } from "lucid
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, liste } from "../api/client";
+import { api, isRequestCancelled, liste } from "../api/client";
 import type { NotificationItem, NotificationType } from "../types";
 import Bulle from "./Bulle";
 
@@ -30,19 +30,28 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  function load() {
+  function load(signal?: AbortSignal) {
     api
-      .get<{ notifications: NotificationItem[] }>("/notifications")
+      .get<{ notifications: NotificationItem[] }>("/notifications", { signal })
       .then((res) => setItems(liste<NotificationItem>(res.data, "notifications")))
-      .catch(() => {
+      .catch((err) => {
+        if (isRequestCancelled(err)) return;
         // silencieux : la cloche ne doit jamais faire planter le reste de l'app
       });
   }
 
+  // clearInterval arrête les prochains sondages, mais pas celui déjà EN VOL :
+  // sans AbortController, une réponse arrivant après le démontage (navigation
+  // au moment précis où le sondage des 30s partait) appelait quand même
+  // setItems sur un composant qui n'existe plus.
   useEffect(() => {
-    load();
-    const interval = setInterval(load, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    load(controller.signal);
+    const interval = setInterval(() => load(controller.signal), POLL_INTERVAL_MS);
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {

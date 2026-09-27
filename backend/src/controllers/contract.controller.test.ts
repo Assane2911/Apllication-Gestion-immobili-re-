@@ -505,6 +505,31 @@ describe("POST /api/contracts/:id/sign", () => {
   });
 
   /**
+   * Régression : signatureDataUrl est stockée telle quelle dans
+   * contracts.tenantSignatureUrl/managerSignatureUrl (pas d'upload vers le
+   * stockage objet, contrairement aux autres fichiers de l'application), et
+   * n'avait aucun plafond de taille. Rien n'empêchait d'y écrire plusieurs
+   * mégaoctets — un simple tracé de signature tient en quelques dizaines de
+   * kilooctets au format PNG.
+   */
+  it("refuse une signature dépassant le plafond de taille", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const signatureTropVolumineuse = `data:image/png;base64,${"A".repeat(500_001)}`;
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/sign`)
+      .set(authHeader(await tokenLocataire(tenant.id)))
+      .send({ signatureDataUrl: signatureTropVolumineuse });
+
+    expect(res.status).toBe(400);
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(apres.signedByTenantAt).toBeNull();
+  });
+
+  /**
    * Régression : la branche `else` ne vérifiait que
    * `property.managerId === req.user.userId`, jamais le rôle réel. Un
    * compte ADMIN promu depuis un ancien compte MANAGER

@@ -387,6 +387,39 @@ describe("initiatePayment", () => {
     journal.mockRestore();
   });
 
+  /**
+   * Régression : la comparaison de devise était sensible à la casse. Une
+   * simple faute de casse dans PAYDUNYA_CURRENCY (variable d'environnement
+   * saisie à la main, contrairement à la devise appelante, toujours déjà
+   * normalisée en amont) bloquait alors TOUS les paiements PayDunya de la
+   * plateforme, alors qu'il s'agit de la MÊME devise.
+   */
+  it("PAYDUNYA : accepte un montant dont la devise ne diffère que par la casse de PAYDUNYA_CURRENCY", async () => {
+    env.payments.demoMode = false;
+    env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk", currency: "xof" };
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        response_code: "00",
+        response_text: "https://paydunya.com/checkout/abc123",
+        token: "paydunya-token-abc123",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await initiatePayment({
+      method: "PAYDUNYA",
+      currency: "XOF",
+      amount: 29000,
+      invoiceId: "sub-1",
+      payerEmail: "a@test.local",
+    });
+
+    expect(result.status).toBe("REQUIRES_ACTION");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("PAYDUNYA : crée une facture de paiement réelle et renvoie l'URL de redirection", async () => {
     env.payments.demoMode = false;
     env.payments.paydunya.masterKey = "master-key";

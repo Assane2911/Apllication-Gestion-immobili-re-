@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { eq, inArray, or } from "drizzle-orm";
@@ -487,7 +488,14 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
     const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
     const { subject, html } = emailVerificationEmail({ verifyUrl });
     sendEmail(user.email, subject, html).catch((err) => {
+      // Un simple console.error ne remonte à rien : Sentry n'instrumente que
+      // les erreurs qui traversent errorHandler, pas un .catch() qui les
+      // avale ici (même raison que activity.service.ts::logActivity). Sans
+      // capture explicite, un SMTP mal configuré ou en panne privait
+      // silencieusement TOUT gestionnaire de son email de confirmation, sans
+      // que rien ne le signale hors lecture manuelle des journaux serveur.
       console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
+      Sentry.captureException(err, { tags: { source: "auth.controller.resendVerification" } });
     });
   }
 
@@ -557,7 +565,9 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
     const resetUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
     const { subject, html } = passwordResetEmail({ resetUrl });
     sendEmail(user.email, subject, html).catch((err) => {
+      // Voir le commentaire équivalent dans resendVerification ci-dessus.
       console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err);
+      Sentry.captureException(err, { tags: { source: "auth.controller.forgotPassword" } });
     });
   }
 

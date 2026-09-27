@@ -73,7 +73,14 @@ const publicFilterSchema = z.object({
 const leadSchema = z.object({
   prospectName: z.string().min(2),
   prospectEmail: z.string().email(),
-  prospectPhone: z.string().min(6),
+  // Un simple min(6) laissait passer n'importe quel texte ("bonjour", six
+  // lettres) — un formulaire public, sans le sélecteur d'indicatif pays
+  // utilisé ailleurs (ChampTelephone), ne peut pas imposer le format E.164
+  // complet sans rejeter des numéros locaux légitimes. On exige au moins la
+  // FORME d'un numéro (chiffres, espaces et séparateurs usuels), pour que le
+  // gestionnaire ne découvre pas un prospect injoignable au moment de
+  // l'appeler.
+  prospectPhone: z.string().regex(/^[+\d][\d\s().-]{5,}$/, "Numéro de téléphone invalide"),
   requestType: z.enum(LEAD_REQUEST_TYPES).optional(),
   preferredDate: z.coerce.date().optional(),
   message: z.string().optional(),

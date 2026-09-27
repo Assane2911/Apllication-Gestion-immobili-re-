@@ -201,7 +201,14 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
   // Aucune conversion n'est tentée : convertir sans taux de référence fiable
   // produirait des montants faux mais crédibles, plus difficiles à repérer
   // qu'un refus.
-  if (currency !== deviseDuCompte) {
+  //
+  // .toUpperCase() des deux côtés, comme la branche Stripe ci-dessus : une
+  // devise appelante est toujours normalisée en amont, mais `deviseDuCompte`
+  // vient d'une variable d'environnement saisie à la main (PAYDUNYA_CURRENCY)
+  // — une simple casse différente ("xof" au lieu de "XOF") bloquerait alors
+  // TOUS les paiements PayDunya de la plateforme sans qu'aucun montant ne
+  // soit réellement en cause.
+  if (currency.toUpperCase() !== deviseDuCompte.toUpperCase()) {
     return {
       status: 503,
       message: `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`,
