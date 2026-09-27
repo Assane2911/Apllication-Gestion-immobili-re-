@@ -52,11 +52,31 @@ function masquer(email: string): string {
   return `${email[0]}***${email.slice(arobase)}`;
 }
 
+/**
+ * Neutralise toute tentative d'injection d'en-tête (CRLF) dans un champ qui
+ * finit dans un en-tête SMTP (destinataire, sujet) et qui peut contenir du
+ * texte saisi par un utilisateur (nom d'agence, de locataire, de
+ * collaborateur...) — un `\r\nBcc: ...` glissé dans un nom ajouterait sinon
+ * un destinataire ou un en-tête arbitraire au message.
+ *
+ * nodemailer neutralise déjà lui-même les retours à la ligne dans ces
+ * champs ; cette défense ne doit toutefois pas reposer uniquement sur un
+ * comportement interne d'une dépendance de transport, qui pourrait changer
+ * silencieusement. `escapeHtml` ci-dessous protège le corps HTML, pas les
+ * en-têtes : les deux sont nécessaires, aucun ne remplace l'autre.
+ */
+function neutraliserEnTete(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
 export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]) {
+  const destinataire = neutraliserEnTete(to);
+  const sujet = neutraliserEnTete(subject);
+
   const t = getTransporter();
   if (!t) {
     console.warn(
-      `[email] SMTP non configuré (SMTP_USER/SMTP_APP_PASSWORD manquants) — email simulé vers ${masquer(to)}: "${subject}"` +
+      `[email] SMTP non configuré (SMTP_USER/SMTP_APP_PASSWORD manquants) — email simulé vers ${masquer(destinataire)}: "${sujet}"` +
         (attachments?.length ? ` (avec ${attachments.length} pièce(s) jointe(s))` : "")
     );
     return { simulated: true };
@@ -64,14 +84,14 @@ export async function sendEmail(to: string, subject: string, html: string, attac
   try {
     const info = await t.sendMail({
       from: env.smtp.from,
-      to,
-      subject,
+      to: destinataire,
+      subject: sujet,
       html,
       attachments,
     });
     return { simulated: false, messageId: info.messageId };
   } catch (err) {
-    console.error(`[email] Échec de l'envoi vers ${masquer(to)}:`, err instanceof Error ? err.message : err);
+    console.error(`[email] Échec de l'envoi vers ${masquer(destinataire)}:`, err instanceof Error ? err.message : err);
     return { simulated: false, error: true };
   }
 }
