@@ -2,17 +2,18 @@ import { CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import ChampTelephone from "../../components/ChampTelephone";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import { useAuth } from "../../context/auth";
-import type { AgencySettings, RetentionEcheances } from "../../types";
+import type { AgencySettings, RetentionEcheances, TeamMember } from "../../types";
 import Bulle from "../../components/Bulle";
 
 export default function AgencySettingsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +97,57 @@ export default function AgencySettingsPage() {
       .then((res) => setEcheances(res.data))
       .catch(() => setEcheancesError(t("manager.agencySettings.retention.error")));
   }, [t]);
+
+  // Multi-utilisateurs (formule Entreprise) : seul le PROPRIÉTAIRE de
+  // l'agence gère l'équipe, jamais un collaborateur (voir team.controller.ts
+  // côté backend, qui refuse l'invitation/révocation dans ce cas).
+  const estProprietaire = !user?.collaboratorId;
+  const formuleEntreprise = user?.subscription?.plan === "ENTERPRISE";
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamError, setTeamError] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
+
+  function loadTeam() {
+    api
+      .get<TeamMember[]>("/team")
+      .then((res) => setTeamMembers(res.data))
+      .catch((err) => setTeamError(apiErrorMessage(err)));
+  }
+
+  useEffect(() => {
+    if (estProprietaire && formuleEntreprise) loadTeam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estProprietaire, formuleEntreprise]);
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    setInviting(true);
+    setInviteError("");
+    setInviteSuccess("");
+    try {
+      await api.post("/team", { email: inviteEmail });
+      setInviteSuccess(t("manager.agencySettings.team.inviteSuccess", { email: inviteEmail }));
+      setInviteEmail("");
+      loadTeam();
+    } catch (err) {
+      setInviteError(apiErrorMessage(err));
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function handleRemove(member: TeamMember) {
+    if (!confirm(t("manager.agencySettings.team.confirmRemove", { email: member.email }))) return;
+    try {
+      await api.delete(`/team/${member.id}`);
+      setTeamMembers((prev) => prev.filter((m) => m.id !== member.id));
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -383,6 +435,94 @@ export default function AgencySettingsPage() {
         </button>
         </Bulle>
       </div>
+
+      {estProprietaire && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+            {t("manager.agencySettings.team.title")}
+          </h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+            {t("manager.agencySettings.team.description")}
+          </p>
+
+          {!formuleEntreprise ? (
+            <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-sm text-slate-600 dark:text-slate-400">
+              <p>{t("manager.agencySettings.team.upsell")}</p>
+              <Link to="/subscription" className="text-brand-600 dark:text-brand-400 hover:underline font-semibold text-xs">
+                {t("manager.agencySettings.team.upsellCta")}
+              </Link>
+            </div>
+          ) : (
+            <>
+              {teamError && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-3" role="alert">
+                  {teamError}
+                </p>
+              )}
+
+              <Bulle texte={t("manager.tips.agencyTeamInvite")}>
+              <form onSubmit={handleInvite} className="mt-4 flex flex-wrap items-end gap-2">
+                <div className="flex-1 min-w-[220px]">
+                  <label htmlFor="team-invite-email" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {t("manager.agencySettings.team.emailLabel")}
+                  </label>
+                  <input
+                    id="team-invite-email"
+                    type="email"
+                    required
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder={t("manager.agencySettings.team.emailPlaceholder")}
+                    className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+                >
+                  {inviting ? t("manager.agencySettings.team.inviting") : t("manager.agencySettings.team.inviteButton")}
+                </button>
+              </form>
+              </Bulle>
+              {inviteError && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-2" role="alert">
+                  {inviteError}
+                </p>
+              )}
+              {inviteSuccess && (
+                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-2">{inviteSuccess}</p>
+              )}
+
+              {teamMembers.length === 0 ? (
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-4">{t("manager.agencySettings.team.empty")}</p>
+              ) : (
+                <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+                  {teamMembers.map((member) => (
+                    <li key={member.id} className="py-2.5 flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{member.email}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                          {member.status === "PENDING"
+                            ? t("manager.agencySettings.team.statusPending")
+                            : t("manager.agencySettings.team.statusActive")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(member)}
+                        className="text-red-600 dark:text-red-400 hover:underline text-xs font-semibold"
+                      >
+                        {t("manager.agencySettings.team.removeButton")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm p-6">
         <h3 className="text-sm font-bold text-red-700 dark:text-red-400 uppercase tracking-wider">

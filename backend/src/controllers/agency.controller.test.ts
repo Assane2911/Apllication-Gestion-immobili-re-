@@ -102,6 +102,44 @@ describe("PUT /api/agency", () => {
     expect(res.status).toBe(400);
   });
 
+  // Marque blanche (logo) : fonctionnalité Pro (CGU §3) — le reste des
+  // réglages (coordonnées, IBAN...) reste ouvert à toutes les formules.
+  it("laisse un gestionnaire Starter modifier ses coordonnées sans logo", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+
+    const res = await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Agence Indépendante", iban: "FR7630006000011234567890189" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.agencyName).toBe("Agence Indépendante");
+  });
+
+  it("refuse à un gestionnaire Starter d'ajouter un logo", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+
+    const res = await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Agence Indépendante", logoUrl: "https://exemple.test/logo.png" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Pro Agence");
+  });
+
+  it("autorise un gestionnaire Pro à ajouter un logo", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Agence Pro", logoUrl: "https://exemple.test/logo.png" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.logoUrl).toBe("https://exemple.test/logo.png");
+  });
+
   it("refuse l'accès à un locataire", async () => {
     const res = await request(app)
       .put("/api/agency")

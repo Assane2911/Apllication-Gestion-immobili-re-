@@ -10,7 +10,8 @@ import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
-import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertPlanAtLeast } from "../middleware/auth";
 import { deviseSchema } from "../utils/devises";
 
 const contractSchema = z.object({
@@ -609,6 +610,10 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
   } else if (req.user.role === "MANAGER") {
     const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
     assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403);
+    // Signature électronique : fonctionnalité Pro (CGU §3) — le locataire,
+    // lui (branche ci-dessus), n'est jamais restreint par la formule de son
+    // gestionnaire.
+    assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
     const [updated] = await db
       .update(contracts)
       .set({

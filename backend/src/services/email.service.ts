@@ -129,6 +129,38 @@ export function passwordResetEmail(params: { resetUrl: string }) {
  * propriétaire choisir lui-même son mot de passe — voir owner.controller.ts
  * (inviteOwnerPortalAccount) et auth.controller.ts (resetPassword).
  */
+/** Invitation d'un collaborateur à rejoindre l'agence (formule Entreprise, voir team.controller.ts). */
+export function teamInvitationEmail(params: { agencyName: string; ownerName: string; inviteUrl: string }) {
+  const { agencyName, ownerName, inviteUrl } = params;
+  return {
+    subject: `🔑 ${escapeHtml(ownerName)} vous invite à rejoindre ${escapeHtml(agencyName)}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">🔑 Invitation à rejoindre l'agence</h2>
+        <p>Bonjour,</p>
+        <p>
+          <strong>${escapeHtml(ownerName)}</strong> vous invite à rejoindre <strong>${escapeHtml(agencyName)}</strong>
+          en tant que collaborateur : vous aurez accès aux mêmes biens, locataires et contrats que le reste de
+          l'agence. Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et activer votre accès.
+          Ce lien est valable <strong>1 heure</strong>.
+        </p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${inviteUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Activer mon accès →
+          </a>
+        </div>
+        <p style="color:#6b7280; font-size:12px;">
+          Si vous ne vous attendiez pas à cette invitation, vous pouvez ignorer cet email sans risque :
+          aucun accès ne sera créé sans confirmation de votre part.
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
 export function ownerInvitationEmail(params: { ownerName: string; agencyName: string; inviteUrl: string }) {
   const { ownerName, agencyName, inviteUrl } = params;
   return {

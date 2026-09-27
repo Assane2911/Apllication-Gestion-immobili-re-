@@ -271,7 +271,7 @@ describe("GET /api/expenses/export", () => {
    * neutraliser ces caractères déclencheurs.
    */
   it("neutralise un titre de dépense qui ressemble à une formule (=, +, -, @)", async () => {
-    const manager = await createManager();
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const property = await createProperty(manager.id, { title: "=2+2" });
     await testDb.insert(expenses).values({
       propertyId: property.id,
@@ -291,7 +291,7 @@ describe("GET /api/expenses/export", () => {
   });
 
   it("exporte normalement un rapport sans caractère à risque", async () => {
-    const manager = await createManager();
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const property = await createProperty(manager.id, { title: "Villa Ngor" });
     await testDb.insert(expenses).values({
       propertyId: property.id,
@@ -313,7 +313,7 @@ describe("GET /api/expenses/export", () => {
     // fr-FR, mais les montants sortaient bruts (« 1234.56 ») : ouvert dans un
     // tableur configuré en français, chaque montant était lu comme du texte —
     // aucune somme possible sur un fichier dont c'est pourtant le seul usage.
-    const manager = await createManager();
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const property = await createProperty(manager.id, { title: "Villa Ngor" });
     await testDb.insert(expenses).values({
       propertyId: property.id,
@@ -328,5 +328,47 @@ describe("GET /api/expenses/export", () => {
     expect(res.status).toBe(200);
     expect(res.text).toContain("-1234,56");
     expect(res.text).not.toContain("1234.56");
+  });
+});
+
+describe("Cloisonnement par formule d'abonnement", () => {
+  /**
+   * Suivi des dépenses & rentabilité : fonctionnalité Pro (CGU §3). Un
+   * gestionnaire Starter (essai terminé, jamais souscrit) n'y a pas accès.
+   */
+  it("refuse la liste des dépenses à un gestionnaire Starter (essai terminé)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+
+    const res = await request(app).get("/api/expenses").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Pro Agence");
+  });
+
+  it("autorise la liste des dépenses à un gestionnaire Pro", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app).get("/api/expenses").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+  });
+
+  // Export comptable : réservé à Entreprise, au-delà du suivi des dépenses
+  // lui-même (Pro) — un gestionnaire Pro a le suivi mais pas l'export.
+  it("refuse l'export comptable à un gestionnaire Pro (réservé à Entreprise)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Entreprise");
+  });
+
+  it("autorise l'export comptable à un gestionnaire Entreprise", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+
+    const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
   });
 });

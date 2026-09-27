@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { eq, inArray, or } from "drizzle-orm";
+import { eq, inArray, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import jwt, { SignOptions } from "jsonwebtoken";
@@ -69,8 +69,25 @@ function signToken(payload: {
   tenantId?: string | null;
   ownerId?: string | null;
   tokenVersion: number;
+  collaboratorId?: string | null;
 }) {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
+}
+
+/**
+ * Résout l'identité à porter dans le jeton d'un compte MANAGER : un
+ * collaborateur (users.teamOwnerId renseigné, voir team.controller.ts) se
+ * voit délivrer un jeton portant l'id du PROPRIÉTAIRE de l'agence — jamais
+ * le sien — pour que tout le code existant (déjà scopé sur userId partout)
+ * continue de fonctionner sans modification. collaboratorId garde sa
+ * véritable identité pour l'attribution et les actions réservées au
+ * propriétaire.
+ */
+function identiteJetonPourManager(user: typeof users.$inferSelect): { userId: string; collaboratorId: string | null } {
+  if (user.teamOwnerId) {
+    return { userId: user.teamOwnerId, collaboratorId: user.id };
+  }
+  return { userId: user.id, collaboratorId: null };
 }
 
 export function computeSubscriptionInfo(user: typeof users.$inferSelect) {
@@ -252,16 +269,27 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     [owner] = await db.select().from(owners).where(eq(owners.userId, user.id));
   }
 
+  // Multi-utilisateurs : un collaborateur se voit délivrer un jeton portant
+  // l'id du gestionnaire PROPRIÉTAIRE de l'agence (voir
+  // identiteJetonPourManager) — la formule/abonnement affichés doivent donc
+  // aussi refléter CETTE ligne-là, jamais celle (vide, sans objet) du compte
+  // collaborateur lui-même.
+  const identite = user.role === "MANAGER" ? identiteJetonPourManager(user) : { userId: user.id, collaboratorId: null };
+  const compteFacturation = identite.collaboratorId
+    ? (await db.select().from(users).where(eq(users.id, identite.userId)))[0]
+    : user;
+
   const token = signToken({
-    userId: user.id,
+    userId: identite.userId,
     role: user.role as "MANAGER" | "TENANT" | "ADMIN" | "OWNER",
     tenantId: tenant?.id ?? null,
     ownerId: owner?.id ?? null,
     tokenVersion: user.tokenVersion,
+    collaboratorId: identite.collaboratorId,
   });
   setAuthCookie(res, token);
 
-  const subscription = computeSubscriptionInfo(user);
+  const subscription = compteFacturation ? computeSubscriptionInfo(compteFacturation) : null;
 
   res.json({
     token,
@@ -275,6 +303,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : null,
       ownerId: owner?.id ?? null,
       ownerName: owner ? `${owner.firstName} ${owner.lastName}` : null,
+      collaboratorId: identite.collaboratorId,
       subscription,
     },
   });
@@ -381,9 +410,22 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
     }
   }
 
-  const token = signToken({ userId: user.id, role: user.role as "MANAGER", tokenVersion: user.tokenVersion });
+  // Un collaborateur (voir identiteJetonPourManager) peut lier son compte à
+  // Google comme n'importe quel gestionnaire : même résolution qu'à la
+  // connexion par mot de passe (login).
+  const identite = identiteJetonPourManager(user);
+  const compteFacturation = identite.collaboratorId
+    ? (await db.select().from(users).where(eq(users.id, identite.userId)))[0]
+    : user;
+
+  const token = signToken({
+    userId: identite.userId,
+    role: user.role as "MANAGER",
+    tokenVersion: user.tokenVersion,
+    collaboratorId: identite.collaboratorId,
+  });
   setAuthCookie(res, token);
-  const subscription = computeSubscriptionInfo(user);
+  const subscription = compteFacturation ? computeSubscriptionInfo(compteFacturation) : null;
 
   res.json({
     token,
@@ -397,6 +439,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
       tenantName: null,
       ownerId: null,
       ownerName: null,
+      collaboratorId: identite.collaboratorId,
       subscription,
     },
   });
@@ -510,7 +553,15 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
+  // Pour un collaborateur, req.user.userId porte l'id du PROPRIÉTAIRE de
+  // l'agence (voir identiteJetonPourManager) : `user` ci-dessous est donc la
+  // bonne ligne pour la formule/abonnement (partagés par toute l'agence),
+  // mais PAS pour l'identité affichée (email, mot de passe) — celle-ci doit
+  // rester la sienne propre.
   const user = await chargerCompteCourant(req);
+  const identite = req.user.collaboratorId
+    ? ((await db.select().from(users).where(eq(users.id, req.user.collaboratorId)))[0] ?? user)
+    : user;
 
   let tenant: typeof tenants.$inferSelect | undefined;
   if (user.role === "TENANT") {
@@ -525,13 +576,14 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
   const subscription = computeSubscriptionInfo(user);
 
   res.json({
-    id: user.id,
-    email: user.email,
-    role: user.role,
+    id: identite.id,
+    email: identite.email,
+    role: identite.role,
     currency: user.currency ?? "EUR",
-    hasPassword: user.hasPassword,
+    hasPassword: identite.hasPassword,
     tenant: tenant ?? null,
     owner: owner ?? null,
+    collaboratorId: req.user.collaboratorId ?? null,
     subscription,
   });
 });
@@ -664,12 +716,17 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
  * expliquer une exception.
  */
 export const logoutAllDevices = asyncHandler(async (req: Request, res: Response) => {
-  const user = await chargerCompteCourant(req);
+  // Multi-utilisateurs : req.user.userId porte l'id du PROPRIÉTAIRE pour un
+  // collaborateur (voir identiteJetonPourManager) — révoquer SES sessions à
+  // LUI doit toucher sa propre ligne, jamais celle du propriétaire (qui
+  // continuerait sinon de travailler pendant que le collaborateur croit
+  // avoir fermé ses accès, ou pire : verrouillerait le propriétaire lui-même).
+  const idAvoirRevoquer = req.user?.collaboratorId ?? (await chargerCompteCourant(req)).id;
 
   await db
     .update(users)
-    .set({ tokenVersion: user.tokenVersion + 1 })
-    .where(eq(users.id, user.id));
+    .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+    .where(eq(users.id, idAvoirRevoquer));
 
   clearAuthCookie(res);
 
@@ -740,6 +797,14 @@ const deleteAccountSchema = z.object({
  */
 export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires");
+  // Multi-utilisateurs : seul le PROPRIÉTAIRE de l'agence peut la supprimer,
+  // jamais un collaborateur invité (voir users.teamOwnerId) — sans quoi la
+  // confirmation ci-dessous porterait de toute façon sur le mot de passe/
+  // compte Google du propriétaire (req.user.userId le désigne, pas le
+  // collaborateur), que celui-ci ne connaît pas.
+  if (req.user.collaboratorId) {
+    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut supprimer ce compte.");
+  }
   const body = deleteAccountSchema.parse(req.body);
 
   const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));

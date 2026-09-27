@@ -1,6 +1,17 @@
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
-import { boolean, doublePrecision, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  type AnyPgColumn,
+  boolean,
+  doublePrecision,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 const id = () => text("id").primaryKey().$defaultFn(() => createId());
 const timestamps = {
@@ -80,6 +91,19 @@ export const users = pgTable("users", {
   emailVerifiedAt: timestamp("email_verified_at", { mode: "date" }),
   emailVerificationTokenHash: text("email_verification_token_hash"),
   emailVerificationExpiresAt: timestamp("email_verification_expires_at", { mode: "date" }),
+  // Multi-utilisateurs (formule Entreprise, voir team.controller.ts) : NULL
+  // pour un compte gestionnaire "propriétaire" ordinaire, ou l'id du
+  // gestionnaire propriétaire pour un compte collaborateur invité par lui.
+  //
+  // Un collaborateur a son propre login, mais AUCUNE colonne managerId de
+  // toute l'application (properties, tenants, contracts...) ne le référence
+  // jamais lui-même : à la connexion, son jeton porte l'userId du
+  // PROPRIÉTAIRE (voir signToken dans auth.controller.ts), de sorte que tout
+  // le reste du code — déjà scopé sur req.user.userId partout — continue de
+  // fonctionner sans aucune modification. Seul un champ collaboratorId
+  // distinct dans le jeton garde sa propre identité (attribution dans le
+  // journal d'activité, affichage "connecté en tant que ...").
+  teamOwnerId: text("team_owner_id").references((): AnyPgColumn => users.id, { onDelete: "cascade" }),
   ...timestamps,
 });
 
