@@ -619,6 +619,7 @@ const es: TranslationSchema = {
       expenseReport: "Produce un informe financiero del periodo elegido, listo para enviar.",
       expenseCreate: "Abre el formulario de un nuevo gasto a imputar a un inmueble.",
       fiscalGrandLivre: "Genera el libro mayor del año: todos los asientos, en orden.",
+      fiscalFEC: "Exportación reglamentaria (FEC) en el formato exigido por la administración fiscal francesa en caso de control.",
       crgExport: "Produce el informe de gestión del mes, para enviar al propietario.",
       propertyEdit: "Modifica la ficha del inmueble: alquiler, superficie, propietario, divisa.",
       propertyCreate: "Abre el formulario de un nuevo inmueble a gestionar.",
@@ -953,6 +954,8 @@ const es: TranslationSchema = {
       yearLabel: "Ejercicio",
       downloadGrandLivre: "Descargar el Libro Mayor (CSV)",
       downloadingGrandLivre: "Generando...",
+      downloadFEC: "Exportación FEC",
+      downloadingFEC: "Generando...",
       stats: {
         totalRevenue: "Alquileres cobrados",
         totalRevenueHint: "Alquileres pagados durante el ejercicio {{year}}",

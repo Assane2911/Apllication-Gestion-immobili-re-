@@ -2,9 +2,9 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
+import { agencySettings, contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { asyncHandler } from "../utils/asyncHandler";
-import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
+import { csvEscape, csvMontant, CSV_BOM, fecEscapeText, fecMontant } from "../utils/csv";
 
 /**
  * Module "Bilan Fiscal & Comptabilité" : synthèse annuelle (revenus/dépenses
@@ -282,4 +282,169 @@ export const exportGrandLivre = asyncHandler(async (req: Request, res: Response)
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   res.send(csvContent);
+});
+
+const FEC_JOURNAL_CODE = "BQ";
+const FEC_JOURNAL_LIB = "Journal de banque";
+const FEC_HEADER = [
+  "JournalCode",
+  "JournalLib",
+  "EcritureNum",
+  "EcritureDate",
+  "CompteNum",
+  "CompteLib",
+  "CompAuxNum",
+  "CompAuxLib",
+  "PieceRef",
+  "PieceDate",
+  "EcritureLib",
+  "Debit",
+  "Credit",
+  "EcritureLet",
+  "DateLet",
+  "ValidDate",
+  "Montantdevise",
+  "Idevise",
+];
+
+const COMPTE_BANQUE = { num: "512000", lib: "Banque" };
+const COMPTE_LOYERS = { num: "706100", lib: "Loyers et produits de gestion locative" };
+/**
+ * Un compte par catégorie de dépense (expenses.category, schema.ts), plutôt
+ * qu'un compte fourre-tout unique : c'est ce qui rend le fichier exploitable
+ * par un comptable (chaque ligne du Grand Livre imputée sur un poste
+ * cohérent), au prix d'un plan comptable volontairement simplifié — un
+ * comptable reste seul juge du plan comptable définitif de l'agence.
+ */
+const COMPTES_DEPENSES: Record<string, { num: string; lib: string }> = {
+  MAINTENANCE: { num: "615500", lib: "Entretien et réparations" },
+  TAX: { num: "635100", lib: "Impôts, taxes et versements assimilés" },
+  INSURANCE: { num: "616100", lib: "Primes d'assurances" },
+  SYNDIC: { num: "622600", lib: "Honoraires (syndic)" },
+  OTHER: { num: "628000", lib: "Charges diverses de gestion courante" },
+};
+
+function formatFecDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}${m}${d}`;
+}
+
+/**
+ * SIREN (9 premiers chiffres du SIRET) à partir du champ libre
+ * agencySettings.siretOrId — celui-ci accueille aussi bien un SIRET français
+ * qu'un identifiant national étranger (l'agence n'est pas nécessairement
+ * française), donc pas nécessairement 14 chiffres. Une valeur absente ou non
+ * numérique retombe sur 9 zéros plutôt que de faire échouer l'export : le
+ * fichier reste généré, à charge du gestionnaire de renseigner son SIRET
+ * dans les paramètres d'agence avant de le transmettre.
+ */
+function sirenDepuisSiretOrId(siretOrId: string | null | undefined): string {
+  const chiffres = (siretOrId ?? "").replace(/\D/g, "");
+  return chiffres.length >= 9 ? chiffres.slice(0, 9) : "000000000";
+}
+
+/**
+ * Export FEC (Fichier des Écritures Comptables, arrêté du 29 juillet 2013) :
+ * réservé à l'Entreprise comme le Grand Livre CSV ci-dessus, dont il partage
+ * les mêmes données sources (loyers encaissés, dépenses de l'exercice), mais
+ * dans le format réglementaire attendu par l'administration fiscale en cas de
+ * contrôle — colonnes fixes séparées par une tabulation, écritures en partie
+ * double (une ligne Débit, une ligne Crédit par mouvement).
+ *
+ * Limites assumées, documentées ici plutôt que silencieuses : plan comptable
+ * simplifié (voir COMPTES_DEPENSES) à valider par un comptable ; montants
+ * exportés dans la devise d'origine de chaque facture/dépense sans
+ * conversion (Montantdevise/Idevise laissés vides) — un export FEC suppose
+ * une comptabilité tenue en euros, cohérent avec son usage (déclaration
+ * fiscale française) ; ValidDate systématiquement égale à EcritureDate
+ * (aucune écriture n'est laissée "non validée"). Comme le rappelle le §8 des
+ * CGU, le Service reste un outil de gestion, pas un substitut à un conseil
+ * comptable.
+ */
+export const exportFEC = asyncHandler(async (req: Request, res: Response) => {
+  const managerId = req.user!.userId;
+  const { year: requestedYear } = yearQuerySchema.parse(req.query);
+  const year = requestedYear ?? new Date().getFullYear();
+
+  const [{ filteredInvoices, filteredExpenses, invoiceDate }, [settings]] = await Promise.all([
+    loadYearData(managerId, year),
+    db.select().from(agencySettings).where(eq(agencySettings.userId, managerId)),
+  ]);
+
+  type Ecriture = {
+    date: Date;
+    pieceRef: string;
+    libelle: string;
+    lignes: [
+      { num: string; lib: string; debit: number; credit: number },
+      { num: string; lib: string; debit: number; credit: number },
+    ];
+  };
+
+  const ecritures: Ecriture[] = [
+    ...filteredInvoices.map((r): Ecriture => {
+      const montant = r.invoice.amount;
+      return {
+        date: invoiceDate(r),
+        pieceRef: r.invoice.id,
+        libelle: `Loyer ${r.invoice.periodMonth}/${r.invoice.periodYear} - ${r.tenant.firstName} ${r.tenant.lastName} (${r.property.title})`,
+        lignes: [
+          { ...COMPTE_BANQUE, debit: montant, credit: 0 },
+          { ...COMPTE_LOYERS, debit: 0, credit: montant },
+        ],
+      };
+    }),
+    ...filteredExpenses.map((r): Ecriture => {
+      const montant = r.expense.amount;
+      const compte = COMPTES_DEPENSES[r.expense.category] ?? COMPTES_DEPENSES.OTHER;
+      return {
+        date: new Date(r.expense.expenseDate),
+        pieceRef: r.expense.id,
+        libelle: `${r.expense.title} (${r.property.title})`,
+        lignes: [
+          { ...compte, debit: montant, credit: 0 },
+          { ...COMPTE_BANQUE, debit: 0, credit: montant },
+        ],
+      };
+    }),
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  const rows: string[] = [FEC_HEADER.join("\t")];
+
+  ecritures.forEach((ecriture, index) => {
+    const ecritureNum = String(index + 1).padStart(6, "0");
+    const dateFec = formatFecDate(ecriture.date);
+    for (const ligne of ecriture.lignes) {
+      rows.push(
+        [
+          FEC_JOURNAL_CODE,
+          FEC_JOURNAL_LIB,
+          ecritureNum,
+          dateFec,
+          ligne.num,
+          fecEscapeText(ligne.lib),
+          "",
+          "",
+          fecEscapeText(ecriture.pieceRef),
+          dateFec,
+          fecEscapeText(ecriture.libelle),
+          fecMontant(ligne.debit),
+          fecMontant(ligne.credit),
+          "",
+          "",
+          dateFec,
+          "",
+          "",
+        ].join("\t")
+      );
+    }
+  });
+
+  const siren = sirenDepuisSiretOrId(settings?.siretOrId);
+  const filename = `${siren}FEC${year}1231.txt`;
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(rows.join("\n"));
 });

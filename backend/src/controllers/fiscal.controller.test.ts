@@ -1,7 +1,7 @@
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { expenses } from "../db/schema";
+import { agencySettings, expenses } from "../db/schema";
 import { authHeader, createContract, createInvoice, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -271,6 +271,148 @@ describe("GET /api/fiscal/grand-livre", () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
 
     const res = await request(app).get("/api/fiscal/grand-livre?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Entreprise");
+  });
+});
+
+describe("GET /api/fiscal/fec", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 8, 20));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("exporte des écritures en partie double équilibrées, une ligne Débit et une ligne Crédit par mouvement", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Sow" });
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, { amount: 500, periodMonth: 3, status: "PAID", paidAt: new Date(2026, 2, 5) });
+    await testDb
+      .insert(expenses)
+      .values({ propertyId: property.id, category: "MAINTENANCE", title: "Plomberie", amount: 200, expenseDate: new Date(2026, 1, 1) });
+
+    const res = await request(app).get("/api/fiscal/fec?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/plain");
+    const lines = res.text.split("\n");
+    expect(lines[0].split("\t")).toEqual([
+      "JournalCode",
+      "JournalLib",
+      "EcritureNum",
+      "EcritureDate",
+      "CompteNum",
+      "CompteLib",
+      "CompAuxNum",
+      "CompAuxLib",
+      "PieceRef",
+      "PieceDate",
+      "EcritureLib",
+      "Debit",
+      "Credit",
+      "EcritureLet",
+      "DateLet",
+      "ValidDate",
+      "Montantdevise",
+      "Idevise",
+    ]);
+    // Deux écritures (loyer + dépense), deux lignes chacune : 1 en-tête + 4.
+    expect(lines.filter((l) => l.length > 0)).toHaveLength(5);
+
+    const ligneLoyerBanque = lines.find((l) => l.includes("Loyer 3/2026") && l.includes("512000"));
+    const ligneLoyerProduit = lines.find((l) => l.includes("Loyer 3/2026") && l.includes("706100"));
+    expect(ligneLoyerBanque).toBeDefined();
+    expect(ligneLoyerProduit).toBeDefined();
+    const colsBanque = ligneLoyerBanque!.split("\t");
+    const colsProduit = ligneLoyerProduit!.split("\t");
+    // Débit Banque = Crédit Loyers = 500,00 : l'écriture est équilibrée.
+    expect(colsBanque[11]).toBe("500.00");
+    expect(colsBanque[12]).toBe("0.00");
+    expect(colsProduit[11]).toBe("0.00");
+    expect(colsProduit[12]).toBe("500.00");
+    // Même EcritureNum pour les deux lignes d'un même mouvement.
+    expect(colsBanque[2]).toBe(colsProduit[2]);
+    // Date au format FEC (AAAAMMDD), sans séparateur.
+    expect(colsBanque[3]).toBe("20260305");
+
+    const ligneDepense = lines.find((l) => l.includes("Plomberie") && l.includes("615500"));
+    const ligneDepenseBanque = lines.find((l) => l.includes("Plomberie") && l.includes("512000"));
+    expect(ligneDepense!.split("\t")[11]).toBe("200.00");
+    expect(ligneDepenseBanque!.split("\t")[12]).toBe("200.00");
+  });
+
+  it("neutralise un intitulé qui ressemble à une formule (CWE-1236), sans les guillemets d'un CSV", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const property = await createProperty(manager.id, { title: "=2+2" });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "MAINTENANCE",
+      title: "=cmd|'/C calc'!A1",
+      amount: 100,
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app).get("/api/fiscal/fec?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain("\t=cmd");
+    expect(res.text).toContain("'=cmd|'/C calc'!A1 (=2+2)");
+  });
+
+  it("ne fait pas fuiter les écritures d'un autre gestionnaire", async () => {
+    const managerA = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const managerB = await createManager();
+    const propertyB = await createProperty(managerB.id, { title: "Bien Confidentiel B" });
+    const tenantB = await createTenant(managerB.id);
+    const contractB = await createContract(propertyB.id, tenantB.id);
+    await createInvoice(contractB.id, { amount: 777, status: "PAID", paidAt: new Date(2026, 2, 5) });
+
+    const res = await request(app).get("/api/fiscal/fec?year=2026").set(authHeader(tokenFor(managerA)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain("Bien Confidentiel B");
+    expect(res.text).not.toContain("777.00");
+  });
+
+  it("ne produit que l'en-tête pour un exercice sans activité", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+
+    const res = await request(app).get("/api/fiscal/fec?year=2020").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text.trim().split("\n")).toHaveLength(1);
+  });
+
+  it("dérive le nom de fichier du SIREN (9 premiers chiffres du SIRET) et de l'année demandée", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    await testDb.insert(agencySettings).values({ userId: manager.id, siretOrId: "84920319400012" });
+
+    const res = await request(app).get("/api/fiscal/fec?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-disposition"]).toContain('filename="849203194FEC20261231.txt"');
+  });
+
+  it("retombe sur un SIREN à zéros quand aucun SIRET n'est renseigné", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+
+    const res = await request(app).get("/api/fiscal/fec?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-disposition"]).toContain('filename="000000000FEC20261231.txt"');
+  });
+
+  // Même réserve que le Grand Livre CSV (CGU §3, "export comptable avancé
+  // FEC/Excel") : un gestionnaire Pro n'y a pas accès.
+  it("refuse l'export à un gestionnaire Pro (réservé à Entreprise)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app).get("/api/fiscal/fec?year=2026").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("Entreprise");

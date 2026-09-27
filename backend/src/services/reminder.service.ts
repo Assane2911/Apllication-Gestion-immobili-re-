@@ -4,13 +4,36 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants, users } from "../db/schema";
 import { logActivity } from "./activity.service";
+import { planAuMoins } from "../middleware/auth";
 import { ApiError } from "../utils/asyncHandler";
 import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
 import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
 import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
-import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonReminderWhatsappVariables } from "./whatsapp.service";
+import {
+  envoyerMessageWhatsapp,
+  rentDueReminderWhatsappVariables,
+  rentDueSoonReminderWhatsappVariables,
+  ResultatEnvoiWhatsapp,
+} from "./whatsapp.service";
 import { nomAvecCivilite, nomComplet } from "../utils/nom";
+
+/**
+ * Rappels WhatsApp : avantage Pro (page tarifs, « Rappels automatiques
+ * multi-canaux » — Starter n'a droit qu'aux « Rappels par email »). Un
+ * gestionnaire dont la formule effective (essai compris, résolu en Pro) est
+ * inférieure à Pro ne déclenche donc pas l'envoi ; l'email, seul canal promis
+ * à sa formule, part quand même. `{ simulated: true }` est le même résultat
+ * neutre qu'un WhatsApp non configuré : aEteJoint/signalerEchecsWhatsapp ne
+ * le comptent jamais comme un échec.
+ */
+const WHATSAPP_NON_ELIGIBLE: ResultatEnvoiWhatsapp = { simulated: true };
+
+async function managersEligiblesWhatsapp(managerIds: string[]): Promise<Set<string>> {
+  if (managerIds.length === 0) return new Set();
+  const managerUsers = await db.select().from(users).where(inArray(users.id, managerIds));
+  return new Set(managerUsers.filter((u) => planAuMoins(u, "PRO")).map((u) => u.id));
+}
 
 /**
  * Le destinataire a-t-il été joint ?
@@ -313,6 +336,9 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   let whatsappEchecs = 0;
   const details = [];
   const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
+  const managersWhatsappEligibles = await managersEligiblesWhatsapp([
+    ...new Set(rows.map((r) => r.property.managerId)),
+  ]);
 
   for (const row of rows) {
     if (budget.epuise()) {
@@ -354,20 +380,23 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     // WhatsApp s'ajoute à l'email (ne le remplace pas) : un échec ici
     // (numéro invalide, API Meta non configurée) ne doit jamais empêcher
     // l'email — déjà parti — d'avoir eu lieu, ni bloquer le reste de la
-    // boucle pour les autres locataires.
-    const whatsappResult = await envoyerMessageWhatsapp(
-      row.tenant.phone,
-      env.whatsapp.templateNameRentDue,
-      rentDueReminderWhatsappVariables({
-        tenantName: nomAvecCivilite(row.tenant),
-        propertyTitle: row.property.title,
-        amount: row.invoice.amount,
-        currency: row.invoice.currency || "EUR",
-        periodMonth: row.invoice.periodMonth,
-        periodYear: row.invoice.periodYear,
-        frontendUrl: env.frontendUrl,
-      })
-    );
+    // boucle pour les autres locataires. Voir managersEligiblesWhatsapp :
+    // un gestionnaire sous Pro ne déclenche pas cet envoi.
+    const whatsappResult = managersWhatsappEligibles.has(row.property.managerId)
+      ? await envoyerMessageWhatsapp(
+          row.tenant.phone,
+          env.whatsapp.templateNameRentDue,
+          rentDueReminderWhatsappVariables({
+            tenantName: nomAvecCivilite(row.tenant),
+            propertyTitle: row.property.title,
+            amount: row.invoice.amount,
+            currency: row.invoice.currency || "EUR",
+            periodMonth: row.invoice.periodMonth,
+            periodYear: row.invoice.periodYear,
+            frontendUrl: env.frontendUrl,
+          })
+        )
+      : WHATSAPP_NON_ELIGIBLE;
 
     if (!aEteJoint(emailResult, whatsappResult)) {
       await db.update(invoices).set({ reminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
@@ -458,6 +487,9 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
   let interrompu = false;
   const details = [];
   const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
+  const managersWhatsappEligibles = await managersEligiblesWhatsapp([
+    ...new Set(rows.map((r) => r.property.managerId)),
+  ]);
 
   for (const row of rows) {
     if (budget.epuise()) {
@@ -493,20 +525,24 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
 
-    const whatsappResult = await envoyerMessageWhatsapp(
-      row.tenant.phone,
-      env.whatsapp.templateNameRentDueSoon,
-      rentDueSoonReminderWhatsappVariables({
-        tenantName: nomAvecCivilite(row.tenant),
-        propertyTitle: row.property.title,
-        amount: row.invoice.amount,
-        currency: row.invoice.currency || "EUR",
-        periodMonth: row.invoice.periodMonth,
-        periodYear: row.invoice.periodYear,
-        daysLeft: joursRestants,
-        frontendUrl: env.frontendUrl,
-      })
-    );
+    // Voir managersEligiblesWhatsapp : un gestionnaire sous Pro ne déclenche
+    // pas cet envoi, l'email seul (promis à sa formule) part quand même.
+    const whatsappResult = managersWhatsappEligibles.has(row.property.managerId)
+      ? await envoyerMessageWhatsapp(
+          row.tenant.phone,
+          env.whatsapp.templateNameRentDueSoon,
+          rentDueSoonReminderWhatsappVariables({
+            tenantName: nomAvecCivilite(row.tenant),
+            propertyTitle: row.property.title,
+            amount: row.invoice.amount,
+            currency: row.invoice.currency || "EUR",
+            periodMonth: row.invoice.periodMonth,
+            periodYear: row.invoice.periodYear,
+            daysLeft: joursRestants,
+            frontendUrl: env.frontendUrl,
+          })
+        )
+      : WHATSAPP_NON_ELIGIBLE;
 
     // Voir runRentDueReminders : sans cette vérification (absente ici avant
     // ce correctif), un échec d'email laissait `dueSoonReminderSentAt` posé
@@ -622,19 +658,24 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
 
   const emailResult = await sendEmail(row.tenant.email, subject, html);
 
-  const whatsappResult = await envoyerMessageWhatsapp(
-    row.tenant.phone,
-    env.whatsapp.templateNameRentDue,
-    rentDueReminderWhatsappVariables({
-      tenantName: nomAvecCivilite(row.tenant),
-      propertyTitle: row.property.title,
-      amount: row.invoice.amount,
-      currency: row.invoice.currency || "EUR",
-      periodMonth: row.invoice.periodMonth,
-      periodYear: row.invoice.periodYear,
-      frontendUrl: env.frontendUrl,
-    })
-  );
+  // Voir managersEligiblesWhatsapp : un gestionnaire sous Pro ne déclenche
+  // pas cet envoi, l'email seul (promis à sa formule) part quand même.
+  const managersWhatsappEligibles = await managersEligiblesWhatsapp([managerId]);
+  const whatsappResult = managersWhatsappEligibles.has(managerId)
+    ? await envoyerMessageWhatsapp(
+        row.tenant.phone,
+        env.whatsapp.templateNameRentDue,
+        rentDueReminderWhatsappVariables({
+          tenantName: nomAvecCivilite(row.tenant),
+          propertyTitle: row.property.title,
+          amount: row.invoice.amount,
+          currency: row.invoice.currency || "EUR",
+          periodMonth: row.invoice.periodMonth,
+          periodYear: row.invoice.periodYear,
+          frontendUrl: env.frontendUrl,
+        })
+      )
+    : WHATSAPP_NON_ELIGIBLE;
 
   // Le rappel manuel affirmait « envoyé » quoi qu'il arrive : `success` était
   // un littéral et le verdict de sendEmail n'était jamais relu. Le

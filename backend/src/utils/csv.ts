@@ -14,16 +14,40 @@
 // (synthèse annuelle / Grand Livre) partagent la même implémentation.
 const FORMULA_TRIGGER_CHARS = /^[=+\-@\t\r]/;
 
+function neutraliserFormule(text: string): string {
+  return FORMULA_TRIGGER_CHARS.test(text) ? `'${text}` : text;
+}
+
 export function csvEscape(value: string | number): string {
-  let text = String(value);
-  if (FORMULA_TRIGGER_CHARS.test(text)) {
-    text = `'${text}`;
-  }
+  const text = neutraliserFormule(String(value));
   return `"${text.replace(/"/g, '""')}"`;
 }
 
 /** BOM UTF-8 à préfixer au contenu d'un CSV exporté, pour qu'Excel détecte l'encodage. */
 export const CSV_BOM = "﻿";
+
+/**
+ * Texte prêt pour un champ FEC (Fichier des Écritures Comptables — colonnes
+ * séparées par une tabulation, jamais de guillemets contrairement à un CSV) :
+ * même risque d'injection de formule qu'un CSV ouvert dans un tableur (voir
+ * csvEscape ci-dessus) si le fichier est un jour ouvert dans Excel plutôt que
+ * lu par un logiciel comptable — un intitulé de dépense ou de bien reste une
+ * donnée saisie par l'utilisateur. Une tabulation ou un retour à la ligne
+ * dans le texte casserait en plus l'alignement des colonnes du fichier :
+ * remplacés par un espace.
+ */
+export function fecEscapeText(value: string): string {
+  return neutraliserFormule(value.replace(/[\t\r\n]/g, " "));
+}
+
+/**
+ * Montant au format FEC : point décimal, deux décimales, toujours positif —
+ * le sens du mouvement est porté par la colonne Débit ou Crédit, jamais par
+ * le signe du montant lui-même (arrêté du 29 juillet 2013, art. II).
+ */
+export function fecMontant(value: number): string {
+  return Math.abs(value || 0).toFixed(2);
+}
 
 /**
  * Montant prêt pour un tableur francophone : deux décimales, séparateur

@@ -203,14 +203,24 @@ const PLAN_LABEL: Record<string, string> = { PRO: "Pro Agence", ENTERPRISE: "Ent
  * requireActiveSubscription ci-dessus). `requirePlan` ci-dessous n'est donc
  * à poser que sur des routes exclusivement gestionnaire.
  */
-export function assertPlanAtLeast(user: typeof users.$inferSelect, minPlan: "PRO" | "ENTERPRISE"): void {
+/**
+ * Version booléenne d'assertPlanAtLeast, pour un appelant qui ne peut pas
+ * lever d'exception HTTP — un job planifié parcourant les gestionnaires de
+ * toute la plateforme (voir reminder.service.ts::runRentDueReminders, où un
+ * gestionnaire Starter ne doit tout simplement pas déclencher l'envoi
+ * WhatsApp, sans que ça n'interrompe le traitement des autres).
+ */
+export function planAuMoins(user: typeof users.$inferSelect, minPlan: "PRO" | "ENTERPRISE"): boolean {
   // Pendant l'essai gratuit, la formule effective est Pro (promis par les
   // CGU), quelle que soit la formule par défaut (Starter) attribuée à
   // l'inscription — même repli que maxPropertiesForPlan (property.controller.ts).
   const subscription = computeSubscriptionInfo(user);
   const effectivePlan = subscription?.isTrialActive ? "PRO" : user.subscriptionPlan;
+  return (PLAN_RANK[effectivePlan] ?? 0) >= PLAN_RANK[minPlan];
+}
 
-  if ((PLAN_RANK[effectivePlan] ?? 0) < PLAN_RANK[minPlan]) {
+export function assertPlanAtLeast(user: typeof users.$inferSelect, minPlan: "PRO" | "ENTERPRISE"): void {
+  if (!planAuMoins(user, minPlan)) {
     throw new ApiError(
       403,
       `Cette fonctionnalité est réservée à la formule ${PLAN_LABEL[minPlan]} ou supérieure. Passez à une formule supérieure pour y accéder.`

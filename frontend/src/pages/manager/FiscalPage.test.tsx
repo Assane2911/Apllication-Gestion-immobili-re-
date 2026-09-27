@@ -125,4 +125,29 @@ describe("FiscalPage", () => {
     );
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob)));
   });
+
+  it("télécharge l'export FEC en reprenant le nom de fichier réglementaire fourni par le serveur", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: synthesis() });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Export FEC/ })).toBeInTheDocument());
+
+    mockedApi.get.mockResolvedValueOnce({
+      data: new Blob(["JournalCode\t..."]),
+      headers: { "content-disposition": 'attachment; filename="849203194FEC20261231.txt"' },
+    });
+    const createObjectURL = vi.fn().mockReturnValue("blob:fake-fec");
+    const revokeObjectURL = vi.fn();
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL;
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /Export FEC/ }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/fiscal/fec", {
+        params: { year: 2026 },
+        responseType: "blob",
+      })
+    );
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob)));
+  });
 });

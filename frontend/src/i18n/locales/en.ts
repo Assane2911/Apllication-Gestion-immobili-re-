@@ -618,6 +618,7 @@ const en: TranslationSchema = {
       expenseReport: "Produces a financial report over the chosen period, ready to send.",
       expenseCreate: "Opens the form for a new cost to charge to a property.",
       fiscalGrandLivre: "Generates the year's ledger: every entry, in order.",
+      fiscalFEC: "Regulatory export (FEC) in the format expected by the French tax authorities in case of an audit.",
       crgExport: "Produces this month's management report, to send to the landlord.",
       propertyEdit: "Edits the property record: rent, floor area, landlord, currency.",
       propertyCreate: "Opens the form for a new property to manage.",
@@ -951,6 +952,8 @@ const en: TranslationSchema = {
       yearLabel: "Fiscal year",
       downloadGrandLivre: "Download General Ledger (CSV)",
       downloadingGrandLivre: "Generating...",
+      downloadFEC: "FEC export",
+      downloadingFEC: "Generating...",
       stats: {
         totalRevenue: "Rent collected",
         totalRevenueHint: "Rent paid during {{year}}",
