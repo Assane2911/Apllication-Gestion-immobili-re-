@@ -1,4 +1,4 @@
-import { BookText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { BookText, FileSpreadsheet, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -37,6 +37,7 @@ export default function FiscalPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingFEC, setDownloadingFEC] = useState(false);
 
   const categoryLabels: Record<ExpenseCategory, string> = {
     MAINTENANCE: t("manager.expenses.categories.MAINTENANCE"),
@@ -76,6 +77,28 @@ export default function FiscalPage() {
       alert(apiErrorMessage(err));
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function downloadFEC() {
+    setDownloadingFEC(true);
+    try {
+      const res = await api.get(`/fiscal/fec`, { params: { year }, responseType: "blob" });
+      // Le nom de fichier réglementaire (SIREN + "FEC" + date de clôture) est
+      // décidé par le serveur (voir exportFEC, fiscal.controller.ts) : un nom
+      // générique ici romprait la convention attendue par un contrôleur.
+      const disposition = res.headers?.["content-disposition"] as string | undefined;
+      const filename = disposition?.match(/filename="([^"]+)"/)?.[1] ?? `fec-${year}.txt`;
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    } finally {
+      setDownloadingFEC(false);
     }
   }
 
@@ -177,6 +200,15 @@ export default function FiscalPage() {
             className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
           >
             <BookText size={13} aria-hidden="true" /> {downloading ? t("manager.fiscal.downloadingGrandLivre") : t("manager.fiscal.downloadGrandLivre")}
+          </button>
+          </Bulle>
+          <Bulle texte={t("manager.tips.fiscalFEC")}>
+          <button
+            onClick={downloadFEC}
+            disabled={downloadingFEC}
+            className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <FileSpreadsheet size={13} aria-hidden="true" /> {downloadingFEC ? t("manager.fiscal.downloadingFEC") : t("manager.fiscal.downloadFEC")}
           </button>
           </Bulle>
         </div>

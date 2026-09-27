@@ -103,6 +103,33 @@ describe("runRentDueReminders", () => {
     sendEmailSpy.mockRestore();
   });
 
+  // Cloisonnement par formule (page tarifs : "Rappels automatiques
+  // multi-canaux" est un avantage Pro, Starter n'a droit qu'aux "Rappels par
+  // email") : un gestionnaire Starter hors période d'essai ne doit pas
+  // déclencher l'envoi WhatsApp, mais l'email part quand même.
+  it("n'envoie pas de message WhatsApp pour un gestionnaire sous la formule Starter (hors essai)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+
+    const sendEmailSpy = vi.spyOn(emailService, "sendEmail");
+    const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+    const result = await runRentDueReminders();
+
+    expect(result.sent).toBe(1);
+    expect(sendEmailSpy).toHaveBeenCalledTimes(1);
+    expect(whatsappSpy).not.toHaveBeenCalled();
+    expect(result.details[0].whatsappSimulated).toBe(true);
+
+    whatsappSpy.mockRestore();
+    sendEmailSpy.mockRestore();
+  });
+
   /**
    * Régression : `aEteJoint` ne compte un rappel en échec que si l'email
    * l'est AUSSI (un seul canal suffit). Un vrai échec WhatsApp alors que
@@ -312,6 +339,29 @@ describe("sendSingleInvoiceReminder", () => {
 
     whatsappSpy.mockRestore();
   });
+
+  it("n'envoie pas de message WhatsApp pour un rappel manuel déclenché par un gestionnaire Starter (hors essai)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, {
+      periodMonth: 8,
+      periodYear: 2026,
+      status: "PENDING",
+      dueDate: new Date(2026, 7, 20),
+    });
+
+    const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+    const result = await sendSingleInvoiceReminder(invoice.id, manager.id);
+
+    expect(result.success).toBe(true);
+    expect(whatsappSpy).not.toHaveBeenCalled();
+    expect(result.whatsappSimulated).toBe(true);
+
+    whatsappSpy.mockRestore();
+  });
 });
 
 describe("runUpcomingRentDueReminders", () => {
@@ -385,6 +435,29 @@ describe("runUpcomingRentDueReminders", () => {
       expect.any(String),
       expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) })
     );
+    expect(result.details[0].whatsappSimulated).toBe(true);
+
+    whatsappSpy.mockRestore();
+  });
+
+  it("n'envoie pas de message WhatsApp 'avant échéance' pour un gestionnaire sous la formule Starter (hors essai)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, {
+      periodMonth: 8,
+      periodYear: 2026,
+      dueDate: new Date(2026, 7, 4),
+      status: "PENDING",
+    });
+
+    const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+    const result = await runUpcomingRentDueReminders();
+
+    expect(result.sent).toBe(1);
+    expect(whatsappSpy).not.toHaveBeenCalled();
     expect(result.details[0].whatsappSimulated).toBe(true);
 
     whatsappSpy.mockRestore();

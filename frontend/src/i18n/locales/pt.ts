@@ -618,6 +618,7 @@ const pt: TranslationSchema = {
       expenseReport: "Produz um relatório financeiro do período escolhido, pronto a enviar.",
       expenseCreate: "Abre o formulário de uma nova despesa a imputar a um imóvel.",
       fiscalGrandLivre: "Gera o livro razão do ano: todos os lançamentos, por ordem.",
+      fiscalFEC: "Exportação regulamentar (FEC) no formato exigido pela administração fiscal francesa em caso de fiscalização.",
       crgExport: "Produz o relatório de gestão do mês, para enviar ao proprietário.",
       propertyEdit: "Altera a ficha do imóvel: renda, área, proprietário, moeda.",
       propertyCreate: "Abre o formulário de um novo imóvel a gerir.",
@@ -951,6 +952,8 @@ const pt: TranslationSchema = {
       yearLabel: "Exercício",
       downloadGrandLivre: "Descarregar o Livro-Razão (CSV)",
       downloadingGrandLivre: "A gerar...",
+      downloadFEC: "Exportação FEC",
+      downloadingFEC: "A gerar...",
       stats: {
         totalRevenue: "Rendas recebidas",
         totalRevenueHint: "Rendas pagas durante o exercício {{year}}",
