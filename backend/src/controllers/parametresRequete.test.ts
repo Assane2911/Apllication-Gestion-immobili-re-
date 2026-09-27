@@ -61,7 +61,10 @@ describe("paramètres de requête mal formés", () => {
       ["une date de fin illisible", "?to=31/12/2026"],
       ["un paramètre répété", "?from=2026-01-01&from=2026-02-01"],
     ])("refuse %s", async (_cas, requete) => {
-      const manager = await createManager();
+      // Export comptable réservé à Entreprise (voir requirePlan) : sans
+      // quoi ces requêtes échoueraient sur un 403 avant même d'atteindre
+      // la validation des paramètres qu'on veut ici exercer.
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
 
       const res = await request(app).get(`${CHEMIN}${requete}`).set(authHeader(tokenFor(manager)));
 
@@ -73,7 +76,7 @@ describe("paramètres de requête mal formés", () => {
       ["un 29 février d'année bissextile", "?from=2028-02-29"],
       ["aucun filtre", ""],
     ])("accepte %s", async (_cas, requete) => {
-      const manager = await createManager();
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
 
       const res = await request(app).get(`${CHEMIN}${requete}`).set(authHeader(tokenFor(manager)));
 
