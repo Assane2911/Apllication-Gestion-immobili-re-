@@ -21,7 +21,14 @@ import { hashToken } from "../utils/token";
 // ci-dessus (résolution des imports ES avant tout code de ce fichier).
 vi.mock("google-auth-library", () => {
   const verifyIdToken = vi.fn();
-  return { OAuth2Client: vi.fn().mockImplementation(() => ({ verifyIdToken })) };
+  // Vitest 5 respecte la sémantique réelle de `new` : une implémentation en
+  // fléchée (jamais constructible en JS) fait échouer `new OAuth2Client()`
+  // avec "is not a constructor". Il faut une vraie fonction/classe ici.
+  return {
+    OAuth2Client: vi.fn().mockImplementation(function () {
+      return { verifyIdToken };
+    }),
+  };
 });
 
 const mockVerifyIdToken = vi.mocked(OAuth2Client).mock.results[0]!.value.verifyIdToken as ReturnType<typeof vi.fn>;
