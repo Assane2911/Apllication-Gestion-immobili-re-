@@ -6,6 +6,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# Rapports de couverture de tests (générés localement/en CI, non versionnés)
+coverage/
+
 # Variables d'environnement (secrets)
 .env
 .env.local
