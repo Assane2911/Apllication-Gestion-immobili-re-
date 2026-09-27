@@ -1,6 +1,7 @@
+import { Capacitor } from "@capacitor/core";
 import { AxiosError, AxiosHeaders } from "axios";
 import { describe, expect, it } from "vitest";
-import { apiErrorCode, apiErrorMessage, fileUrl, liste } from "./client";
+import { api, apiErrorCode, apiErrorMessage, fileUrl, liste } from "./client";
 import { afterEach, beforeEach, vi } from "vitest";
 
 describe("fileUrl", () => {
@@ -134,5 +135,47 @@ describe("liste", () => {
     // afficherait « aucun élément » et le défaut resterait invisible.
     liste({ error: "boom" });
     expect(trace).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * Depuis la migration vers un cookie httpOnly (voir backend/src/utils/authCookie.ts
+ * et AuthContext.tsx), le web ne doit plus jamais poser d'en-tête Authorization
+ * lu depuis localStorage : le cookie accompagne déjà la requête via
+ * withCredentials. Seule l'app mobile Capacitor, qui n'a pas de cookie
+ * cross-site fiable, continue de porter le jeton dans l'en-tête.
+ */
+describe("intercepteur de requête (authentification)", () => {
+  async function headersEnvoyees() {
+    let captures: unknown;
+    await api.get("/quelque-chose", {
+      adapter: async (config) => {
+        captures = config.headers;
+        return { data: {}, status: 200, statusText: "OK", headers: {}, config };
+      },
+    });
+    return captures as Record<string, string>;
+  }
+
+  afterEach(() => {
+    localStorage.removeItem("token");
+    vi.restoreAllMocks();
+  });
+
+  it("envoie toujours withCredentials (le cookie httpOnly doit accompagner la requête)", () => {
+    expect(api.defaults.withCredentials).toBe(true);
+  });
+
+  it("web : n'attache pas d'en-tête Authorization, même si un token traîne encore en localStorage", async () => {
+    localStorage.setItem("token", "un-jeton-quelconque");
+    const headers = await headersEnvoyees();
+    expect(headers.Authorization).toBeUndefined();
+  });
+
+  it("natif (Capacitor) : attache l'en-tête Authorization depuis le token en localStorage", async () => {
+    vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
+    localStorage.setItem("token", "jeton-natif");
+    const headers = await headersEnvoyees();
+    expect(headers.Authorization).toBe("Bearer jeton-natif");
   });
 });

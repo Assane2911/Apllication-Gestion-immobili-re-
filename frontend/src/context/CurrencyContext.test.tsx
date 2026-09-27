@@ -1,13 +1,22 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { api } from "../api/client";
 import { AuthProvider } from "./AuthContext";
 import { CurrencyProvider } from "./CurrencyContext";
 import { useCurrency } from "./currency";
 
-// AuthProvider ne fait un appel réseau (api.get("/auth/me")) que si un token
-// est déjà présent dans localStorage — aucun test ci-dessous n'en pose un,
-// donc aucun mock d'axios n'est nécessaire pour ces tests de formatage.
+// AuthProvider ne fait un appel réseau (api.get("/auth/me")) que si une
+// session locale est déjà connue (voir AuthContext.tsx) — aucun test
+// ci-dessous n'en pose une, donc ce mock ne sert par défaut qu'à isoler
+// setCurrency() de tout appel réseau réel ; voir le describe dédié plus bas
+// pour le cas d'un profil déjà chargé.
+vi.mock("../api/client", async () => {
+  const actual = await vi.importActual<typeof import("../api/client")>("../api/client");
+  return { ...actual, api: { get: vi.fn(), patch: vi.fn() } };
+});
+
+const mockedApi = vi.mocked(api, { deep: true });
 
 function TestConsumer() {
   const { formatMoney, currency, setCurrency, availableCurrencies } = useCurrency();
@@ -142,5 +151,30 @@ describe("CurrencyProvider — setCurrency", () => {
     await user.click(screen.getByTestId("set-invalid"));
     expect(screen.getByTestId("currency").textContent).toBe("EUR");
     expect(localStorage.getItem("app_currency")).not.toBe("NOPE");
+  });
+
+  /**
+   * Régression : sauvegarder la préférence sur le profil (PATCH
+   * /auth/currency) était conditionné à un jeton en localStorage. Depuis la
+   * migration vers le cookie httpOnly, le web n'en stocke plus jamais (voir
+   * AuthContext.tsx) : ce test aurait alors cru tout visiteur connecté
+   * "non connecté" et n'aurait plus jamais persisté sa devise côté serveur.
+   * `user` (contexte), pas localStorage, doit décider.
+   */
+  it("sauvegarde la préférence sur le profil (PATCH /auth/currency) pour un utilisateur connecté, sans jeton en localStorage", async () => {
+    localStorage.setItem("user", JSON.stringify({ id: "u1", email: "alice@test.local", role: "MANAGER" }));
+    localStorage.setItem("hasSession", "1");
+    mockedApi.get.mockResolvedValueOnce({
+      data: { id: "u1", email: "alice@test.local", role: "MANAGER", subscription: null },
+    });
+    mockedApi.patch.mockResolvedValueOnce({ data: { success: true, currency: "XOF" } });
+
+    const user = userEvent.setup();
+    renderWithProviders();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
+
+    await user.selectOptions(screen.getByTestId("select"), "XOF");
+
+    await waitFor(() => expect(mockedApi.patch).toHaveBeenCalledWith("/auth/currency", { currency: "XOF" }));
   });
 });

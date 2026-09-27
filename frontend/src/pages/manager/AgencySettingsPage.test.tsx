@@ -214,8 +214,10 @@ describe("AgencySettingsPage", () => {
       await waitFor(() =>
         expect(mockedApi.delete).toHaveBeenCalledWith("/auth/account", { data: { password: "Password123!" } })
       );
-      // La déconnexion vide le stockage local — signe que logout() a bien été appelé.
-      await waitFor(() => expect(localStorage.getItem("token")).toBeNull());
+      // La déconnexion vide le profil du stockage local — signe que logout() a
+      // bien été appelé (le jeton, lui, n'y est plus stocké côté web : voir
+      // AuthContext.tsx).
+      await waitFor(() => expect(localStorage.getItem("user")).toBeNull());
     });
 
     /**
@@ -240,7 +242,7 @@ describe("AgencySettingsPage", () => {
       await user.click(screen.getByRole("button", { name: "Déconnecter tous mes appareils" }));
 
       await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/auth/logout-all"));
-      await waitFor(() => expect(localStorage.getItem("token")).toBeNull());
+      await waitFor(() => expect(localStorage.getItem("user")).toBeNull());
     });
 
     /**

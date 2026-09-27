@@ -64,6 +64,36 @@ describe("authenticate", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
+
+  // Repli cookie : le frontend web ne pose plus d'en-tête Authorization (voir
+  // frontend/src/api/client.ts) — authenticate doit accepter le même jeton
+  // transporté par le cookie httpOnly posé à la connexion (utils/authCookie.ts).
+  it("accepte un token valide transporté par le cookie httpOnly `token`, sans en-tête Authorization", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const tenantUser = await createTenantPortalUser(tenant);
+    const res = await request(app)
+      .get("/api/issues/mine")
+      .set("Cookie", `token=${tokenFor(tenantUser, tenant.id)}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("préfère l'en-tête Authorization au cookie quand les deux sont présents", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const tenantUser = await createTenantPortalUser(tenant);
+    const res = await request(app)
+      .get("/api/issues/mine")
+      .set("Authorization", `Bearer ${tokenFor(tenantUser, tenant.id)}`)
+      .set("Cookie", "token=ceci-nest-pas-un-jwt");
+    expect(res.status).toBe(200);
+  });
+
+  it("rejette (401) un cookie `token` mal formé quand aucun en-tête Authorization n'est fourni", async () => {
+    const res = await request(app).get("/api/issues/mine").set("Cookie", "token=ceci-nest-pas-un-jwt");
+    expect(res.status).toBe(401);
+  });
 });
 
 describe("requireRole", () => {

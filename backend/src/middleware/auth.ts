@@ -5,6 +5,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
+import { AUTH_COOKIE_NAME } from "../utils/authCookie";
 
 export interface AuthPayload {
   userId: string;
@@ -59,14 +60,20 @@ declare global {
  * survit ; jeton antérieur à une révocation.
  */
 export async function authenticate(req: Request, _res: Response, next: NextFunction) {
+  // En-tête Authorization d'abord (app mobile Capacitor et clients API, qui
+  // gèrent eux-mêmes le jeton — voir utils/authCookie.ts) ; à défaut, le
+  // cookie httpOnly posé à la connexion (frontend web, depuis cette
+  // migration, qui ne lit ni ne stocke plus le jeton lui-même).
   const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer ")) {
+  const token =
+    header && header.startsWith("Bearer ") ? header.slice("Bearer ".length) : req.cookies?.[AUTH_COOKIE_NAME];
+  if (!token) {
     return next(new ApiError(401, "Authentification requise"));
   }
 
   let payload: AuthPayload;
   try {
-    payload = jwt.verify(header.slice("Bearer ".length), env.jwtSecret) as AuthPayload;
+    payload = jwt.verify(token, env.jwtSecret) as AuthPayload;
   } catch {
     return next(new ApiError(401, "Token invalide ou expiré"));
   }

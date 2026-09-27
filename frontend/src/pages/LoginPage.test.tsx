@@ -79,7 +79,10 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/login", { email: "agence@test.local", password: "Password123!" });
-    expect(localStorage.getItem("token")).toBe("tok_123");
+    // Web : la session voyage dans le cookie httpOnly posé par le serveur, pas
+    // dans localStorage (voir AuthContext.tsx / AuthContext.native.test.tsx
+    // pour le comportement de l'app mobile Capacitor).
+    expect(localStorage.getItem("token")).toBeNull();
   });
 
   it("redirige un locataire vers son portail", async () => {
@@ -172,7 +175,7 @@ describe("LoginPage — connexion avec Google (VITE_GOOGLE_CLIENT_ID configuré)
 
     await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/google", { credential: "fake-google-credential" });
-    expect(localStorage.getItem("token")).toBe("tok_google_1");
+    expect(localStorage.getItem("token")).toBeNull();
   });
 
   it("affiche l'erreur du serveur si la connexion Google est refusée (ex: compte non gestionnaire)", async () => {

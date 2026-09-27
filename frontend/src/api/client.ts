@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import axios from "axios";
 import i18n from "../i18n";
 
@@ -9,7 +10,15 @@ export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 // connexion). 20s est largement suffisant pour un appel JSON classique ; les
 // envois de fichiers (voir DELAI_UPLOAD_MS plus bas) ont besoin de plus de
 // marge et le précisent explicitement à l'appel.
-export const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 20_000 });
+// withCredentials : sur le web, l'authentification voyage désormais dans un
+// cookie httpOnly posé par le serveur (voir backend/src/utils/authCookie.ts)
+// plutôt que dans un en-tête Authorization lu depuis localStorage — sans ce
+// réglage, un navigateur n'attache par défaut aucun cookie à une requête
+// cross-origin (frontend et backend sont sur des origines distinctes, y
+// compris en production). L'app mobile Capacitor continue de porter son
+// jeton dans l'en-tête (voir l'intercepteur ci-dessous) ; ce réglage est
+// alors sans effet, faute de cookie posé pour elle.
+export const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 20_000, withCredentials: true });
 
 /**
  * Timeout étendu pour les requêtes qui envoient un fichier (photo, pièce
@@ -23,9 +32,16 @@ export const DELAI_UPLOAD_MS = 60_000;
 export const MAX_UPLOAD_SIZE_MB = 8;
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Web : le cookie httpOnly posé à la connexion suit déjà la requête grâce à
+  // withCredentials ci-dessus — un en-tête Authorization n'y ajouterait rien
+  // et un jeton n'est de toute façon plus stocké dans localStorage sur cette
+  // plateforme (voir AuthContext.tsx). L'app native garde l'ancien schéma :
+  // un cookie cross-site n'y est pas fiable (voir authCookie.ts côté serveur).
+  if (Capacitor.isNativePlatform()) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });

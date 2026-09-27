@@ -18,6 +18,7 @@ import {
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
+import { clearAuthCookie, setAuthCookie } from "../utils/authCookie";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 import { deviseSchema } from "../utils/devises";
 
@@ -258,6 +259,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     ownerId: owner?.id ?? null,
     tokenVersion: user.tokenVersion,
   });
+  setAuthCookie(res, token);
 
   const subscription = computeSubscriptionInfo(user);
 
@@ -380,6 +382,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
   }
 
   const token = signToken({ userId: user.id, role: user.role as "MANAGER", tokenVersion: user.tokenVersion });
+  setAuthCookie(res, token);
   const subscription = computeSubscriptionInfo(user);
 
   res.json({
@@ -432,6 +435,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     .returning();
 
   const token = signToken({ userId: updated.id, role: "MANAGER", tokenVersion: updated.tokenVersion });
+  setAuthCookie(res, token);
   const subscription = computeSubscriptionInfo(updated);
 
   res.json({
@@ -613,6 +617,11 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
     })
     .where(eq(users.id, user.id));
 
+  // Le cookie éventuellement posé sur CE navigateur référence l'ancienne
+  // version du jeton, désormais révoquée par le tokenVersion+1 ci-dessus : le
+  // laisser en place ne ferait qu'échouer en 401 à la prochaine requête.
+  clearAuthCookie(res);
+
   res.json({
     message: "Mot de passe mis à jour avec succès. Les sessions ouvertes sur vos autres appareils ont été fermées.",
   });
@@ -662,10 +671,26 @@ export const logoutAllDevices = asyncHandler(async (req: Request, res: Response)
     .set({ tokenVersion: user.tokenVersion + 1 })
     .where(eq(users.id, user.id));
 
+  clearAuthCookie(res);
+
   res.json({
     success: true,
     message: "Toutes vos sessions ont été fermées, y compris celle-ci. Veuillez vous reconnecter.",
   });
+});
+
+/**
+ * Déconnexion d'un seul appareil : contrairement à logoutAllDevices, ne
+ * révoque rien (le jeton reste valable ailleurs, ex. l'app mobile qui garde
+ * le sien) — elle se contente d'effacer le cookie httpOnly du navigateur
+ * appelant, la seule chose qu'un frontend web ne peut plus faire lui-même
+ * pour un jeton qu'il ne lit ni ne stocke plus (voir api/client.ts). Aucune
+ * authentification requise : un cookie déjà expiré ou absent doit pouvoir
+ * être "nettoyé" sans finir en 401.
+ */
+export const logout = asyncHandler(async (_req: Request, res: Response) => {
+  clearAuthCookie(res);
+  res.status(204).send();
 });
 
 const deleteAccountSchema = z.object({
@@ -829,6 +854,10 @@ export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) 
   await Promise.allSettled(storageCleanupTargets.map((target) => deleteStorageObjectBestEffort(target)));
 
   console.log(`[account] Compte gestionnaire supprimé définitivement (id=${user.id})`);
+
+  // Le compte n'existe plus : un cookie encore présent référencerait un
+  // userId qu'authenticate ne pourrait plus jamais résoudre.
+  clearAuthCookie(res);
 
   res.status(204).send();
 });

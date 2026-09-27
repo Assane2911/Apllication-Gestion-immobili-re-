@@ -27,7 +27,7 @@ function authValue(user: AuthUser | null): AuthContextValue {
     register: noop,
     loginWithGoogle: noop,
     verifyEmail: noop,
-    logout: () => {},
+    logout: async () => {},
     refreshUser: async () => user,
   };
 }
