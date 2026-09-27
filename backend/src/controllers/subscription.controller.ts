@@ -129,6 +129,7 @@ export const SUBSCRIPTION_PLANS = [
       "Émission automatique des quittances",
       "Portail locataire & déclarations",
       "Paiements en ligne & PayDunya (Orange Money, Wave...)",
+      "Suivi des incidents avec photos",
       "Rappels par email",
       "Support standard par email",
     ],
@@ -141,7 +142,6 @@ export const SUBSCRIPTION_PLANS = [
     maxProperties: 25,
     features: [
       "Jusqu'à 25 biens immobiliers",
-      "Suivi des incidents avec photos",
       "Alertes de fin de bail & renouvellement",
       "Rappels automatiques multi-canaux (email + WhatsApp)",
       "Support prioritaire 7j/7",

@@ -229,6 +229,34 @@ describe("Rattrapage des rappels après une exécution manquée", () => {
 
     expect((await runContractEndingReminders()).sent).toBe(0);
   });
+
+  /**
+   * Cloisonnement par formule (page tarifs : "Alertes de fin de bail &
+   * renouvellement" est un avantage Pro) : contrairement au rappel d'échéance
+   * de loyer (email toujours envoyé), il n'existe ici aucune version réduite
+   * pour Starter — le rappel ne part tout simplement pas.
+   */
+  it("n'envoie aucun rappel de fin de bail pour un gestionnaire sous la formule Starter (hors essai)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      startDate: new Date(2025, 7, 15),
+      endDate: new Date(2026, 7, 15), // J+5
+      status: "ACTIVE",
+    });
+
+    const envois = vi.spyOn(emailService, "sendEmail");
+    const { sent } = await runContractEndingReminders();
+
+    expect(sent).toBe(0);
+    expect(envois).not.toHaveBeenCalled();
+
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.propertyId, property.id));
+    // Non marqué : si le gestionnaire passe à Pro avant la fin de la fenêtre
+    // glissante, le rappel doit encore pouvoir partir.
+    expect(apres.reminderSentAt).toBeNull();
+  });
 });
 
 /**

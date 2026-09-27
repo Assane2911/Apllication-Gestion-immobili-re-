@@ -29,7 +29,13 @@ import { nomAvecCivilite, nomComplet } from "../utils/nom";
  */
 const WHATSAPP_NON_ELIGIBLE: ResultatEnvoiWhatsapp = { simulated: true };
 
-async function managersEligiblesWhatsapp(managerIds: string[]): Promise<Set<string>> {
+/**
+ * Gestionnaires (parmi la liste donnée) dont la formule effective (essai
+ * compris, résolu en Pro) est au moins Pro — utilisé aussi bien pour décider
+ * qui reçoit les rappels WhatsApp que pour les rappels de fin de bail
+ * (« Alertes de fin de bail & renouvellement », avantage Pro lui aussi).
+ */
+async function managersEligiblesPro(managerIds: string[]): Promise<Set<string>> {
   if (managerIds.length === 0) return new Set();
   const managerUsers = await db.select().from(users).where(inArray(users.id, managerIds));
   return new Set(managerUsers.filter((u) => planAuMoins(u, "PRO")).map((u) => u.id));
@@ -118,12 +124,13 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
   const targetStart = debutDeLaJournee(now);
   const targetEnd = finDeLaJournee(jourDecale(daysBefore, now));
 
-  const rows = await db
+  const toutesLesLignes = await db
     .select({
       contract: contracts,
       tenant: tenants,
       property: properties,
       managerEmail: users.email,
+      manager: users,
     })
     .from(contracts)
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
@@ -141,6 +148,17 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
         lte(contracts.endDate, targetEnd)
       )
     );
+
+  // "Alertes de fin de bail & renouvellement" : avantage Pro (page tarifs) —
+  // un gestionnaire sous Pro (essai compris, résolu en Pro) ne doit tout
+  // simplement PAS déclencher ce rappel. Contrairement au rappel d'échéance
+  // de loyer (email toujours envoyé, WhatsApp en plus si Pro), il n'existe
+  // ici aucune version "réduite" à offrir à Starter : celui-ci n'a droit à
+  // aucun rappel de fin de bail. Filtré AVANT toute réclamation (voir plus
+  // bas) et non après : un contrat ignoré ici reste `reminderSentAt` NULL, et
+  // pourra donc encore déclencher son rappel si le gestionnaire passe à Pro
+  // avant la fin de la fenêtre glissante.
+  const rows = toutesLesLignes.filter((r) => planAuMoins(r.manager, "PRO"));
 
   let sent = 0;
   let echecs = 0;
@@ -336,7 +354,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   let whatsappEchecs = 0;
   const details = [];
   const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
-  const managersWhatsappEligibles = await managersEligiblesWhatsapp([
+  const managersWhatsappEligibles = await managersEligiblesPro([
     ...new Set(rows.map((r) => r.property.managerId)),
   ]);
 
@@ -380,7 +398,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     // WhatsApp s'ajoute à l'email (ne le remplace pas) : un échec ici
     // (numéro invalide, API Meta non configurée) ne doit jamais empêcher
     // l'email — déjà parti — d'avoir eu lieu, ni bloquer le reste de la
-    // boucle pour les autres locataires. Voir managersEligiblesWhatsapp :
+    // boucle pour les autres locataires. Voir managersEligiblesPro :
     // un gestionnaire sous Pro ne déclenche pas cet envoi.
     const whatsappResult = managersWhatsappEligibles.has(row.property.managerId)
       ? await envoyerMessageWhatsapp(
@@ -487,7 +505,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
   let interrompu = false;
   const details = [];
   const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
-  const managersWhatsappEligibles = await managersEligiblesWhatsapp([
+  const managersWhatsappEligibles = await managersEligiblesPro([
     ...new Set(rows.map((r) => r.property.managerId)),
   ]);
 
@@ -525,7 +543,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
 
-    // Voir managersEligiblesWhatsapp : un gestionnaire sous Pro ne déclenche
+    // Voir managersEligiblesPro : un gestionnaire sous Pro ne déclenche
     // pas cet envoi, l'email seul (promis à sa formule) part quand même.
     const whatsappResult = managersWhatsappEligibles.has(row.property.managerId)
       ? await envoyerMessageWhatsapp(
@@ -658,9 +676,9 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
 
   const emailResult = await sendEmail(row.tenant.email, subject, html);
 
-  // Voir managersEligiblesWhatsapp : un gestionnaire sous Pro ne déclenche
+  // Voir managersEligiblesPro : un gestionnaire sous Pro ne déclenche
   // pas cet envoi, l'email seul (promis à sa formule) part quand même.
-  const managersWhatsappEligibles = await managersEligiblesWhatsapp([managerId]);
+  const managersWhatsappEligibles = await managersEligiblesPro([managerId]);
   const whatsappResult = managersWhatsappEligibles.has(managerId)
     ? await envoyerMessageWhatsapp(
         row.tenant.phone,
