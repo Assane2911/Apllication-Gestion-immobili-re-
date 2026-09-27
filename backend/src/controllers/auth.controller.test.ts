@@ -12,6 +12,7 @@ import {
   createOwner,
   createOwnerPortalUser,
   createProperty,
+  createTeamMember,
   createTenant,
   createTenantPortalUser,
   tokenFor,
@@ -251,6 +252,65 @@ describe("POST /api/auth/login puis /api/auth/me — compte propriétaire (Espac
 
     expect(meRes.status).toBe(200);
     expect(meRes.body.owner.id).toBe(owner.id);
+  });
+});
+
+describe("POST /api/auth/login puis /api/auth/me — compte collaborateur (multi-utilisateurs)", () => {
+  /**
+   * Vérifie le VRAI flux de connexion (pas un jeton forgé dans les tests
+   * d'autorisation de team.controller.test.ts) : le jeton délivré à un
+   * collaborateur doit porter l'id du PROPRIÉTAIRE de l'agence (voir
+   * identiteJetonPourManager), pour que tout le reste du code — déjà scopé
+   * sur cet id partout — lui donne accès aux mêmes données qu'au propriétaire,
+   * sans aucune modification. /me doit pourtant afficher SA PROPRE identité.
+   */
+  it("se connecte avec son propre email, mais accède aux données de l'agence propriétaire", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    await createProperty(manager.id, { title: "Villa Ngor" });
+    const collaborateur = await createTeamMember(manager.id, { email: "awa-login@test.local" });
+
+    const loginRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "awa-login@test.local", password: "Password123!" });
+
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.user.role).toBe("MANAGER");
+    expect(loginRes.body.user.email).toBe("awa-login@test.local");
+    expect(loginRes.body.user.collaboratorId).toBe(collaborateur.id);
+    expect(loginRes.body.user.subscription.plan).toBe("ENTERPRISE");
+
+    // Le jeton donne bien accès aux biens du PROPRIÉTAIRE, pas à une agence
+    // vide rattachée au compte collaborateur lui-même.
+    const propertiesRes = await request(app)
+      .get("/api/properties")
+      .set("Authorization", `Bearer ${loginRes.body.token}`);
+    expect(propertiesRes.status).toBe(200);
+    expect(propertiesRes.body.items.some((p: { title: string }) => p.title === "Villa Ngor")).toBe(true);
+
+    const meRes = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${loginRes.body.token}`);
+    expect(meRes.status).toBe(200);
+    expect(meRes.body.email).toBe("awa-login@test.local");
+    expect(meRes.body.collaboratorId).toBe(collaborateur.id);
+  });
+
+  it("logout-all-devices ne révoque que ses propres sessions, jamais celles du propriétaire", async () => {
+    const manager = await createManager();
+    await createTeamMember(manager.id, { email: "awa-revoc@test.local" });
+
+    const collabLogin = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "awa-revoc@test.local", password: "Password123!" });
+    const collabToken = collabLogin.body.token as string;
+
+    await request(app).post("/api/auth/logout-all").set("Authorization", `Bearer ${collabToken}`);
+
+    // Le jeton du collaborateur lui-même est bien révoqué...
+    const collabRetry = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${collabToken}`);
+    expect(collabRetry.status).toBe(401);
+
+    // ...mais le propriétaire, lui, n'a pas été déconnecté.
+    const ownerRes = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${tokenFor(manager)}`);
+    expect(ownerRes.status).toBe(200);
   });
 });
 

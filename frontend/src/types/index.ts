@@ -43,7 +43,23 @@ export interface AuthUser {
   tenantName?: string | null;
   ownerId?: string | null;
   ownerName?: string | null;
+  /**
+   * Multi-utilisateurs (formule Entreprise) : id du compte quand il s'agit
+   * d'un collaborateur invité par un gestionnaire propriétaire — `id`
+   * ci-dessus reste alors celui du PROPRIÉTAIRE (voir
+   * identiteJetonPourManager côté backend), pour que les données affichées
+   * soient celles de l'agence. `null`/absent pour un gestionnaire
+   * propriétaire ordinaire.
+   */
+  collaboratorId?: string | null;
   subscription?: SubscriptionInfo | null;
+}
+
+export interface TeamMember {
+  id: string;
+  email: string;
+  createdAt: string;
+  status: "PENDING" | "ACTIVE";
 }
 
 export type PropertyStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";

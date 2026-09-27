@@ -24,16 +24,21 @@ export interface LogActivityParams {
  */
 export async function logActivity(params: LogActivityParams) {
   try {
+    // Multi-utilisateurs : pour un collaborateur, req.user.userId porte l'id
+    // du PROPRIÉTAIRE de l'agence (voir identiteJetonPourManager), jamais le
+    // sien — l'attribution doit pourtant nommer qui a RÉELLEMENT agi.
+    const acteurReelId = params.req?.user?.collaboratorId ?? params.req?.user?.userId;
+
     let actorLabel = "Système";
-    if (params.req?.user) {
-      const [actor] = await db.select().from(users).where(eq(users.id, params.req.user.userId));
-      const roleLabel = params.req.user.role === "TENANT" ? "Locataire" : "Gestionnaire";
+    if (acteurReelId) {
+      const [actor] = await db.select().from(users).where(eq(users.id, acteurReelId));
+      const roleLabel = params.req!.user!.role === "TENANT" ? "Locataire" : "Gestionnaire";
       actorLabel = actor ? `${roleLabel} (${actor.email})` : roleLabel;
     }
 
     await db.insert(activityLogs).values({
       managerId: params.managerId,
-      actorId: params.req?.user?.userId ?? null,
+      actorId: acteurReelId ?? null,
       actorRole: params.req?.user?.role ?? null,
       actorLabel,
       action: params.action,

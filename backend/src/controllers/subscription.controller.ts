@@ -270,6 +270,11 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") {
     throw new ApiError(403, "Espace réservé aux gestionnaires");
   }
+  // Multi-utilisateurs : la formule est partagée par toute l'agence — seul
+  // son propriétaire en décide, jamais un collaborateur invité.
+  if (req.user.collaboratorId) {
+    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut modifier l'abonnement.");
+  }
 
   const body = subscribeSchema.parse(req.body);
   const user = await chargerCompteCourant(req);
@@ -459,6 +464,11 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
 export const cancelSubscription = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") {
     throw new ApiError(403, "Espace réservé aux gestionnaires");
+  }
+  // Multi-utilisateurs : même règle que subscribe() — seul le propriétaire
+  // de l'agence décide de résilier.
+  if (req.user.collaboratorId) {
+    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut modifier l'abonnement.");
   }
 
   // Même raison qu'updateCurrency : sans ce contrôle, un jeton dont le compte

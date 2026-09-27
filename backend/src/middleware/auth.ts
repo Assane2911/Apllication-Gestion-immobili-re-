@@ -19,6 +19,15 @@ export interface AuthPayload {
   // l'émission. Optionnel : les jetons émis avant l'introduction du mécanisme
   // n'en portent pas et valent la version 0 (voir authenticate).
   tokenVersion?: number;
+  // Multi-utilisateurs (formule Entreprise) : id RÉEL du compte connecté
+  // quand il s'agit d'un collaborateur invité (voir users.teamOwnerId et
+  // signToken dans auth.controller.ts). Dans ce cas, `userId` ci-dessus porte
+  // l'id du gestionnaire PROPRIÉTAIRE de l'agence (pour que tout le reste du
+  // code, déjà scopé sur userId partout, continue de fonctionner sans
+  // modification) — collaboratorId sert uniquement à l'attribution
+  // (journal d'activité, affichage) et aux actions réservées au propriétaire
+  // (team.controller.ts, deleteMyAccount, changement de formule).
+  collaboratorId?: string | null;
 }
 
 declare global {
@@ -85,11 +94,27 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
       return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
     }
 
+    // Multi-utilisateurs : `user` ci-dessus est le PROPRIÉTAIRE de l'agence
+    // (payload.userId en porte l'id, voir identiteJetonPourManager côté
+    // auth.controller.ts) — bon pour tout ce qui suit (subscription, scope
+    // des données), mais pas pour la révocation : le numéro de version du
+    // jeton d'un collaborateur a été recopié depuis SA PROPRE ligne, pas
+    // celle du propriétaire, pour que révoquer les sessions de l'un
+    // n'affecte jamais celles de l'autre.
+    let tokenVersionAttendue = user.tokenVersion;
+    if (payload.collaboratorId) {
+      const [collaborateur] = await db.select().from(users).where(eq(users.id, payload.collaboratorId));
+      if (!collaborateur) {
+        return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
+      }
+      tokenVersionAttendue = collaborateur.tokenVersion;
+    }
+
     // Un jeton émis avant l'introduction du mécanisme ne porte aucun numéro :
     // il vaut la version 0, donc il reste valable tant qu'aucune révocation
     // n'a eu lieu. Déployer ce contrôle ne déconnecte ainsi personne, alors
     // que la première révocation, elle, portera bien sur ces jetons-là aussi.
-    if ((payload.tokenVersion ?? 0) !== user.tokenVersion) {
+    if ((payload.tokenVersion ?? 0) !== tokenVersionAttendue) {
       return next(new ApiError(401, "Votre session a été fermée. Veuillez vous reconnecter."));
     }
 

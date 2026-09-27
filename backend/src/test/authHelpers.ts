@@ -148,9 +148,14 @@ export async function createOwner(managerId: string, overrides: Partial<typeof o
 export function tokenFor(
   user: { id: string; role: "MANAGER" | "TENANT" | "ADMIN" | "OWNER" },
   tenantId: string | null = null,
-  ownerId: string | null = null
+  ownerId: string | null = null,
+  collaboratorId: string | null = null
 ) {
-  return jwt.sign({ userId: user.id, role: user.role, tenantId, ownerId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+  return jwt.sign(
+    { userId: user.id, role: user.role, tenantId, ownerId, collaboratorId },
+    process.env.JWT_SECRET!,
+    { expiresIn: "1h" }
+  );
 }
 
 export function authHeader(token: string) {
@@ -316,4 +321,40 @@ export async function tokenLocataire(tenantId: string) {
 export async function tokenProprietaire(owner: { id: string; email: string }) {
   const compte = await createOwnerPortalUser(owner);
   return tokenFor(compte, null, owner.id);
+}
+
+/**
+ * Crée un compte collaborateur (multi-utilisateurs, formule Entreprise —
+ * voir team.controller.ts), rattaché au gestionnaire propriétaire donné.
+ * Mot de passe déjà posé (contrairement au flux d'invitation réel par email +
+ * token) : ces tests portent sur l'autorisation, pas sur l'activation.
+ */
+export async function createTeamMember(ownerId: string, overrides: Partial<typeof users.$inferInsert> = {}) {
+  const id = createId();
+  const passwordHash = await bcrypt.hash("Password123!", 10);
+  const [collaborateur] = await testDb
+    .insert(users)
+    .values({
+      id,
+      email: `collaborateur-${id}@test.local`,
+      passwordHash,
+      role: "MANAGER" as const,
+      teamOwnerId: ownerId,
+      emailVerifiedAt: new Date(),
+      ...overrides,
+    })
+    .returning();
+  return collaborateur;
+}
+
+/**
+ * Jeton d'un collaborateur RÉELLEMENT rattaché au propriétaire donné : porte
+ * l'id du PROPRIÉTAIRE (pas celui du collaborateur) plus collaboratorId pour
+ * son identité propre — même construction que identiteJetonPourManager
+ * (auth.controller.ts), reproduite ici pour ne pas dépendre du flux de
+ * connexion complet dans les tests d'autorisation.
+ */
+export async function tokenCollaborateur(owner: { id: string }, overrides: Partial<typeof users.$inferInsert> = {}) {
+  const collaborateur = await createTeamMember(owner.id, overrides);
+  return tokenFor({ id: owner.id, role: "MANAGER" }, null, null, collaborateur.id);
 }
