@@ -86,6 +86,31 @@ describe("sendEmail", () => {
     expect(result).toEqual({ simulated: false, error: true });
     expect(console.error).toHaveBeenCalled();
   });
+
+  /**
+   * Défense en profondeur contre l'injection d'en-tête SMTP : un sujet
+   * construit à partir d'un nom saisi par un utilisateur (agence, locataire,
+   * collaborateur...) ne doit jamais pouvoir glisser un retour à la ligne
+   * suivi d'un en-tête arbitraire (`\r\nBcc: attaquant@evil.test`). nodemailer
+   * neutralise déjà ce cas lui-même, mais cette protection ne doit pas
+   * dépendre uniquement d'un comportement interne du transport SMTP.
+   */
+  it("neutralise un retour à la ligne dans le sujet avant de l'envoyer au transport SMTP", async () => {
+    env.smtp.user = "agence@test.local";
+    env.smtp.appPassword = "un-mot-de-passe-app";
+    sendMail.mockResolvedValueOnce({ messageId: "msg-injection" });
+
+    await sendEmail(
+      "locataire@test.local",
+      "Sujet légitime\r\nBcc: attaquant@evil.test",
+      "<p>Contenu</p>"
+    );
+
+    const sujetEnvoye = sendMail.mock.calls[0][0].subject as string;
+    expect(sujetEnvoye).not.toContain("\r");
+    expect(sujetEnvoye).not.toContain("\n");
+    expect(sujetEnvoye).toBe("Sujet légitime Bcc: attaquant@evil.test");
+  });
 });
 
 // fr-FR sépare les milliers par une espace fine insécable (U+202F). Les
