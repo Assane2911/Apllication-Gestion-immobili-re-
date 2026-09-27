@@ -678,6 +678,7 @@ const es: TranslationSchema = {
         email: "Correo electrónico",
         idDocument: "Documento de identidad",
         portal: "Portal",
+        actions: "Acciones",
       },
       viewIdDocument: "Ver",
       viewIdDocumentMobile: "Ver el documento de identidad",

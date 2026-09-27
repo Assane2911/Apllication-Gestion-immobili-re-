@@ -676,6 +676,7 @@ const fr = {
         email: "Email",
         idDocument: "Pièce d'identité",
         portal: "Portail",
+        actions: "Actions",
       },
       viewIdDocument: "Voir",
       viewIdDocumentMobile: "Voir la pièce d'identité",

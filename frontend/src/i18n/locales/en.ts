@@ -676,6 +676,7 @@ const en: TranslationSchema = {
         email: "Email",
         idDocument: "ID document",
         portal: "Portal",
+        actions: "Actions",
       },
       viewIdDocument: "View",
       viewIdDocumentMobile: "View ID document",

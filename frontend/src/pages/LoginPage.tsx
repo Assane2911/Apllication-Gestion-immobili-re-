@@ -118,7 +118,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-950">
       {/* Panneau de gauche : image de marque (masqué sur mobile) */}
-      <div className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-brand-950 p-12 xl:p-16">
+      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-brand-950 p-12 xl:p-16">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -left-16 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl animate-float-slow" />
           <div className="absolute bottom-0 right-0 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl animate-float-delay" />
@@ -151,10 +151,10 @@ export default function LoginPage() {
           <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
           {t("auth.login.panel.trialNote")}
         </Reveal>
-      </div>
+      </aside>
 
       {/* Panneau de droite : formulaire */}
-      <div className="flex flex-col items-center justify-center px-6 py-12 relative">
+      <main className="flex flex-col items-center justify-center px-6 py-12 relative">
         <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
           <Link
             to="/landing"
@@ -287,7 +287,7 @@ export default function LoginPage() {
           </p>
 
         </Reveal>
-      </div>
+      </main>
     </div>
   );
 }

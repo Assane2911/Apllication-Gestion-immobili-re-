@@ -249,9 +249,9 @@ export default function PropertiesPage() {
                 </div>
               </div>
               <div className="p-4 sm:p-5">
-                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   {p.title}
-                </h4>
+                </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{p.address}</p>
                 <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <span className="font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">

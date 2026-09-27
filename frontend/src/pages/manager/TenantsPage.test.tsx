@@ -79,6 +79,19 @@ describe("TenantsPage (manager)", () => {
     expect(screen.getAllByText("awa@example.com").length).toBeGreaterThan(0);
   });
 
+  /**
+   * Régression a11y : la colonne d'actions du tableau (modifier/supprimer par
+   * ligne) n'avait aucun texte accessible sur son en-tête — un lecteur
+   * d'écran annonçait une colonne muette plutôt que "Actions".
+   */
+  it("donne un nom accessible à la colonne d'actions du tableau", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([tenant()]));
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText("Awa Diallo").length).toBeGreaterThan(0));
+    expect(screen.getByRole("columnheader", { name: "Actions" })).toBeInTheDocument();
+  });
+
   it("affiche l'état vide avec un bouton d'ajout quand il n'y a aucun locataire", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([]));
     renderPage();

@@ -105,6 +105,19 @@ describe("PropertiesPage (manager)", () => {
     expect(screen.getByText("Disponible")).toBeInTheDocument();
   });
 
+  /**
+   * Régression a11y : le titre de chaque carte de bien sautait de h2 (titre de
+   * la page) directement à h4, sans h3 intermédiaire — un niveau de titre
+   * invalide pour la navigation par en-têtes des lecteurs d'écran.
+   */
+  it("titre chaque carte de bien avec un niveau de titre h3, pas h4", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([property()]));
+    mockedApi.get.mockResolvedValueOnce(paginatedOwners());
+    renderPage();
+
+    expect(await screen.findByRole("heading", { level: 3, name: "Studio Centre-ville" })).toBeInTheDocument();
+  });
+
   // Régression. L'écran lisait `res.data.items` sans vérifier que c'en était
   // un tableau, puis enchaînait sur `.length` et `.map()` PENDANT le rendu.
   // Une réponse de forme inattendue ne donnait donc pas un message d'erreur

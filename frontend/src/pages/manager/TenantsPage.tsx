@@ -283,7 +283,9 @@ export default function TenantsPage() {
               <th className="px-4 py-3 font-medium">{t("manager.tenants.table.email")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.tenants.table.idDocument")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.tenants.table.portal")}</th>
-              <th className="px-4 py-3 font-medium"></th>
+              <th className="px-4 py-3 font-medium">
+                <span className="sr-only">{t("manager.tenants.table.actions")}</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

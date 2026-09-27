@@ -90,4 +90,25 @@ describe("LandingPage", () => {
     expect(screen.getByText("Quittances & Baux PDF Certifiés")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Des formules simples et transparentes", level: 2 })).toBeInTheDocument();
   });
+
+  /**
+   * Régression a11y : le contenu de la page (hero, fonctionnalités, tarifs...)
+   * ne vivait dans aucun repère de landmark — un lecteur d'écran n'avait aucun
+   * moyen d'aller directement au contenu principal en sautant la navigation.
+   */
+  it("place le contenu principal dans un repère <main>", () => {
+    renderPage();
+    expect(screen.getByRole("main")).toBeInTheDocument();
+  });
+
+  /**
+   * Régression a11y : le titre de chaque ligne du comparatif sautait de h2
+   * (titre de la section) directement à h4, sans h3 intermédiaire.
+   */
+  it("titre chaque ligne du comparatif avec un niveau de titre h3, pas h4", () => {
+    renderPage();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Avis d'échéance & Relances de loyer" })
+    ).toBeInTheDocument();
+  });
 });

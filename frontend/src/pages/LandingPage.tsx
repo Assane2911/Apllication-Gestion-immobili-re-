@@ -306,6 +306,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      <main>
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-44 md:pb-32 px-6 max-w-7xl mx-auto text-center overflow-hidden">
         {/* Formes décoratives flottantes en arrière-plan */}
@@ -534,7 +535,7 @@ export default function LandingPage() {
                   <div className="md:col-span-4 p-5 flex items-start gap-3">
                     <row.icon size={20} strokeWidth={1.75} className="shrink-0 mt-0.5 text-slate-400" aria-hidden="true" />
                     <div>
-                      <h4 className="font-bold text-white text-sm">{row.title}</h4>
+                      <h3 className="font-bold text-white text-sm">{row.title}</h3>
                       <p className="text-xs text-slate-400 mt-0.5">{row.description}</p>
                     </div>
                   </div>
@@ -757,6 +758,7 @@ export default function LandingPage() {
           </div>
         </Reveal>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-12 px-6 bg-slate-950 text-center text-xs text-slate-500">
