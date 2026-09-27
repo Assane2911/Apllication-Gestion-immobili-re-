@@ -50,7 +50,7 @@ const COMPARE_ROWS = [
     title: "Quittances de loyer certifiées",
     description: "Génération et délivrance légale aux locataires",
     traditional: "Création manuelle sur Word/Excel, conversion PDF fastidieuse, envois par email souvent oubliés.",
-    immoplatform: "Génération automatique en 1 clic au format officiel certifié avec cachet agence, QR/numéro unique et mentions légales.",
+    immoplatform: "Génération automatique en 1 clic au format officiel certifié avec cachet agence, numéro unique et mentions légales.",
   },
   {
     icon: PenLine,
