@@ -198,6 +198,40 @@ describe("POST /api/inspections/:id/sign", () => {
     expect(res.body.signedByTenantAt).not.toBeNull();
   });
 
+  // Signature électronique : fonctionnalité Pro (CGU §3), même règle que
+  // signContract (contract.controller.ts).
+  it("refuse au gestionnaire de signer si sa formule est Starter", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const inspection = await createInspection(contract, manager.id, { status: "COMPLETED" });
+
+    const res = await request(app)
+      .post(`/api/inspections/${inspection.id}/sign`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ signatureDataUrl: "data:image/png;base64,fake" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Pro Agence");
+  });
+
+  it("laisse le locataire signer même si le gestionnaire est en formule Starter", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const inspection = await createInspection(contract, manager.id, { status: "COMPLETED" });
+    const tenantUser = await createTenantPortalUser(tenant);
+
+    const res = await request(app)
+      .post(`/api/inspections/${inspection.id}/sign`)
+      .set(authHeader(tokenFor(tenantUser, tenant.id)))
+      .send({ signatureDataUrl: "data:image/png;base64,fake" });
+
+    expect(res.status).toBe(200);
+  });
+
   it("refuse un locataire qui n'est pas celui du contrat", async () => {
     const { contract, manager } = await setup();
     const inspection = await createInspection(contract, manager.id, { status: "COMPLETED" });

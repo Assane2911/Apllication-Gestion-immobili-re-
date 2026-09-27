@@ -5,7 +5,8 @@ import { db } from "../db/client";
 import { contracts, inspections, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertPlanAtLeast } from "../middleware/auth";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 // État des lieux volontairement simplifié à un triplet nom/état/notes par
@@ -229,6 +230,10 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
 
   if (req.user.role === "MANAGER") {
     assertOwnership(inspection, (i) => i.managerId, req.user.userId, "Accès refusé", 403);
+    // Signature électronique : fonctionnalité Pro (CGU §3) — même règle que
+    // signContract (contract.controller.ts). Le locataire (branche
+    // ci-dessus) n'est jamais restreint par la formule de son gestionnaire.
+    assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
     const [updated] = await db
       .update(inspections)
       .set({ signedByManagerAt: new Date(), managerSignatureUrl: signatureDataUrl })

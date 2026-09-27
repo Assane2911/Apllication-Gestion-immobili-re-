@@ -140,6 +140,16 @@ describe("GET /api/fiscal/synthese", () => {
     expect(res.status).toBe(200);
     expect(res.body.availableYears).toContain(2026);
   });
+
+  // Contrairement à l'export (grand-livre, réservé à Entreprise ci-dessous),
+  // la synthèse à l'écran reste accessible à toutes les formules payantes.
+  it("reste accessible à un gestionnaire Starter", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+
+    const res = await request(app).get("/api/fiscal/synthese").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("GET /api/fiscal/grand-livre", () => {
@@ -152,7 +162,7 @@ describe("GET /api/fiscal/grand-livre", () => {
   });
 
   it("exporte un journal chronologique (recettes et dépenses mêlées) avec un solde cumulé correct", async () => {
-    const manager = await createManager();
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const property = await createProperty(manager.id, { title: "Villa Ngor" });
     const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Sow" });
     const contract = await createContract(property.id, tenant.id);
@@ -183,7 +193,7 @@ describe("GET /api/fiscal/grand-livre", () => {
   });
 
   it("neutralise un intitulé de dépense qui ressemble à une formule (CWE-1236)", async () => {
-    const manager = await createManager();
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const property = await createProperty(manager.id, { title: "=2+2" });
     await testDb.insert(expenses).values({
       propertyId: property.id,
@@ -203,7 +213,7 @@ describe("GET /api/fiscal/grand-livre", () => {
   });
 
   it("ne fait pas fuiter les écritures d'un autre gestionnaire", async () => {
-    const managerA = await createManager();
+    const managerA = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const managerB = await createManager();
     const propertyB = await createProperty(managerB.id, { title: "Bien Confidentiel B" });
     const tenantB = await createTenant(managerB.id);
@@ -218,7 +228,7 @@ describe("GET /api/fiscal/grand-livre", () => {
   });
 
   it("indique l'absence d'écritures pour un exercice sans activité", async () => {
-    const manager = await createManager();
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
 
     const res = await request(app).get("/api/fiscal/grand-livre?year=2020").set(authHeader(tokenFor(manager)));
 
@@ -231,7 +241,7 @@ describe("GET /api/fiscal/grand-livre", () => {
     // cumulé sortait en « 799.9999999999999 ». Et tous les montants
     // sortaient au point décimal alors que le séparateur de colonnes est le
     // point-virgule — illisibles comme nombres dans un tableur français.
-    const manager = await createManager();
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const property = await createProperty(manager.id, { title: "Villa Ngor" });
     const tenant = await createTenant(manager.id);
     const contract = await createContract(property.id, tenant.id);
@@ -253,5 +263,16 @@ describe("GET /api/fiscal/grand-livre", () => {
     // et surtout pas « 799.9999999999999 ».
     expect(res.text).toContain("800,00");
     expect(res.text).not.toContain("799.99");
+  });
+
+  // Export comptable (grand livre) : réservé à Entreprise (CGU §3) — un
+  // gestionnaire Pro a accès à la synthèse fiscale mais pas à cet export.
+  it("refuse l'export à un gestionnaire Pro (réservé à Entreprise)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app).get("/api/fiscal/grand-livre?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Entreprise");
   });
 });

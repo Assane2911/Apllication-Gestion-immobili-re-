@@ -183,4 +183,37 @@ describe("Messages API (/api/messages)", () => {
 
     expect(res.status).toBe(403);
   });
+
+  // Messagerie directe intégrée : fonctionnalité Pro (CGU §3).
+  it("POST /api/messages/:id — refuse au gestionnaire d'écrire si sa formule est Starter", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .post(`/api/messages/${contract.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ content: "Bonjour" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Pro Agence");
+  });
+
+  // Le locataire, lui, n'est jamais restreint par la formule de son
+  // gestionnaire : il doit toujours pouvoir écrire à son agence.
+  it("POST /api/messages/:id — laisse le locataire écrire même si le gestionnaire est en formule Starter", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
+
+    const res = await request(app)
+      .post(`/api/messages/${contract.id}`)
+      .set(authHeader(tokenFor(portalUser, tenant.id)))
+      .send({ content: "J'ai une question" });
+
+    expect(res.status).toBe(201);
+  });
 });

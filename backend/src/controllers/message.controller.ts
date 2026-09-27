@@ -6,7 +6,8 @@ import { db } from "../db/client";
 import { contracts, messages, properties, tenants, users } from "../db/schema";
 import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertAccesLocataireOuGestionnaire, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertAccesLocataireOuGestionnaire, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertPlanAtLeast } from "../middleware/auth";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 export const listConversations = asyncHandler(async (req: Request, res: Response) => {
@@ -162,6 +163,14 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     contract.tenantId === (await idLocataireDuCompte(req)),
     row.property.managerId === req.user.userId
   );
+
+  // Messagerie directe intégrée : fonctionnalité Pro (CGU §3) — seul l'envoi
+  // par le GESTIONNAIRE est concerné ; un locataire ne doit jamais être privé
+  // de la possibilité d'écrire à son agence par la formule que celle-ci a
+  // choisie.
+  if (req.user.role === "MANAGER") {
+    assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
+  }
 
   const [newMsg] = await db
     .insert(messages)

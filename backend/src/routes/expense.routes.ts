@@ -6,15 +6,19 @@ import {
   getFinancialSummary,
   listExpenses,
 } from "../controllers/expense.controller";
-import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
+import { authenticate, requireActiveSubscription, requirePlan, requireRole } from "../middleware/auth";
 
 const router = Router();
 
-router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
+// Suivi des dépenses & rentabilité : fonctionnalité Pro (voir CGU §3 /
+// page tarifs) — jamais vérifié jusqu'ici, comme pour maxPropertiesForPlan.
+router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription, requirePlan("PRO"));
 
 router.get("/", listExpenses);
 router.get("/summary", getFinancialSummary);
-router.get("/export", exportFinancialReport);
+// Export comptable : réservé à Entreprise (CGU §3), au-delà du suivi des
+// dépenses lui-même (Pro, voir le requirePlan("PRO") du router.use ci-dessus).
+router.get("/export", requirePlan("ENTERPRISE"), exportFinancialReport);
 router.post("/", createExpense);
 router.delete("/:id", deleteExpense);
 

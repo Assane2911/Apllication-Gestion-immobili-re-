@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { computeSubscriptionInfo } from "../controllers/auth.controller";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { tenants, users } from "../db/schema";
@@ -157,4 +158,56 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
   }
 
   next();
+}
+
+const PLAN_RANK: Record<string, number> = { STARTER: 0, PRO: 1, ENTERPRISE: 2 };
+const PLAN_LABEL: Record<string, string> = { PRO: "Pro Agence", ENTERPRISE: "Entreprise" };
+
+/**
+ * Vérifie qu'un gestionnaire dispose au moins de la formule demandée (audit
+ * sept. 2026 : comme pour maxPropertiesForPlan côté nombre de biens, les CGU
+ * et la page tarifs annoncent des fonctionnalités réservées à Pro/Entreprise
+ * — signature électronique, suivi de rentabilité, messagerie, export
+ * comptable — sans qu'aucun contrôle ne les fasse respecter jusqu'ici).
+ *
+ * Fonction nue (et non middleware) pour rester appelable au milieu d'un
+ * contrôleur — nécessaire pour les ressources à double rôle (signature de
+ * bail, messagerie) où seule la branche GESTIONNAIRE doit être restreinte :
+ * un locataire ou un propriétaire ne doit jamais être pénalisé par la
+ * formule choisie par son gestionnaire (même principe que
+ * requireActiveSubscription ci-dessus). `requirePlan` ci-dessous n'est donc
+ * à poser que sur des routes exclusivement gestionnaire.
+ */
+export function assertPlanAtLeast(user: typeof users.$inferSelect, minPlan: "PRO" | "ENTERPRISE"): void {
+  // Pendant l'essai gratuit, la formule effective est Pro (promis par les
+  // CGU), quelle que soit la formule par défaut (Starter) attribuée à
+  // l'inscription — même repli que maxPropertiesForPlan (property.controller.ts).
+  const subscription = computeSubscriptionInfo(user);
+  const effectivePlan = subscription?.isTrialActive ? "PRO" : user.subscriptionPlan;
+
+  if ((PLAN_RANK[effectivePlan] ?? 0) < PLAN_RANK[minPlan]) {
+    throw new ApiError(
+      403,
+      `Cette fonctionnalité est réservée à la formule ${PLAN_LABEL[minPlan]} ou supérieure. Passez à une formule supérieure pour y accéder.`
+    );
+  }
+}
+
+/** Middleware équivalent à assertPlanAtLeast, pour une route exclusivement gestionnaire. */
+export function requirePlan(minPlan: "PRO" | "ENTERPRISE") {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) return next(new ApiError(401, "Authentification requise"));
+    if (req.user.role !== "MANAGER") return next();
+
+    const user = req.compteCourant;
+    if (!user) return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
+
+    try {
+      assertPlanAtLeast(user, minPlan);
+    } catch (err) {
+      return next(err);
+    }
+
+    next();
+  };
 }

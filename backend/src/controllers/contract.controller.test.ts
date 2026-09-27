@@ -571,6 +571,40 @@ describe("POST /api/contracts/:id/sign", () => {
 
     expect(res.status).toBe(403);
   });
+
+  // Signature électronique : fonctionnalité Pro (CGU §3).
+  it("refuse au gestionnaire de signer si sa formule est Starter", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/sign`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ signatureDataUrl: SIGNATURE_DATA_URL });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Pro Agence");
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(apres.signedByManagerAt).toBeNull();
+  });
+
+  // Le locataire, lui, n'est jamais restreint par la formule de son
+  // gestionnaire (même principe que requireActiveSubscription).
+  it("laisse le locataire signer même si le gestionnaire est en formule Starter", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/sign`)
+      .set(authHeader(await tokenLocataire(tenant.id)))
+      .send({ signatureDataUrl: SIGNATURE_DATA_URL });
+
+    expect(res.status).toBe(200);
+  });
 });
 
 

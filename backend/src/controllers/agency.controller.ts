@@ -5,7 +5,8 @@ import { db } from "../db/client";
 import { agencySettings, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bicSchema, ibanSchema } from "../utils/iban";
-import { chargerLocataireDuCompte } from "../utils/authorization";
+import { chargerCompteCourant, chargerLocataireDuCompte } from "../utils/authorization";
+import { assertPlanAtLeast } from "../middleware/auth";
 
 export const getAgencySettings = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -53,6 +54,18 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
     .select()
     .from(agencySettings)
     .where(eq(agencySettings.userId, req.user.userId));
+
+  // Marque blanche (logo, tampon) : fonctionnalité Pro (CGU §3). Le reste des
+  // réglages d'agence (coordonnées bancaires, mentions légales...) reste
+  // accessible à toutes les formules — un gestionnaire Starter doit pouvoir
+  // renseigner son IBAN pour encaisser un virement, par exemple. On ne
+  // restreint donc que le CHANGEMENT effectif de ces deux champs, jamais le
+  // reste du formulaire (envoyé en entier à chaque enregistrement).
+  const changeLogo = !!body.logoUrl && body.logoUrl !== (existing?.logoUrl ?? null);
+  const changeStamp = !!body.stampOrSignatureUrl && body.stampOrSignatureUrl !== (existing?.stampOrSignatureUrl ?? null);
+  if (changeLogo || changeStamp) {
+    assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
+  }
 
   if (!existing) {
     const [created] = await db
