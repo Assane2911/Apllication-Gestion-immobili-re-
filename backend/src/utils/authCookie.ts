@@ -13,18 +13,27 @@ import { env } from "../config/env";
  */
 export const AUTH_COOKIE_NAME = "token";
 
-// Frontend et backend sont sur des origines distinctes même en production
-// (souvent deux sous-domaines *.vercel.app, donc deux "sites" au sens de
-// SameSite) : seul SameSite=None laisse alors le cookie suivre la requête, ce
-// qui impose Secure. En local/dev, les deux serveurs tournent sur des ports
-// différents de "localhost" mais RESTENT le même site — Lax suffit, et évite
-// d'exiger HTTPS localement, où il n'existe pas.
+// Frontend et backend sont TOUJOURS sur des origines distinctes sur Vercel —
+// y compris en preview, où chaque déploiement (front comme back) reçoit son
+// propre sous-domaine *.vercel.app généré par PR, donc deux "sites" distincts
+// au sens de SameSite. Seul SameSite=None laisse alors le cookie suivre la
+// requête, ce qui impose Secure. `NODE_ENV` n'est PAS fiable ici : Vercel ne
+// le positionne pas automatiquement à l'exécution (seul `VERCEL=1` l'est,
+// voir la liste officielle de ses "System Environment Variables" — déjà
+// utilisé pour la même raison par `trust proxy` dans app.ts). Sans ce
+// repli, la valeur par défaut de env.nodeEnv ("development") aurait posé un
+// cookie Lax + non-Secure en production réelle : jamais renvoyé par le
+// navigateur sur une requête cross-site, donc une authentification web
+// silencieusement cassée dès le premier déploiement. En local/dev (hors
+// Vercel), les deux serveurs tournent sur des ports différents de
+// "localhost" mais RESTENT le même site — Lax suffit, et évite d'exiger
+// HTTPS localement, où il n'existe pas.
 function cookieOptions(maxAge?: number) {
-  const isProd = env.nodeEnv === "production";
+  const surVercel = env.nodeEnv === "production" || process.env.VERCEL === "1";
   return {
     httpOnly: true,
-    secure: isProd,
-    sameSite: (isProd ? "none" : "lax") as "none" | "lax",
+    secure: surVercel,
+    sameSite: (surVercel ? "none" : "lax") as "none" | "lax",
     path: "/",
     ...(maxAge !== undefined ? { maxAge } : {}),
   };
