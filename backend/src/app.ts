@@ -1,5 +1,6 @@
 import "./instrument";
 import * as Sentry from "@sentry/node";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -101,6 +102,12 @@ app.use("/api/payments/stripe/webhook", express.raw({ type: "*/*" }));
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Lit le cookie httpOnly posé à la connexion (voir utils/authCookie.ts) dans
+// req.cookies, consulté par authenticate (middleware/auth.ts) en repli quand
+// aucun en-tête Authorization n'est présent — le cas du frontend web depuis
+// cette migration.
+app.use(cookieParser());
 
 // Les fichiers (images des biens, pièces d'identité, photos d'incidents) sont
 // stockés sur Supabase Storage, pas sur disque local (nécessaire sur Vercel,

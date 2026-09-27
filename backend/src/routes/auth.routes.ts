@@ -4,6 +4,7 @@ import {
   forgotPassword,
   login,
   loginWithGoogle,
+  logout,
   me,
   registerManager,
   resendVerification,
@@ -37,6 +38,9 @@ router.post("/forgot-password", authIpLimiter, authEmailLimiter, forgotPassword)
 router.post("/reset-password", authIpLimiter, resetPassword);
 router.get("/me", authenticate, me);
 router.patch("/currency", authenticate, updateCurrency);
+// Sans authenticate : voir le commentaire de logout (auth.controller.ts) —
+// un cookie déjà expiré ou absent doit pouvoir être "nettoyé" sans 401.
+router.post("/logout", logout);
 router.post("/logout-all", authenticate, logoutAllDevices);
 router.delete("/account", authenticate, requireRole("MANAGER"), deleteMyAccount);
 

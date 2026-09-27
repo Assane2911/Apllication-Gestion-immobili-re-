@@ -55,13 +55,14 @@ describe("AuthProvider", () => {
 
     expect(screen.getByTestId("user-email").textContent).toBe("aucun");
     // Laisse le useEffect initial (refreshUser) se dérouler avant de vérifier :
-    // sans token en localStorage, il doit ressortir immédiatement, sans jamais
-    // appeler l'API.
+    // sans indice de session locale (voir AuthContext.tsx — `user` sur le web,
+    // `token` en natif), il doit ressortir immédiatement, sans jamais appeler
+    // l'API.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mockedApi.get).not.toHaveBeenCalled();
   });
 
-  it("login : stocke le token et l'utilisateur, et met à jour le contexte", async () => {
+  it("login (web) : stocke l'utilisateur et met à jour le contexte, sans stocker le jeton en localStorage", async () => {
     const user = userEvent.setup();
     mockedApi.post.mockResolvedValueOnce({
       data: { token: "jwt-abc", user: { id: "u1", email: "alice@test.local", role: "MANAGER" } },
@@ -71,8 +72,12 @@ describe("AuthProvider", () => {
     await user.click(screen.getByTestId("login-btn"));
 
     await waitFor(() => expect(screen.getByTestId("user-email").textContent).toBe("alice@test.local"));
-    expect(localStorage.getItem("token")).toBe("jwt-abc");
+    // Le cookie httpOnly posé par le serveur (voir backend/src/utils/authCookie.ts)
+    // porte désormais la session sur le web : stocker aussi le jeton en clair ici
+    // recréerait le risque de vol par XSS que cette migration retire.
+    expect(localStorage.getItem("token")).toBeNull();
     expect(JSON.parse(localStorage.getItem("user")!).email).toBe("alice@test.local");
+    expect(localStorage.getItem("hasSession")).toBe("1");
   });
 
   it("login : en cas d'échec, n'enregistre rien et repasse loading à false", async () => {
@@ -101,10 +106,12 @@ describe("AuthProvider", () => {
     expect(screen.getByTestId("user-email").textContent).toBe("aucun");
     expect(localStorage.getItem("token")).toBeNull();
     expect(localStorage.getItem("user")).toBeNull();
+    expect(localStorage.getItem("hasSession")).toBeNull();
   });
 
-  it("refreshUser : reconstruit tenantId/tenantName à partir de /auth/me quand un token existe", async () => {
-    localStorage.setItem("token", "jwt-existant");
+  it("refreshUser : reconstruit tenantId/tenantName à partir de /auth/me quand une session locale est connue", async () => {
+    localStorage.setItem("user", JSON.stringify({ id: "t1", email: "locataire@test.local", role: "TENANT" }));
+    localStorage.setItem("hasSession", "1");
     mockedApi.get.mockResolvedValueOnce({
       data: {
         id: "t1",
@@ -122,14 +129,20 @@ describe("AuthProvider", () => {
     expect(JSON.parse(localStorage.getItem("user")!).tenantId).toBe("tenant-1");
   });
 
-  it("refreshUser : ne casse rien si le token est invalide (échec de /auth/me)", async () => {
-    localStorage.setItem("token", "jwt-invalide");
+  it("refreshUser : ne casse rien si la session a expiré côté serveur (échec de /auth/me)", async () => {
+    // Le nettoyage d'une session expirée (401) est le rôle de l'intercepteur
+    // de réponse (api/client.ts), pas de refreshUser lui-même : un échec ici
+    // ne doit ni planter ni écraser un profil déjà affiché — utile aussi pour
+    // une simple panne réseau transitoire, où le compte reste par ailleurs
+    // valide.
+    localStorage.setItem("user", JSON.stringify({ id: "u1", email: "ancien@test.local", role: "MANAGER" }));
+    localStorage.setItem("hasSession", "1");
     mockedApi.get.mockRejectedValueOnce(new Error("401"));
 
     renderAuth();
 
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
-    expect(screen.getByTestId("user-email").textContent).toBe("aucun");
+    expect(screen.getByTestId("user-email").textContent).toBe("ancien@test.local");
   });
 });
 
@@ -153,7 +166,8 @@ describe("AuthProvider — la devise du profil survit au rafraîchissement", () 
    * gestionnaire retombait sur l'euro sans recours.
    */
   it("conserve la devise renvoyée par le serveur", async () => {
-    localStorage.setItem("token", "jeton-valide");
+    localStorage.setItem("user", JSON.stringify({ id: "u1", email: "alice@test.local", role: "MANAGER" }));
+    localStorage.setItem("hasSession", "1");
     mockedApi.get.mockResolvedValue({
       data: {
         id: "u1",

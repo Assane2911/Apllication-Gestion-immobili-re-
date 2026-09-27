@@ -98,4 +98,45 @@ describe("Révocation des jetons par version", () => {
     const res = await request(app).get("/api/auth/me").set(authHeader(connexion.body.token));
     expect(res.status).toBe(200);
   });
+
+  // Le cookie httpOnly (frontend web — voir utils/authCookie.ts) référence la
+  // même version de jeton que l'en-tête Authorization : une révocation doit
+  // donc aussi couper l'accès qui passerait par lui, pas seulement l'en-tête.
+  it("efface aussi le cookie httpOnly du navigateur appelant lors d'une réinitialisation de mot de passe", async () => {
+    const manager = await createManager({ email: "cookie-reset@test.local" });
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "cookie-reset@test.local", password: "Password123!" });
+
+    const jetonDeReinitialisation = "jeton-cookie-reset";
+    const empreinte = await import("crypto").then((c) =>
+      c.createHash("sha256").update(jetonDeReinitialisation).digest("hex")
+    );
+    await testDb
+      .update(users)
+      .set({
+        resetPasswordTokenHash: empreinte,
+        resetPasswordExpiresAt: new Date(Date.now() + 3_600_000),
+      })
+      .where(eq(users.id, manager.id));
+
+    const reinit = await agent
+      .post("/api/auth/reset-password")
+      .send({ token: jetonDeReinitialisation, password: "NouveauMotDePasse123!" });
+    expect(reinit.status).toBe(200);
+
+    const res = await agent.get("/api/auth/me");
+    expect(res.status).toBe(401);
+  });
+
+  it("efface aussi le cookie httpOnly du navigateur appelant lors d'une déconnexion de tous les appareils", async () => {
+    const manager = await createManager({ email: "cookie-logout-all@test.local" });
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "cookie-logout-all@test.local", password: "Password123!" });
+
+    const demande = await agent.post("/api/auth/logout-all");
+    expect(demande.status).toBe(200);
+
+    const res = await agent.get("/api/auth/me");
+    expect(res.status).toBe(401);
+  });
 });

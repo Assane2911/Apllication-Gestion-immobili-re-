@@ -27,9 +27,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     setCurrencyState(code);
     localStorage.setItem("app_currency", code);
 
-    // Si l'utilisateur est connecté, sauvegarder sa préférence sur le backend
-    const token = localStorage.getItem("token");
-    if (token) {
+    // Si l'utilisateur est connecté, sauvegarder sa préférence sur le backend.
+    // `user` (contexte, pas localStorage) reste la bonne source pour ça même
+    // sur le web, où l'authentification voyage désormais dans un cookie
+    // httpOnly et ne laisse plus de jeton lisible ici (voir AuthContext.tsx) —
+    // un test sur localStorage.getItem("token") ne détecterait jamais plus
+    // personne comme connecté sur cette plateforme.
+    if (user) {
       try {
         await api.patch("/auth/currency", { currency: code });
       } catch (err) {

@@ -1,8 +1,17 @@
+import { Capacitor } from "@capacitor/core";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AuthUser } from "../types";
 import { AuthContext } from "./auth";
+
+// Indice non sensible (jamais le jeton lui-même) qu'une connexion web a déjà
+// eu lieu sur cet appareil, pour éviter d'appeler /auth/me à chaque montage
+// pour un simple visiteur — voir refreshUser ci-dessous. Volontairement
+// distinct de la clé "user" : de nombreux tests posent directement "user" en
+// localStorage pour simuler un profil déjà chargé sans passer par login(),
+// et ne doivent pas de ce seul fait déclencher un appel réseau.
+const SESSION_HINT_KEY = "hasSession";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
@@ -12,8 +21,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   async function refreshUser(): Promise<AuthUser | null> {
-    const token = localStorage.getItem("token");
-    if (!token) return null;
+    // Natif (app Capacitor) : le jeton reste dans localStorage et porté par
+    // l'en-tête Authorization (voir api/client.ts) — inutile d'appeler /me
+    // sans lui. Web : l'authentification voyage dans un cookie httpOnly
+    // illisible depuis ce code, donc impossible à tester directement ; voir
+    // SESSION_HINT_KEY ci-dessus. Un indice présent mais un cookie expiré ou
+    // absent se résout simplement par le 401 de l'appel.
+    const indiceSessionLocale = Capacitor.isNativePlatform()
+      ? localStorage.getItem("token")
+      : localStorage.getItem(SESSION_HINT_KEY);
+    if (!indiceSessionLocale) return null;
     try {
       const { data } = await api.get("/auth/me");
       const updatedUser: AuthUser = {
@@ -49,8 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      localStorage.setItem("token", data.token);
+      // Web : le serveur vient de poser le cookie httpOnly qui portera
+      // l'authentification (voir api/client.ts) — stocker aussi le jeton en
+      // clair ici recréerait exactement le risque de vol par XSS que cette
+      // migration retire. Natif : pas de cookie fiable, le jeton reste géré
+      // comme avant.
+      if (Capacitor.isNativePlatform()) {
+        localStorage.setItem("token", data.token);
+      }
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem(SESSION_HINT_KEY, "1");
       setUser(data.user);
       return data.user as AuthUser;
     } finally {
@@ -70,8 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/google", { credential });
-      localStorage.setItem("token", data.token);
+      if (Capacitor.isNativePlatform()) {
+        localStorage.setItem("token", data.token);
+      }
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem(SESSION_HINT_KEY, "1");
       setUser(data.user);
       return data.user as AuthUser;
     } finally {
@@ -96,8 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/verify-email", { token });
-      localStorage.setItem("token", data.token);
+      if (Capacitor.isNativePlatform()) {
+        localStorage.setItem("token", data.token);
+      }
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem(SESSION_HINT_KEY, "1");
       setUser(data.user);
       return data.user as AuthUser;
     } finally {
@@ -105,10 +136,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function logout() {
-    localStorage.removeItem("token");
+  async function logout() {
+    if (Capacitor.isNativePlatform()) {
+      localStorage.removeItem("token");
+    }
     localStorage.removeItem("user");
+    localStorage.removeItem(SESSION_HINT_KEY);
     setUser(null);
+    try {
+      // Efface le cookie httpOnly côté serveur : la seule chose qu'un
+      // frontend web ne peut plus faire lui-même pour un jeton qu'il ne lit
+      // ni ne stocke plus (voir api/client.ts). Un échec ici (cookie déjà
+      // absent ou expiré, réseau coupé) ne remet pas en cause la
+      // déconnexion locale déjà actée ci-dessus.
+      await api.post("/auth/logout");
+    } catch {
+      // Rien de plus à faire : voir le commentaire ci-dessus.
+    }
   }
 
   return (

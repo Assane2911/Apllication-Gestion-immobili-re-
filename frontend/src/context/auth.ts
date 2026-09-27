@@ -8,7 +8,7 @@ export interface AuthContextValue {
   register: (email: string, password: string) => Promise<{ pendingVerification: boolean }>;
   loginWithGoogle: (credential: string) => Promise<AuthUser>;
   verifyEmail: (token: string) => Promise<AuthUser>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<AuthUser | null>;
 }
 

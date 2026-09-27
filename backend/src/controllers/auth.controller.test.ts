@@ -107,6 +107,51 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
   });
 });
 
+describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
+  it("pose un cookie httpOnly `token` à la connexion, exploitable par /me sans en-tête Authorization", async () => {
+    await request(app).post("/api/auth/register").send({ email: "cookie@test.local", password: "Password123!" });
+    await testDb.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.email, "cookie@test.local"));
+
+    const agent = request.agent(app);
+    const loginRes = await agent
+      .post("/api/auth/login")
+      .send({ email: "cookie@test.local", password: "Password123!" });
+
+    expect(loginRes.status).toBe(200);
+    const setCookie = (loginRes.headers["set-cookie"] ?? []) as unknown as string[];
+    expect(setCookie.some((c) => c.startsWith("token=") && /HttpOnly/i.test(c))).toBe(true);
+
+    // Même agent (jar de cookies) : /me répond sans aucun en-tête Authorization.
+    const meRes = await agent.get("/api/auth/me");
+    expect(meRes.status).toBe(200);
+    expect(meRes.body.email).toBe("cookie@test.local");
+  });
+
+  it("POST /api/auth/logout efface le cookie : /me échoue ensuite (401) pour ce même navigateur", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "cookie-logout@test.local", password: "Password123!" });
+    await testDb
+      .update(users)
+      .set({ emailVerifiedAt: new Date() })
+      .where(eq(users.email, "cookie-logout@test.local"));
+
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "cookie-logout@test.local", password: "Password123!" });
+
+    const logoutRes = await agent.post("/api/auth/logout");
+    expect(logoutRes.status).toBe(204);
+
+    const meRes = await agent.get("/api/auth/me");
+    expect(meRes.status).toBe(401);
+  });
+
+  it("POST /api/auth/logout répond 204 même sans cookie (rien à effacer)", async () => {
+    const res = await request(app).post("/api/auth/logout");
+    expect(res.status).toBe(204);
+  });
+});
+
 describe("POST /api/auth/login puis /api/auth/me — compte propriétaire (Espace propriétaire)", () => {
   it("renvoie ownerId/ownerName au login et à /me, comme tenantId/tenantName pour un locataire", async () => {
     const manager = await createManager();
