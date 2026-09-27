@@ -26,15 +26,26 @@ vi.mock("nodemailer", () => ({
 // échec) ni la transmission des pièces jointes.
 describe("sendEmail", () => {
   const originalSmtp = { ...env.smtp };
+  // email.service.ts mémorise le transporteur au premier appel réussi
+  // (`getTransporter()` ne rappelle `createTransport` que si aucun n'est déjà
+  // en cache) : une fois créé, il survit à tous les tests suivants de ce
+  // fichier. Remplacer `sendMail` par un NOUVEAU mock à chaque test (via un
+  // second `mockReturnValue` sur `createTransport`) ne change donc plus rien
+  // après le premier test SMTP — le transporteur déjà mis en cache garde
+  // l'ANCIEN `sendMail`. D'où ce mock unique, partagé par tous les tests, dont
+  // chacun ne fait que reconfigurer le PROCHAIN appel (`...Once`).
+  const sendMail = vi.fn();
 
   beforeEach(() => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(nodemailer.createTransport).mockReturnValue({ sendMail } as any);
   });
 
   afterEach(() => {
     env.smtp.user = originalSmtp.user;
     env.smtp.appPassword = originalSmtp.appPassword;
+    sendMail.mockReset();
     vi.restoreAllMocks();
   });
 
@@ -49,8 +60,7 @@ describe("sendEmail", () => {
   it("envoie réellement l'email (et les pièces jointes) quand SMTP est configuré", async () => {
     env.smtp.user = "agence@test.local";
     env.smtp.appPassword = "un-mot-de-passe-app";
-    const sendMail = vi.fn().mockResolvedValue({ messageId: "msg-123" });
-    vi.mocked(nodemailer.createTransport).mockReturnValue({ sendMail } as any);
+    sendMail.mockResolvedValueOnce({ messageId: "msg-123" });
 
     const attachments = [{ filename: "quittance.pdf", content: Buffer.from("pdf"), contentType: "application/pdf" }];
     const result = await sendEmail("locataire@test.local", "Sujet réel", "<p>Contenu réel</p>", attachments);
@@ -69,8 +79,7 @@ describe("sendEmail", () => {
   it("renvoie simulated:false et error:true (sans jeter) si l'envoi SMTP échoue", async () => {
     env.smtp.user = "agence@test.local";
     env.smtp.appPassword = "un-mot-de-passe-app";
-    const sendMail = vi.fn().mockRejectedValue(new Error("Connexion SMTP refusée"));
-    vi.mocked(nodemailer.createTransport).mockReturnValue({ sendMail } as any);
+    sendMail.mockRejectedValueOnce(new Error("Connexion SMTP refusée"));
 
     const result = await sendEmail("locataire@test.local", "Sujet", "<p>Contenu</p>");
 
