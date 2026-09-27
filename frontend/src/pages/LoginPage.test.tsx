@@ -201,4 +201,10 @@ describe("LoginPage — connexion avec Google (VITE_GOOGLE_CLIENT_ID configuré)
 
     expect(await screen.findByText("La connexion avec Google a échoué. Réessaie.")).toBeInTheDocument();
   });
+
+  /** Régression a11y : le formulaire ne vivait dans aucun repère <main>. */
+  it("place le formulaire de connexion dans un repère <main>", () => {
+    renderPage();
+    expect(screen.getByRole("main")).toBeInTheDocument();
+  });
 });

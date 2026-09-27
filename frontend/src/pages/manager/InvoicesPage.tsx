@@ -143,7 +143,7 @@ export default function InvoicesPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.invoices.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.invoices.subtitle")}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.invoices.subtitle")}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <select
@@ -199,7 +199,7 @@ export default function InvoicesPage() {
       {/* Vue tableau (écrans sm et plus) */}
       <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-left border-b border-slate-200 dark:border-slate-800">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-left border-b border-slate-200 dark:border-slate-800">
             <tr>
               <th className="px-4 py-3 font-medium">{t("manager.invoices.table.period")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.invoices.table.tenant")}</th>
@@ -219,7 +219,7 @@ export default function InvoicesPage() {
                 </td>
                 <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
                   <p className="font-medium">{inv.contract?.tenant?.firstName} {inv.contract?.tenant?.lastName}</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">{inv.contract?.tenant?.email}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">{inv.contract?.tenant?.email}</p>
                 </td>
                 <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">{inv.contract?.property?.title}</td>
                 <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">{formatMoney(inv.amount, inv.currency)}</td>
@@ -271,7 +271,7 @@ export default function InvoicesPage() {
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-slate-600 dark:text-slate-400">
                   {t("manager.invoices.noInvoicesForFilter")}
                 </td>
               </tr>
@@ -283,7 +283,7 @@ export default function InvoicesPage() {
       {/* Vue cartes empilées (mobile, < sm) */}
       <div className="sm:hidden space-y-3">
         {invoices.length === 0 ? (
-          <p className="text-center text-slate-400 dark:text-slate-500 text-sm py-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <p className="text-center text-slate-600 dark:text-slate-400 text-sm py-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
             {t("manager.invoices.noInvoicesForFilter")}
           </p>
         ) : (
@@ -294,7 +294,7 @@ export default function InvoicesPage() {
                   <p className="font-medium text-slate-900 dark:text-slate-100">
                     {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{inv.contract?.property?.title}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">{inv.contract?.property?.title}</p>
                 </div>
                 <Badge status={inv.status} />
               </div>
@@ -306,7 +306,7 @@ export default function InvoicesPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 dark:text-slate-100">{formatMoney(inv.amount, inv.currency)}</span>
-                <span className="text-slate-500 dark:text-slate-400">
+                <span className="text-slate-600 dark:text-slate-400">
                   {t("manager.invoices.dueDatePrefix", { date: new Date(inv.dueDate).toLocaleDateString(i18n.language) })}
                 </span>
               </div>

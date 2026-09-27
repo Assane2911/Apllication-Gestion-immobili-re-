@@ -49,7 +49,7 @@ export default function AdminSettingsPage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("admin.settings.title")}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("admin.settings.subtitle")}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("admin.settings.subtitle")}</p>
       </div>
 
       {loadError ? (

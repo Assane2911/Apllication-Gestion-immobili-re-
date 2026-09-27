@@ -50,7 +50,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
             </div>
             <div>
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 {isPdf ? "Document PDF numérisé" : "Scan image / photo haute résolution"}
               </p>
             </div>

@@ -90,7 +90,7 @@ export default function BoutonSuggestion() {
             <h3 id="suggestion-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
               {t("suggestions.title")}
             </h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("suggestions.subtitle")}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("suggestions.subtitle")}</p>
 
             {envoye ? (
               <div className="mt-4">

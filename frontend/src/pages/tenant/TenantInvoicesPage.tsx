@@ -105,7 +105,7 @@ export default function TenantInvoicesPage() {
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             {t("tenant.invoices.title")}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
             Consultez votre historique et réglez vos loyers en toute sécurité.
           </p>
         </div>
@@ -146,7 +146,7 @@ export default function TenantInvoicesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
               En attente de règlement
             </p>
             <span className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
@@ -159,7 +159,7 @@ export default function TenantInvoicesPage() {
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
               Quittances disponibles
             </p>
             <span className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
@@ -198,7 +198,7 @@ export default function TenantInvoicesPage() {
                       {inv.contract?.property?.title}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                     {t("tenant.invoices.dueDate", {
                       date: new Date(inv.dueDate).toLocaleDateString(i18n.language),
                     })}
@@ -246,7 +246,7 @@ export default function TenantInvoicesPage() {
                         className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/40 hover:border-brand-400 dark:hover:border-brand-500 transition-colors"
                       >
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{m.label}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{m.hint}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{m.hint}</p>
                         {m.key === "BANK_TRANSFER" && (
                           <>
                             <BankDetails
@@ -286,7 +286,7 @@ export default function TenantInvoicesPage() {
         })}
         {invoices.length === 0 && (
           <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-            <p className="text-slate-400 dark:text-slate-500 text-sm">{t("tenant.invoices.noInvoices")}</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.invoices.noInvoices")}</p>
           </div>
         )}
       </div>

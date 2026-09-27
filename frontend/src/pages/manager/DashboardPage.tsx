@@ -91,7 +91,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.dashboard.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.dashboard.loadingHint")}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.dashboard.loadingHint")}</p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -175,7 +175,7 @@ export default function DashboardPage() {
               <CheckCircle2 size={12} /> {t("manager.dashboard.liveSystem")}
             </span>
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.dashboard.overviewSubtitle")}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.dashboard.overviewSubtitle")}</p>
         </div>
       </div>
 
@@ -247,7 +247,7 @@ export default function DashboardPage() {
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("manager.dashboard.charts.revenueVsExpenses")}</h3>
           </div>
           {comparisonChartData.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">
+            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">
               {t("manager.dashboard.charts.noRevenueData")}
             </p>
           ) : (
@@ -255,8 +255,8 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={comparisonChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
-                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
+                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
                   <Tooltip
                     formatter={(value: any, name: any) => {
                       const [kind, currency] = String(name).split("_");
@@ -311,7 +311,7 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("manager.dashboard.charts.statusChart")}</h3>
           {donutData.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">{t("manager.dashboard.charts.noProperties")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.dashboard.charts.noProperties")}</p>
           ) : (
             <>
               <div className="h-[200px] w-full">

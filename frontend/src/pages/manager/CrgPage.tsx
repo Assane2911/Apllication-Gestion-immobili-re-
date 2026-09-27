@@ -109,7 +109,7 @@ export default function CrgPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.crg.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {t("manager.crg.subtitle", { ownerName: crg.ownerName })}
           </p>
         </div>
@@ -189,7 +189,7 @@ export default function CrgPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-left">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
               <tr>
                 <th className="px-4 py-3 font-medium">{t("manager.crg.table.property")}</th>
                 <th className="px-4 py-3 font-medium">{t("manager.crg.table.currency")}</th>
@@ -203,14 +203,14 @@ export default function CrgPage() {
               {crg.properties.map((row) => (
                 <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{row.propertyTitle}</td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">{row.currency}</td>
-                  <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{row.currency}</td>
+                  <td className="px-4 py-3 text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
                     {formatMoney(row.loyersEncaisses, row.currency)}
                   </td>
                   <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold tabular-nums">
                     -{formatMoney(row.chargesDeduites, row.currency)}
                   </td>
-                  <td className="px-4 py-3 text-amber-600 dark:text-amber-400 font-semibold tabular-nums">
+                  <td className="px-4 py-3 text-amber-700 dark:text-amber-400 font-semibold tabular-nums">
                     -{formatMoney(row.commission, row.currency)}
                   </td>
                   <td
@@ -222,7 +222,7 @@ export default function CrgPage() {
               ))}
               {crg.properties.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center text-slate-400 dark:text-slate-500 py-8 text-sm">
+                  <td colSpan={6} className="text-center text-slate-600 dark:text-slate-400 py-8 text-sm">
                     {t("manager.crg.empty")}
                   </td>
                 </tr>

@@ -70,7 +70,7 @@ export default function ActivityLogPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.activityLog.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {t("manager.activityLog.subtitle")}
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function ActivityLogPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.when")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.who")}</th>
@@ -115,7 +115,7 @@ export default function ActivityLogPage() {
                 const Icon = iconByEntityType[log.entityType] ?? Clock;
                 return (
                   <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
                       {formatDateTime(log.createdAt)}
                     </td>
                     <td className="px-4 py-3 text-slate-700 dark:text-slate-300 text-xs">{log.actorLabel}</td>

@@ -27,7 +27,7 @@ export default function MessagesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.messages.title")}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.messages.subtitle")}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.messages.subtitle")}</p>
       </div>
 
       {error && (
@@ -48,7 +48,7 @@ export default function MessagesPage() {
         >
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200">{t("manager.messages.ongoingDiscussions")}</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500">{t("manager.messages.conversationCount", { count: total })}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.messages.conversationCount", { count: total })}</p>
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
             {conversations.map((c) => (
@@ -69,15 +69,15 @@ export default function MessagesPage() {
                   <p className="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate">
                     {c.tenant?.firstName} {c.tenant?.lastName}
                   </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{c.property?.title}</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-1">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{c.property?.title}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-1">
                     {c.lastMessage ? c.lastMessage.content : t("manager.messages.noMessageYet")}
                   </p>
                 </div>
               </button>
             ))}
             {conversations.length === 0 && (
-              <p className="text-xs text-slate-400 dark:text-slate-500 p-6 text-center">{t("manager.messages.noActiveContracts")}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400 p-6 text-center">{t("manager.messages.noActiveContracts")}</p>
             )}
           </div>
           <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -100,7 +100,7 @@ export default function MessagesPage() {
                     type="button"
                     onClick={() => setSelectedContractId(null)}
                     aria-label={t("common.actions.back")}
-                    className="md:hidden shrink-0 -ml-1 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-800"
+                    className="md:hidden shrink-0 -ml-1 p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-800"
                   >
                     ←
                   </button>
@@ -108,7 +108,7 @@ export default function MessagesPage() {
                     <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
                       {activeDetails.tenant?.firstName} {activeDetails.tenant?.lastName}
                     </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                       {activeDetails.property?.title} — {activeDetails.property?.address}
                     </p>
                   </div>
@@ -121,14 +121,14 @@ export default function MessagesPage() {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30 dark:bg-slate-950/20">
                 {loadingMessages && (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">{t("manager.messages.loadingMessages")}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-4">{t("manager.messages.loadingMessages")}</p>
                 )}
                 {messages.map((m) => {
                   const isMe = m.senderRole === "MANAGER";
                   return (
                     <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400">
                           {isMe ? t("manager.messages.you") : t("manager.messages.tenantParen", { name: activeDetails.tenant?.firstName })} •{" "}
                           {new Date(m.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}
                         </span>
@@ -146,7 +146,7 @@ export default function MessagesPage() {
                   );
                 })}
                 {!loadingMessages && messages.length === 0 && (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-12">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-12">
                     {t("manager.messages.noMessagesInThread")}
                   </p>
                 )}
@@ -172,7 +172,7 @@ export default function MessagesPage() {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
+            <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400 text-sm">
               {t("manager.messages.selectDiscussion")}
             </div>
           )}

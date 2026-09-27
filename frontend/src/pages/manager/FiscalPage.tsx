@@ -99,7 +99,7 @@ export default function FiscalPage() {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.fiscal.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.fiscal.subtitle")}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.fiscal.subtitle")}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -152,7 +152,7 @@ export default function FiscalPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.fiscal.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.fiscal.subtitle")}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.fiscal.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="fiscal-year-select" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -212,14 +212,14 @@ export default function FiscalPage() {
             {t("manager.fiscal.charts.revenueVsExpenses", { year })}
           </h3>
           {!hasMonthlyData ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">{t("manager.fiscal.charts.noData")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.fiscal.charts.noData")}</p>
           ) : (
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={comparisonChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
-                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-500 dark:text-slate-400" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
+                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
                   <Tooltip
                     formatter={(value: number | string, name: string) => {
                       const [kind, currency] = String(name).split("_");
@@ -270,7 +270,7 @@ export default function FiscalPage() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("manager.fiscal.charts.categoryBreakdown")}</h3>
           {categoryEntries.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 py-16 text-center">{t("manager.fiscal.charts.noCategoryData")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.fiscal.charts.noCategoryData")}</p>
           ) : (
             <ul className="space-y-3">
               {categoryEntries.map(([category, byCurrency]) => (
@@ -291,15 +291,15 @@ export default function FiscalPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-          <Landmark size={16} className="text-slate-400 dark:text-slate-500" />
+          <Landmark size={16} className="text-slate-600 dark:text-slate-400" />
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("manager.fiscal.bilanParBien.title")}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.fiscal.bilanParBien.subtitle")}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.fiscal.bilanParBien.subtitle")}</p>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-left">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
               <tr>
                 <th className="px-4 py-3 font-medium">{t("manager.fiscal.bilanParBien.table.property")}</th>
                 <th className="px-4 py-3 font-medium">{t("manager.fiscal.bilanParBien.table.currency")}</th>
@@ -312,8 +312,8 @@ export default function FiscalPage() {
               {synthesis.bilanParBien.map((row) => (
                 <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{row.propertyTitle}</td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">{row.currency}</td>
-                  <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{row.currency}</td>
+                  <td className="px-4 py-3 text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
                     {formatMoney(row.revenue, row.currency)}
                   </td>
                   <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold tabular-nums">
@@ -328,7 +328,7 @@ export default function FiscalPage() {
               ))}
               {synthesis.bilanParBien.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-slate-400 dark:text-slate-500 py-8 text-sm">
+                  <td colSpan={5} className="text-center text-slate-600 dark:text-slate-400 py-8 text-sm">
                     {t("manager.fiscal.bilanParBien.empty")}
                   </td>
                 </tr>

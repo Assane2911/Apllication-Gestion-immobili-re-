@@ -132,7 +132,7 @@ export default function PropertiesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.properties.title")}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("manager.properties.count", { count: properties.length })}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.properties.count", { count: properties.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.propertyCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
@@ -203,7 +203,7 @@ export default function PropertiesPage() {
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -249,16 +249,16 @@ export default function PropertiesPage() {
                 </div>
               </div>
               <div className="p-4 sm:p-5">
-                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   {p.title}
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{p.address}</p>
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1">{p.address}</p>
                 <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <span className="font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
+                  <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
                     {p.surface} m²
                   </span>
                   <span className="font-bold text-slate-900 dark:text-slate-100">
-                    {formatMoney(p.rent, p.currency)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{t("manager.properties.perMonth")}</span>
+                    {formatMoney(p.rent, p.currency)} <span className="text-xs font-normal text-slate-600 dark:text-slate-400">{t("manager.properties.perMonth")}</span>
                   </span>
                 </div>
               </div>
@@ -275,7 +275,7 @@ export default function PropertiesPage() {
               <Bulle texte={t("manager.tips.propertyDelete")}>
               <button
                 onClick={() => handleDelete(p)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 {t("common.actions.delete")}
               </button>
