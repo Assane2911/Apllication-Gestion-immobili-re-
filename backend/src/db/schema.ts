@@ -78,6 +78,18 @@ export const users = pgTable("users", {
   // sans elle, un double clic ou deux onglets envoyaient chacun leur propre
   // appel au prestataire de paiement pour le même abonnement.
   subscriptionPaymentAttemptStartedAt: timestamp("subscription_payment_attempt_started_at", { mode: "date" }),
+  // Renouvellement automatique réel (Stripe Subscriptions), réservé au
+  // paiement par carte — voir subscription.controller.ts::subscribe. NULL
+  // pour tout compte n'ayant jamais activé le renouvellement automatique
+  // (paiement ponctuel, PayDunya, virement) : c'est la présence de
+  // stripeSubscriptionId, et elle seule, qui distingue un abonnement
+  // réellement reconduit d'un abonnement à renouveler manuellement.
+  // stripeCustomerId survit à la résiliation (réutilisable à la prochaine
+  // souscription, évite de recréer un Customer Stripe) ; stripeSubscriptionId
+  // est effacé quand Stripe confirme la fin de l'abonnement (webhook
+  // customer.subscription.deleted).
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
   // Réinitialisation de mot de passe : on ne stocke jamais le token en clair,
   // seulement son empreinte SHA-256 (comme un token à usage unique classique,
   // distinct du hash bcrypt du mot de passe lui-même). expiresAt limite sa

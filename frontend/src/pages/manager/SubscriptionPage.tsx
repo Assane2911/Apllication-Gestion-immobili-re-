@@ -48,8 +48,10 @@ export default function SubscriptionPage() {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("PAYDUNYA");
   const [bankRef, setBankRef] = useState("");
   const [bankInfo, setBankInfo] = useState<PlatformBankInfo | null>(null);
+  const [autoRenew, setAutoRenew] = useState(false);
   const [, setLoading] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const isNativeApp = Capacitor.isNativePlatform();
@@ -131,6 +133,10 @@ export default function SubscriptionPage() {
         billingCycle,
         paymentMethod: selectedMethod,
         bankReference: selectedMethod === "BANK_TRANSFER" ? bankRef : undefined,
+        // Renouvellement automatique réel (Stripe Subscriptions) : réservé au
+        // paiement par carte — voir CGU §4. Le serveur ignore/rejette cette
+        // valeur pour tout autre moyen, mais autant ne jamais l'envoyer.
+        autoRenew: selectedMethod === "STRIPE" ? autoRenew : undefined,
       });
 
       // PayDunya (et Stripe une fois branché) redirigent vers une page de
@@ -150,6 +156,23 @@ export default function SubscriptionPage() {
       setError(apiErrorMessage(err));
     } finally {
       setSubscribing(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    if (!confirm(t("manager.subscription.confirmCancel"))) return;
+    setCancelling(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const { data } = await api.post("/subscription/cancel");
+      setSuccessMessage(data.message);
+      await refreshUser();
+      loadData();
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -283,6 +306,20 @@ export default function SubscriptionPage() {
             </p>
           </div>
         )}
+
+        {/* Résiliation (CGU §7 : "à tout moment depuis son espace de
+            gestion") — uniquement pour un abonnement payant ACTIF ; déjà
+            résilié (CANCELLED) ou pas encore souscrit, rien à résilier. */}
+        {sub?.status === "ACTIVE" && (
+          <button
+            type="button"
+            onClick={handleCancelSubscription}
+            disabled={cancelling}
+            className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline disabled:opacity-60 whitespace-nowrap"
+          >
+            {cancelling ? t("manager.subscription.cancelling") : t("manager.subscription.cancelButton")}
+          </button>
+        )}
       </div>
 
       {/* Switch Mensuel / Annuel */}
@@ -376,7 +413,10 @@ export default function SubscriptionPage() {
               </div>
 
               <button
-                onClick={() => setSelectedPlan(plan)}
+                onClick={() => {
+                  setSelectedPlan(plan);
+                  setAutoRenew(false);
+                }}
                 disabled={isCurrentPlan}
                 className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm ${
                   isCurrentPlan
@@ -453,6 +493,30 @@ export default function SubscriptionPage() {
                   </label>
                 ))}
               </div>
+
+              {/* Renouvellement automatique réel (Stripe Subscriptions) :
+                  réservé au paiement par carte via Stripe, "explicitement
+                  proposé dans l'interface" (CGU §4) — PayDunya et le
+                  virement restent des paiements ponctuels, à renouveler soi-même
+                  à chaque échéance. */}
+              {selectedMethod === "STRIPE" && (
+                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoRenew}
+                    onChange={(e) => setAutoRenew(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                      {t("manager.subscription.autoRenewLabel")}
+                    </p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                      {t("manager.subscription.autoRenewHint")}
+                    </p>
+                  </div>
+                </label>
+              )}
 
               {selectedMethod === "BANK_TRANSFER" && (
                 <div className="pt-2">

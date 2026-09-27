@@ -1241,6 +1241,11 @@ const fr = {
       },
       confirmAndActivate: "Confirmer et Activer l'Abonnement",
       processing: "Traitement en cours...",
+      autoRenewLabel: "Activer le renouvellement automatique",
+      autoRenewHint: "Votre carte sera débitée automatiquement à chaque échéance, jusqu'à résiliation.",
+      cancelButton: "Résilier mon abonnement",
+      cancelling: "Résiliation...",
+      confirmCancel: "Résilier votre abonnement ? Vous ne serez plus débité à la prochaine échéance, mais votre accès reste actif jusqu'au terme de la période déjà payée.",
       historyTitle: "Historique de vos factures d'abonnement",
       historyTable: {
         date: "Date",

@@ -689,4 +689,135 @@ describe("SubscriptionPage", () => {
       screen.getByText(/La plateforme n'a pas encore renseigné ses coordonnées bancaires/)
     ).toBeInTheDocument();
   });
+
+  /**
+   * Renouvellement automatique réel (Stripe Subscriptions) : réservé au
+   * paiement par carte via Stripe (CGU §4) — la case à cocher ne doit donc
+   * apparaître que pour ce moyen de paiement, et sa valeur doit voyager dans
+   * la requête de souscription.
+   */
+  it("propose le renouvellement automatique uniquement pour le paiement par carte (Stripe)", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser());
+    installerGet(["STRIPE", "BANK_TRANSFER"]);
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+
+    // Stripe est le premier moyen renvoyé par le serveur, donc présélectionné :
+    // la case est déjà visible sans clic supplémentaire.
+    await waitFor(() => expect(screen.getByLabelText(/Activer le renouvellement automatique/)).toBeInTheDocument());
+
+    await user.click(screen.getByRole("radio", { name: /Virement bancaire/ }));
+    expect(screen.queryByLabelText(/renouvellement automatique/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: /Carte bancaire/ }));
+    expect(screen.getByLabelText(/Activer le renouvellement automatique/)).toBeInTheDocument();
+  });
+
+  it("envoie autoRenew: true quand la case est cochée pour un paiement Stripe", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser());
+    installerGet(["STRIPE"]);
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+    mockedApi.post.mockResolvedValueOnce({
+      data: { payment: { method: "STRIPE", status: "REQUIRES_ACTION", redirectUrl: "https://checkout.stripe.test/abc" } },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+    await waitFor(() => expect(screen.getByLabelText(/Activer le renouvellement automatique/)).toBeInTheDocument());
+
+    await user.click(screen.getByLabelText(/Activer le renouvellement automatique/));
+    await user.click(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" }));
+
+    await waitFor(() =>
+      expect(mockedApi.post).toHaveBeenCalledWith("/subscription/subscribe", {
+        plan: "STARTER",
+        billingCycle: "MONTHLY",
+        paymentMethod: "STRIPE",
+        bankReference: undefined,
+        autoRenew: true,
+      })
+    );
+  });
+
+  /**
+   * Régression : le backend expose bien POST /subscription/cancel depuis la
+   * migration multi-utilisateurs, mais aucun bouton ne l'appelait nulle part
+   * dans l'interface — un gestionnaire ne pouvait résilier qu'en appelant
+   * l'API directement, alors que les CGU (§7) promettent une résiliation
+   * "à tout moment depuis son espace de gestion".
+   */
+  describe("résiliation de l'abonnement", () => {
+    it("propose la résiliation pour un abonnement payant actif, et affiche la confirmation renvoyée par le serveur", async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      seedUser(
+        authUser({
+          subscription: subscription({
+            status: "ACTIVE",
+            plan: "PRO",
+            isTrialActive: false,
+            isSubscriptionActive: true,
+            subscriptionEndsAt: "2026-10-01T00:00:00.000Z",
+          }),
+        })
+      );
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+      mockedApi.post.mockResolvedValueOnce({
+        data: {
+          success: true,
+          message: "Le renouvellement automatique de votre abonnement a été annulé.",
+          subscription: subscription({ status: "CANCELLED" }),
+        },
+      });
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+
+      renderPage();
+      await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+
+      await user.click(screen.getByRole("button", { name: "Résilier mon abonnement" }));
+
+      expect(mockedApi.post).toHaveBeenCalledWith("/subscription/cancel");
+      await waitFor(() =>
+        expect(screen.getByText("Le renouvellement automatique de votre abonnement a été annulé.")).toBeInTheDocument()
+      );
+    });
+
+    it("ne résilie rien si le gestionnaire annule la confirmation", async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      seedUser(
+        authUser({
+          subscription: subscription({ status: "ACTIVE", plan: "PRO", isTrialActive: false, isSubscriptionActive: true }),
+        })
+      );
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+
+      renderPage();
+      await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: "Résilier mon abonnement" }));
+
+      expect(mockedApi.post).not.toHaveBeenCalled();
+    });
+
+    it("ne propose pas de résiliation pendant l'essai gratuit ou un abonnement déjà expiré", async () => {
+      seedUser(authUser()); // TRIAL par défaut
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+
+      renderPage();
+      await waitFor(() => expect(screen.getByText("Essai : 7 j restant(s)")).toBeInTheDocument());
+      expect(screen.queryByRole("button", { name: "Résilier mon abonnement" })).not.toBeInTheDocument();
+    });
+  });
 });

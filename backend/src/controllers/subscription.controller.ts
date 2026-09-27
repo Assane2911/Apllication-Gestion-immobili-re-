@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { platformSubscriptions, properties, users } from "../db/schema";
-import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
+import { cancelStripeSubscriptionAtPeriodEnd, initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
 import { calculerPeriodeActivation } from "../services/subscriptionPeriod.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
@@ -254,6 +254,10 @@ const subscribeSchema = z.object({
   billingCycle: z.enum(["MONTHLY", "ANNUAL"]).default("MONTHLY"),
   paymentMethod: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]),
   bankReference: z.string().optional(),
+  // Renouvellement automatique réel (Stripe Subscriptions) — voir CGU §4 :
+  // seul le paiement par carte via Stripe le propose "explicitement dans
+  // l'interface" ; PayDunya et le virement restent des paiements ponctuels.
+  autoRenew: z.boolean().optional().default(false),
 });
 
 /**
@@ -277,6 +281,10 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const body = subscribeSchema.parse(req.body);
+  if (body.autoRenew && body.paymentMethod !== "STRIPE") {
+    throw new ApiError(400, "Le renouvellement automatique n'est disponible que pour le paiement par carte (Stripe).");
+  }
+
   const user = await chargerCompteCourant(req);
 
   const planDef = SUBSCRIPTION_PLANS.find((p) => p.id === body.plan);
@@ -334,6 +342,8 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
       payerEmail: user.email,
       bankReference: body.bankReference,
       returnPath: "/subscription",
+      autoRenew: body.autoRenew,
+      billingCycle: body.billingCycle,
     });
   } finally {
     // Levée inconditionnelle, comme pour payInvoice : que l'appel ait réussi,
@@ -473,7 +483,7 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
 
   // Même raison qu'updateCurrency : sans ce contrôle, un jeton dont le compte
   // n'existe plus produisait un 500 sur computeSubscriptionInfo(undefined).
-  await chargerCompteCourant(req);
+  const compteAvant = await chargerCompteCourant(req);
 
   const [updatedUser] = await db
     .update(users)
@@ -483,9 +493,22 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
     .where(eq(users.id, req.user.userId))
     .returning();
 
+  // Seul un compte ayant réellement activé le renouvellement automatique
+  // (Stripe Subscriptions, voir subscribe()) a un abonnement Stripe à
+  // résilier côté prestataire — RÉGRESSION évitée : ce message affirmait
+  // auparavant "le renouvellement automatique a été annulé" pour TOUT
+  // paiement, y compris ponctuel (PayDunya, virement, ou Stripe sans
+  // reconduction), alors qu'aucun renouvellement automatique n'avait jamais
+  // existé pour ces comptes-là.
+  if (compteAvant.stripeSubscriptionId) {
+    await cancelStripeSubscriptionAtPeriodEnd(compteAvant.stripeSubscriptionId);
+  }
+
   res.json({
     success: true,
-    message: "Le renouvellement automatique de votre abonnement a été annulé.",
+    message: compteAvant.stripeSubscriptionId
+      ? "Le renouvellement automatique de votre abonnement a été annulé. Votre accès reste actif jusqu'au terme de la période déjà payée."
+      : "Votre abonnement ne sera pas reconduit. Votre accès reste actif jusqu'au terme de la période déjà payée.",
     subscription: computeSubscriptionInfo(updatedUser),
   });
 });

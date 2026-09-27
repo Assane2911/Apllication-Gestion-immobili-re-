@@ -342,6 +342,8 @@ export async function initDb() {
     try { await db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS iban TEXT`); } catch {}
     try { await db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS bic TEXT`); } catch {}
     try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS team_owner_id TEXT REFERENCES users(id) ON DELETE CASCADE`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`); } catch {}
+    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE`); } catch {}
     // Sur une base créée avant ce correctif, "tenants.email" portait encore
     // une contrainte UNIQUE globale (nom par défaut Postgres/PGlite pour une
     // colonne UNIQUE déclarée en ligne) — on la retire au profit de l'index

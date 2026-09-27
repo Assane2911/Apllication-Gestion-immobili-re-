@@ -42,8 +42,18 @@ export async function initiatePayment(params: {
   bankReference?: string;
   /** Chemin du frontend vers lequel rediriger une fois le paiement terminé (ex: "/portail/paiements"). */
   returnPath?: string;
+  /**
+   * Renouvellement automatique réel (Stripe Subscriptions), réservé au
+   * paiement par carte — voir subscription.controller.ts::subscribe. Ignoré
+   * pour tout autre moyen de paiement : PayDunya et le virement bancaire
+   * restent des paiements ponctuels, par choix (CGU §4).
+   */
+  autoRenew?: boolean;
+  /** Périodicité de l'abonnement — nécessaire à `autoRenew` pour fixer l'intervalle de reconduction Stripe (mois/an). */
+  billingCycle?: "MONTHLY" | "ANNUAL";
 }): Promise<PaymentIntentResult> {
-  const { method, amount, currency, invoiceId: reference, payerEmail, bankReference, returnPath } = params;
+  const { method, amount, currency, invoiceId: reference, payerEmail, bankReference, returnPath, autoRenew, billingCycle } =
+    params;
 
   // Porte unique : le refus est décidé AVANT tout appel réseau, par la même
   // règle que celle consultée par l'interface.
@@ -55,7 +65,15 @@ export async function initiatePayment(params: {
 
   switch (method) {
     case "STRIPE":
-      return initiateStripePayment(amount, currency, reference, payerEmail, returnPath);
+      return initiateStripePayment(
+        amount,
+        currency,
+        reference,
+        payerEmail,
+        returnPath,
+        autoRenew ?? false,
+        billingCycle ?? "MONTHLY"
+      );
     case "PAYDUNYA":
       return initiatePaydunyaPayment(amount, currency, reference, payerEmail, returnPath);
     case "BANK_TRANSFER":
@@ -248,13 +266,23 @@ export function moyensDePaiementDisponibles(currency: string): PaymentMethodKey[
  * Le montant part en PLUS PETITE UNITÉ de la devise (voir
  * versPlusPetiteUnite) : c'est la convention de Stripe, et s'en écarter
  * facturerait cent fois trop ou cent fois trop peu.
+ *
+ * `autoRenew` bascule la session en `mode: "subscription"` (au lieu de
+ * `"payment"`) : Stripe crée alors un Customer et une Subscription réels, et
+ * reconduit lui-même le prélèvement à chaque échéance (voir
+ * stripe.controller.ts pour les événements de renouvellement/résiliation).
+ * Le prix reste défini en ligne (`price_data`), avec juste un `recurring`
+ * en plus — pas besoin de pré-créer un objet Price dans le tableau de bord
+ * Stripe, cohérent avec le paiement ponctuel existant.
  */
 async function initiateStripePayment(
   amount: number,
   currency: string,
   reference: string,
   payerEmail: string,
-  returnPath?: string
+  returnPath?: string,
+  autoRenew = false,
+  billingCycle: "MONTHLY" | "ANNUAL" = "MONTHLY"
 ): Promise<PaymentIntentResult> {
   if (env.payments.demoMode) {
     return simulatedResult("STRIPE", reference, "Mode démo — paiement Stripe simulé.");
@@ -263,7 +291,7 @@ async function initiateStripePayment(
   const redirectBase = `${env.frontendUrl}${returnPath ?? "/"}`;
 
   const corps = new URLSearchParams({
-    mode: "payment",
+    mode: autoRenew ? "subscription" : "payment",
     customer_email: payerEmail,
     // client_reference_id nous revient tel quel dans le webhook : c'est notre
     // identifiant d'origine (id de facture, ou "sub_<userId>_<timestamp>").
@@ -277,6 +305,12 @@ async function initiateStripePayment(
     success_url: `${redirectBase}?stripe=succes`,
     cancel_url: `${redirectBase}?stripe=annule`,
   });
+
+  if (autoRenew) {
+    // Seul ajout nécessaire pour un prix récurrent : `product_data` (nom,
+    // description) reste valide tel quel, avec ou sans `recurring`.
+    corps.set("line_items[0][price_data][recurring][interval]", billingCycle === "ANNUAL" ? "year" : "month");
+  }
 
   let response: Response;
   try {
@@ -317,6 +351,43 @@ async function initiateStripePayment(
     redirectUrl: data.url,
     message: "Redirection vers Stripe pour finaliser le paiement.",
   };
+}
+
+/**
+ * Résilie un abonnement Stripe réel à la fin de la période déjà payée
+ * (`cancel_at_period_end`), plutôt qu'une résiliation immédiate : même règle
+ * que cancelSubscription (subscription.controller.ts) pour tout moyen de
+ * paiement — un abonnement résilié reste utilisable jusqu'à son terme.
+ * Stripe continue alors de facturer la période en cours (déjà réglée) mais
+ * n'en déclenchera plus aucune après elle, et enverra `customer.subscription.
+ * deleted` à l'échéance (voir stripe.controller.ts).
+ *
+ * N'échoue jamais bruyamment : appelée depuis cancelSubscription(), qui doit
+ * pouvoir résilier localement même si Stripe est injoignable — la résiliation
+ * du client ne doit pas dépendre de la disponibilité du prestataire.
+ * L'échec est journalisé pour un suivi opérationnel (webhook à rejouer,
+ * incohérence à corriger à la main).
+ */
+export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: string): Promise<void> {
+  try {
+    const response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.payments.stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ cancel_at_period_end: "true" }).toString(),
+    });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+      console.error(
+        `[stripe] Échec de la résiliation (cancel_at_period_end) de l'abonnement ${stripeSubscriptionId} :`,
+        data.error?.message ?? response.status
+      );
+    }
+  } catch (err) {
+    console.error(`[stripe] Échec réseau lors de la résiliation de l'abonnement ${stripeSubscriptionId} :`, err);
+  }
 }
 
 /**

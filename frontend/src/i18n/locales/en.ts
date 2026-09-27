@@ -1240,6 +1240,11 @@ const en: TranslationSchema = {
       },
       confirmAndActivate: "Confirm and Activate Subscription",
       processing: "Processing...",
+      autoRenewLabel: "Enable automatic renewal",
+      autoRenewHint: "Your card will be charged automatically at each due date, until cancelled.",
+      cancelButton: "Cancel my subscription",
+      cancelling: "Cancelling...",
+      confirmCancel: "Cancel your subscription? You won't be charged again at the next due date, but your access stays active until the end of the period already paid for.",
       historyTitle: "Your subscription invoice history",
       historyTable: {
         date: "Date",
