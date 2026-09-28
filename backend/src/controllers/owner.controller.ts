@@ -280,7 +280,12 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
     agencyName: settings?.agencyName || "Votre agence",
     inviteUrl,
   });
-  sendEmail(owner.email, subject, html).catch((err) => {
+  // Attendu avant la réponse : sur Vercel (serverless), l'exécution peut
+  // s'arrêter juste après l'envoi de la réponse, avant qu'un envoi non
+  // attendu ait eu le temps de partir (même bug déjà corrigé ailleurs — voir
+  // errorHandler.ts). `.catch()` garantit quand même que l'échec de l'email
+  // ne fait jamais échouer la création du compte propriétaire.
+  await sendEmail(owner.email, subject, html).catch((err) => {
     console.error("[owners] Échec de l'envoi de l'email d'invitation:", err);
   });
 

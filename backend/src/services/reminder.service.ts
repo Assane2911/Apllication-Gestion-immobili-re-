@@ -308,12 +308,25 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   }
 
   let interrompu = false;
+  let generationEchecs = 0;
   for (const { contract } of activeContractRows) {
     if (budget.epuise()) {
       interrompu = true;
       break;
     }
-    await generateInvoicesForContract(contract, db, facturesParBien.get(contract.propertyId));
+    try {
+      await generateInvoicesForContract(contract, db, facturesParBien.get(contract.propertyId));
+    } catch (err) {
+      // Un contrat en échec (contrainte SQL, aléa réseau...) ne doit jamais
+      // interrompre la génération des factures de TOUS LES AUTRES contrats de
+      // la plateforme, ni sauter la phase 2 ci-dessous (envoi des avis
+      // d'échéance) : avant ce correctif, une exception ici remontait telle
+      // quelle et arrêtait net runRentDueReminders — un seul contrat à
+      // problème pouvait donc priver TOUS les gestionnaires de leurs avis
+      // d'échéance ce jour-là.
+      generationEchecs += 1;
+      console.error(`[reminder] Échec de la génération de facture pour le contrat ${contract.id} :`, err);
+    }
   }
 
   // 2. Recherche toutes les factures impayées du mois courant pour les contrats actifs
@@ -454,7 +467,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   if (interrompu) {
     console.warn("[reminder] Budget de temps épuisé : avis d'échéance restants reportés à la prochaine exécution.");
   }
-  return { sent, echecs, whatsappEchecs, details, interrompu };
+  return { sent, echecs, whatsappEchecs, generationEchecs, details, interrompu };
 }
 
 /**

@@ -277,6 +277,37 @@ describe("initiatePayment", () => {
     ).rejects.toThrow(ApiError);
   });
 
+  // Régression : response.json() n'était pas protégé — une panne Stripe
+  // renvoyant une page d'erreur HTML (plutôt que du JSON) au lieu d'un corps
+  // JSON faisait remonter un SyntaxError brut au lieu de l'ApiError(502)
+  // attendu par le reste du code.
+  it("STRIPE : échoue (502) proprement si la réponse n'est pas du JSON valide", async () => {
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "sk_test_fake_key";
+    env.payments.stripeWebhookSecret = "whsec_test";
+    env.payments.stripeCurrencies = ["EUR"];
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => {
+          throw new SyntaxError("Unexpected token < in JSON");
+        },
+      })
+    );
+
+    await expect(
+      initiatePayment({
+        method: "STRIPE",
+        currency: "EUR",
+        amount: 29,
+        invoiceId: "inv-1",
+        payerEmail: "test@test.local",
+      })
+    ).rejects.toThrow(ApiError);
+  });
+
   // Ce test affirmait exactement le contraire : « retombe sur une simulation
   // confirmée tant que les clés ne sont pas configurées », clés vidées et
   // demoMode à false, avec expect(result.status).toBe("PAID"). Il verrouillait
@@ -462,6 +493,29 @@ describe("initiatePayment", () => {
       vi.fn().mockResolvedValue({
         ok: false,
         json: async () => ({ response_code: "01", response_text: "Erreur PayDunya" }),
+      })
+    );
+
+    await expect(
+      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
+    ).rejects.toThrow(ApiError);
+  });
+
+  // Régression : voir le test Stripe équivalent ci-dessus.
+  it("PAYDUNYA : échoue (502) proprement si la réponse n'est pas du JSON valide", async () => {
+    env.payments.demoMode = false;
+    env.payments.paydunya.masterKey = "master-key";
+    env.payments.paydunya.privateKey = "private-key";
+    env.payments.paydunya.token = "token";
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => {
+          throw new SyntaxError("Unexpected token < in JSON");
+        },
       })
     );
 
