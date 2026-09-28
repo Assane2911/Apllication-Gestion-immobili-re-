@@ -50,6 +50,29 @@ export function fecMontant(value: number): string {
 }
 
 /**
+ * Encode le contenu FEC en ISO-8859-1 (Latin-1), seul jeu de caractères
+ * accepté par l'administration fiscale pour ce format (arrêté du 29 juillet
+ * 2013, art. I) — express ne le fait jamais de lui-même : `res.send()`
+ * envoie toujours une chaîne encodée en UTF-8 sur le fil, quel que soit le
+ * Content-Type déclaré. Sans cette conversion, chaque caractère accentué
+ * (omniprésent dans les intitulés français : « réparations », « Impôts »,
+ * un nom de locataire ou d'agence...) partait sur plusieurs octets UTF-8 au
+ * lieu d'un seul en Latin-1 — un fichier qu'un validateur FEC strict (dont
+ * l'outil officiel « Test Compta Demat » de la DGFiP) rejette.
+ *
+ * Un caractère hors Latin-1 (emoji, idéogramme...) est peu probable dans ce
+ * contexte mais remplacé par "?" plutôt que tronqué silencieusement sur un
+ * octet imprévisible par `Buffer.from(str, "latin1")`, qui ne garde que
+ * l'octet bas de chaque point de code.
+ */
+export function versLatin1Fec(texte: string): Buffer {
+  const asciiSurLatin1 = Array.from(texte)
+    .map((caractere) => (caractere.codePointAt(0)! <= 0xff ? caractere : "?"))
+    .join("");
+  return Buffer.from(asciiSurLatin1, "latin1");
+}
+
+/**
  * Montant prêt pour un tableur francophone : deux décimales, séparateur
  * virgule. Les exports sortaient le nombre brut (`1234.56`) alors que le
  * séparateur de colonnes est le point-virgule : ouvert dans un tableur
