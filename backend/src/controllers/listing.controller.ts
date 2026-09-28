@@ -202,7 +202,7 @@ export const createPublicLead = asyncHandler(async (req: Request, res: Response)
 
 async function loadListingForManager(listingId: string, managerId: string) {
   const [listing] = await db.select().from(listings).where(eq(listings.id, listingId));
-  if (!listing || listing.managerId !== managerId) throw new ApiError(404, "Annonce introuvable");
+  assertOwnership(listing, (l) => l.managerId, managerId, "Annonce introuvable");
   return listing;
 }
 

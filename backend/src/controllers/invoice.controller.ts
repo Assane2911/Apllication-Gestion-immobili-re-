@@ -10,7 +10,7 @@ import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../servi
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 
 function isInvoiceStatus(value: unknown): value is (typeof invoiceStatusEnum.enumValues)[number] {
   return typeof value === "string" && (invoiceStatusEnum.enumValues as readonly string[]).includes(value);
@@ -142,7 +142,7 @@ async function assertInvoiceOwnership(invoiceId: string, managerId: string) {
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(invoices.id, invoiceId));
-  if (!row || row.property.managerId !== managerId) throw new ApiError(404, "Facture introuvable");
+  assertOwnership(row, (r) => r.property.managerId, managerId, "Facture introuvable");
   return row.invoice;
 }
 
