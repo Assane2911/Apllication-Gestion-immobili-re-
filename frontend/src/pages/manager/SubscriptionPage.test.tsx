@@ -471,6 +471,28 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByRole("button", { name: "Confirmer et Activer l'Abonnement" })).not.toBeInTheDocument();
   });
 
+  it("souscription : affiche l'erreur du serveur et réactive le bouton si la requête échoue", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+    mockedApi.post.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { data: { error: "Moyen de paiement indisponible pour le moment." } },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+    await user.click(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("Moyen de paiement indisponible pour le moment.")).toBeInTheDocument()
+    );
+    // Le bouton doit rester disponible pour une nouvelle tentative.
+    expect(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" })).not.toBeDisabled();
+  });
+
   it("virement bancaire : transmet la référence saisie", async () => {
     const user = userEvent.setup();
     seedUser(authUser());
@@ -790,6 +812,38 @@ describe("SubscriptionPage", () => {
       await waitFor(() =>
         expect(screen.getByText("Le renouvellement automatique de votre abonnement a été annulé.")).toBeInTheDocument()
       );
+    });
+
+    it("affiche l'erreur du serveur et réactive le bouton si la résiliation échoue", async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      seedUser(
+        authUser({
+          subscription: subscription({
+            status: "ACTIVE",
+            plan: "PRO",
+            isTrialActive: false,
+            isSubscriptionActive: true,
+            subscriptionEndsAt: "2026-10-01T00:00:00.000Z",
+          }),
+        })
+      );
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+      mockedApi.post.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: { data: { error: "Impossible de contacter Stripe pour le moment." } },
+      });
+
+      renderPage();
+      await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+
+      await user.click(screen.getByRole("button", { name: "Résilier mon abonnement" }));
+
+      await waitFor(() =>
+        expect(screen.getByText("Impossible de contacter Stripe pour le moment.")).toBeInTheDocument()
+      );
+      expect(screen.getByRole("button", { name: "Résilier mon abonnement" })).not.toBeDisabled();
     });
 
     it("ne résilie rien si le gestionnaire annule la confirmation", async () => {
