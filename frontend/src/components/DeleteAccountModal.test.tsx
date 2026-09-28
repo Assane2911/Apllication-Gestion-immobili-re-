@@ -120,6 +120,43 @@ describe("DeleteAccountModal", () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
   });
 
+  it("appelle DELETE /auth/account avec le mot de passe pour un compte classique", async () => {
+    mockedApi.delete.mockResolvedValueOnce({ data: undefined });
+    const { onSuccess } = renderModal({ id: "mgr-1", email: "manager@test.local", role: "MANAGER", hasPassword: true });
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/Tapez/), "SUPPRIMER");
+    await user.type(screen.getByLabelText("Ressaisissez votre mot de passe actuel"), "mon-mot-de-passe");
+    await user.click(screen.getByRole("button", { name: "Supprimer définitivement mon compte" }));
+
+    await waitFor(() =>
+      expect(mockedApi.delete).toHaveBeenCalledWith("/auth/account", { data: { password: "mon-mot-de-passe" } })
+    );
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+  });
+
+  // Régression : seul l'échec du chargement du script Google Identity
+  // Services était testé — jamais un rejet du VRAI appel DELETE /auth/account
+  // (ex. mot de passe erroné). Une action irréversible comme celle-ci ne doit
+  // jamais laisser le formulaire bloqué ni faire croire, à tort, que le
+  // compte a été supprimé.
+  it("affiche l'erreur du serveur et réactive le bouton si le mot de passe est incorrect", async () => {
+    mockedApi.delete.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { data: { error: "Mot de passe incorrect." } },
+    });
+    const { onSuccess } = renderModal({ id: "mgr-1", email: "manager@test.local", role: "MANAGER", hasPassword: true });
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/Tapez/), "SUPPRIMER");
+    await user.type(screen.getByLabelText("Ressaisissez votre mot de passe actuel"), "mauvais-mot-de-passe");
+    await user.click(screen.getByRole("button", { name: "Supprimer définitivement mon compte" }));
+
+    expect(await screen.findByText("Mot de passe incorrect.")).toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Supprimer définitivement mon compte" })).not.toBeDisabled();
+  });
+
   it("affiche une erreur si le script Google échoue à charger", async () => {
     renderModal({ id: "mgr-2", email: "google-manager@test.local", role: "MANAGER", hasPassword: false });
     const user = userEvent.setup();

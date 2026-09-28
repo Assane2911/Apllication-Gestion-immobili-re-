@@ -184,6 +184,31 @@ describe("TenantInvoicesPage", () => {
     expect(chargements).toHaveLength(2); // chargement initial + rechargement après paiement
   });
 
+  // Régression : seul l'échec du CHARGEMENT de la liste des factures était
+  // testé — jamais l'échec du paiement lui-même (moyen refusé, facture déjà
+  // réglée entretemps...), qui est le geste irréversible que cette page gère.
+  it("paiement en ligne : affiche l'erreur du serveur et laisse la facture impayée si le paiement échoue", async () => {
+    const user = userEvent.setup();
+    queueGet({ data: [invoice({ status: "PENDING" })] });
+    mockedApi.post.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { data: { error: "Moyen de paiement refusé." } },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Payer" }));
+    const paydunyaCard = screen.getByText("PayDunya").closest("div")!;
+    await user.click(within(paydunyaCard).getByRole("button", { name: "Choisir ce moyen" }));
+
+    await waitFor(() => expect(screen.getByText("Moyen de paiement refusé.")).toBeInTheDocument());
+    // Aucun rechargement de la liste des factures après un échec : la
+    // facture affichée reste celle chargée initialement, toujours impayée.
+    const chargements = mockedApi.get.mock.calls.filter((appel) => String(appel[0]).startsWith("/invoices/mine"));
+    expect(chargements).toHaveLength(1);
+  });
+
   it("virement bancaire : transmet la référence saisie", async () => {
     const user = userEvent.setup();
     queueGet({ data: [invoice({ status: "PENDING" })] });

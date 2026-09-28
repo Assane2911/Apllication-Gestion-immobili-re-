@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { CrgExportData, generateCrgHtml, generateLeaseHtml, generateReceiptHtml, generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
+import {
+  CrgExportData,
+  generateCrgHtml,
+  generateInspectionHtml,
+  generateLeaseHtml,
+  generateReceiptHtml,
+  generateReceiptPdfBuffer,
+  InspectionExportData,
+  ReceiptData,
+} from "./pdf.service";
 import { formaterMontant } from "../utils/montant";
 
 // fr-FR sépare les milliers par une espace fine insécable (U+202F). Les
@@ -248,6 +257,111 @@ describe("generateLeaseHtml", () => {
     // "sig-img" apparaît dans la feuille de style : on vérifie l'absence de la
     // balise elle-même, pas de la classe CSS.
     expect(html).not.toContain("<img");
+  });
+});
+
+describe("generateInspectionHtml", () => {
+  const baseInspection: InspectionExportData = {
+    reference: "EDL-2026-06-A1B2C3",
+    type: "ENTRY",
+    inspectionDate: new Date(2026, 5, 3),
+    agencyName: "Agence Teranga",
+    property: { title: "Villa Ngor", address: "3 rue des Almadies" },
+    tenant: { fullName: "Aminata Ba" },
+    rooms: [{ name: "Salon", condition: "BON", notes: "RAS" }],
+    meters: { electricity: "12345", water: "678", gas: "90" },
+    keys: [{ label: "Clé principale", quantity: 2 }],
+    generalComments: "Aucune remarque.",
+    managerSignatureUrl: null,
+    signedByManagerAt: null,
+    tenantSignatureUrl: null,
+    signedByTenantAt: null,
+  };
+
+  it("rend le type, les parties, le bien, les compteurs, les pièces et les clés", () => {
+    const html = generateInspectionHtml(baseInspection);
+
+    expect(html).toContain("EDL-2026-06-A1B2C3");
+    expect(html).toContain("ENTRÉE");
+    expect(html).toContain("Agence Teranga");
+    expect(html).toContain("Aminata Ba");
+    expect(html).toContain("Villa Ngor");
+    expect(html).toContain("3 rue des Almadies");
+    expect(html).toContain("12345");
+    expect(html).toContain("Salon");
+    expect(html).toContain("Bon état");
+    expect(html).toContain("Clé principale");
+    expect(html).toContain("Aucune remarque.");
+  });
+
+  // Même principe que generateReceiptHtml/generateLeaseHtml : ce document HTML
+  // est servi tel quel (document.controller.ts) et imprimable/exportable
+  // depuis le navigateur — un champ non échappé y serait une XSS stockée.
+  // room.notes et keys[].label sont en particulier renseignés par le
+  // gestionnaire ou le locataire lors de l'état des lieux, donc attaquables.
+  it("échappe les champs contrôlés par l'utilisateur (protection XSS stockée)", () => {
+    const html = generateInspectionHtml({
+      ...baseInspection,
+      agencyName: "<b>Agence</b>",
+      tenant: { fullName: '<script>alert("xss")</script>' },
+      property: { title: '"><img src=x onerror=alert(1)>', address: "Dakar & environs" },
+      rooms: [{ name: "<i>Chambre</i>", condition: "MOYEN", notes: '<script>x</script>' }],
+      keys: [{ label: '<img src=x onerror=alert(2)>', quantity: 1 }],
+      generalComments: "<b>Commentaire & remarque</b>",
+    });
+
+    expect(html).not.toContain("<script>alert");
+    expect(html).not.toContain("<script>x</script>");
+    expect(html).not.toContain("<img src=x onerror");
+    expect(html).toContain("&lt;b&gt;Agence&lt;/b&gt;");
+    expect(html).toContain("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;");
+    expect(html).toContain("&lt;i&gt;Chambre&lt;/i&gt;");
+    expect(html).toContain("&lt;script&gt;x&lt;/script&gt;");
+    expect(html).toContain("&lt;img src=x onerror=alert(2)&gt;");
+    expect(html).toContain("&lt;b&gt;Commentaire &amp; remarque&lt;/b&gt;");
+    expect(html).toContain("Dakar &amp; environs");
+  });
+
+  it("affiche des messages de repli quand aucune pièce ni aucune clé n'est renseignée", () => {
+    const html = generateInspectionHtml({ ...baseInspection, rooms: [], keys: [] });
+
+    expect(html).toContain("Aucune pièce renseignée");
+    expect(html).toContain("Aucune clé renseignée");
+  });
+
+  it("omet la section « Observations générales » quand elle est vide", () => {
+    const html = generateInspectionHtml({ ...baseInspection, generalComments: null });
+
+    expect(html).not.toContain("Observations Générales");
+  });
+
+  it("affiche 'En attente de signature' tant que les deux parties n'ont pas signé, sans tampon ni image", () => {
+    const html = generateInspectionHtml(baseInspection);
+
+    expect(html).toContain("En attente de signature");
+    expect(html).not.toContain("ÉTAT DES LIEUX SIGNÉ CONTRADICTOIREMENT");
+    expect(html).not.toContain("<img");
+  });
+
+  it("affiche le tampon « signé contradictoirement » uniquement une fois les deux parties signées", () => {
+    const signeParUnSeul = generateInspectionHtml({
+      ...baseInspection,
+      signedByManagerAt: new Date(2026, 5, 4),
+      managerSignatureUrl: "https://storage.test/sig-manager.png",
+    });
+    expect(signeParUnSeul).toContain("Signé électroniquement le 04/06/2026");
+    expect(signeParUnSeul).toContain('src="https://storage.test/sig-manager.png"');
+    expect(signeParUnSeul).not.toContain("ÉTAT DES LIEUX SIGNÉ CONTRADICTOIREMENT");
+
+    const signeParLesDeux = generateInspectionHtml({
+      ...baseInspection,
+      signedByManagerAt: new Date(2026, 5, 4),
+      managerSignatureUrl: "https://storage.test/sig-manager.png",
+      signedByTenantAt: new Date(2026, 5, 5),
+      tenantSignatureUrl: "https://storage.test/sig-tenant.png",
+    });
+    expect(signeParLesDeux).toContain('src="https://storage.test/sig-tenant.png"');
+    expect(signeParLesDeux).toContain("ÉTAT DES LIEUX SIGNÉ CONTRADICTOIREMENT");
   });
 });
 
