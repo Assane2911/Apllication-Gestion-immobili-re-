@@ -1,6 +1,24 @@
 import { sql } from "drizzle-orm";
 import { db } from "./client";
 
+/**
+ * Exécute une migration additive (ALTER TABLE ... ADD COLUMN IF NOT EXISTS,
+ * DROP/ADD CONSTRAINT...) en avalant l'échec plutôt qu'en interrompant tout
+ * initDb() — une seule instruction en délicatesse (base pas encore créée sur
+ * un environnement PGlite local vierge, essentiellement) ne doit pas empêcher
+ * TOUTES les suivantes de s'exécuter. Journalisé (contrairement à l'ancien
+ * `catch {}` muet) : un vrai échec — typo, permission refusée, coupure réseau
+ * en plein milieu — se manifestait auparavant bien plus tard, sur une requête
+ * applicative sans rapport, avec un message qui ne pointait vers rien.
+ */
+async function alterSiBesoin(migration: () => Promise<unknown>): Promise<void> {
+  try {
+    await migration();
+  } catch (err) {
+    console.error("[db] Échec d'une migration additive (non bloquant) :", err);
+  }
+}
+
 export async function initDb() {
   try {
     // PGlite does not support CREATE TYPE ... AS ENUM, so we create tables
@@ -181,7 +199,7 @@ export async function initDb() {
       )
     `);
 
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`));
 
     await db.execute(sql`
       CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique
@@ -315,41 +333,41 @@ export async function initDb() {
     // gestionnaire — n'étaient jamais créées, faisant échouer les CREATE
     // INDEX juste après ("column manager_id does not exist") puis toute
     // requête applicative qui s'appuie sur ces colonnes.
-    try { await db.execute(sql`ALTER TABLE platform_subscriptions ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'TRIAL'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'STARTER'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_method TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS scanned_contract_url TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_manager_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS manager_signature_url TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_tenant_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_signature_url TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`); } catch {}
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_soon_reminder_sent_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0`); } catch {}
-    try { await db.execute(sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS anonymized_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_attempt_started_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_attempt_started_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id TEXT REFERENCES owners(id) ON DELETE SET NULL`); } catch {}
-    try { await db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS iban TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS bic TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS team_owner_id TEXT REFERENCES users(id) ON DELETE CASCADE`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE`); } catch {}
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE platform_subscriptions ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'TRIAL'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'STARTER'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_method TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS scanned_contract_url TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_manager_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS manager_signature_url TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS signed_by_tenant_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_signature_url TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_soon_reminder_sent_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS additional_photos TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS anonymized_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_attempt_started_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_attempt_started_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id TEXT REFERENCES owners(id) ON DELETE SET NULL`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS iban TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS bic TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS team_owner_id TEXT REFERENCES users(id) ON DELETE CASCADE`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE`));
     // Sur une base créée avant ce correctif, "tenants.email" portait encore
     // une contrainte UNIQUE globale (nom par défaut Postgres/PGlite pour une
     // colonne UNIQUE déclarée en ligne) — on la retire au profit de l'index
     // composite (manager_id, email) créé plus bas, seul contrat réellement
     // voulu par schema.ts.
-    try { await db.execute(sql`ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_email_key`); } catch {}
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_email_key`));
 
     // Colonnes ajoutées au schéma après l'écriture des CREATE TABLE ci-dessus.
     // Elles étaient absentes de ce fichier, si bien qu'une base créée par
@@ -363,31 +381,31 @@ export async function initDb() {
     // contenant déjà des lignes sans valeur par défaut. Les insertions
     // applicatives la renseignent toujours, la contrainte n'est donc utile
     // qu'à la création initiale de la table.
-    try { await db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
-    try { await db.execute(sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
-    try { await db.execute(sql`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`); } catch {}
-    try { await db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS terms TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token_hash TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT`); } catch {}
-    try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP`); } catch {}
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS terms TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token_hash TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP`));
 
     // Les bases locales créées avant l'ajout des rôles ADMIN et OWNER portent
     // encore une contrainte CHECK qui ne les autorise pas : un admin créé via
     // « npm run create-admin », ou un propriétaire créé par createOwnerAccount
     // (owner.controller.ts), y serait refusé par la base elle-même. On la
     // remplace.
-    try {
+    await alterSiBesoin(async () => {
       await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
       await db.execute(sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN', 'OWNER'))`);
-    } catch {}
+    });
     // 15 jours, pas 10 : même durée que celle réellement accordée à
     // l'inscription (voir auth.controller.ts). Ce backfill ne visait que les
     // comptes gestionnaire pré-existants sans date d'essai ; leur donner une
     // durée différente de celle annoncée partout ailleurs dans l'application
     // aurait été incohérent.
-    try { await db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`); } catch {}
+    await alterSiBesoin(() => db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`));
 
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);

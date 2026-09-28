@@ -107,7 +107,12 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
     ownerName: proprietaire?.email || "Votre gestionnaire",
     inviteUrl,
   });
-  sendEmail(body.email, subject, html).catch((err) => {
+  // Attendu avant la réponse : sur Vercel (serverless), l'exécution peut
+  // s'arrêter juste après l'envoi de la réponse, avant qu'un envoi non
+  // attendu ait eu le temps de partir (même bug déjà corrigé ailleurs — voir
+  // errorHandler.ts). `.catch()` garantit quand même que l'échec de l'email
+  // ne fait jamais échouer la création du compte collaborateur.
+  await sendEmail(body.email, subject, html).catch((err) => {
     console.error("[team] Échec de l'envoi de l'email d'invitation:", err);
   });
 

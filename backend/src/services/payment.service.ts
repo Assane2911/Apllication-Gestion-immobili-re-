@@ -331,11 +331,13 @@ async function initiateStripePayment(
     throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Réessayez plus tard.");
   }
 
-  const data = (await response.json()) as {
-    id?: string;
-    url?: string;
-    error?: { message?: string };
-  };
+  let data: { id?: string; url?: string; error?: { message?: string } };
+  try {
+    data = (await response.json()) as typeof data;
+  } catch (err) {
+    console.error("[stripe] Réponse illisible lors de la création de la session:", err);
+    throw new ApiError(502, "Réponse inattendue de Stripe. Réessayez plus tard.");
+  }
 
   if (!response.ok || !data.id || !data.url) {
     console.error("[stripe] Réponse inattendue lors de la création de la session:", data);
@@ -460,11 +462,13 @@ async function initiatePaydunyaPayment(
     throw new ApiError(502, "Impossible de contacter PayDunya pour le moment. Réessayez plus tard.");
   }
 
-  const data = (await response.json()) as {
-    response_code?: string;
-    response_text?: string;
-    token?: string;
-  };
+  let data: { response_code?: string; response_text?: string; token?: string };
+  try {
+    data = (await response.json()) as typeof data;
+  } catch (err) {
+    console.error("[paydunya] Réponse illisible lors de la création de la facture:", err);
+    throw new ApiError(502, "Réponse inattendue de PayDunya. Réessayez plus tard.");
+  }
 
   if (!response.ok || data.response_code !== "00" || !data.token || !data.response_text) {
     console.error("[paydunya] Réponse inattendue lors de la création de la facture:", data);

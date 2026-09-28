@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { activityLogs, invoices } from "../db/schema";
 import * as emailService from "./email.service";
+import * as invoiceService from "./invoice.service";
 import * as whatsappService from "./whatsapp.service";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -45,6 +46,43 @@ describe("runRentDueReminders", () => {
 
     const secondRun = await runRentDueReminders();
     expect(secondRun.sent).toBe(0);
+  });
+
+  // Régression : un contrat dont la génération de facture échoue (contrainte
+  // SQL, aléa réseau...) ne doit pas interrompre la boucle pour TOUS les
+  // autres contrats de la plateforme, ni sauter la phase d'envoi des avis
+  // d'échéance qui suit.
+  it("un contrat dont la génération de facture échoue n'empêche pas les autres contrats d'être traités", async () => {
+    const manager = await createManager();
+
+    const proprieteEnEchec = await createProperty(manager.id);
+    const locataireEnEchec = await createTenant(manager.id);
+    const contratEnEchec = await createContract(proprieteEnEchec.id, locataireEnEchec.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+
+    const proprieteOk = await createProperty(manager.id);
+    const locataireOk = await createTenant(manager.id);
+    await createContract(proprieteOk.id, locataireOk.id, {
+      startDate: new Date(2026, 7, 1),
+      endDate: new Date(2027, 7, 1),
+    });
+
+    const original = invoiceService.generateInvoicesForContract;
+    const spy = vi
+      .spyOn(invoiceService, "generateInvoicesForContract")
+      .mockImplementation(async (contract, tx, existantes) => {
+        if (contract.id === contratEnEchec.id) throw new Error("Panne simulée");
+        return original(contract, tx, existantes);
+      });
+
+    const result = await runRentDueReminders();
+
+    expect(result.generationEchecs).toBe(1);
+    expect(result.sent).toBe(1);
+
+    spy.mockRestore();
   });
 
   // Le WhatsApp s'ajoute à l'email (voir whatsapp.service.ts) : ce test vérifie

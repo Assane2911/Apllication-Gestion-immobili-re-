@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { owners, properties, users } from "../db/schema";
+import * as emailService from "../services/email.service";
 import {
   authHeader,
   createContract,
@@ -294,6 +295,24 @@ describe("POST /api/owners/:id/invite", () => {
 
     const [updatedOwner] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
     expect(updatedOwner.userId).toBe(createdUser.id);
+  });
+
+  // Régression : sendEmail() n'était pas attendu avant la réponse — sur
+  // Vercel (serverless), l'exécution peut s'arrêter juste après l'envoi de la
+  // réponse, avant qu'un envoi non attendu ait eu le temps de partir. Ce test
+  // ne peut pas prouver l'ordre d'exécution réel côté Vercel, mais garantit
+  // au moins qu'un futur retrait accidentel de cet envoi soit détecté.
+  it("envoie l'email d'invitation au propriétaire", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { email: "invite-email@test.local" });
+    const sendEmailSpy = vi.spyOn(emailService, "sendEmail");
+
+    const res = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(sendEmailSpy).toHaveBeenCalledWith("invite-email@test.local", expect.any(String), expect.any(String));
+
+    sendEmailSpy.mockRestore();
   });
 
   it("permet de renvoyer l'invitation tant qu'elle n'a pas été activée", async () => {
