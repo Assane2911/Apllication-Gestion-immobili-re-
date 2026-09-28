@@ -120,27 +120,39 @@ export const users = pgTable("users", {
 });
 
 // --- Platform Subscriptions (Historique des paiements d'abonnements SaaS de la plateforme) ---
-export const platformSubscriptions = pgTable("platform_subscriptions", {
-  id: id(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  plan: subscriptionPlanEnum("plan").notNull(),
-  amount: doublePrecision("amount").notNull(),
-  // Un montant sans devise n'est pas un montant : les tarifs existent en
-  // plusieurs devises (voir TARIFS dans subscription.controller.ts), et sans
-  // cette colonne l'historique comme l'écran d'administration affichaient des
-  // euros par défaut, y compris pour un abonnement réglé en FCFA. Les lignes
-  // antérieures sont bien en euros, d'où ce défaut.
-  currency: text("currency").notNull().default("EUR"),
-  billingCycle: text("billing_cycle").notNull().default("MONTHLY"), // "MONTHLY" | "ANNUAL"
-  status: text("status").notNull().default("PAID"),
-  paymentMethod: paymentMethodEnum("payment_method").notNull(),
-  paymentRef: text("payment_ref"),
-  startDate: timestamp("start_date", { mode: "date" }).notNull(),
-  endDate: timestamp("end_date", { mode: "date" }).notNull(),
-  ...timestamps,
-});
+export const platformSubscriptions = pgTable(
+  "platform_subscriptions",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    plan: subscriptionPlanEnum("plan").notNull(),
+    amount: doublePrecision("amount").notNull(),
+    // Un montant sans devise n'est pas un montant : les tarifs existent en
+    // plusieurs devises (voir TARIFS dans subscription.controller.ts), et sans
+    // cette colonne l'historique comme l'écran d'administration affichaient des
+    // euros par défaut, y compris pour un abonnement réglé en FCFA. Les lignes
+    // antérieures sont bien en euros, d'où ce défaut.
+    currency: text("currency").notNull().default("EUR"),
+    billingCycle: text("billing_cycle").notNull().default("MONTHLY"), // "MONTHLY" | "ANNUAL"
+    status: text("status").notNull().default("PAID"),
+    paymentMethod: paymentMethodEnum("payment_method").notNull(),
+    paymentRef: text("payment_ref"),
+    startDate: timestamp("start_date", { mode: "date" }).notNull(),
+    endDate: timestamp("end_date", { mode: "date" }).notNull(),
+    ...timestamps,
+  },
+  (table) => ({
+    // userId : historique de facturation d'un gestionnaire (getStatus) et
+    // activation d'un paiement (subscriptionActivation.service.ts) — lu à
+    // chaque affichage de l'écran abonnement et à chaque confirmation de
+    // paiement. paymentRef : clé de rapprochement de tous les webhooks
+    // (Stripe, PayDunya) et des validations de virement.
+    userIdIdx: index("platform_subscriptions_user_id_idx").on(table.userId),
+    paymentRefIdx: index("platform_subscriptions_payment_ref_idx").on(table.paymentRef),
+  })
+);
 
 // --- Properties (biens immobiliers) ---
 export const properties = pgTable(

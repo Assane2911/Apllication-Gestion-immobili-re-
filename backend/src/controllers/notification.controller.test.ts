@@ -66,7 +66,7 @@ describe("GET /api/notifications", () => {
     expect(messageNotif.title).toContain(tenant.firstName);
   });
 
-  it("ne signale pas un message déjà lu ni un message envoyé par le gestionnaire", async () => {
+  it("ne signale pas un message envoyé par le gestionnaire lui-même", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -76,6 +76,34 @@ describe("GET /api/notifications", () => {
       .post(`/api/messages/${contract.id}`)
       .set(authHeader(tokenFor(manager)))
       .send({ content: "Message du gestionnaire" });
+
+    const res = await request(app).get("/api/notifications").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.notifications.some((n: { type: string }) => n.type === "message")).toBe(false);
+  });
+
+  /**
+   * Le filtre isRead=false est désormais porté par le SQL de la requête
+   * (voir notification.controller.ts), pas par une boucle après coup : ce
+   * test verrouille le même résultat qu'avant, message par message, plutôt
+   * que la performance de la requête elle-même.
+   */
+  it("ne signale plus un message du locataire une fois que le gestionnaire l'a lu", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
+
+    await request(app)
+      .post(`/api/messages/${contract.id}`)
+      .set(await tenantToken(tenant.id, portalUser.id))
+      .send({ content: "Bonjour, une question" });
+
+    // Ouvrir la conversation marque les messages reçus comme lus (voir
+    // getMessagesByContract, message.controller.ts).
+    await request(app).get(`/api/messages/${contract.id}`).set(authHeader(tokenFor(manager)));
 
     const res = await request(app).get("/api/notifications").set(authHeader(tokenFor(manager)));
 

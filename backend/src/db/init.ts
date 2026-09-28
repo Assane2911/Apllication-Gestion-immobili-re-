@@ -421,6 +421,8 @@ export async function initDb() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_property_id_idx ON inspections (property_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_manager_id_idx ON inspections (manager_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_tenant_id_idx ON inspections (tenant_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_user_id_idx ON platform_subscriptions (user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_payment_ref_idx ON platform_subscriptions (payment_ref)`);
 
     console.log("✅ Tables et types de base de données initialisés avec succès.");
 

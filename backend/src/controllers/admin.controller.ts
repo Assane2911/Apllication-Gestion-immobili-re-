@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { agencySettings, contracts, platformSubscriptions, properties, tenants, users } from "../db/schema";
@@ -196,11 +196,16 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
   }
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
-  const totalProperties = (await db.select({ id: properties.id }).from(properties)).length;
-  const totalTenants = (await db.select({ id: tenants.id }).from(tenants)).length;
-  const activeContracts = (
-    await db.select({ id: contracts.id }).from(contracts).where(eq(contracts.status, "ACTIVE"))
-  ).length;
+  // Comptage porté par SQL (COUNT), pas par le chargement de chaque ligne en
+  // mémoire pour n'en lire que la longueur — ce tableau de bord agrège TOUTE
+  // la plateforme, tous gestionnaires confondus, contrairement aux écrans
+  // scopés à une seule agence.
+  const [{ count: totalProperties }] = await db.select({ count: sql<number>`count(*)::int` }).from(properties);
+  const [{ count: totalTenants }] = await db.select({ count: sql<number>`count(*)::int` }).from(tenants);
+  const [{ count: activeContracts }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(contracts)
+    .where(eq(contracts.status, "ACTIVE"));
 
   res.json({
     managers: {
