@@ -123,8 +123,11 @@ describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
     const setCookie = (loginRes.headers["set-cookie"] ?? []) as unknown as string[];
     expect(setCookie.some((c) => c.startsWith("token=") && /HttpOnly/i.test(c))).toBe(true);
 
-    // Même agent (jar de cookies) : /me répond sans aucun en-tête Authorization.
-    const meRes = await agent.get("/api/auth/me");
+    // Même agent (jar de cookies) : /me répond sans aucun en-tête Authorization,
+    // mais avec X-Requested-With — posé par tout appel réel du frontend (voir
+    // client.ts), exigé par authenticate pour ce mode (protection CSRF, voir
+    // middleware/auth.test.ts).
+    const meRes = await agent.get("/api/auth/me").set("X-Requested-With", "XMLHttpRequest");
     expect(meRes.status).toBe(200);
     expect(meRes.body.email).toBe("cookie@test.local");
   });
@@ -144,7 +147,7 @@ describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
     const logoutRes = await agent.post("/api/auth/logout");
     expect(logoutRes.status).toBe(204);
 
-    const meRes = await agent.get("/api/auth/me");
+    const meRes = await agent.get("/api/auth/me").set("X-Requested-With", "XMLHttpRequest");
     expect(meRes.status).toBe(401);
   });
 
