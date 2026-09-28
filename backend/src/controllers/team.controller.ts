@@ -9,6 +9,7 @@ import { agencySettings, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { sendEmail, teamInvitationEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { assertOwnership } from "../utils/authorization";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
 /**
@@ -133,9 +134,10 @@ export const removeTeamMember = asyncHandler(async (req: Request, res: Response)
   assertEstProprietaire(req);
 
   const [collaborateur] = await db.select().from(users).where(eq(users.id, req.params.id));
-  if (!collaborateur || collaborateur.teamOwnerId !== req.user!.userId) {
-    throw new ApiError(404, "Collaborateur introuvable");
-  }
+  // teamOwnerId est nullable (tout compte n'a pas de propriétaire d'équipe) :
+  // le replier sur une chaîne vide, qui ne peut jamais égaler un vrai id,
+  // préserve le refus déjà obtenu par le `!==` d'origine.
+  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable");
 
   // Révoque immédiatement toute session déjà ouverte (même si le compte est
   // supprimé juste après) : le futur `authenticate` d'un jeton déjà émis

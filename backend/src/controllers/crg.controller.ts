@@ -4,9 +4,9 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { agencySettings, contracts, expenses, invoices, owners, properties } from "../db/schema";
 import { generateCrgHtml } from "../services/pdf.service";
-import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { asyncHandler } from "../utils/asyncHandler";
 import { nomAvecCivilite } from "../utils/nom";
-import { chargerProprietaireDuCompte } from "../utils/authorization";
+import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
 
 /**
  * Module "CRG" (Compte-Rendu de Gestion) : synthèse mensuelle par
@@ -55,7 +55,7 @@ function monthBounds(month: number, year: number) {
 
 async function loadOwnerForManager(ownerId: string, managerId: string) {
   const [owner] = await db.select().from(owners).where(eq(owners.id, ownerId));
-  if (!owner || owner.managerId !== managerId) throw new ApiError(404, "Propriétaire introuvable");
+  assertOwnership(owner, (o) => o.managerId, managerId, "Propriétaire introuvable");
   return owner;
 }
 

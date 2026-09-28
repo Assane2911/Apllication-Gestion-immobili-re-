@@ -2,7 +2,19 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
+import { AuthProvider } from "../../context/AuthContext";
+import { CurrencyProvider } from "../../context/CurrencyContext";
 import AdminDashboardPage from "./AdminDashboardPage";
+
+function renderPage() {
+  return render(
+    <AuthProvider>
+      <CurrencyProvider>
+        <AdminDashboardPage />
+      </CurrencyProvider>
+    </AuthProvider>
+  );
+}
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
@@ -36,7 +48,7 @@ describe("AdminDashboardPage", () => {
   it("affiche les indicateurs clés de la plateforme", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats() });
 
-    render(<AdminDashboardPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText("12")).toBeInTheDocument());
     expect(screen.getByText("6")).toBeInTheDocument();
@@ -46,10 +58,33 @@ describe("AdminDashboardPage", () => {
     expect(screen.getByText("19")).toBeInTheDocument();
   });
 
+  // Régression : cette page formatait le MRR avec sa propre table de symboles
+  // (EUR/XOF/XAF/USD/GBP, symbole toujours après le montant), au lieu du
+  // formatage partagé (CurrencyContext) déjà utilisé par le reste de l'admin
+  // — un abonnement en USD ou GBP s'affichait donc "150 $" au lieu de "$150",
+  // et une devise plus récente (ex. CHF, MAD) retombait sur son code brut.
+  it("place le symbole avant le montant pour une devise qui le veut (USD)", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: stats({
+        mrr: {
+          byCurrency: [{ currency: "USD", total: 150, byPlan: { STARTER: 0, PRO: 150, ENTERPRISE: 0 }, contributors: 1 }],
+          contributors: 1,
+        },
+      }),
+    });
+
+    renderPage();
+
+    // "$150" apparaît deux fois (la tuile MRR et la ventilation par formule,
+    // toutes deux sur cette seule devise) : les deux affichages doivent
+    // s'accorder.
+    await waitFor(() => expect(screen.getAllByText("$150").length).toBeGreaterThan(0));
+  });
+
   it("liste les essais se terminant bientôt avec le nom de l'agence", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats() });
 
-    render(<AdminDashboardPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText("Agence du Port")).toBeInTheDocument());
     expect(screen.getByText("agence-port@test.local")).toBeInTheDocument();
@@ -59,7 +94,7 @@ describe("AdminDashboardPage", () => {
   it("affiche un message dédié quand aucun essai ne se termine bientôt", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats({ trialsEndingSoon: [] }) });
 
-    render(<AdminDashboardPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText("Aucun essai ne se termine dans les 7 prochains jours.")).toBeInTheDocument());
   });
@@ -70,7 +105,7 @@ describe("AdminDashboardPage", () => {
       isAxiosError: true,
     });
 
-    render(<AdminDashboardPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
 

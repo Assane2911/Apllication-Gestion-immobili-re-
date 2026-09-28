@@ -5,26 +5,19 @@ import { api, apiErrorMessage } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
+import { useCurrency } from "../../context/currency";
 import type { AdminDashboardStats } from "../../types";
-
-/**
- * Les abonnements ne sont plus « toujours facturés en euros » : chaque formule
- * a un tarif propre par devise (voir TARIFS côté backend), et un gestionnaire
- * réglant en FCFA produit des lignes en FCFA. Le format numérique reste fixe,
- * indépendant de la langue d'affichage de l'admin, mais le symbole suit la
- * devise de la ligne.
- */
-const SYMBOLES: Record<string, string> = { EUR: "€", XOF: "FCFA", XAF: "FCFA", USD: "$", GBP: "£" };
-
-function formatMontant(amount: number, currency: string): string {
-  const nombre = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
-  return `${nombre} ${SYMBOLES[currency] ?? currency}`;
-}
 
 const PLAN_ORDER = ["STARTER", "PRO", "ENTERPRISE"] as const;
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation();
+  // Les abonnements ne sont plus « toujours facturés en euros » : chaque
+  // formule a un tarif propre par devise (voir TARIFS côté backend), et un
+  // gestionnaire réglant en FCFA produit des lignes en FCFA — `formatMoney`
+  // applique donc toujours la devise DE LA LIGNE (2ᵉ argument), jamais celle
+  // de l'admin qui consulte ce tableau de bord.
+  const { formatMoney } = useCurrency();
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,10 +100,10 @@ export default function AdminDashboardPage() {
         <StatCard
           icon={Wallet}
           label={t("admin.dashboard.stats.mrr")}
-          value={deviseCle ? formatMontant(deviseCle.total, deviseCle.currency) : "—"}
+          value={deviseCle ? formatMoney(deviseCle.total, deviseCle.currency) : "—"}
           hint={
             autresDevises.length > 0
-              ? autresDevises.map((d) => formatMontant(d.total, d.currency)).join(" · ")
+              ? autresDevises.map((d) => formatMoney(d.total, d.currency)).join(" · ")
               : t("admin.dashboard.stats.mrrHint", { count: mrr.contributors })
           }
           accent="green"
@@ -165,7 +158,7 @@ export default function AdminDashboardPage() {
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="font-semibold text-slate-700 dark:text-slate-300">{plan}</span>
                             <span className="text-slate-600 dark:text-slate-400 font-mono tabular-nums">
-                              {formatMontant(amount, bloc.currency)}
+                              {formatMoney(amount, bloc.currency)}
                             </span>
                           </div>
                           <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
