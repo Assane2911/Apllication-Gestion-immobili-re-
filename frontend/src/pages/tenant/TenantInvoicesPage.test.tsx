@@ -172,7 +172,7 @@ describe("TenantInvoicesPage", () => {
     const paydunyaCard = screen.getByText("PayDunya").closest("div")!;
     await user.click(within(paydunyaCard).getByRole("button", { name: "Choisir ce moyen" }));
 
-    await waitFor(() => expect(screen.getByText("Paiement de 500 confirmé.")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Paiement de 500 confirmé."));
     expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/pay", {
       method: "PAYDUNYA",
       bankReference: undefined,

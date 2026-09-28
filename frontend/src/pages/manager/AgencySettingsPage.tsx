@@ -191,7 +191,7 @@ export default function AgencySettingsPage() {
       ) : (
       <>
       {success && (
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+        <div role="status" className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
           <CheckCircle2 size={15} aria-hidden="true" /> {t("manager.agencySettings.success")}
         </div>
       )}
@@ -491,7 +491,7 @@ export default function AgencySettingsPage() {
                 </p>
               )}
               {inviteSuccess && (
-                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-2">{inviteSuccess}</p>
+                <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400 mt-2">{inviteSuccess}</p>
               )}
 
               {teamMembers.length === 0 ? (

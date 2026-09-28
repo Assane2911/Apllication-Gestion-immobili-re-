@@ -143,7 +143,7 @@ describe("AgencySettingsPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
 
     await waitFor(() =>
-      expect(screen.getByText(/Paramètres de l'agence mis à jour avec succès/)).toBeInTheDocument()
+      expect(screen.getByRole("status")).toHaveTextContent(/Paramètres de l'agence mis à jour avec succès/)
     );
     expect(mockedApi.put).toHaveBeenCalledWith(
       "/agency",

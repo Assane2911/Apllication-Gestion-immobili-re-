@@ -67,7 +67,7 @@ describe("AdminSettingsPage", () => {
         bic: "BDFEFRPPXXX",
       })
     );
-    await waitFor(() => expect(screen.getByText("Coordonnées bancaires enregistrées")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Coordonnées bancaires enregistrées"));
   });
 
   it("affiche l'erreur du serveur quand l'IBAN saisi est invalide", async () => {

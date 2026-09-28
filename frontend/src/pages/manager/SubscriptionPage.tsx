@@ -218,7 +218,7 @@ export default function SubscriptionPage() {
         </div>
       )}
       {successMessage && (
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div role="status" className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl flex items-center gap-2">
           <CheckCircle2 size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{successMessage}</span>
         </div>

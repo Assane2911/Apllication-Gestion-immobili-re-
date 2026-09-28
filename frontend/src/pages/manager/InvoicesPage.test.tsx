@@ -189,7 +189,7 @@ describe("InvoicesPage (manager)", () => {
     await user.click(buttons[0]);
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/send-reminder"));
-    await waitFor(() => expect(screen.getByText(/Relance envoyée à Awa Diallo\./)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/Relance envoyée à Awa Diallo\./));
   });
 
   it("envoyer les alertes mensuelles : demande confirmation puis envoie la requête", async () => {
