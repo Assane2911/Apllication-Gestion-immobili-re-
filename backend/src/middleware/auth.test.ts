@@ -67,14 +67,18 @@ describe("authenticate", () => {
 
   // Repli cookie : le frontend web ne pose plus d'en-tête Authorization (voir
   // frontend/src/api/client.ts) — authenticate doit accepter le même jeton
-  // transporté par le cookie httpOnly posé à la connexion (utils/authCookie.ts).
+  // transporté par le cookie httpOnly posé à la connexion (utils/authCookie.ts),
+  // à condition que la requête porte aussi X-Requested-With (voir le
+  // describe("protection CSRF") plus bas) — c'est le cas de tout appel émis
+  // par notre propre frontend (client.ts), reproduit ici.
   it("accepte un token valide transporté par le cookie httpOnly `token`, sans en-tête Authorization", async () => {
     const manager = await createManager();
     const tenant = await createTenant(manager.id);
     const tenantUser = await createTenantPortalUser(tenant);
     const res = await request(app)
       .get("/api/issues/mine")
-      .set("Cookie", `token=${tokenFor(tenantUser, tenant.id)}`);
+      .set("Cookie", `token=${tokenFor(tenantUser, tenant.id)}`)
+      .set("X-Requested-With", "XMLHttpRequest");
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
@@ -91,8 +95,42 @@ describe("authenticate", () => {
   });
 
   it("rejette (401) un cookie `token` mal formé quand aucun en-tête Authorization n'est fourni", async () => {
-    const res = await request(app).get("/api/issues/mine").set("Cookie", "token=ceci-nest-pas-un-jwt");
+    const res = await request(app)
+      .get("/api/issues/mine")
+      .set("Cookie", "token=ceci-nest-pas-un-jwt")
+      .set("X-Requested-With", "XMLHttpRequest");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("protection CSRF (repli cookie)", () => {
+  // SameSite=None (authCookie.ts, imposé par le frontend et le backend sur
+  // des origines distinctes) laisse le cookie httpOnly suivre N'IMPORTE
+  // QUELLE requête "simple" envoyée vers l'API — pas seulement celles de
+  // notre propre frontend. Sans le garde ajouté à authenticate, un
+  // formulaire HTML hébergé sur un site tiers, soumis automatiquement par un
+  // script pendant qu'un utilisateur est connecté, aurait suffi à agir en son
+  // nom sur n'importe quelle route authentifiée par cookie : exactement ce
+  // que reproduit ce test, en envoyant un cookie valide SANS le en-tête que
+  // seul notre code JS peut poser.
+  it("rejette (403) un jeton valide transporté par le cookie sans X-Requested-With (requête forgée cross-site)", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const tenantUser = await createTenantPortalUser(tenant);
+    const res = await request(app)
+      .get("/api/issues/mine")
+      .set("Cookie", `token=${tokenFor(tenantUser, tenant.id)}`);
+    expect(res.status).toBe(403);
+  });
+
+  it("n'exige pas X-Requested-With quand le jeton vient de l'en-tête Authorization (app native)", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const tenantUser = await createTenantPortalUser(tenant);
+    const res = await request(app)
+      .get("/api/issues/mine")
+      .set("Authorization", `Bearer ${tokenFor(tenantUser, tenant.id)}`);
+    expect(res.status).toBe(200);
   });
 });
 

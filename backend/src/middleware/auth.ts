@@ -6,7 +6,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
-import { AUTH_COOKIE_NAME } from "../utils/authCookie";
+import { AUTH_COOKIE_NAME, CSRF_HEADER_NAME } from "../utils/authCookie";
 
 export interface AuthPayload {
   userId: string;
@@ -75,8 +75,18 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
   // cookie httpOnly posé à la connexion (frontend web, depuis cette
   // migration, qui ne lit ni ne stocke plus le jeton lui-même).
   const header = req.headers.authorization;
-  const token =
-    header && header.startsWith("Bearer ") ? header.slice("Bearer ".length) : req.cookies?.[AUTH_COOKIE_NAME];
+  const bearerToken = header && header.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
+  const cookieToken = req.cookies?.[AUTH_COOKIE_NAME];
+
+  // Protection CSRF : voir le commentaire de CSRF_HEADER_NAME et de
+  // cookieOptions (utils/authCookie.ts). Ne s'applique qu'au repli cookie —
+  // un Authorization: Bearer n'est jamais posé automatiquement par un
+  // navigateur, donc pas exposé au même risque.
+  if (!bearerToken && cookieToken && req.headers[CSRF_HEADER_NAME] === undefined) {
+    return next(new ApiError(403, "Requête refusée (protection CSRF)"));
+  }
+
+  const token = bearerToken ?? cookieToken;
   if (!token) {
     return next(new ApiError(401, "Authentification requise"));
   }

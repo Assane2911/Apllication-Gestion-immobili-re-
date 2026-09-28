@@ -133,7 +133,7 @@ describe("Révocation des jetons par version", () => {
     const agent = request.agent(app);
     await agent.post("/api/auth/login").send({ email: "cookie-logout-all@test.local", password: "Password123!" });
 
-    const demande = await agent.post("/api/auth/logout-all");
+    const demande = await agent.post("/api/auth/logout-all").set("X-Requested-With", "XMLHttpRequest");
     expect(demande.status).toBe(200);
 
     const res = await agent.get("/api/auth/me");

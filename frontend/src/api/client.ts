@@ -18,7 +18,18 @@ export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 // compris en production). L'app mobile Capacitor continue de porter son
 // jeton dans l'en-tête (voir l'intercepteur ci-dessous) ; ce réglage est
 // alors sans effet, faute de cookie posé pour elle.
-export const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 20_000, withCredentials: true });
+//
+// X-Requested-With : exigé par le backend (middleware/auth.ts, voir
+// CSRF_HEADER_NAME) sur toute requête authentifiée par ce cookie — un
+// formulaire HTML forgé sur un autre site ne peut jamais poser cet en-tête,
+// seul notre propre code JS le peut. Posé ici une fois pour tous les appels,
+// plutôt que par appel : aucun n'a de raison de s'en passer.
+export const api = axios.create({
+  baseURL: `${API_URL}/api`,
+  timeout: 20_000,
+  withCredentials: true,
+  headers: { "X-Requested-With": "XMLHttpRequest" },
+});
 
 /**
  * Timeout étendu pour les requêtes qui envoient un fichier (photo, pièce

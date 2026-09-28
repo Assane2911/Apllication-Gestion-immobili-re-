@@ -13,6 +13,15 @@ import { env } from "../config/env";
  */
 export const AUTH_COOKIE_NAME = "token";
 
+/**
+ * En-tête que seul notre propre frontend (voir frontend/src/api/client.ts)
+ * pose sur chaque appel, exigé par `authenticate` (middleware/auth.ts) quand
+ * le jeton vient du cookie plutôt que d'un en-tête Authorization — protection
+ * CSRF pour ce mode d'authentification, voir le commentaire de
+ * `cookieOptions` ci-dessous pour le contexte (SameSite=None obligatoire).
+ */
+export const CSRF_HEADER_NAME = "x-requested-with";
+
 // Frontend et backend sont TOUJOURS sur des origines distinctes sur Vercel —
 // y compris en preview, où chaque déploiement (front comme back) reçoit son
 // propre sous-domaine *.vercel.app généré par PR, donc deux "sites" distincts
@@ -28,6 +37,15 @@ export const AUTH_COOKIE_NAME = "token";
 // Vercel), les deux serveurs tournent sur des ports différents de
 // "localhost" mais RESTENT le même site — Lax suffit, et évite d'exiger
 // HTTPS localement, où il n'existe pas.
+//
+// SameSite=None a un prix : le cookie suit alors N'IMPORTE QUELLE requête
+// "simple" (un <form> HTML, sans préflight CORS) envoyée vers notre API par
+// N'IMPORTE QUEL site, pas seulement notre propre frontend — la définition
+// même d'une CSRF. `express.urlencoded` (app.ts) accepte justement ce genre
+// de corps sur toutes les routes. CSRF_HEADER_NAME ci-dessus est la
+// contre-mesure : un formulaire HTML ne peut jamais poser d'en-tête
+// personnalisé, et un script sur un autre site qui tenterait de l'ajouter
+// déclencherait un préflight CORS que notre liste blanche d'origines refuse.
 function cookieOptions(maxAge?: number) {
   const surVercel = env.nodeEnv === "production" || process.env.VERCEL === "1";
   return {
