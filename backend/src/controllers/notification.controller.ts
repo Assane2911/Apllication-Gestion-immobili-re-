@@ -58,20 +58,26 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
   const notifications: NotificationItem[] = [];
 
   // --- Messages non lus envoyés par les locataires ---
+  // Le filtre isRead=false est porté par le SQL, pas par une boucle JS après
+  // coup : sans lui, cette requête chargeait l'intégralité de l'historique
+  // des messages de l'agence (des années de conversations, la quasi-totalité
+  // déjà lus) à chaque affichage du centre de notifications, pour n'en
+  // retenir qu'une poignée.
   const unreadRows = (await db
     .select({ message: messages, contract: contracts, tenant: tenants, property: properties })
     .from(messages)
     .innerJoin(contracts, eq(messages.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(and(eq(messages.senderRole, "TENANT"), eq(properties.managerId, managerId)))) as MessageRow[];
+    .where(
+      and(eq(messages.senderRole, "TENANT"), eq(messages.isRead, false), eq(properties.managerId, managerId))
+    )) as MessageRow[];
 
   const unreadByContract = new Map<
     string,
     { count: number; tenantName: string; propertyTitle: string; latest: Date }
   >();
   for (const r of unreadRows) {
-    if (r.message.isRead) continue;
     const key = r.contract.id;
     const createdAt = new Date(r.message.createdAt);
     const existing = unreadByContract.get(key);
