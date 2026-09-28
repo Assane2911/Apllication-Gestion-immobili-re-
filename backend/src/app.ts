@@ -5,6 +5,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env";
+import { initDb } from "./db/init";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import activityLogRoutes from "./routes/activityLog.routes";
 import adminRoutes from "./routes/admin.routes";
@@ -36,6 +37,34 @@ import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
 
 export const app = express();
+
+// Sur Vercel, ce fichier est directement le point d'entrée serverless (voir
+// l'export par défaut en bas de fichier) : src/index.ts, qui appelait
+// initDb() avant app.listen(), n'y est JAMAIS exécuté — uniquement en local
+// via `npm run dev`/`start`. Sans ce garde-fou, la mise à jour du schéma
+// (tables/colonnes/index ajoutés à schema.ts) ne s'exécutait donc jamais
+// contre la vraie base de production : toute colonne ajoutée après le tout
+// premier déploiement y restait absente, et chaque requête qui la nommait
+// échouait avec "column ... does not exist" — masqué en 500 générique côté
+// client (incident réel : connexion impossible pour tous les gestionnaires
+// après l'ajout de stripeCustomerId/stripeSubscriptionId à `users`).
+//
+// `dbReady` mémorise la promesse : une seule exécution par instance
+// serverless "chaude" (et par process en local/tests), jamais une par
+// requête — initDb() reste idempotent (CREATE/ALTER ... IF NOT EXISTS) mais
+// rien ne justifie de repayer son coût à chaque appel. Remise à `null` en
+// cas d'échec : une panne transitoire de la base ne doit pas condamner
+// l'instance à échouer indéfiniment tant qu'elle reste chaude.
+let dbReady: Promise<void> | null = null;
+app.use((_req, _res, next) => {
+  (dbReady ?? (dbReady = initDb())).then(
+    () => next(),
+    (err) => {
+      dbReady = null;
+      next(err);
+    }
+  );
+});
 
 // Sur Vercel, chaque requête traverse leur edge/proxy : sans ce réglage,
 // `req.ip` (et donc les limiteurs de fréquence par IP — voir rateLimit.ts)
