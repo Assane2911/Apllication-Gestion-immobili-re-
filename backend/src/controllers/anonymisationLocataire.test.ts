@@ -2,12 +2,13 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { contracts, invoices, tenants, users } from "../db/schema";
+import { activityLogs, contracts, inspections, invoices, tenants, users } from "../db/schema";
 import * as storageService from "../services/storage.service";
 import * as reminderService from "../services/reminder.service";
 import {
   authHeader,
   createContract,
+  createInspection,
   createInvoice,
   createManager,
   createProperty,
@@ -70,6 +71,95 @@ describe("Anonymisation d'un locataire", () => {
     const [factureApres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
     expect(contratApres).toBeDefined();
     expect(factureApres.status).toBe("PAID");
+  });
+
+  // Régression : une signature électronique est un tracé manuscrit encodé en
+  // base64, stocké tel quel dans contracts/inspections.tenantSignatureUrl
+  // (jamais uploadé au stockage objet, voir signContractSchema) — au moins
+  // aussi identifiant qu'un nom. L'anonymisation ne l'effaçait pas.
+  it("efface la signature du locataire dans ses contrats et états des lieux, sans effacer la date de signature", async () => {
+    const { manager, tenant, contract } = await locataireAvecHistorique();
+    await testDb
+      .update(contracts)
+      .set({ signedByTenantAt: new Date(2026, 5, 4), tenantSignatureUrl: "data:image/png;base64,AAAA" })
+      .where(eq(contracts.id, contract.id));
+    const inspection = await createInspection(contract, manager.id, {
+      signedByTenantAt: new Date(2026, 5, 5),
+      tenantSignatureUrl: "data:image/png;base64,BBBB",
+    });
+
+    await request(app).post(`/api/tenants/${tenant.id}/anonymiser`).set(authHeader(tokenFor(manager)));
+
+    const [contratApres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(contratApres.tenantSignatureUrl).toBeNull();
+    expect(contratApres.signedByTenantAt).not.toBeNull();
+
+    const [inspectionApres] = await testDb.select().from(inspections).where(eq(inspections.id, inspection.id));
+    expect(inspectionApres.tenantSignatureUrl).toBeNull();
+    expect(inspectionApres.signedByTenantAt).not.toBeNull();
+  });
+
+  // Régression : le journal d'activité garde, en texte libre, le nom du
+  // locataire dans les entrées passées le concernant (fiche, contrats,
+  // factures, signalements) — l'anonymisation de la fiche elle-même ne les
+  // touchait pas, laissant son identité lisible pendant toute la durée de
+  // rétention du journal (jusqu'à 365 jours).
+  it("efface le nom réel du locataire des entrées passées du journal d'activité, sans toucher au reste du texte", async () => {
+    const { manager, tenant, contract, invoice } = await locataireAvecHistorique();
+    const nomReel = `${tenant.firstName} ${tenant.lastName}`;
+
+    await testDb.insert(activityLogs).values([
+      {
+        managerId: manager.id,
+        actorLabel: `Gestionnaire (${manager.email})`,
+        action: "tenant.create",
+        entityType: "tenant",
+        entityId: tenant.id,
+        entityLabel: nomReel,
+        details: `Nouvelle fiche locataire créée pour ${nomReel}`,
+      },
+      {
+        managerId: manager.id,
+        actorLabel: `Gestionnaire (${manager.email})`,
+        action: "contract.create",
+        entityType: "contract",
+        entityId: contract.id,
+        entityLabel: `Villa Ngor — ${nomReel}`,
+        details: `Nouveau contrat créé pour ${nomReel} sur le bien Villa Ngor`,
+      },
+      {
+        managerId: manager.id,
+        actorLabel: `Gestionnaire (${manager.email})`,
+        action: "invoice.mark_paid",
+        entityType: "invoice",
+        entityId: invoice.id,
+        entityLabel: `${nomReel} — Villa Ngor`,
+        details: `Facture 6/2026 marquée réglée (500 EUR)`,
+      },
+    ]);
+
+    await request(app).post(`/api/tenants/${tenant.id}/anonymiser`).set(authHeader(tokenFor(manager)));
+
+    const entrees: (typeof activityLogs.$inferSelect)[] = await testDb
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.managerId, manager.id));
+    for (const entree of entrees) {
+      expect(entree.entityLabel).not.toContain(nomReel);
+      if (entree.details) expect(entree.details).not.toContain(nomReel);
+    }
+    // Le reste du texte (bien concerné, montant, action) doit rester intact.
+    const factureApres = entrees.find((e) => e.entityType === "invoice");
+    expect(factureApres?.details).toContain("6/2026");
+    expect(factureApres?.details).toContain("500 EUR");
+    const contratApres = entrees.find((e) => e.entityType === "contract");
+    expect(contratApres?.entityLabel).toContain("Villa Ngor");
+    // Et la nouvelle entrée que l'anonymisation elle-même crée ne doit pas
+    // réintroduire le nom réel qu'on vient d'effacer partout ailleurs.
+    const entreeAnonymisation = entrees.find((e) => e.action === "tenant.anonymize");
+    expect(entreeAnonymisation).toBeDefined();
+    expect(entreeAnonymisation?.entityLabel).not.toContain(nomReel);
+    expect(entreeAnonymisation?.details).not.toContain(nomReel);
   });
 
   it("supprime la pièce d'identité du stockage, pas seulement sa référence", async () => {

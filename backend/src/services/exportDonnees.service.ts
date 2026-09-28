@@ -1,6 +1,7 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or, SQL } from "drizzle-orm";
 import { db } from "../db/client";
 import {
+  activityLogs,
   agencySettings,
   contracts,
   inspections,
@@ -65,6 +66,25 @@ export async function construireExportLocataire(tenantId: string) {
       ])
     : [[], await db.select().from(issueReports).where(eq(issueReports.tenantId, tenantId)), [], []];
 
+  // Le journal d'activité parle AUSSI du locataire (création/modification de
+  // sa fiche, de ses contrats, de ses factures, de ses signalements) : « on ne
+  // choisit pas ce qu'on montre » (voir plus haut) s'applique ici comme
+  // ailleurs — l'omettre aurait fait de « l'ensemble des données détenues à
+  // votre sujet », promis ci-dessous, une promesse incomplète.
+  const idsFactures = factures.map((f: typeof invoices.$inferSelect) => f.id);
+  const idsSignalements = signalements.map((s: typeof issueReports.$inferSelect) => s.id);
+  const entitesConcernees: SQL[] = [and(eq(activityLogs.entityType, "tenant"), eq(activityLogs.entityId, tenantId))!];
+  if (idsContrats.length > 0) {
+    entitesConcernees.push(and(eq(activityLogs.entityType, "contract"), inArray(activityLogs.entityId, idsContrats))!);
+  }
+  if (idsFactures.length > 0) {
+    entitesConcernees.push(and(eq(activityLogs.entityType, "invoice"), inArray(activityLogs.entityId, idsFactures))!);
+  }
+  if (idsSignalements.length > 0) {
+    entitesConcernees.push(and(eq(activityLogs.entityType, "issue"), inArray(activityLogs.entityId, idsSignalements))!);
+  }
+  const journal = await db.select().from(activityLogs).where(or(...entitesConcernees));
+
   return {
     exportGenereLe: new Date().toISOString(),
     aProposDeCetExport:
@@ -108,6 +128,7 @@ export async function construireExportLocataire(tenantId: string) {
     signalements,
     etatsDesLieux,
     messages: conversations,
+    journalActivite: journal,
   };
 }
 
