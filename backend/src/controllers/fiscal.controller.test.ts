@@ -407,6 +407,45 @@ describe("GET /api/fiscal/fec", () => {
     expect(res.headers["content-disposition"]).toContain('filename="000000000FEC20261231.txt"');
   });
 
+  // Régression : le FEC n'accepte que l'ISO-8859-1 (arrêté du 29 juillet
+  // 2013) — express.res.send() envoie pourtant toujours une chaîne en UTF-8
+  // sur le fil, quel que soit le Content-Type déclaré. Un intitulé de
+  // dépense/bien accentué (très courant en français) partait donc sur
+  // plusieurs octets UTF-8 au lieu d'un seul octet Latin-1, ce qu'un
+  // validateur FEC strict rejette. `.buffer(true)` + `.parse` lit les octets
+  // BRUTS de la réponse : un test sur `res.text` (déjà décodé par le client
+  // HTTP selon le charset déclaré) ne peut pas détecter ce genre d'écart.
+  it("encode le fichier en ISO-8859-1, pas en UTF-8 (arrêté du 29 juillet 2013)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "MAINTENANCE",
+      title: "Réparations et Impôts",
+      amount: 100,
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app)
+      .get("/api/fiscal/fec?year=2026")
+      .set(authHeader(tokenFor(manager)))
+      .buffer(true)
+      .parse((response, callback) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk: Buffer) => chunks.push(chunk));
+        response.on("end", () => callback(null, Buffer.concat(chunks)));
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("iso-8859-1");
+    const octets: Buffer = res.body;
+    // "é" en Latin-1 est l'octet unique 0xE9 ; en UTF-8, il serait encodé sur
+    // deux octets (0xC3 0xA9), absents du fichier envoyé.
+    expect(octets.includes(0xe9)).toBe(true);
+    expect(octets.includes(0xc3)).toBe(false);
+    expect(octets.toString("latin1")).toContain("Réparations et Impôts");
+  });
+
   // Même réserve que le Grand Livre CSV (CGU §3, "export comptable avancé
   // FEC/Excel") : un gestionnaire Pro n'y a pas accès.
   it("refuse l'export à un gestionnaire Pro (réservé à Entreprise)", async () => {

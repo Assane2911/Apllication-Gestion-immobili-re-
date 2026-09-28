@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { agencySettings, contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { asyncHandler } from "../utils/asyncHandler";
-import { csvEscape, csvMontant, CSV_BOM, fecEscapeText, fecMontant } from "../utils/csv";
+import { csvEscape, csvMontant, CSV_BOM, fecEscapeText, fecMontant, versLatin1Fec } from "../utils/csv";
 
 /**
  * Module "Bilan Fiscal & Comptabilité" : synthèse annuelle (revenus/dépenses
@@ -444,7 +444,7 @@ export const exportFEC = asyncHandler(async (req: Request, res: Response) => {
 
   const siren = sirenDepuisSiretOrId(settings?.siretOrId);
   const filename = `${siren}FEC${year}1231.txt`;
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Content-Type", "text/plain; charset=iso-8859-1");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  res.send(rows.join("\n"));
+  res.send(versLatin1Fec(rows.join("\n")));
 });
