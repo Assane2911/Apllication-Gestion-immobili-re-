@@ -43,7 +43,7 @@ describe("VerifyEmailPage", () => {
     renderPage();
 
     expect(screen.getByText("Vérification en cours...")).toBeInTheDocument();
-    expect(await screen.findByText("Email confirmé !")).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent("Email confirmé !");
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/verify-email", { token: "abc123" });
   });
 

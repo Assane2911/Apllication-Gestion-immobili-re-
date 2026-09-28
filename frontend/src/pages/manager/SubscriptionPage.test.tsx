@@ -467,7 +467,7 @@ describe("SubscriptionPage", () => {
         bankReference: undefined,
       })
     );
-    await waitFor(() => expect(screen.getByText("Abonnement activé avec succès !")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Abonnement activé avec succès !"));
     expect(screen.queryByRole("button", { name: "Confirmer et Activer l'Abonnement" })).not.toBeInTheDocument();
   });
 

@@ -74,7 +74,7 @@ export default function VerifyEmailPage() {
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.verifyingSubtitle")}</p>
           </div>
         ) : status === "success" ? (
-          <div className="text-center">
+          <div role="status" className="text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
               <CheckCircle2 size={24} strokeWidth={1.8} />
             </div>

@@ -131,7 +131,7 @@ export default function TenantInvoicesPage() {
       )}
 
       {message && (
-        <div className="text-sm bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
+        <div role="status" className="text-sm bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
           <CheckCircle2 size={16} />
           <span>{message}</span>
         </div>
