@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { agencySettings, issueReports, messages } from "../db/schema";
+import { activityLogs, agencySettings, issueReports, messages } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -73,6 +73,62 @@ describe("Export des données d'un locataire", () => {
     expect(res.body.signalements).toHaveLength(1);
     expect(res.body.messages).toHaveLength(1);
     expect(res.body.messages[0].content).toBe("Bonjour, la fuite continue");
+  });
+
+  // Régression : « on ne choisit pas ce qu'on montre » (voir le commentaire
+  // de construireExportLocataire) s'appliquait à la note interne d'un
+  // signalement, mais pas au journal d'activité — pourtant lui aussi rempli
+  // d'entrées qui parlent du locataire (création de sa fiche, de son contrat,
+  // de sa facture). L'export n'était donc pas l'« ensemble des données »
+  // promis.
+  it("inclut le journal d'activité concernant le locataire (fiche, contrat, facture)", async () => {
+    const { manager, tenant, contract, invoice } = await dossierComplet();
+    await testDb.insert(activityLogs).values([
+      {
+        managerId: manager.id,
+        actorLabel: "Gestionnaire",
+        action: "tenant.create",
+        entityType: "tenant",
+        entityId: tenant.id,
+        entityLabel: "Awa Diallo",
+      },
+      {
+        managerId: manager.id,
+        actorLabel: "Gestionnaire",
+        action: "contract.create",
+        entityType: "contract",
+        entityId: contract.id,
+        entityLabel: "Studio Plateau — Awa Diallo",
+      },
+      {
+        managerId: manager.id,
+        actorLabel: "Gestionnaire",
+        action: "invoice.mark_paid",
+        entityType: "invoice",
+        entityId: invoice.id,
+        entityLabel: "Awa Diallo — Studio Plateau",
+      },
+      // Bruit : une entrée sans rapport avec ce locataire ne doit pas fuiter dans son export.
+      {
+        managerId: manager.id,
+        actorLabel: "Gestionnaire",
+        action: "property.create",
+        entityType: "property",
+        entityId: "autre-bien",
+        entityLabel: "Un autre bien",
+      },
+    ]);
+
+    const res = await request(app)
+      .get(`/api/tenants/${tenant.id}/export`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    const actions = res.body.journalActivite.map((e: { action: string }) => e.action);
+    expect(actions).toEqual(
+      expect.arrayContaining(["tenant.create", "contract.create", "invoice.mark_paid"])
+    );
+    expect(actions).not.toContain("property.create");
   });
 
   it("nomme le responsable du traitement, sans qui l'export ne dit pas à qui s'adresser", async () => {

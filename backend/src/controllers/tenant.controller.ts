@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, SQL, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { contracts, issueReports, properties, tenants, users } from "../db/schema";
+import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
@@ -231,6 +231,7 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
   }
 
   const nomAffiche = `${existing.firstName} ${existing.lastName}`;
+  const nomAnonyme = "Locataire anonymisé";
   const pieceIdentite = existing.idDocument;
   const comptePortail = existing.userId;
 
@@ -256,6 +257,61 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
     if (comptePortail) {
       await tx.delete(users).where(eq(users.id, comptePortail));
     }
+
+    // La signature électronique n'est pas un fichier du stockage objet : elle
+    // est stockée telle quelle, en base64, dans contracts/inspections.
+    // tenantSignatureUrl (voir le commentaire de signContractSchema) — un
+    // tracé de signature manuscrite identifie son auteur au moins aussi
+    // directement qu'un nom. `signedByTenantAt` (la DATE de signature) est en
+    // revanche conservée : elle prouve que le bail/état des lieux a bien été
+    // signé, sans plus rien identifier — le rendu HTML (pdf.service.ts) gère
+    // déjà ce cas (date affichée, aucune balise <img> si l'URL est absente).
+    const tenantContractIds = (
+      await tx.select({ id: contracts.id }).from(contracts).where(eq(contracts.tenantId, existing.id))
+    ).map((c) => c.id);
+    if (tenantContractIds.length > 0) {
+      await tx
+        .update(contracts)
+        .set({ tenantSignatureUrl: null })
+        .where(inArray(contracts.id, tenantContractIds));
+    }
+    await tx.update(inspections).set({ tenantSignatureUrl: null }).where(eq(inspections.tenantId, existing.id));
+
+    // Le journal d'activité conserve, en texte libre, le nom du locataire
+    // dans les entrées passées le concernant (création/modification de sa
+    // fiche, contrats, factures, signalements) : l'anonymisation de la fiche
+    // elle-même ne les touchait pas, laissant son identité lisible dans le
+    // journal pendant toute sa durée de rétention (jusqu'à 365 jours, voir
+    // conservation.service.ts). `replace()` cible précisément les occurrences
+    // du nom complet, sans toucher au reste du texte (bien concerné, montant,
+    // action...).
+    const invoiceIds = tenantContractIds.length
+      ? (
+          await tx.select({ id: invoices.id }).from(invoices).where(inArray(invoices.contractId, tenantContractIds))
+        ).map((i) => i.id)
+      : [];
+    const issueIds = (
+      await tx.select({ id: issueReports.id }).from(issueReports).where(eq(issueReports.tenantId, existing.id))
+    ).map((i) => i.id);
+
+    const entitesConcernees: SQL[] = [and(eq(activityLogs.entityType, "tenant"), eq(activityLogs.entityId, existing.id))!];
+    if (tenantContractIds.length > 0) {
+      entitesConcernees.push(and(eq(activityLogs.entityType, "contract"), inArray(activityLogs.entityId, tenantContractIds))!);
+    }
+    if (invoiceIds.length > 0) {
+      entitesConcernees.push(and(eq(activityLogs.entityType, "invoice"), inArray(activityLogs.entityId, invoiceIds))!);
+    }
+    if (issueIds.length > 0) {
+      entitesConcernees.push(and(eq(activityLogs.entityType, "issue"), inArray(activityLogs.entityId, issueIds))!);
+    }
+
+    await tx
+      .update(activityLogs)
+      .set({
+        entityLabel: sql`replace(${activityLogs.entityLabel}, ${nomAffiche}, ${nomAnonyme})`,
+        details: sql`replace(${activityLogs.details}, ${nomAffiche}, ${nomAnonyme})`,
+      })
+      .where(or(...entitesConcernees));
   });
 
   // Après la transaction, best-effort : un stockage indisponible ne doit pas
@@ -265,14 +321,19 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
     await deleteStorageObjectBestEffort(pieceIdentite).catch(() => undefined);
   }
 
+  // Le nom réel ne doit apparaître ni ici ni dans aucune entrée passée (voir
+  // le nettoyage ci-dessus) : cette entrée elle-même reste consultable dans
+  // le journal d'activité pendant toute sa durée de rétention (jusqu'à 365
+  // jours, voir conservation.service.ts), ce qui aurait autrement rouvert la
+  // fuite qu'on vient de refermer, au moment même de l'anonymisation.
   await logActivity({
     req,
     managerId: existing.managerId,
     action: "tenant.anonymize",
     entityType: "tenant",
     entityId: existing.id,
-    entityLabel: nomAffiche,
-    details: `Données identifiantes de ${nomAffiche} effacées à sa demande (droit à l'effacement). L'historique locatif et comptable est conservé.`,
+    entityLabel: nomAnonyme,
+    details: "Données identifiantes effacées à la demande du locataire (droit à l'effacement). L'historique locatif et comptable est conservé.",
   });
 
   res.json({
