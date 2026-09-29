@@ -1,4 +1,4 @@
-package com.votredomaine.immoplatform;
+package com.immoplatformpro.app;
 
 import com.getcapacitor.BridgeActivity;
 
