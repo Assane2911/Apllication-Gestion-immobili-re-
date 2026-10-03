@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+
+# Espaces applicatifs derrière authentification : aucune valeur pour un
+# visiteur non connecté (formulaire de connexion ou redirection), et
+# inutile de dépenser du budget de crawl dessus. La vitrine publique
+# (/vitrine) et ses annonces (/vitrine/annonces/...) restent autorisées.
+Disallow: /dashboard
+Disallow: /properties
+Disallow: /tenants
+Disallow: /proprietaires
+Disallow: /contracts
+Disallow: /etats-des-lieux
+Disallow: /invoices
+Disallow: /annonces
+Disallow: /leads
+Disallow: /expenses
+Disallow: /bilan-fiscal
+Disallow: /messages
+Disallow: /issues
+Disallow: /activity-log
+Disallow: /agency
+Disallow: /subscription
+Disallow: /portail
+Disallow: /proprietaire
+Disallow: /admin
+
+Sitemap: https://apllication-gestion-immobili-re.vercel.app/sitemap.xml
