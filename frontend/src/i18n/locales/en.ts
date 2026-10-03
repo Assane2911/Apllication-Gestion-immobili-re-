@@ -1574,6 +1574,13 @@ const en: TranslationSchema = {
         "Browse listings published by our partner agencies: rentals, sales, land and new developments across France and francophone Africa.",
     },
   },
+  cookieConsent: {
+    message:
+      "We use Google Analytics to measure site traffic (pages visited, traffic sources). No data is collected without your consent.",
+    privacyLink: "Learn more",
+    accept: "Accept",
+    reject: "Reject",
+  },
 };
 
 export default en;

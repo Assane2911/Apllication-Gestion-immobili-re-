@@ -79,4 +79,14 @@ export const SUBPROCESSORS = {
     name: "Sentry",
     role: "Détection et diagnostic des erreurs techniques. Configuré pour ne pas transmettre de données personnelles par défaut ; un rapport d'erreur peut néanmoins contenir des éléments techniques de contexte (adresse IP, identifiants internes).",
   },
+  /**
+   * N'est chargé qu'après consentement explicite via la bannière cookies
+   * (CookieConsentBanner.tsx), jamais par défaut — voir utils/analytics.ts.
+   * Tant qu'aucun ID de mesure n'est configuré (VITE_GA_MEASUREMENT_ID), la
+   * bannière elle-même ne s'affiche pas et ce sous-traitant reste inactif.
+   */
+  analytics: {
+    name: "Google Analytics (Google LLC)",
+    role: "Mesure d'audience du site public (pages visitées, provenance du trafic), uniquement sur le site vitrine et avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
+  },
 };

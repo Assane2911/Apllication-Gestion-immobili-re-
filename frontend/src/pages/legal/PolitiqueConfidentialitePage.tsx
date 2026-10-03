@@ -136,6 +136,10 @@ export default function PolitiqueConfidentialitePage() {
               <strong className="text-slate-100">{SUBPROCESSORS.errorMonitoring.name}</strong> —{" "}
               {SUBPROCESSORS.errorMonitoring.role}
             </>,
+            <>
+              <strong className="text-slate-100">{SUBPROCESSORS.analytics.name}</strong> —{" "}
+              {SUBPROCESSORS.analytics.role} Voir la section 9 « Cookies et mesure d'audience » ci-dessous.
+            </>,
           ]}
         />
       </LegalSection>
@@ -228,13 +232,21 @@ export default function PolitiqueConfidentialitePage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="9. Cookies et stockage local">
+      <LegalSection title="9. Cookies et mesure d'audience">
         <p>
-          Le Service n'utilise aucun cookie publicitaire ou de traçage à des fins commerciales. Il utilise le
-          stockage local de votre navigateur (localStorage) uniquement à des fins strictement fonctionnelles :
-          maintien de votre session de connexion, mémorisation de votre langue d'affichage préférée, de votre
-          thème (clair/sombre) et de votre devise d'affichage. Ces données restent sur votre appareil et ne
-          sont pas transmises à des tiers.
+          Le Service n'utilise aucun cookie publicitaire. Il utilise le stockage local de votre navigateur
+          (localStorage) à des fins strictement fonctionnelles : maintien de votre session de connexion,
+          mémorisation de votre langue d'affichage préférée, de votre thème (clair/sombre), de votre devise
+          d'affichage et de votre choix de consentement aux cookies ci-dessous. Ces données restent sur votre
+          appareil et ne sont pas transmises à des tiers.
+        </p>
+        <p>
+          Sur le site vitrine public (page d'accueil, annonces, pages légales), un bandeau vous propose
+          d'accepter ou de refuser le dépôt d'un cookie de mesure d'audience par{" "}
+          {SUBPROCESSORS.analytics.name} (voir sa finalité détaillée en section 5 ci-dessus). Ce cookie n'est
+          déposé qu'après votre acceptation explicite ; en cas de refus ou tant que vous n'avez pas répondu,
+          aucune donnée n'est envoyée à Google. Vous pouvez revenir sur votre choix à tout moment en effaçant
+          les cookies de votre navigateur pour ce site, ce qui fera réapparaître le bandeau.
         </p>
       </LegalSection>
 
