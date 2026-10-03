@@ -66,6 +66,13 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
     expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
       "Bel appartement lumineux proche des commodités, à deux pas de la plage."
     );
+
+    const script = document.querySelector('script[type="application/ld+json"]');
+    expect(script).not.toBeNull();
+    const data = JSON.parse(script!.innerHTML);
+    expect(data["@type"]).toBe("RealEstateListing");
+    expect(data.name).toBe("Appartement 2 pièces vue mer");
+    expect(data.offers.price).toBe(450);
   });
 
   it("affiche un message dédié quand l'annonce n'existe plus", async () => {
