@@ -278,6 +278,7 @@ const fr = {
         "Générez vos quittances en PDF certifié, faites signer vos baux en ligne, envoyez vos relances automatiques du 1er du mois et suivez votre rentabilité nette en temps réel.",
       ctaTrial: "Démarrer l'essai 15 jours gratuit →",
       ctaPricing: "Voir les tarifs",
+      mobileSoon: "Bientôt disponible sur l'App Store et Google Play",
     },
     features: {
       receipts: {
