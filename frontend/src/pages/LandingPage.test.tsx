@@ -35,6 +35,11 @@ describe("LandingPage", () => {
     expect(screen.getByText("réinventée & automatisée.")).toBeInTheDocument();
   });
 
+  it("annonce la disponibilité prochaine de l'app mobile sur l'App Store et Google Play", () => {
+    renderPage();
+    expect(screen.getByText("Bientôt disponible sur l'App Store et Google Play")).toBeInTheDocument();
+  });
+
   // Régression. La durée réelle de l'essai (auth.controller.ts::register,
   // trialEndsAt = +15 jours) était annoncée à "15 jours" partout sauf sur le
   // bouton "Essai" de la barre de navigation et les 3 CTA de tarifs, restés à

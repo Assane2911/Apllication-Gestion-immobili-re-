@@ -280,6 +280,7 @@ const es: TranslationSchema = {
         "Genera tus recibos en PDF certificado, firma tus contratos en línea, envía tus recordatorios automáticos desde el día 1 de cada mes y sigue tu rentabilidad neta en tiempo real.",
       ctaTrial: "Comenzar la prueba gratuita de 15 días →",
       ctaPricing: "Ver precios",
+      mobileSoon: "Próximamente en App Store y Google Play",
     },
     features: {
       receipts: {

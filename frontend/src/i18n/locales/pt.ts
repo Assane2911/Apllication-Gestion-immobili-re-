@@ -280,6 +280,7 @@ const pt: TranslationSchema = {
         "Gere os seus recibos de renda em PDF certificado, faça assinar os contratos online, envie lembretes automáticos no dia 1 de cada mês e acompanhe a sua rentabilidade líquida em tempo real.",
       ctaTrial: "Iniciar o teste grátis de 15 dias →",
       ctaPricing: "Ver os preços",
+      mobileSoon: "Em breve na App Store e no Google Play",
     },
     features: {
       receipts: {
