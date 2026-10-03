@@ -1547,6 +1547,9 @@ const pt: TranslationSchema = {
     allTypes: "Todos os tipos",
     empty: "Nenhum anúncio corresponde a estes critérios por enquanto.",
     roomsCount: "{{count}} divisão(ões)",
+    backToListings: "← Todos os anúncios",
+    notFound: "Este anúncio já não está disponível.",
+    notFoundCta: "Ver todos os anúncios",
     leadForm: {
       title: "Contactar a agência",
       name: "Nome completo",

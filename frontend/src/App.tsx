@@ -49,6 +49,7 @@ const AdminSubscriptionsPage = lazy(() => import("./pages/admin/AdminSubscriptio
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const AdminSuggestionsPage = lazy(() => import("./pages/admin/AdminSuggestionsPage"));
 const VitrinePage = lazy(() => import("./pages/VitrinePage"));
+const VitrineListingPage = lazy(() => import("./pages/VitrineListingPage"));
 
 /** Indicateur de chargement affiché pendant le téléchargement du chunk d'une page (React.lazy). */
 function PageLoader() {
@@ -83,6 +84,7 @@ function AppRoutes() {
             volontairement hors de tout layout protégé (voir listing.routes.ts
             côté backend, dont les routes /public/... suivent la même logique). */}
         <Route path="/vitrine" element={<VitrinePage />} />
+        <Route path="/vitrine/annonces/:id" element={<VitrineListingPage />} />
 
         <Route
           element={

@@ -1548,6 +1548,9 @@ const fr = {
     allTypes: "Tous les types",
     empty: "Aucune annonce ne correspond à ces critères pour le moment.",
     roomsCount: "{{count}} pièce(s)",
+    backToListings: "← Toutes les annonces",
+    notFound: "Cette annonce n'est plus disponible.",
+    notFoundCta: "Voir toutes les annonces",
     leadForm: {
       title: "Contacter l'agence",
       name: "Nom complet",
