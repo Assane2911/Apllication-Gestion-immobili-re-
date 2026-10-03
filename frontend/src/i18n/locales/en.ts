@@ -1547,6 +1547,9 @@ const en: TranslationSchema = {
     allTypes: "All types",
     empty: "No listing matches these criteria for now.",
     roomsCount: "{{count}} room(s)",
+    backToListings: "← All listings",
+    notFound: "This listing is no longer available.",
+    notFoundCta: "View all listings",
     leadForm: {
       title: "Contact the agency",
       name: "Full name",

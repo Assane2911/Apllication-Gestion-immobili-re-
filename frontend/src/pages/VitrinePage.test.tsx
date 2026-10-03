@@ -74,47 +74,20 @@ describe("VitrinePage (vitrine publique)", () => {
     await waitFor(() => expect(screen.getByText("Aucune annonce ne correspond à ces critères pour le moment.")).toBeInTheDocument());
   });
 
-  it("ouvre la fiche d'une annonce et affiche sa description complète", async () => {
+  // Régression. Le détail d'une annonce ne s'ouvrait que dans une modale JS,
+  // sans URL propre : invisible pour Google et impossible à partager. Chaque
+  // annonce a maintenant sa propre page (/vitrine/annonces/:id) — voir
+  // VitrineListingPage.test.tsx pour son contenu.
+  it("lie chaque annonce vers sa propre page plutôt que d'ouvrir une modale", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([listing()]));
     mockedApi.get.mockResolvedValueOnce({ data: { countries: ["SN"] } });
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Appartement 2 pièces vue mer")).toBeInTheDocument());
-    await userEvent.setup().click(screen.getByText("Appartement 2 pièces vue mer"));
-
-    expect(screen.getByText("Bel appartement lumineux proche des commodités, à deux pas de la plage.")).toBeInTheDocument();
-    expect(screen.getByText("Contacter l'agence")).toBeInTheDocument();
-  });
-
-  it("soumet une demande de visite depuis la fiche annonce", async () => {
-    const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([listing()]));
-    mockedApi.get.mockResolvedValueOnce({ data: { countries: ["SN"] } });
-    mockedApi.post.mockResolvedValueOnce({ data: { message: "Demande envoyée avec succès" } });
-
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Appartement 2 pièces vue mer")).toBeInTheDocument());
-    await user.click(screen.getByText("Appartement 2 pièces vue mer"));
-
-    await user.type(screen.getByLabelText("Nom complet"), "Moussa Fall");
-    await user.type(screen.getByLabelText("Email"), "moussa@example.com");
-    await user.type(screen.getByLabelText("Téléphone"), "+221 76 000 00 00");
-    await user.type(screen.getByLabelText("Message (optionnel)"), "Je souhaite visiter samedi.");
-
-    await user.click(screen.getByRole("button", { name: "Envoyer la demande" }));
-
-    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
-    const [url, body] = mockedApi.post.mock.calls[0];
-    expect(url).toBe("/listings/public/list-1/leads");
-    expect(body).toMatchObject({
-      prospectName: "Moussa Fall",
-      prospectEmail: "moussa@example.com",
-      prospectPhone: "+221 76 000 00 00",
-      requestType: "VISIT",
-      message: "Je souhaite visiter samedi.",
-    });
-
-    await waitFor(() => expect(screen.getByText(/Votre demande a bien été envoyée/)).toBeInTheDocument());
+    expect(screen.getByRole("link", { name: /Appartement 2 pièces vue mer/ })).toHaveAttribute(
+      "href",
+      "/vitrine/annonces/list-1"
+    );
   });
 
   it("filtre par pays et relance l'appel avec le paramètre country", async () => {
