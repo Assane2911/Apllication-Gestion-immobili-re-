@@ -17,4 +17,14 @@ describe("MentionsLegalesPage", () => {
     expect(screen.getByText(COMPANY.fullName)).toBeInTheDocument();
     expect(screen.getByText(COMPANY.siret, { exact: false })).toBeInTheDocument();
   });
+
+  it("définit un titre d'onglet propre à la page", () => {
+    render(
+      <MemoryRouter>
+        <MentionsLegalesPage />
+      </MemoryRouter>
+    );
+
+    expect(document.title).toBe("Mentions légales | ImmoPlatform Pro");
+  });
 });

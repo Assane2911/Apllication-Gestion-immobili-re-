@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
+import Seo from "../components/Seo";
 import { useInView } from "../hooks/useInView";
 import { useAuth } from "../context/auth";
 import { homePathForRole } from "../utils/roleHome";
@@ -237,6 +238,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-brand-500 selection:text-white">
+      <Seo title={t("seo.landing.title")} description={t("seo.landing.description")} />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">

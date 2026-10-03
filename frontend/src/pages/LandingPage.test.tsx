@@ -40,6 +40,14 @@ describe("LandingPage", () => {
     expect(screen.getByText("Bientôt disponible sur l'App Store et Google Play")).toBeInTheDocument();
   });
 
+  it("définit un titre d'onglet et une meta description propres à la page", () => {
+    renderPage();
+    expect(document.title).toBe("ImmoPlatform Pro — Gestion locative et immobilière intelligente");
+    expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
+      "Quittances PDF certifiées, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement."
+    );
+  });
+
   // Régression. La durée réelle de l'essai (auth.controller.ts::register,
   // trialEndsAt = +15 jours) était annoncée à "15 jours" partout sauf sur le
   // bouton "Essai" de la barre de navigation et les 3 CTA de tarifs, restés à

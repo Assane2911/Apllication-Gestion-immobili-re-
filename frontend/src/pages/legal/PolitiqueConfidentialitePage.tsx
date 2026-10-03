@@ -3,7 +3,10 @@ import { COMPANY, SUBPROCESSORS } from "../../legal/companyInfo";
 
 export default function PolitiqueConfidentialitePage() {
   return (
-    <LegalLayout title="Politique de confidentialité">
+    <LegalLayout
+      title="Politique de confidentialité"
+      description="Comment ImmoPlatform Pro collecte, utilise et protège les données personnelles de ses utilisateurs."
+    >
       <LegalSection title="1. Responsable du traitement">
         <p>
           Le responsable du traitement des données personnelles collectées via {COMPANY.tradeName} est{" "}

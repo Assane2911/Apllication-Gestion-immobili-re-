@@ -16,6 +16,16 @@ describe("PolitiqueConfidentialitePage", () => {
     expect(screen.getByText("2. Données collectées")).toBeInTheDocument();
   });
 
+  it("définit un titre d'onglet propre à la page", () => {
+    render(
+      <MemoryRouter>
+        <PolitiqueConfidentialitePage />
+      </MemoryRouter>
+    );
+
+    expect(document.title).toBe("Politique de confidentialité | ImmoPlatform Pro");
+  });
+
   /**
    * Une politique de confidentialité n'est pas un texte décoratif : chacune de
    * ses affirmations engage l'éditeur. Les deux tests ci-dessous verrouillent

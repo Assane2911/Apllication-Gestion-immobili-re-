@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { COMPANY } from "../legal/companyInfo";
+import Seo from "./Seo";
 
 const LEGAL_PAGES = [
   { to: "/mentions-legales", label: "Mentions légales" },
@@ -10,6 +11,8 @@ const LEGAL_PAGES = [
 
 interface LegalLayoutProps {
   title: string;
+  /** Meta description de la page (document juridique français uniquement, voir plus bas). */
+  description: string;
   children: ReactNode;
 }
 
@@ -39,11 +42,12 @@ export function LegalList({ items }: { items: ReactNode[] }) {
  * uniquement (pas de useTranslation ici) : ce sont des documents juridiques
  * de référence, pas des écrans de l'application traduite.
  */
-export default function LegalLayout({ title, children }: LegalLayoutProps) {
+export default function LegalLayout({ title, description, children }: LegalLayoutProps) {
   const { pathname } = useLocation();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <Seo title={`${title} | ${COMPANY.tradeName}`} description={description} />
       <nav className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">

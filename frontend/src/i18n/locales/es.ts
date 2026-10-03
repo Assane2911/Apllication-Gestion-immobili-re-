@@ -1564,6 +1564,18 @@ const es: TranslationSchema = {
       success: "¡Su solicitud ha sido enviada! La agencia se pondrá en contacto con usted próximamente.",
     },
   },
+  seo: {
+    landing: {
+      title: "ImmoPlatform Pro — Gestión inmobiliaria y de alquileres inteligente",
+      description:
+        "Recibos de alquiler en PDF certificados, firma electrónica de contratos, recordatorios automáticos, panel en tiempo real. Prueba gratuita de 15 días sin compromiso.",
+    },
+    vitrine: {
+      title: "Anuncios inmobiliarios — Alquileres, ventas, terrenos | ImmoPlatform Pro",
+      description:
+        "Explore los anuncios publicados por nuestras agencias asociadas: alquileres, ventas, terrenos y promociones inmobiliarias en Francia y África francófona.",
+    },
+  },
 };
 
 export default es;

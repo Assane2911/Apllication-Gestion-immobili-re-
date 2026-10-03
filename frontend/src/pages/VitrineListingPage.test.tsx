@@ -63,6 +63,9 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
     expect(screen.getByText("Bel appartement lumineux proche des commodités, à deux pas de la plage.")).toBeInTheDocument();
     expect(screen.getByText("Contacter l'agence")).toBeInTheDocument();
     expect(document.title).toContain("Appartement 2 pièces vue mer");
+    expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
+      "Bel appartement lumineux proche des commodités, à deux pas de la plage."
+    );
   });
 
   it("affiche un message dédié quand l'annonce n'existe plus", async () => {

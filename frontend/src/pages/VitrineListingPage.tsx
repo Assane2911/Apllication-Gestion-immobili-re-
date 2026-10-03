@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { api, apiErrorMessage, fileUrl, isRequestCancelled } from "../api/client";
+import Seo from "../components/Seo";
 import VitrineHeader from "../components/VitrineHeader";
 import type { Listing, LeadRequestType } from "../types";
 import { countryLabel } from "../utils/countries";
@@ -52,21 +53,6 @@ export default function VitrineListingPage() {
     return () => controller.abort();
   }, [id]);
 
-  useEffect(() => {
-    if (!listing) return;
-    const previousTitle = document.title;
-    document.title = `${listing.title} — ${listing.location} | ${t("vitrine.brand")}`;
-
-    const meta = document.createElement("meta");
-    meta.name = "description";
-    meta.content = listing.description.slice(0, 160);
-    document.head.appendChild(meta);
-
-    return () => {
-      document.title = previousTitle;
-      meta.remove();
-    };
-  }, [listing, t]);
 
   async function handleLeadSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -117,6 +103,7 @@ export default function VitrineListingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <Seo title={`${listing.title} — ${listing.location} | ${t("vitrine.brand")}`} description={listing.description.slice(0, 160)} />
       <VitrineHeader />
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-4">

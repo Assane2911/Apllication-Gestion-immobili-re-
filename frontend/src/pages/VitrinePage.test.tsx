@@ -66,6 +66,17 @@ describe("VitrinePage (vitrine publique)", () => {
     expect(screen.getByText("450 EUR")).toBeInTheDocument();
   });
 
+  it("définit un titre d'onglet et une meta description propres à la page", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([listing()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { countries: ["SN"] } });
+    renderPage();
+
+    await waitFor(() => expect(document.title).toBe("Annonces immobilières — Locations, ventes, terrains | ImmoPlatform Pro"));
+    expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
+      "Parcourez les annonces publiées par nos agences partenaires : locations, ventes, terrains et promotions immobilières en France et en Afrique francophone."
+    );
+  });
+
   it("affiche un message dédié quand aucune annonce ne correspond", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([]));
     mockedApi.get.mockResolvedValueOnce({ data: { countries: [] } });

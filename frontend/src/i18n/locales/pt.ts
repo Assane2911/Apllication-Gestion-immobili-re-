@@ -1562,6 +1562,18 @@ const pt: TranslationSchema = {
       success: "O seu pedido foi enviado! A agência entrará em contacto consigo brevemente.",
     },
   },
+  seo: {
+    landing: {
+      title: "ImmoPlatform Pro — Gestão imobiliária e de arrendamentos inteligente",
+      description:
+        "Recibos de renda em PDF certificados, assinatura eletrónica de contratos, lembretes automáticos, painel em tempo real. Teste gratuito de 15 dias sem compromisso.",
+    },
+    vitrine: {
+      title: "Anúncios imobiliários — Arrendamentos, vendas, terrenos | ImmoPlatform Pro",
+      description:
+        "Consulte os anúncios publicados pelas nossas agências parceiras: arrendamentos, vendas, terrenos e promoções imobiliárias em França e na África francófona.",
+    },
+  },
 };
 
 export default pt;
