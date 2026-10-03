@@ -1,10 +1,48 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/app-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImmoPlatform Pro — Gestion Immobilière Intelligente</title>
+    <title>ImmoPlatform Pro — Gestion locative et immobilière intelligente</title>
+    <!--
+      Pas de <meta name="description"> statique ici : le composant React
+      Seo.tsx (priorité 2 du plan d'action SEO) en pose une par page une fois
+      monté, et React ne réconcilie PAS un <meta> qu'il n'a pas lui-même rendu
+      — en ajouter un ici dupliquerait la balise plutôt que de la remplacer
+      (vérifié : React remplace bien un <title> statique existant, mais pas un
+      <meta> générique). Les balises Open Graph/Twitter ci-dessous n'ont pas ce
+      problème : Seo.tsx n'en rend aucune, donc rien ne les duplique.
+
+      Ces balises Open Graph/Twitter sont volontairement STATIQUES et
+      génériques (le même contenu pour toutes les URL) : les robots qui les
+      lisent pour construire un aperçu de partage (Facebook, LinkedIn,
+      WhatsApp, X/Twitter) n'exécutent PAS JavaScript, contrairement à
+      Googlebot — ils ne verront donc jamais ce que React rend, seulement ce
+      fichier statique, identique pour toute URL du site (frontend/vercel.json
+      réécrit tout vers ce seul fichier). Un aperçu de partage propre à chaque
+      page (ex. la photo d'une annonce précise) demanderait un rendu serveur
+      ou un pré-rendu — hors périmètre ici (voir l'étape "SSR/pré-rendu" du
+      plan d'action SEO).
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ImmoPlatform Pro" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="ImmoPlatform Pro — Gestion locative et immobilière intelligente" />
+    <meta
+      property="og:description"
+      content="Quittances PDF certifiées, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement."
+    />
+    <meta property="og:image" content="https://apllication-gestion-immobili-re.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ImmoPlatform Pro — Gestion locative et immobilière intelligente" />
+    <meta
+      name="twitter:description"
+      content="Quittances PDF certifiées, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement."
+    />
+    <meta name="twitter:image" content="https://apllication-gestion-immobili-re.vercel.app/og-image.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
