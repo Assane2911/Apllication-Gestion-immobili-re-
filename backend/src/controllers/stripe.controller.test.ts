@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { invoices, platformSubscriptions, users } from "../db/schema";
 import * as emailService from "../services/email.service";
@@ -395,6 +395,19 @@ describe("POST /api/payments/stripe/webhook", () => {
   });
 
   describe("invoice.paid — renouvellement automatique d'un cycle suivant", () => {
+    beforeEach(() => {
+      // calculerPeriode (subscriptionPeriod.service.ts) démarre la nouvelle période
+      // sur `finActuelle` UNIQUEMENT si elle est encore dans le futur par rapport à
+      // `new Date()` réel ; ces fixtures fixent `subscriptionEndsAt` au 1er septembre
+      // 2026 en supposant que "maintenant" le précède encore. Sans horloge figée, le
+      // test casse dès que la date réelle d'exécution dépasse le 1er septembre 2026.
+      vi.setSystemTime(new Date(2026, 7, 15));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it("prolonge l'abonnement et enregistre une nouvelle ligne payée", async () => {
       const manager = await createManager({
         subscriptionStatus: "ACTIVE",

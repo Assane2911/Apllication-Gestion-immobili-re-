@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
@@ -55,6 +55,14 @@ function renderPage() {
 describe("OwnerCrgPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
+    // Les fixtures ci-dessus supposent "mois courant = septembre 2026" (month: 9) ;
+    // sans horloge figée, ce test casse dès que la date réelle d'exécution dépasse
+    // septembre 2026 (OwnerCrgPage.tsx calcule le mois par défaut via `new Date()`).
+    vi.setSystemTime(new Date(2026, 8, 15));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("affiche le CRG du propriétaire connecté, avec ses coordonnées bancaires", async () => {
