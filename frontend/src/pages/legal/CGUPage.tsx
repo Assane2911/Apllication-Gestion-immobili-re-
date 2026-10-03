@@ -3,7 +3,10 @@ import { COMPANY } from "../../legal/companyInfo";
 
 export default function CGUPage() {
   return (
-    <LegalLayout title="Conditions Générales d'Utilisation et de Vente">
+    <LegalLayout
+      title="Conditions Générales d'Utilisation et de Vente"
+      description="Conditions d'utilisation et de vente du service ImmoPlatform Pro : abonnement, essai gratuit, résiliation, responsabilités."
+    >
       <LegalSection title="1. Objet">
         <p>
           Les présentes Conditions Générales d'Utilisation et de Vente (« CGU/CGV ») régissent l'accès et

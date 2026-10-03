@@ -1563,6 +1563,18 @@ const fr = {
       success: "Votre demande a bien été envoyée ! L'agence vous recontactera prochainement.",
     },
   },
+  seo: {
+    landing: {
+      title: "ImmoPlatform Pro — Gestion locative et immobilière intelligente",
+      description:
+        "Quittances PDF certifiées, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement.",
+    },
+    vitrine: {
+      title: "Annonces immobilières — Locations, ventes, terrains | ImmoPlatform Pro",
+      description:
+        "Parcourez les annonces publiées par nos agences partenaires : locations, ventes, terrains et promotions immobilières en France et en Afrique francophone.",
+    },
+  },
 };
 
 export default fr;

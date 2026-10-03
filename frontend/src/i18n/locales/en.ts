@@ -1562,6 +1562,18 @@ const en: TranslationSchema = {
       success: "Your request has been sent! The agency will get back to you shortly.",
     },
   },
+  seo: {
+    landing: {
+      title: "ImmoPlatform Pro — Smart Property & Rental Management",
+      description:
+        "Certified PDF rent receipts, electronic lease signing, automatic reminders, real-time dashboard. Free 15-day trial, no commitment.",
+    },
+    vitrine: {
+      title: "Property Listings — Rentals, Sales, Land | ImmoPlatform Pro",
+      description:
+        "Browse listings published by our partner agencies: rentals, sales, land and new developments across France and francophone Africa.",
+    },
+  },
 };
 
 export default en;

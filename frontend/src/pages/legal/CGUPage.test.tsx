@@ -15,4 +15,14 @@ describe("CGUPage", () => {
     expect(screen.getByText("1. Objet")).toBeInTheDocument();
     expect(screen.getByText("3. Formules d'abonnement et essai gratuit")).toBeInTheDocument();
   });
+
+  it("définit un titre d'onglet propre à la page", () => {
+    render(
+      <MemoryRouter>
+        <CGUPage />
+      </MemoryRouter>
+    );
+
+    expect(document.title).toBe("Conditions Générales d'Utilisation et de Vente | ImmoPlatform Pro");
+  });
 });

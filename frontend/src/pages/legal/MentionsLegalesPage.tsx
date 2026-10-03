@@ -3,7 +3,10 @@ import { COMPANY, SUBPROCESSORS } from "../../legal/companyInfo";
 
 export default function MentionsLegalesPage() {
   return (
-    <LegalLayout title="Mentions légales">
+    <LegalLayout
+      title="Mentions légales"
+      description="Éditeur, hébergement et directeur de la publication du service ImmoPlatform Pro."
+    >
       <LegalSection title="1. Éditeur du site">
         <p>
           Le service {COMPANY.tradeName} (le « Service ») est édité par :
