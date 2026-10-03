@@ -48,6 +48,15 @@ describe("LandingPage", () => {
     );
   });
 
+  it("expose les données structurées Organization et SoftwareApplication", () => {
+    renderPage();
+    const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map((el) =>
+      JSON.parse(el.innerHTML)
+    );
+    expect(scripts.some((s) => s["@type"] === "Organization")).toBe(true);
+    expect(scripts.some((s) => s["@type"] === "SoftwareApplication")).toBe(true);
+  });
+
   // Régression. La durée réelle de l'essai (auth.controller.ts::register,
   // trialEndsAt = +15 jours) était annoncée à "15 jours" partout sauf sur le
   // bouton "Essai" de la barre de navigation et les 3 CTA de tarifs, restés à
