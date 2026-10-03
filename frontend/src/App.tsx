@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import AdminLayout from "./components/AdminLayout";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ManagerLayout from "./components/ManagerLayout";
 import OwnerLayout from "./components/OwnerLayout";
@@ -163,6 +164,7 @@ export default function App() {
           <AuthProvider>
             <CurrencyProvider>
               <AppRoutes />
+              <CookieConsentBanner />
             </CurrencyProvider>
           </AuthProvider>
         </ThemeProvider>

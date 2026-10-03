@@ -1576,6 +1576,13 @@ const es: TranslationSchema = {
         "Explore los anuncios publicados por nuestras agencias asociadas: alquileres, ventas, terrenos y promociones inmobiliarias en Francia y África francófona.",
     },
   },
+  cookieConsent: {
+    message:
+      "Utilizamos Google Analytics para medir la audiencia del sitio (páginas visitadas, origen del tráfico). No se recopila ningún dato sin su consentimiento.",
+    privacyLink: "Saber más",
+    accept: "Aceptar",
+    reject: "Rechazar",
+  },
 };
 
 export default es;

@@ -1575,6 +1575,13 @@ const fr = {
         "Parcourez les annonces publiées par nos agences partenaires : locations, ventes, terrains et promotions immobilières en France et en Afrique francophone.",
     },
   },
+  cookieConsent: {
+    message:
+      "Nous utilisons Google Analytics pour mesurer la fréquentation du site (pages visitées, provenance du trafic). Aucune donnée n'est collectée sans votre accord.",
+    privacyLink: "En savoir plus",
+    accept: "Accepter",
+    reject: "Refuser",
+  },
 };
 
 export default fr;
