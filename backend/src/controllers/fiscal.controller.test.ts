@@ -457,3 +457,125 @@ describe("GET /api/fiscal/fec", () => {
     expect(res.body.error).toContain("Entreprise");
   });
 });
+
+describe("GET /api/fiscal/syscohada", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 8, 20));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("exporte un Journal, un Grand Livre et une Balance équilibrés", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Sow" });
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, { amount: 500, periodMonth: 3, status: "PAID", paidAt: new Date(2026, 2, 5) });
+    await testDb
+      .insert(expenses)
+      .values({ propertyId: property.id, category: "MAINTENANCE", title: "Plomberie", amount: 200, expenseDate: new Date(2026, 1, 1) });
+
+    const res = await request(app).get("/api/fiscal/syscohada?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/csv");
+    // L'avertissement de plan comptable provisoire doit toujours être présent.
+    expect(res.text).toContain("non validé par un expert-comptable agréé OHADA");
+    expect(res.text).toContain("JOURNAL");
+    expect(res.text).toContain("GRAND LIVRE");
+    expect(res.text).toContain("BALANCE GÉNÉRALE");
+    // Compte banque OHADA (521000) et compte loyers OHADA (706000) apparaissent
+    // tous les deux pour le même mouvement, en partie double.
+    const ligneLoyerBanque = res.text.split("\n").find((l) => l.includes("Loyer 3/2026") && l.includes("521000"));
+    const ligneLoyerProduit = res.text.split("\n").find((l) => l.includes("Loyer 3/2026") && l.includes("706000"));
+    expect(ligneLoyerBanque).toBeDefined();
+    expect(ligneLoyerProduit).toBeDefined();
+    // Compte de dépense OHADA (624000, Entretien/réparations/maintenance).
+    expect(res.text).toContain("624000");
+    // Équilibre global : Total Débit == Total Crédit sur la ligne "Total général".
+    const ligneTotal = res.text.split("\n").find((l) => l.includes("Total général EUR"));
+    expect(ligneTotal).toBeDefined();
+    const colonnes = ligneTotal!.split(";");
+    expect(colonnes[3]).toBe(colonnes[4]);
+  });
+
+  it("ventile les comptes par devise sans les mélanger", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+
+    const propertyEur = await createProperty(manager.id, { currency: "EUR" });
+    const tenantEur = await createTenant(manager.id);
+    const contractEur = await createContract(propertyEur.id, tenantEur.id, { currency: "EUR" });
+    await createInvoice(contractEur.id, { amount: 500, currency: "EUR", status: "PAID", paidAt: new Date(2026, 2, 5) });
+
+    const propertyXof = await createProperty(manager.id, { currency: "XOF" });
+    const tenantXof = await createTenant(manager.id);
+    const contractXof = await createContract(propertyXof.id, tenantXof.id, { currency: "XOF" });
+    await createInvoice(contractXof.id, { amount: 300000, currency: "XOF", status: "PAID", paidAt: new Date(2026, 2, 6) });
+
+    const res = await request(app).get("/api/fiscal/syscohada?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("Total général EUR");
+    expect(res.text).toContain("Total général XOF");
+    // Dans la seule section BALANCE GÉNÉRALE, une ligne "706000;...;EUR;..."
+    // et une autre "706000;...;XOF;..." distinctes (pas mélangées en une seule).
+    const sectionBalance = res.text.split("BALANCE GÉNÉRALE")[1];
+    const lignesBalance = sectionBalance.split("\n").filter((l) => l.startsWith("706000;"));
+    expect(lignesBalance).toHaveLength(2);
+  });
+
+  it("neutralise un intitulé qui ressemble à une formule (CWE-1236)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const property = await createProperty(manager.id, { title: "=2+2" });
+    await testDb.insert(expenses).values({
+      propertyId: property.id,
+      category: "MAINTENANCE",
+      title: "=cmd|'/C calc'!A1",
+      amount: 100,
+      expenseDate: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app).get("/api/fiscal/syscohada?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain(";=cmd");
+    expect(res.text).toContain("'=cmd|'/C calc'!A1 (=2+2)");
+  });
+
+  it("ne fait pas fuiter les écritures d'un autre gestionnaire", async () => {
+    const managerA = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const managerB = await createManager();
+    const propertyB = await createProperty(managerB.id, { title: "Bien Confidentiel B" });
+    const tenantB = await createTenant(managerB.id);
+    const contractB = await createContract(propertyB.id, tenantB.id);
+    await createInvoice(contractB.id, { amount: 777, status: "PAID", paidAt: new Date(2026, 2, 5) });
+
+    const res = await request(app).get("/api/fiscal/syscohada?year=2026").set(authHeader(tokenFor(managerA)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain("Bien Confidentiel B");
+    expect(res.text).not.toContain("777");
+  });
+
+  it("indique l'absence d'écritures pour un exercice sans activité", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+
+    const res = await request(app).get("/api/fiscal/syscohada?year=2020").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text.match(/Aucune écriture pour cet exercice/g)).toHaveLength(3);
+  });
+
+  // Même réserve que le Grand Livre CSV et le FEC (CGU §3) : un gestionnaire
+  // Pro n'y a pas accès.
+  it("refuse l'export à un gestionnaire Pro (réservé à Entreprise)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app).get("/api/fiscal/syscohada?year=2026").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Entreprise");
+  });
+});

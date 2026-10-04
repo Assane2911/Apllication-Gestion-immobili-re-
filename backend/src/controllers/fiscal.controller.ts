@@ -448,3 +448,182 @@ export const exportFEC = asyncHandler(async (req: Request, res: Response) => {
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   res.send(versLatin1Fec(rows.join("\n")));
 });
+
+/**
+ * Plan comptable SYSCOHADA (OHADA révisé) — PROVISOIRE. Construit par analogie
+ * avec la structure générale du plan comptable SYSCOHADA (classe 5 trésorerie,
+ * classe 6 charges, classe 7 produits), faute d'avoir pu faire valider ces
+ * numéros par un expert-comptable agréé OHADA au moment d'écrire ce code.
+ *
+ * ⚠️ Contrairement au plan comptable simplifié de exportFEC ci-dessus (simplifié
+ * mais conforme au PCG français), AUCUN numéro ci-dessous n'a été vérifié
+ * contre une source SYSCOHADA officielle. Ne jamais présenter ce mapping comme
+ * définitif à un gestionnaire ou un comptable — l'avertissement est répété en
+ * première ligne du fichier exporté pour qu'il ne puisse pas être ignoré.
+ */
+const SYSCOHADA_WARNING =
+  "ATTENTION : plan comptable provisoire, non validé par un expert-comptable agréé OHADA — à faire vérifier avant tout usage réglementaire ou déclaratif.";
+
+const COMPTE_BANQUE_OHADA = { num: "521000", lib: "Banques" };
+const COMPTE_LOYERS_OHADA = { num: "706000", lib: "Loyers et produits de gestion locative" };
+const COMPTES_DEPENSES_OHADA: Record<string, { num: string; lib: string }> = {
+  MAINTENANCE: { num: "624000", lib: "Entretien, réparations et maintenance" },
+  TAX: { num: "645000", lib: "Impôts et taxes" },
+  INSURANCE: { num: "625000", lib: "Primes d'assurance" },
+  SYNDIC: { num: "632000", lib: "Rémunérations d'intermédiaires et honoraires" },
+  OTHER: { num: "658000", lib: "Charges diverses" },
+};
+
+/**
+ * Export comptable SYSCOHADA : Journal (chronologique), Grand Livre (regroupé
+ * par compte) et Balance générale, dans un seul CSV à trois sections — même
+ * source de données que exportFEC (loadYearData), seul le plan comptable
+ * change. Chaque compte est en plus ventilé par devise (jamais mélangées,
+ * même principe que partout ailleurs dans ce module) : un compte "Banques" en
+ * EUR et un en XOF sortent comme deux lignes distinctes de la Balance.
+ */
+export const exportSyscohada = asyncHandler(async (req: Request, res: Response) => {
+  const managerId = req.user!.userId;
+  const { year: requestedYear } = yearQuerySchema.parse(req.query);
+  const year = requestedYear ?? new Date().getFullYear();
+
+  const { filteredInvoices, filteredExpenses, invoiceDate } = await loadYearData(managerId, year);
+
+  type LigneEcriture = {
+    date: Date;
+    pieceRef: string;
+    libelle: string;
+    compte: { num: string; lib: string };
+    devise: string;
+    debit: number;
+    credit: number;
+  };
+
+  const lignes: LigneEcriture[] = [];
+  for (const r of filteredInvoices) {
+    const montant = r.invoice.amount;
+    const devise = r.invoice.currency || "EUR";
+    const date = invoiceDate(r);
+    const pieceRef = r.invoice.id;
+    const libelle = `Loyer ${r.invoice.periodMonth}/${r.invoice.periodYear} - ${r.tenant.firstName} ${r.tenant.lastName} (${r.property.title})`;
+    lignes.push({ date, pieceRef, libelle, compte: COMPTE_BANQUE_OHADA, devise, debit: montant, credit: 0 });
+    lignes.push({ date, pieceRef, libelle, compte: COMPTE_LOYERS_OHADA, devise, debit: 0, credit: montant });
+  }
+  for (const r of filteredExpenses) {
+    const montant = r.expense.amount;
+    const devise = r.expense.currency || "EUR";
+    const date = new Date(r.expense.expenseDate);
+    const pieceRef = r.expense.id;
+    const libelle = `${r.expense.title} (${r.property.title})`;
+    const compte = COMPTES_DEPENSES_OHADA[r.expense.category] ?? COMPTES_DEPENSES_OHADA.OTHER;
+    lignes.push({ date, pieceRef, libelle, compte, devise, debit: montant, credit: 0 });
+    lignes.push({ date, pieceRef, libelle, compte: COMPTE_BANQUE_OHADA, devise, debit: 0, credit: montant });
+  }
+
+  const lignesTriees = [...lignes].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const out: string[] = [];
+  out.push(`Export comptable SYSCOHADA - Exercice ${year}`);
+  out.push(SYSCOHADA_WARNING);
+  out.push("");
+
+  // --- JOURNAL (chronologique, une ligne par mouvement Débit/Crédit) ---
+  out.push("JOURNAL");
+  out.push(["Date", "Compte", "Libellé compte", "Pièce", "Libellé écriture", "Débit", "Crédit", "Devise"].join(";"));
+  for (const l of lignesTriees) {
+    out.push(
+      [
+        l.date.toLocaleDateString("fr-FR"),
+        l.compte.num,
+        csvEscape(l.compte.lib),
+        csvEscape(l.pieceRef),
+        csvEscape(l.libelle),
+        l.debit > 0 ? csvMontant(l.debit) : "",
+        l.credit > 0 ? csvMontant(l.credit) : "",
+        l.devise,
+      ].join(";")
+    );
+  }
+  if (lignesTriees.length === 0) out.push("Aucune écriture pour cet exercice");
+  out.push("");
+
+  // --- GRAND LIVRE (regroupé par compte puis devise, avec solde progressif) ---
+  out.push("GRAND LIVRE (par compte)");
+  out.push(["Compte", "Libellé compte", "Devise", "Date", "Pièce", "Libellé écriture", "Débit", "Crédit", "Solde"].join(";"));
+  const cleCompte = (num: string, devise: string) => `${num}::${devise}`;
+  const groupes = new Map<string, LigneEcriture[]>();
+  for (const l of lignesTriees) {
+    const cle = cleCompte(l.compte.num, l.devise);
+    const arr = groupes.get(cle) ?? [];
+    arr.push(l);
+    groupes.set(cle, arr);
+  }
+  const clesTriees = Array.from(groupes.keys()).sort();
+  for (const cle of clesTriees) {
+    const arr = groupes.get(cle)!;
+    let solde = 0;
+    for (const l of arr) {
+      solde += l.debit - l.credit;
+      out.push(
+        [
+          l.compte.num,
+          csvEscape(l.compte.lib),
+          l.devise,
+          l.date.toLocaleDateString("fr-FR"),
+          csvEscape(l.pieceRef),
+          csvEscape(l.libelle),
+          l.debit > 0 ? csvMontant(l.debit) : "",
+          l.credit > 0 ? csvMontant(l.credit) : "",
+          csvMontant(solde),
+        ].join(";")
+      );
+    }
+    const totalDebit = arr.reduce((s, l) => s + l.debit, 0);
+    const totalCredit = arr.reduce((s, l) => s + l.credit, 0);
+    out.push(["", "", "", "", "", `Total ${arr[0].compte.num}`, csvMontant(totalDebit), csvMontant(totalCredit), csvMontant(solde)].join(";"));
+  }
+  if (clesTriees.length === 0) out.push("Aucune écriture pour cet exercice");
+  out.push("");
+
+  // --- BALANCE GÉNÉRALE (un compte = une ligne, ventilée par devise) ---
+  out.push("BALANCE GÉNÉRALE");
+  out.push(["Compte", "Libellé compte", "Devise", "Total Débit", "Total Crédit", "Solde Débiteur", "Solde Créditeur"].join(";"));
+  const totalGeneralByCurrency = new Map<string, { debit: number; credit: number }>();
+  for (const cle of clesTriees) {
+    const arr = groupes.get(cle)!;
+    const totalDebit = arr.reduce((s, l) => s + l.debit, 0);
+    const totalCredit = arr.reduce((s, l) => s + l.credit, 0);
+    const solde = totalDebit - totalCredit;
+    out.push(
+      [
+        arr[0].compte.num,
+        csvEscape(arr[0].compte.lib),
+        arr[0].devise,
+        csvMontant(totalDebit),
+        csvMontant(totalCredit),
+        solde > 0 ? csvMontant(solde) : "",
+        solde < 0 ? csvMontant(-solde) : "",
+      ].join(";")
+    );
+    const cumul = totalGeneralByCurrency.get(arr[0].devise) ?? { debit: 0, credit: 0 };
+    cumul.debit += totalDebit;
+    cumul.credit += totalCredit;
+    totalGeneralByCurrency.set(arr[0].devise, cumul);
+  }
+  if (clesTriees.length === 0) {
+    out.push("Aucune écriture pour cet exercice");
+  } else {
+    out.push("");
+    // Vérification d'équilibre : Total Débit doit toujours égaler Total
+    // Crédit (par devise) dans une comptabilité en partie double correcte —
+    // utile à un comptable pour contrôler l'export en un coup d'œil.
+    for (const [devise, cumul] of Array.from(totalGeneralByCurrency.entries()).sort()) {
+      out.push(["", `Total général ${devise}`, "", csvMontant(cumul.debit), csvMontant(cumul.credit), "", ""].join(";"));
+    }
+  }
+
+  const csvContent = CSV_BOM + out.join("\n");
+  const filename = `syscohada-${year}.csv`;
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(csvContent);
+});

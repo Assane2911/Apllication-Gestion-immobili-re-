@@ -620,6 +620,7 @@ const en: TranslationSchema = {
       expenseCreate: "Opens the form for a new cost to charge to a property.",
       fiscalGrandLivre: "Generates the year's ledger: every entry, in order.",
       fiscalFEC: "Regulatory export (FEC) in the format expected by the French tax authorities in case of an audit.",
+      fiscalSyscohada: "Journal, General Ledger and Trial Balance using the OHADA (SYSCOHADA) chart of accounts — a provisional chart of accounts, to be validated by your accountant before any regulatory use.",
       crgExport: "Produces this month's management report, to send to the landlord.",
       propertyEdit: "Edits the property record: rent, floor area, landlord, currency.",
       propertyCreate: "Opens the form for a new property to manage.",
@@ -955,6 +956,8 @@ const en: TranslationSchema = {
       downloadingGrandLivre: "Generating...",
       downloadFEC: "FEC export",
       downloadingFEC: "Generating...",
+      downloadSyscohada: "SYSCOHADA export",
+      downloadingSyscohada: "Generating...",
       stats: {
         totalRevenue: "Rent collected",
         totalRevenueHint: "Rent paid during {{year}}",
