@@ -1578,7 +1578,7 @@ const es: TranslationSchema = {
   },
   cookieConsent: {
     message:
-      "Utilizamos Google Analytics para medir la audiencia del sitio (páginas visitadas, origen del tráfico). No se recopila ningún dato sin su consentimiento.",
+      "Utilizamos herramientas de medición de audiencia y publicidad (Google Analytics, Meta, LinkedIn) para analizar el tráfico del sitio y mostrarle anuncios relevantes. No se recopila ningún dato sin su consentimiento.",
     privacyLink: "Saber más",
     accept: "Aceptar",
     reject: "Rechazar",

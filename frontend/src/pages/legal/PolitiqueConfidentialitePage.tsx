@@ -140,6 +140,14 @@ export default function PolitiqueConfidentialitePage() {
               <strong className="text-slate-100">{SUBPROCESSORS.analytics.name}</strong> —{" "}
               {SUBPROCESSORS.analytics.role} Voir la section 9 « Cookies et mesure d'audience » ci-dessous.
             </>,
+            <>
+              <strong className="text-slate-100">{SUBPROCESSORS.metaPixel.name}</strong> —{" "}
+              {SUBPROCESSORS.metaPixel.role} Voir la section 9 ci-dessous.
+            </>,
+            <>
+              <strong className="text-slate-100">{SUBPROCESSORS.linkedinInsight.name}</strong> —{" "}
+              {SUBPROCESSORS.linkedinInsight.role} Voir la section 9 ci-dessous.
+            </>,
           ]}
         />
       </LegalSection>
@@ -234,19 +242,23 @@ export default function PolitiqueConfidentialitePage() {
 
       <LegalSection title="9. Cookies et mesure d'audience">
         <p>
-          Le Service n'utilise aucun cookie publicitaire. Il utilise le stockage local de votre navigateur
-          (localStorage) à des fins strictement fonctionnelles : maintien de votre session de connexion,
-          mémorisation de votre langue d'affichage préférée, de votre thème (clair/sombre), de votre devise
-          d'affichage et de votre choix de consentement aux cookies ci-dessous. Ces données restent sur votre
-          appareil et ne sont pas transmises à des tiers.
+          Le Service utilise le stockage local de votre navigateur (localStorage) à des fins strictement
+          fonctionnelles : maintien de votre session de connexion, mémorisation de votre langue d'affichage
+          préférée, de votre thème (clair/sombre), de votre devise d'affichage et de votre choix de
+          consentement aux cookies ci-dessous. Ces données restent sur votre appareil et ne sont pas
+          transmises à des tiers.
         </p>
         <p>
-          Sur le site vitrine public (page d'accueil, annonces, pages légales), un bandeau vous propose
-          d'accepter ou de refuser le dépôt d'un cookie de mesure d'audience par{" "}
-          {SUBPROCESSORS.analytics.name} (voir sa finalité détaillée en section 5 ci-dessus). Ce cookie n'est
-          déposé qu'après votre acceptation explicite ; en cas de refus ou tant que vous n'avez pas répondu,
-          aucune donnée n'est envoyée à Google. Vous pouvez revenir sur votre choix à tout moment en effaçant
-          les cookies de votre navigateur pour ce site, ce qui fera réapparaître le bandeau.
+          Un bandeau vous propose par ailleurs d'accepter ou de refuser le dépôt de cookies de mesure
+          d'audience et de publicité par {SUBPROCESSORS.analytics.name}, {SUBPROCESSORS.metaPixel.name} et{" "}
+          {SUBPROCESSORS.linkedinInsight.name} (voir leur finalité détaillée en section 5 ci-dessus). Les
+          cookies de Meta et LinkedIn servent notamment au <strong className="text-slate-100">reciblage
+          publicitaire</strong> : si vous avez visité le site sans finaliser votre inscription, il est
+          possible que des publicités d'ImmoPlatform Pro vous soient ensuite présentées sur Facebook,
+          Instagram ou LinkedIn. Aucun de ces cookies n'est déposé avant votre acceptation explicite ; en cas
+          de refus ou tant que vous n'avez pas répondu, aucune donnée n'est envoyée à ces services. Vous
+          pouvez revenir sur votre choix à tout moment en effaçant les cookies de votre navigateur pour ce
+          site, ce qui fera réapparaître le bandeau.
         </p>
       </LegalSection>
 

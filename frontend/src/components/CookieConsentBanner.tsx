@@ -2,16 +2,25 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { isAnalyticsConfigured, loadGoogleAnalytics, trackPageView } from "../utils/analytics";
+import { isLinkedInConfigured, loadLinkedInInsightTag } from "../utils/linkedinInsight";
+import { isMetaPixelConfigured, loadMetaPixel, trackMetaPageView } from "../utils/metaPixel";
 
 const STORAGE_KEY = "cookie_consent";
 type Consentement = "accepted" | "rejected";
 
+/** Vrai si au moins un des trois traceurs a son identifiant configuré — sinon le bandeau n'a rien à proposer. */
+function unTraceurEstConfigure(): boolean {
+  return isAnalyticsConfigured() || isMetaPixelConfigured() || isLinkedInConfigured();
+}
+
 /**
- * Bandeau de consentement RGPD/CNIL pour Google Analytics (GA4). Ne s'affiche
- * que si un ID de mesure est configuré (VITE_GA_MEASUREMENT_ID) — inutile
- * de demander un consentement pour un traceur qui n'existe pas encore (dev,
- * previews sans la variable). Le choix est mémorisé dans localStorage ; GA4
- * n'est chargé qu'après acceptation explicite, jamais par défaut.
+ * Bandeau de consentement RGPD/CNIL pour la mesure d'audience (GA4) et les
+ * pixels de reciblage publicitaire (Meta, LinkedIn). Ne s'affiche que si au
+ * moins un identifiant est configuré (VITE_GA_MEASUREMENT_ID,
+ * VITE_META_PIXEL_ID, VITE_LINKEDIN_PARTNER_ID) — inutile de demander un
+ * consentement pour des traceurs qui n'existent pas encore (dev, previews
+ * sans variable). Le choix est mémorisé dans localStorage ; aucun des trois
+ * n'est chargé avant acceptation explicite, jamais par défaut.
  */
 export default function CookieConsentBanner() {
   const { t } = useTranslation();
@@ -21,14 +30,21 @@ export default function CookieConsentBanner() {
   });
 
   useEffect(() => {
-    if (consentement === "accepted") loadGoogleAnalytics();
+    if (consentement === "accepted") {
+      loadGoogleAnalytics();
+      loadMetaPixel();
+      loadLinkedInInsightTag();
+    }
   }, [consentement]);
 
   useEffect(() => {
-    if (consentement === "accepted") trackPageView(location.pathname);
+    if (consentement === "accepted") {
+      trackPageView(location.pathname);
+      trackMetaPageView();
+    }
   }, [consentement, location.pathname]);
 
-  if (!isAnalyticsConfigured() || consentement !== null) return null;
+  if (!unTraceurEstConfigure() || consentement !== null) return null;
 
   function repondre(choix: Consentement) {
     localStorage.setItem(STORAGE_KEY, choix);

@@ -87,6 +87,25 @@ export const SUBPROCESSORS = {
    */
   analytics: {
     name: "Google Analytics (Google LLC)",
-    role: "Mesure d'audience du site public (pages visitées, provenance du trafic), uniquement sur le site vitrine et avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
+    role: "Mesure d'audience du site public (pages visitées, provenance du trafic), uniquement avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
+  },
+  /**
+   * N'est chargé qu'après consentement explicite via la bannière cookies
+   * (CookieConsentBanner.tsx), jamais par défaut — voir utils/metaPixel.ts.
+   * Distinct de l'entrée "whatsapp" ci-dessus : même entreprise (Meta), mais
+   * un produit différent (pixel de reciblage publicitaire, pas l'envoi de
+   * messages WhatsApp).
+   */
+  metaPixel: {
+    name: "Meta Platforms (Pixel Meta)",
+    role: "Mesure et reciblage publicitaire sur Facebook/Instagram (ex. revisiter le site après avoir vu une publicité), uniquement avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
+  },
+  /**
+   * N'est chargé qu'après consentement explicite via la bannière cookies
+   * (CookieConsentBanner.tsx), jamais par défaut — voir utils/linkedinInsight.ts.
+   */
+  linkedinInsight: {
+    name: "LinkedIn (LinkedIn Corporation)",
+    role: "Mesure et reciblage publicitaire sur LinkedIn, uniquement avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
   },
 };
