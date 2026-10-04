@@ -30,7 +30,19 @@ const connectionString = process.env.DATABASE_URL;
 let dbInstance: Database;
 
 if (connectionString && !connectionString.includes("VOTRE_MOT_DE_PASSE")) {
-  const client = postgres(connectionString, { prepare: false });
+  // max: 1 — chaque fonction serverless Vercel ne traite qu'une requête à la
+  // fois, mais peut en exécuter plusieurs EN PARALLÈLE sous charge (une
+  // instance par invocation concurrente). Le max_connections de ce projet
+  // Supabase est de 60 (vérifié) ; avec le max par défaut de postgres.js (10)
+  // par instance, une poignée d'invocations concurrentes suffisait à épuiser
+  // ce quota et à faire échouer les nouvelles connexions en timeout —
+  // constaté en production (Sentry : plusieurs "Failed to connect to
+  // database: timeout" sur /api/notifications, /api/contracts,
+  // /api/dashboard/stats, /api/auth/google). idle_timeout libère les
+  // connexions inactives au lieu de les garder ouvertes indéfiniment
+  // (défaut de postgres.js) entre deux invocations d'une même instance
+  // tiède.
+  const client = postgres(connectionString, { prepare: false, max: 1, idle_timeout: 20 });
   dbInstance = drizzlePg(client, { schema });
 } else {
   const dataDir = path.resolve(__dirname, "../../data/local-db");
