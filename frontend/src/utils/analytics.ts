@@ -38,6 +38,19 @@ export function loadGoogleAnalytics(): void {
     window.dataLayer!.push(args);
   };
   window.gtag("js", new Date());
+  // Sans signal explicite, le Consent Mode de Google considère par défaut la
+  // mesure comme non autorisée et abandonne silencieusement les événements
+  // (le script se charge, la requête de config part, mais rien n'atteint
+  // /g/collect) — constaté en prod. loadGoogleAnalytics() n'est appelé
+  // qu'après acceptation explicite du bandeau (CookieConsentBanner), donc
+  // la mesure est bien autorisée à ce stade ; ad_storage/ads reste refusé,
+  // ce produit ne fait pas de ciblage publicitaire.
+  window.gtag("consent", "default", {
+    analytics_storage: "granted",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
   // send_page_view à false : la première vue et celles liées à la navigation
   // interne (SPA, pas de rechargement de page) sont toutes envoyées
   // explicitement par trackPageView, pour ne jamais en perdre ni en dupliquer.
