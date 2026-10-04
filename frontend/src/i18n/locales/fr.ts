@@ -619,6 +619,7 @@ const fr = {
       expenseCreate: "Ouvre le formulaire d'une nouvelle dépense à imputer à un bien.",
       fiscalGrandLivre: "Génère le grand livre de l'année : toutes les écritures, dans l'ordre.",
       fiscalFEC: "Export réglementaire (FEC) au format attendu par l'administration fiscale en cas de contrôle.",
+      fiscalSyscohada: "Journal, Grand Livre et Balance avec le plan comptable OHADA (SYSCOHADA) — plan comptable provisoire, à faire valider par votre comptable avant tout usage déclaratif.",
       crgExport: "Produit le compte-rendu de gestion du mois, à envoyer au propriétaire.",
       propertyEdit: "Modifie la fiche du bien : loyer, surface, propriétaire, devise.",
       propertyCreate: "Ouvre le formulaire d'un nouveau bien à mettre en gestion.",
@@ -956,6 +957,8 @@ const fr = {
       downloadingGrandLivre: "Génération...",
       downloadFEC: "Export FEC",
       downloadingFEC: "Génération...",
+      downloadSyscohada: "Export SYSCOHADA",
+      downloadingSyscohada: "Génération...",
       stats: {
         totalRevenue: "Revenus encaissés",
         totalRevenueHint: "Loyers payés sur l'exercice {{year}}",

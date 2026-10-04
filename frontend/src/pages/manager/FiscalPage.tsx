@@ -1,4 +1,4 @@
-import { BookText, FileSpreadsheet, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { BookText, FileSpreadsheet, Landmark, Scale, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -38,6 +38,7 @@ export default function FiscalPage() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [downloadingFEC, setDownloadingFEC] = useState(false);
+  const [downloadingSyscohada, setDownloadingSyscohada] = useState(false);
 
   const categoryLabels: Record<ExpenseCategory, string> = {
     MAINTENANCE: t("manager.expenses.categories.MAINTENANCE"),
@@ -99,6 +100,23 @@ export default function FiscalPage() {
       alert(apiErrorMessage(err));
     } finally {
       setDownloadingFEC(false);
+    }
+  }
+
+  async function downloadSyscohada() {
+    setDownloadingSyscohada(true);
+    try {
+      const res = await api.get(`/fiscal/syscohada`, { params: { year }, responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `syscohada-${year}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    } finally {
+      setDownloadingSyscohada(false);
     }
   }
 
@@ -209,6 +227,15 @@ export default function FiscalPage() {
             className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
           >
             <FileSpreadsheet size={13} aria-hidden="true" /> {downloadingFEC ? t("manager.fiscal.downloadingFEC") : t("manager.fiscal.downloadFEC")}
+          </button>
+          </Bulle>
+          <Bulle texte={t("manager.tips.fiscalSyscohada")}>
+          <button
+            onClick={downloadSyscohada}
+            disabled={downloadingSyscohada}
+            className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <Scale size={13} aria-hidden="true" /> {downloadingSyscohada ? t("manager.fiscal.downloadingSyscohada") : t("manager.fiscal.downloadSyscohada")}
           </button>
           </Bulle>
         </div>

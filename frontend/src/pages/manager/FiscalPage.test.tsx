@@ -150,4 +150,26 @@ describe("FiscalPage", () => {
     );
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob)));
   });
+
+  it("télécharge l'export SYSCOHADA pour l'année affichée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: synthesis() });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Export SYSCOHADA/ })).toBeInTheDocument());
+
+    mockedApi.get.mockResolvedValueOnce({ data: new Blob(["JOURNAL\n..."]) });
+    const createObjectURL = vi.fn().mockReturnValue("blob:fake-syscohada");
+    const revokeObjectURL = vi.fn();
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL;
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /Export SYSCOHADA/ }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/fiscal/syscohada", {
+        params: { year: 2026 },
+        responseType: "blob",
+      })
+    );
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob)));
+  });
 });

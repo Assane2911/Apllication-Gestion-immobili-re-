@@ -620,6 +620,7 @@ const pt: TranslationSchema = {
       expenseCreate: "Abre o formulário de uma nova despesa a imputar a um imóvel.",
       fiscalGrandLivre: "Gera o livro razão do ano: todos os lançamentos, por ordem.",
       fiscalFEC: "Exportação regulamentar (FEC) no formato exigido pela administração fiscal francesa em caso de fiscalização.",
+      fiscalSyscohada: "Diário, Razão Geral e Balancete com o plano de contas OHADA (SYSCOHADA) — plano de contas provisório, a validar pelo seu contabilista antes de qualquer uso declarativo.",
       crgExport: "Produz o relatório de gestão do mês, para enviar ao proprietário.",
       propertyEdit: "Altera a ficha do imóvel: renda, área, proprietário, moeda.",
       propertyCreate: "Abre o formulário de um novo imóvel a gerir.",
@@ -955,6 +956,8 @@ const pt: TranslationSchema = {
       downloadingGrandLivre: "A gerar...",
       downloadFEC: "Exportação FEC",
       downloadingFEC: "A gerar...",
+      downloadSyscohada: "Exportação SYSCOHADA",
+      downloadingSyscohada: "A gerar...",
       stats: {
         totalRevenue: "Rendas recebidas",
         totalRevenueHint: "Rendas pagas durante o exercício {{year}}",
