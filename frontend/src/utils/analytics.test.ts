@@ -40,6 +40,19 @@ describe("analytics", () => {
     expect(window.gtag).toBeTypeOf("function");
   });
 
+  it("accorde le consentement de mesure avant de configurer le tag, sans quoi Google abandonne silencieusement les événements", () => {
+    vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+    loadGoogleAnalytics();
+
+    const appels = window.dataLayer!;
+    const indexConsent = appels.findIndex((appel) => (appel as unknown[])[0] === "consent");
+    const indexConfig = appels.findIndex((appel) => (appel as unknown[])[0] === "config");
+
+    expect(indexConsent).toBeGreaterThanOrEqual(0);
+    expect(indexConsent).toBeLessThan(indexConfig);
+    expect(appels[indexConsent]).toEqual(["consent", "default", expect.objectContaining({ analytics_storage: "granted" })]);
+  });
+
   it("ne charge le script qu'une seule fois même appelé plusieurs fois", () => {
     vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
     loadGoogleAnalytics();
