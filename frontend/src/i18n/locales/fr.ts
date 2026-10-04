@@ -1577,7 +1577,7 @@ const fr = {
   },
   cookieConsent: {
     message:
-      "Nous utilisons Google Analytics pour mesurer la fréquentation du site (pages visitées, provenance du trafic). Aucune donnée n'est collectée sans votre accord.",
+      "Nous utilisons des outils de mesure d'audience et de publicité (Google Analytics, Meta, LinkedIn) pour analyser la fréquentation du site et vous proposer des publicités pertinentes. Aucune donnée n'est collectée sans votre accord.",
     privacyLink: "En savoir plus",
     accept: "Accepter",
     reject: "Refuser",

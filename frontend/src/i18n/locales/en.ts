@@ -1576,7 +1576,7 @@ const en: TranslationSchema = {
   },
   cookieConsent: {
     message:
-      "We use Google Analytics to measure site traffic (pages visited, traffic sources). No data is collected without your consent.",
+      "We use audience measurement and advertising tools (Google Analytics, Meta, LinkedIn) to analyze site traffic and show you relevant ads. No data is collected without your consent.",
     privacyLink: "Learn more",
     accept: "Accept",
     reject: "Reject",
