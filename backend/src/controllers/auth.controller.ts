@@ -764,8 +764,11 @@ const deleteAccountSchema = z.object({
 
 /**
  * Suppression définitive et immédiate du compte gestionnaire, à sa propre
- * demande (audit sept. 2026 : la politique de confidentialité promet un
- * droit à l'effacement, jusqu'ici non implémenté — voir PolitiqueConfidentialitePage.tsx §8).
+ * demande — l'exercice du droit à l'effacement (RGPD art. 17) promis par la
+ * politique de confidentialité (§8) pour ce rôle-ci. Pour un locataire ou un
+ * propriétaire, qui n'ont pas la main sur les données que leur Gestionnaire a
+ * saisies à leur sujet, voir anonymiserTenant (tenant.controller.ts) et
+ * anonymiserOwner (owner.controller.ts), déclenchées par le Gestionnaire lui-même.
  *
  * Portée (choix explicite du gestionnaire) : TOUT ce qui appartient à
  * l'agence — biens, locataires, propriétaires, contrats, factures,

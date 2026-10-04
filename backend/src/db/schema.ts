@@ -236,6 +236,11 @@ export const owners = pgTable(
     managementFeeRate: doublePrecision("management_fee_rate").notNull().default(8.0),
     notes: text("notes"),
     userId: text("user_id").unique().references(() => users.id),
+    // Droit à l'effacement (RGPD art. 17) — voir anonymiserOwner
+    // (owner.controller.ts) et son équivalent tenants.anonymizedAt ci-dessus :
+    // deleteOwner refuse tant qu'un bien est associé, l'anonymisation est
+    // l'issue pour un propriétaire qui en demande l'effacement malgré tout.
+    anonymizedAt: timestamp("anonymized_at", { mode: "date" }),
     ...timestamps,
   },
   (table) => ({

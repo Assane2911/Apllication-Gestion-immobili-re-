@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  anonymiserOwner,
   createOwner,
   deleteOwner,
   getOwner,
@@ -25,5 +26,7 @@ router.post("/", createOwner);
 router.put("/:id", updateOwner);
 router.delete("/:id", deleteOwner);
 router.post("/:id/invite", inviteOwnerPortalAccount);
+// Droit à l'effacement : la seule issue quand un bien associé interdit la suppression.
+router.post("/:id/anonymiser", anonymiserOwner);
 
 export default router;

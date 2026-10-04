@@ -648,6 +648,7 @@ const fr = {
       tenantDelete: "Supprime la fiche. Impossible si un contrat y est rattaché.",
       ownerEdit: "Modifie la fiche : coordonnées, IBAN, taux de commission.",
       ownerDelete: "Supprime la fiche. Impossible si un bien lui est rattaché.",
+      ownerAnonymize: "Efface définitivement ce qui l'identifie. Les biens et l'historique de gestion sont conservés.",
       invoiceReceipt: "Ouvre la quittance en PDF, prête à être envoyée ou imprimée.",
       invoiceRemind: "Envoie un rappel au locataire, par email et par WhatsApp.",
       invoiceMarkPaid: "Enregistre le paiement et génère la quittance correspondante.",
@@ -715,6 +716,10 @@ const fr = {
       emptyDesc:
         "Ajoutez un propriétaire (nom, email, téléphone) pour pouvoir lui associer des biens et lui ouvrir l'accès à son espace propriétaire.",
       confirmDelete: 'Supprimer le propriétaire "{{name}}" ?',
+      anonymize: "Anonymiser",
+      anonymized: "Anonymisé",
+      confirmAnonymize:
+        "Effacer les données identifiantes de {{name}} ?\n\nSon nom, sa raison sociale, son email, son téléphone, son adresse, son IBAN/BIC et son accès au portail seront effacés définitivement. Ses biens et son historique de comptes-rendus de gestion sont conservés, comme l'exige la réglementation comptable — ils resteront rattachés à une fiche anonyme.\n\nCette action est irréversible et vous ne pourrez plus le contacter depuis le Service.",
       table: {
         name: "Nom",
         phone: "Téléphone",
