@@ -253,7 +253,7 @@ export async function initDb() {
         sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         sender_role TEXT NOT NULL,
         content TEXT NOT NULL,
-        is_read TEXT NOT NULL DEFAULT 'false',
+        is_read BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -399,6 +399,19 @@ export async function initDb() {
     await alterSiBesoin(async () => {
       await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
       await db.execute(sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN', 'OWNER'))`);
+    });
+    // Sur une base créée avant ce correctif, "messages.is_read" portait le
+    // type TEXT (défaut 'false') hérité du CREATE TABLE ci-dessus, alors que
+    // schema.ts la déclare boolean() depuis toujours : Postgres refuse la
+    // comparaison "is_read = false" ("operator does not exist: text =
+    // boolean"), ce qui faisait échouer GET /api/notifications dès qu'un
+    // gestionnaire avait des messages non lus (constaté en production —
+    // Sentry IMMOPLATFORM-PRO-BACKEND-2, >1200 occurrences). Idempotent :
+    // relancer ces ALTER sur une colonne déjà boolean ne fait rien.
+    await alterSiBesoin(async () => {
+      await db.execute(sql`ALTER TABLE messages ALTER COLUMN is_read DROP DEFAULT`);
+      await db.execute(sql`ALTER TABLE messages ALTER COLUMN is_read TYPE BOOLEAN USING (is_read::boolean)`);
+      await db.execute(sql`ALTER TABLE messages ALTER COLUMN is_read SET DEFAULT false`);
     });
     // 15 jours, pas 10 : même durée que celle réellement accordée à
     // l'inscription (voir auth.controller.ts). Ce backfill ne visait que les
