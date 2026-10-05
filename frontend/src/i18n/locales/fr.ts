@@ -257,6 +257,16 @@ const fr = {
       error: "La connexion avec Google a échoué. Réessaie.",
       wrongRole: "La connexion avec Google est réservée aux comptes gestionnaire.",
     },
+    twoFactor: {
+      title: "Vérification en deux étapes",
+      subtitle: "Entre le code affiché par ton application d'authentification.",
+      codeLabel: "Code de vérification",
+      codePlaceholder: "123 456",
+      backupCodeHint: "Tu peux aussi utiliser l'un de tes codes de secours.",
+      submit: "Vérifier",
+      submitting: "Vérification...",
+      back: "Retour à la connexion",
+    },
   },
 
   landing: {
@@ -489,6 +499,27 @@ const fr = {
       confirmButton: "Supprimer définitivement mon compte",
       deleting: "Suppression en cours...",
     },
+    twoFactorSetup: {
+      title: "Activer la double authentification",
+      subtitle: "Scannez ce QR code avec une application d'authentification (Google Authenticator, Authy...).",
+      subtitleBackupCodes: "Notez ces codes de secours avant de continuer.",
+      loading: "Préparation de l'enrôlement...",
+      qrAlt: "QR code de double authentification",
+      manualEntryHint: "Vous pouvez aussi saisir ce code manuellement dans votre application :",
+      codeLabel: "Code affiché par l'application",
+      codePlaceholder: "123 456",
+      confirmButton: "Activer",
+      confirming: "Vérification...",
+      backupCodesWarning:
+        "Ces 8 codes de secours permettent de vous connecter si vous perdez l'accès à votre application d'authentification. Chacun ne fonctionne qu'une seule fois. Ils ne seront plus jamais affichés : notez-les dans un endroit sûr.",
+      done: "J'ai noté mes codes de secours",
+    },
+    twoFactorDisable: {
+      title: "Désactiver la double authentification",
+      subtitle: "Confirmez votre identité pour désactiver cette protection.",
+      disabling: "Désactivation...",
+      confirmButton: "Désactiver",
+    },
     globalSearch: {
       placeholder: "Rechercher un locataire, un bien, un contrat...",
       clearAria: "Effacer la recherche",
@@ -632,6 +663,8 @@ const fr = {
       invoiceSendMonthly: "Envoie en une fois un rappel à TOUS les locataires dont le loyer est impayé, par email et WhatsApp.",
       agencyDeleteAccount: "Ouvre la procédure de fermeture définitive de l'agence et de toutes ses données.",
       agencyLogoutAll: "Déconnecte immédiatement tous vos appareils. Il faudra vous reconnecter partout.",
+      agencyTwoFactorEnable: "Ouvre la configuration de la double authentification (QR code + code de vérification).",
+      agencyTwoFactorDisable: "Désactive la double authentification, après ressaisie du mot de passe.",
       agencyTeamInvite: "Envoie une invitation par email pour donner accès à votre agence à un collaborateur.",
       inspectionFinalize: "Verrouille l'état des lieux et l'ouvre à la signature. Il ne sera plus modifiable.",
       inspectionDelete: "Supprime l'état des lieux et ses photos. Rien n'est récupérable ensuite.",
@@ -1214,6 +1247,14 @@ const fr = {
         logoutAllPending: "Fermeture des sessions…",
         logoutAllError: "Impossible de fermer les sessions. Réessayez dans un instant.",
         confirmLogoutAll: "Fermer toutes les sessions ouvertes, y compris celle-ci ? Vous serez immédiatement déconnecté et devrez vous reconnecter.",
+      },
+      twoFactor: {
+        title: "Double authentification",
+        description:
+          "Exige, en plus du mot de passe, un code à usage unique généré par une application d'authentification (Google Authenticator, Authy...) à chaque connexion sur un nouvel appareil.",
+        enabled: "Activée",
+        enableButton: "Activer la double authentification",
+        disableButton: "Désactiver",
       },
       retention: {
         title: "Données arrivées à échéance",

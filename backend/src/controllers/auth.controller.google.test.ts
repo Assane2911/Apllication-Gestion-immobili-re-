@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { env } from "../config/env";
 import { users } from "../db/schema";
+import { genererCodeTotp } from "../services/totp.service";
 import { authHeader, createManager, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { hashToken } from "../utils/token";
@@ -112,6 +113,29 @@ describe("POST /api/auth/google", () => {
     // L'inscription initiale n'avait jamais été confirmée (emailVerifiedAt:
     // null) : la preuve Google équivaut à cette confirmation.
     expect(row.emailVerifiedAt).not.toBeNull();
+  });
+
+  /**
+   * Régression : un compte peut lier Google ET avoir un mot de passe. La 2FA
+   * activée par ce mot de passe protégeait la connexion par /login, mais pas
+   * /google — un jeton Google valide suffisait à se connecter sans jamais
+   * passer par le second facteur. Google atteste l'adresse email, pas le
+   * second facteur propre à ce Service.
+   */
+  it("exige la 2FA même en passant par Google, pour un compte qui l'a activée", async () => {
+    const manager = await createManager({ email: "google-2fa@test.local", googleId: "google-sub-2fa" });
+
+    const setupRes = await request(app).post("/api/auth/2fa/setup").set(authHeader(tokenFor(manager)));
+    const code = await genererCodeTotp(setupRes.body.secret);
+    await request(app).post("/api/auth/2fa/confirm").set(authHeader(tokenFor(manager))).send({ code });
+
+    mockGooglePayload({ sub: "google-sub-2fa", email: "google-2fa@test.local", email_verified: true });
+    const res = await request(app).post("/api/auth/google").send({ credential: "fake-id-token" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.twoFactorRequired).toBe(true);
+    expect(res.body.pendingToken).toBeDefined();
+    expect(res.body.token).toBeUndefined();
   });
 
   it("refuse la connexion Google pour un compte existant qui n'est pas un compte gestionnaire", async () => {

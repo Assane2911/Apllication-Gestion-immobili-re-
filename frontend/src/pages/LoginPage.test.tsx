@@ -146,6 +146,83 @@ describe("LoginPage", () => {
   });
 });
 
+describe("LoginPage — double authentification (2FA)", () => {
+  beforeEach(() => {
+    mockedApi.post.mockReset();
+  });
+
+  it("affiche l'étape du code quand le serveur répond twoFactorRequired, sans naviguer", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "jeton-intermediaire" } });
+    renderPage();
+
+    await user.type(screen.getByLabelText("Email"), "2fa@test.local");
+    await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+
+    expect(await screen.findByLabelText("Code de vérification")).toBeInTheDocument();
+    expect(screen.queryByText("Espace gestionnaire")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
+  });
+
+  it("valide le code et redirige vers le tableau de bord", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "jeton-intermediaire" } });
+    renderPage();
+    await user.type(screen.getByLabelText("Email"), "2fa@test.local");
+    await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+    await screen.findByLabelText("Code de vérification");
+
+    mockedApi.post.mockResolvedValueOnce({
+      data: { token: "tok_final", user: { id: "mgr-1", email: "2fa@test.local", role: "MANAGER" } },
+    });
+    await user.type(screen.getByLabelText("Code de vérification"), "123456");
+    await user.click(screen.getByRole("button", { name: "Vérifier" }));
+
+    await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
+    expect(mockedApi.post).toHaveBeenLastCalledWith("/auth/2fa/verify-login", {
+      pendingToken: "jeton-intermediaire",
+      code: "123456",
+    });
+  });
+
+  it("affiche l'erreur du serveur pour un code incorrect, sans quitter l'étape 2FA", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "jeton-intermediaire" } });
+    renderPage();
+    await user.type(screen.getByLabelText("Email"), "2fa@test.local");
+    await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+    await screen.findByLabelText("Code de vérification");
+
+    mockedApi.post.mockRejectedValueOnce({
+      response: { data: { error: "Code invalide ou expiré." } },
+      isAxiosError: true,
+    });
+    await user.type(screen.getByLabelText("Code de vérification"), "000000");
+    await user.click(screen.getByRole("button", { name: "Vérifier" }));
+
+    expect(await screen.findByText("Code invalide ou expiré.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Code de vérification")).toBeInTheDocument();
+  });
+
+  it("le bouton « Retour à la connexion » revient au formulaire email/mot de passe", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "jeton-intermediaire" } });
+    renderPage();
+    await user.type(screen.getByLabelText("Email"), "2fa@test.local");
+    await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+    await screen.findByLabelText("Code de vérification");
+
+    await user.click(screen.getByRole("button", { name: "Retour à la connexion" }));
+
+    expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Code de vérification")).not.toBeInTheDocument();
+  });
+});
+
 describe("LoginPage — connexion avec Google (VITE_GOOGLE_CLIENT_ID configuré)", () => {
   beforeEach(() => {
     mockedApi.post.mockReset();

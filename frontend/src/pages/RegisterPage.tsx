@@ -98,8 +98,16 @@ export default function RegisterPage() {
     setGoogleError(null);
     setGoogleLoading(true);
     try {
-      const user = await loginWithGoogle(credential);
-      navigate(homePathForRole(user.role));
+      const result = await loginWithGoogle(credential);
+      // Cas marginal : ce compte Google est déjà lié à un compte gestionnaire
+      // existant (voir loginWithGoogle, auth.controller.ts) qui a depuis
+      // activé la double authentification — la page d'inscription n'a pas de
+      // formulaire pour ce second facteur, contrairement à LoginPage.
+      if ("twoFactorRequired" in result) {
+        navigate("/login");
+        return;
+      }
+      navigate(homePathForRole(result.role));
     } catch (err) {
       setGoogleError(apiErrorMessage(err));
     } finally {

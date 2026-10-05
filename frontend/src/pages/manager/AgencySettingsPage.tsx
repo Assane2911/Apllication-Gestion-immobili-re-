@@ -6,6 +6,8 @@ import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import ChampTelephone from "../../components/ChampTelephone";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
+import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
+import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
 import { useAuth } from "../../context/auth";
 import type { AgencySettings, RetentionEcheances, TeamMember } from "../../types";
 import Bulle from "../../components/Bulle";
@@ -13,12 +15,24 @@ import Bulle from "../../components/Bulle";
 export default function AgencySettingsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user, refreshUser } = useAuth();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [showTwoFactorDisable, setShowTwoFactorDisable] = useState(false);
+
+  function handleTwoFactorEnabled() {
+    setShowTwoFactorSetup(false);
+    refreshUser();
+  }
+
+  function handleTwoFactorDisabled() {
+    setShowTwoFactorDisable(false);
+    refreshUser();
+  }
 
   function handleAccountDeleted() {
     logout();
@@ -435,6 +449,56 @@ export default function AgencySettingsPage() {
         </button>
         </Bulle>
       </div>
+
+      {/*
+        Un geste par compte de connexion, pas par agence : un collaborateur
+        (voir team.controller.ts) active/désactive SA PROPRE 2FA ici, jamais
+        celle du propriétaire — c'est pourquoi cette carte n'est pas réservée
+        à `estProprietaire`, contrairement à la gestion de l'équipe ci-dessous.
+      */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+          {t("manager.agencySettings.twoFactor.title")}
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+          {t("manager.agencySettings.twoFactor.description")}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {user?.twoFactorEnabled ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 rounded-full px-3 py-1.5">
+                <CheckCircle2 size={14} /> {t("manager.agencySettings.twoFactor.enabled")}
+              </span>
+              <Bulle texte={t("manager.tips.agencyTwoFactorDisable")}>
+              <button
+                type="button"
+                onClick={() => setShowTwoFactorDisable(true)}
+                className="border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              >
+                {t("manager.agencySettings.twoFactor.disableButton")}
+              </button>
+              </Bulle>
+            </>
+          ) : (
+            <Bulle texte={t("manager.tips.agencyTwoFactorEnable")}>
+            <button
+              type="button"
+              onClick={() => setShowTwoFactorSetup(true)}
+              className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              {t("manager.agencySettings.twoFactor.enableButton")}
+            </button>
+            </Bulle>
+          )}
+        </div>
+      </div>
+
+      {showTwoFactorSetup && (
+        <TwoFactorSetupModal onSuccess={handleTwoFactorEnabled} onClose={() => setShowTwoFactorSetup(false)} />
+      )}
+      {showTwoFactorDisable && (
+        <TwoFactorDisableModal onSuccess={handleTwoFactorDisabled} onClose={() => setShowTwoFactorDisable(false)} />
+      )}
 
       {estProprietaire && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
