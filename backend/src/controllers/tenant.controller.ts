@@ -7,6 +7,7 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
+import { fetchFiabiliteParLocataire } from "../services/reliability.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
@@ -50,7 +51,10 @@ export const listTenants = asyncHandler(async (req: Request, res: Response) => {
     db.select({ count: sql<number>`count(*)::int` }).from(tenants).where(whereClause),
   ]);
 
-  res.json(buildPaginatedResult(rows, count, pagination));
+  const fiabilites = await fetchFiabiliteParLocataire(rows.map((r: typeof tenants.$inferSelect) => r.id));
+  const rowsAvecFiabilite = rows.map((r: typeof tenants.$inferSelect) => ({ ...r, fiabilite: fiabilites.get(r.id)! }));
+
+  res.json(buildPaginatedResult(rowsAvecFiabilite, count, pagination));
 });
 
 export const getTenant = asyncHandler(async (req: Request, res: Response) => {
@@ -64,6 +68,7 @@ export const getTenant = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(contracts.tenantId, tenant.id));
 
   const issues = await db.select().from(issueReports).where(eq(issueReports.tenantId, tenant.id));
+  const fiabilite = (await fetchFiabiliteParLocataire([tenant.id])).get(tenant.id)!;
 
   const contractsWithScans = await Promise.all(
     tenantContracts.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
@@ -77,6 +82,7 @@ export const getTenant = asyncHandler(async (req: Request, res: Response) => {
     ...tenant,
     contracts: contractsWithScans,
     issues,
+    fiabilite,
   });
 });
 

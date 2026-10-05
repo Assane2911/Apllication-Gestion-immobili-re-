@@ -272,6 +272,28 @@ describe("TenantsPage (manager)", () => {
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
   });
 
+  describe("score de fiabilité", () => {
+    it("affiche le score et son niveau quand assez de factures ont été prises en compte", async () => {
+      mockedApi.get.mockResolvedValueOnce(
+        paginated([
+          tenant({ fiabilite: { score: 92, niveau: "excellent", payeATemps: 11, payeEnRetard: 1, enRetardActuel: 0 } }),
+        ])
+      );
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByText("92/100 · Excellent").length).toBeGreaterThan(0));
+    });
+
+    it("affiche 'Historique insuffisant' sans chiffre quand il n'y a pas encore assez de factures échues", async () => {
+      mockedApi.get.mockResolvedValueOnce(
+        paginated([tenant({ fiabilite: { score: null, niveau: "insuffisant", payeATemps: 1, payeEnRetard: 0, enRetardActuel: 0 } })])
+      );
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByText("Historique insuffisant").length).toBeGreaterThan(0));
+    });
+  });
+
   /**
    * Droit à l'effacement. L'API refuse de SUPPRIMER un locataire dès qu'un
    * contrat existe — on ne détruit pas des pièces comptables — ce qui ne
