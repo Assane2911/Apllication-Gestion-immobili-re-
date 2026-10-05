@@ -352,12 +352,14 @@ export default function SubscriptionPage() {
           </button>
         </div>
 
-        {/* Les abonnements ne sont tarifés qu'en EUR et en XOF (voir TARIFS
-            côté backend, une décision commerciale délibérée plutôt qu'une
-            conversion de taux) : si la devise d'affichage choisie par le
-            gestionnaire n'en fait pas partie, les prix ci-dessous retombent
-            silencieusement sur l'une des deux — ce message évite que ça
-            passe pour une erreur d'affichage. */}
+        {/* Les 12 devises du sélecteur sont toutes tarifées côté backend (voir
+            TARIFS, subscription.controller.ts) — mais users.currency n'a pas
+            de liste blanche aussi stricte que les autres devises de
+            l'application (updateCurrency valide pourtant via deviseSchema,
+            comme les autres ; le cas réel est une valeur héritée d'avant
+            cette validation, ou posée directement en base). deviseFacturee()
+            retombe alors silencieusement sur l'euro : ce message évite que ça
+            passe pour une erreur d'affichage plutôt qu'un repli de sécurité. */}
         {planReference && planReference.currency !== currency && (
           <p className="text-center text-xs text-slate-600 dark:text-slate-400 max-w-md">
             {t("manager.subscription.unsupportedCurrencyNotice", { currency: planReference.currency })}
