@@ -7,6 +7,7 @@ import { uploadPrivateFile } from "../services/storage.service";
 import {
   authHeader,
   createContract,
+  createInvoice,
   createManager,
   createProperty,
   createTenant,
@@ -105,6 +106,64 @@ describe("GET /api/tenants/:id", () => {
     const res = await request(app).get(`/api/tenants/${tenant.id}`).set(authHeader(tokenFor(otherManager)));
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe("GET /api/tenants/:id — score de fiabilité", () => {
+  it("renvoie un score nul et le niveau 'insuffisant' sous le seuil minimum de factures échues", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const property = await createProperty(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, {
+      periodMonth: 6,
+      dueDate: new Date(2026, 5, 20),
+      status: "PAID",
+      paidAt: new Date(2026, 5, 10),
+    });
+
+    const res = await request(app).get(`/api/tenants/${tenant.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.fiabilite).toEqual({
+      payeATemps: 1,
+      payeEnRetard: 0,
+      enRetardActuel: 0,
+      score: null,
+      niveau: "insuffisant",
+    });
+  });
+
+  it("calcule le score à partir des factures échues de TOUS les contrats du locataire (passés et en cours), en ignorant celles pas encore échues ou annulées", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const ancienLogement = await createProperty(manager.id);
+    const logementActuel = await createProperty(manager.id);
+    const ancienContrat = await createContract(ancienLogement.id, tenant.id, { status: "ENDED" });
+    const contratActuel = await createContract(logementActuel.id, tenant.id);
+
+    // 2 factures payées à temps (ancien logement), puis sur le logement actuel :
+    // 1 payée en retard, 1 actuellement impayée, 1 pas encore échue (PENDING)
+    // et 1 annulée — ces deux dernières ne doivent pas entrer dans le calcul.
+    await createInvoice(ancienContrat.id, { periodMonth: 1, dueDate: new Date(2026, 0, 5), status: "PAID", paidAt: new Date(2026, 0, 5) });
+    await createInvoice(ancienContrat.id, { periodMonth: 2, dueDate: new Date(2026, 1, 5), status: "PAID", paidAt: new Date(2026, 1, 4) });
+    await createInvoice(contratActuel.id, { periodMonth: 3, dueDate: new Date(2026, 2, 5), status: "PAID", paidAt: new Date(2026, 2, 10) });
+    await createInvoice(contratActuel.id, { periodMonth: 4, dueDate: new Date(2026, 3, 5), status: "LATE" });
+    await createInvoice(contratActuel.id, { periodMonth: 5, dueDate: new Date(2099, 0, 5), status: "PENDING" });
+    await createInvoice(contratActuel.id, { periodMonth: 6, dueDate: new Date(2026, 5, 5), status: "CANCELLED" });
+
+    const res = await request(app).get(`/api/tenants/${tenant.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    // points = 2 (à temps) + 0,5 (en retard) = 2,5 ; total = 4 (l'impayé compte
+    // pour 0 point mais fait bien partie du total) -> 2,5 / 4 = 62,5 % -> 63
+    expect(res.body.fiabilite).toEqual({
+      payeATemps: 2,
+      payeEnRetard: 1,
+      enRetardActuel: 1,
+      score: 63,
+      niveau: "moyen",
+    });
   });
 });
 
@@ -253,6 +312,32 @@ describe("GET /api/tenants — isolation entre gestionnaires", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
+  });
+
+  it("inclut le score de fiabilité de chaque locataire dans la liste paginée", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const property = await createProperty(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    for (let mois = 1; mois <= 3; mois++) {
+      await createInvoice(contract.id, {
+        periodMonth: mois,
+        dueDate: new Date(2026, mois - 1, 5),
+        status: "PAID",
+        paidAt: new Date(2026, mois - 1, 5),
+      });
+    }
+
+    const res = await request(app).get("/api/tenants").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.items[0].fiabilite).toEqual({
+      payeATemps: 3,
+      payeEnRetard: 0,
+      enRetardActuel: 0,
+      score: 100,
+      niveau: "excellent",
+    });
   });
 });
 

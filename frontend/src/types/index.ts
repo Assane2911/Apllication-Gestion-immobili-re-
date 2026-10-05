@@ -156,6 +156,23 @@ export interface Tenant {
   /** Date d'exercice du droit à l'effacement — voir anonymiserTenant côté API. */
   anonymizedAt?: string | null;
   createdAt: string;
+  fiabilite?: TenantReliability;
+}
+
+export type ReliabilityLevel = "excellent" | "bon" | "moyen" | "risque" | "insuffisant";
+
+/**
+ * Score interne de ponctualité de paiement (0-100, ou null si pas assez de
+ * factures échues pour être significatif) — voir reliability.service.ts
+ * côté API pour la formule exacte. Un indicateur pour le gestionnaire, pas un
+ * score de solvabilité.
+ */
+export interface TenantReliability {
+  score: number | null;
+  niveau: ReliabilityLevel;
+  payeATemps: number;
+  payeEnRetard: number;
+  enRetardActuel: number;
 }
 
 export type ContractStatus = "ACTIVE" | "ENDED" | "TERMINATED";

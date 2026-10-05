@@ -6,11 +6,44 @@ import ChampTelephone from "../../components/ChampTelephone";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
-import type { PaginatedResponse, Tenant } from "../../types";
+import type { PaginatedResponse, ReliabilityLevel, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
 
 const emptyForm = { civility: "", firstName: "", lastName: "", phone: "", email: "" };
 const PAGE_SIZE = 20;
+
+const CLASSES_PAR_NIVEAU: Record<ReliabilityLevel, string> = {
+  excellent: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+  bon: "bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400",
+  moyen: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+  risque: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
+  insuffisant: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+};
+
+/** Badge du score interne de ponctualité de paiement — voir reliability.service.ts côté API. */
+function BadgeFiabilite({ tenant }: { tenant: Tenant }) {
+  const { t } = useTranslation();
+  const f = tenant.fiabilite;
+  if (!f) return <span className="text-slate-300 dark:text-slate-600">—</span>;
+
+  const libelle = t(`manager.tenants.reliability.${f.niveau}`);
+  const texteBulle = t("manager.tips.tenantReliability", {
+    onTime: f.payeATemps,
+    late: f.payeEnRetard,
+    unpaid: f.enRetardActuel,
+  });
+
+  return (
+    <Bulle texte={texteBulle}>
+      <span
+        tabIndex={0}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium cursor-default ${CLASSES_PAR_NIVEAU[f.niveau]}`}
+      >
+        {f.score !== null ? `${f.score}/100 · ${libelle}` : libelle}
+      </span>
+    </Bulle>
+  );
+}
 
 export default function TenantsPage() {
   const { t } = useTranslation();
@@ -282,6 +315,7 @@ export default function TenantsPage() {
               <th className="px-4 py-3 font-medium">{t("manager.tenants.table.phone")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.tenants.table.email")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.tenants.table.idDocument")}</th>
+              <th className="px-4 py-3 font-medium">{t("manager.tenants.table.reliability")}</th>
               <th className="px-4 py-3 font-medium">{t("manager.tenants.table.portal")}</th>
               <th className="px-4 py-3 font-medium">
                 <span className="sr-only">{t("manager.tenants.table.actions")}</span>
@@ -290,7 +324,7 @@ export default function TenantsPage() {
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
-              Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={6} />)
+              Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={7} />)
             ) : (
             tenants.map((tenant) => (
               <tr key={tenant.id}>
@@ -305,6 +339,9 @@ export default function TenantsPage() {
                   ) : (
                     <span className="text-slate-300 dark:text-slate-600">—</span>
                   )}
+                </td>
+                <td className="px-4 py-3">
+                  <BadgeFiabilite tenant={tenant} />
                 </td>
                 <td className="px-4 py-3">
                   {tenant.userId ? (
@@ -360,6 +397,9 @@ export default function TenantsPage() {
                 <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                   <p>{tenant.phone}</p>
                   <p>{tenant.email}</p>
+                </div>
+                <div>
+                  <BadgeFiabilite tenant={tenant} />
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
                   {tenant.idDocument ? (
