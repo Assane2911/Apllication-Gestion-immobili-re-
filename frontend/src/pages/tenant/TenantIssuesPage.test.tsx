@@ -85,6 +85,26 @@ describe("TenantIssuesPage", () => {
     expect(screen.getByText("Réponse de l'agence :")).toBeInTheDocument();
   });
 
+  it("affiche le prestataire assigné (nom et métier), sans ses coordonnées", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [issue({ vendor: { name: "Plomberie Fall", trade: "Plombier" } })] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Prestataire assigné :")).toBeInTheDocument());
+    expect(screen.getByText("Plomberie Fall — Plombier")).toBeInTheDocument();
+  });
+
+  it("n'affiche aucun bloc prestataire quand aucun n'est assigné", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [issue({ vendor: null })] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+    expect(screen.queryByText("Prestataire assigné :")).not.toBeInTheDocument();
+  });
+
   it("affiche un message quand il n'y a aucun signalement", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [] });
     mockedApi.get.mockResolvedValueOnce({ data: [contract()] });

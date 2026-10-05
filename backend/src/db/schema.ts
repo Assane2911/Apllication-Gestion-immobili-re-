@@ -249,6 +249,41 @@ export const owners = pgTable(
   })
 );
 
+/**
+ * Carnet de prestataires/artisans (plombier, électricien...) du gestionnaire,
+ * assignables à un signalement d'incident (voir issueReports.vendorId
+ * ci-dessous) — comble l'écart identifié face à des concurrents directs
+ * (ByteeLoge) qui mettent en avant un réseau d'artisans suivi dans l'outil.
+ *
+ * Volontairement plus simple que owners : pas de compte portail (un
+ * prestataire n'a aucune donnée à consulter dans l'application), pas de
+ * droit à l'effacement dédié (aucune donnée de locataire ne lui est
+ * associée, seulement ses propres coordonnées professionnelles).
+ */
+export const vendors = pgTable(
+  "vendors",
+  {
+    id: id(),
+    managerId: text("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // Corps de métier en texte libre ("Plombier", "Électricien"...), pas un
+    // enum : la liste des métiers utiles varie trop d'une agence à l'autre
+    // pour être figée dans le code, même constat que expenses.category qui,
+    // lui, reste un enum parce que ses valeurs pilotent des comptes
+    // comptables (fiscal.controller.ts) — rien de tel n'en dépend ici.
+    trade: text("trade"),
+    phone: text("phone").notNull(),
+    email: text("email"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (table) => ({
+    managerIdIdx: index("vendors_manager_id_idx").on(table.managerId),
+  })
+);
+
 // --- Listings (vitrine publique de biens à louer/vendre) ---
 export const listings = pgTable(
   "listings",
@@ -497,12 +532,18 @@ export const issueReports = pgTable(
     additionalPhotos: text("additional_photos"), // JSON string array of photo URLs
     status: issueStatusEnum("status").notNull().default("OPEN"),
     managerNote: text("manager_note"),
+    // Prestataire assigné pour traiter l'incident — voir vendors ci-dessus.
+    // SET NULL (pas CASCADE) : supprimer un prestataire du carnet ne doit pas
+    // supprimer l'historique des incidents qu'il a traités, seulement l'
+    // affectation elle-même, exactement comme properties.ownerId.
+    vendorId: text("vendor_id").references(() => vendors.id, { onDelete: "set null" }),
     ...timestamps,
   },
   (table) => ({
     contractIdIdx: index("issue_reports_contract_id_idx").on(table.contractId),
     tenantIdIdx: index("issue_reports_tenant_id_idx").on(table.tenantId),
     statusIdx: index("issue_reports_status_idx").on(table.status),
+    vendorIdIdx: index("issue_reports_vendor_id_idx").on(table.vendorId),
   })
 );
 
@@ -697,6 +738,12 @@ export const invoicesRelations = relations(invoices, ({ one }) => ({
 export const issueReportsRelations = relations(issueReports, ({ one }) => ({
   contract: one(contracts, { fields: [issueReports.contractId], references: [contracts.id] }),
   tenant: one(tenants, { fields: [issueReports.tenantId], references: [tenants.id] }),
+  vendor: one(vendors, { fields: [issueReports.vendorId], references: [vendors.id] }),
+}));
+
+export const vendorsRelations = relations(vendors, ({ one, many }) => ({
+  manager: one(users, { fields: [vendors.managerId], references: [users.id] }),
+  issues: many(issueReports),
 }));
 
 export const expensesRelations = relations(expenses, ({ one }) => ({

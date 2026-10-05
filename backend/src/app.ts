@@ -35,6 +35,7 @@ import searchRoutes from "./routes/search.routes";
 import conservationRoutes from "./routes/conservation.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
+import vendorRoutes from "./routes/vendor.routes";
 
 export const app = express();
 
@@ -164,6 +165,7 @@ app.use("/api/agency", agencyRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/issues", issueRoutes);
+app.use("/api/vendors", vendorRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/search", searchRoutes);

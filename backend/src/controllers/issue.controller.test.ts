@@ -9,6 +9,7 @@ import {
   createManager,
   createProperty,
   createTenant,
+  createVendor,
   fakeJpegBuffer,
   createPortalUser,
   tokenFor,
@@ -268,6 +269,111 @@ describe("PUT /api/issues/:id/status", () => {
       .send({ status: "NIMPORTEQUOI" });
 
     expect(res.status).toBe(400);
+  });
+
+  it("assigne un prestataire à l'incident et le renvoie dans la réponse", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const vendor = await createVendor(manager.id, { name: "Plomberie Fall", trade: "Plombier" });
+    const createRes = await request(app)
+      .post("/api/issues")
+      .set(await tenantToken(tenant.id))
+      .field("contractId", contract.id)
+      .field("title", "Fuite d'eau")
+      .field("description", "Description")
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+    const res = await request(app)
+      .put(`/api/issues/${createRes.body.id}/status`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "IN_PROGRESS", vendorId: vendor.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.vendor).toMatchObject({ id: vendor.id, name: "Plomberie Fall", trade: "Plombier" });
+
+    // Le locataire voit le nom et le métier, mais pas les coordonnées directes.
+    const mine = await request(app).get("/api/issues/mine").set(await tenantToken(tenant.id));
+    expect(mine.body[0].vendor).toEqual({ name: "Plomberie Fall", trade: "Plombier" });
+    expect(mine.body[0].vendor.phone).toBeUndefined();
+  });
+
+  it("désassigne le prestataire quand vendorId vaut null", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const vendor = await createVendor(manager.id);
+    const createRes = await request(app)
+      .post("/api/issues")
+      .set(await tenantToken(tenant.id))
+      .field("contractId", contract.id)
+      .field("title", "Fuite d'eau")
+      .field("description", "Description")
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+    await request(app)
+      .put(`/api/issues/${createRes.body.id}/status`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "IN_PROGRESS", vendorId: vendor.id });
+
+    const res = await request(app)
+      .put(`/api/issues/${createRes.body.id}/status`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "IN_PROGRESS", vendorId: null });
+
+    expect(res.status).toBe(200);
+    expect(res.body.vendor).toBeNull();
+  });
+
+  it("refuse d'assigner le prestataire d'une autre agence", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const autreManager = await createManager();
+    const vendorAutreAgence = await createVendor(autreManager.id);
+    const createRes = await request(app)
+      .post("/api/issues")
+      .set(await tenantToken(tenant.id))
+      .field("contractId", contract.id)
+      .field("title", "Fuite d'eau")
+      .field("description", "Description")
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+    const res = await request(app)
+      .put(`/api/issues/${createRes.body.id}/status`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "IN_PROGRESS", vendorId: vendorAutreAgence.id });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("ne modifie pas l'assignation existante quand vendorId est absent du corps", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const vendor = await createVendor(manager.id);
+    const createRes = await request(app)
+      .post("/api/issues")
+      .set(await tenantToken(tenant.id))
+      .field("contractId", contract.id)
+      .field("title", "Fuite d'eau")
+      .field("description", "Description")
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+    await request(app)
+      .put(`/api/issues/${createRes.body.id}/status`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "IN_PROGRESS", vendorId: vendor.id });
+
+    const res = await request(app)
+      .put(`/api/issues/${createRes.body.id}/status`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "RESOLVED" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.vendor).toMatchObject({ id: vendor.id });
   });
 });
 
