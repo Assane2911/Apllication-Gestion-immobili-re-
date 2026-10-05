@@ -259,6 +259,16 @@ const es: TranslationSchema = {
       error: "La conexión con Google falló. Inténtalo de nuevo.",
       wrongRole: "La conexión con Google está reservada a las cuentas de gestor.",
     },
+    twoFactor: {
+      title: "Verificación en dos pasos",
+      subtitle: "Introduce el código mostrado por tu aplicación de autenticación.",
+      codeLabel: "Código de verificación",
+      codePlaceholder: "123 456",
+      backupCodeHint: "También puedes usar uno de tus códigos de respaldo.",
+      submit: "Verificar",
+      submitting: "Verificando...",
+      back: "Volver a la conexión",
+    },
   },
 
   landing: {
@@ -491,6 +501,27 @@ const es: TranslationSchema = {
       confirmButton: "Eliminar definitivamente mi cuenta",
       deleting: "Eliminando...",
     },
+    twoFactorSetup: {
+      title: "Activar la verificación en dos pasos",
+      subtitle: "Escanea este código QR con una aplicación de autenticación (Google Authenticator, Authy...).",
+      subtitleBackupCodes: "Anota estos códigos de respaldo antes de continuar.",
+      loading: "Preparando la configuración...",
+      qrAlt: "Código QR de verificación en dos pasos",
+      manualEntryHint: "También puedes introducir este código manualmente en tu aplicación:",
+      codeLabel: "Código mostrado por la aplicación",
+      codePlaceholder: "123 456",
+      confirmButton: "Activar",
+      confirming: "Verificando...",
+      backupCodesWarning:
+        "Estos 8 códigos de respaldo te permiten iniciar sesión si pierdes el acceso a tu aplicación de autenticación. Cada uno funciona una sola vez. No volverán a mostrarse: anótalos en un lugar seguro.",
+      done: "He anotado mis códigos de respaldo",
+    },
+    twoFactorDisable: {
+      title: "Desactivar la verificación en dos pasos",
+      subtitle: "Confirma tu identidad para desactivar esta protección.",
+      disabling: "Desactivando...",
+      confirmButton: "Desactivar",
+    },
     globalSearch: {
       placeholder: "Buscar un inquilino, una propiedad, un contrato...",
       clearAria: "Borrar la búsqueda",
@@ -634,6 +665,8 @@ const es: TranslationSchema = {
       invoiceSendMonthly: "Envía de una vez un recordatorio a TODOS los inquilinos con el alquiler impagado, por correo y WhatsApp.",
       agencyDeleteAccount: "Abre el procedimiento de cierre definitivo de la agencia y de todos sus datos.",
       agencyLogoutAll: "Cierra de inmediato la sesión en todos sus dispositivos. Habrá que volver a entrar.",
+      agencyTwoFactorEnable: "Abre la configuración de la verificación en dos pasos (código QR + código de verificación).",
+      agencyTwoFactorDisable: "Desactiva la verificación en dos pasos, tras volver a introducir la contraseña.",
       agencyTeamInvite: "Envía una invitación por email para dar acceso a su agencia a un colaborador.",
       inspectionFinalize: "Bloquea el acta y la abre a la firma. Ya no podrá modificarse.",
       inspectionDelete: "Elimina el acta y sus fotos. Nada será recuperable después.",
@@ -1215,6 +1248,14 @@ const es: TranslationSchema = {
         logoutAllPending: "Cerrando sesiones…",
         logoutAllError: "No se han podido cerrar las sesiones. Inténtalo de nuevo en un momento.",
         confirmLogoutAll: "¿Cerrar todas las sesiones abiertas, incluida esta? Se cerrará tu sesión de inmediato y tendrás que volver a iniciar sesión.",
+      },
+      twoFactor: {
+        title: "Verificación en dos pasos",
+        description:
+          "Exige, además de la contraseña, un código de un solo uso generado por una aplicación de autenticación (Google Authenticator, Authy...) al iniciar sesión en un nuevo dispositivo.",
+        enabled: "Activada",
+        enableButton: "Activar la verificación en dos pasos",
+        disableButton: "Desactivar",
       },
       retention: {
         title: "Datos que han alcanzado su plazo de conservación",

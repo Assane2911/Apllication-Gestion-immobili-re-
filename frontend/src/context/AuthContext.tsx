@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
-import type { AuthUser } from "../types";
+import type { AuthUser, TwoFactorRequired } from "../types";
 import { AuthContext } from "./auth";
 
 // Indice non sensible (jamais le jeton lui-même) qu'une connexion web a déjà
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ownerId: data.owner?.id ?? null,
         ownerName: data.owner ? `${data.owner.firstName} ${data.owner.lastName}` : null,
         subscription: data.subscription,
+        twoFactorEnabled: data.twoFactorEnabled,
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
@@ -62,22 +63,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
   }, []);
 
-  async function login(email: string, password: string) {
+  /**
+   * Installe la session une fois l'identité ENTIÈREMENT prouvée (mot de
+   * passe seul, ou mot de passe + second facteur) — partagée par login(),
+   * loginWithGoogle(), verifyTwoFactor() et verifyEmail(), qui reçoivent
+   * toutes la même forme `{token, user}` en réponse.
+   */
+  function installSession(data: { token: string; user: AuthUser }): AuthUser {
+    // Web : le serveur vient de poser le cookie httpOnly qui portera
+    // l'authentification (voir api/client.ts) — stocker aussi le jeton en
+    // clair ici recréerait exactement le risque de vol par XSS que cette
+    // migration retire. Natif : pas de cookie fiable, le jeton reste géré
+    // comme avant.
+    if (Capacitor.isNativePlatform()) {
+      localStorage.setItem("token", data.token);
+    }
+    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem(SESSION_HINT_KEY, "1");
+    setUser(data.user);
+    return data.user;
+  }
+
+  /**
+   * Quand le compte exige un second facteur (voir twoFactor.controller.ts
+   * côté serveur), le serveur ne pose ENCORE aucun cookie et ne renvoie
+   * qu'un jeton intermédiaire de courte durée (`pendingToken`) : aucune
+   * session n'est installée tant que verifyTwoFactor() ne l'a pas échangé
+   * contre une vraie, une fois le code vérifié.
+   */
+  async function login(email: string, password: string): Promise<AuthUser | TwoFactorRequired> {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      // Web : le serveur vient de poser le cookie httpOnly qui portera
-      // l'authentification (voir api/client.ts) — stocker aussi le jeton en
-      // clair ici recréerait exactement le risque de vol par XSS que cette
-      // migration retire. Natif : pas de cookie fiable, le jeton reste géré
-      // comme avant.
-      if (Capacitor.isNativePlatform()) {
-        localStorage.setItem("token", data.token);
-      }
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem(SESSION_HINT_KEY, "1");
-      setUser(data.user);
-      return data.user as AuthUser;
+      if (data.twoFactorRequired) return data as TwoFactorRequired;
+      return installSession(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyTwoFactor(pendingToken: string, code: string): Promise<AuthUser> {
+    setLoading(true);
+    try {
+      const { data } = await api.post("/auth/2fa/verify-login", { pendingToken, code });
+      return installSession(data);
     } finally {
       setLoading(false);
     }
@@ -91,17 +120,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * la réponse contient directement un token exploitable : Google a déjà
    * vérifié l'adresse, il n'y a pas d'étape de confirmation par email.
    */
-  async function loginWithGoogle(credential: string) {
+  async function loginWithGoogle(credential: string): Promise<AuthUser | TwoFactorRequired> {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/google", { credential });
-      if (Capacitor.isNativePlatform()) {
-        localStorage.setItem("token", data.token);
-      }
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem(SESSION_HINT_KEY, "1");
-      setUser(data.user);
-      return data.user as AuthUser;
+      if (data.twoFactorRequired) return data as TwoFactorRequired;
+      return installSession(data);
     } finally {
       setLoading(false);
     }
@@ -120,17 +144,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function verifyEmail(token: string) {
+  async function verifyEmail(token: string): Promise<AuthUser> {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/verify-email", { token });
-      if (Capacitor.isNativePlatform()) {
-        localStorage.setItem("token", data.token);
-      }
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem(SESSION_HINT_KEY, "1");
-      setUser(data.user);
-      return data.user as AuthUser;
+      return installSession(data);
     } finally {
       setLoading(false);
     }
@@ -156,7 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, verifyEmail, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, loginWithGoogle, verifyTwoFactor, verifyEmail, logout, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

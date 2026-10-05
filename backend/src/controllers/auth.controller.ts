@@ -16,6 +16,7 @@ import {
   sendEmail,
 } from "../services/email.service";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
+import { consommerCodeSecours, verifierCodeTotp } from "../services/totp.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { clearAuthCookie, setAuthCookie } from "../utils/authCookie";
@@ -72,6 +73,39 @@ function signToken(payload: {
   collaboratorId?: string | null;
 }) {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
+}
+
+/**
+ * Jeton intermédiaire émis quand le mot de passe est correct mais que le
+ * compte exige un second facteur (voir login ci-dessous) : il ne porte QUE
+ * l'id du compte dont l'identité reste à prouver — ni rôle, ni tokenVersion,
+ * ni aucun des claims de signToken — pour qu'authenticate (middleware/auth.ts)
+ * ne puisse jamais le confondre avec une vraie session. 5 minutes : assez pour
+ * saisir un code, pas assez pour qu'un jeton intercepté serve longtemps à
+ * autre chose qu'à cette seule vérification.
+ */
+const DUREE_JETON_2FA_EN_ATTENTE = "5m";
+
+function signerJeton2faEnAttente(userId: string): string {
+  return jwt.sign({ userId, purpose: "2fa_pending" }, env.jwtSecret, { expiresIn: DUREE_JETON_2FA_EN_ATTENTE });
+}
+
+function verifierJeton2faEnAttente(token: string): string {
+  let payload: unknown;
+  try {
+    payload = jwt.verify(token, env.jwtSecret);
+  } catch {
+    throw new ApiError(401, "Session de connexion expirée. Veuillez vous reconnecter.");
+  }
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    (payload as Record<string, unknown>).purpose !== "2fa_pending" ||
+    typeof (payload as Record<string, unknown>).userId !== "string"
+  ) {
+    throw new ApiError(401, "Jeton invalide.");
+  }
+  return (payload as { userId: string }).userId;
 }
 
 /**
@@ -233,32 +267,14 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
   res.status(201).json(REPONSE_INSCRIPTION);
 });
 
-/** Connexion (gestionnaire ou locataire). */
-export const login = asyncHandler(async (req: Request, res: Response) => {
-  const body = loginSchema.parse(req.body);
-
-  const [user] = await db.select().from(users).where(eq(users.email, body.email));
-
-  // Le message d'erreur etait deja le meme dans les deux cas, mais pas le
-  // TEMPS de reponse : une adresse inconnue repondait aussitot, une adresse
-  // connue apres un bcrypt.compare (~100 ms). L'ecart se mesure de
-  // l'exterieur, et suffit a distinguer les deux — la meme fuite que le 409
-  // de l'inscription, par un autre canal.
-  //
-  // On hache donc TOUJOURS, contre une empreinte de rattrapage quand le
-  // compte n'existe pas, pour que les deux chemins coutent le meme temps.
-  const empreinte = user?.passwordHash ?? EMPREINTE_FACTICE;
-  const valid = await bcrypt.compare(body.password, empreinte);
-  if (!user || !valid) throw new ApiError(401, "Email ou mot de passe incorrect");
-
-  if (user.role === "MANAGER" && !user.emailVerifiedAt) {
-    throw new ApiError(
-      403,
-      "Merci de confirmer ton email avant de te connecter. Vérifie ta boîte de réception (et tes spams).",
-      "EMAIL_NOT_VERIFIED"
-    );
-  }
-
+/**
+ * Termine une connexion déjà entièrement prouvée (mot de passe seul, ou
+ * mot de passe + second facteur) : émet le jeton de session et la réponse.
+ * Partagée par login() (compte sans 2FA) et verifyTwoFactorLogin() (compte
+ * avec 2FA, une fois le code vérifié) pour qu'il n'existe qu'un seul endroit
+ * où une session est réellement ouverte.
+ */
+async function finalizeLogin(user: typeof users.$inferSelect, res: Response) {
   let tenant: typeof tenants.$inferSelect | undefined;
   if (user.role === "TENANT") {
     [tenant] = await db.select().from(tenants).where(eq(tenants.userId, user.id));
@@ -307,6 +323,91 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       subscription,
     },
   });
+}
+
+/** Connexion (gestionnaire, locataire, propriétaire...). */
+export const login = asyncHandler(async (req: Request, res: Response) => {
+  const body = loginSchema.parse(req.body);
+
+  const [user] = await db.select().from(users).where(eq(users.email, body.email));
+
+  // Le message d'erreur etait deja le meme dans les deux cas, mais pas le
+  // TEMPS de reponse : une adresse inconnue repondait aussitot, une adresse
+  // connue apres un bcrypt.compare (~100 ms). L'ecart se mesure de
+  // l'exterieur, et suffit a distinguer les deux — la meme fuite que le 409
+  // de l'inscription, par un autre canal.
+  //
+  // On hache donc TOUJOURS, contre une empreinte de rattrapage quand le
+  // compte n'existe pas, pour que les deux chemins coutent le meme temps.
+  const empreinte = user?.passwordHash ?? EMPREINTE_FACTICE;
+  const valid = await bcrypt.compare(body.password, empreinte);
+  if (!user || !valid) throw new ApiError(401, "Email ou mot de passe incorrect");
+
+  if (user.role === "MANAGER" && !user.emailVerifiedAt) {
+    throw new ApiError(
+      403,
+      "Merci de confirmer ton email avant de te connecter. Vérifie ta boîte de réception (et tes spams).",
+      "EMAIL_NOT_VERIFIED"
+    );
+  }
+
+  // Mot de passe prouvé, mais pas encore l'identité complète : ce compte a
+  // activé la double authentification (voir twoFactor.controller.ts). Aucun
+  // jeton de session n'est émis ici — seulement un jeton intermédiaire, sans
+  // valeur pour accéder à quoi que ce soit, que verifyTwoFactorLogin échangera
+  // contre une vraie session une fois le second facteur vérifié.
+  if (user.totpEnabledAt) {
+    res.json({ twoFactorRequired: true, pendingToken: signerJeton2faEnAttente(user.id) });
+    return;
+  }
+
+  await finalizeLogin(user, res);
+});
+
+const verifyTwoFactorLoginSchema = z.object({
+  pendingToken: z.string().min(1),
+  // 6 chiffres pour un code TOTP, 10 caractères hexadécimaux pour un code de
+  // secours (voir totp.service.ts) : la longueur seule ne les distingue pas
+  // de façon fiable, donc verifyTwoFactorLogin essaie les deux.
+  code: z.string().min(6).max(12),
+});
+
+/**
+ * Deuxième étape de la connexion pour un compte avec 2FA activée : échange le
+ * jeton intermédiaire de login() contre une vraie session, après vérification
+ * du code TOTP ou, à défaut, d'un code de secours.
+ */
+export const verifyTwoFactorLogin = asyncHandler(async (req: Request, res: Response) => {
+  const body = verifyTwoFactorLoginSchema.parse(req.body);
+  const userId = verifierJeton2faEnAttente(body.pendingToken);
+
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  // totpEnabledAt/totpSecret pourraient avoir été désactivés entre l'émission
+  // du jeton intermédiaire et cette vérification (ex. deux onglets) : le
+  // jeton seul ne suffit alors plus, il faut se reconnecter proprement.
+  if (!user || !user.totpEnabledAt || !user.totpSecret) {
+    throw new ApiError(401, "Session de connexion expirée. Veuillez vous reconnecter.");
+  }
+
+  const code = body.code.trim();
+  const codeTotpValide = await verifierCodeTotp(user.totpSecret, code);
+
+  if (codeTotpValide) {
+    await finalizeLogin(user, res);
+    return;
+  }
+
+  // Repli : un code de secours, pour le cas où le téléphone qui génère les
+  // codes TOTP n'est plus disponible. Chaque code ne sert qu'une fois — la
+  // liste de hachages restante (sans celui qui vient d'être consommé)
+  // remplace l'ancienne.
+  const hachesRestants = await consommerCodeSecours(code, user.totpBackupCodesHash);
+  if (hachesRestants === null) {
+    throw new ApiError(401, "Code invalide ou expiré.");
+  }
+
+  await db.update(users).set({ totpBackupCodesHash: JSON.stringify(hachesRestants) }).where(eq(users.id, user.id));
+  await finalizeLogin(user, res);
 });
 
 /**
@@ -410,39 +511,19 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
     }
   }
 
+  // Un compte avec la 2FA activée ne doit pas pouvoir la contourner en
+  // passant par Google plutôt que par le mot de passe — même garde qu'en
+  // login() : Google atteste l'adresse email, pas le second facteur propre à
+  // ce Service.
+  if (user.totpEnabledAt) {
+    res.json({ twoFactorRequired: true, pendingToken: signerJeton2faEnAttente(user.id) });
+    return;
+  }
+
   // Un collaborateur (voir identiteJetonPourManager) peut lier son compte à
   // Google comme n'importe quel gestionnaire : même résolution qu'à la
   // connexion par mot de passe (login).
-  const identite = identiteJetonPourManager(user);
-  const compteFacturation = identite.collaboratorId
-    ? (await db.select().from(users).where(eq(users.id, identite.userId)))[0]
-    : user;
-
-  const token = signToken({
-    userId: identite.userId,
-    role: user.role as "MANAGER",
-    tokenVersion: user.tokenVersion,
-    collaboratorId: identite.collaboratorId,
-  });
-  setAuthCookie(res, token);
-  const subscription = compteFacturation ? computeSubscriptionInfo(compteFacturation) : null;
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      currency: user.currency ?? "EUR",
-      hasPassword: user.hasPassword,
-      tenantId: null,
-      tenantName: null,
-      ownerId: null,
-      ownerName: null,
-      collaboratorId: identite.collaboratorId,
-      subscription,
-    },
-  });
+  await finalizeLogin(user, res);
 });
 
 const verifyEmailSchema = z.object({
@@ -581,6 +662,11 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     role: identite.role,
     currency: user.currency ?? "EUR",
     hasPassword: identite.hasPassword,
+    // `identite` ci-dessus est déjà la ligne du compte RÉELLEMENT connecté
+    // (son email/mot de passe propres) — jamais celle du propriétaire de
+    // l'agence pour un collaborateur, qui n'a pas nécessairement activé la
+    // 2FA lui-même.
+    twoFactorEnabled: !!identite.totpEnabledAt,
     tenant: tenant ?? null,
     owner: owner ?? null,
     collaboratorId: req.user.collaboratorId ?? null,

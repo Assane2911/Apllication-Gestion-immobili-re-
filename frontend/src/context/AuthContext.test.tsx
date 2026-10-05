@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "./AuthContext";
@@ -12,19 +13,36 @@ vi.mock("../api/client", () => ({
 const mockedApi = vi.mocked(api, { deep: true });
 
 function TestConsumer() {
-  const { user, loading, login, logout, refreshUser } = useAuth();
+  const { user, loading, login, verifyTwoFactor, logout, refreshUser } = useAuth();
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
   return (
     <div>
       <span data-testid="loading">{String(loading)}</span>
       <span data-testid="user-email">{user?.email ?? "aucun"}</span>
       <span data-testid="tenant-name">{user?.tenantName ?? "aucun"}</span>
       <span data-testid="devise">{user?.currency ?? "aucune"}</span>
+      <span data-testid="pending-token">{pendingToken ?? "aucun"}</span>
       <button
         type="button"
         data-testid="login-btn"
-        onClick={() => login("alice@test.local", "Password123!").catch(() => {})}
+        onClick={() =>
+          login("alice@test.local", "Password123!")
+            .then((result) => {
+              if ("twoFactorRequired" in result) setPendingToken(result.pendingToken);
+            })
+            .catch(() => {})
+        }
       >
         login
+      </button>
+      <button
+        type="button"
+        data-testid="verify-2fa-btn"
+        onClick={() => {
+          if (pendingToken) verifyTwoFactor(pendingToken, "123456").catch(() => {});
+        }}
+      >
+        verify-2fa
       </button>
       <button type="button" data-testid="logout-btn" onClick={logout}>
         logout
@@ -107,6 +125,44 @@ describe("AuthProvider", () => {
     expect(localStorage.getItem("token")).toBeNull();
     expect(localStorage.getItem("user")).toBeNull();
     expect(localStorage.getItem("hasSession")).toBeNull();
+  });
+
+  /**
+   * Quand le compte exige la 2FA (voir twoFactor.controller.ts côté serveur),
+   * login() ne doit installer AUCUNE session — ni jeton natif, ni utilisateur
+   * en localStorage — tant que verifyTwoFactor() n'a pas vérifié le code.
+   */
+  it("login : un compte avec la 2FA activée ne pose ni jeton ni utilisateur, et renvoie le jeton intermédiaire", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "jeton-intermediaire" } });
+    renderAuth();
+
+    await user.click(screen.getByTestId("login-btn"));
+
+    await waitFor(() => expect(screen.getByTestId("pending-token").textContent).toBe("jeton-intermediaire"));
+    expect(screen.getByTestId("user-email").textContent).toBe("aucun");
+    expect(localStorage.getItem("user")).toBeNull();
+    expect(localStorage.getItem("hasSession")).toBeNull();
+  });
+
+  it("verifyTwoFactor : échange le jeton intermédiaire contre une vraie session", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "jeton-intermediaire" } });
+    renderAuth();
+    await user.click(screen.getByTestId("login-btn"));
+    await waitFor(() => expect(screen.getByTestId("pending-token").textContent).toBe("jeton-intermediaire"));
+
+    mockedApi.post.mockResolvedValueOnce({
+      data: { token: "jwt-final", user: { id: "u1", email: "alice@test.local", role: "MANAGER" } },
+    });
+    await user.click(screen.getByTestId("verify-2fa-btn"));
+
+    await waitFor(() => expect(screen.getByTestId("user-email").textContent).toBe("alice@test.local"));
+    expect(mockedApi.post).toHaveBeenLastCalledWith("/auth/2fa/verify-login", {
+      pendingToken: "jeton-intermediaire",
+      code: "123456",
+    });
+    expect(JSON.parse(localStorage.getItem("user")!).email).toBe("alice@test.local");
   });
 
   it("refreshUser : reconstruit tenantId/tenantName à partir de /auth/me quand une session locale est connue", async () => {

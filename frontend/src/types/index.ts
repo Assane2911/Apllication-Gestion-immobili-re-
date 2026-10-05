@@ -53,6 +53,14 @@ export interface AuthUser {
    */
   collaboratorId?: string | null;
   subscription?: SubscriptionInfo | null;
+  /** Double authentification (TOTP) activée sur CE compte — voir /auth/me. */
+  twoFactorEnabled?: boolean;
+}
+
+/** Réponse de POST /auth/login ou /auth/google quand le compte exige un second facteur. */
+export interface TwoFactorRequired {
+  twoFactorRequired: true;
+  pendingToken: string;
 }
 
 export interface TeamMember {

@@ -305,6 +305,62 @@ describe("AgencySettingsPage", () => {
     });
   });
 
+  describe("Double authentification", () => {
+    it("propose de l'activer quand elle n'est pas encore activée", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      renderPage();
+
+      await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+      expect(screen.getByRole("button", { name: "Activer la double authentification" })).toBeInTheDocument();
+      expect(screen.queryByText("Activée")).not.toBeInTheDocument();
+    });
+
+    it("affiche le badge « Activée » et le bouton Désactiver quand elle l'est déjà", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ id: "mgr-1", email: "manager@test.local", role: "MANAGER", twoFactorEnabled: true })
+      );
+      renderPage();
+
+      await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+      expect(screen.getByText("Activée")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Désactiver" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Activer la double authentification" })).not.toBeInTheDocument();
+    });
+
+    it("ouvre la modale d'enrôlement au clic sur « Activer »", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      mockedApi.post.mockResolvedValueOnce({
+        data: { secret: "SECRET123", otpauthUrl: "otpauth://totp/...", qrCodeDataUrl: "data:image/png;base64,xxx" },
+      });
+      renderPage();
+      const user = userEvent.setup();
+
+      await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+      await user.click(screen.getByRole("button", { name: "Activer la double authentification" }));
+
+      expect(await screen.findByRole("heading", { name: "Activer la double authentification" })).toBeInTheDocument();
+      expect(mockedApi.post).toHaveBeenCalledWith("/auth/2fa/setup");
+    });
+
+    it("ouvre la modale de désactivation au clic sur « Désactiver »", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: settings() });
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ id: "mgr-1", email: "manager@test.local", role: "MANAGER", twoFactorEnabled: true })
+      );
+      renderPage();
+      const user = userEvent.setup();
+
+      await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+      await user.click(screen.getByRole("button", { name: "Désactiver" }));
+
+      expect(screen.getByRole("heading", { name: "Désactiver la double authentification" })).toBeInTheDocument();
+      expect(mockedApi.post).not.toHaveBeenCalled();
+    });
+  });
+
   /**
    * Le Service ne détruit pas les données locatives de ses clients : pour
    * elles, le gestionnaire est responsable de traitement et le Service

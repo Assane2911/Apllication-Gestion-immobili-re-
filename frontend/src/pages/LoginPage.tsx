@@ -54,16 +54,20 @@ function CheckIcon() {
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<"form" | "google" | null>(null);
+  const [loading, setLoading] = useState<"form" | "google" | "2fa" | null>(null);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
+  // Non-null uniquement pendant la deuxième étape (code TOTP ou de secours),
+  // après que login()/loginWithGoogle() ait renvoyé `twoFactorRequired`.
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
 
   const highlights = t("auth.login.panel.highlights", { returnObjects: true }) as string[];
 
@@ -73,13 +77,32 @@ export default function LoginPage() {
     setResendState("idle");
     setLoading(source);
     try {
-      const user = await login(loginEmail, loginPassword);
-      navigate(homePathForRole(user.role));
+      const result = await login(loginEmail, loginPassword);
+      if ("twoFactorRequired" in result) {
+        setPendingToken(result.pendingToken);
+        return;
+      }
+      navigate(homePathForRole(result.role));
     } catch (err) {
       setError(apiErrorMessage(err));
       if (apiErrorCode(err) === "EMAIL_NOT_VERIFIED") {
         setUnverifiedEmail(loginEmail);
       }
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleTwoFactorSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pendingToken) return;
+    setError(null);
+    setLoading("2fa");
+    try {
+      const user = await verifyTwoFactor(pendingToken, twoFactorCode.trim());
+      navigate(homePathForRole(user.role));
+    } catch (err) {
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(null);
     }
@@ -106,8 +129,12 @@ export default function LoginPage() {
     setGoogleError(null);
     setLoading("google");
     try {
-      const user = await loginWithGoogle(credential);
-      navigate(homePathForRole(user.role));
+      const result = await loginWithGoogle(credential);
+      if ("twoFactorRequired" in result) {
+        setPendingToken(result.pendingToken);
+        return;
+      }
+      navigate(homePathForRole(result.role));
     } catch (err) {
       setGoogleError(apiErrorMessage(err));
     } finally {
@@ -171,120 +198,181 @@ export default function LoginPage() {
             <span className="font-bold text-lg tracking-tight text-white">{t("common.appName")}</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-white text-center">{t("auth.login.title")}</h2>
-          <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.login.subtitle")}</p>
+          {pendingToken ? (
+            <>
+              <h2 className="text-2xl font-bold text-white text-center">{t("auth.twoFactor.title")}</h2>
+              <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.twoFactor.subtitle")}</p>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-            <div>
-              <label htmlFor="login-email" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.email")}</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                  <MailIcon />
-                </span>
-                <input
-                  id="login-email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  placeholder={t("auth.login.emailPlaceholder")}
-                />
-              </div>
-            </div>
+              <form onSubmit={handleTwoFactorSubmit} className="mt-8 space-y-4">
+                <div>
+                  <label htmlFor="login-2fa-code" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    {t("auth.twoFactor.codeLabel")}
+                  </label>
+                  <input
+                    id="login-2fa-code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    required
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value)}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 px-3.5 py-2.5 text-sm text-center tracking-[0.3em] placeholder:text-slate-600 placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                    placeholder={t("auth.twoFactor.codePlaceholder")}
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">{t("auth.twoFactor.backupCodeHint")}</p>
+                </div>
 
-            <div>
-              <label htmlFor="login-password" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.password")}</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                  <LockIcon />
-                </span>
-                <input
-                  id="login-password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                  placeholder={t("auth.login.passwordPlaceholder")}
-                />
+                {error && (
+                  <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading !== null}
+                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
+                >
+                  {loading === "2fa" && (
+                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  )}
+                  {loading === "2fa" ? t("auth.twoFactor.submitting") : t("auth.twoFactor.submit")}
+                </button>
+
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  onClick={() => {
+                    setPendingToken(null);
+                    setTwoFactorCode("");
+                    setError(null);
+                  }}
+                  className="w-full text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors text-center"
                 >
-                  <EyeIcon off={showPassword} />
+                  {t("auth.twoFactor.back")}
                 </button>
-              </div>
-              <div className="mt-1.5 text-right">
-                <Link to="/mot-de-passe-oublie" className="text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors">
-                  {t("auth.login.forgotPasswordLink")}
-                </Link>
-              </div>
-            </div>
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-white text-center">{t("auth.login.title")}</h2>
+              <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.login.subtitle")}</p>
 
-            {error && (
-              <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                {error}
-              </p>
-            )}
+              <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+                <div>
+                  <label htmlFor="login-email" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.email")}</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <MailIcon />
+                    </span>
+                    <input
+                      id="login-email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      placeholder={t("auth.login.emailPlaceholder")}
+                    />
+                  </div>
+                </div>
 
-            {unverifiedEmail && (
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={resendState !== "idle"}
-                className="w-full text-xs font-medium text-brand-400 hover:text-brand-300 disabled:opacity-60 transition-colors text-center"
-              >
-                {resendState === "sending"
-                  ? t("auth.login.resendVerificationSending")
-                  : resendState === "sent"
-                  ? t("auth.login.resendVerificationSent")
-                  : t("auth.login.resendVerificationButton")}
-              </button>
-            )}
+                <div>
+                  <label htmlFor="login-password" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.password")}</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <LockIcon />
+                    </span>
+                    <input
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      placeholder={t("auth.login.passwordPlaceholder")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      <EyeIcon off={showPassword} />
+                    </button>
+                  </div>
+                  <div className="mt-1.5 text-right">
+                    <Link to="/mot-de-passe-oublie" className="text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors">
+                      {t("auth.login.forgotPasswordLink")}
+                    </Link>
+                  </div>
+                </div>
 
-            <button
-              type="submit"
-              disabled={loading !== null}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-            >
-              {loading === "form" && (
-                <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                {error && (
+                  <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
+                {unverifiedEmail && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendState !== "idle"}
+                    className="w-full text-xs font-medium text-brand-400 hover:text-brand-300 disabled:opacity-60 transition-colors text-center"
+                  >
+                    {resendState === "sending"
+                      ? t("auth.login.resendVerificationSending")
+                      : resendState === "sent"
+                      ? t("auth.login.resendVerificationSent")
+                      : t("auth.login.resendVerificationButton")}
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading !== null}
+                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
+                >
+                  {loading === "form" && (
+                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  )}
+                  {loading === "form" ? t("auth.login.submitting") : t("auth.login.submit")}
+                </button>
+              </form>
+
+              {isGoogleSignInEnabled() && (
+                <div className="mt-5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-slate-800" />
+                    <span className="text-[11px] uppercase tracking-wide text-slate-600">{t("auth.google.orDivider")}</span>
+                    <div className="h-px flex-1 bg-slate-800" />
+                  </div>
+                  <div className="mt-4">
+                    <GoogleSignInButton
+                      onCredential={handleGoogleCredential}
+                      onError={() => setGoogleError(t("auth.google.error"))}
+                      locale={i18n.language}
+                    />
+                  </div>
+                  {googleError && (
+                    <p className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                      {googleError}
+                    </p>
+                  )}
+                </div>
               )}
-              {loading === "form" ? t("auth.login.submitting") : t("auth.login.submit")}
-            </button>
-          </form>
-
-          {isGoogleSignInEnabled() && (
-            <div className="mt-5">
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-slate-800" />
-                <span className="text-[11px] uppercase tracking-wide text-slate-600">{t("auth.google.orDivider")}</span>
-                <div className="h-px flex-1 bg-slate-800" />
-              </div>
-              <div className="mt-4">
-                <GoogleSignInButton
-                  onCredential={handleGoogleCredential}
-                  onError={() => setGoogleError(t("auth.google.error"))}
-                  locale={i18n.language}
-                />
-              </div>
-              {googleError && (
-                <p className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                  {googleError}
-                </p>
-              )}
-            </div>
+            </>
           )}
 
-          <p className="mt-6 text-center text-xs text-slate-400">
-            {t("auth.login.noAccountText")}{" "}
-            <Link to="/inscription" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
-              {t("auth.login.registerLink")}
-            </Link>
-          </p>
+          {!pendingToken && (
+            <p className="mt-6 text-center text-xs text-slate-400">
+              {t("auth.login.noAccountText")}{" "}
+              <Link to="/inscription" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
+                {t("auth.login.registerLink")}
+              </Link>
+            </p>
+          )}
 
         </Reveal>
       </main>

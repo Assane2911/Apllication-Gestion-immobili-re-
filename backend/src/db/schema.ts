@@ -116,6 +116,17 @@ export const users = pgTable("users", {
   // distinct dans le jeton garde sa propre identité (attribution dans le
   // journal d'activité, affichage "connecté en tant que ...").
   teamOwnerId: text("team_owner_id").references((): AnyPgColumn => users.id, { onDelete: "cascade" }),
+  // Authentification à deux facteurs (TOTP, voir totp.service.ts). totpSecret
+  // est renseigné dès le début de l'enrôlement (setupTwoFactor), AVANT toute
+  // confirmation — c'est totpEnabledAt (NULL jusque-là) qui fait foi : lui
+  // seul déclenche la demande du second facteur à la connexion (voir
+  // auth.controller.ts::login). Un enrôlement jamais confirmé ne bloque donc
+  // jamais personne. totpBackupCodesHash est le hachage bcrypt (un par code,
+  // encodés en JSON) des codes de secours remis en clair une seule fois à la
+  // confirmation — jamais le code lui-même, au même titre qu'un mot de passe.
+  totpSecret: text("totp_secret"),
+  totpEnabledAt: timestamp("totp_enabled_at", { mode: "date" }),
+  totpBackupCodesHash: text("totp_backup_codes_hash"),
   ...timestamps,
 });
 

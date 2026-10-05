@@ -1,12 +1,14 @@
 import { createContext, useContext } from "react";
-import type { AuthUser } from "../types";
+import type { AuthUser, TwoFactorRequired } from "../types";
 
 export interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string) => Promise<AuthUser | TwoFactorRequired>;
   register: (email: string, password: string) => Promise<{ pendingVerification: boolean }>;
-  loginWithGoogle: (credential: string) => Promise<AuthUser>;
+  loginWithGoogle: (credential: string) => Promise<AuthUser | TwoFactorRequired>;
+  /** Deuxième étape d'une connexion qui a renvoyé `twoFactorRequired` — voir login/loginWithGoogle. */
+  verifyTwoFactor: (pendingToken: string, code: string) => Promise<AuthUser>;
   verifyEmail: (token: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<AuthUser | null>;
