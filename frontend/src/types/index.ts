@@ -108,6 +108,17 @@ export interface Owner {
   createdAt: string;
 }
 
+/** Prestataire/artisan du carnet du gestionnaire, assignable à un incident — voir vendor.controller.ts. */
+export interface Vendor {
+  id: string;
+  name: string;
+  trade?: string | null;
+  phone: string;
+  email?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
 /** Résumé financier d'un bien tel que renvoyé par GET /api/owners/mine/dashboard. */
 export interface OwnerDashboardProperty {
   propertyId: string;
@@ -322,6 +333,13 @@ export interface IssueReport {
   createdAt: string;
   tenant?: Tenant;
   contract?: Contract;
+  /**
+   * Prestataire assigné, ou `null`. Vu par le Gestionnaire (IssuesPage), le
+   * carnet complet (toutes les colonnes de Vendor) ; vu par le Locataire
+   * (TenantIssuesPage), seulement nom et métier — jamais les coordonnées
+   * directes du prestataire (voir myIssues, issue.controller.ts).
+   */
+  vendor?: Pick<Vendor, "name" | "trade"> & Partial<Pick<Vendor, "id" | "phone" | "email" | "notes">> | null;
 }
 
 export type NotificationType = "message" | "invoice" | "issue" | "contract_ending";

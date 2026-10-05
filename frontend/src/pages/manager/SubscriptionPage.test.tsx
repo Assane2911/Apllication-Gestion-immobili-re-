@@ -289,11 +289,13 @@ describe("SubscriptionPage", () => {
   });
 
   it("prévient le gestionnaire quand sa devise d'affichage n'est pas tarifée pour les abonnements", async () => {
-    // Les neuf devises du sélecteur sont désormais tarifées, mais
-    // users.currency n'a pas de liste blanche (updateCurrency accepte toute
-    // chaîne) : une devise comme le yen peut donc s'y trouver, et le serveur
+    // Les 12 devises du sélecteur sont désormais toutes tarifées, et
+    // updateCurrency valide lui aussi via deviseSchema depuis le 24 sept.
+    // (auth.controller.ts) : une devise comme le yen ne peut donc plus être
+    // posée via l'API normale. Le cas réel restant est une valeur héritée
+    // d'avant cette validation, ou posée directement en base — le serveur
     // retombe alors sur EUR. Sans ce message, le gestionnaire concerné
-    // croirait à un bug d'affichage plutôt qu'à une limite connue.
+    // croirait à un bug d'affichage plutôt qu'à un repli de sécurité.
     localStorage.removeItem("app_currency");
     seedUser(authUser({ currency: "JPY" }));
     mockedApi.get.mockImplementation((url: string) => {

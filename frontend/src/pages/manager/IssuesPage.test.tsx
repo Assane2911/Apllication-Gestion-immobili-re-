@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
-import type { Contract, IssueReport, PaginatedResponse, Tenant } from "../../types";
+import type { Contract, IssueReport, PaginatedResponse, Tenant, Vendor } from "../../types";
 import IssuesPage from "./IssuesPage";
 
 vi.mock("../../api/client", async () => {
@@ -48,6 +48,22 @@ function paginated(items: IssueReport[]): { data: PaginatedResponse<IssueReport>
   return { data: { items, page: 1, pageSize: 20, total: items.length, totalPages: 1 } };
 }
 
+function vendor(overrides: Partial<Vendor> = {}): Vendor {
+  return { id: "ven-1", name: "Plomberie Fall", trade: "Plombier", phone: "+221770001122", createdAt: "2026-01-01T00:00:00.000Z", ...overrides };
+}
+
+/**
+ * La page charge aussi le carnet de prestataires au montage (effet séparé,
+ * déps vides, voir IssuesPage.tsx) — EN PLUS de l'appel /issues, dans cet
+ * ordre. Un rendu de la page doit donc toujours mettre en file ce second
+ * mock, sans quoi le second appel GET réel (celui des prestataires) consomme
+ * par erreur le mock destiné à un rechargement ultérieur des incidents.
+ */
+function renderWithVendors(vendorList: Vendor[] = []) {
+  mockedApi.get.mockResolvedValueOnce({ data: vendorList });
+  return render(<IssuesPage />);
+}
+
 describe("IssuesPage (gestionnaire)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
@@ -57,7 +73,7 @@ describe("IssuesPage (gestionnaire)", () => {
 
   it("affiche les incidents signalés avec locataire et bien concerné", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([issue()]));
-    render(<IssuesPage />);
+    renderWithVendors();
 
     await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
     expect(screen.getByText("Ça goutte depuis ce matin.")).toBeInTheDocument();
@@ -67,18 +83,18 @@ describe("IssuesPage (gestionnaire)", () => {
 
   it("affiche un message dédié quand aucun incident ne correspond au filtre", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([]));
-    render(<IssuesPage />);
+    renderWithVendors();
 
     await waitFor(() => expect(screen.getByText("Aucun incident pour ce filtre")).toBeInTheDocument());
   });
 
   it("change le statut d'un incident et relance le chargement", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([issue()]));
+    renderWithVendors();
+    await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+
     mockedApi.put.mockResolvedValueOnce({ data: {} });
     mockedApi.get.mockResolvedValueOnce(paginated([issue({ status: "RESOLVED" })]));
-
-    render(<IssuesPage />);
-    await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
 
     await userEvent.setup().click(screen.getByRole("button", { name: "Résolu" }));
 
@@ -92,7 +108,7 @@ describe("IssuesPage (gestionnaire)", () => {
 
   it("filtre par statut et relance l'appel avec le paramètre status", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([issue()]));
-    render(<IssuesPage />);
+    renderWithVendors();
     await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
 
     mockedApi.get.mockResolvedValueOnce(paginated([]));
@@ -102,6 +118,44 @@ describe("IssuesPage (gestionnaire)", () => {
       expect(mockedApi.get).toHaveBeenLastCalledWith("/issues", {
         params: { page: 1, pageSize: 20, status: "RESOLVED" },
         signal: expect.anything(),
+      })
+    );
+  });
+
+  it("assigne un prestataire du carnet à un incident", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([issue()]));
+    renderWithVendors([vendor()]);
+    await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+
+    mockedApi.put.mockResolvedValueOnce({ data: {} });
+    mockedApi.get.mockResolvedValueOnce(paginated([issue({ vendor: vendor() })]));
+
+    await userEvent.setup().selectOptions(screen.getByLabelText("Prestataire assigné :"), "ven-1");
+
+    await waitFor(() =>
+      expect(mockedApi.put).toHaveBeenCalledWith("/issues/iss-1/status", {
+        status: "OPEN",
+        managerNote: undefined,
+        vendorId: "ven-1",
+      })
+    );
+  });
+
+  it("désassigne un prestataire en revenant à l'option « Aucun prestataire »", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([issue({ vendor: vendor() })]));
+    renderWithVendors([vendor()]);
+    await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+
+    mockedApi.put.mockResolvedValueOnce({ data: {} });
+    mockedApi.get.mockResolvedValueOnce(paginated([issue({ vendor: null })]));
+
+    await userEvent.setup().selectOptions(screen.getByLabelText("Prestataire assigné :"), "");
+
+    await waitFor(() =>
+      expect(mockedApi.put).toHaveBeenCalledWith("/issues/iss-1/status", {
+        status: "OPEN",
+        managerNote: undefined,
+        vendorId: null,
       })
     );
   });

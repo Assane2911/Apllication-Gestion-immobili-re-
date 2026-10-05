@@ -4,7 +4,7 @@ import { api, apiErrorMessage, fileUrl, isRequestCancelled, liste } from "../../
 import Badge from "../../components/Badge";
 import Pagination from "../../components/Pagination";
 import PhotoLightbox from "../../components/PhotoLightbox";
-import type { IssueReport, IssueStatus, PaginatedResponse } from "../../types";
+import type { IssueReport, IssueStatus, PaginatedResponse, Vendor } from "../../types";
 import { getAllIssuePhotos } from "../../utils/issuePhotos";
 import Bulle from "../../components/Bulle";
 
@@ -14,6 +14,7 @@ const PAGE_SIZE = 20;
 export default function IssuesPage() {
   const { t, i18n } = useTranslation();
   const [issues, setIssues] = useState<IssueReport[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [filter, setFilter] = useState<IssueStatus | "ALL">("ALL");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -46,6 +47,16 @@ export default function IssuesPage() {
     return () => controller.abort();
   }, [page, filter]);
 
+  // Carnet de prestataires, chargé une seule fois : sert au sélecteur
+  // d'assignation de chaque incident ci-dessous, indépendant de la pagination
+  // des incidents eux-mêmes.
+  useEffect(() => {
+    api
+      .get<Vendor[]>("/vendors")
+      .then((res) => setVendors(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setVendors([]));
+  }, []);
+
   function handleFilterChange(value: IssueStatus | "ALL") {
     setFilter(value);
     setPage(1);
@@ -56,6 +67,25 @@ export default function IssuesPage() {
       await api.put(`/issues/${issue.id}/status`, {
         status,
         managerNote: notes[issue.id] ?? issue.managerNote ?? undefined,
+      });
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
+  /**
+   * Assignation du prestataire, indépendante du statut : `vendorId` vide
+   * désassigne (envoyé comme `null`, jamais `undefined` — voir
+   * updateIssueSchema côté serveur, où l'absence du champ signifierait "ne
+   * pas toucher à l'assignation existante").
+   */
+  async function assignVendor(issue: IssueReport, vendorId: string) {
+    try {
+      await api.put(`/issues/${issue.id}/status`, {
+        status: issue.status,
+        managerNote: issue.managerNote ?? undefined,
+        vendorId: vendorId || null,
       });
       load();
     } catch (err) {
@@ -145,6 +175,28 @@ export default function IssuesPage() {
                   <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                     {t("manager.issues.concernedProperty")} <span className="text-slate-800 dark:text-slate-200">{issue.contract?.property?.title}</span>
                   </p>
+
+                  <div>
+                    <label htmlFor={`issue-vendor-${issue.id}`} className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      {t("manager.issues.vendorLabel")}
+                    </label>
+                    <Bulle texte={t("manager.tips.issueVendor")}>
+                    <select
+                      id={`issue-vendor-${issue.id}`}
+                      value={issue.vendor?.id ?? ""}
+                      onChange={(e) => assignVendor(issue, e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs"
+                    >
+                      <option value="">{t("manager.issues.noVendor")}</option>
+                      {vendors.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name}
+                          {v.trade ? ` (${v.trade})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    </Bulle>
+                  </div>
 
                   <div>
                     <label htmlFor={`issue-response-${issue.id}`} className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">

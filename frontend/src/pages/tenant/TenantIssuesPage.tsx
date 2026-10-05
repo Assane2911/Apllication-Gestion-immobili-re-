@@ -292,6 +292,13 @@ export default function TenantIssuesPage() {
                     </div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{issue.description}</p>
 
+                    {issue.vendor && (
+                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-700 dark:text-slate-300 mt-2">
+                        <strong className="block mb-0.5 font-semibold text-slate-800 dark:text-slate-200">{t("tenant.issues.vendorAssigned")}</strong>
+                        {issue.vendor.trade ? `${issue.vendor.name} — ${issue.vendor.trade}` : issue.vendor.name}
+                      </div>
+                    )}
+
                     {issue.managerNote && (
                       <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-3 text-xs text-blue-900 dark:text-blue-300 mt-2">
                         <strong className="block mb-0.5 font-semibold">{t("tenant.issues.managerResponse")}</strong>

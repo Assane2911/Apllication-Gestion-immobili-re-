@@ -32,6 +32,7 @@ const ExpensesPage = lazyWithReload(() => import("./pages/manager/ExpensesPage")
 const FiscalPage = lazyWithReload(() => import("./pages/manager/FiscalPage"));
 const InvoicesPage = lazyWithReload(() => import("./pages/manager/InvoicesPage"));
 const IssuesPage = lazyWithReload(() => import("./pages/manager/IssuesPage"));
+const VendorsPage = lazyWithReload(() => import("./pages/manager/VendorsPage"));
 const ListingsPage = lazyWithReload(() => import("./pages/manager/ListingsPage"));
 const ListingLeadsPage = lazyWithReload(() => import("./pages/manager/ListingLeadsPage"));
 const MessagesPage = lazyWithReload(() => import("./pages/manager/MessagesPage"));
@@ -109,6 +110,7 @@ function AppRoutes() {
           <Route path="/bilan-fiscal" element={<FiscalPage />} />
           <Route path="/messages" element={<MessagesPage />} />
           <Route path="/issues" element={<IssuesPage />} />
+          <Route path="/prestataires" element={<VendorsPage />} />
           <Route path="/activity-log" element={<ActivityLogPage />} />
           <Route path="/agency" element={<AgencySettingsPage />} />
           <Route path="/subscription" element={<SubscriptionPage />} />

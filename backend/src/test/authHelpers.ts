@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
-import { contracts, inspections, invoices, owners, platformSubscriptions, properties, tenants, users } from "../db/schema";
+import { contracts, inspections, invoices, owners, platformSubscriptions, properties, tenants, users, vendors } from "../db/schema";
 
 /**
  * Construit un buffer commençant par la vraie signature magique JPEG
@@ -134,6 +134,22 @@ export async function createOwner(managerId: string, overrides: Partial<typeof o
     })
     .returning();
   return owner;
+}
+
+export async function createVendor(managerId: string, overrides: Partial<typeof vendors.$inferInsert> = {}) {
+  const id = overrides.id ?? createId();
+  const [vendor] = await testDb
+    .insert(vendors)
+    .values({
+      id,
+      managerId,
+      name: "Plomberie Diallo",
+      trade: "Plombier",
+      phone: "0600000001",
+      ...overrides,
+    })
+    .returning();
+  return vendor;
 }
 
 /** Émet un JWT valide pour les tests, avec le même secret que l'app en mode test. */

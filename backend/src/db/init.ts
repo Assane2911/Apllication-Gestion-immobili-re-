@@ -296,6 +296,20 @@ export async function initDb() {
     `);
 
     await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS vendors (
+        id TEXT PRIMARY KEY,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        trade TEXT,
+        phone TEXT NOT NULL,
+        email TEXT,
+        notes TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS issue_reports (
         id TEXT PRIMARY KEY,
         contract_id TEXT NOT NULL REFERENCES contracts(id),
@@ -305,6 +319,7 @@ export async function initDb() {
         photo_url TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED')),
         manager_note TEXT,
+        vendor_id TEXT REFERENCES vendors(id) ON DELETE SET NULL,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -425,6 +440,10 @@ export async function initDb() {
     // tenants.anonymized_at ci-dessus, pour un propriétaire qu'un bien associé
     // empêche de supprimer (deleteOwner).
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE owners ADD COLUMN IF NOT EXISTS anonymized_at TIMESTAMP`));
+    // Carnet de prestataires/artisans (vendors) : sur une base créée avant ce
+    // correctif, la table existe déjà sans cette colonne — voir
+    // assignVendorToIssue (issue.controller.ts).
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS vendor_id TEXT REFERENCES vendors(id) ON DELETE SET NULL`));
 
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);

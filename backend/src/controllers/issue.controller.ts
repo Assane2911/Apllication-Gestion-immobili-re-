@@ -3,7 +3,8 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, issueReports, issueStatusEnum, properties, tenants } from "../db/schema";
+import { contracts, issueReports, issueStatusEnum, properties, tenants, vendors } from "../db/schema";
+import { assertVendorOwnership } from "./vendor.controller";
 import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
@@ -62,15 +63,17 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
     tenant: typeof tenants.$inferSelect;
     contract: typeof contracts.$inferSelect;
     property: typeof properties.$inferSelect;
+    vendor: typeof vendors.$inferSelect | null;
   };
 
   const [rows, [{ count }]] = await Promise.all([
     db
-      .select({ issue: issueReports, tenant: tenants, contract: contracts, property: properties })
+      .select({ issue: issueReports, tenant: tenants, contract: contracts, property: properties, vendor: vendors })
       .from(issueReports)
       .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
       .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .leftJoin(vendors, eq(issueReports.vendorId, vendors.id))
       .where(whereClause)
       .orderBy(desc(issueReports.createdAt))
       .limit(pagination.pageSize)
@@ -88,6 +91,7 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
       ...(await withSignedPhotos(r.issue)),
       tenant: r.tenant,
       contract: { ...r.contract, property: r.property },
+      vendor: r.vendor,
     }))
   );
 
@@ -97,6 +101,10 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
 const updateIssueSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"]),
   managerNote: z.string().optional(),
+  // Prestataire assigné pour traiter l'incident — absent du corps : pas de
+  // changement ; `null` explicite : désassigne. Voir assertVendorOwnership
+  // (vendor.controller.ts) pour la raison de la vérification ci-dessous.
+  vendorId: z.string().min(1).nullable().optional(),
 });
 
 export const updateIssueStatus = asyncHandler(async (req: Request, res: Response) => {
@@ -109,9 +117,17 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     .where(eq(issueReports.id, req.params.id));
   assertOwnership(owned, (o) => o.property.managerId, req.user!.userId, "Signalement introuvable");
 
+  if (body.vendorId) {
+    await assertVendorOwnership(body.vendorId, req.user!.userId);
+  }
+
   const [updated] = await db
     .update(issueReports)
-    .set({ status: body.status, managerNote: body.managerNote })
+    .set({
+      status: body.status,
+      managerNote: body.managerNote,
+      ...(body.vendorId !== undefined ? { vendorId: body.vendorId } : {}),
+    })
     .where(eq(issueReports.id, req.params.id))
     .returning();
 
@@ -148,23 +164,36 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     details: `Statut de l'incident « ${updated.title} » changé en ${updated.status}`,
   });
 
-  res.json(await withSignedPhotos(updated));
+  const vendor = updated.vendorId ? (await db.select().from(vendors).where(eq(vendors.id, updated.vendorId)))[0] ?? null : null;
+  res.json({ ...(await withSignedPhotos(updated)), vendor });
 });
 
 /** Signalements du locataire connecté (portail locataire). */
 export const myIssues = asyncHandler(async (req: Request, res: Response) => {
   const rows = await db
-    .select({ issue: issueReports, contract: contracts, property: properties })
+    .select({ issue: issueReports, contract: contracts, property: properties, vendor: vendors })
     .from(issueReports)
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .leftJoin(vendors, eq(issueReports.vendorId, vendors.id))
     .where(eq(issueReports.tenantId, (await chargerLocataireDuCompte(req)).id))
     .orderBy(desc(issueReports.createdAt));
 
+  type MyIssueRow = {
+    issue: typeof issueReports.$inferSelect;
+    contract: typeof contracts.$inferSelect;
+    property: typeof properties.$inferSelect;
+    vendor: typeof vendors.$inferSelect | null;
+  };
+
   const signed = await Promise.all(
-    rows.map(async (r: { issue: typeof issueReports.$inferSelect; contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
+    rows.map(async (r: MyIssueRow) => ({
       ...(await withSignedPhotos(r.issue)),
       contract: { ...r.contract, property: r.property },
+      // Nom et métier seulement : les coordonnées directes du prestataire
+      // (téléphone, email) restent un contact professionnel du gestionnaire,
+      // pas quelque chose à exposer au locataire sans qu'il l'ait demandé.
+      vendor: r.vendor ? { name: r.vendor.name, trade: r.vendor.trade } : null,
     }))
   );
   res.json(signed);
