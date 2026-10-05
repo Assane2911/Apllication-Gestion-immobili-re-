@@ -649,6 +649,7 @@ const en: TranslationSchema = {
       tenantDelete: "Deletes the record. Not possible while a lease is attached.",
       ownerEdit: "Edit the record: contact details, IBAN, commission rate.",
       ownerDelete: "Deletes the record. Not possible while a property is attached.",
+      ownerAnonymize: "Permanently erases identifying details. Properties and management history are kept.",
       invoiceReceipt: "Opens the receipt as a PDF, ready to send or print.",
       invoiceRemind: "Sends the tenant a reminder, by email and WhatsApp.",
       invoiceMarkPaid: "Records the payment and issues the matching receipt.",
@@ -714,6 +715,10 @@ const en: TranslationSchema = {
       emptyTitle: "No owner yet",
       emptyDesc: "Add an owner (name, email, phone) so you can link properties to them and grant them access to their owner portal.",
       confirmDelete: 'Delete owner "{{name}}"?',
+      anonymize: "Anonymise",
+      anonymized: "Anonymised",
+      confirmAnonymize:
+        "Erase {{name}}'s identifying data?\n\nTheir name, company name, email, phone, address, IBAN/BIC and portal access will be permanently erased. Their properties and management-report history are kept, as accounting rules require — they will remain attached to an anonymous record.\n\nThis cannot be undone, and you will no longer be able to contact them from the Service.",
       table: {
         name: "Name",
         phone: "Phone",

@@ -103,6 +103,8 @@ export interface Owner {
   userId?: string | null;
   /** NONE = aucun accès créé, PENDING = invité mais mot de passe pas encore posé, ACTIVE = accès utilisable. */
   portalStatus: OwnerPortalStatus;
+  /** Date d'exercice du droit à l'effacement (RGPD art. 17) — non nulle une fois anonymisé, voir anonymiserOwner. */
+  anonymizedAt?: string | null;
   createdAt: string;
 }
 

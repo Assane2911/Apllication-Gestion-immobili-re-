@@ -65,6 +65,7 @@ export async function initDb() {
         management_fee_rate DOUBLE PRECISION NOT NULL DEFAULT 8.0,
         notes TEXT,
         user_id TEXT REFERENCES users(id),
+        anonymized_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -419,6 +420,11 @@ export async function initDb() {
     // durée différente de celle annoncée partout ailleurs dans l'application
     // aurait été incohérent.
     await alterSiBesoin(() => db.execute(sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`));
+    // Droit à l'effacement (RGPD art. 17) pour un propriétaire — voir
+    // anonymiserOwner (owner.controller.ts), même principe que
+    // tenants.anonymized_at ci-dessus, pour un propriétaire qu'un bien associé
+    // empêche de supprimer (deleteOwner).
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE owners ADD COLUMN IF NOT EXISTS anonymized_at TIMESTAMP`));
 
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);

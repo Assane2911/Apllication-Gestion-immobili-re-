@@ -650,6 +650,7 @@ const es: TranslationSchema = {
       tenantDelete: "Elimina la ficha. Imposible si tiene un contrato asociado.",
       ownerEdit: "Modifica la ficha: datos de contacto, IBAN, tasa de comisión.",
       ownerDelete: "Elimina la ficha. Imposible si tiene un inmueble asociado.",
+      ownerAnonymize: "Borra definitivamente lo que lo identifica. Los inmuebles y el historial de gestión se conservan.",
       invoiceReceipt: "Abre el recibo en PDF, listo para enviar o imprimir.",
       invoiceRemind: "Envía un recordatorio al inquilino, por correo y por WhatsApp.",
       invoiceMarkPaid: "Registra el pago y genera el recibo correspondiente.",
@@ -716,6 +717,10 @@ const es: TranslationSchema = {
       emptyTitle: "Todavía no hay propietarios",
       emptyDesc: "Añade un propietario (nombre, correo, teléfono) para poder asociarle propiedades y darle acceso a su portal.",
       confirmDelete: '¿Eliminar al propietario "{{name}}"?',
+      anonymize: "Anonimizar",
+      anonymized: "Anonimizado",
+      confirmAnonymize:
+        "¿Borrar los datos identificativos de {{name}}?\n\nSu nombre, razón social, correo, teléfono, dirección, IBAN/BIC y acceso al portal se borrarán definitivamente. Sus inmuebles y su historial de informes de gestión se conservan, como exige la normativa contable: quedarán vinculados a una ficha anónima.\n\nEsta acción es irreversible y ya no podrás contactarle desde el Servicio.",
       table: {
         name: "Nombre",
         phone: "Teléfono",

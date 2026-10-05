@@ -5,7 +5,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
-import { agencySettings, contracts, invoices, owners, properties, users } from "../db/schema";
+import { activityLogs, agencySettings, contracts, invoices, owners, properties, users } from "../db/schema";
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -164,7 +164,7 @@ export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
   if (linkedProperties.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un propriétaire associé à un ou plusieurs biens. Retirez d'abord l'association sur ces biens."
+      "Impossible de supprimer un propriétaire associé à un ou plusieurs biens. Retirez d'abord l'association sur ces biens, ou anonymisez sa fiche si c'est l'effacement de ses données qui est recherché."
     );
   }
 
@@ -181,6 +181,106 @@ export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
   });
 
   res.status(204).send();
+});
+
+/**
+ * Exercice du droit à l'effacement (RGPD art. 17) pour un propriétaire qui a
+ * un historique.
+ *
+ * `deleteOwner` refuse — à juste titre — toute suppression dès qu'un bien lui
+ * est associé : les comptes-rendus de gestion (CRG) et les loyers déjà
+ * reversés doivent rester traçables. Le propriétaire qui demandait
+ * l'effacement n'avait donc aucune issue, à la différence du locataire (voir
+ * anonymiserTenant, tenant.controller.ts, RGPD : audit sept. 2026). Même
+ * remède ici : ce qui l'IDENTIFIE disparaît — civilité, nom, raison sociale,
+ * email, téléphone, adresse, IBAN/BIC, notes, compte d'accès au portail — et
+ * les biens, CRG et reversements restent rattachés à une fiche devenue
+ * anonyme.
+ *
+ * L'adresse de remplacement vise le domaine `.invalid` (RFC 2606, garanti sans
+ * existence), même principe que anonymiserTenant.
+ *
+ * Contrairement au locataire, un propriétaire ne signe ni bail ni état des
+ * lieux dans ce Service (aucun ownerSignatureUrl n'existe sur contracts/
+ * inspections) et ne dispose d'aucun document stocké (pas de pièce
+ * d'identité) : rien à nettoyer côté stockage Supabase.
+ *
+ * Disponible à tout moment (pas seulement quand deleteOwner serait bloqué) :
+ * même choix que anonymiserTenant, qui ne conditionne pas non plus le geste à
+ * l'existence d'un contrat.
+ */
+export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) => {
+  const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable");
+
+  if (existing.anonymizedAt) {
+    throw new ApiError(409, "Ce propriétaire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.");
+  }
+
+  const nomAffiche = `${existing.firstName} ${existing.lastName}`;
+  const nomAnonyme = "Propriétaire anonymisé";
+  const comptePortail = existing.userId;
+
+  await db.transaction(async (tx: Transaction) => {
+    await tx
+      .update(owners)
+      .set({
+        civility: null,
+        firstName: "Propriétaire",
+        lastName: "anonymisé",
+        companyName: null,
+        email: `anonyme-${existing.id}@supprime.invalid`,
+        phone: "",
+        address: null,
+        iban: null,
+        bic: null,
+        notes: null,
+        userId: null,
+        anonymizedAt: new Date(),
+      })
+      .where(eq(owners.id, existing.id));
+
+    // Le compte d'accès au portail porte lui aussi une adresse email, et
+    // permet de se connecter : le laisser viderait l'anonymisation de son
+    // sens. owners.userId est déjà remis à null ci-dessus, donc la
+    // suppression ne casse aucune référence.
+    if (comptePortail) {
+      await tx.delete(users).where(eq(users.id, comptePortail));
+    }
+
+    // Le journal d'activité conserve, en texte libre, le nom du propriétaire
+    // dans les entrées passées le concernant (création, modification,
+    // invitation au portail) — voir owner.create/update/delete/invite
+    // ci-dessus, seuls points où son nom apparaît dans activityLogs (aucune
+    // entrée "property"/"crg" n'embarque son nom).
+    await tx
+      .update(activityLogs)
+      .set({
+        entityLabel: sql`replace(${activityLogs.entityLabel}, ${nomAffiche}, ${nomAnonyme})`,
+        details: sql`replace(${activityLogs.details}, ${nomAffiche}, ${nomAnonyme})`,
+      })
+      .where(and(eq(activityLogs.entityType, "owner"), eq(activityLogs.entityId, existing.id)));
+  });
+
+  // Le nom réel ne doit apparaître ni ici ni dans aucune entrée passée (voir
+  // le nettoyage ci-dessus), sous peine de rouvrir la fuite qu'on vient de
+  // refermer, au moment même de l'anonymisation.
+  await logActivity({
+    req,
+    managerId: existing.managerId,
+    action: "owner.anonymize",
+    entityType: "owner",
+    entityId: existing.id,
+    entityLabel: nomAnonyme,
+    details:
+      "Données identifiantes effacées à la demande du propriétaire (droit à l'effacement). Les biens, comptes-rendus de gestion et reversements sont conservés.",
+  });
+
+  res.json({
+    success: true,
+    message:
+      "Les données identifiantes de ce propriétaire ont été effacées. Ses biens et son historique de reversements sont conservés, comme l'exige la réglementation comptable.",
+  });
 });
 
 /**

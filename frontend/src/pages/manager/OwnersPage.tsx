@@ -133,6 +133,24 @@ export default function OwnersPage() {
     }
   }
 
+  /**
+   * Droit à l'effacement. `deleteOwner` refuse dès qu'un bien est associé —
+   * les comptes-rendus de gestion et reversements doivent rester traçables —
+   * ce qui ne laissait aucune réponse à donner au propriétaire qui la
+   * demande. L'anonymisation efface ce qui l'identifie et conserve les biens
+   * et l'historique de gestion (même principe que handleAnonymize côté
+   * locataire, voir TenantsPage.tsx).
+   */
+  async function handleAnonymize(owner: Owner) {
+    if (!confirm(t("manager.owners.confirmAnonymize", { name: `${owner.firstName} ${owner.lastName}` }))) return;
+    try {
+      await api.post(`/owners/${owner.id}/anonymiser`);
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
   async function handleInvite(owner: Owner) {
     setInvitingId(owner.id);
     setInviteMsg(null);
@@ -308,6 +326,11 @@ export default function OwnersPage() {
                 <td className="px-4 py-3 text-right space-x-3">
                   <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("manager.owners.viewCrg")}</Link>
                   <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
+                  {owner.anonymizedAt ? (
+                    <span className="text-slate-600 dark:text-slate-400 text-xs">{t("manager.owners.anonymized")}</span>
+                  ) : (
+                    <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-amber-700 dark:text-amber-500 hover:underline text-xs">{t("manager.owners.anonymize")}</button></Bulle>
+                  )}
                   <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
                 </td>
               </tr>
@@ -360,6 +383,11 @@ export default function OwnersPage() {
                   <div className="space-x-3">
                     <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline">{t("manager.owners.viewCrg")}</Link>
                     <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button></Bulle>
+                    {owner.anonymizedAt ? (
+                      <span className="text-slate-600 dark:text-slate-400">{t("manager.owners.anonymized")}</span>
+                    ) : (
+                      <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-amber-700 dark:text-amber-500 hover:underline">{t("manager.owners.anonymize")}</button></Bulle>
+                    )}
                     <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button></Bulle>
                   </div>
                 </div>

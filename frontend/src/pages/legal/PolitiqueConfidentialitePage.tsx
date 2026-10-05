@@ -224,13 +224,17 @@ export default function PolitiqueConfidentialitePage() {
           adresse email, téléphone, pièce d'identité et accès au portail. Vos contrats, factures et quittances
           sont en revanche conservés, sans votre identité : la réglementation comptable impose au Gestionnaire
           de garder ces pièces, et l'effacement ne peut pas primer sur cette obligation. Le portail Locataire
-          vous permet de consulter votre bail, vos quittances et vos paiements, mais ne comporte aujourd'hui
-          une suppression de votre fiche à votre propre initiative — celle-ci relève de votre Gestionnaire — mais il
-          vous permet de télécharger, à tout moment et sans demande préalable, une copie complète des données
-          détenues à votre sujet, dans un format lisible par machine. En tant que{" "}
-          <strong className="text-slate-100">Gestionnaire</strong>, vous pouvez rectifier vos données à tout
-          moment depuis votre espace, et supprimer définitivement votre compte et l'ensemble des données
-          associées depuis les paramètres du Service.
+          vous permet de consulter votre bail, vos quittances et vos paiements, et de télécharger, à tout
+          moment et sans demande préalable, une copie complète des données détenues à votre sujet, dans un
+          format lisible par machine ; il ne comporte en revanche pas de suppression de votre fiche à votre
+          propre initiative — celle-ci relève de votre Gestionnaire, comme indiqué ci-dessus. En tant que{" "}
+          <strong className="text-slate-100">Propriétaire</strong>, la même logique s'applique : adressez-vous
+          à votre Gestionnaire, qui dispose de la même fonction d'effacement pour vos propres données
+          identifiantes (nom, raison sociale, email, téléphone, adresse, IBAN/BIC et accès au portail), tandis
+          que les biens qui vous sont associés et l'historique de vos comptes-rendus de gestion sont conservés
+          pour les mêmes raisons comptables. En tant que <strong className="text-slate-100">Gestionnaire</strong>,
+          vous pouvez rectifier vos données à tout moment depuis votre espace, et supprimer définitivement votre
+          compte et l'ensemble des données associées depuis les paramètres du Service.
         </p>
         <p>
           Pour toute autre demande — limitation du traitement, opposition, ou toute question qui ne trouve pas

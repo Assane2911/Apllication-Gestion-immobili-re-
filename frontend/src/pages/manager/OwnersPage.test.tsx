@@ -184,4 +184,20 @@ describe("OwnersPage (manager)", () => {
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/owners/own-1/invite"));
     await waitFor(() => expect(screen.getAllByText("Invitation envoyée avec succès.").length).toBeGreaterThan(0));
   });
+
+  it("anonymise un propriétaire après confirmation (droit à l'effacement)", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1" })]));
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1", anonymizedAt: "2026-10-04T00:00:00.000Z" })]));
+
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Anonymiser" }).length).toBeGreaterThan(0));
+    await user.click(screen.getAllByRole("button", { name: "Anonymiser" })[0]);
+
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/owners/own-1/anonymiser"));
+    await waitFor(() => expect(screen.getAllByText("Anonymisé").length).toBeGreaterThan(0));
+    expect(screen.queryAllByRole("button", { name: "Anonymiser" })).toHaveLength(0);
+  });
 });
