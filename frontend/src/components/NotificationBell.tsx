@@ -21,10 +21,22 @@ const severityDot: Record<string, string> = {
 
 const POLL_INTERVAL_MS = 30_000;
 
-/** Cloche de notifications regroupant messages non lus, factures en retard,
- * incidents ouverts et contrats arrivant à échéance — recalculée à la volée
- * côté backend (voir GET /api/notifications), rafraîchie toutes les 30s. */
-export default function NotificationBell() {
+interface NotificationBellProps {
+  /** Route de l'API à interroger — un centre de notifications différent par portail (voir notification.controller.ts). */
+  endpoint?: string;
+  /** Préfixe i18n des libellés affichés (tip, titre, "tout est à jour"...), un jeu de clés distinct par portail. */
+  i18nPrefix?: string;
+}
+
+/** Cloche de notifications recalculée à la volée côté backend, rafraîchie
+ * toutes les 30s. Par défaut, celle du gestionnaire (messages non lus,
+ * factures en retard, incidents ouverts, contrats arrivant à échéance — voir
+ * GET /api/notifications) ; `endpoint`/`i18nPrefix` permettent de la réutiliser
+ * pour un autre portail (voir TenantLayout.tsx, GET /api/notifications/mine). */
+export default function NotificationBell({
+  endpoint = "/notifications",
+  i18nPrefix = "components.notificationBell",
+}: NotificationBellProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
@@ -32,7 +44,7 @@ export default function NotificationBell() {
 
   function load(signal?: AbortSignal) {
     api
-      .get<{ notifications: NotificationItem[] }>("/notifications", { signal })
+      .get<{ notifications: NotificationItem[] }>(endpoint, { signal })
       .then((res) => setItems(liste<NotificationItem>(res.data, "notifications")))
       .catch((err) => {
         if (isRequestCancelled(err)) return;
@@ -52,7 +64,7 @@ export default function NotificationBell() {
       clearInterval(interval);
       controller.abort();
     };
-  }, []);
+  }, [endpoint]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -66,11 +78,11 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={containerRef}>
-      <Bulle texte={t("components.notificationBell.tip")}>
+      <Bulle texte={t(`${i18nPrefix}.tip`)}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
-        aria-label={t("components.notificationBell.ariaLabel")}
+        aria-label={t(`${i18nPrefix}.ariaLabel`)}
       >
         <Bell size={18} />
         {items.length > 0 && (
@@ -84,11 +96,11 @@ export default function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">
           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t("components.notificationBell.title")}</h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("components.notificationBell.itemCount", { count: items.length })}</p>
+            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t(`${i18nPrefix}.title`)}</h4>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t(`${i18nPrefix}.itemCount`, { count: items.length })}</p>
           </div>
           {items.length === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">{t("components.notificationBell.allCaughtUp")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">{t(`${i18nPrefix}.allCaughtUp`)}</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {items.map((n) => {

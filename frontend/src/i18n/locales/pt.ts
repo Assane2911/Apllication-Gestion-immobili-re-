@@ -1369,6 +1369,13 @@ const pt: TranslationSchema = {
       signContract: "Abre o painel de assinatura: a sua assinatura vincula o contrato e é datada.",
       signInspection: "Assina o auto. Depois não poderá ser acrescentada qualquer reserva.",
     },
+    notificationBell: {
+      tip: "Os teus alertas: mensagens do gestor, renda a pagar, contrato a terminar em breve.",
+      ariaLabel: "Notificações",
+      title: "Notificações",
+      itemCount: "{{count}} item(ns) que requer(em) a tua atenção",
+      allCaughtUp: "Tudo em dia",
+    },
     dashboard: {
       privacy: {
         title: "Os meus dados pessoais",

@@ -1,8 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { Request, Response } from "express";
+import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, issueReports, messages, properties, tenants } from "../db/schema";
-import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { idLocataireDuCompte } from "../utils/authorization";
 
 export type NotificationType = "message" | "invoice" | "issue" | "contract_ending";
 export type NotificationSeverity = "info" | "warning" | "danger";
@@ -170,6 +172,109 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
         title: `Contrat se terminant dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}`,
         description: `${r.property.title} · ${r.tenant.firstName} ${r.tenant.lastName}`,
         link: "/contracts",
+        createdAt: endDate.toISOString(),
+      });
+    }
+  }
+
+  notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  res.json({ notifications, count: notifications.length });
+});
+
+/**
+ * Centre de notifications du locataire (Espace résident) : même principe que
+ * getNotifications côté gestionnaire — calculé à la volée, jamais stocké —
+ * mais scopé à SES PROPRES contrats et limité à ce qui le concerne
+ * directement : messages non lus envoyés par le gestionnaire, loyers à régler
+ * (en retard, ou bientôt dus — même fenêtre que le rappel email automatique,
+ * `env.reminder.rentDueSoonDays`), et bail arrivant à échéance.
+ *
+ * Volontairement SANS les signalements d'incidents : contrairement au
+ * gestionnaire, qui doit être alerté d'un nouveau signalement, le locataire
+ * qui l'a lui-même déposé n'a besoin d'aucun rappel pour une action qu'il a
+ * déjà effectuée — il consulte son statut depuis la page Incidents.
+ */
+export const getTenantNotifications = asyncHandler(async (req: Request, res: Response) => {
+  const tenantId = await idLocataireDuCompte(req);
+  if (!tenantId) throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
+
+  const notifications: NotificationItem[] = [];
+
+  // --- Messages non lus envoyés par le gestionnaire ---
+  const unreadRows = await db
+    .select({ message: messages, contract: contracts })
+    .from(messages)
+    .innerJoin(contracts, eq(messages.contractId, contracts.id))
+    .where(and(eq(contracts.tenantId, tenantId), eq(messages.senderRole, "MANAGER"), eq(messages.isRead, false)));
+
+  if (unreadRows.length > 0) {
+    const latest = unreadRows.reduce(
+      (max, r) => (new Date(r.message.createdAt) > max ? new Date(r.message.createdAt) : max),
+      new Date(unreadRows[0].message.createdAt)
+    );
+    notifications.push({
+      id: "message-mine",
+      type: "message",
+      severity: "info",
+      title: `${unreadRows.length} nouveau${unreadRows.length > 1 ? "x" : ""} message${unreadRows.length > 1 ? "s" : ""} de votre gestionnaire`,
+      description: "Consultez votre messagerie",
+      link: "/portail/messages",
+      createdAt: latest.toISOString(),
+    });
+  }
+
+  // --- Loyers à régler (en retard, ou bientôt dus) ---
+  const now = new Date();
+  const dueSoonWindowEnd = new Date(now);
+  dueSoonWindowEnd.setDate(dueSoonWindowEnd.getDate() + env.reminder.rentDueSoonDays);
+
+  const invoiceRows = await db
+    .select({ invoice: invoices, contract: contracts })
+    .from(invoices)
+    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+    .where(and(eq(contracts.tenantId, tenantId), inArray(invoices.status, ["LATE", "PENDING"])));
+
+  for (const r of invoiceRows) {
+    const dueDate = new Date(r.invoice.dueDate);
+    const estEnRetard = r.invoice.status === "LATE";
+    const estBientotDue = !estEnRetard && dueDate >= now && dueDate <= dueSoonWindowEnd;
+    if (!estEnRetard && !estBientotDue) continue;
+
+    notifications.push({
+      id: `invoice-${r.invoice.id}`,
+      type: "invoice",
+      severity: estEnRetard ? "danger" : "warning",
+      title: estEnRetard ? "Loyer en retard" : "Loyer à régler bientôt",
+      description: `Échéance du ${dueDate.toLocaleDateString("fr-FR")}`,
+      link: "/portail/paiements",
+      createdAt: dueDate.toISOString(),
+    });
+  }
+
+  // --- Bail arrivant à échéance ---
+  // Fenêtre plus large que celle des loyers "bientôt dus" ci-dessus (3 jours,
+  // trop courte pour un bail) : on reprend celle du centre de notifications
+  // du gestionnaire (CONTRACT_ENDING_WINDOW_DAYS), pensée pour ça.
+  const activeContractRows = await db
+    .select({ contract: contracts })
+    .from(contracts)
+    .where(and(eq(contracts.tenantId, tenantId), eq(contracts.status, "ACTIVE")));
+
+  const contractEndingWindowEnd = new Date(now);
+  contractEndingWindowEnd.setDate(contractEndingWindowEnd.getDate() + CONTRACT_ENDING_WINDOW_DAYS);
+
+  for (const r of activeContractRows) {
+    const endDate = new Date(r.contract.endDate);
+    if (endDate >= now && endDate <= contractEndingWindowEnd) {
+      const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      notifications.push({
+        id: `contract-${r.contract.id}`,
+        type: "contract_ending",
+        severity: daysLeft <= 7 ? "danger" : "warning",
+        title: `Votre bail se termine dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}`,
+        description: "Contactez votre gestionnaire pour un renouvellement",
+        link: "/portail",
         createdAt: endDate.toISOString(),
       });
     }

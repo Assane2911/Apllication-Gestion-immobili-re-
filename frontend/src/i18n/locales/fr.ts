@@ -1370,6 +1370,13 @@ const fr = {
       signContract: "Ouvre le pavé de signature : votre paraphe engage le bail et est horodaté.",
       signInspection: "Signe l'état des lieux. Aucune réserve ne pourra être ajoutée après.",
     },
+    notificationBell: {
+      tip: "Vos alertes : messages du gestionnaire, loyers à régler, bail arrivant à échéance.",
+      ariaLabel: "Notifications",
+      title: "Notifications",
+      itemCount: "{{count}} élément(s) nécessitant votre attention",
+      allCaughtUp: "Tout est à jour",
+    },
     dashboard: {
       privacy: {
         title: "Mes données personnelles",

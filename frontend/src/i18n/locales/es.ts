@@ -1371,6 +1371,13 @@ const es: TranslationSchema = {
       signContract: "Abre el panel de firma: su firma compromete el contrato y queda fechada.",
       signInspection: "Firma el acta. Después no podrá añadirse ninguna reserva.",
     },
+    notificationBell: {
+      tip: "Tus alertas: mensajes del gestor, alquiler por pagar, contrato próximo a vencer.",
+      ariaLabel: "Notificaciones",
+      title: "Notificaciones",
+      itemCount: "{{count}} elemento(s) que requieren tu atención",
+      allCaughtUp: "Todo al día",
+    },
     dashboard: {
       privacy: {
         title: "Mis datos personales",

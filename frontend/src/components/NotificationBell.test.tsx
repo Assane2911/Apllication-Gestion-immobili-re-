@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -25,10 +25,10 @@ function notification(overrides: Partial<NotificationItem> = {}): NotificationIt
   };
 }
 
-function renderBell() {
+function renderBell(props: { endpoint?: string; i18nPrefix?: string } = {}) {
   return render(
     <MemoryRouter>
-      <NotificationBell />
+      <NotificationBell {...props} />
     </MemoryRouter>
   );
 }
@@ -68,5 +68,24 @@ describe("NotificationBell", () => {
     unmount();
 
     await expect(pending).rejects.toEqual({ __CANCEL__: true });
+  });
+
+  /**
+   * Généralisée pour servir d'autres portails (voir TenantLayout.tsx) :
+   * `endpoint`/`i18nPrefix` doivent réellement être pris en compte, et pas
+   * seulement acceptés sans effet, sans quoi un portail locataire afficherait
+   * silencieusement les notifications — et les textes — d'un autre portail.
+   */
+  it("interroge l'endpoint fourni et utilise le préfixe i18n fourni, plutôt que ceux du gestionnaire", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: { notifications: [notification()] } });
+    renderBell({ endpoint: "/notifications/mine", i18nPrefix: "tenant.notificationBell" });
+
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/notifications/mine", expect.anything()));
+
+    const bouton = screen.getByLabelText("Notifications");
+    fireEvent.mouseEnter(bouton.parentElement!);
+    expect(
+      screen.getByText("Vos alertes : messages du gestionnaire, loyers à régler, bail arrivant à échéance.")
+    ).toBeInTheDocument();
   });
 });
