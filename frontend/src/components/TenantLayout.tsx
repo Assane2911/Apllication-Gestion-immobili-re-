@@ -7,6 +7,7 @@ import { useTheme } from "../context/theme";
 import Bulle from "./Bulle";
 import LanguageSwitcher from "./LanguageSwitcher";
 import BoutonSuggestion from "./BoutonSuggestion";
+import NotificationBell from "./NotificationBell";
 
 const navItems = [
   { to: "/portail", key: "home", icon: Home },
@@ -46,6 +47,7 @@ export default function TenantLayout() {
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
             <LanguageSwitcher />
             <CurrencySelector />
+            <NotificationBell endpoint="/notifications/mine" i18nPrefix="tenant.notificationBell" />
             <Bulle texte={t("common.theme.tip")} className="contents">
             <button
               onClick={toggleTheme}

@@ -1369,6 +1369,13 @@ const en: TranslationSchema = {
       signContract: "Opens the signature pad: your signature commits the lease and is time-stamped.",
       signInspection: "Signs the report. No further reservations can be added afterwards.",
     },
+    notificationBell: {
+      tip: "Your alerts: messages from your property manager, rent to pay, lease ending soon.",
+      ariaLabel: "Notifications",
+      title: "Notifications",
+      itemCount: "{{count}} item(s) requiring your attention",
+      allCaughtUp: "All caught up",
+    },
     dashboard: {
       privacy: {
         title: "My personal data",
