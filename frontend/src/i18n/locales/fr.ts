@@ -37,6 +37,8 @@ const fr = {
       retry: "Réessayer",
       none: "Aucun(e)",
       view: "Voir",
+      copy: "Copier",
+      copied: "Copié !",
     },
     status: {
       AVAILABLE: "Disponible",
@@ -105,6 +107,7 @@ const fr = {
       activityLog: "Qui a fait quoi, et quand, sur votre espace.",
       agency: "Identité de l'agence : coordonnées, logo et mentions des quittances.",
       subscription: "Votre formule, vos factures et l'état de votre essai.",
+      referral: "Votre code de parrainage et vos filleuls.",
     },
     manager: {
       dashboard: "Tableau de bord",
@@ -124,6 +127,7 @@ const fr = {
       activityLog: "Journal d'activité",
       agency: "Mon Agence",
       subscription: "Mon Abonnement",
+      referral: "Parrainage",
     },
     tipsTenant: {
       home: "Votre bail, vos documents et vos états des lieux à signer.",
@@ -192,6 +196,8 @@ const fr = {
       passwordPlaceholder: "••••••••",
       passwordHint: "8 caractères minimum",
       confirmPassword: "Confirmer le mot de passe",
+      referralCode: "Code de parrainage (facultatif)",
+      referralCodePlaceholder: "Ex. A1B2C3D4",
       submit: "Créer mon compte",
       submitting: "Création du compte...",
       mismatchError: "Les deux mots de passe ne correspondent pas.",
@@ -1377,6 +1383,15 @@ const fr = {
         BANK_TRANSFER: { label: "Virement bancaire", hint: "Validation sous 24h par virement" },
         DEMO: { label: "Mode démo", hint: "Activation immédiate pour tests et validation" },
       },
+    },
+    referral: {
+      title: "Programme de parrainage",
+      subtitle: "Partagez votre code : chaque filleul confirmé vous offre {{days}} jours supplémentaires.",
+      subtitleGeneric: "Partagez votre code et prolongez votre accès à chaque filleul confirmé.",
+      codeLabel: "Votre code de parrainage",
+      linkLabel: "Votre lien à partager",
+      explanation: "Dès qu'une personne s'inscrit avec votre code et confirme son adresse email, {{days}} jours sont automatiquement ajoutés à votre essai ou à votre abonnement en cours.",
+      totalReferred: "Filleul(s) inscrit(s)",
     },
   },
 

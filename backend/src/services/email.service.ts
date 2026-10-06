@@ -430,6 +430,43 @@ export function depositRefundEmail(params: {
   };
 }
 
+/**
+ * Email envoyé au PARRAIN quand son filleul confirme son adresse email et
+ * déclenche sa récompense (voir accorderRecompenseParrainage,
+ * referral.service.ts).
+ */
+export function referralRewardEmail(params: { days: number; newEndDate: Date; frontendUrl: string }) {
+  const { days, newEndDate, frontendUrl } = params;
+  const dateAffichee = escapeHtml(newEndDate.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" }));
+
+  return {
+    subject: `🎁 +${days} jours offerts — votre filleul a rejoint ImmoPlatform Pro`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">🎁 Merci pour votre parrainage !</h2>
+        <p>Bonjour,</p>
+        <p>
+          La personne que vous avez parrainée vient de confirmer son compte. En remerciement,
+          <strong>${days} jours</strong> ont été ajoutés à votre accès.
+        </p>
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; text-align:center; margin: 16px 0;">
+          <span style="font-size:11px; color:#166534; text-transform:uppercase; letter-spacing:1px; font-weight:bold;">Nouvelle échéance</span>
+          <div style="font-size:20px; font-weight:900; color:#166534; margin-top:4px;">${dateAffichee}</div>
+        </div>
+        <p>Continuez à partager votre code de parrainage pour prolonger votre accès à chaque nouveau filleul confirmé.</p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${frontendUrl}/parrainage" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Voir mon programme de parrainage →
+          </a>
+        </div>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
 /** Email envoyé au locataire lorsqu'il reçoit un nouveau message de son agence. */
 export function newMessageFromManagerEmail(params: {
   tenantName: string;

@@ -9,6 +9,7 @@ import {
   issueStatusUpdateEmail,
   newMessageFromManagerEmail,
   passwordResetEmail,
+  referralRewardEmail,
   rentDueReminderEmail,
   rentDueSoonReminderEmail,
   sendEmail,
@@ -231,6 +232,15 @@ describe("templates d'emails", () => {
     expect(html).toContain("Nettoyage");
     expect(html).not.toContain("Aucune retenue");
     expect(html).toContain(formaterMontant(800, "EUR"));
+  });
+
+  it("referralRewardEmail : annonce le nombre de jours offerts et la nouvelle échéance", () => {
+    const newEndDate = new Date("2026-11-05T00:00:00.000Z");
+    const { subject, html } = referralRewardEmail({ days: 15, newEndDate, frontendUrl: "https://app.test" });
+
+    expect(subject).toContain("+15 jours");
+    expect(html).toContain("15 jours");
+    expect(html).toContain("5 novembre 2026");
   });
 
   it("newMessageFromManagerEmail : affiche le contenu intégral s'il est court", () => {

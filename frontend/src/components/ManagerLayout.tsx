@@ -5,6 +5,7 @@ import {
   CreditCard,
   FileText,
   Gem,
+  Gift,
   HardHat,
   History,
   Home,
@@ -53,6 +54,7 @@ const navItems = [
   { to: "/activity-log", key: "activityLog", icon: History },
   { to: "/agency", key: "agency", icon: Building2 },
   { to: "/subscription", key: "subscription", icon: Gem },
+  { to: "/parrainage", key: "referral", icon: Gift },
 ] as const;
 
 export default function ManagerLayout() {

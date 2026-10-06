@@ -33,9 +33,9 @@ vi.mock("../components/GoogleSignInButton", () => ({
 
 const mockedApi = vi.mocked(api, { deep: true });
 
-function renderPage() {
+function renderPage(initialEntry = "/inscription") {
   return render(
-    <MemoryRouter initialEntries={["/inscription"]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <AuthProvider>
         <Routes>
           <Route path="/inscription" element={<RegisterPage />} />
@@ -116,6 +116,28 @@ describe("RegisterPage", () => {
   it("ne montre pas le bouton Google si VITE_GOOGLE_CLIENT_ID n'est pas configuré", () => {
     renderPage();
     expect(screen.queryByRole("button", { name: "Simuler connexion Google" })).not.toBeInTheDocument();
+  });
+
+  it("pré-remplit le code de parrainage depuis le lien partagé (?ref=CODE)", () => {
+    renderPage("/inscription?ref=ab12cd34");
+    expect(screen.getByLabelText("Code de parrainage (facultatif)")).toHaveValue("AB12CD34");
+  });
+
+  it("envoie le code de parrainage saisi à l'inscription", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { pendingVerification: true } });
+    renderPage();
+
+    await fillForm(user);
+    await user.type(screen.getByLabelText("Code de parrainage (facultatif)"), "parrain1");
+    await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
+
+    expect(await screen.findByText("Vérifie ta boîte mail")).toBeInTheDocument();
+    expect(mockedApi.post).toHaveBeenCalledWith("/auth/register", {
+      email: "nouvelle-agence@test.local",
+      password: "Password123!",
+      referralCode: "PARRAIN1",
+    });
   });
 });
 

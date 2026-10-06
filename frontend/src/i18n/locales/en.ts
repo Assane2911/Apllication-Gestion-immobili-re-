@@ -39,6 +39,8 @@ const en: TranslationSchema = {
       retry: "Retry",
       none: "None",
       view: "View",
+      copy: "Copy",
+      copied: "Copied!",
     },
     status: {
       AVAILABLE: "Available",
@@ -107,6 +109,7 @@ const en: TranslationSchema = {
       activityLog: "Who did what, and when, on your workspace.",
       agency: "Agency identity: details, logo and the wording on receipts.",
       subscription: "Your plan, your invoices and the state of your trial.",
+      referral: "Your referral code and your referred signups.",
     },
     manager: {
       dashboard: "Dashboard",
@@ -126,6 +129,7 @@ const en: TranslationSchema = {
       activityLog: "Activity Log",
       agency: "My Agency",
       subscription: "My Subscription",
+      referral: "Referrals",
     },
     tipsTenant: {
       home: "Your lease, your documents and the reports awaiting your signature.",
@@ -194,6 +198,8 @@ const en: TranslationSchema = {
       passwordPlaceholder: "••••••••",
       passwordHint: "At least 8 characters",
       confirmPassword: "Confirm password",
+      referralCode: "Referral code (optional)",
+      referralCodePlaceholder: "E.g. A1B2C3D4",
       submit: "Create my account",
       submitting: "Creating account...",
       mismatchError: "The two passwords don't match.",
@@ -1376,6 +1382,15 @@ const en: TranslationSchema = {
         BANK_TRANSFER: { label: "Bank transfer", hint: "Validated within 24h by bank transfer" },
         DEMO: { label: "Demo mode", hint: "Immediate activation for testing and validation" },
       },
+    },
+    referral: {
+      title: "Referral program",
+      subtitle: "Share your code: every confirmed referral gives you {{days}} extra days.",
+      subtitleGeneric: "Share your code and extend your access with every confirmed referral.",
+      codeLabel: "Your referral code",
+      linkLabel: "Your link to share",
+      explanation: "As soon as someone signs up with your code and confirms their email, {{days}} days are automatically added to your trial or current subscription.",
+      totalReferred: "Referred signup(s)",
     },
   },
 
