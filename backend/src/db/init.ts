@@ -177,6 +177,8 @@ export async function initDb() {
         end_date TIMESTAMP NOT NULL,
         status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'ENDED', 'TERMINATED')),
         reminder_sent_at TIMESTAMP,
+        deposit_deductions TEXT,
+        deposit_refunded_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -451,6 +453,11 @@ export async function initDb() {
     // correctif, la table existe déjà sans cette colonne — voir
     // assignVendorToIssue (issue.controller.ts).
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS vendor_id TEXT REFERENCES vendors(id) ON DELETE SET NULL`));
+    // Restitution du dépôt de garantie : sur une base créée avant ce correctif,
+    // la table existe déjà sans ces colonnes — voir recordDepositRefund
+    // (contract.controller.ts).
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS deposit_deductions TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS deposit_refunded_at TIMESTAMP`));
 
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);

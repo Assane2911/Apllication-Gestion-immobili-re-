@@ -1,8 +1,10 @@
 import nodemailer from "nodemailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
+import { formaterMontant } from "../utils/montant";
 import {
   contractEndingReminderEmail,
+  depositRefundEmail,
   emailVerificationEmail,
   issueStatusUpdateEmail,
   newMessageFromManagerEmail,
@@ -195,6 +197,40 @@ describe("templates d'emails", () => {
       frontendUrl: "https://app.test",
     });
     expect(html).not.toContain("Intervention prévue le");
+  });
+
+  it("depositRefundEmail : affiche une restitution intégrale sans tableau de retenues", () => {
+    const { subject, html } = depositRefundEmail({
+      tenantName: "Moussa Fall",
+      propertyTitle: "Villa Almadies",
+      deposit: 1000,
+      deductions: [],
+      refundedAmount: 1000,
+      currency: "EUR",
+      frontendUrl: "https://app.test",
+    });
+    expect(subject).toContain("Villa Almadies");
+    expect(html).toContain("Aucune retenue");
+    expect(html).toContain(formaterMontant(1000, "EUR"));
+  });
+
+  it("depositRefundEmail : détaille chaque retenue et le montant finalement restitué", () => {
+    const { html } = depositRefundEmail({
+      tenantName: "Moussa Fall",
+      propertyTitle: "Villa Almadies",
+      deposit: 1000,
+      deductions: [
+        { label: "Trou dans le mur du salon", amount: 150 },
+        { label: "Nettoyage", amount: 50 },
+      ],
+      refundedAmount: 800,
+      currency: "EUR",
+      frontendUrl: "https://app.test",
+    });
+    expect(html).toContain("Trou dans le mur du salon");
+    expect(html).toContain("Nettoyage");
+    expect(html).not.toContain("Aucune retenue");
+    expect(html).toContain(formaterMontant(800, "EUR"));
   });
 
   it("newMessageFromManagerEmail : affiche le contenu intégral s'il est court", () => {

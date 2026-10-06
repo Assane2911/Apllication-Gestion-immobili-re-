@@ -6,6 +6,7 @@ import { contracts, invoices, properties, users } from "../db/schema";
 import {
   authHeader,
   createContract,
+  createInspection,
   createInvoice,
   createManager,
   createProperty,
@@ -693,5 +694,169 @@ describe("PUT /api/contracts/:id — un bail signé n'est plus modifiable", () =
       .send({ rent: 900 });
 
     expect(res.status).toBe(200);
+  });
+});
+
+describe("PUT /api/contracts/:id/deposit-refund", () => {
+  it("refuse d'enregistrer une restitution sans état des lieux de sortie finalisé", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [] });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("refuse une restitution si l'état des lieux de sortie existe mais n'est pas finalisé (DRAFT)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "DRAFT" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [] });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("enregistre une restitution intégrale une fois l'état des lieux de sortie finalisé", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "COMPLETED" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.depositDeductions).toEqual([]);
+    expect(res.body.depositRefundedAt).not.toBeNull();
+  });
+
+  it("enregistre une restitution avec retenues ligne à ligne", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "COMPLETED" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [{ label: "Trou dans le mur du salon", amount: 150 }, { label: "Nettoyage", amount: 50 }] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.depositDeductions).toEqual([
+      { label: "Trou dans le mur du salon", amount: 150 },
+      { label: "Nettoyage", amount: 50 },
+    ]);
+  });
+
+  it("refuse si le total des retenues dépasse le montant du dépôt", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "COMPLETED" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [{ label: "Dégâts majeurs", amount: 1500 }] });
+
+    expect(res.status).toBe(400);
+
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
+    expect(apres.depositRefundedAt).toBeNull();
+  });
+
+  it("refuse une retenue avec un montant négatif ou un libellé vide", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "COMPLETED" });
+
+    const montantNegatif = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [{ label: "Dégâts", amount: -10 }] });
+    expect(montantNegatif.status).toBe(400);
+
+    const libelleVide = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [{ label: "", amount: 10 }] });
+    expect(libelleVide.status).toBe(400);
+  });
+
+  it("annule une restitution déjà enregistrée via deductions: null", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "COMPLETED" });
+
+    await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [{ label: "Nettoyage", amount: 50 }] });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: null });
+
+    expect(res.status).toBe(200);
+    expect(res.body.depositDeductions).toBeNull();
+    expect(res.body.depositRefundedAt).toBeNull();
+  });
+
+  it("refuse à un gestionnaire non propriétaire du bien", async () => {
+    const manager = await createManager();
+    const autreManager = await createManager({ email: "autre-gestionnaire@test.com" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "COMPLETED" });
+
+    const res = await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(autreManager)))
+      .send({ deductions: [] });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("le locataire voit la restitution de son dépôt via /api/contracts/mine", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { deposit: 1000 });
+    await createInspection(contract, manager.id, { type: "EXIT", status: "COMPLETED" });
+
+    await request(app)
+      .put(`/api/contracts/${contract.id}/deposit-refund`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ deductions: [{ label: "Nettoyage", amount: 50 }] });
+
+    const res = await request(app)
+      .get("/api/contracts/mine")
+      .set(authHeader(await tokenLocataire(tenant.id)));
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].depositDeductions).toEqual([{ label: "Nettoyage", amount: 50 }]);
+    expect(res.body[0].depositRefundedAt).not.toBeNull();
   });
 });

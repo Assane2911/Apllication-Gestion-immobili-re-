@@ -296,4 +296,84 @@ describe("ContractsPage (manager)", () => {
     );
     await waitFor(() => expect(screen.queryByText(/Bail - Studio Centre-ville/)).not.toBeInTheDocument());
   });
+
+  describe("restitution du dépôt de garantie", () => {
+    it("n'affiche pas le bouton de restitution sur un contrat actif", async () => {
+      queueLoad([contract({ id: "c1", status: "ACTIVE" })]);
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+      expect(screen.queryByRole("button", { name: /Restituer le dépôt/ })).not.toBeInTheDocument();
+    });
+
+    it("enregistre une restitution intégrale sans retenue", async () => {
+      const user = userEvent.setup();
+      queueLoad([contract({ id: "c1", status: "ENDED", deposit: 1000 })]);
+      mockedApi.put.mockResolvedValueOnce({ data: {} });
+      queueLoad([contract({ id: "c1", status: "ENDED", deposit: 1000, depositRefundedAt: "2026-06-01T00:00:00.000Z", depositDeductions: [] })]);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByRole("button", { name: /Restituer le dépôt/ }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: /Restituer le dépôt/ })[0]);
+
+      await waitFor(() => expect(screen.getByText("Restitution du dépôt de garantie")).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: "Enregistrer la restitution" }));
+
+      await waitFor(() =>
+        expect(mockedApi.put).toHaveBeenCalledWith("/contracts/c1/deposit-refund", { deductions: [] })
+      );
+    });
+
+    it("enregistre une restitution avec une retenue ajoutée dans la modale", async () => {
+      const user = userEvent.setup();
+      queueLoad([contract({ id: "c1", status: "TERMINATED", deposit: 1000 })]);
+      mockedApi.put.mockResolvedValueOnce({ data: {} });
+      queueLoad([
+        contract({
+          id: "c1",
+          status: "TERMINATED",
+          deposit: 1000,
+          depositRefundedAt: "2026-06-01T00:00:00.000Z",
+          depositDeductions: [{ label: "Nettoyage", amount: 50 }],
+        }),
+      ]);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByRole("button", { name: /Restituer le dépôt/ }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: /Restituer le dépôt/ })[0]);
+
+      await waitFor(() => expect(screen.getByText("Restitution du dépôt de garantie")).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: /Ajouter une retenue/ }));
+      await user.type(screen.getByPlaceholderText("Motif"), "Nettoyage");
+      await user.type(screen.getByPlaceholderText("Montant"), "50");
+      await user.click(screen.getByRole("button", { name: "Enregistrer la restitution" }));
+
+      await waitFor(() =>
+        expect(mockedApi.put).toHaveBeenCalledWith("/contracts/c1/deposit-refund", {
+          deductions: [{ label: "Nettoyage", amount: 50 }],
+        })
+      );
+    });
+
+    it("annule une restitution déjà enregistrée après confirmation", async () => {
+      const user = userEvent.setup();
+      queueLoad([
+        contract({ id: "c1", status: "ENDED", deposit: 1000, depositRefundedAt: "2026-06-01T00:00:00.000Z", depositDeductions: [] }),
+      ]);
+      mockedApi.put.mockResolvedValueOnce({ data: {} });
+      queueLoad([contract({ id: "c1", status: "ENDED", deposit: 1000, depositRefundedAt: null, depositDeductions: null })]);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByRole("button", { name: /Dépôt restitué/ }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: /Dépôt restitué/ })[0]);
+
+      expect(window.confirm).toHaveBeenCalled();
+      await waitFor(() =>
+        expect(mockedApi.put).toHaveBeenCalledWith("/contracts/c1/deposit-refund", { deductions: null })
+      );
+    });
+  });
 });

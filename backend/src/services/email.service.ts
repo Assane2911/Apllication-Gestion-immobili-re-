@@ -375,6 +375,61 @@ export function issueStatusUpdateEmail(params: {
   };
 }
 
+/**
+ * Email envoyé au locataire lorsque le gestionnaire enregistre la
+ * restitution de son dépôt de garantie (voir recordDepositRefund,
+ * contract.controller.ts). `deductions` est la même liste que celle
+ * persistée : vide pour une restitution intégrale.
+ */
+export function depositRefundEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  deposit: number;
+  deductions: Array<{ label: string; amount: number }>;
+  refundedAmount: number;
+  currency?: string | null;
+  frontendUrl: string;
+}) {
+  const { tenantName, propertyTitle, deposit, deductions, refundedAmount, currency, frontendUrl } = params;
+  const lignesDeductions = deductions
+    .map(
+      (d) =>
+        `<tr><td style="padding:4px 0; color:#334155;">${escapeHtml(d.label)}</td><td style="padding:4px 0; text-align:right; color:#dc2626;">- ${escapeHtml(formaterMontant(d.amount, currency))}</td></tr>`
+    )
+    .join("");
+
+  return {
+    subject: `💰 Restitution de votre dépôt de garantie — ${propertyTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">💰 Restitution de votre dépôt de garantie</h2>
+        <p>Bonjour ${escapeHtml(tenantName)},</p>
+        <p>
+          La restitution de votre dépôt de garantie pour le logement <strong>${escapeHtml(propertyTitle)}</strong>
+          (déposé initialement : ${escapeHtml(formaterMontant(deposit, currency))}) vient d'être enregistrée par votre agence.
+        </p>
+        ${
+          deductions.length > 0
+            ? `<table style="width:100%; border-collapse:collapse; margin:16px 0; font-size:13px;"><tbody>${lignesDeductions}</tbody></table>`
+            : `<p style="color:#059669;">Aucune retenue : le dépôt vous est restitué intégralement.</p>`
+        }
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; text-align:center; margin: 8px 0 16px 0;">
+          <span style="font-size:11px; color:#166534; text-transform:uppercase; letter-spacing:1px; font-weight:bold;">Montant restitué</span>
+          <div style="font-size:26px; font-weight:900; color:#166534; margin-top:4px;">${escapeHtml(formaterMontant(refundedAmount, currency))}</div>
+        </div>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${frontendUrl}/portail/contrats" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Voir mon contrat →
+          </a>
+        </div>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
 /** Email envoyé au locataire lorsqu'il reçoit un nouveau message de son agence. */
 export function newMessageFromManagerEmail(params: {
   tenantName: string;

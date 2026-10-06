@@ -474,6 +474,19 @@ export const contracts = pgTable(
     managerSignatureUrl: text("manager_signature_url"),
     signedByTenantAt: timestamp("signed_by_tenant_at", { mode: "date" }),
     tenantSignatureUrl: text("tenant_signature_url"),
+    // Restitution du dépôt de garantie, calculée à l'état des lieux de sortie
+    // — voir recordDepositRefund (contract.controller.ts), qui refuse de la
+    // renseigner sans état des lieux de sortie COMPLETED pour ce contrat :
+    // sans cette exigence, une retenue pour dégâts ne s'appuierait sur aucune
+    // constatation contradictoire. `depositDeductions` est la liste (JSON)
+    // des retenues ligne à ligne ([{label, amount}, ...], tableau vide si
+    // restitution intégrale) ; le montant restitué se déduit de `deposit` -
+    // somme(deductions), jamais stocké séparément puisque `deposit` est figé
+    // dès la signature du locataire (voir updateContract). `depositRefundedAt`
+    // marque la restitution comme traitée ; `null` sur les deux colonnes
+    // signifie qu'elle ne l'a pas encore été.
+    depositDeductions: text("deposit_deductions"),
+    depositRefundedAt: timestamp("deposit_refunded_at", { mode: "date" }),
     ...timestamps,
   },
   (table) => ({
