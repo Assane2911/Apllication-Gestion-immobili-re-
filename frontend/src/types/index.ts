@@ -365,6 +365,8 @@ export interface IssueReport {
    * directes du prestataire (voir myIssues, issue.controller.ts).
    */
   vendor?: Pick<Vendor, "name" | "trade"> & Partial<Pick<Vendor, "id" | "phone" | "email" | "notes">> | null;
+  /** Rendez-vous d'intervention pris avec le prestataire assigné, ou `null`/absent. */
+  scheduledAt?: string | null;
 }
 
 export type NotificationType = "message" | "invoice" | "issue" | "contract_ending";

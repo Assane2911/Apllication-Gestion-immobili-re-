@@ -375,6 +375,182 @@ describe("PUT /api/issues/:id/status", () => {
     expect(res.status).toBe(200);
     expect(res.body.vendor).toMatchObject({ id: vendor.id });
   });
+
+  describe("scheduledAt — planification de l'intervention", () => {
+    it("planifie une intervention en assignant le prestataire dans la même requête", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const vendor = await createVendor(manager.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+      const rendezVous = "2026-11-05T09:00:00.000Z";
+      const res = await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: vendor.id, scheduledAt: rendezVous });
+
+      expect(res.status).toBe(200);
+      expect(new Date(res.body.scheduledAt).toISOString()).toBe(rendezVous);
+    });
+
+    it("planifie une intervention sur un incident ayant déjà un prestataire assigné", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const vendor = await createVendor(manager.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: vendor.id });
+
+      const rendezVous = "2026-11-05T09:00:00.000Z";
+      const res = await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", scheduledAt: rendezVous });
+
+      expect(res.status).toBe(200);
+      expect(new Date(res.body.scheduledAt).toISOString()).toBe(rendezVous);
+    });
+
+    it("refuse de planifier une intervention sans aucun prestataire assigné", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+      const res = await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", scheduledAt: "2026-11-05T09:00:00.000Z" });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("refuse de planifier une intervention tout en désassignant le prestataire dans la même requête", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const vendor = await createVendor(manager.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: vendor.id });
+
+      const res = await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: null, scheduledAt: "2026-11-05T09:00:00.000Z" });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("permet de déprogrammer une intervention (scheduledAt: null) sans toucher au prestataire", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const vendor = await createVendor(manager.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+      await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: vendor.id, scheduledAt: "2026-11-05T09:00:00.000Z" });
+
+      const res = await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", scheduledAt: null });
+
+      expect(res.status).toBe(200);
+      expect(res.body.scheduledAt).toBeNull();
+      expect(res.body.vendor).toMatchObject({ id: vendor.id });
+    });
+
+    it("rejette une date de planification invalide", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const vendor = await createVendor(manager.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+      const res = await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: vendor.id, scheduledAt: "pas-une-date" });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("le locataire voit la date d'intervention planifiée sur ses propres signalements", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const vendor = await createVendor(manager.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+      const rendezVous = "2026-11-05T09:00:00.000Z";
+      await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: vendor.id, scheduledAt: rendezVous });
+
+      const mine = await request(app).get("/api/issues/mine").set(await tenantToken(tenant.id));
+
+      expect(new Date(mine.body[0].scheduledAt).toISOString()).toBe(rendezVous);
+    });
+  });
 });
 
 describe("POST /api/issues/:id/photo", () => {
