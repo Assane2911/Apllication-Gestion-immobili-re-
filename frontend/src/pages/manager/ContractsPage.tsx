@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, CheckCircle2, Clock, Download, FileCheck, Hourglass, PenLine, RefreshCw } from "lucide-react";
+import { Banknote, Camera, CheckCircle2, Clock, Download, FileCheck, Hourglass, PenLine, RefreshCw } from "lucide-react";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
+import DepositRefundModal from "../../components/DepositRefundModal";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
 import ScannedContractModal from "../../components/ScannedContractModal";
@@ -30,6 +31,11 @@ function daysUntil(d: string) {
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
+function depositRefundedAmount(c: Contract): number {
+  const total = (c.depositDeductions ?? []).reduce((somme, d) => somme + d.amount, 0);
+  return Math.max(0, c.deposit - total);
+}
+
 export default function ContractsPage() {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
@@ -43,6 +49,7 @@ export default function ContractsPage() {
   const [saving, setSaving] = useState(false);
 
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
+  const [depositRefundContract, setDepositRefundContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [uploadingScanContractId, setUploadingScanContractId] = useState<string | null>(null);
@@ -112,6 +119,16 @@ export default function ContractsPage() {
     if (!confirm(t("manager.contracts.confirmDelete"))) return;
     try {
       await api.delete(`/contracts/${c.id}`);
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
+  async function handleCancelDepositRefund(c: Contract) {
+    if (!confirm(t("manager.contracts.confirmCancelDepositRefund"))) return;
+    try {
+      await api.put(`/contracts/${c.id}/deposit-refund`, { deductions: null });
       load();
     } catch (err) {
       alert(apiErrorMessage(err));
@@ -395,6 +412,29 @@ export default function ContractsPage() {
                     </button>
                     </Bulle>
                   )}
+                  {c.status !== "ACTIVE" && (
+                    c.depositRefundedAt ? (
+                      <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
+                      <button
+                        onClick={() => handleCancelDepositRefund(c)}
+                        className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                      >
+                        <Banknote size={13} aria-hidden="true" />
+                        <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
+                      </button>
+                      </Bulle>
+                    ) : (
+                      <Bulle texte={t("manager.tips.contractDepositRefund")}>
+                      <button
+                        onClick={() => setDepositRefundContract(c)}
+                        className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20"
+                      >
+                        <Banknote size={13} aria-hidden="true" />
+                        <span>{t("manager.contracts.depositRefund")}</span>
+                      </button>
+                      </Bulle>
+                    )
+                  )}
                   <Bulle texte={t("manager.tips.contractDelete")}>
                   <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
                     {t("common.actions.delete")}
@@ -526,6 +566,29 @@ export default function ContractsPage() {
                   </button>
                   </Bulle>
                 )}
+                {c.status !== "ACTIVE" && (
+                  c.depositRefundedAt ? (
+                    <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
+                    <button
+                      onClick={() => handleCancelDepositRefund(c)}
+                      className="text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                    >
+                      <Banknote size={13} aria-hidden="true" />
+                      <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
+                    </button>
+                    </Bulle>
+                  ) : (
+                    <Bulle texte={t("manager.tips.contractDepositRefund")}>
+                    <button
+                      onClick={() => setDepositRefundContract(c)}
+                      className="text-xs bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20"
+                    >
+                      <Banknote size={13} aria-hidden="true" />
+                      <span>{t("manager.contracts.depositRefund")}</span>
+                    </button>
+                    </Bulle>
+                  )
+                )}
                 <Bulle texte={t("manager.tips.contractDelete")}>
                 <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
                   {t("common.actions.delete")}
@@ -574,6 +637,17 @@ export default function ContractsPage() {
           title={viewingScannedContract.title}
           fileUrl={viewingScannedContract.url}
           onClose={() => setViewingScannedContract(null)}
+        />
+      )}
+
+      {depositRefundContract && (
+        <DepositRefundModal
+          contract={depositRefundContract}
+          onSuccess={() => {
+            setDepositRefundContract(null);
+            load();
+          }}
+          onClose={() => setDepositRefundContract(null)}
         />
       )}
     </div>

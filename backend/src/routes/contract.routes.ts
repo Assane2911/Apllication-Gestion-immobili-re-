@@ -5,6 +5,7 @@ import {
   getContract,
   listContracts,
   myContracts,
+  recordDepositRefund,
   renewContract,
   signContract,
   updateContract,
@@ -24,6 +25,7 @@ router.get("/:id", getContract);
 router.post("/", createContract);
 router.post("/:id/scan", uploadContractScan.single("scan"), uploadScannedContract);
 router.post("/:id/renew", renewContract);
+router.put("/:id/deposit-refund", recordDepositRefund);
 router.put("/:id", updateContract);
 router.delete("/:id", deleteContract);
 

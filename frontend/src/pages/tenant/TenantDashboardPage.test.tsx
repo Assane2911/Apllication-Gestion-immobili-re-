@@ -100,6 +100,33 @@ describe("TenantDashboardPage", () => {
     expect(screen.queryByRole("button", { name: /Signer mon bail/ })).not.toBeInTheDocument();
   });
 
+  it("affiche la restitution du dépôt de garantie avec son détail de retenues", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: [
+        contract({
+          deposit: 1000,
+          depositRefundedAt: "2026-06-01T00:00:00.000Z",
+          depositDeductions: [{ label: "Nettoyage", amount: 50 }],
+        }),
+      ],
+    });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText(/Dépôt de garantie restitué/)).toBeInTheDocument());
+    expect(screen.getByText("950 €", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(/Nettoyage/)).toBeInTheDocument();
+  });
+
+  it("n'affiche aucun encart de restitution tant que le dépôt n'a pas été restitué", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ depositRefundedAt: null })] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument());
+    expect(screen.queryByText(/Dépôt de garantie restitué/)).not.toBeInTheDocument();
+  });
+
   it("alerte sur les mensualités impayées avec un lien vers le paiement", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ status: "PENDING" })] })] });
     mockedApi.get.mockResolvedValueOnce(emptyInspections());

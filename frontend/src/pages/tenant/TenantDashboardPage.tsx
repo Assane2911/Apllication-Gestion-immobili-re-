@@ -294,6 +294,32 @@ export default function TenantDashboardPage() {
                 </div>
               </div>
 
+              {/* Restitution du dépôt de garantie, une fois enregistrée par le gestionnaire */}
+              {c.depositRefundedAt && (
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={16} className="text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300">
+                      {t("tenant.dashboard.depositRefundTitle", {
+                        amount: formatMoney(
+                          c.deposit - (c.depositDeductions ?? []).reduce((somme, d) => somme + d.amount, 0),
+                          c.currency
+                        ),
+                      })}
+                    </p>
+                  </div>
+                  {(c.depositDeductions ?? []).length > 0 && (
+                    <ul className="text-xs text-emerald-800 dark:text-emerald-400 space-y-0.5 pl-6 list-disc">
+                      {(c.depositDeductions ?? []).map((d, i) => (
+                        <li key={i}>
+                          {d.label} — {formatMoney(d.amount, c.currency)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
               {/* États des lieux (entrée/sortie) rattachés à ce contrat */}
               {inspections.filter((insp) => insp.contractId === c.id).length > 0 && (
                 <div className="space-y-2">

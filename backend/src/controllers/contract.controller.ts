@@ -1,10 +1,12 @@
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
+import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { contracts, invoices, issueReports, properties, tenants } from "../db/schema";
+import { contracts, inspections, invoices, issueReports, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
+import { depositRefundEmail, sendEmail } from "../services/email.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -34,6 +36,18 @@ export async function resolveScannedUrl(value: string | null | undefined): Promi
   } catch {
     return value;
   }
+}
+
+/**
+ * `contracts.depositDeductions` est du JSON stringifié en base (voir
+ * recordDepositRefund) : le frontend attend un tableau déjà parsé, même
+ * convention que `parseInspection` pour `roomsData`/`metersData`/`keysData`
+ * (inspection.controller.ts).
+ */
+function parseDepositDeductions<T extends { depositDeductions: string | null }>(
+  contract: T
+): Omit<T, "depositDeductions"> & { depositDeductions: Array<{ label: string; amount: number }> | null } {
+  return { ...contract, depositDeductions: contract.depositDeductions ? JSON.parse(contract.depositDeductions) : null };
 }
 
 /**
@@ -91,7 +105,13 @@ async function withRelations(contractId: string) {
     .where(eq(invoices.contractId, contractId))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
   const scannedContractUrl = await resolveScannedUrl(row.contract.scannedContractUrl);
-  return { ...row.contract, scannedContractUrl, property: row.property, tenant: row.tenant, invoices: contractInvoices };
+  return {
+    ...parseDepositDeductions(row.contract),
+    scannedContractUrl,
+    property: row.property,
+    tenant: row.tenant,
+    invoices: contractInvoices,
+  };
 }
 
 export const listContracts = asyncHandler(async (req: Request, res: Response) => {
@@ -117,7 +137,7 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
 
   const items = await Promise.all(
     rows.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
-      ...r.contract,
+      ...parseDepositDeductions(r.contract),
       scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
       property: r.property,
       tenant: r.tenant,
@@ -473,7 +493,7 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
 
   const result = await Promise.all(
     rows.map(async (row) => ({
-      ...row.contract,
+      ...parseDepositDeductions(row.contract),
       scannedContractUrl: await resolveScannedUrl(row.contract.scannedContractUrl),
       property: row.property,
       invoices: invoicesByContract.get(row.contract.id) ?? [],
@@ -633,6 +653,101 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     // TENANT ni MANAGER.
     throw new ApiError(403, "Accès refusé");
   }
+});
+
+const depositDeductionSchema = z.object({
+  label: z.string().min(1).max(200),
+  amount: z.coerce.number().positive(),
+});
+
+const depositRefundSchema = z.object({
+  // Tableau vide : restitution intégrale. Tableau non vide : retenues ligne à
+  // ligne (dégâts, loyers impayés...). `null` explicite : annule une
+  // restitution déjà enregistrée (le gestionnaire s'était trompé) — même
+  // convention que `scheduledAt` sur les incidents (issue.controller.ts).
+  deductions: z.array(depositDeductionSchema).max(20).nullable(),
+});
+
+/**
+ * Enregistre (ou annule) la restitution du dépôt de garantie d'un contrat.
+ * Liée à l'état des lieux de sortie plutôt qu'au seul statut du contrat : une
+ * retenue pour dégâts n'a de valeur probatoire que si un constat
+ * contradictoire (l'état des lieux de sortie, signé ou non) l'a établie.
+ */
+export const recordDepositRefund = asyncHandler(async (req: Request, res: Response) => {
+  const { deductions } = depositRefundSchema.parse(req.body);
+
+  const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
+  if (!existing) throw new ApiError(404, "Contrat introuvable");
+  const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+
+  let totalDeductions = 0;
+  if (deductions !== null) {
+    const [exitInspection] = await db
+      .select({ id: inspections.id })
+      .from(inspections)
+      .where(and(eq(inspections.contractId, existing.id), eq(inspections.type, "EXIT"), eq(inspections.status, "COMPLETED")))
+      .limit(1);
+    if (!exitInspection) {
+      throw new ApiError(
+        400,
+        "Impossible d'enregistrer la restitution du dépôt sans état des lieux de sortie finalisé pour ce contrat."
+      );
+    }
+
+    totalDeductions = deductions.reduce((somme, d) => somme + d.amount, 0);
+    if (totalDeductions > existing.deposit) {
+      throw new ApiError(
+        400,
+        `Le total des retenues (${totalDeductions}) dépasse le montant du dépôt de garantie (${existing.deposit}).`
+      );
+    }
+  }
+
+  const [updated] = await db
+    .update(contracts)
+    .set({
+      depositDeductions: deductions !== null ? JSON.stringify(deductions) : null,
+      depositRefundedAt: deductions !== null ? new Date() : null,
+    })
+    .where(eq(contracts.id, req.params.id))
+    .returning();
+
+  // Notifie le locataire par email — ne doit jamais faire échouer la réponse
+  // si l'envoi échoue, ni partir pour une annulation (deductions === null).
+  if (deductions !== null) {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, updated.tenantId));
+    if (tenant?.email) {
+      const { subject, html } = depositRefundEmail({
+        tenantName: `${tenant.firstName} ${tenant.lastName}`,
+        propertyTitle: property?.title ?? "",
+        deposit: updated.deposit,
+        deductions,
+        refundedAmount: updated.deposit - totalDeductions,
+        currency: updated.currency,
+        frontendUrl: env.frontendUrl,
+      });
+      await sendEmail(tenant.email, subject, html).catch((err) =>
+        console.error("[contract] Échec de l'envoi de la notification de restitution du dépôt:", err)
+      );
+    }
+  }
+
+  await logActivity({
+    req,
+    managerId: property.managerId,
+    action: "contract.deposit_refund",
+    entityType: "contract",
+    entityId: updated.id,
+    entityLabel: property?.title ?? "Contrat",
+    details:
+      deductions !== null
+        ? `Restitution du dépôt enregistrée pour le bien ${property?.title ?? ""} (${deductions.length} retenue(s))`
+        : `Restitution du dépôt annulée pour le bien ${property?.title ?? ""}`,
+  });
+
+  res.json(await withRelations(updated.id));
 });
 
 /**

@@ -202,9 +202,18 @@ export interface Contract {
   managerSignatureUrl?: string | null;
   signedByTenantAt?: string | null;
   tenantSignatureUrl?: string | null;
+  /** Retenues ligne à ligne sur le dépôt de garantie, ou `null`/absent si pas encore restitué. */
+  depositDeductions?: DepositDeduction[] | null;
+  /** Date à laquelle la restitution du dépôt a été enregistrée, ou `null`/absent. */
+  depositRefundedAt?: string | null;
   property?: Property;
   tenant?: Tenant;
   invoices?: Invoice[];
+}
+
+export interface DepositDeduction {
+  label: string;
+  amount: number;
 }
 
 export type InspectionType = "ENTRY" | "EXIT";
