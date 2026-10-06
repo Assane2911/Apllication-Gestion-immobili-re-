@@ -548,6 +548,12 @@ export const issueReports = pgTable(
     // supprimer l'historique des incidents qu'il a traités, seulement l'
     // affectation elle-même, exactement comme properties.ownerId.
     vendorId: text("vendor_id").references(() => vendors.id, { onDelete: "set null" }),
+    // Rendez-vous d'intervention pris avec le prestataire assigné — distinct
+    // de `createdAt` (date du signalement) et de `status` (son avancement) :
+    // NULL tant qu'aucune date n'a été convenue. Voir updateIssueStatus
+    // (issue.controller.ts), qui refuse d'en fixer une sans prestataire déjà
+    // assigné — planifier la visite de personne n'a pas de sens.
+    scheduledAt: timestamp("scheduled_at", { mode: "date" }),
     ...timestamps,
   },
   (table) => ({

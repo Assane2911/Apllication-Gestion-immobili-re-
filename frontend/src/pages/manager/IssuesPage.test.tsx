@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -158,5 +158,56 @@ describe("IssuesPage (gestionnaire)", () => {
         vendorId: null,
       })
     );
+  });
+
+  describe("planification de l'intervention", () => {
+    it("désactive le champ de planification tant qu'aucun prestataire n'est assigné", async () => {
+      mockedApi.get.mockResolvedValueOnce(paginated([issue()]));
+      renderWithVendors([vendor()]);
+      await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+
+      expect(screen.getByLabelText("Intervention planifiée :")).toBeDisabled();
+    });
+
+    it("planifie une intervention une fois un prestataire assigné", async () => {
+      mockedApi.get.mockResolvedValueOnce(paginated([issue({ vendor: vendor() })]));
+      renderWithVendors([vendor()]);
+      await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+
+      const champ = screen.getByLabelText("Intervention planifiée :");
+      expect(champ).toBeEnabled();
+
+      mockedApi.put.mockResolvedValueOnce({ data: {} });
+      mockedApi.get.mockResolvedValueOnce(
+        paginated([issue({ vendor: vendor(), scheduledAt: "2026-11-05T09:00:00.000Z" })])
+      );
+
+      fireEvent.change(champ, { target: { value: "2026-11-05T10:00" } });
+
+      await waitFor(() => expect(mockedApi.put).toHaveBeenCalledWith("/issues/iss-1/status", expect.anything()));
+      const [, body] = mockedApi.put.mock.calls[0];
+      expect((body as { scheduledAt: string }).scheduledAt).not.toBeNull();
+    });
+
+    it("efface la planification quand le champ est vidé", async () => {
+      mockedApi.get.mockResolvedValueOnce(
+        paginated([issue({ vendor: vendor(), scheduledAt: "2026-11-05T09:00:00.000Z" })])
+      );
+      renderWithVendors([vendor()]);
+      await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+
+      mockedApi.put.mockResolvedValueOnce({ data: {} });
+      mockedApi.get.mockResolvedValueOnce(paginated([issue({ vendor: vendor(), scheduledAt: null })]));
+
+      fireEvent.change(screen.getByLabelText("Intervention planifiée :"), { target: { value: "" } });
+
+      await waitFor(() =>
+        expect(mockedApi.put).toHaveBeenCalledWith("/issues/iss-1/status", {
+          status: "OPEN",
+          managerNote: undefined,
+          scheduledAt: null,
+        })
+      );
+    });
   });
 });

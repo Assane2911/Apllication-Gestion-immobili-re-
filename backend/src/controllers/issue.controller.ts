@@ -105,6 +105,13 @@ const updateIssueSchema = z.object({
   // changement ; `null` explicite : désassigne. Voir assertVendorOwnership
   // (vendor.controller.ts) pour la raison de la vérification ci-dessous.
   vendorId: z.string().min(1).nullable().optional(),
+  // Rendez-vous d'intervention pris avec le prestataire — même raisonnement
+  // qu'ailleurs (expense.controller.ts, contract.controller.ts) :
+  // z.coerce.date() plutôt que z.string(), pour qu'une date invalide ressorte
+  // en 400 explicite plutôt qu'en Invalid Date silencieuse écrite en base.
+  // .nullable() AVANT .optional() : c'est l'ordre qui fait que `null` reste
+  // `null` (déprogrammer un rendez-vous) au lieu d'être coercé en epoch Unix.
+  scheduledAt: z.coerce.date().nullable().optional(),
 });
 
 export const updateIssueStatus = asyncHandler(async (req: Request, res: Response) => {
@@ -121,12 +128,22 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     await assertVendorOwnership(body.vendorId, req.user!.userId);
   }
 
+  // Planifier la visite de personne n'a pas de sens : il faut un prestataire
+  // assigné à l'issue de CETTE requête — déjà en base, affecté ici, ou (le
+  // cas qui aurait été raté par une vérification plus naïve) pas désassigné
+  // ici (vendorId: null) tout en fixant une date dans la même requête.
+  const effectiveVendorId = body.vendorId !== undefined ? body.vendorId : owned.issue.vendorId;
+  if (body.scheduledAt && !effectiveVendorId) {
+    throw new ApiError(400, "Impossible de planifier une intervention sans prestataire assigné.");
+  }
+
   const [updated] = await db
     .update(issueReports)
     .set({
       status: body.status,
       managerNote: body.managerNote,
       ...(body.vendorId !== undefined ? { vendorId: body.vendorId } : {}),
+      ...(body.scheduledAt !== undefined ? { scheduledAt: body.scheduledAt } : {}),
     })
     .where(eq(issueReports.id, req.params.id))
     .returning();
@@ -147,6 +164,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
       propertyTitle: row.property.title,
       status: updated.status,
       managerNote: updated.managerNote,
+      scheduledAt: updated.scheduledAt,
       frontendUrl: env.frontendUrl,
     });
     await sendEmail(row.tenant.email, subject, html).catch((err) =>

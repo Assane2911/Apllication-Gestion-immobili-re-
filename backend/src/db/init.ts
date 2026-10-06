@@ -320,6 +320,7 @@ export async function initDb() {
         status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED')),
         manager_note TEXT,
         vendor_id TEXT REFERENCES vendors(id) ON DELETE SET NULL,
+        scheduled_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -381,6 +382,9 @@ export async function initDb() {
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled_at TIMESTAMP`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_backup_codes_hash TEXT`));
+    // Planification des interventions prestataires : sur une base créée avant
+    // ce correctif, la table existe déjà sans cette colonne.
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP`));
     // Sur une base créée avant ce correctif, "tenants.email" portait encore
     // une contrainte UNIQUE globale (nom par défaut Postgres/PGlite pour une
     // colonne UNIQUE déclarée en ligne) — on la retire au profit de l'index

@@ -11,6 +11,18 @@ import Bulle from "../../components/Bulle";
 const statusOptions: IssueStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"];
 const PAGE_SIZE = 20;
 
+/**
+ * `<input type="datetime-local">` attend "AAAA-MM-JJTHH:mm" en heure LOCALE,
+ * sans fuseau — `toISOString()` donnerait l'heure UTC, décalée de l'heure
+ * locale de qui saisit le rendez-vous.
+ */
+function versDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function IssuesPage() {
   const { t, i18n } = useTranslation();
   const [issues, setIssues] = useState<IssueReport[]>([]);
@@ -86,6 +98,26 @@ export default function IssuesPage() {
         status: issue.status,
         managerNote: issue.managerNote ?? undefined,
         vendorId: vendorId || null,
+      });
+      load();
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
+  /**
+   * `value` vide efface la planification (envoyée comme `null`) — jamais
+   * `undefined`, qui signifierait côté serveur "ne pas y toucher" (voir
+   * updateIssueSchema). Le serveur refuse par ailleurs toute date sans
+   * prestataire déjà assigné : ce champ est désactivé dans le JSX tant
+   * qu'aucun prestataire ne l'est, mais la garde reste aussi côté serveur.
+   */
+  async function scheduleIntervention(issue: IssueReport, value: string) {
+    try {
+      await api.put(`/issues/${issue.id}/status`, {
+        status: issue.status,
+        managerNote: issue.managerNote ?? undefined,
+        scheduledAt: value ? new Date(value).toISOString() : null,
       });
       load();
     } catch (err) {
@@ -195,6 +227,22 @@ export default function IssuesPage() {
                         </option>
                       ))}
                     </select>
+                    </Bulle>
+                  </div>
+
+                  <div>
+                    <label htmlFor={`issue-schedule-${issue.id}`} className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      {t("manager.issues.scheduleLabel")}
+                    </label>
+                    <Bulle texte={issue.vendor ? t("manager.tips.issueSchedule") : t("manager.tips.issueScheduleNoVendor")}>
+                    <input
+                      id={`issue-schedule-${issue.id}`}
+                      type="datetime-local"
+                      disabled={!issue.vendor}
+                      defaultValue={versDatetimeLocal(issue.scheduledAt)}
+                      onChange={(e) => scheduleIntervention(issue, e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
                     </Bulle>
                   </div>
 

@@ -172,6 +172,31 @@ describe("templates d'emails", () => {
     expect(html).toContain("Un plombier passera demain matin.");
   });
 
+  it("issueStatusUpdateEmail : affiche la date d'intervention planifiée quand elle est fournie", () => {
+    const { html } = issueStatusUpdateEmail({
+      tenantName: "Moussa Fall",
+      issueTitle: "Fuite d'eau",
+      propertyTitle: "Villa Almadies",
+      status: "IN_PROGRESS",
+      managerNote: null,
+      scheduledAt: new Date("2026-11-05T09:00:00.000Z"),
+      frontendUrl: "https://app.test",
+    });
+    expect(html).toContain("Intervention prévue le");
+  });
+
+  it("issueStatusUpdateEmail : n'affiche aucun encart de rendez-vous sans date planifiée", () => {
+    const { html } = issueStatusUpdateEmail({
+      tenantName: "Moussa Fall",
+      issueTitle: "Fuite d'eau",
+      propertyTitle: "Villa Almadies",
+      status: "IN_PROGRESS",
+      managerNote: null,
+      frontendUrl: "https://app.test",
+    });
+    expect(html).not.toContain("Intervention prévue le");
+  });
+
   it("newMessageFromManagerEmail : affiche le contenu intégral s'il est court", () => {
     const { html } = newMessageFromManagerEmail({
       tenantName: "Aïda Sow",

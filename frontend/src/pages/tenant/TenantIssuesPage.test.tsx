@@ -105,6 +105,32 @@ describe("TenantIssuesPage", () => {
     expect(screen.queryByText("Prestataire assigné :")).not.toBeInTheDocument();
   });
 
+  it("affiche la date d'intervention planifiée quand elle est renseignée", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: [
+        issue({
+          vendor: { name: "Plomberie Fall", trade: "Plombier" },
+          scheduledAt: "2026-11-05T09:00:00.000Z",
+        }),
+      ],
+    });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Intervention prévue le :")).toBeInTheDocument());
+  });
+
+  it("n'affiche aucun bloc de rendez-vous quand aucune intervention n'est planifiée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [issue({ vendor: null, scheduledAt: null })] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
+    expect(screen.queryByText("Intervention prévue le :")).not.toBeInTheDocument();
+  });
+
   it("affiche un message quand il n'y a aucun signalement", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [] });
     mockedApi.get.mockResolvedValueOnce({ data: [contract()] });

@@ -299,6 +299,13 @@ export default function TenantIssuesPage() {
                       </div>
                     )}
 
+                    {issue.scheduledAt && (
+                      <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-3 text-xs text-blue-900 dark:text-blue-300 mt-2">
+                        <strong className="block mb-0.5 font-semibold">{t("tenant.issues.interventionScheduled")}</strong>
+                        {new Date(issue.scheduledAt).toLocaleString(i18n.language, { dateStyle: "long", timeStyle: "short" })}
+                      </div>
+                    )}
+
                     {issue.managerNote && (
                       <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-3 text-xs text-blue-900 dark:text-blue-300 mt-2">
                         <strong className="block mb-0.5 font-semibold">{t("tenant.issues.managerResponse")}</strong>

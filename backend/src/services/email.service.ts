@@ -337,9 +337,14 @@ export function issueStatusUpdateEmail(params: {
   propertyTitle: string;
   status: string;
   managerNote?: string | null;
+  // Rendez-vous d'intervention pris avec le prestataire, s'il y en a un —
+  // voir updateIssueStatus (issue.controller.ts). Simple Date, pas une
+  // chaîne : c'est la colonne telle que Drizzle la renvoie, à formater ici
+  // comme partout ailleurs dans ce service (voir toLocaleDateString plus bas).
+  scheduledAt?: Date | null;
   frontendUrl: string;
 }) {
-  const { tenantName, issueTitle, propertyTitle, status, managerNote, frontendUrl } = params;
+  const { tenantName, issueTitle, propertyTitle, status, managerNote, scheduledAt, frontendUrl } = params;
   const meta = issueStatusLabels[status] ?? { label: status, color: "#334155", emoji: "ℹ️" };
 
   return {
@@ -355,6 +360,7 @@ export function issueStatusUpdateEmail(params: {
         <div style="display:inline-block; background:${meta.color}1a; color:${meta.color}; font-weight:bold; padding:8px 16px; border-radius:20px; border:1px solid ${meta.color}40; margin: 8px 0 16px 0;">
           ${escapeHtml(meta.label)}
         </div>
+        ${scheduledAt ? `<p style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; color:#1e3a8a;"><strong>📅 Intervention prévue le ${escapeHtml(new Date(scheduledAt).toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" }))}</strong><br/>Merci de vous assurer d'être présent ou de prévoir un accès au logement.</p>` : ""}
         ${managerNote ? `<p style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; color:#334155;"><strong>Message de votre agence :</strong><br/>${escapeHtml(managerNote)}</p>` : ""}
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${frontendUrl}/portail/incidents" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
