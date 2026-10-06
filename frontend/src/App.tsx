@@ -38,6 +38,7 @@ const ListingLeadsPage = lazyWithReload(() => import("./pages/manager/ListingLea
 const MessagesPage = lazyWithReload(() => import("./pages/manager/MessagesPage"));
 const PropertiesPage = lazyWithReload(() => import("./pages/manager/PropertiesPage"));
 const SubscriptionPage = lazyWithReload(() => import("./pages/manager/SubscriptionPage"));
+const ReferralPage = lazyWithReload(() => import("./pages/manager/ReferralPage"));
 const TenantsPage = lazyWithReload(() => import("./pages/manager/TenantsPage"));
 const OwnersPage = lazyWithReload(() => import("./pages/manager/OwnersPage"));
 const InspectionsPage = lazyWithReload(() => import("./pages/manager/InspectionsPage"));
@@ -114,6 +115,7 @@ function AppRoutes() {
           <Route path="/activity-log" element={<ActivityLogPage />} />
           <Route path="/agency" element={<AgencySettingsPage />} />
           <Route path="/subscription" element={<SubscriptionPage />} />
+          <Route path="/parrainage" element={<ReferralPage />} />
         </Route>
 
         <Route

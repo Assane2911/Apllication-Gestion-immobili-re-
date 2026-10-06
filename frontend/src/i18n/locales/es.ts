@@ -39,6 +39,8 @@ const es: TranslationSchema = {
       retry: "Reintentar",
       none: "Ninguno/a",
       view: "Ver",
+      copy: "Copiar",
+      copied: "¡Copiado!",
     },
     status: {
       AVAILABLE: "Disponible",
@@ -107,6 +109,7 @@ const es: TranslationSchema = {
       activityLog: "Quién hizo qué, y cuándo, en su espacio.",
       agency: "Identidad de la agencia: datos, logotipo y menciones de los recibos.",
       subscription: "Su plan, sus facturas y el estado de su prueba.",
+      referral: "Tu código de referido y tus referidos.",
     },
     manager: {
       dashboard: "Panel de control",
@@ -126,6 +129,7 @@ const es: TranslationSchema = {
       activityLog: "Registro de actividad",
       agency: "Mi Agencia",
       subscription: "Mi Suscripción",
+      referral: "Referidos",
     },
     tipsTenant: {
       home: "Su contrato, sus documentos y las actas pendientes de firma.",
@@ -194,6 +198,8 @@ const es: TranslationSchema = {
       passwordPlaceholder: "••••••••",
       passwordHint: "Mínimo 8 caracteres",
       confirmPassword: "Confirmar contraseña",
+      referralCode: "Código de referido (opcional)",
+      referralCodePlaceholder: "Ej. A1B2C3D4",
       submit: "Crear mi cuenta",
       submitting: "Creando cuenta...",
       mismatchError: "Las dos contraseñas no coinciden.",
@@ -1378,6 +1384,15 @@ const es: TranslationSchema = {
         BANK_TRANSFER: { label: "Transferencia bancaria", hint: "Validación en 24h mediante transferencia" },
         DEMO: { label: "Modo demo", hint: "Activación inmediata para pruebas y validación" },
       },
+    },
+    referral: {
+      title: "Programa de referidos",
+      subtitle: "Comparte tu código: cada referido confirmado te da {{days}} días adicionales.",
+      subtitleGeneric: "Comparte tu código y amplía tu acceso con cada referido confirmado.",
+      codeLabel: "Tu código de referido",
+      linkLabel: "Tu enlace para compartir",
+      explanation: "En cuanto alguien se registre con tu código y confirme su correo, se añadirán automáticamente {{days}} días a tu prueba o a tu suscripción actual.",
+      totalReferred: "Referido(s) inscrito(s)",
     },
   },
 

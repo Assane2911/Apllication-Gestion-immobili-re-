@@ -131,10 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function register(email: string, password: string) {
+  async function register(email: string, password: string, referralCode?: string) {
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/register", { email, password });
+      const { data } = await api.post("/auth/register", { email, password, referralCode: referralCode || undefined });
       // `email` ne fait plus partie de la réponse : le renvoyer permettait de
       // distinguer une adresse libre d'une adresse déjà prise, et donc de
       // tester qui a un compte (voir registerManager côté serveur).

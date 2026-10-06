@@ -35,6 +35,9 @@ export async function initDb() {
         trial_ends_at TIMESTAMP,
         subscription_ends_at TIMESTAMP,
         subscription_payment_method TEXT CHECK (subscription_payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO')),
+        referral_code TEXT UNIQUE,
+        referred_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        referral_reward_granted_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -458,6 +461,11 @@ export async function initDb() {
     // (contract.controller.ts).
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS deposit_deductions TEXT`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS deposit_refunded_at TIMESTAMP`));
+    // Programme de parrainage : sur une base créée avant ce correctif, la
+    // table existe déjà sans ces colonnes — voir referral.service.ts.
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_reward_granted_at TIMESTAMP`));
 
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);
@@ -493,6 +501,7 @@ export async function initDb() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS inspections_tenant_id_idx ON inspections (tenant_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_user_id_idx ON platform_subscriptions (user_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_payment_ref_idx ON platform_subscriptions (payment_ref)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS users_referred_by_user_id_idx ON users (referred_by_user_id)`);
 
     console.log("✅ Tables et types de base de données initialisés avec succès.");
 

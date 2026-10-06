@@ -127,6 +127,23 @@ export const users = pgTable("users", {
   totpSecret: text("totp_secret"),
   totpEnabledAt: timestamp("totp_enabled_at", { mode: "date" }),
   totpBackupCodesHash: text("totp_backup_codes_hash"),
+  // Programme de parrainage (voir referral.service.ts). `referralCode` est
+  // propre à CE compte et généré paresseusement (NULL jusqu'au premier appel
+  // de getMyReferral) plutôt qu'à l'inscription : un backfill sur les comptes
+  // déjà existants aurait exigé une valeur aléatoire par ligne, qu'une simple
+  // migration SQL ne sait pas faire proprement.
+  referralCode: text("referral_code").unique(),
+  // Compte MANAGER qui a parrainé CE compte, renseigné à l'inscription si un
+  // code valide a été fourni (voir registerManager). SET NULL (pas CASCADE) :
+  // supprimer le parrain ne doit pas supprimer les comptes qu'il a parrainés,
+  // seulement le lien d'attribution.
+  referredByUserId: text("referred_by_user_id").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+  // Marque que la récompense du PARRAIN a déjà été accordée pour CE
+  // filleul — posée sur le filleul (pas le parrain) pour qu'elle reste scopée
+  // à une seule attribution, même si le parrain en a plusieurs en cours.
+  // Empêche une double récompense si accorderRecompenseParrainage était
+  // jamais rappelée pour ce compte.
+  referralRewardGrantedAt: timestamp("referral_reward_granted_at", { mode: "date" }),
   ...timestamps,
 });
 

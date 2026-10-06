@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import jwt, { SignOptions } from "jsonwebtoken";
@@ -15,6 +15,7 @@ import {
   passwordResetEmail,
   sendEmail,
 } from "../services/email.service";
+import { accorderRecompenseParrainage } from "../services/referral.service";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { consommerCodeSecours, verifierCodeTotp } from "../services/totp.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -29,6 +30,11 @@ const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
 const registerManagerSchema = z.object({
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
   password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+  // Code de parrainage (voir referral.service.ts), saisi manuellement ou
+  // pré-rempli depuis le lien partagé (?ref=CODE). Facultatif, et un code
+  // introuvable n'empêche jamais l'inscription — voir plus bas : ce n'est
+  // qu'une attribution de récompense, jamais une condition d'accès.
+  referralCode: z.string().trim().min(1).optional(),
 });
 
 const loginSchema = z.object({
@@ -222,6 +228,27 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
   const emailVerificationTokenHash = hashToken(rawToken);
   const emailVerificationExpiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
 
+  // Programme de parrainage (voir referral.service.ts) : seul un compte
+  // gestionnaire PROPRIÉTAIRE (teamOwnerId NULL) peut être parrain — un
+  // collaborateur invité n'a pas de code qui lui soit propre (voir
+  // schema.ts::teamOwnerId). Un code introuvable ou mal saisi est ignoré en
+  // silence plutôt que de bloquer l'inscription : ce n'est qu'une
+  // attribution de récompense.
+  let referredByUserId: string | null = null;
+  if (body.referralCode) {
+    const [parrain] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(
+        and(
+          eq(users.referralCode, body.referralCode.toUpperCase()),
+          eq(users.role, "MANAGER"),
+          isNull(users.teamOwnerId)
+        )
+      );
+    referredByUserId = parrain?.id ?? null;
+  }
+
   const [user] = await db
     .insert(users)
     .values({
@@ -237,6 +264,7 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
       trialEndsAt,
       emailVerificationTokenHash,
       emailVerificationExpiresAt,
+      referredByUserId,
     })
     .returning();
 
@@ -557,6 +585,17 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     })
     .where(eq(users.id, user.id))
     .returning();
+
+  // Programme de parrainage (voir referral.service.ts) : la confirmation de
+  // CE compte est ce qui déclenche la récompense de son éventuel parrain.
+  // Protégé par son propre try/catch : un filleul qui confirme son adresse
+  // ne doit jamais rester bloqué par un problème sur la récompense d'un
+  // tiers.
+  try {
+    await accorderRecompenseParrainage(updated);
+  } catch (err) {
+    console.error("[referral] Échec de l'attribution de la récompense de parrainage:", err);
+  }
 
   const token = signToken({ userId: updated.id, role: "MANAGER", tokenVersion: updated.tokenVersion });
   setAuthCookie(res, token);

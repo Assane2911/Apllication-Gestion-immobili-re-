@@ -127,6 +127,14 @@ export interface Vendor {
   createdAt: string;
 }
 
+/** Réponse de GET /api/referral (programme de parrainage). */
+export interface ReferralInfo {
+  referralCode: string;
+  referralUrl: string;
+  rewardDays: number;
+  totalReferred: number;
+}
+
 /** Résumé financier d'un bien tel que renvoyé par GET /api/owners/mine/dashboard. */
 export interface OwnerDashboardProperty {
   propertyId: string;

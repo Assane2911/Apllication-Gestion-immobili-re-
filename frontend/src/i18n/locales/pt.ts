@@ -39,6 +39,8 @@ const pt: TranslationSchema = {
       retry: "Tentar novamente",
       none: "Nenhum",
       view: "Ver",
+      copy: "Copiar",
+      copied: "Copiado!",
     },
     status: {
       AVAILABLE: "Disponível",
@@ -107,6 +109,7 @@ const pt: TranslationSchema = {
       activityLog: "Quem fez o quê, e quando, no seu espaço.",
       agency: "Identidade da agência: contactos, logótipo e menções dos recibos.",
       subscription: "O seu plano, as suas faturas e o estado do seu período de teste.",
+      referral: "O seu código de indicação e as suas indicações.",
     },
     manager: {
       dashboard: "Painel",
@@ -126,6 +129,7 @@ const pt: TranslationSchema = {
       activityLog: "Registo de atividade",
       agency: "Minha Agência",
       subscription: "Minha Assinatura",
+      referral: "Indicações",
     },
     tipsTenant: {
       home: "O seu contrato, os seus documentos e os autos a assinar.",
@@ -194,6 +198,8 @@ const pt: TranslationSchema = {
       passwordPlaceholder: "••••••••",
       passwordHint: "Mínimo de 8 caracteres",
       confirmPassword: "Confirmar palavra-passe",
+      referralCode: "Código de indicação (facultativo)",
+      referralCodePlaceholder: "Ex. A1B2C3D4",
       submit: "Criar a minha conta",
       submitting: "A criar conta...",
       mismatchError: "As duas palavras-passe não coincidem.",
@@ -1376,6 +1382,15 @@ const pt: TranslationSchema = {
         BANK_TRANSFER: { label: "Transferência bancária", hint: "Validação em 24h por transferência" },
         DEMO: { label: "Modo demonstração", hint: "Ativação imediata para testes e validação" },
       },
+    },
+    referral: {
+      title: "Programa de indicação",
+      subtitle: "Partilhe o seu código: cada indicação confirmada oferece-lhe {{days}} dias adicionais.",
+      subtitleGeneric: "Partilhe o seu código e prolongue o seu acesso a cada indicação confirmada.",
+      codeLabel: "O seu código de indicação",
+      linkLabel: "O seu link a partilhar",
+      explanation: "Assim que alguém se inscrever com o seu código e confirmar o email, {{days}} dias são automaticamente adicionados ao seu período de teste ou à sua assinatura atual.",
+      totalReferred: "Indicação(ões) inscrita(s)",
     },
   },
 

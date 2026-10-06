@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "../api/client";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -44,6 +44,15 @@ function EyeIcon({ off }: { off: boolean }) {
   );
 }
 
+function GiftIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3.5" y="9" width="17" height="11" rx="1.5" />
+      <path d="M3.5 13.5h17M12 9v11M8 9a2.5 2.5 0 1 1 0-5c1.5 0 2.8 1.2 4 3 1.2-1.8 2.5-3 4-3a2.5 2.5 0 1 1 0 5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CheckIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
@@ -56,10 +65,15 @@ export default function RegisterPage() {
   const { t, i18n } = useTranslation();
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // Pré-rempli depuis un lien de parrainage partagé (?ref=CODE, voir
+  // ReferralPage.tsx) mais toujours modifiable : rien n'empêche une personne
+  // de saisir un autre code à la main.
+  const [referralCode, setReferralCode] = useState(() => (searchParams.get("ref") ?? "").toUpperCase());
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -84,7 +98,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(email, password);
+      await register(email, password, referralCode);
       setSent(true);
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -254,6 +268,25 @@ export default function RegisterPage() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                       placeholder={t("auth.register.passwordPlaceholder")}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="register-referral-code" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    {t("auth.register.referralCode")}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <GiftIcon />
+                    </span>
+                    <input
+                      id="register-referral-code"
+                      type="text"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors uppercase"
+                      placeholder={t("auth.register.referralCodePlaceholder")}
                     />
                   </div>
                 </div>
