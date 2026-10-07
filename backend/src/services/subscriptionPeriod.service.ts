@@ -42,7 +42,7 @@ export function calculerPeriode(params: {
   const startDate =
     finActuelle && finActuelle.getTime() > maintenant.getTime() ? new Date(finActuelle) : new Date(maintenant);
 
-  return { startDate, endDate: ajouter(startDate, cycle) };
+  return { startDate, endDate: ajouterPeriode(startDate, cycle) };
 }
 
 /**
@@ -246,7 +246,7 @@ function convertirVersDevise(
  * partout ailleurs en facturation : le 31 janvier + 1 mois = 28 (ou 29)
  * février.
  */
-function ajouter(depuis: Date, cycle: BillingCycle): Date {
+export function ajouterPeriode(depuis: Date, cycle: BillingCycle): Date {
   const resultat = new Date(depuis);
   const jour = resultat.getDate();
 

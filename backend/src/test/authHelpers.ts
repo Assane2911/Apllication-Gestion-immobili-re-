@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
-import { contracts, inspections, invoices, owners, platformSubscriptions, properties, tenants, users, vendors } from "../db/schema";
+import { contracts, expenses, inspections, invoices, owners, platformSubscriptions, properties, tenants, users, vendors } from "../db/schema";
 
 /**
  * Construit un buffer commençant par la vraie signature magique JPEG
@@ -71,6 +71,21 @@ export async function createProperty(managerId: string, overrides: Partial<typeo
     })
     .returning();
   return property;
+}
+
+/** Crée directement une dépense pour un bien donné (sans passer par createExpense du contrôleur). */
+export async function createExpense(propertyId: string, overrides: Partial<typeof expenses.$inferInsert> = {}) {
+  const [expense] = await testDb
+    .insert(expenses)
+    .values({
+      propertyId,
+      category: "MAINTENANCE",
+      title: "Dépense de test",
+      amount: 100,
+      ...overrides,
+    })
+    .returning();
+  return expense;
 }
 
 /** Crée une fiche locataire pour un gestionnaire donné. */

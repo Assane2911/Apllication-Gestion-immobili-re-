@@ -242,6 +242,100 @@ describe("ExpensesPage", () => {
     expect(mockedApi.post).not.toHaveBeenCalled();
   });
 
+  describe("dépenses récurrentes", () => {
+    it("crée un modèle de dépense mensuelle, sans date de fin", async () => {
+      const user = userEvent.setup();
+      queueLoad([property({ id: "prop-1" })], summary(), []);
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "exp-new" } });
+      queueLoad([property({ id: "prop-1" })], summary(), []);
+
+      renderPage();
+      await waitFor(() => expect(screen.getByRole("button", { name: /Enregistrer une dépense/ })).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: /Enregistrer une dépense/ }));
+
+      const selects = screen.getAllByRole("combobox");
+      await user.selectOptions(selects[1], "prop-1");
+      await user.type(screen.getByPlaceholderText("Ex: Remplacement chauffe-eau"), "Assurance habitation");
+      fireEvent.change(screen.getByPlaceholderText("0.00"), { target: { value: "30" } });
+      await user.selectOptions(screen.getByLabelText("Récurrence"), "MONTHLY");
+
+      // Pas de champ de date de fin sans qu'une récurrence soit choisie au
+      // préalable (affiché ici puisque MONTHLY vient d'être sélectionné) —
+      // on ne le remplit pas pour ce test : la récurrence doit rester ouverte.
+      expect(screen.getByLabelText("Jusqu'au (facultatif)")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Enregistrer la dépense" }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith(
+          "/expenses",
+          expect.objectContaining({ recurrence: "MONTHLY", recurrenceEndDate: undefined })
+        )
+      );
+    });
+
+    it("crée un modèle de dépense annuelle avec une date de fin", async () => {
+      const user = userEvent.setup();
+      queueLoad([property({ id: "prop-1" })], summary(), []);
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "exp-new" } });
+      queueLoad([property({ id: "prop-1" })], summary(), []);
+
+      renderPage();
+      await waitFor(() => expect(screen.getByRole("button", { name: /Enregistrer une dépense/ })).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: /Enregistrer une dépense/ }));
+
+      const selects = screen.getAllByRole("combobox");
+      await user.selectOptions(selects[1], "prop-1");
+      await user.type(screen.getByPlaceholderText("Ex: Remplacement chauffe-eau"), "Assurance PNO");
+      fireEvent.change(screen.getByPlaceholderText("0.00"), { target: { value: "300" } });
+      await user.selectOptions(screen.getByLabelText("Récurrence"), "ANNUAL");
+      fireEvent.change(screen.getByLabelText("Jusqu'au (facultatif)"), { target: { value: "2030-01-01" } });
+
+      await user.click(screen.getByRole("button", { name: "Enregistrer la dépense" }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith(
+          "/expenses",
+          expect.objectContaining({ recurrence: "ANNUAL", recurrenceEndDate: "2030-01-01" })
+        )
+      );
+    });
+
+    it("n'affiche pas le champ de date de fin tant qu'aucune récurrence n'est choisie", async () => {
+      const user = userEvent.setup();
+      queueLoad([property({ id: "prop-1" })], summary(), []);
+
+      renderPage();
+      await waitFor(() => expect(screen.getByRole("button", { name: /Enregistrer une dépense/ })).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: /Enregistrer une dépense/ }));
+
+      expect(screen.queryByLabelText("Jusqu'au (facultatif)")).not.toBeInTheDocument();
+    });
+
+    it("affiche un badge de récurrence sur le modèle et sur une occurrence générée", async () => {
+      queueLoad(
+        [property({ id: "prop-1" })],
+        summary(),
+        [
+          expense({ id: "exp-template", title: "Assurance habitation", recurrence: "ANNUAL", templateId: null }),
+          expense({ id: "exp-occurrence", title: "Taxe foncière", recurrence: null, templateId: "exp-other-template" }),
+          expense({ id: "exp-ordinaire", title: "Plomberie ponctuelle", recurrence: null, templateId: null }),
+        ]
+      );
+
+      renderPage();
+      await waitFor(() => expect(screen.getByText("Assurance habitation")).toBeInTheDocument());
+
+      const ligneModele = screen.getByText("Assurance habitation").closest("tr")!;
+      const ligneOccurrence = screen.getByText("Taxe foncière").closest("tr")!;
+      const ligneOrdinaire = screen.getByText("Plomberie ponctuelle").closest("tr")!;
+
+      expect(ligneModele.querySelector("svg.lucide-repeat")).not.toBeNull();
+      expect(ligneOccurrence.querySelector("svg.lucide-repeat")).not.toBeNull();
+      expect(ligneOrdinaire.querySelector("svg.lucide-repeat")).toBeNull();
+    });
+  });
+
   it("supprime une dépense après confirmation", async () => {
     const user = userEvent.setup();
     queueLoad([property()], summary(), [expense({ id: "exp-1" })]);

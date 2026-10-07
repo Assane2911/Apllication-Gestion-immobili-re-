@@ -97,6 +97,60 @@ describe("POST /api/expenses", () => {
     expect(res.status).toBe(201);
     expect(res.body.currency).toBe("EUR");
   });
+
+  describe("dépenses récurrentes", () => {
+    it("crée un modèle de dépense récurrente", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+
+      const res = await request(app)
+        .post("/api/expenses")
+        .set(authHeader(tokenFor(manager)))
+        .send({
+          propertyId: property.id,
+          title: "Assurance habitation",
+          amount: 300,
+          recurrence: "ANNUAL",
+          expenseDate: "2026-01-15",
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.recurrence).toBe("ANNUAL");
+      expect(res.body.templateId).toBeNull();
+      expect(res.body.periodIndex).toBeNull();
+    });
+
+    it("refuse une date de fin de récurrence sans récurrence", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+
+      const res = await request(app)
+        .post("/api/expenses")
+        .set(authHeader(tokenFor(manager)))
+        .send({ propertyId: property.id, title: "Syndic", amount: 80, recurrenceEndDate: "2027-01-01" });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("refuse une date de fin de récurrence antérieure ou égale à la date de la dépense", async () => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+
+      const res = await request(app)
+        .post("/api/expenses")
+        .set(authHeader(tokenFor(manager)))
+        .send({
+          propertyId: property.id,
+          title: "Syndic",
+          amount: 80,
+          recurrence: "MONTHLY",
+          expenseDate: "2026-06-01",
+          recurrenceEndDate: "2026-06-01",
+        });
+
+      expect(res.status).toBe(400);
+    });
+  });
 });
 
 describe("DELETE /api/expenses/:id", () => {

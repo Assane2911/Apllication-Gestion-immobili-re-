@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   triggerContractEndingReminders,
   triggerDailyReminders,
+  triggerRecurringExpenseGeneration,
   triggerRentDueReminders,
   triggerUpcomingRentDueReminders,
 } from "../controllers/cron.controller";
@@ -33,5 +34,6 @@ router.get("/daily", triggerDailyReminders);
 router.get("/contract-reminders", triggerContractEndingReminders);
 router.get("/rent-due-reminders", triggerRentDueReminders);
 router.get("/rent-due-soon-reminders", triggerUpcomingRentDueReminders);
+router.get("/recurring-expenses", triggerRecurringExpenseGeneration);
 
 export default router;

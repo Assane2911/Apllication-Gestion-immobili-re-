@@ -271,6 +271,8 @@ export interface Inspection {
 
 export type ExpenseCategory = "MAINTENANCE" | "TAX" | "INSURANCE" | "SYNDIC" | "OTHER";
 
+export type ExpenseRecurrence = "MONTHLY" | "ANNUAL";
+
 export interface Expense {
   id: string;
   propertyId: string;
@@ -281,6 +283,12 @@ export interface Expense {
   expenseDate: string;
   receiptUrl?: string | null;
   notes?: string | null;
+  /** Renseigné uniquement sur le modèle d'une dépense récurrente. */
+  recurrence?: ExpenseRecurrence | null;
+  recurrenceEndDate?: string | null;
+  /** Renseigné uniquement sur une occurrence générée automatiquement depuis un modèle. */
+  templateId?: string | null;
+  periodIndex?: number | null;
   property?: Property;
   createdAt: string;
 }
