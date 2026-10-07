@@ -61,6 +61,7 @@
     "vitest": "^5.0.2"
   },
   "overrides": {
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "@scure/base": "1.2.6"
   }
 }
