@@ -28,6 +28,13 @@ const createExpenseSchema = z.object({
   // Livre) plutôt qu'un 400 clair au moment de la saisie.
   expenseDate: z.coerce.date().optional(),
   notes: z.string().optional(),
+  // Dépense récurrente (voir recurringExpense.service.ts) : cette dépense
+  // devient le MODÈLE à partir duquel les occurrences suivantes sont générées
+  // automatiquement chaque jour (cron /daily). Pas d'endpoint de mise à jour
+  // des dépenses dans ce contrôleur — la récurrence ne se fixe qu'à la
+  // création, jamais après coup.
+  recurrence: z.enum(["MONTHLY", "ANNUAL"]).optional(),
+  recurrenceEndDate: z.coerce.date().optional(),
 });
 
 /**
@@ -79,6 +86,14 @@ export const listExpenses = asyncHandler(async (req: Request, res: Response) => 
 export const createExpense = asyncHandler(async (req: Request, res: Response) => {
   const body = createExpenseSchema.parse(req.body);
 
+  if (body.recurrenceEndDate && !body.recurrence) {
+    throw new ApiError(400, "Une date de fin de récurrence suppose une dépense récurrente.");
+  }
+  const expenseDate = body.expenseDate ?? new Date();
+  if (body.recurrenceEndDate && body.recurrenceEndDate <= expenseDate) {
+    throw new ApiError(400, "La date de fin de récurrence doit être postérieure à la date de la dépense.");
+  }
+
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
   assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable");
 
@@ -90,8 +105,10 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
       title: body.title,
       amount: body.amount,
       currency: body.currency || prop.currency || "EUR",
-      expenseDate: body.expenseDate ?? new Date(),
+      expenseDate,
       notes: body.notes,
+      recurrence: body.recurrence,
+      recurrenceEndDate: body.recurrenceEndDate,
     })
     .returning();
 

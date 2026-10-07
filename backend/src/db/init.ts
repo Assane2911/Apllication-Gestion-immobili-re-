@@ -247,6 +247,10 @@ export async function initDb() {
         expense_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         receipt_url TEXT,
         notes TEXT,
+        recurrence TEXT,
+        recurrence_end_date TIMESTAMP,
+        template_id TEXT REFERENCES expenses(id) ON DELETE SET NULL,
+        period_index INTEGER,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -466,6 +470,15 @@ export async function initDb() {
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_reward_granted_at TIMESTAMP`));
+    // Dépenses récurrentes : sur une base créée avant ce correctif, la table
+    // existe déjà sans ces colonnes — voir recurringExpense.service.ts.
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS recurrence TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS recurrence_end_date TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS template_id TEXT REFERENCES expenses(id) ON DELETE SET NULL`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS period_index INTEGER`));
+    await alterSiBesoin(() =>
+      db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS expenses_template_period_unique ON expenses (template_id, period_index)`)
+    );
 
     // Index de performance sur clés étrangères et filtres fréquents
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_manager_id_idx ON properties (manager_id)`);

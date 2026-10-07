@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { env } from "../config/env";
 import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "../services/reminder.service";
 import { purgerDonneesDeLaPlateforme } from "../services/conservation.service";
+import { runRecurringExpenseGeneration } from "../services/recurringExpense.service";
 import { budgetTemps } from "../utils/budgetTemps";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -108,6 +109,7 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   const contractEnding = await runContractEndingReminders(budget);
   const upcoming = await runUpcomingRentDueReminders(budget);
   const rentDue = await runRentDueReminders(undefined, budget);
+  const recurringExpenses = await runRecurringExpenseGeneration(budget);
 
   res.json({
     success: true,
@@ -115,13 +117,14 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
     contractEndingRemindersSent: contractEnding.sent,
     upcomingRentDueRemindersSent: upcoming.sent,
     rentDueRemindersSent: rentDue.sent,
+    recurringExpensesGenerated: recurringExpenses.generees,
     // Les envois qui ont VRAIMENT échoué. Leur marqueur a été relâché, donc
     // ils repartiront demain — mais un cron qui annonce « 40 envoyés » sans
     // dire que 40 ont échoué ne se distingue pas d'un cron qui a réussi.
     echecs: contractEnding.echecs + upcoming.echecs + rentDue.echecs,
     // Vrai dès qu'un des trois travaux s'est arrêté faute de temps : le
     // reliquat n'est pas perdu, il sera traité à la prochaine exécution.
-    interrompu: contractEnding.interrompu || upcoming.interrompu || rentDue.interrompu,
+    interrompu: contractEnding.interrompu || upcoming.interrompu || rentDue.interrompu || recurringExpenses.interrompu,
     details: upcoming.details,
   });
 });
@@ -167,3 +170,19 @@ export const triggerUpcomingRentDueReminders = asyncHandler(async (req: Request,
   });
 });
 
+/**
+ * Génère les occurrences manquantes des dépenses récurrentes (voir
+ * recurringExpense.service.ts). Toujours déclenchée par /daily ; cette route
+ * individuelle reste disponible pour un déclenchement manuel.
+ */
+export const triggerRecurringExpenseGeneration = asyncHandler(async (req: Request, res: Response) => {
+  assertCronAuthorized(req);
+
+  const result = await runRecurringExpenseGeneration(budgetTemps(env.cronBudgetMs));
+  res.json({
+    success: true,
+    message: `${result.generees} dépense(s) récurrente(s) générée(s)`,
+    generees: result.generees,
+    interrompu: result.interrompu,
+  });
+});

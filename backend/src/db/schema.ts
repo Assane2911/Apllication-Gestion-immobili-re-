@@ -611,10 +611,37 @@ export const expenses = pgTable(
     expenseDate: timestamp("expense_date", { mode: "date" }).notNull().defaultNow(),
     receiptUrl: text("receipt_url"),
     notes: text("notes"),
+    // Dépenses récurrentes (voir recurringExpense.service.ts) : NULL partout
+    // sauf sur la dépense MODÈLE elle-même, qui reste une dépense normale
+    // (déjà réellement engagée à `expenseDate`) en plus de porter la
+    // récurrence. "MONTHLY" | "ANNUAL" — contrainte CHECK en base, non
+    // modélisée ici (même convention que issueReports.status, etc.).
+    recurrence: text("recurrence"),
+    // Date au-delà de laquelle ne plus générer de nouvelle occurrence (ex. un
+    // contrat d'assurance à durée déterminée). NULL = récurrence sans fin
+    // prévue, génération jusqu'à suppression manuelle du modèle.
+    recurrenceEndDate: timestamp("recurrence_end_date", { mode: "date" }),
+    // Posé UNIQUEMENT sur une occurrence GÉNÉRÉE automatiquement, jamais sur
+    // le modèle ni sur une dépense ordinaire. SET NULL (pas CASCADE) :
+    // supprimer le modèle arrête la génération future mais ne doit jamais
+    // effacer des dépenses déjà réellement engagées et déjà comptées dans le
+    // Grand Livre / bilan fiscal — même principe que issueReports.vendorId.
+    templateId: text("template_id").references((): AnyPgColumn => expenses.id, { onDelete: "set null" }),
+    // Numéro d'occurrence relatif au modèle (1, 2, 3...) — jamais recalculé à
+    // partir de `expenseDate` (fuseaux, heure d'été) : c'est lui, avec
+    // `templateId`, qui rend la génération idempotente (voir la contrainte
+    // UNIQUE ci-dessous), sur le même principe que
+    // invoices.(contractId, periodMonth, periodYear).
+    periodIndex: integer("period_index"),
     ...timestamps,
   },
   (table) => ({
     propertyIdIdx: index("expenses_property_id_idx").on(table.propertyId),
+    // NULL n'est jamais égal à NULL pour une contrainte UNIQUE : une dépense
+    // ordinaire ou un modèle (templateId NULL) n'est donc jamais bloqué par
+    // cette contrainte, qui ne protège que les occurrences générées entre
+    // elles.
+    templatePeriodUnique: uniqueIndex("expenses_template_period_unique").on(table.templateId, table.periodIndex),
   })
 );
 

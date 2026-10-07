@@ -1,4 +1,4 @@
-import { BarChart3, Download, X } from "lucide-react";
+import { BarChart3, Download, Repeat, X } from "lucide-react";
 import { csvEscape, csvMontant, CSV_BOM } from "../../utils/csv";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,7 +6,7 @@ import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/clien
 import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
-import type { Expense, ExpenseCategory, PaginatedResponse, Property } from "../../types";
+import type { Expense, ExpenseCategory, ExpenseRecurrence, PaginatedResponse, Property } from "../../types";
 import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
 
@@ -70,14 +70,17 @@ export default function ExpensesPage() {
     OTHER: t("manager.expenses.categories.OTHER"),
   };
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     propertyId: "",
     category: "MAINTENANCE" as ExpenseCategory,
     title: "",
     amount: "",
     expenseDate: new Date().toISOString().split("T")[0],
     notes: "",
-  });
+    recurrence: "" as "" | ExpenseRecurrence,
+    recurrenceEndDate: "",
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const loadData = useCallback(
     (signal?: AbortSignal) => {
@@ -136,16 +139,11 @@ export default function ExpensesPage() {
       await api.post("/expenses", {
         ...form,
         amount: Number(form.amount),
+        recurrence: form.recurrence || undefined,
+        recurrenceEndDate: form.recurrence && form.recurrenceEndDate ? form.recurrenceEndDate : undefined,
       });
       setShowModal(false);
-      setForm({
-        propertyId: "",
-        category: "MAINTENANCE",
-        title: "",
-        amount: "",
-        expenseDate: new Date().toISOString().split("T")[0],
-        notes: "",
-      });
+      setForm(emptyForm);
       loadData();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -409,7 +407,16 @@ export default function ExpensesPage() {
                     {categoryLabels[exp.category] || exp.category}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{exp.title}</td>
+                <td className="px-4 py-3 text-slate-800 dark:text-slate-200">
+                  <span className="inline-flex items-center gap-1.5">
+                    {exp.title}
+                    {(exp.recurrence || exp.templateId) && (
+                      <Bulle texte={exp.recurrence ? t("manager.expenses.recurrenceModelHint") : t("manager.expenses.recurrenceOccurrenceHint")}>
+                        <Repeat size={12} className="text-brand-600 dark:text-brand-400 shrink-0" aria-hidden="true" />
+                      </Bulle>
+                    )}
+                  </span>
+                </td>
                 <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400">-{formatMoney(exp.amount, exp.currency)}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
@@ -537,6 +544,40 @@ export default function ExpensesPage() {
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="expense-modal-recurrence" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {t("manager.expenses.fields.recurrence")}
+                  </label>
+                  <Bulle texte={t("manager.tips.expenseRecurrence")}>
+                  <select
+                    id="expense-modal-recurrence"
+                    value={form.recurrence}
+                    onChange={(e) => setForm({ ...form, recurrence: e.target.value as "" | ExpenseRecurrence })}
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                  >
+                    <option value="">{t("manager.expenses.fields.recurrenceNone")}</option>
+                    <option value="MONTHLY">{t("manager.expenses.fields.recurrenceMonthly")}</option>
+                    <option value="ANNUAL">{t("manager.expenses.fields.recurrenceAnnual")}</option>
+                  </select>
+                  </Bulle>
+                </div>
+                {form.recurrence && (
+                  <div>
+                    <label htmlFor="expense-modal-recurrence-end" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t("manager.expenses.fields.recurrenceEndDate")}
+                    </label>
+                    <input
+                      id="expense-modal-recurrence-end"
+                      type="date"
+                      value={form.recurrenceEndDate}
+                      onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
+                      className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    />
+                  </div>
+                )}
               </div>
 
               {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
