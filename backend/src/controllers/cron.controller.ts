@@ -1,7 +1,12 @@
 import crypto from "crypto";
 import { Request, Response } from "express";
 import { env } from "../config/env";
-import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "../services/reminder.service";
+import {
+  runContractEndingReminders,
+  runInsurancePolicyExpiryReminders,
+  runRentDueReminders,
+  runUpcomingRentDueReminders,
+} from "../services/reminder.service";
 import { purgerDonneesDeLaPlateforme } from "../services/conservation.service";
 import { runRecurringExpenseGeneration } from "../services/recurringExpense.service";
 import { budgetTemps } from "../utils/budgetTemps";
@@ -110,6 +115,7 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   const upcoming = await runUpcomingRentDueReminders(budget);
   const rentDue = await runRentDueReminders(undefined, budget);
   const recurringExpenses = await runRecurringExpenseGeneration(budget);
+  const insurance = await runInsurancePolicyExpiryReminders(budget);
 
   res.json({
     success: true,
@@ -118,13 +124,19 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
     upcomingRentDueRemindersSent: upcoming.sent,
     rentDueRemindersSent: rentDue.sent,
     recurringExpensesGenerated: recurringExpenses.generees,
+    insuranceRemindersSent: insurance.sent,
     // Les envois qui ont VRAIMENT échoué. Leur marqueur a été relâché, donc
     // ils repartiront demain — mais un cron qui annonce « 40 envoyés » sans
     // dire que 40 ont échoué ne se distingue pas d'un cron qui a réussi.
-    echecs: contractEnding.echecs + upcoming.echecs + rentDue.echecs,
-    // Vrai dès qu'un des trois travaux s'est arrêté faute de temps : le
-    // reliquat n'est pas perdu, il sera traité à la prochaine exécution.
-    interrompu: contractEnding.interrompu || upcoming.interrompu || rentDue.interrompu || recurringExpenses.interrompu,
+    echecs: contractEnding.echecs + upcoming.echecs + rentDue.echecs + insurance.echecs,
+    // Vrai dès qu'un des travaux s'est arrêté faute de temps : le reliquat
+    // n'est pas perdu, il sera traité à la prochaine exécution.
+    interrompu:
+      contractEnding.interrompu ||
+      upcoming.interrompu ||
+      rentDue.interrompu ||
+      recurringExpenses.interrompu ||
+      insurance.interrompu,
     details: upcoming.details,
   });
 });
@@ -183,6 +195,24 @@ export const triggerRecurringExpenseGeneration = asyncHandler(async (req: Reques
     success: true,
     message: `${result.generees} dépense(s) récurrente(s) générée(s)`,
     generees: result.generees,
+    interrompu: result.interrompu,
+  });
+});
+
+/**
+ * Envoie les rappels d'échéance des polices d'assurance arrivant à expiration
+ * (voir runInsurancePolicyExpiryReminders). Toujours déclenchée par /daily ;
+ * cette route individuelle reste disponible pour un déclenchement manuel.
+ */
+export const triggerInsurancePolicyExpiryReminders = asyncHandler(async (req: Request, res: Response) => {
+  assertCronAuthorized(req);
+
+  const result = await runInsurancePolicyExpiryReminders(budgetTemps(env.cronBudgetMs));
+  res.json({
+    success: true,
+    message: `${result.sent} rappel(s) d'échéance d'assurance envoyé(s)`,
+    remindersSent: result.sent,
+    echecs: result.echecs,
     interrompu: result.interrompu,
   });
 });

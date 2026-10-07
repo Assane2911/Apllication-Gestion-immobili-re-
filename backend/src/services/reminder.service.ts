@@ -2,13 +2,19 @@ import { SQL, and, desc, eq, gte, inArray, isNull, lt, lte, or } from "drizzle-o
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, invoices, properties, tenants, users } from "../db/schema";
+import { contracts, insurancePolicies, invoices, properties, tenants, users } from "../db/schema";
 import { logActivity } from "./activity.service";
 import { planAuMoins } from "../middleware/auth";
 import { ApiError } from "../utils/asyncHandler";
 import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
-import { contractEndingReminderEmail, rentDueReminderEmail, rentDueSoonReminderEmail, sendEmail } from "./email.service";
+import {
+  contractEndingReminderEmail,
+  insurancePolicyExpiryReminderEmail,
+  rentDueReminderEmail,
+  rentDueSoonReminderEmail,
+  sendEmail,
+} from "./email.service";
 import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import {
   envoyerMessageWhatsapp,
@@ -216,6 +222,92 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
   if (interrompu) {
     console.warn(
       `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) de fin de contrat reportés à la prochaine exécution.`
+    );
+  }
+  return { sent, echecs, interrompu };
+}
+
+/**
+ * Recherche les polices d'assurance dont l'échéance approche et qui n'ont pas
+ * encore reçu de rappel, puis prévient le gestionnaire propriétaire du bien
+ * concerné — même principe que runContractEndingReminders (fenêtre glissante,
+ * réclamation atomique avant envoi, email uniquement puisqu'il s'agit d'un
+ * rappel adressé au gestionnaire, pas au locataire).
+ *
+ * Contrairement au rappel de fin de bail, ce rappel n'est gated par aucun
+ * palier d'abonnement : le suivi des échéances d'assurance est une donnée de
+ * base du bien, pas une fonctionnalité avancée.
+ */
+export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SANS_LIMITE) {
+  const daysBefore = env.reminder.insuranceReminderDays;
+
+  const now = new Date();
+  // Fenêtre glissante : voir runContractEndingReminders pour la justification
+  // (une exécution manquée ne doit jamais faire sortir la police de la
+  // fenêtre avant qu'un rappel n'ait pu partir).
+  const targetStart = debutDeLaJournee(now);
+  const targetEnd = finDeLaJournee(jourDecale(daysBefore, now));
+
+  const rows = await db
+    .select({
+      policy: insurancePolicies,
+      property: properties,
+      managerEmail: users.email,
+    })
+    .from(insurancePolicies)
+    .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
+    .innerJoin(users, eq(properties.managerId, users.id))
+    .where(
+      and(
+        isNull(insurancePolicies.reminderSentAt),
+        gte(insurancePolicies.expiryDate, targetStart),
+        lte(insurancePolicies.expiryDate, targetEnd)
+      )
+    );
+
+  let sent = 0;
+  let echecs = 0;
+  let interrompu = false;
+  for (const row of rows) {
+    if (budget.epuise()) {
+      interrompu = true;
+      break;
+    }
+
+    // Réclamation atomique AVANT l'envoi — même course concurrentielle que
+    // runContractEndingReminders (chevauchement du cron quotidien).
+    const [reclamee] = await db
+      .update(insurancePolicies)
+      .set({ reminderSentAt: new Date() })
+      .where(and(eq(insurancePolicies.id, row.policy.id), isNull(insurancePolicies.reminderSentAt)))
+      .returning();
+    if (!reclamee) continue;
+
+    const { subject, html } = insurancePolicyExpiryReminderEmail({
+      propertyTitle: row.property.title,
+      insurerName: row.policy.insurerName,
+      policyNumber: row.policy.policyNumber,
+      expiryDate: new Date(row.policy.expiryDate),
+      daysLeft: joursEntre(now, new Date(row.policy.expiryDate)),
+    });
+
+    const emailResult = await sendEmail(row.managerEmail, subject, html);
+    if (emailResult.error) {
+      // Marqueur relâché : le rappel repartira à la prochaine exécution
+      // plutôt que d'être perdu pour cette police.
+      await db.update(insurancePolicies).set({ reminderSentAt: null }).where(eq(insurancePolicies.id, row.policy.id));
+      echecs += 1;
+      continue;
+    }
+    sent += 1;
+  }
+
+  if (sent > 0) {
+    console.log(`[reminder] 🛡️ ${sent} rappel(s) d'échéance d'assurance envoyé(s).`);
+  }
+  if (interrompu) {
+    console.warn(
+      `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) d'échéance d'assurance reportés à la prochaine exécution.`
     );
   }
   return { sent, echecs, interrompu };
@@ -764,6 +856,14 @@ export function scheduleContractEndingReminders() {
   console.log(`[reminder] ⏰ Job rappel "avant échéance" planifié avec "${rentDueSoonCron}"`);
   cron.schedule(rentDueSoonCron, () => {
     runUpcomingRentDueReminders().catch((err) => console.error("[reminder] erreur rappel avant échéance:", err));
+  });
+
+  // Tâche planifiée automatique : tous les jours à 8h30, rappel d'échéance
+  // des polices d'assurance (voir runInsurancePolicyExpiryReminders).
+  const insuranceReminderCron = "30 8 * * *";
+  console.log(`[reminder] 🛡️ Job rappel d'échéance d'assurance planifié avec "${insuranceReminderCron}"`);
+  cron.schedule(insuranceReminderCron, () => {
+    runInsurancePolicyExpiryReminders().catch((err) => console.error("[reminder] erreur rappel assurance:", err));
   });
 }
 

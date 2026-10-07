@@ -3,7 +3,19 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { testDb } from "./setupTestDb";
-import { contracts, expenses, inspections, invoices, owners, platformSubscriptions, properties, tenants, users, vendors } from "../db/schema";
+import {
+  contracts,
+  expenses,
+  inspections,
+  insurancePolicies,
+  invoices,
+  owners,
+  platformSubscriptions,
+  properties,
+  tenants,
+  users,
+  vendors,
+} from "../db/schema";
 
 /**
  * Construit un buffer commençant par la vraie signature magique JPEG
@@ -86,6 +98,21 @@ export async function createExpense(propertyId: string, overrides: Partial<typeo
     })
     .returning();
   return expense;
+}
+
+/** Crée directement une police d'assurance pour un bien donné. */
+export async function createInsurancePolicy(propertyId: string, overrides: Partial<typeof insurancePolicies.$inferInsert> = {}) {
+  const [policy] = await testDb
+    .insert(insurancePolicies)
+    .values({
+      propertyId,
+      insurerName: "Assureur Test",
+      policyNumber: "POL-TEST-001",
+      expiryDate: new Date(2027, 0, 1),
+      ...overrides,
+    })
+    .returning();
+  return policy;
 }
 
 /** Crée une fiche locataire pour un gestionnaire donné. */

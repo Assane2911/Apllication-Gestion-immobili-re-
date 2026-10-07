@@ -320,6 +320,35 @@ export function contractEndingReminderEmail(params: {
   };
 }
 
+export function insurancePolicyExpiryReminderEmail(params: {
+  propertyTitle: string;
+  insurerName: string;
+  policyNumber: string;
+  expiryDate: Date;
+  daysLeft: number;
+}) {
+  const { propertyTitle, insurerName, policyNumber, expiryDate, daysLeft } = params;
+  const formattedDate = expiryDate.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  return {
+    subject: `Rappel : police d'assurance à renouveler dans ${daysLeft} jours — ${propertyTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#1f2937;">Rappel d'échéance d'assurance</h2>
+        <p>Bonjour,</p>
+        <p>
+          La police d'assurance <strong>${escapeHtml(policyNumber)}</strong> souscrite auprès de
+          <strong>${escapeHtml(insurerName)}</strong> pour le bien <strong>${escapeHtml(propertyTitle)}</strong>
+          arrive à échéance le <strong>${escapeHtml(formattedDate)}</strong> (dans ${daysLeft} jours).
+        </p>
+        <p>Pensez à contacter votre assureur pour renouveler le contrat ou en souscrire un nouveau avant cette date.</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
 const issueStatusLabels: Record<string, { label: string; color: string; emoji: string }> = {
   OPEN: { label: "Ouvert", color: "#2563eb", emoji: "📋" },
   IN_PROGRESS: { label: "En cours de traitement", color: "#d97706", emoji: "🔧" },
