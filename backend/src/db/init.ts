@@ -257,6 +257,23 @@ export async function initDb() {
     `);
 
     await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS insurance_policies (
+        id TEXT PRIMARY KEY,
+        property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+        insurer_name TEXT NOT NULL,
+        policy_number TEXT NOT NULL,
+        premium_amount DOUBLE PRECISION,
+        currency TEXT NOT NULL DEFAULT 'EUR',
+        start_date TIMESTAMP,
+        expiry_date TIMESTAMP NOT NULL,
+        notes TEXT,
+        reminder_sent_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
         contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
@@ -490,6 +507,7 @@ export async function initDb() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS invoices_status_idx ON invoices (status)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS invoices_due_date_idx ON invoices (due_date)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS expenses_property_id_idx ON expenses (property_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS insurance_policies_property_id_idx ON insurance_policies (property_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_contract_id_idx ON issue_reports (contract_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_tenant_id_idx ON issue_reports (tenant_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS issue_reports_status_idx ON issue_reports (status)`);

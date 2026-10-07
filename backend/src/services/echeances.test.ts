@@ -1,8 +1,9 @@
 import { eq, isNull } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { contracts, invoices } from "../db/schema";
+import { contracts, insurancePolicies, invoices } from "../db/schema";
 import {
   createContract,
+  createInsurancePolicy,
   createInvoice,
   createManager,
   createProperty,
@@ -12,7 +13,12 @@ import { testDb } from "../test/setupTestDb";
 import { budgetTemps } from "../utils/budgetTemps";
 import * as emailService from "./email.service";
 import { generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
-import { runContractEndingReminders, runRentDueReminders, runUpcomingRentDueReminders } from "./reminder.service";
+import {
+  runContractEndingReminders,
+  runInsurancePolicyExpiryReminders,
+  runRentDueReminders,
+  runUpcomingRentDueReminders,
+} from "./reminder.service";
 
 /**
  * « En retard » est une accusation portée à un locataire : elle doit être
@@ -410,6 +416,119 @@ describe("Budget de temps des tâches planifiées", () => {
     expect(interrompue.interrompu).toBe(true);
 
     const reprise = await runRentDueReminders();
+    expect(reprise.sent).toBe(1);
+    expect(reprise.interrompu).toBe(false);
+  });
+});
+
+/**
+ * Même principe de fenêtre glissante et de réclamation atomique que les
+ * rappels de fin de bail ci-dessus, appliqué aux polices d'assurance
+ * (INSURANCE_REMINDER_DAYS = 30 jours par défaut, voir config/env.ts).
+ */
+describe("runInsurancePolicyExpiryReminders", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 7, 10, 8, 0, 0)); // 10 août 2026, 8h
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("envoie le rappel pour une police expirant dans 10 jours (fenêtre à 30 jours)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 7, 20) });
+
+    const result = await runInsurancePolicyExpiryReminders();
+
+    expect(result.sent).toBe(1);
+  });
+
+  it("envoie le rappel pour une police expirant dans 29 jours, pas seulement à J-30", async () => {
+    // Même rattrapage qu'un rappel manqué la veille : la fenêtre glissante
+    // couvre tout l'intervalle [aujourd'hui, J+30], pas le seul jour J+30.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 8, 8) });
+
+    const result = await runInsurancePolicyExpiryReminders();
+
+    expect(result.sent).toBe(1);
+  });
+
+  it("n'envoie aucun rappel pour une police dont l'échéance est hors fenêtre (dans 60 jours)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 9, 9) });
+
+    const result = await runInsurancePolicyExpiryReminders();
+
+    expect(result.sent).toBe(0);
+  });
+
+  it("n'envoie aucun rappel pour une police déjà expirée", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 6, 1) });
+
+    const result = await runInsurancePolicyExpiryReminders();
+
+    expect(result.sent).toBe(0);
+  });
+
+  it("n'envoie pas deux fois le rappel pour la même police", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 7, 20) });
+
+    expect((await runInsurancePolicyExpiryReminders()).sent).toBe(1);
+    expect((await runInsurancePolicyExpiryReminders()).sent).toBe(0);
+  });
+
+  it("écrit au gestionnaire propriétaire du bien, à l'adresse de son compte", async () => {
+    const envois = vi.spyOn(emailService, "sendEmail");
+    const manager = await createManager({ email: "agence-nord@test.local" });
+    const property = await createProperty(manager.id);
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 7, 20) });
+
+    const { sent } = await runInsurancePolicyExpiryReminders();
+
+    expect(sent).toBe(1);
+    expect(envois.mock.calls.map((appel) => appel[0])).toEqual(["agence-nord@test.local"]);
+  });
+
+  it("libère le marqueur quand l'envoi échoue, pour que le rappel reparte au prochain passage", async () => {
+    const email = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false, error: true });
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const policy = await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 7, 20) });
+
+    const result = await runInsurancePolicyExpiryReminders();
+
+    expect(result.sent).toBe(0);
+    expect(result.echecs).toBe(1);
+    const [enBase] = await testDb.select().from(insurancePolicies).where(eq(insurancePolicies.id, policy.id));
+    expect(enBase.reminderSentAt).toBeNull();
+
+    email.mockRestore();
+  });
+
+  it("laisse les polices non traitées reprenables par l'exécution suivante (budget de temps)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 7, 20) });
+
+    const interrompue = await runInsurancePolicyExpiryReminders(budgetTemps(0));
+    expect(interrompue.sent).toBe(0);
+    expect(interrompue.interrompu).toBe(true);
+
+    const restantes = await testDb.select().from(insurancePolicies).where(isNull(insurancePolicies.reminderSentAt));
+    expect(restantes).toHaveLength(1);
+
+    const reprise = await runInsurancePolicyExpiryReminders();
     expect(reprise.sent).toBe(1);
     expect(reprise.interrompu).toBe(false);
   });

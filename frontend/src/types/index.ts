@@ -293,6 +293,22 @@ export interface Expense {
   createdAt: string;
 }
 
+/** Police d'assurance d'un bien (voir insurance.controller.ts côté API). */
+export interface InsurancePolicy {
+  id: string;
+  propertyId: string;
+  insurerName: string;
+  policyNumber: string;
+  premiumAmount?: number | null;
+  currency: string;
+  startDate?: string | null;
+  expiryDate: string;
+  notes?: string | null;
+  reminderSentAt?: string | null;
+  property?: Property;
+  createdAt: string;
+}
+
 export interface Message {
   id: string;
   contractId: string;

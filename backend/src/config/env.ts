@@ -87,6 +87,12 @@ export const env = {
     // Nombre de jours avant l'échéance d'une facture pour envoyer le rappel
     // complémentaire "dernière minute" au locataire (voir runUpcomingRentDueReminders).
     rentDueSoonDays: parseInt(process.env.RENT_DUE_SOON_DAYS ?? "3", 10),
+    // Nombre de jours avant l'échéance d'une police d'assurance pour prévenir
+    // le gestionnaire (voir runInsurancePolicyExpiryReminders). Plus long que
+    // le rappel de fin de bail (14 jours) : renouveler une assurance suppose
+    // souvent de comparer plusieurs devis, ce qui prend plus de temps qu'un
+    // simple contact avec le locataire.
+    insuranceReminderDays: parseInt(process.env.INSURANCE_REMINDER_DAYS ?? "30", 10),
   },
 
   // Secret partagé avec Vercel (variable d'env CRON_SECRET sur le projet)

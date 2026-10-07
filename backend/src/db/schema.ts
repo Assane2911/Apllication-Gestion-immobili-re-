@@ -645,6 +645,34 @@ export const expenses = pgTable(
   })
 );
 
+// --- Insurance Policies (Suivi des polices d'assurance par bien) ---
+export const insurancePolicies = pgTable(
+  "insurance_policies",
+  {
+    id: id(),
+    propertyId: text("property_id")
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    insurerName: text("insurer_name").notNull(),
+    policyNumber: text("policy_number").notNull(),
+    premiumAmount: doublePrecision("premium_amount"),
+    currency: text("currency").notNull().default("EUR"),
+    startDate: timestamp("start_date", { mode: "date" }),
+    expiryDate: timestamp("expiry_date", { mode: "date" }).notNull(),
+    notes: text("notes"),
+    // Idempotence du rappel d'échéance (voir runInsurancePolicyExpiryReminders,
+    // reminder.service.ts) — même principe que contracts.reminderSentAt.
+    // Remis à NULL par updateInsurancePolicy quand expiryDate recule (police
+    // renouvelée) : sans cela, une police renouvelée chaque année ne
+    // recevrait jamais plus qu'un seul rappel, le premier, pour toute sa vie.
+    reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
+    ...timestamps,
+  },
+  (table) => ({
+    propertyIdIdx: index("insurance_policies_property_id_idx").on(table.propertyId),
+  })
+);
+
 // --- Messages (Messagerie directe Agence - Locataire) ---
 export const messages = pgTable(
   "messages",
@@ -795,6 +823,7 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   owner: one(owners, { fields: [properties.ownerId], references: [owners.id] }),
   contracts: many(contracts),
   expenses: many(expenses),
+  insurancePolicies: many(insurancePolicies),
 }));
 
 export const contractsRelations = relations(contracts, ({ one, many }) => ({
@@ -822,6 +851,10 @@ export const vendorsRelations = relations(vendors, ({ one, many }) => ({
 
 export const expensesRelations = relations(expenses, ({ one }) => ({
   property: one(properties, { fields: [expenses.propertyId], references: [properties.id] }),
+}));
+
+export const insurancePoliciesRelations = relations(insurancePolicies, ({ one }) => ({
+  property: one(properties, { fields: [insurancePolicies.propertyId], references: [properties.id] }),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({

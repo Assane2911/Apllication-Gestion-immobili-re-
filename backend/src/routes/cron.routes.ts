@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   triggerContractEndingReminders,
   triggerDailyReminders,
+  triggerInsurancePolicyExpiryReminders,
   triggerRecurringExpenseGeneration,
   triggerRentDueReminders,
   triggerUpcomingRentDueReminders,
@@ -35,5 +36,6 @@ router.get("/contract-reminders", triggerContractEndingReminders);
 router.get("/rent-due-reminders", triggerRentDueReminders);
 router.get("/rent-due-soon-reminders", triggerUpcomingRentDueReminders);
 router.get("/recurring-expenses", triggerRecurringExpenseGeneration);
+router.get("/insurance-reminders", triggerInsurancePolicyExpiryReminders);
 
 export default router;

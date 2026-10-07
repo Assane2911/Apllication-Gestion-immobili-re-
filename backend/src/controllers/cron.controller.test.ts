@@ -1,8 +1,15 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { contracts, expenses, invoices } from "../db/schema";
-import { createContract, createExpense, createManager, createProperty, createTenant } from "../test/authHelpers";
+import { contracts, expenses, insurancePolicies, invoices } from "../db/schema";
+import {
+  createContract,
+  createExpense,
+  createInsurancePolicy,
+  createManager,
+  createProperty,
+  createTenant,
+} from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { and, eq } from "drizzle-orm";
 
@@ -12,6 +19,7 @@ const CRON_ROUTES = [
   "/api/cron/rent-due-reminders",
   "/api/cron/rent-due-soon-reminders",
   "/api/cron/recurring-expenses",
+  "/api/cron/insurance-reminders",
 ];
 
 const CRON_SECRET = process.env.CRON_SECRET!;
@@ -148,6 +156,35 @@ describe("GET /api/cron/recurring-expenses", () => {
   });
 });
 
+describe("GET /api/cron/insurance-reminders", () => {
+  it("envoie un rappel pour une police expirant dans la fenêtre et marque reminderSentAt", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 10);
+    const policy = await createInsurancePolicy(property.id, { expiryDate });
+
+    const res = await request(app)
+      .get("/api/cron/insurance-reminders")
+      .set({ Authorization: `Bearer ${CRON_SECRET}` });
+
+    expect(res.status).toBe(200);
+    expect(res.body.remindersSent).toBe(1);
+
+    const [updated] = await testDb.select().from(insurancePolicies).where(eq(insurancePolicies.id, policy.id));
+    expect(updated.reminderSentAt).not.toBeNull();
+  });
+
+  it("répond avec succès même sans aucune police d'assurance", async () => {
+    const res = await request(app)
+      .get("/api/cron/insurance-reminders")
+      .set({ Authorization: `Bearer ${CRON_SECRET}` });
+
+    expect(res.status).toBe(200);
+    expect(res.body.remindersSent).toBe(0);
+  });
+});
+
 describe("GET /api/cron/daily", () => {
   it("combine le rappel de fin de contrat et le rappel avant échéance", async () => {
     const res = await request(app).get("/api/cron/daily").set({ Authorization: `Bearer ${CRON_SECRET}` });
@@ -156,6 +193,7 @@ describe("GET /api/cron/daily", () => {
     expect(typeof res.body.contractEndingRemindersSent).toBe("number");
     expect(typeof res.body.upcomingRentDueRemindersSent).toBe("number");
     expect(typeof res.body.recurringExpensesGenerated).toBe("number");
+    expect(typeof res.body.insuranceRemindersSent).toBe("number");
   });
 
   /**
