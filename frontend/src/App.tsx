@@ -53,6 +53,8 @@ const AdminDashboardPage = lazyWithReload(() => import("./pages/admin/AdminDashb
 const AdminSubscriptionsPage = lazyWithReload(() => import("./pages/admin/AdminSubscriptionsPage"));
 const AdminSettingsPage = lazyWithReload(() => import("./pages/admin/AdminSettingsPage"));
 const AdminSuggestionsPage = lazyWithReload(() => import("./pages/admin/AdminSuggestionsPage"));
+const AdminManagersPage = lazyWithReload(() => import("./pages/admin/AdminManagersPage"));
+const AdminManagerDetailPage = lazyWithReload(() => import("./pages/admin/AdminManagerDetailPage"));
 const VitrinePage = lazyWithReload(() => import("./pages/VitrinePage"));
 const VitrineListingPage = lazyWithReload(() => import("./pages/VitrineListingPage"));
 
@@ -152,6 +154,8 @@ function AppRoutes() {
           }
         >
           <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route path="/admin/gestionnaires" element={<AdminManagersPage />} />
+          <Route path="/admin/gestionnaires/:id" element={<AdminManagerDetailPage />} />
           <Route path="/admin/virements" element={<AdminSubscriptionsPage />} />
           <Route path="/admin/parametres" element={<AdminSettingsPage />} />
           <Route path="/admin/suggestions" element={<AdminSuggestionsPage />} />

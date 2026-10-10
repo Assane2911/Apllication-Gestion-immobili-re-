@@ -1,4 +1,4 @@
-import { Landmark, LayoutDashboard, Lightbulb, Moon, Settings, Sun } from "lucide-react";
+import { Building2, Landmark, LayoutDashboard, Lightbulb, Moon, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
@@ -8,6 +8,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 
 const navItems = [
   { to: "/admin", key: "dashboard", icon: LayoutDashboard },
+  { to: "/admin/gestionnaires", key: "managers", icon: Building2 },
   { to: "/admin/virements", key: "transfers", icon: Landmark },
   { to: "/admin/suggestions", key: "suggestions", icon: Lightbulb },
   { to: "/admin/parametres", key: "settings", icon: Settings },
@@ -22,7 +23,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-semibold text-slate-900 dark:text-slate-100">{t("components.adminLayout.title")}</h1>
             <p className="text-xs text-slate-600 dark:text-slate-400">{user?.email}</p>
@@ -43,7 +44,7 @@ export default function AdminLayout() {
             </button>
           </div>
         </div>
-        <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-2">
+        <div className="max-w-5xl mx-auto px-4 flex flex-wrap gap-1 pb-2">
           {navItems.map((item) => (
             // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par
             // défaut). C'est la barre latérale du gestionnaire qui fait
@@ -51,7 +52,7 @@ export default function AdminLayout() {
             <Bulle key={item.to} texte={t(`admin.nav.tips.${item.key}`)}>
             <NavLink
               to={item.to}
-              end
+              end={item.to === "/admin"}
               className={({ isActive }) =>
                 `px-3 py-1.5 rounded-lg text-sm ${
                   isActive
