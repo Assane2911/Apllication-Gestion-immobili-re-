@@ -1682,7 +1682,7 @@ const fr = {
       suspension: {
         title: "Accès au compte",
         suspendedTitle: "Compte suspendu",
-        description: "Suspendre empêche l'agence et ses collaborateurs de se connecter, et coupe leurs sessions ouvertes. Les données sont conservées ; les locataires et bailleurs ne sont pas touchés. Si l'abonnement se renouvelle automatiquement (Stripe), sa facturation est mise en pause et reprend à la levée de la suspension.",
+        description: "Suspendre empêche l'agence et ses collaborateurs de se connecter, et coupe leurs sessions ouvertes. Les rappels automatiques de l'agence (avis d'échéance, fin de bail, assurances) sont aussi arrêtés ; ils reprennent à la levée de la suspension. Les données sont conservées ; les locataires et bailleurs ne sont pas touchés. Si l'abonnement se renouvelle automatiquement (Stripe), sa facturation est mise en pause et reprend à la levée de la suspension.",
         billingPaused: "Facturation Stripe mise en pause : l'agence ne sera plus prélevée tant que la suspension dure.",
         billingResumed: "Facturation Stripe reprise.",
         suspend: "Suspendre le compte",

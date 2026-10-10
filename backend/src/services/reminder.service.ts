@@ -36,6 +36,20 @@ import { nomAvecCivilite, nomComplet } from "../utils/nom";
 const WHATSAPP_NON_ELIGIBLE: ResultatEnvoiWhatsapp = { simulated: true };
 
 /**
+ * Condition SQL : l'agence n'est PAS suspendue par l'administration (voir
+ * users.suspendedAt, admin.controller.ts::suspendManager). Les rappels
+ * automatiques sont des messages envoyés AU NOM de l'agence (aux locataires)
+ * ou à son gestionnaire : une agence à qui l'on a coupé l'accès ne doit plus
+ * en émettre ni en recevoir.
+ *
+ * À poser dans le WHERE de sélection, AVANT toute réclamation de marqueur
+ * (`reminderSentAt`, `dueSoonReminderSentAt`) : l'élément écarté reste ainsi
+ * « non envoyé » et sera repris à la réactivation tant que sa fenêtre n'est pas
+ * échue. Suppose que la requête joint `users` sur `properties.managerId`.
+ */
+const AGENCE_ACTIVE = isNull(users.suspendedAt);
+
+/**
  * Gestionnaires (parmi la liste donnée) dont la formule effective (essai
  * compris, résolu en Pro) est au moins Pro — utilisé aussi bien pour décider
  * qui reçoit les rappels WhatsApp que pour les rappels de fin de bail
@@ -149,6 +163,11 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
         // destinataire de rien : son adresse pointe vers un domaine
         // inexistant, et surtout le traitement n'est plus autorisé.
         isNull(tenants.anonymizedAt),
+        // Agence suspendue : aucun rappel. Filtré ICI, avant la réclamation
+        // du marqueur, pour que `reminderSentAt` reste vide et que le rappel
+        // parte à la réactivation si la fenêtre n'est pas échue (voir
+        // AGENCE_ACTIVE).
+        AGENCE_ACTIVE,
         isNull(contracts.reminderSentAt),
         gte(contracts.endDate, targetStart),
         lte(contracts.endDate, targetEnd)
@@ -259,6 +278,7 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
     .innerJoin(users, eq(properties.managerId, users.id))
     .where(
       and(
+        AGENCE_ACTIVE,
         isNull(insurancePolicies.reminderSentAt),
         gte(insurancePolicies.expiryDate, targetStart),
         lte(insurancePolicies.expiryDate, targetEnd)
@@ -440,6 +460,11 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     isNull(invoices.reminderSentAt),
   ];
   if (managerId) conditions.push(eq(properties.managerId, managerId));
+  // Agence suspendue : la génération des factures (phase 1) continue — c'est
+  // de la comptabilité, et les locataires, non touchés par la suspension,
+  // retrouvent leurs échéances dans leur espace — mais AUCUN avis n'est
+  // envoyé en son nom (voir AGENCE_ACTIVE).
+  conditions.push(AGENCE_ACTIVE);
 
   const rows = await db
     .select({
@@ -452,6 +477,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .innerJoin(users, eq(properties.managerId, users.id))
     .where(and(...conditions));
 
   let sent = 0;
@@ -593,10 +619,12 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .innerJoin(users, eq(properties.managerId, users.id))
     .where(
       and(
         eq(contracts.status, "ACTIVE"),
         isNull(tenants.anonymizedAt),
+        AGENCE_ACTIVE,
         isNull(invoices.dueSoonReminderSentAt),
         or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE")),
         gte(invoices.dueDate, targetStart),

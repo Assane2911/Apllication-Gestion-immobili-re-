@@ -1681,7 +1681,7 @@ const en: TranslationSchema = {
       suspension: {
         title: "Account access",
         suspendedTitle: "Account suspended",
-        description: "Suspending prevents the agency and its collaborators from signing in and cuts their open sessions. Data is kept; tenants and owners are not affected. If the subscription renews automatically (Stripe), its billing is paused and resumes when the suspension is lifted.",
+        description: "Suspending prevents the agency and its collaborators from signing in and cuts their open sessions. The agency's automatic reminders (rent notices, lease endings, insurance) are also stopped; they resume when the suspension is lifted. Data is kept; tenants and owners are not affected. If the subscription renews automatically (Stripe), its billing is paused and resumes when the suspension is lifted.",
         billingPaused: "Stripe billing paused: the agency will not be charged while the suspension lasts.",
         billingResumed: "Stripe billing resumed.",
         suspend: "Suspend account",
