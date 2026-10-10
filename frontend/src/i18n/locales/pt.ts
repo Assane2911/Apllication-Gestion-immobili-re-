@@ -1662,6 +1662,22 @@ const pt: TranslationSchema = {
       },
     },
     managerDetail: {
+      adjust: {
+        title: "Ajustar a assinatura",
+        description: "Gestos comerciais e correções. Cada ajuste fica registado no registo de auditoria com o seu motivo. Nenhum pagamento é criado: a faturação e o MRR não mudam.",
+        stripe: "Esta assinatura renova-se automaticamente (Stripe): um ajuste aqui seria substituído na próxima renovação. Use o Stripe.",
+        daysTitle: "Oferecer dias",
+        daysField: "Número de dias (1 a 365)",
+        daysReason: "Motivo (registo de auditoria)",
+        daysSubmit: "Oferecer estes dias",
+        planTitle: "Alterar o plano",
+        planField: "Novo plano",
+        planChoose: "Escolher...",
+        planReason: "Motivo (registo de auditoria)",
+        planSubmit: "Alterar o plano",
+        saving: "A guardar...",
+        done: "Ajuste guardado.",
+      },
       suspension: {
         title: "Acesso à conta",
         suspendedTitle: "Conta suspensa",
@@ -1740,6 +1756,8 @@ const pt: TranslationSchema = {
         details: "Detalhe",
       },
       actions: {
+        "subscription.grant_days": "Dias oferecidos",
+        "subscription.change_plan": "Plano alterado",
         "manager.suspend": "Conta suspensa",
         "manager.reactivate": "Suspensão levantada",
         "subscription.bank_transfer.confirm": "Transferência confirmada",

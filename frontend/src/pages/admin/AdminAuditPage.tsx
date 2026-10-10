@@ -12,6 +12,8 @@ const ACTIONS = [
   "platform.bank_details.update",
   "manager.suspend",
   "manager.reactivate",
+  "subscription.grant_days",
+  "subscription.change_plan",
 ] as const;
 
 interface AuditEntry {

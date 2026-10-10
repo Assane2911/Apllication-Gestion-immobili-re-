@@ -63,6 +63,13 @@ export default function AdminManagerDetailPage() {
   const [motif, setMotif] = useState("");
   const [enCours, setEnCours] = useState(false);
   const [erreurAction, setErreurAction] = useState<string | null>(null);
+  // Ajustement manuel de l'abonnement (offrir des jours / changer de formule).
+  const [jours, setJours] = useState("");
+  const [motifJours, setMotifJours] = useState("");
+  const [nouvellePlan, setNouvellePlan] = useState<ManagerPlan | "">("");
+  const [motifPlan, setMotifPlan] = useState("");
+  const [ajustementEnCours, setAjustementEnCours] = useState<"days" | "plan" | null>(null);
+  const [ajustementMessage, setAjustementMessage] = useState<{ type: "ok" | "erreur"; texte: string } | null>(null);
 
   useEffect(() => {
     let vivant = true;
@@ -97,6 +104,28 @@ export default function AdminManagerDetailPage() {
       setErreurAction(apiErrorMessage(err));
     } finally {
       setEnCours(false);
+    }
+  }
+
+  async function ajuster(type: "days" | "plan") {
+    setAjustementEnCours(type);
+    setAjustementMessage(null);
+    try {
+      if (type === "days") {
+        await api.post(`/admin/managers/${id}/subscription/grant-days`, { days: Number(jours), reason: motifJours.trim() });
+        setJours("");
+        setMotifJours("");
+      } else {
+        await api.post(`/admin/managers/${id}/subscription/change-plan`, { plan: nouvellePlan, reason: motifPlan.trim() });
+        setNouvellePlan("");
+        setMotifPlan("");
+      }
+      setAjustementMessage({ type: "ok", texte: t("admin.managerDetail.adjust.done") });
+      setVersion((v) => v + 1);
+    } catch (err) {
+      setAjustementMessage({ type: "erreur", texte: apiErrorMessage(err) });
+    } finally {
+      setAjustementEnCours(null);
     }
   }
 
@@ -224,6 +253,115 @@ export default function AdminManagerDetailPage() {
               </>
             )}
             {erreurAction && <p className="mt-2 text-xs text-red-700 dark:text-red-400">{erreurAction}</p>}
+          </section>
+
+          <section className={carte}>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">{t("admin.managerDetail.adjust.title")}</h3>
+            {manager.subscription.autoRenew ? (
+              <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.adjust.stripe")}</p>
+            ) : (
+              <>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">{t("admin.managerDetail.adjust.description")}</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void ajuster("days");
+                    }}
+                    className="space-y-2"
+                  >
+                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.daysTitle")}</p>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {t("admin.managerDetail.adjust.daysField")}
+                      <input
+                        type="number"
+                        min={1}
+                        max={365}
+                        step={1}
+                        required
+                        value={jours}
+                        onChange={(e) => setJours(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                      />
+                    </label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {t("admin.managerDetail.adjust.daysReason")}
+                      <input
+                        type="text"
+                        required
+                        maxLength={500}
+                        value={motifJours}
+                        onChange={(e) => setMotifJours(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      disabled={ajustementEnCours !== null || !(Number(jours) >= 1) || motifJours.trim().length < 3}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+                    >
+                      {ajustementEnCours === "days" ? t("admin.managerDetail.adjust.saving") : t("admin.managerDetail.adjust.daysSubmit")}
+                    </button>
+                  </form>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void ajuster("plan");
+                    }}
+                    className="space-y-2"
+                  >
+                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.planTitle")}</p>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {t("admin.managerDetail.adjust.planField")}
+                      <select
+                        required
+                        value={nouvellePlan}
+                        onChange={(e) => setNouvellePlan(e.target.value as ManagerPlan | "")}
+                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                      >
+                        <option value="">{t("admin.managerDetail.adjust.planChoose")}</option>
+                        {(["STARTER", "PRO", "ENTERPRISE"] as const)
+                          .filter((p) => p !== manager.subscription.plan)
+                          .map((p) => (
+                            <option key={p} value={p}>
+                              {t(`admin.managers.plans.${p}`)}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {t("admin.managerDetail.adjust.planReason")}
+                      <input
+                        type="text"
+                        required
+                        maxLength={500}
+                        value={motifPlan}
+                        onChange={(e) => setMotifPlan(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      disabled={ajustementEnCours !== null || nouvellePlan === "" || motifPlan.trim().length < 3}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+                    >
+                      {ajustementEnCours === "plan" ? t("admin.managerDetail.adjust.saving") : t("admin.managerDetail.adjust.planSubmit")}
+                    </button>
+                  </form>
+                </div>
+              </>
+            )}
+            {ajustementMessage && (
+              <p
+                role={ajustementMessage.type === "erreur" ? "alert" : "status"}
+                className={`mt-3 text-xs ${
+                  ajustementMessage.type === "erreur" ? "text-red-700 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"
+                }`}
+              >
+                {ajustementMessage.texte}
+              </p>
+            )}
           </section>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
