@@ -728,10 +728,17 @@ export const suggestions = pgTable(
     authorRole: roleEnum("author_role"),
     page: text("page"),
     message: text("message").notNull(),
+    // Suivi par l'administration (voir suggestion.controller.ts). Volontairement
+    // PAS de réponse à l'auteur : un fil de discussion suppose de s'engager à
+    // répondre à chacun. `status` dit seulement où en est l'idée ; `adminNote`
+    // est une note INTERNE, jamais renvoyée à l'auteur.
+    status: text("status").notNull().default("NEW"), // NEW | PLANNED | DONE | DECLINED
+    adminNote: text("admin_note"),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
     createdAtIdx: index("suggestions_created_at_idx").on(table.createdAt),
+    statusIdx: index("suggestions_status_idx").on(table.status),
   })
 );
 
