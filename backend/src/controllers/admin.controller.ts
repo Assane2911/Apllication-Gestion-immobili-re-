@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import type { AnyPgColumn, AnyPgTable } from "drizzle-orm/pg-core";
 import { Request, Response } from "express";
 import { z } from "zod";
@@ -287,7 +287,8 @@ function echapperLike(valeur: string): string {
 const listManagersQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
   plan: z.enum(["STARTER", "PRO", "ENTERPRISE"]).optional(),
-  status: z.enum(["TRIAL", "ACTIVE", "CANCELLED", "EXPIRED"]).optional(),
+  // « SUSPENDED » est orthogonal au statut d'abonnement : filtré en SQL.
+  status: z.enum(["TRIAL", "ACTIVE", "CANCELLED", "EXPIRED", "SUSPENDED"]).optional(),
 });
 
 /**
@@ -311,6 +312,7 @@ export const listManagers = asyncHandler(async (req: Request, res: Response) => 
 
   const conditions = [eq(users.role, "MANAGER"), isNull(users.teamOwnerId)];
   if (plan) conditions.push(eq(users.subscriptionPlan, plan));
+  if (status === "SUSPENDED") conditions.push(isNotNull(users.suspendedAt));
   if (search) {
     const motif = `%${echapperLike(search)}%`;
     const recherche = or(ilike(users.email, motif), ilike(agencySettings.agencyName, motif));
@@ -327,7 +329,7 @@ export const listManagers = asyncHandler(async (req: Request, res: Response) => 
   const enriched = rows
     .map(({ user, agencyName }) => ({ user, agencyName, info: computeSubscriptionInfo(user) }))
     .filter((r): r is typeof r & { info: NonNullable<typeof r.info> } => r.info !== null)
-    .filter((r) => !status || r.info.status === status);
+    .filter((r) => !status || status === "SUSPENDED" || r.info.status === status);
 
   const total = enriched.length;
   const pageRows = enriched.slice(pagination.offset, pagination.offset + pagination.pageSize);
@@ -357,6 +359,7 @@ export const listManagers = asyncHandler(async (req: Request, res: Response) => 
     subscriptionEndsAt: info.subscriptionEndsAt,
     propertiesCount: propertyCounts.get(user.id) ?? 0,
     tenantsCount: tenantCounts.get(user.id) ?? 0,
+    suspendedAt: user.suspendedAt,
     createdAt: user.createdAt,
   }));
 
@@ -432,6 +435,8 @@ export const getManagerDetail = asyncHandler(async (req: Request, res: Response)
     currency: user.currency,
     createdAt: user.createdAt,
     emailVerifiedAt: user.emailVerifiedAt,
+    suspendedAt: user.suspendedAt,
+    suspensionReason: user.suspensionReason,
     twoFactorEnabled: user.totpEnabledAt !== null,
     subscription: {
       status: info.status,
@@ -521,4 +526,76 @@ export const listAdminAuditLogs = asyncHandler(async (req: Request, res: Respons
       pagination
     )
   );
+});
+
+const suspendManagerSchema = z.object({
+  reason: z.string().trim().min(3, "Indiquez le motif de la suspension").max(500),
+});
+
+/** Gestionnaire propriétaire (ni collaborateur, ni administrateur) ou 404. */
+async function trouverGestionnaire(id: string) {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.role, "MANAGER"), isNull(users.teamOwnerId)));
+  if (!user) throw new ApiError(404, "Gestionnaire introuvable");
+  return user;
+}
+
+/**
+ * Suspend un compte gestionnaire : l'agence (collaborateurs compris) ne peut
+ * plus se connecter, et les sessions déjà ouvertes sont refusées dès la
+ * requête suivante (voir authenticate). Les données sont conservées intactes
+ * et les locataires/bailleurs de l'agence ne sont pas touchés. Le motif est
+ * une note interne, jamais renvoyée au gestionnaire.
+ *
+ * Réclamation atomique : deux administrateurs qui suspendent en même temps ne
+ * produisent qu'une trace, le second reçoit un 409.
+ */
+export const suspendManager = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason } = suspendManagerSchema.parse(req.body);
+
+  const manager = await trouverGestionnaire(id);
+
+  const [updated] = await db
+    .update(users)
+    .set({ suspendedAt: new Date(), suspensionReason: reason })
+    .where(and(eq(users.id, id), isNull(users.suspendedAt)))
+    .returning({ suspendedAt: users.suspendedAt });
+  if (!updated) throw new ApiError(409, "Ce compte est déjà suspendu");
+
+  await logAdminAction({
+    req,
+    action: "manager.suspend",
+    targetUserId: manager.id,
+    targetLabel: manager.email,
+    details: `Compte suspendu. Motif : ${reason}`,
+  });
+
+  res.json({ success: true, suspendedAt: updated.suspendedAt });
+});
+
+/** Lève la suspension : l'agence peut de nouveau se connecter (données intactes). */
+export const reactivateManager = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const manager = await trouverGestionnaire(id);
+
+  const [updated] = await db
+    .update(users)
+    .set({ suspendedAt: null, suspensionReason: null })
+    .where(and(eq(users.id, id), isNotNull(users.suspendedAt)))
+    .returning({ id: users.id });
+  if (!updated) throw new ApiError(409, "Ce compte n'est pas suspendu");
+
+  await logAdminAction({
+    req,
+    action: "manager.reactivate",
+    targetUserId: manager.id,
+    targetLabel: manager.email,
+    details: "Suspension levée",
+  });
+
+  res.json({ success: true });
 });

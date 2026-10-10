@@ -162,6 +162,7 @@ const es: TranslationSchema = {
 
   auth: {
     login: {
+      suspended: "Su cuenta está suspendida. Contacte con el soporte de la plataforma para más información.",
       title: "Gestión Inmobiliaria",
       subtitle: "Inicia sesión en tu espacio",
       email: "Correo electrónico",
@@ -1655,6 +1656,7 @@ const es: TranslationSchema = {
         ENTERPRISE: "Empresa",
       },
       statuses: {
+        SUSPENDED: "Suspendido",
         TRIAL: "Prueba",
         ACTIVE: "Activo",
         CANCELLED: "Cancelado",
@@ -1662,6 +1664,23 @@ const es: TranslationSchema = {
       },
     },
     managerDetail: {
+      suspension: {
+        title: "Acceso a la cuenta",
+        suspendedTitle: "Cuenta suspendida",
+        description: "Suspender impide que la agencia y sus colaboradores inicien sesión y corta sus sesiones abiertas. Los datos se conservan; los inquilinos y propietarios no se ven afectados. La facturación de la suscripción no se interrumpe.",
+        suspend: "Suspender la cuenta",
+        warning: "La agencia no podrá iniciar sesión hasta que se levante la suspensión.",
+        reasonField: "Motivo (nota interna, nunca se muestra al gestor)",
+        confirm: "Confirmar la suspensión",
+        suspending: "Suspendiendo...",
+        cancel: "Cancelar",
+        since: "Suspendida desde el {{date}}",
+        reasonLabel: "Motivo:",
+        reasonHidden: "Este motivo es interno: el gestor solo ve que su cuenta está suspendida.",
+        reactivate: "Levantar la suspensión",
+        reactivating: "Reactivando...",
+        reactivateConfirm: "¿Levantar la suspensión? La agencia podrá volver a iniciar sesión.",
+      },
       back: "Volver a los gestores",
       loading: "Cargando la ficha...",
       errorTitle: "No se puede cargar este gestor",
@@ -1723,6 +1742,8 @@ const es: TranslationSchema = {
         details: "Detalle",
       },
       actions: {
+        "manager.suspend": "Cuenta suspendida",
+        "manager.reactivate": "Suspensión levantada",
         "subscription.bank_transfer.confirm": "Transferencia confirmada",
         "subscription.bank_transfer.reject": "Transferencia rechazada",
         "platform.bank_details.update": "Datos bancarios modificados",

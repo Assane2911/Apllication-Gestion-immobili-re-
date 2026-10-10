@@ -13,6 +13,8 @@ interface ManagerDetail {
   currency: string;
   createdAt: string;
   emailVerifiedAt: string | null;
+  suspendedAt: string | null;
+  suspensionReason: string | null;
   twoFactorEnabled: boolean;
   subscription: {
     status: ManagerStatus;
@@ -55,6 +57,12 @@ export default function AdminManagerDetailPage() {
   const [manager, setManager] = useState<ManagerDetail | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [chargement, setChargement] = useState(true);
+  // Incrémenté après une suspension / réactivation pour relire la fiche.
+  const [version, setVersion] = useState(0);
+  const [formulaireOuvert, setFormulaireOuvert] = useState(false);
+  const [motif, setMotif] = useState("");
+  const [enCours, setEnCours] = useState(false);
+  const [erreurAction, setErreurAction] = useState<string | null>(null);
 
   useEffect(() => {
     let vivant = true;
@@ -74,7 +82,37 @@ export default function AdminManagerDetailPage() {
     return () => {
       vivant = false;
     };
-  }, [id]);
+  }, [id, version]);
+
+  async function suspendre(e: React.FormEvent) {
+    e.preventDefault();
+    setEnCours(true);
+    setErreurAction(null);
+    try {
+      await api.post(`/admin/managers/${id}/suspend`, { reason: motif.trim() });
+      setFormulaireOuvert(false);
+      setMotif("");
+      setVersion((v) => v + 1);
+    } catch (err) {
+      setErreurAction(apiErrorMessage(err));
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  async function reactiver() {
+    if (!window.confirm(t("admin.managerDetail.suspension.reactivateConfirm"))) return;
+    setEnCours(true);
+    setErreurAction(null);
+    try {
+      await api.post(`/admin/managers/${id}/reactivate`);
+      setVersion((v) => v + 1);
+    } catch (err) {
+      setErreurAction(apiErrorMessage(err));
+    } finally {
+      setEnCours(false);
+    }
+  }
 
   const date = (valeur: string | null) => (valeur ? new Date(valeur).toLocaleDateString(i18n.language) : "—");
   const carte = "rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
@@ -113,6 +151,80 @@ export default function AdminManagerDetailPage() {
               {t(`admin.managers.statuses.${manager.subscription.status}`)}
             </span>
           </div>
+
+          <section
+            className={`${carte} ${manager.suspendedAt ? "border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/30" : ""}`}
+          >
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+              {manager.suspendedAt ? t("admin.managerDetail.suspension.suspendedTitle") : t("admin.managerDetail.suspension.title")}
+            </h3>
+            {manager.suspendedAt ? (
+              <>
+                <p className="text-xs text-slate-700 dark:text-slate-300">
+                  {t("admin.managerDetail.suspension.since", { date: date(manager.suspendedAt) })}
+                </p>
+                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 break-words">
+                  <span className="font-semibold">{t("admin.managerDetail.suspension.reasonLabel")}</span>{" "}
+                  {manager.suspensionReason ?? "—"}
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.managerDetail.suspension.reasonHidden")}</p>
+                <button
+                  type="button"
+                  onClick={reactiver}
+                  disabled={enCours}
+                  className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {enCours ? t("admin.managerDetail.suspension.reactivating") : t("admin.managerDetail.suspension.reactivate")}
+                </button>
+              </>
+            ) : formulaireOuvert ? (
+              <form onSubmit={suspendre} className="space-y-3">
+                <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.suspension.warning")}</p>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {t("admin.managerDetail.suspension.reasonField")}
+                  <textarea
+                    value={motif}
+                    onChange={(e) => setMotif(e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    required
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={enCours || motif.trim().length < 3}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {enCours ? t("admin.managerDetail.suspension.suspending") : t("admin.managerDetail.suspension.confirm")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormulaireOuvert(false);
+                      setMotif("");
+                    }}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                  >
+                    {t("admin.managerDetail.suspension.cancel")}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.suspension.description")}</p>
+                <button
+                  type="button"
+                  onClick={() => setFormulaireOuvert(true)}
+                  className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+                >
+                  {t("admin.managerDetail.suspension.suspend")}
+                </button>
+              </>
+            )}
+            {erreurAction && <p className="mt-2 text-xs text-red-700 dark:text-red-400">{erreurAction}</p>}
+          </section>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard icon={Building2} label={t("admin.managerDetail.usage.properties")} value={manager.usage.properties} accent="blue" />

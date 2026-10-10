@@ -7,6 +7,7 @@ import { db } from "../db/client";
 import { tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { AUTH_COOKIE_NAME, CSRF_HEADER_NAME } from "../utils/authCookie";
+import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 
 export interface AuthPayload {
   userId: string;
@@ -102,6 +103,16 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     const [user] = await db.select().from(users).where(eq(users.id, payload.userId));
     if (!user) {
       return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
+    }
+
+    // Compte suspendu par l'administration : refus immédiat à chaque requête
+    // (pas seulement à la connexion), sinon une session déjà ouverte survivrait
+    // à la suspension. `user` est ici le PROPRIÉTAIRE de l'agence : ses
+    // collaborateurs, dont le jeton porte son id, sont donc bloqués avec lui.
+    // 401 (et non 403) pour que l'intercepteur du frontend vide la session ;
+    // la raison interne n'est jamais renvoyée.
+    if (user.suspendedAt) {
+      return next(new ApiError(401, MESSAGE_COMPTE_SUSPENDU, CODE_COMPTE_SUSPENDU));
     }
 
     // Multi-utilisateurs : `user` ci-dessus est le PROPRIÉTAIRE de l'agence

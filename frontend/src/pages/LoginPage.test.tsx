@@ -36,9 +36,9 @@ vi.mock("../components/GoogleSignInButton", () => ({
 
 const mockedApi = vi.mocked(api, { deep: true });
 
-function renderPage() {
+function renderPage(entree = "/login") {
   return render(
-    <MemoryRouter initialEntries={["/login"]}>
+    <MemoryRouter initialEntries={[entree]}>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -61,6 +61,18 @@ describe("LoginPage", () => {
     expect(screen.getByRole("heading", { name: "Gestion Immobilière" })).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Mot de passe")).toBeInTheDocument();
+  });
+
+  it("explique la suspension quand l'intercepteur renvoie ici avec ?suspended=1", () => {
+    renderPage("/login?suspended=1");
+    expect(
+      screen.getByText("Votre compte est suspendu. Contactez le support de la plateforme pour en savoir plus.")
+    ).toBeInTheDocument();
+  });
+
+  it("n'affiche aucun message d'erreur à l'arrivée normale sur la page", () => {
+    renderPage();
+    expect(screen.queryByText(/suspendu/)).not.toBeInTheDocument();
   });
 
   it("connecte le gestionnaire et redirige vers son tableau de bord", async () => {

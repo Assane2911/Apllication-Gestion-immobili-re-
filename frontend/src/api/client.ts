@@ -64,7 +64,10 @@ api.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       if (!window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
+        // Compte suspendu par l'administration : la session est coupée comme
+        // pour un jeton expiré, mais on dit POURQUOI sur la page de connexion
+        // plutôt que de laisser croire à un bug.
+        window.location.href = error.response.data?.code === "ACCOUNT_SUSPENDED" ? "/login?suspended=1" : "/login";
       }
     }
     return Promise.reject(error);

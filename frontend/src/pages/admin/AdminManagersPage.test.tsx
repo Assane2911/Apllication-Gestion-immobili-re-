@@ -21,6 +21,7 @@ function ligne(overrides: Record<string, unknown> = {}) {
     status: "ACTIVE",
     trialEndsAt: null,
     subscriptionEndsAt: "2030-01-01T00:00:00.000Z",
+    suspendedAt: null,
     propertiesCount: 3,
     tenantsCount: 2,
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -58,6 +59,36 @@ describe("AdminManagersPage", () => {
     expect(tableau.getByText("Pro")).toBeInTheDocument();
     expect(tableau.getByText("Actif")).toBeInTheDocument();
     expect(tableau.getByText("3 bien(s) · 2 locataire(s)")).toBeInTheDocument();
+  });
+
+  it("affiche un badge « Suspendu » en plus du statut d'abonnement", async () => {
+    mockedApi.get.mockResolvedValueOnce(page([ligne({ suspendedAt: "2026-10-10T10:00:00.000Z" })]));
+    renderPage();
+
+    const tableau = within(await screen.findByRole("table"));
+    expect(tableau.getByText("Suspendu")).toBeInTheDocument();
+    expect(tableau.getByText("Actif")).toBeInTheDocument();
+  });
+
+  it("n'affiche pas de badge « Suspendu » pour un compte en règle", async () => {
+    mockedApi.get.mockResolvedValueOnce(page([ligne()]));
+    renderPage();
+
+    const tableau = within(await screen.findByRole("table"));
+    expect(tableau.queryByText("Suspendu")).not.toBeInTheDocument();
+  });
+
+  it("filtre les comptes suspendus", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValue(page([ligne()]));
+    renderPage();
+    await screen.findByText("Agence Alpha");
+
+    await user.selectOptions(screen.getByLabelText("Filtrer par statut"), "SUSPENDED");
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/admin/managers", { params: { page: 1, status: "SUSPENDED" } })
+    );
   });
 
   it("affiche un libellé de repli quand l'agence n'a pas de nom", async () => {

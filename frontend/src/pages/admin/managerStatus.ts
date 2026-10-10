@@ -8,3 +8,6 @@ export const STATUS_CLASSES: Record<ManagerStatus, string> = {
   CANCELLED: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
   EXPIRED: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300",
 };
+
+/** Badge « Suspendu » : se superpose au statut d'abonnement, qui reste affiché. */
+export const SUSPENDED_CLASS = "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900";

@@ -160,6 +160,7 @@ const fr = {
 
   auth: {
     login: {
+      suspended: "Votre compte est suspendu. Contactez le support de la plateforme pour en savoir plus.",
       title: "Gestion Immobilière",
       subtitle: "Connectez-vous à votre espace",
       email: "Email",
@@ -1654,6 +1655,7 @@ const fr = {
         ENTERPRISE: "Entreprise",
       },
       statuses: {
+        SUSPENDED: "Suspendu",
         TRIAL: "Essai",
         ACTIVE: "Actif",
         CANCELLED: "Résilié",
@@ -1661,6 +1663,23 @@ const fr = {
       },
     },
     managerDetail: {
+      suspension: {
+        title: "Accès au compte",
+        suspendedTitle: "Compte suspendu",
+        description: "Suspendre empêche l'agence et ses collaborateurs de se connecter, et coupe leurs sessions ouvertes. Les données sont conservées ; les locataires et bailleurs ne sont pas touchés. La facturation de l'abonnement n'est pas interrompue.",
+        suspend: "Suspendre le compte",
+        warning: "L'agence ne pourra plus se connecter tant que la suspension n'est pas levée.",
+        reasonField: "Motif (note interne, jamais montrée au gestionnaire)",
+        confirm: "Confirmer la suspension",
+        suspending: "Suspension...",
+        cancel: "Annuler",
+        since: "Suspendu depuis le {{date}}",
+        reasonLabel: "Motif :",
+        reasonHidden: "Ce motif est interne : le gestionnaire voit seulement que son compte est suspendu.",
+        reactivate: "Lever la suspension",
+        reactivating: "Réactivation...",
+        reactivateConfirm: "Lever la suspension ? L'agence pourra de nouveau se connecter.",
+      },
       back: "Retour aux gestionnaires",
       loading: "Chargement de la fiche...",
       errorTitle: "Impossible de charger ce gestionnaire",
@@ -1722,6 +1741,8 @@ const fr = {
         details: "Détail",
       },
       actions: {
+        "manager.suspend": "Compte suspendu",
+        "manager.reactivate": "Suspension levée",
         "subscription.bank_transfer.confirm": "Virement confirmé",
         "subscription.bank_transfer.reject": "Virement rejeté",
         "platform.bank_details.update": "Coordonnées bancaires modifiées",
