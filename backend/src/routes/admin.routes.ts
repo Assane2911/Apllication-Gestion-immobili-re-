@@ -3,6 +3,7 @@ import {
   confirmBankTransfer,
   getManagerDetail,
   getPlatformDashboardStats,
+  listAdminAuditLogs,
   listManagers,
   listPendingBankTransfers,
   rejectBankTransfer,
@@ -23,6 +24,7 @@ router.post("/subscriptions/:id/confirm-bank-transfer", confirmBankTransfer);
 router.post("/subscriptions/:id/reject-bank-transfer", rejectBankTransfer);
 router.get("/managers", listManagers);
 router.get("/managers/:id", getManagerDetail);
+router.get("/audit-logs", listAdminAuditLogs);
 router.get("/settings", getPlatformSettings);
 router.put("/settings", updatePlatformSettings);
 router.get("/suggestions", listSuggestions);

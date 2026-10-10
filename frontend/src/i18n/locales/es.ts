@@ -1612,12 +1612,14 @@ const es: TranslationSchema = {
   admin: {
     nav: {
       tips: {
+        audit: "Quién confirmó una transferencia o cambió los ajustes de la plataforma, y cuándo.",
         managers: "Todas las cuentas de agencia: suscripción, uso y facturación.",
         dashboard: "La actividad de la plataforma, todos los gestores incluidos.",
         transfers: "Las transferencias de suscripción pendientes de confirmar o rechazar.",
         settings: "Los datos bancarios donde los gestores abonan su suscripción.",
         suggestions: "Las sugerencias enviadas por gestores, inquilinos y propietarios.",
       },
+      audit: "Registro de auditoría",
       managers: "Gestores",
       dashboard: "Panel",
       transfers: "Transferencias bancarias",
@@ -1702,6 +1704,28 @@ const es: TranslationSchema = {
         empty: "Ningún pago registrado.",
         date: "Fecha",
         method: "Método",
+      },
+    },
+    audit: {
+      title: "Registro de auditoría",
+      subtitle: "Las acciones sensibles de la administración, de la más reciente a la más antigua",
+      filterLabel: "Filtrar por acción",
+      allActions: "Todas las acciones",
+      errorTitle: "No se puede cargar el registro de auditoría",
+      loading: "Cargando el registro...",
+      emptyTitle: "Ninguna acción registrada",
+      emptyDescription: "Las confirmaciones de transferencia y los cambios de ajustes aparecerán aquí.",
+      table: {
+        date: "Fecha",
+        admin: "Administrador",
+        action: "Acción",
+        target: "Gestor",
+        details: "Detalle",
+      },
+      actions: {
+        "subscription.bank_transfer.confirm": "Transferencia confirmada",
+        "subscription.bank_transfer.reject": "Transferencia rechazada",
+        "platform.bank_details.update": "Datos bancarios modificados",
       },
     },
     suggestions: {

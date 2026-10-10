@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import {
   activityLogs,
+  adminAuditLogs,
   agencySettings,
   contracts,
   owners,
@@ -13,10 +14,17 @@ import {
   tenants,
   users,
 } from "../db/schema";
+import { ADMIN_AUDIT_ACTIONS, logAdminAction } from "../services/adminAudit.service";
 import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
+
+/** Email d'un gestionnaire, pour l'instantané `targetLabel` du journal d'audit. */
+async function emailDuGestionnaire(userId: string): Promise<string | null> {
+  const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+  return user?.email ?? null;
+}
 
 /**
  * Liste les abonnements SaaS réglés par virement bancaire et toujours en
@@ -66,6 +74,14 @@ export const confirmBankTransfer = asyncHandler(async (req: Request, res: Respon
 
   const updated = await activateSubscriptionRecord(id);
 
+  await logAdminAction({
+    req,
+    action: "subscription.bank_transfer.confirm",
+    targetUserId: record.userId,
+    targetLabel: await emailDuGestionnaire(record.userId),
+    details: `Virement ${record.plan} de ${record.amount} ${record.currency} confirmé (réf. ${record.paymentRef ?? "—"})`,
+  });
+
   res.json({ success: true, record: updated });
 });
 
@@ -109,6 +125,14 @@ export const rejectBankTransfer = asyncHandler(async (req: Request, res: Respons
   if (!updated) {
     throw new ApiError(409, "Ce virement vient d'être traité par une autre requête. Veuillez rafraîchir la page.");
   }
+
+  await logAdminAction({
+    req,
+    action: "subscription.bank_transfer.reject",
+    targetUserId: record.userId,
+    targetLabel: await emailDuGestionnaire(record.userId),
+    details: `Virement ${record.plan} de ${record.amount} ${record.currency} rejeté (réf. ${record.paymentRef ?? "—"})`,
+  });
 
   res.json({ success: true, record: updated });
 });
@@ -449,4 +473,52 @@ export const getManagerDetail = asyncHandler(async (req: Request, res: Response)
       createdAt: b.createdAt,
     })),
   });
+});
+
+const listAuditLogsQuerySchema = z.object({
+  action: z.enum(ADMIN_AUDIT_ACTIONS).optional(),
+  targetUserId: z.string().min(1).max(100).optional(),
+});
+
+/**
+ * Journal d'audit de l'administration, du plus récent au plus ancien,
+ * paginé, filtrable par type d'action et par gestionnaire visé. Un paramètre
+ * mal formé donne un 400 explicite plutôt que d'être ignoré : l'appelant ne
+ * doit pas croire son filtre appliqué alors qu'il ne l'est pas.
+ */
+export const listAdminAuditLogs = asyncHandler(async (req: Request, res: Response) => {
+  const parsed = listAuditLogsQuerySchema.safeParse(req.query);
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  const { action, targetUserId } = parsed.data;
+  const pagination = parsePagination(req);
+
+  const conditions = [];
+  if (action) conditions.push(eq(adminAuditLogs.action, action));
+  if (targetUserId) conditions.push(eq(adminAuditLogs.targetUserId, targetUserId));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [{ count: total }] = await db.select({ count: sql<number>`count(*)::int` }).from(adminAuditLogs).where(where);
+  const rows = await db
+    .select()
+    .from(adminAuditLogs)
+    .where(where)
+    .orderBy(desc(adminAuditLogs.createdAt), desc(adminAuditLogs.id))
+    .limit(pagination.pageSize)
+    .offset(pagination.offset);
+
+  res.json(
+    buildPaginatedResult(
+      rows.map((r) => ({
+        id: r.id,
+        adminEmail: r.adminEmail,
+        action: r.action,
+        targetUserId: r.targetUserId,
+        targetLabel: r.targetLabel,
+        details: r.details,
+        createdAt: r.createdAt,
+      })),
+      total,
+      pagination
+    )
+  );
 });
