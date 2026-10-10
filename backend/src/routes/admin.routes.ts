@@ -12,7 +12,7 @@ import {
 } from "../controllers/admin.controller";
 import { changeManagerPlan, grantSubscriptionDays } from "../controllers/adminSubscription.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
-import { listSuggestions } from "../controllers/suggestion.controller";
+import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
 import { authenticate, requireRole } from "../middleware/auth";
 
 const router = Router();
@@ -35,5 +35,6 @@ router.get("/audit-logs", listAdminAuditLogs);
 router.get("/settings", getPlatformSettings);
 router.put("/settings", updatePlatformSettings);
 router.get("/suggestions", listSuggestions);
+router.patch("/suggestions/:id", updateSuggestion);
 
 export default router;

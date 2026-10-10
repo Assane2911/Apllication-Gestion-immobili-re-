@@ -288,6 +288,24 @@ export async function initDb() {
       )
     `);
 
+    // La table `suggestions` n'avait jamais été créée ici (elle existe en
+    // production par un autre chemin) : une installation neuve n'en avait donc
+    // pas. Sur une base existante, ce CREATE ne fait rien — les colonnes de
+    // suivi sont ajoutées par les ALTER plus bas.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS suggestions (
+        id TEXT PRIMARY KEY,
+        author_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        author_label TEXT NOT NULL,
+        author_role TEXT CHECK (author_role IN ('MANAGER', 'TENANT', 'ADMIN', 'OWNER')),
+        page TEXT,
+        message TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'NEW',
+        admin_note TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
@@ -400,6 +418,8 @@ export async function initDb() {
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'NEW'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS admin_note TEXT`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS scanned_contract_url TEXT`));
@@ -532,6 +552,8 @@ export async function initDb() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS messages_contract_id_idx ON messages (contract_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs (created_at)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS suggestions_created_at_idx ON suggestions (created_at)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS suggestions_status_idx ON suggestions (status)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_created_at_idx ON admin_audit_logs (created_at)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_target_user_id_idx ON admin_audit_logs (target_user_id)`);
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS tenants_manager_email_unique ON tenants (manager_id, email)`);
