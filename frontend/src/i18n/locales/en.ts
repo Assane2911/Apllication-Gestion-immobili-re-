@@ -1610,12 +1610,14 @@ const en: TranslationSchema = {
   admin: {
     nav: {
       tips: {
+        audit: "Who confirmed a transfer or changed platform settings, and when.",
         managers: "All agency accounts: subscription, usage and billing.",
         dashboard: "Platform activity, across every manager.",
         transfers: "Subscription transfers awaiting manual confirmation or rejection.",
         settings: "The bank details managers pay their subscription into.",
         suggestions: "Suggestions sent in by managers, tenants and owners.",
       },
+      audit: "Audit log",
       managers: "Managers",
       dashboard: "Dashboard",
       transfers: "Bank transfers",
@@ -1700,6 +1702,28 @@ const en: TranslationSchema = {
         empty: "No payment recorded.",
         date: "Date",
         method: "Method",
+      },
+    },
+    audit: {
+      title: "Audit log",
+      subtitle: "Sensitive administration actions, newest first",
+      filterLabel: "Filter by action",
+      allActions: "All actions",
+      errorTitle: "Unable to load the audit log",
+      loading: "Loading the log...",
+      emptyTitle: "No action recorded",
+      emptyDescription: "Transfer confirmations and settings changes will appear here.",
+      table: {
+        date: "Date",
+        admin: "Administrator",
+        action: "Action",
+        target: "Manager",
+        details: "Details",
+      },
+      actions: {
+        "subscription.bank_transfer.confirm": "Transfer confirmed",
+        "subscription.bank_transfer.reject": "Transfer rejected",
+        "platform.bank_details.update": "Bank details changed",
       },
     },
     suggestions: {

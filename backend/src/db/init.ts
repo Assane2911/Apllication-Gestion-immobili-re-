@@ -274,6 +274,19 @@ export async function initDb() {
     `);
 
     await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS admin_audit_logs (
+        id TEXT PRIMARY KEY,
+        admin_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        admin_email TEXT NOT NULL,
+        action TEXT NOT NULL,
+        target_user_id TEXT,
+        target_label TEXT,
+        details TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
         contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
@@ -515,6 +528,8 @@ export async function initDb() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS messages_contract_id_idx ON messages (contract_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs (created_at)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_created_at_idx ON admin_audit_logs (created_at)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_target_user_id_idx ON admin_audit_logs (target_user_id)`);
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS tenants_manager_email_unique ON tenants (manager_id, email)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS properties_owner_id_idx ON properties (owner_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS owners_manager_id_idx ON owners (manager_id)`);

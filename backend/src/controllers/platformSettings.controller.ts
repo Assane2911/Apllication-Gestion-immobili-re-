@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { platformSettings } from "../db/schema";
+import { logAdminAction } from "../services/adminAudit.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bicSchema, ibanSchema } from "../utils/iban";
 
@@ -30,6 +31,16 @@ const updatePlatformSettingsSchema = z.object({
   bic: bicSchema,
 });
 
+// L'IBAN/BIC n'est volontairement PAS recopié dans le journal : on y garde la
+// trace du changement (qui, quand), pas la valeur, pour que le journal ne
+// devienne pas un second endroit où lire des coordonnées bancaires.
+const journaliserModification = (req: Request) =>
+  logAdminAction({
+    req,
+    action: "platform.bank_details.update",
+    details: "Coordonnées bancaires de la plateforme modifiées",
+  });
+
 export const updatePlatformSettings = asyncHandler(async (req: Request, res: Response) => {
   const body = updatePlatformSettingsSchema.parse(req.body);
 
@@ -40,6 +51,7 @@ export const updatePlatformSettings = asyncHandler(async (req: Request, res: Res
       .insert(platformSettings)
       .values({ id: PLATFORM_SETTINGS_ID, ...body })
       .returning();
+    await journaliserModification(req);
     return res.json(created);
   }
 
@@ -49,6 +61,7 @@ export const updatePlatformSettings = asyncHandler(async (req: Request, res: Res
     .where(eq(platformSettings.id, PLATFORM_SETTINGS_ID))
     .returning();
 
+  await journaliserModification(req);
   res.json(updated);
 });
 

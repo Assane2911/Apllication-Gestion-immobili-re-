@@ -728,6 +728,36 @@ export const suggestions = pgTable(
 );
 
 
+// --- Journal d'audit administrateur (qui, parmi l'administration de la plateforme, a fait quoi) ---
+/**
+ * Trace des actions sensibles de l'administration : confirmation ou rejet d'un
+ * virement, changement des coordonnées bancaires de la plateforme, etc.
+ * Distinct d'`activityLogs`, qui est le journal PAR AGENCE visible du
+ * gestionnaire : ici, c'est la plateforme qui rend des comptes sur elle-même.
+ *
+ * `adminEmail` et `targetLabel` sont des instantanés : l'entrée doit rester
+ * lisible même si le compte administrateur ou le compte visé est supprimé
+ * ensuite (adminId passe alors à NULL). Aucune valeur sensible (IBAN, secret,
+ * jeton) n'est jamais écrite dans `details`.
+ */
+export const adminAuditLogs = pgTable(
+  "admin_audit_logs",
+  {
+    id: id(),
+    adminId: text("admin_id").references(() => users.id, { onDelete: "set null" }),
+    adminEmail: text("admin_email").notNull(),
+    action: text("action").notNull(), // ex: "subscription.bank_transfer.confirm"
+    targetUserId: text("target_user_id"), // gestionnaire visé, quand il y en a un
+    targetLabel: text("target_label"), // email du gestionnaire visé au moment de l'action
+    details: text("details"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    createdAtIdx: index("admin_audit_logs_created_at_idx").on(table.createdAt),
+    targetUserIdIdx: index("admin_audit_logs_target_user_id_idx").on(table.targetUserId),
+  })
+);
+
 // --- Activity Log (Journal d'activité / audit — qui a fait quoi, quand) ---
 export const activityLogs = pgTable(
   "activity_logs",

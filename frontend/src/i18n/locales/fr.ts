@@ -1611,12 +1611,14 @@ const fr = {
   admin: {
     nav: {
       tips: {
+        audit: "Qui a confirmé un virement ou modifié les réglages de la plateforme, et quand.",
         managers: "Tous les comptes agence : abonnement, usage et facturation.",
         dashboard: "L'activité de la plateforme, tous gestionnaires confondus.",
         transfers: "Les virements d'abonnement à confirmer ou à rejeter à la main.",
         settings: "Coordonnées bancaires sur lesquelles les gestionnaires virent leur abonnement.",
         suggestions: "Les suggestions envoyées par les gestionnaires, les locataires et les bailleurs.",
       },
+      audit: "Journal d'audit",
       managers: "Gestionnaires",
       dashboard: "Tableau de bord",
       transfers: "Virements bancaires",
@@ -1701,6 +1703,28 @@ const fr = {
         empty: "Aucun paiement enregistré.",
         date: "Date",
         method: "Moyen",
+      },
+    },
+    audit: {
+      title: "Journal d'audit",
+      subtitle: "Les actions sensibles de l'administration, de la plus récente à la plus ancienne",
+      filterLabel: "Filtrer par action",
+      allActions: "Toutes les actions",
+      errorTitle: "Impossible de charger le journal d'audit",
+      loading: "Chargement du journal...",
+      emptyTitle: "Aucune action enregistrée",
+      emptyDescription: "Les confirmations de virement et les changements de réglages apparaîtront ici.",
+      table: {
+        date: "Date",
+        admin: "Administrateur",
+        action: "Action",
+        target: "Gestionnaire",
+        details: "Détail",
+      },
+      actions: {
+        "subscription.bank_transfer.confirm": "Virement confirmé",
+        "subscription.bank_transfer.reject": "Virement rejeté",
+        "platform.bank_details.update": "Coordonnées bancaires modifiées",
       },
     },
     suggestions: {
