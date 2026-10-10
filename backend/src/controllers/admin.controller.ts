@@ -1,9 +1,21 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import type { AnyPgColumn, AnyPgTable } from "drizzle-orm/pg-core";
 import { Request, Response } from "express";
+import { z } from "zod";
 import { db } from "../db/client";
-import { agencySettings, contracts, platformSubscriptions, properties, tenants, users } from "../db/schema";
+import {
+  activityLogs,
+  agencySettings,
+  contracts,
+  owners,
+  platformSubscriptions,
+  properties,
+  tenants,
+  users,
+} from "../db/schema";
 import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
 
 /**
@@ -240,5 +252,201 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
       totalTenants,
       activeContracts,
     },
+  });
+});
+
+/** Neutralise `%`, `_` et `\` pour qu'une recherche saisie soit lue littéralement dans un LIKE. */
+function echapperLike(valeur: string): string {
+  return valeur.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+const listManagersQuerySchema = z.object({
+  search: z.string().trim().max(100).optional(),
+  plan: z.enum(["STARTER", "PRO", "ENTERPRISE"]).optional(),
+  status: z.enum(["TRIAL", "ACTIVE", "CANCELLED", "EXPIRED"]).optional(),
+});
+
+/**
+ * Liste paginée des gestionnaires (comptes agence) pour l'administrateur, avec
+ * recherche (email ou nom d'agence) et filtres par formule et par statut.
+ *
+ * Les collaborateurs invités (teamOwnerId renseigné) ne sont pas des clients de
+ * la plateforme : ils sont exclus. Le statut filtré est le statut CALCULÉ
+ * (computeSubscriptionInfo), pas la colonne en base, qui peut être obsolète
+ * tant que l'utilisateur ne s'est pas reconnecté — d'où un filtrage en
+ * mémoire après la requête SQL, puis la pagination.
+ *
+ * Aucune donnée sensible n'est renvoyée (hash de mot de passe, secrets 2FA,
+ * jetons, coordonnées bancaires de l'agence…) : réponse par liste blanche.
+ */
+export const listManagers = asyncHandler(async (req: Request, res: Response) => {
+  const parsed = listManagersQuerySchema.safeParse(req.query);
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  const { search, plan, status } = parsed.data;
+  const pagination = parsePagination(req);
+
+  const conditions = [eq(users.role, "MANAGER"), isNull(users.teamOwnerId)];
+  if (plan) conditions.push(eq(users.subscriptionPlan, plan));
+  if (search) {
+    const motif = `%${echapperLike(search)}%`;
+    const recherche = or(ilike(users.email, motif), ilike(agencySettings.agencyName, motif));
+    if (recherche) conditions.push(recherche);
+  }
+
+  const rows = await db
+    .select({ user: users, agencyName: agencySettings.agencyName })
+    .from(users)
+    .leftJoin(agencySettings, eq(agencySettings.userId, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(users.createdAt));
+
+  const enriched = rows
+    .map(({ user, agencyName }) => ({ user, agencyName, info: computeSubscriptionInfo(user) }))
+    .filter((r): r is typeof r & { info: NonNullable<typeof r.info> } => r.info !== null)
+    .filter((r) => !status || r.info.status === status);
+
+  const total = enriched.length;
+  const pageRows = enriched.slice(pagination.offset, pagination.offset + pagination.pageSize);
+  const pageIds = pageRows.map((r) => r.user.id);
+
+  const countsFor = async (table: AnyPgTable, column: AnyPgColumn) => {
+    if (pageIds.length === 0) return new Map<string, number>();
+    const grouped = await db
+      .select({ managerId: sql<string>`${column}`, count: sql<number>`count(*)::int` })
+      .from(table)
+      .where(inArray(column, pageIds))
+      .groupBy(column);
+    return new Map(grouped.map((g) => [g.managerId, g.count]));
+  };
+  const [propertyCounts, tenantCounts] = await Promise.all([
+    countsFor(properties, properties.managerId),
+    countsFor(tenants, tenants.managerId),
+  ]);
+
+  const items = pageRows.map(({ user, agencyName, info }) => ({
+    id: user.id,
+    email: user.email,
+    agencyName: agencyName ?? null,
+    plan: info.plan,
+    status: info.status,
+    trialEndsAt: info.trialEndsAt,
+    subscriptionEndsAt: info.subscriptionEndsAt,
+    propertiesCount: propertyCounts.get(user.id) ?? 0,
+    tenantsCount: tenantCounts.get(user.id) ?? 0,
+    createdAt: user.createdAt,
+  }));
+
+  res.json(buildPaginatedResult(items, total, pagination));
+});
+
+/**
+ * Fiche détail d'un gestionnaire pour l'administrateur : abonnement (statut
+ * calculé), volumétrie d'usage, dernière activité, identité publique de
+ * l'agence et historique de facturation récent. Réponse par liste blanche :
+ * ni hash, ni secret 2FA, ni jeton, ni IBAN/BIC de l'agence.
+ * 404 pour un id inconnu, un administrateur ou un collaborateur invité.
+ */
+export const getManagerDetail = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.role, "MANAGER"), isNull(users.teamOwnerId)));
+  if (!user) throw new ApiError(404, "Gestionnaire introuvable");
+
+  const info = computeSubscriptionInfo(user);
+  if (!info) throw new ApiError(404, "Gestionnaire introuvable");
+
+  const countOf = async (table: AnyPgTable, column: AnyPgColumn) => {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(table)
+      .where(eq(column, id));
+    return row.count;
+  };
+
+  const [
+    [agency],
+    propertiesCount,
+    tenantsCount,
+    ownersCount,
+    [{ count: activeContractsCount }],
+    [{ count: collaboratorsCount }],
+    [lastActivity],
+    billing,
+  ] = await Promise.all([
+    db.select().from(agencySettings).where(eq(agencySettings.userId, id)),
+    countOf(properties, properties.managerId),
+    countOf(tenants, tenants.managerId),
+    countOf(owners, owners.managerId),
+    // Un contrat n'a pas de managerId propre : il appartient au gestionnaire
+    // du bien qu'il couvre.
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(contracts)
+      .innerJoin(properties, eq(properties.id, contracts.propertyId))
+      .where(and(eq(properties.managerId, id), eq(contracts.status, "ACTIVE"))),
+    db.select({ count: sql<number>`count(*)::int` }).from(users).where(eq(users.teamOwnerId, id)),
+    db
+      .select({ createdAt: activityLogs.createdAt })
+      .from(activityLogs)
+      .where(eq(activityLogs.managerId, id))
+      .orderBy(desc(activityLogs.createdAt))
+      .limit(1),
+    db
+      .select()
+      .from(platformSubscriptions)
+      .where(eq(platformSubscriptions.userId, id))
+      .orderBy(desc(platformSubscriptions.createdAt))
+      .limit(10),
+  ]);
+
+  res.json({
+    id: user.id,
+    email: user.email,
+    currency: user.currency,
+    createdAt: user.createdAt,
+    emailVerifiedAt: user.emailVerifiedAt,
+    twoFactorEnabled: user.totpEnabledAt !== null,
+    subscription: {
+      status: info.status,
+      plan: info.plan,
+      trialEndsAt: info.trialEndsAt,
+      subscriptionEndsAt: info.subscriptionEndsAt,
+      trialDaysRemaining: info.trialDaysRemaining,
+      paymentMethod: user.subscriptionPaymentMethod,
+      autoRenew: user.stripeSubscriptionId !== null,
+    },
+    agency: agency
+      ? {
+          agencyName: agency.agencyName,
+          phone: agency.phone,
+          email: agency.email,
+          address: agency.address,
+          siretOrId: agency.siretOrId,
+        }
+      : null,
+    usage: {
+      properties: propertiesCount,
+      tenants: tenantsCount,
+      owners: ownersCount,
+      activeContracts: activeContractsCount,
+      collaborators: collaboratorsCount,
+    },
+    lastActivityAt: lastActivity?.createdAt ?? null,
+    billingHistory: billing.map((b) => ({
+      id: b.id,
+      plan: b.plan,
+      amount: b.amount,
+      currency: b.currency,
+      billingCycle: b.billingCycle,
+      status: b.status,
+      paymentMethod: b.paymentMethod,
+      paymentRef: b.paymentRef,
+      startDate: b.startDate,
+      endDate: b.endDate,
+      createdAt: b.createdAt,
+    })),
   });
 });
