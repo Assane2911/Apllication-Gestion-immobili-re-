@@ -179,3 +179,44 @@ describe("intercepteur de requête (authentification)", () => {
     expect(headers.Authorization).toBe("Bearer jeton-natif");
   });
 });
+
+describe("intercepteur de réponse 401", () => {
+  type Rejeteur = (error: unknown) => Promise<never>;
+  // Les gestionnaires enregistrés par api.interceptors.response.use, lus tels quels.
+  const rejeteur = (): Rejeteur =>
+    (api.interceptors.response as unknown as { handlers: Array<{ rejected: Rejeteur }> }).handlers[0].rejected;
+
+  function stubLocation(pathname: string) {
+    const location = { pathname, href: "" };
+    vi.stubGlobal("location", location);
+    return location;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("vide la session et renvoie vers /login sur un 401 ordinaire", async () => {
+    const location = stubLocation("/dashboard");
+    localStorage.setItem("token", "t");
+    await expect(rejeteur()(axiosErrorWithResponse({ error: "Token invalide" }, 401))).rejects.toBeDefined();
+    expect(localStorage.getItem("token")).toBeNull();
+    expect(location.href).toBe("/login");
+  });
+
+  it("renvoie vers /login?suspended=1 quand le compte est suspendu", async () => {
+    const location = stubLocation("/dashboard");
+    await expect(
+      rejeteur()(axiosErrorWithResponse({ error: "Compte suspendu", code: "ACCOUNT_SUSPENDED" }, 401))
+    ).rejects.toBeDefined();
+    expect(location.href).toBe("/login?suspended=1");
+  });
+
+  it("ne redirige pas quand on est déjà sur /login", async () => {
+    const location = stubLocation("/login");
+    await expect(
+      rejeteur()(axiosErrorWithResponse({ error: "Compte suspendu", code: "ACCOUNT_SUSPENDED" }, 401))
+    ).rejects.toBeDefined();
+    expect(location.href).toBe("");
+  });
+});

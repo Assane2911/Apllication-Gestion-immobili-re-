@@ -71,6 +71,20 @@ describe("AdminAuditPage", () => {
     expect(await screen.findByText("future.action")).toBeInTheDocument();
   });
 
+  it("traduit les actions de suspension et de réactivation", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        entree({ id: "a1", action: "manager.suspend", details: "Compte suspendu. Motif : Impayé" }),
+        entree({ id: "a2", action: "manager.reactivate", details: "Suspension levée" }),
+      ])
+    );
+    renderPage();
+
+    const tableau = within(await screen.findByRole("table"));
+    expect(tableau.getByText("Compte suspendu")).toBeInTheDocument();
+    expect(tableau.getByText("Suspension levée", { selector: "td.font-semibold" })).toBeInTheDocument();
+  });
+
   it("affiche un état vide", async () => {
     mockedApi.get.mockResolvedValueOnce(page([]));
     renderPage();

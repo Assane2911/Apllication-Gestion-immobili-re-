@@ -18,6 +18,7 @@ import {
 import { accorderRecompenseParrainage } from "../services/referral.service";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { consommerCodeSecours, verifierCodeTotp } from "../services/totp.service";
+import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { clearAuthCookie, setAuthCookie } from "../utils/authCookie";
@@ -322,6 +323,14 @@ async function finalizeLogin(user: typeof users.$inferSelect, res: Response) {
   const compteFacturation = identite.collaboratorId
     ? (await db.select().from(users).where(eq(users.id, identite.userId)))[0]
     : user;
+
+  // Aucune session n'est ouverte pour une agence suspendue (ni pour ses
+  // collaborateurs : compteFacturation est le propriétaire). authenticate
+  // refuse de toute façon chaque requête ; ce refus-ci donne simplement le
+  // message à la connexion plutôt qu'une session aussitôt fermée.
+  if (compteFacturation?.suspendedAt) {
+    throw new ApiError(403, MESSAGE_COMPTE_SUSPENDU, CODE_COMPTE_SUSPENDU);
+  }
 
   const token = signToken({
     userId: identite.userId,

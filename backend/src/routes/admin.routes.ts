@@ -6,7 +6,9 @@ import {
   listAdminAuditLogs,
   listManagers,
   listPendingBankTransfers,
+  reactivateManager,
   rejectBankTransfer,
+  suspendManager,
 } from "../controllers/admin.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions } from "../controllers/suggestion.controller";
@@ -24,6 +26,8 @@ router.post("/subscriptions/:id/confirm-bank-transfer", confirmBankTransfer);
 router.post("/subscriptions/:id/reject-bank-transfer", rejectBankTransfer);
 router.get("/managers", listManagers);
 router.get("/managers/:id", getManagerDetail);
+router.post("/managers/:id/suspend", suspendManager);
+router.post("/managers/:id/reactivate", reactivateManager);
 router.get("/audit-logs", listAdminAuditLogs);
 router.get("/settings", getPlatformSettings);
 router.put("/settings", updatePlatformSettings);

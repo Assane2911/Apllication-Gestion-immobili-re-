@@ -103,6 +103,14 @@ export const users = pgTable("users", {
   emailVerifiedAt: timestamp("email_verified_at", { mode: "date" }),
   emailVerificationTokenHash: text("email_verification_token_hash"),
   emailVerificationExpiresAt: timestamp("email_verification_expires_at", { mode: "date" }),
+  // Suspension du compte par l'administration de la plateforme (voir
+  // admin.controller.ts::suspendManager). NULL = compte en règle. Posée sur le
+  // gestionnaire PROPRIÉTAIRE de l'agence : ses collaborateurs, dont les
+  // jetons portent l'id du propriétaire, sont bloqués du même coup (voir
+  // authenticate). `suspensionReason` est une note interne de l'administration,
+  // jamais renvoyée au gestionnaire lui-même.
+  suspendedAt: timestamp("suspended_at", { mode: "date" }),
+  suspensionReason: text("suspension_reason"),
   // Multi-utilisateurs (formule Entreprise, voir team.controller.ts) : NULL
   // pour un compte gestionnaire "propriétaire" ordinaire, ou l'id du
   // gestionnaire propriétaire pour un compte collaborateur invité par lui.

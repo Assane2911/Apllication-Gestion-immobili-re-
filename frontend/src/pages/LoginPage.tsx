@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, apiErrorCode, apiErrorMessage } from "../api/client";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -59,7 +59,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Arrivée depuis l'intercepteur d'api/client.ts après une suspension de compte.
+  const [searchParams] = useSearchParams();
+  const [error, setError] = useState<string | null>(() =>
+    searchParams.get("suspended") ? t("auth.login.suspended") : null
+  );
   const [loading, setLoading] = useState<"form" | "google" | "2fa" | null>(null);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);

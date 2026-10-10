@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -8,7 +9,7 @@ import AdminManagerDetailPage from "./AdminManagerDetailPage";
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
-  return { ...actual, api: { get: vi.fn() } };
+  return { ...actual, api: { get: vi.fn(), post: vi.fn() } };
 });
 
 const mockedApi = vi.mocked(api, { deep: true });
@@ -20,6 +21,8 @@ function fiche(overrides: Record<string, unknown> = {}) {
     currency: "EUR",
     createdAt: "2026-01-01T00:00:00.000Z",
     emailVerifiedAt: "2026-01-01T00:00:00.000Z",
+    suspendedAt: null,
+    suspensionReason: null,
     twoFactorEnabled: true,
     subscription: {
       status: "ACTIVE",
@@ -69,6 +72,8 @@ function renderPage() {
 describe("AdminManagerDetailPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("affiche l'abonnement, l'agence, l'usage et l'historique de facturation", async () => {
@@ -117,5 +122,84 @@ describe("AdminManagerDetailPage", () => {
     renderPage();
 
     expect(await screen.findByText("Gestionnaire introuvable")).toBeInTheDocument();
+  });
+
+  it("suspend le compte avec un motif obligatoire, puis relit la fiche", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+    mockedApi.get.mockResolvedValueOnce({
+      data: fiche({ suspendedAt: "2026-10-10T10:00:00.000Z", suspensionReason: "Impayé" }),
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Suspendre le compte" }));
+    const confirmer = screen.getByRole("button", { name: "Confirmer la suspension" });
+    // Sans motif, impossible de confirmer.
+    expect(confirmer).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/Motif/), "Impayé");
+    await user.click(confirmer);
+
+    await waitFor(() =>
+      expect(mockedApi.post).toHaveBeenCalledWith("/admin/managers/mgr-1/suspend", { reason: "Impayé" })
+    );
+    expect(await screen.findByText("Compte suspendu")).toBeInTheDocument();
+    expect(screen.getByText("Impayé")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lever la suspension" })).toBeInTheDocument();
+  });
+
+  it("affiche l'erreur serveur d'une suspension refusée", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+    mockedApi.post.mockRejectedValueOnce({ response: { data: { error: "Ce compte est déjà suspendu" } }, isAxiosError: true });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Suspendre le compte" }));
+    await user.type(screen.getByLabelText(/Motif/), "Doublon");
+    await user.click(screen.getByRole("button", { name: "Confirmer la suspension" }));
+
+    expect(await screen.findByText("Ce compte est déjà suspendu")).toBeInTheDocument();
+  });
+
+  it("annuler referme le formulaire sans rien envoyer", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Suspendre le compte" }));
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+
+    expect(screen.getByRole("button", { name: "Suspendre le compte" })).toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("lève la suspension après confirmation", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({
+      data: fiche({ suspendedAt: "2026-10-10T10:00:00.000Z", suspensionReason: "Impayé" }),
+    });
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+    mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Lever la suspension" }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/admin/managers/mgr-1/reactivate"));
+    expect(await screen.findByRole("button", { name: "Suspendre le compte" })).toBeInTheDocument();
+  });
+
+  it("ne lève pas la suspension si l'administrateur refuse la confirmation", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    mockedApi.get.mockResolvedValueOnce({
+      data: fiche({ suspendedAt: "2026-10-10T10:00:00.000Z", suspensionReason: "Impayé" }),
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Lever la suspension" }));
+
+    expect(mockedApi.post).not.toHaveBeenCalled();
   });
 });

@@ -10,6 +10,8 @@ const ACTIONS = [
   "subscription.bank_transfer.confirm",
   "subscription.bank_transfer.reject",
   "platform.bank_details.update",
+  "manager.suspend",
+  "manager.reactivate",
 ] as const;
 
 interface AuditEntry {

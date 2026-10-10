@@ -162,6 +162,7 @@ const en: TranslationSchema = {
 
   auth: {
     login: {
+      suspended: "Your account is suspended. Contact platform support to find out more.",
       title: "Property Management",
       subtitle: "Sign in to your account",
       email: "Email",
@@ -1653,6 +1654,7 @@ const en: TranslationSchema = {
         ENTERPRISE: "Enterprise",
       },
       statuses: {
+        SUSPENDED: "Suspended",
         TRIAL: "Trial",
         ACTIVE: "Active",
         CANCELLED: "Cancelled",
@@ -1660,6 +1662,23 @@ const en: TranslationSchema = {
       },
     },
     managerDetail: {
+      suspension: {
+        title: "Account access",
+        suspendedTitle: "Account suspended",
+        description: "Suspending prevents the agency and its collaborators from signing in and cuts their open sessions. Data is kept; tenants and owners are not affected. Subscription billing is not stopped.",
+        suspend: "Suspend account",
+        warning: "The agency will not be able to sign in until the suspension is lifted.",
+        reasonField: "Reason (internal note, never shown to the manager)",
+        confirm: "Confirm suspension",
+        suspending: "Suspending...",
+        cancel: "Cancel",
+        since: "Suspended since {{date}}",
+        reasonLabel: "Reason:",
+        reasonHidden: "This reason is internal: the manager only sees that their account is suspended.",
+        reactivate: "Lift suspension",
+        reactivating: "Reactivating...",
+        reactivateConfirm: "Lift the suspension? The agency will be able to sign in again.",
+      },
       back: "Back to managers",
       loading: "Loading profile...",
       errorTitle: "Unable to load this manager",
@@ -1721,6 +1740,8 @@ const en: TranslationSchema = {
         details: "Details",
       },
       actions: {
+        "manager.suspend": "Account suspended",
+        "manager.reactivate": "Suspension lifted",
         "subscription.bank_transfer.confirm": "Transfer confirmed",
         "subscription.bank_transfer.reject": "Transfer rejected",
         "platform.bank_details.update": "Bank details changed",

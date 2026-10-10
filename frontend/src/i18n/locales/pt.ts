@@ -162,6 +162,7 @@ const pt: TranslationSchema = {
 
   auth: {
     login: {
+      suspended: "A sua conta está suspensa. Contacte o suporte da plataforma para saber mais.",
       title: "Gestão Imobiliária",
       subtitle: "Inicie sessão na sua conta",
       email: "Email",
@@ -1653,6 +1654,7 @@ const pt: TranslationSchema = {
         ENTERPRISE: "Empresarial",
       },
       statuses: {
+        SUSPENDED: "Suspenso",
         TRIAL: "Teste",
         ACTIVE: "Ativo",
         CANCELLED: "Cancelado",
@@ -1660,6 +1662,23 @@ const pt: TranslationSchema = {
       },
     },
     managerDetail: {
+      suspension: {
+        title: "Acesso à conta",
+        suspendedTitle: "Conta suspensa",
+        description: "Suspender impede a agência e os seus colaboradores de iniciar sessão e corta as sessões abertas. Os dados são conservados; os inquilinos e proprietários não são afetados. A faturação da assinatura não é interrompida.",
+        suspend: "Suspender a conta",
+        warning: "A agência não poderá iniciar sessão enquanto a suspensão não for levantada.",
+        reasonField: "Motivo (nota interna, nunca mostrada ao gestor)",
+        confirm: "Confirmar a suspensão",
+        suspending: "A suspender...",
+        cancel: "Cancelar",
+        since: "Suspensa desde {{date}}",
+        reasonLabel: "Motivo:",
+        reasonHidden: "Este motivo é interno: o gestor só vê que a sua conta está suspensa.",
+        reactivate: "Levantar a suspensão",
+        reactivating: "A reativar...",
+        reactivateConfirm: "Levantar a suspensão? A agência poderá voltar a iniciar sessão.",
+      },
       back: "Voltar aos gestores",
       loading: "A carregar a ficha...",
       errorTitle: "Não foi possível carregar este gestor",
@@ -1721,6 +1740,8 @@ const pt: TranslationSchema = {
         details: "Detalhe",
       },
       actions: {
+        "manager.suspend": "Conta suspensa",
+        "manager.reactivate": "Suspensão levantada",
         "subscription.bank_transfer.confirm": "Transferência confirmada",
         "subscription.bank_transfer.reject": "Transferência rejeitada",
         "platform.bank_details.update": "Dados bancários alterados",

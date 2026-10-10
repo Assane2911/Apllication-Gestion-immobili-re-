@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
-import { STATUS_CLASSES, type ManagerPlan, type ManagerStatus } from "./managerStatus";
+import { STATUS_CLASSES, SUSPENDED_CLASS, type ManagerPlan, type ManagerStatus } from "./managerStatus";
 
 interface ManagerRow {
   id: string;
@@ -15,6 +15,7 @@ interface ManagerRow {
   status: ManagerStatus;
   trialEndsAt: string | null;
   subscriptionEndsAt: string | null;
+  suspendedAt: string | null;
   propertiesCount: number;
   tenantsCount: number;
   createdAt: string;
@@ -126,7 +127,7 @@ export default function AdminManagersPage() {
           className={champ}
         >
           <option value="">{t("admin.managers.allStatuses")}</option>
-          {(["TRIAL", "ACTIVE", "CANCELLED", "EXPIRED"] as const).map((s) => (
+          {(["TRIAL", "ACTIVE", "CANCELLED", "EXPIRED", "SUSPENDED"] as const).map((s) => (
             <option key={s} value={s}>
               {t(`admin.managers.statuses.${s}`)}
             </option>
@@ -178,6 +179,11 @@ export default function AdminManagersPage() {
                       <span className={`inline-block rounded-full px-2 py-0.5 font-semibold ${STATUS_CLASSES[m.status]}`}>
                         {t(`admin.managers.statuses.${m.status}`)}
                       </span>
+                      {m.suspendedAt && (
+                        <span className={`ml-1 inline-block rounded-full px-2 py-0.5 font-semibold ${SUSPENDED_CLASS}`}>
+                          {t("admin.managers.statuses.SUSPENDED")}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">{echeance(m)}</td>
                     <td className="px-4 py-3">

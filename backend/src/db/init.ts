@@ -35,6 +35,8 @@ export async function initDb() {
         trial_ends_at TIMESTAMP,
         subscription_ends_at TIMESTAMP,
         subscription_payment_method TEXT CHECK (subscription_payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO')),
+        suspended_at TIMESTAMP,
+        suspension_reason TEXT,
         referral_code TEXT UNIQUE,
         referred_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
         referral_reward_granted_at TIMESTAMP,
@@ -396,6 +398,8 @@ export async function initDb() {
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_method TEXT`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP`));
+    await alterSiBesoin(() => db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`));
     await alterSiBesoin(() => db.execute(sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS scanned_contract_url TEXT`));
