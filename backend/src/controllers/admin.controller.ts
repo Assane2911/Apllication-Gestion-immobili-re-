@@ -15,6 +15,7 @@ import {
   users,
 } from "../db/schema";
 import { ADMIN_AUDIT_ACTIONS, logAdminAction } from "../services/adminAudit.service";
+import { setStripeCollectionPaused } from "../services/payment.service";
 import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
@@ -549,6 +550,14 @@ async function trouverGestionnaire(id: string) {
  * et les locataires/bailleurs de l'agence ne sont pas touchés. Le motif est
  * une note interne, jamais renvoyée au gestionnaire.
  *
+ * FACTURATION. Un compte à renouvellement automatique Stripe est mis en pause
+ * de facturation (voir setStripeCollectionPaused) : on ne facture pas une
+ * agence à qui l'on a coupé l'accès. L'appel Stripe est fait AVANT d'écrire
+ * en base, et son échec annule la suspension (502) — l'invariant « suspendu
+ * ⇒ plus facturé » ne souffre aucune exception silencieuse. Les paiements
+ * ponctuels (virement, PayDunya, Stripe sans reconduction) n'ont aucune
+ * facturation récurrente à interrompre.
+ *
  * Réclamation atomique : deux administrateurs qui suspendent en même temps ne
  * produisent qu'une trace, le second reçoit un 409.
  */
@@ -557,6 +566,10 @@ export const suspendManager = asyncHandler(async (req: Request, res: Response) =
   const { reason } = suspendManagerSchema.parse(req.body);
 
   const manager = await trouverGestionnaire(id);
+  if (manager.suspendedAt) throw new ApiError(409, "Ce compte est déjà suspendu");
+
+  const facturationPausee = Boolean(manager.stripeSubscriptionId);
+  if (manager.stripeSubscriptionId) await setStripeCollectionPaused(manager.stripeSubscriptionId, true);
 
   const [updated] = await db
     .update(users)
@@ -570,17 +583,26 @@ export const suspendManager = asyncHandler(async (req: Request, res: Response) =
     action: "manager.suspend",
     targetUserId: manager.id,
     targetLabel: manager.email,
-    details: `Compte suspendu. Motif : ${reason}`,
+    details: `Compte suspendu${facturationPausee ? " (facturation Stripe mise en pause)" : ""}. Motif : ${reason}`,
   });
 
-  res.json({ success: true, suspendedAt: updated.suspendedAt });
+  res.json({ success: true, suspendedAt: updated.suspendedAt, billingPaused: facturationPausee });
 });
 
-/** Lève la suspension : l'agence peut de nouveau se connecter (données intactes). */
+/**
+ * Lève la suspension : l'agence peut de nouveau se connecter (données
+ * intactes). La facturation Stripe, mise en pause à la suspension, REPREND —
+ * avant l'écriture en base, et son échec annule la réactivation : rouvrir
+ * l'accès sans rétablir la facturation offrirait le service en silence.
+ */
 export const reactivateManager = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const manager = await trouverGestionnaire(id);
+  if (!manager.suspendedAt) throw new ApiError(409, "Ce compte n'est pas suspendu");
+
+  const facturationReprise = Boolean(manager.stripeSubscriptionId);
+  if (manager.stripeSubscriptionId) await setStripeCollectionPaused(manager.stripeSubscriptionId, false);
 
   const [updated] = await db
     .update(users)
@@ -594,8 +616,8 @@ export const reactivateManager = asyncHandler(async (req: Request, res: Response
     action: "manager.reactivate",
     targetUserId: manager.id,
     targetLabel: manager.email,
-    details: "Suspension levée",
+    details: `Suspension levée${facturationReprise ? " (facturation Stripe reprise)" : ""}`,
   });
 
-  res.json({ success: true });
+  res.json({ success: true, billingResumed: facturationReprise });
 });

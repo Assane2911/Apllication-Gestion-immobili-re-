@@ -63,6 +63,8 @@ export default function AdminManagerDetailPage() {
   const [motif, setMotif] = useState("");
   const [enCours, setEnCours] = useState(false);
   const [erreurAction, setErreurAction] = useState<string | null>(null);
+  // Résultat de la dernière suspension / réactivation côté facturation Stripe.
+  const [infoFacturation, setInfoFacturation] = useState<string | null>(null);
   // Ajustement manuel de l'abonnement (offrir des jours / changer de formule).
   const [jours, setJours] = useState("");
   const [motifJours, setMotifJours] = useState("");
@@ -95,8 +97,10 @@ export default function AdminManagerDetailPage() {
     e.preventDefault();
     setEnCours(true);
     setErreurAction(null);
+    setInfoFacturation(null);
     try {
-      await api.post(`/admin/managers/${id}/suspend`, { reason: motif.trim() });
+      const res = await api.post<{ billingPaused?: boolean }>(`/admin/managers/${id}/suspend`, { reason: motif.trim() });
+      if (res.data?.billingPaused) setInfoFacturation(t("admin.managerDetail.suspension.billingPaused"));
       setFormulaireOuvert(false);
       setMotif("");
       setVersion((v) => v + 1);
@@ -133,8 +137,10 @@ export default function AdminManagerDetailPage() {
     if (!window.confirm(t("admin.managerDetail.suspension.reactivateConfirm"))) return;
     setEnCours(true);
     setErreurAction(null);
+    setInfoFacturation(null);
     try {
-      await api.post(`/admin/managers/${id}/reactivate`);
+      const res = await api.post<{ billingResumed?: boolean }>(`/admin/managers/${id}/reactivate`);
+      if (res.data?.billingResumed) setInfoFacturation(t("admin.managerDetail.suspension.billingResumed"));
       setVersion((v) => v + 1);
     } catch (err) {
       setErreurAction(apiErrorMessage(err));
@@ -252,7 +258,16 @@ export default function AdminManagerDetailPage() {
                 </button>
               </>
             )}
-            {erreurAction && <p className="mt-2 text-xs text-red-700 dark:text-red-400">{erreurAction}</p>}
+            {infoFacturation && (
+              <p role="status" className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
+                {infoFacturation}
+              </p>
+            )}
+            {erreurAction && (
+              <p role="alert" className="mt-2 text-xs text-red-700 dark:text-red-400">
+                {erreurAction}
+              </p>
+            )}
           </section>
 
           <section className={carte}>

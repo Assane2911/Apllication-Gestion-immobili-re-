@@ -393,6 +393,61 @@ export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: 
 }
 
 /**
+ * Met en pause (ou reprend) la FACTURATION d'un abonnement Stripe à
+ * renouvellement automatique : `pause_collection[behavior]=void` — les
+ * factures qui tomberaient pendant la pause sont annulées (voided), jamais
+ * encaissées ; l'abonnement lui-même reste en place, donc la reprise
+ * (`pause_collection` vidé) rétablit la facturation sans que le client ait à
+ * ressaisir sa carte. Utilisé à la suspension / réactivation d'un compte par
+ * l'administration (admin.controller.ts).
+ *
+ * CONTRAIREMENT à cancelStripeSubscriptionAtPeriodEnd, cette fonction ÉCHOUE
+ * bruyamment (ApiError 502). La suspension promet que le compte ne sera plus
+ * facturé, la réactivation que la facturation reprend : les deux seraient
+ * fausses si l'appel Stripe échouait en silence. L'appelant fait donc l'appel
+ * AVANT de toucher à la base, et renonce à l'opération en cas d'échec.
+ *
+ * Un abonnement que Stripe ne connaît plus (`resource_missing`) n'a plus rien
+ * à facturer : on le tient pour déjà en pause / déjà sans objet.
+ */
+export async function setStripeCollectionPaused(stripeSubscriptionId: string, paused: boolean): Promise<void> {
+  if (!env.payments.stripeSecretKey) {
+    throw new ApiError(
+      502,
+      "Stripe n'est pas configuré sur ce serveur : impossible de mettre en pause la facturation de ce compte."
+    );
+  }
+
+  const corps = new URLSearchParams(paused ? { "pause_collection[behavior]": "void" } : { pause_collection: "" });
+
+  let response: Response;
+  try {
+    response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.payments.stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: corps.toString(),
+    });
+  } catch (err) {
+    console.error(`[stripe] Échec réseau (pause_collection=${paused}) de l'abonnement ${stripeSubscriptionId} :`, err);
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été modifié : réessayez plus tard.");
+  }
+
+  if (response.ok) return;
+
+  const data = (await response.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
+  if (data.error?.code === "resource_missing") return;
+
+  console.error(
+    `[stripe] Échec (pause_collection=${paused}) de l'abonnement ${stripeSubscriptionId} :`,
+    data.error?.message ?? response.status
+  );
+  throw new ApiError(502, "Stripe a refusé la mise à jour de la facturation. Rien n'a été modifié : réessayez plus tard.");
+}
+
+/**
  * PayDunya (https://paydunya.com) : agrégateur ouest-africain qui donne accès
  * à Orange Money, Wave, Free Money, MTN Money et carte bancaire derrière une
  * seule page de paiement hébergée. Voir https://developers.paydunya.com/doc/EN/http_json.

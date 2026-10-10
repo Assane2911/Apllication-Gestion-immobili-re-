@@ -277,4 +277,61 @@ describe("AdminManagerDetailPage", () => {
       expect(screen.queryByRole("button", { name: "Offrir ces jours" })).not.toBeInTheDocument();
     });
   });
+
+  describe("facturation à la suspension", () => {
+    it("annonce la mise en pause de la facturation Stripe après une suspension", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche() });
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true, billingPaused: true } });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: "Suspendre le compte" }));
+      await user.type(screen.getByLabelText(/Motif \(note interne/), "Impayé");
+      await user.click(screen.getByRole("button", { name: "Confirmer la suspension" }));
+
+      expect(await screen.findByRole("status")).toHaveTextContent("Facturation Stripe mise en pause");
+    });
+
+    it("n'annonce rien sur la facturation quand il n'y a pas de renouvellement automatique", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche() });
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true, billingPaused: false } });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: "Suspendre le compte" }));
+      await user.type(screen.getByLabelText(/Motif \(note interne/), "Impayé");
+      await user.click(screen.getByRole("button", { name: "Confirmer la suspension" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+      expect(screen.queryByText(/Facturation Stripe/)).not.toBeInTheDocument();
+    });
+
+    it("annonce la reprise de la facturation à la levée de la suspension", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche({ suspendedAt: "2026-10-10T10:00:00.000Z", suspensionReason: "Impayé" }) });
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true, billingResumed: true } });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: "Lever la suspension" }));
+
+      expect(await screen.findByRole("status")).toHaveTextContent("Facturation Stripe reprise");
+    });
+
+    it("affiche l'erreur 502 quand Stripe a refusé, sans prétendre que la suspension a eu lieu", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche() });
+      mockedApi.post.mockRejectedValueOnce({
+        response: { data: { error: "Stripe a refusé la mise à jour de la facturation. Rien n'a été modifié : réessayez plus tard." } },
+        isAxiosError: true,
+      });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: "Suspendre le compte" }));
+      await user.type(screen.getByLabelText(/Motif \(note interne/), "Impayé");
+      await user.click(screen.getByRole("button", { name: "Confirmer la suspension" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Rien n'a été modifié");
+      expect(screen.queryByText("Compte suspendu")).not.toBeInTheDocument();
+    });
+  });
 });
