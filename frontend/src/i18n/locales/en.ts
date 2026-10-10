@@ -1662,6 +1662,22 @@ const en: TranslationSchema = {
       },
     },
     managerDetail: {
+      adjust: {
+        title: "Adjust subscription",
+        description: "Goodwill gestures and corrections. Every adjustment is recorded in the audit log with its reason. No payment is created: billing and MRR do not change.",
+        stripe: "This subscription renews automatically (Stripe): an adjustment here would be overwritten at the next renewal. Use Stripe instead.",
+        daysTitle: "Grant days",
+        daysField: "Number of days (1 to 365)",
+        daysReason: "Reason (audit log)",
+        daysSubmit: "Grant these days",
+        planTitle: "Change plan",
+        planField: "New plan",
+        planChoose: "Choose...",
+        planReason: "Reason (audit log)",
+        planSubmit: "Change plan",
+        saving: "Saving...",
+        done: "Adjustment saved.",
+      },
       suspension: {
         title: "Account access",
         suspendedTitle: "Account suspended",
@@ -1740,6 +1756,8 @@ const en: TranslationSchema = {
         details: "Details",
       },
       actions: {
+        "subscription.grant_days": "Days granted",
+        "subscription.change_plan": "Plan changed",
         "manager.suspend": "Account suspended",
         "manager.reactivate": "Suspension lifted",
         "subscription.bank_transfer.confirm": "Transfer confirmed",

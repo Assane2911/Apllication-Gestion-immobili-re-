@@ -85,6 +85,20 @@ describe("AdminAuditPage", () => {
     expect(tableau.getByText("Suspension levée", { selector: "td.font-semibold" })).toBeInTheDocument();
   });
 
+  it("traduit les actions d'ajustement d'abonnement", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        entree({ id: "a1", action: "subscription.grant_days", details: "10 jour(s) offert(s)" }),
+        entree({ id: "a2", action: "subscription.change_plan", details: "Starter → Pro" }),
+      ])
+    );
+    renderPage();
+
+    const tableau = within(await screen.findByRole("table"));
+    expect(tableau.getByText("Jours offerts")).toBeInTheDocument();
+    expect(tableau.getByText("Formule modifiée")).toBeInTheDocument();
+  });
+
   it("affiche un état vide", async () => {
     mockedApi.get.mockResolvedValueOnce(page([]));
     renderPage();

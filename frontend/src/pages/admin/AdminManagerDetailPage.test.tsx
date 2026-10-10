@@ -138,7 +138,7 @@ describe("AdminManagerDetailPage", () => {
     // Sans motif, impossible de confirmer.
     expect(confirmer).toBeDisabled();
 
-    await user.type(screen.getByLabelText(/Motif/), "Impayé");
+    await user.type(screen.getByLabelText(/Motif \(note interne/), "Impayé");
     await user.click(confirmer);
 
     await waitFor(() =>
@@ -156,7 +156,7 @@ describe("AdminManagerDetailPage", () => {
     renderPage();
 
     await user.click(await screen.findByRole("button", { name: "Suspendre le compte" }));
-    await user.type(screen.getByLabelText(/Motif/), "Doublon");
+    await user.type(screen.getByLabelText(/Motif \(note interne/), "Doublon");
     await user.click(screen.getByRole("button", { name: "Confirmer la suspension" }));
 
     expect(await screen.findByText("Ce compte est déjà suspendu")).toBeInTheDocument();
@@ -201,5 +201,80 @@ describe("AdminManagerDetailPage", () => {
     await user.click(await screen.findByRole("button", { name: "Lever la suspension" }));
 
     expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  describe("ajustement de l'abonnement", () => {
+    it("offre des jours avec un motif, confirme et relit la fiche", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+      mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+      renderPage();
+
+      await user.type(await screen.findByLabelText("Nombre de jours (1 à 365)"), "10");
+      await user.type(screen.getAllByLabelText("Motif (journal d'audit)")[0], "Geste commercial");
+      await user.click(screen.getByRole("button", { name: "Offrir ces jours" }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith("/admin/managers/mgr-1/subscription/grant-days", {
+          days: 10,
+          reason: "Geste commercial",
+        })
+      );
+      expect(await screen.findByText("Ajustement enregistré.")).toBeInTheDocument();
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
+    });
+
+    it("ne permet pas d'envoyer sans nombre de jours ni motif", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+      renderPage();
+
+      expect(await screen.findByRole("button", { name: "Offrir ces jours" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Changer la formule" })).toBeDisabled();
+    });
+
+    it("change la formule : la formule actuelle n'est pas proposée", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche() }); // formule actuelle : PRO
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+      renderPage();
+
+      const select = await screen.findByLabelText("Nouvelle formule");
+      const options = Array.from((select as HTMLSelectElement).options).map((o) => o.value);
+      expect(options).toEqual(["", "STARTER", "ENTERPRISE"]);
+
+      await user.selectOptions(select, "ENTERPRISE");
+      await user.type(screen.getAllByLabelText("Motif (journal d'audit)")[1], "Erreur de souscription");
+      await user.click(screen.getByRole("button", { name: "Changer la formule" }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith("/admin/managers/mgr-1/subscription/change-plan", {
+          plan: "ENTERPRISE",
+          reason: "Erreur de souscription",
+        })
+      );
+    });
+
+    it("affiche l'erreur du serveur", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+      mockedApi.post.mockRejectedValueOnce({ response: { data: { error: "Cet abonnement n'a pas d'échéance" } }, isAxiosError: true });
+      renderPage();
+
+      await user.type(await screen.findByLabelText("Nombre de jours (1 à 365)"), "5");
+      await user.type(screen.getAllByLabelText("Motif (journal d'audit)")[0], "Test");
+      await user.click(screen.getByRole("button", { name: "Offrir ces jours" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Cet abonnement n'a pas d'échéance");
+    });
+
+    it("masque les formulaires pour un abonnement Stripe et explique pourquoi", async () => {
+      const base = fiche();
+      mockedApi.get.mockResolvedValueOnce({ data: fiche({ subscription: { ...base.subscription, autoRenew: true } }) });
+      renderPage();
+
+      expect(await screen.findByText(/renouvellement automatique \(Stripe\)/)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Offrir ces jours" })).not.toBeInTheDocument();
+    });
   });
 });

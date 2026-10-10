@@ -1663,6 +1663,22 @@ const fr = {
       },
     },
     managerDetail: {
+      adjust: {
+        title: "Ajuster l'abonnement",
+        description: "Gestes commerciaux et corrections. Chaque ajustement est tracé dans le journal d'audit avec son motif. Aucun paiement n'est créé : la facturation et le MRR ne changent pas.",
+        stripe: "Cet abonnement est à renouvellement automatique (Stripe) : un ajustement ici serait écrasé au prochain renouvellement. Passez par Stripe.",
+        daysTitle: "Offrir des jours",
+        daysField: "Nombre de jours (1 à 365)",
+        daysReason: "Motif (journal d'audit)",
+        daysSubmit: "Offrir ces jours",
+        planTitle: "Changer la formule",
+        planField: "Nouvelle formule",
+        planChoose: "Choisir...",
+        planReason: "Motif (journal d'audit)",
+        planSubmit: "Changer la formule",
+        saving: "Enregistrement...",
+        done: "Ajustement enregistré.",
+      },
       suspension: {
         title: "Accès au compte",
         suspendedTitle: "Compte suspendu",
@@ -1741,6 +1757,8 @@ const fr = {
         details: "Détail",
       },
       actions: {
+        "subscription.grant_days": "Jours offerts",
+        "subscription.change_plan": "Formule modifiée",
         "manager.suspend": "Compte suspendu",
         "manager.reactivate": "Suspension levée",
         "subscription.bank_transfer.confirm": "Virement confirmé",

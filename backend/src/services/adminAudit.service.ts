@@ -15,6 +15,8 @@ export const ADMIN_AUDIT_ACTIONS = [
   "platform.bank_details.update",
   "manager.suspend",
   "manager.reactivate",
+  "subscription.grant_days",
+  "subscription.change_plan",
 ] as const;
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number];
