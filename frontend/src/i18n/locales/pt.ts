@@ -1681,7 +1681,9 @@ const pt: TranslationSchema = {
       suspension: {
         title: "Acesso à conta",
         suspendedTitle: "Conta suspensa",
-        description: "Suspender impede a agência e os seus colaboradores de iniciar sessão e corta as sessões abertas. Os dados são conservados; os inquilinos e proprietários não são afetados. A faturação da assinatura não é interrompida.",
+        description: "Suspender impede a agência e os seus colaboradores de iniciar sessão e corta as sessões abertas. Os dados são conservados; os inquilinos e proprietários não são afetados. Se a assinatura se renova automaticamente (Stripe), a sua faturação é colocada em pausa e retoma quando a suspensão é levantada.",
+        billingPaused: "Faturação do Stripe em pausa: a agência não será cobrada enquanto a suspensão durar.",
+        billingResumed: "Faturação do Stripe retomada.",
         suspend: "Suspender a conta",
         warning: "A agência não poderá iniciar sessão enquanto a suspensão não for levantada.",
         reasonField: "Motivo (nota interna, nunca mostrada ao gestor)",
