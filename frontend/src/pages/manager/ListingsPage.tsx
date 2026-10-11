@@ -370,6 +370,17 @@ export default function ListingsPage() {
                   )}
                 </div>
               </div>
+              {listing.hiddenByAdminAt && (
+                <div role="note" className="bg-red-50 dark:bg-red-950/40 border-y border-red-200 dark:border-red-900 px-4 py-3">
+                  <p className="text-xs font-semibold text-red-800 dark:text-red-300">{t("manager.listings.moderation.title")}</p>
+                  {listing.moderationReason && (
+                    <p className="text-xs text-red-700 dark:text-red-400 mt-0.5 break-words">
+                      {t("manager.listings.moderation.reason", { reason: listing.moderationReason })}
+                    </p>
+                  )}
+                  <p className="text-xs text-red-700 dark:text-red-400 mt-1">{t("manager.listings.moderation.help")}</p>
+                </div>
+              )}
               <div className="p-4 sm:p-5">
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   {listing.title}

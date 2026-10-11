@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -96,10 +96,26 @@ const leadFilterSchema = z.object({
   status: z.enum(LEAD_STATUSES).optional(),
 });
 
-/** Retire managerId (identifiant interne du gestionnaire) des annonces exposées à un visiteur non authentifié. */
+/**
+ * Retire des annonces exposées à un visiteur non authentifié les champs
+ * internes : l'identifiant du gestionnaire et l'état de modération (une
+ * annonce visible n'est, par définition, pas masquée).
+ */
 function toPublicListing(listing: typeof listings.$inferSelect) {
-  const { managerId: _managerId, ...publicFields } = listing;
+  const { managerId: _managerId, hiddenByAdminAt: _hidden, moderationReason: _reason, ...publicFields } = listing;
   return publicFields;
+}
+
+/**
+ * Une annonce est visible de tous si le gestionnaire l'a publiée ET que
+ * l'administration ne l'a pas masquée. Condition UNIQUE pour toutes les
+ * lectures publiques : en oublier une laisserait une annonce modérée
+ * accessible par cette seule voie.
+ */
+const visibleSurLaVitrine = and(eq(listings.status, "PUBLISHED"), isNull(listings.hiddenByAdminAt));
+
+function estVisibleSurLaVitrine(listing: typeof listings.$inferSelect) {
+  return listing.status === "PUBLISHED" && listing.hiddenByAdminAt === null;
 }
 
 // --- Vitrine publique (aucune authentification) ---
@@ -109,7 +125,7 @@ export const listPublicListings = asyncHandler(async (req: Request, res: Respons
   const pagination = parsePagination(req);
 
   const whereClause = and(
-    eq(listings.status, "PUBLISHED"),
+    visibleSurLaVitrine,
     filters.country ? eq(listings.country, filters.country) : undefined,
     filters.type ? eq(listings.type, filters.type) : undefined
   );
@@ -137,7 +153,7 @@ export const listPublicCountries = asyncHandler(async (_req: Request, res: Respo
   const rows = await db
     .selectDistinct({ country: listings.country })
     .from(listings)
-    .where(eq(listings.status, "PUBLISHED"));
+    .where(visibleSurLaVitrine);
 
   const countries = rows
     .map((r: { country: string | null }) => r.country)
@@ -153,7 +169,7 @@ export const getPublicListing = asyncHandler(async (req: Request, res: Response)
   // jamais un 403 qui confirmerait au visiteur qu'une annonce existe mais lui
   // est cachée (même principe de non-divulgation que le 404 d'ownership côté
   // gestionnaire ailleurs dans l'app).
-  if (!listing || listing.status !== "PUBLISHED") throw new ApiError(404, "Annonce introuvable");
+  if (!listing || !estVisibleSurLaVitrine(listing)) throw new ApiError(404, "Annonce introuvable");
 
   res.json(toPublicListing(listing));
 });
@@ -170,7 +186,7 @@ export const createPublicLead = asyncHandler(async (req: Request, res: Response)
   const body = leadSchema.parse(req.body);
 
   const [listing] = await db.select().from(listings).where(eq(listings.id, req.params.id));
-  if (!listing || listing.status !== "PUBLISHED") throw new ApiError(404, "Annonce introuvable");
+  if (!listing || !estVisibleSurLaVitrine(listing)) throw new ApiError(404, "Annonce introuvable");
 
   const [lead] = await db
     .insert(listingLeads)

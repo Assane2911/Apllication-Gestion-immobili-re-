@@ -53,6 +53,7 @@ const AdminDashboardPage = lazyWithReload(() => import("./pages/admin/AdminDashb
 const AdminSubscriptionsPage = lazyWithReload(() => import("./pages/admin/AdminSubscriptionsPage"));
 const AdminSettingsPage = lazyWithReload(() => import("./pages/admin/AdminSettingsPage"));
 const AdminSuggestionsPage = lazyWithReload(() => import("./pages/admin/AdminSuggestionsPage"));
+const AdminListingsPage = lazyWithReload(() => import("./pages/admin/AdminListingsPage"));
 const AdminManagersPage = lazyWithReload(() => import("./pages/admin/AdminManagersPage"));
 const AdminAuditPage = lazyWithReload(() => import("./pages/admin/AdminAuditPage"));
 const AdminManagerDetailPage = lazyWithReload(() => import("./pages/admin/AdminManagerDetailPage"));
@@ -161,6 +162,7 @@ function AppRoutes() {
           <Route path="/admin/virements" element={<AdminSubscriptionsPage />} />
           <Route path="/admin/parametres" element={<AdminSettingsPage />} />
           <Route path="/admin/suggestions" element={<AdminSuggestionsPage />} />
+          <Route path="/admin/annonces" element={<AdminListingsPage />} />
         </Route>
 
         <Route path="*" element={<HomeRedirect />} />

@@ -273,6 +273,8 @@ export async function initDb() {
         status TEXT NOT NULL DEFAULT 'PUBLISHED',
         featured BOOLEAN NOT NULL DEFAULT FALSE,
         country TEXT,
+        hidden_by_admin_at TIMESTAMP,
+        moderation_reason TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -595,6 +597,8 @@ export async function initDb() {
     await ajouterColonne("users", "currency", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`);
     await ajouterColonne("users", "suspended_at", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP`);
     await ajouterColonne("users", "suspension_reason", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT`);
+    await ajouterColonne("listings", "hidden_by_admin_at", sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS hidden_by_admin_at TIMESTAMP`);
+    await ajouterColonne("listings", "moderation_reason", sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_reason TEXT`);
     await ajouterColonne("suggestions", "status", sql`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'NEW'`);
     await ajouterColonne("suggestions", "admin_note", sql`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS admin_note TEXT`);
     await ajouterColonne("properties", "currency", sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`);

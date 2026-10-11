@@ -14,6 +14,10 @@ const ACTIONS = [
   "manager.reactivate",
   "subscription.grant_days",
   "subscription.change_plan",
+  "listing.hide",
+  "listing.restore",
+  "listing.feature",
+  "listing.unfeature",
 ] as const;
 
 interface AuditEntry {

@@ -1,4 +1,4 @@
-import { Building2, Landmark, LayoutDashboard, Lightbulb, Moon, ScrollText, Settings, Sun } from "lucide-react";
+import { Building2, Landmark, LayoutDashboard, Lightbulb, Megaphone, Moon, ScrollText, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
@@ -9,6 +9,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 const navItems = [
   { to: "/admin", key: "dashboard", icon: LayoutDashboard },
   { to: "/admin/gestionnaires", key: "managers", icon: Building2 },
+  { to: "/admin/annonces", key: "listings", icon: Megaphone },
   { to: "/admin/virements", key: "transfers", icon: Landmark },
   { to: "/admin/journal", key: "audit", icon: ScrollText },
   { to: "/admin/suggestions", key: "suggestions", icon: Lightbulb },
