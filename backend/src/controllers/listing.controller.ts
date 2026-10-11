@@ -1,8 +1,8 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, notExists, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { listingLeads, listings } from "../db/schema";
+import { listingLeads, listings, users } from "../db/schema";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
@@ -107,16 +107,28 @@ function toPublicListing(listing: typeof listings.$inferSelect) {
 }
 
 /**
- * Une annonce est visible de tous si le gestionnaire l'a publiée ET que
- * l'administration ne l'a pas masquée. Condition UNIQUE pour toutes les
- * lectures publiques : en oublier une laisserait une annonce modérée
- * accessible par cette seule voie.
+ * Une annonce est visible de tous si le gestionnaire l'a publiée, que
+ * l'administration ne l'a pas masquée, ET que le compte de son gestionnaire
+ * n'est pas suspendu. Condition UNIQUE pour toutes les lectures publiques (et
+ * pour la visibilité « réelle » affichée à l'administration) : en oublier une
+ * laisserait une annonce modérée accessible par cette seule voie.
+ *
+ * Le compte suspendu est évalué À LA LECTURE (sous-requête), pas recopié dans
+ * les annonces : rien n'est modifié à la suspension, et la levée de la
+ * suspension rétablit les annonces d'elle-même, sans qu'on ait à distinguer
+ * ce que la suspension a masqué de ce que le gestionnaire avait déjà dépublié
+ * ou que l'administration avait déjà modéré.
  */
-const visibleSurLaVitrine = and(eq(listings.status, "PUBLISHED"), isNull(listings.hiddenByAdminAt));
-
-function estVisibleSurLaVitrine(listing: typeof listings.$inferSelect) {
-  return listing.status === "PUBLISHED" && listing.hiddenByAdminAt === null;
-}
+export const visibleSurLaVitrine = and(
+  eq(listings.status, "PUBLISHED"),
+  isNull(listings.hiddenByAdminAt),
+  notExists(
+    db
+      .select({ un: sql`1` })
+      .from(users)
+      .where(and(eq(users.id, listings.managerId), isNotNull(users.suspendedAt)))
+  )
+);
 
 // --- Vitrine publique (aucune authentification) ---
 
@@ -164,12 +176,15 @@ export const listPublicCountries = asyncHandler(async (_req: Request, res: Respo
 });
 
 export const getPublicListing = asyncHandler(async (req: Request, res: Response) => {
-  const [listing] = await db.select().from(listings).where(eq(listings.id, req.params.id));
-  // Une annonce DRAFT/ARCHIVED renvoie 404 comme si elle n'existait pas —
+  const [listing] = await db
+    .select()
+    .from(listings)
+    .where(and(eq(listings.id, req.params.id), visibleSurLaVitrine));
+  // Une annonce DRAFT/ARCHIVED (ou masquée, ou d'un compte suspendu) renvoie 404 comme si elle n'existait pas —
   // jamais un 403 qui confirmerait au visiteur qu'une annonce existe mais lui
   // est cachée (même principe de non-divulgation que le 404 d'ownership côté
   // gestionnaire ailleurs dans l'app).
-  if (!listing || !estVisibleSurLaVitrine(listing)) throw new ApiError(404, "Annonce introuvable");
+  if (!listing) throw new ApiError(404, "Annonce introuvable");
 
   res.json(toPublicListing(listing));
 });
@@ -185,8 +200,11 @@ export const getPublicListing = asyncHandler(async (req: Request, res: Response)
 export const createPublicLead = asyncHandler(async (req: Request, res: Response) => {
   const body = leadSchema.parse(req.body);
 
-  const [listing] = await db.select().from(listings).where(eq(listings.id, req.params.id));
-  if (!listing || !estVisibleSurLaVitrine(listing)) throw new ApiError(404, "Annonce introuvable");
+  const [listing] = await db
+    .select()
+    .from(listings)
+    .where(and(eq(listings.id, req.params.id), visibleSurLaVitrine));
+  if (!listing) throw new ApiError(404, "Annonce introuvable");
 
   const [lead] = await db
     .insert(listingLeads)

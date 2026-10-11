@@ -7,6 +7,7 @@ import { logActivity } from "../services/activity.service";
 import { logAdminAction } from "../services/adminAudit.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { visibleSurLaVitrine } from "./listing.controller";
 
 /**
  * Modération des annonces de la vitrine publique par l'administration de la
@@ -34,8 +35,9 @@ const listListingsQuerySchema = z.object({
 /**
  * Liste paginée de toutes les annonces, tous gestionnaires confondus, avec
  * recherche (titre, lieu, email ou nom d'agence) et filtres. « VISIBLE » est la
- * visibilité RÉELLE sur la vitrine (publiée ET non masquée), pas le seul
- * statut choisi par le gestionnaire.
+ * visibilité RÉELLE sur la vitrine (publiée, non masquée ET compte non
+ * suspendu — voir visibleSurLaVitrine), pas le seul statut choisi par le
+ * gestionnaire.
  *
  * Réponse par liste blanche : ni coordonnées de contact de l'annonce, ni donnée
  * de compte autre que l'email et le nom d'agence du gestionnaire.
@@ -49,7 +51,7 @@ export const listAdminListings = asyncHandler(async (req: Request, res: Response
   const conditions = [];
   if (status) conditions.push(eq(listings.status, status));
   if (visibility === "HIDDEN") conditions.push(isNotNull(listings.hiddenByAdminAt));
-  if (visibility === "VISIBLE") conditions.push(and(eq(listings.status, "PUBLISHED"), isNull(listings.hiddenByAdminAt)));
+  if (visibility === "VISIBLE") conditions.push(visibleSurLaVitrine);
   if (search) {
     const motif = `%${echapperLike(search)}%`;
     const recherche = or(
@@ -88,6 +90,7 @@ export const listAdminListings = asyncHandler(async (req: Request, res: Response
         createdAt: listings.createdAt,
         managerId: listings.managerId,
         managerEmail: users.email,
+        managerSuspendedAt: users.suspendedAt,
         agencyName: agencySettings.agencyName,
       })
       .from(listings)

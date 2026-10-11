@@ -21,6 +21,9 @@ interface AdminListing {
   featured: boolean;
   hiddenByAdminAt: string | null;
   moderationReason: string | null;
+  // Compte du gestionnaire suspendu : l'annonce n'est plus visible sur la vitrine.
+  // Absent d'une réponse d'un serveur plus ancien (déploiement en cours).
+  managerSuspendedAt?: string | null;
   managerEmail: string;
   agencyName: string | null;
 }
@@ -258,6 +261,11 @@ export default function AdminListingsPage() {
                             {t("admin.listings.hiddenBadge")}
                           </span>
                         )}
+                        {a.managerSuspendedAt && (
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+                            {t("admin.listings.suspendedBadge")}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -297,7 +305,7 @@ export default function AdminListingsPage() {
                     >
                       {a.featured ? t("admin.listings.unfeature") : t("admin.listings.feature")}
                     </button>
-                    {!masquee && a.status === "PUBLISHED" && (
+                    {!masquee && !a.managerSuspendedAt && a.status === "PUBLISHED" && (
                       <a
                         href={`/vitrine/annonces/${a.id}`}
                         target="_blank"
