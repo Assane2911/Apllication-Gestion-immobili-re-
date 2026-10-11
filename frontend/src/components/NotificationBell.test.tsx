@@ -209,4 +209,148 @@ describe("NotificationBell", () => {
       }
     });
   });
+
+  describe("« Tout marquer comme lu »", () => {
+    const bouton = () => screen.getByLabelText("Notifications");
+    const deux = () => ({
+      data: {
+        notifications: [
+          notification({ id: "a", key: "a|1", seen: false, read: false, title: "Loyer en retard A" }),
+          notification({ id: "b", key: "b|1", seen: true, read: false, title: "Loyer en retard B" }),
+        ],
+      },
+    });
+
+    it("écarte les éléments du panneau, enregistre les clés et propose de les réafficher", async () => {
+      mockedApi.get.mockResolvedValueOnce(deux());
+      renderBell();
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+      fireEvent.click(bouton());
+      expect(screen.getByText("2 élément(s) nécessitant votre attention")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Tout marquer comme lu"));
+
+      expect(mockedApi.post).toHaveBeenCalledWith("/notifications/read", { keys: ["a|1", "b|1"] });
+      expect(screen.queryByText("Loyer en retard A")).not.toBeInTheDocument();
+      expect(screen.getByText("Tout est à jour")).toBeInTheDocument();
+      expect(screen.queryByText("Tout marquer comme lu")).not.toBeInTheDocument();
+      expect(screen.getByText("Afficher les 2 élément(s) lu(s)")).toBeInTheDocument();
+    });
+
+    it("permet de réafficher les éléments lus (atténués), puis de les masquer de nouveau", async () => {
+      mockedApi.get.mockResolvedValueOnce(deux());
+      renderBell();
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+      fireEvent.click(bouton());
+      fireEvent.click(screen.getByText("Tout marquer comme lu"));
+
+      fireEvent.click(screen.getByText("Afficher les 2 élément(s) lu(s)"));
+      expect(screen.getByText("Loyer en retard A").closest("li")!.className).toContain("opacity-60");
+      expect(screen.getByText("Loyer en retard B")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Masquer les éléments lus"));
+      expect(screen.queryByText("Loyer en retard A")).not.toBeInTheDocument();
+    });
+
+    it("ne propose pas le bouton quand tout est déjà lu, et cache les lus par défaut", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: { notifications: [notification({ id: "a", key: "a|1", seen: true, read: true, title: "Déjà lu" })] },
+      });
+      renderBell();
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
+
+      fireEvent.click(bouton());
+
+      expect(screen.queryByText("Tout marquer comme lu")).not.toBeInTheDocument();
+      expect(screen.queryByText("Déjà lu")).not.toBeInTheDocument();
+      expect(screen.getByText("Tout est à jour")).toBeInTheDocument();
+      expect(mockedApi.post).not.toHaveBeenCalled();
+    });
+
+    it("n'écarte que les non lus et laisse le panneau à jour d'une notification arrivée ensuite", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: {
+          notifications: [
+            notification({ id: "old", key: "old|1", seen: true, read: true, title: "Ancien" }),
+            notification({ id: "new", key: "new|1", seen: false, read: false, title: "Récent" }),
+          ],
+        },
+      });
+      renderBell();
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+      fireEvent.click(bouton());
+
+      fireEvent.click(screen.getByText("Tout marquer comme lu"));
+
+      // Seule la clé non lue est envoyée.
+      expect(mockedApi.post).toHaveBeenCalledWith("/notifications/read", { keys: ["new|1"] });
+    });
+
+    it("enregistre sur l'endpoint du portail utilisé (locataire)", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: { notifications: [notification({ key: "n1|1", seen: true, read: false })] } });
+      renderBell({ endpoint: "/notifications/mine", i18nPrefix: "tenant.notificationBell" });
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
+      fireEvent.click(bouton());
+
+      fireEvent.click(screen.getByText("Tout marquer comme lu"));
+
+      expect(mockedApi.post).toHaveBeenCalledWith("/notifications/mine/read", { keys: ["n1|1"] });
+    });
+
+    it("remet les éléments dans le panneau si l'enregistrement échoue (l'état réel est relu)", async () => {
+      const seule = () => ({ data: { notifications: [notification({ id: "a", key: "a|1", seen: true, read: false, title: "À traiter" })] } });
+      mockedApi.get.mockResolvedValueOnce(seule()).mockResolvedValueOnce(seule());
+      mockedApi.post.mockRejectedValueOnce(new Error("réseau"));
+      renderBell();
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
+      fireEvent.click(bouton());
+
+      fireEvent.click(screen.getByText("Tout marquer comme lu"));
+
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByText("À traiter")).toBeInTheDocument());
+    });
+
+    it("un sondage arrivant après n'y remet pas ce qui vient d'être écarté", async () => {
+      vi.useFakeTimers();
+      try {
+        const nonLue = { data: { notifications: [notification({ id: "a", key: "a|1", seen: true, read: false, title: "À traiter" })] } };
+        mockedApi.get.mockResolvedValue(nonLue);
+        renderBell();
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(10);
+        });
+        fireEvent.click(screen.getByLabelText("Notifications"));
+        fireEvent.click(screen.getByText("Tout marquer comme lu"));
+        expect(screen.queryByText("À traiter")).not.toBeInTheDocument();
+
+        // Le serveur répond encore « non lue » (réponse calculée avant l'enregistrement).
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(30_000);
+        });
+
+        expect(mockedApi.get.mock.calls.length).toBeGreaterThan(1);
+        expect(screen.queryByText("À traiter")).not.toBeInTheDocument();
+        expect(screen.getByText("Tout est à jour")).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("remet l'affichage des éléments lus à zéro à la fermeture du panneau", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: { notifications: [notification({ id: "a", key: "a|1", seen: true, read: true, title: "Déjà lu" })] },
+      });
+      renderBell();
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
+      fireEvent.click(bouton());
+      fireEvent.click(screen.getByText("Afficher les 1 élément(s) lu(s)"));
+      expect(screen.getByText("Déjà lu")).toBeInTheDocument();
+
+      fireEvent.click(bouton());
+      fireEvent.click(bouton());
+
+      expect(screen.queryByText("Déjà lu")).not.toBeInTheDocument();
+    });
+  });
 });

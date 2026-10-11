@@ -590,6 +590,7 @@ export async function initDb() {
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         cle TEXT NOT NULL,
         seen_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        read_at TIMESTAMP,
         PRIMARY KEY (user_id, cle)
       )
     `);
@@ -615,6 +616,7 @@ export async function initDb() {
     await ajouterColonne("users", "has_password", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS has_password BOOLEAN NOT NULL DEFAULT TRUE`);
     await ajouterColonne("owners", "civility", sql`ALTER TABLE owners ADD COLUMN IF NOT EXISTS civility TEXT`);
     await ajouterColonne("tenants", "civility", sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS civility TEXT`);
+    await ajouterColonne("notification_vues", "read_at", sql`ALTER TABLE notification_vues ADD COLUMN IF NOT EXISTS read_at TIMESTAMP`);
     await ajouterColonne("listings", "hidden_by_admin_at", sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS hidden_by_admin_at TIMESTAMP`);
     await ajouterColonne("listings", "moderation_reason", sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_reason TEXT`);
     await ajouterColonne("suggestions", "status", sql`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'NEW'`);

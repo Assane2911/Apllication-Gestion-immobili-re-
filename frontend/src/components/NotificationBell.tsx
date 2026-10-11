@@ -32,10 +32,15 @@ interface NotificationBellProps {
  * toutes les 30s. Le badge ne compte que les nouveautés (non vues) : ouvrir la
  * cloche les marque vues côté serveur (POST <endpoint>/seen), donc sur tous les
  * appareils. La liste, elle, garde les éléments encore à traiter — une facture
- * en retard reste un sujet même une fois vue. Par défaut, celle du gestionnaire (messages non lus,
- * factures en retard, incidents ouverts, contrats arrivant à échéance — voir
- * GET /api/notifications) ; `endpoint`/`i18nPrefix` permettent de la réutiliser
- * pour un autre portail (voir TenantLayout.tsx, GET /api/notifications/mine). */
+ * en retard reste un sujet même une fois vue — jusqu'à ce que la personne les
+ * écarte avec « Tout marquer comme lu » (POST <endpoint>/read) ; ils restent
+ * alors consultables via « Afficher les éléments lus », et une notification
+ * nouvelle (autre événement) revient d'elle-même.
+ *
+ * Par défaut, celle du gestionnaire (messages non lus, factures en retard,
+ * incidents ouverts, contrats arrivant à échéance — voir GET /api/notifications) ;
+ * `endpoint`/`i18nPrefix` permettent de la réutiliser pour un autre portail
+ * (voir TenantLayout.tsx, GET /api/notifications/mine). */
 export default function NotificationBell({
   endpoint = "/notifications",
   i18nPrefix = "components.notificationBell",
@@ -52,15 +57,21 @@ export default function NotificationBell({
   // AVANT l'enregistrement peut arriver après : sans ceci, elle rallumerait le
   // badge jusqu'au sondage suivant.
   const marqueesVues = useRef<Set<string>>(new Set());
+  // Même garde pour « lues » : un sondage en retard ne doit pas ressortir du
+  // panneau ce que la personne vient d'en écarter.
+  const marqueesLues = useRef<Set<string>>(new Set());
+  const [afficherLues, setAfficherLues] = useState(false);
 
   function load(signal?: AbortSignal) {
     api
       .get<{ notifications: NotificationItem[] }>(endpoint, { signal })
       .then((res) =>
         setItems(
-          liste<NotificationItem>(res.data, "notifications").map((n) =>
-            marqueesVues.current.has(n.key ?? n.id) ? { ...n, seen: true } : n
-          )
+          liste<NotificationItem>(res.data, "notifications").map((n) => {
+            const cle = n.key ?? n.id;
+            const lue = n.read || marqueesLues.current.has(cle);
+            return { ...n, seen: n.seen || lue || marqueesVues.current.has(cle), read: lue };
+          })
         )
       )
       .catch((err) => {
@@ -86,11 +97,34 @@ export default function NotificationBell({
   // Sans clé (ancien backend), l'identifiant fait office de clé.
   const cleDe = (n: NotificationItem) => n.key ?? n.id;
   const nonVues = items.filter((n) => !n.seen);
+  const aTraiter = items.filter((n) => !n.read);
+  const lues = items.filter((n) => n.read);
+  const affichees = afficherLues ? items : aTraiter;
+
+  function fermer() {
+    setOpen(false);
+    setNouvelles(new Set());
+    setAfficherLues(false);
+  }
+
+  function toutMarquerLu() {
+    const cles = aTraiter.map(cleDe);
+    if (cles.length === 0) return;
+    cles.forEach((c) => {
+      marqueesVues.current.add(c);
+      marqueesLues.current.add(c);
+    });
+    setNouvelles(new Set());
+    setItems((courants) => courants.map((n) => ({ ...n, seen: true, read: true })));
+    api.post(`${endpoint}/read`, { keys: cles }).catch(() => {
+      cles.forEach((c) => marqueesLues.current.delete(c));
+      load();
+    });
+  }
 
   function basculer() {
     if (open) {
-      setOpen(false);
-      setNouvelles(new Set());
+      fermer();
       return;
     }
     setOpen(true);
@@ -112,6 +146,7 @@ export default function NotificationBell({
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
         setNouvelles(new Set());
+        setAfficherLues(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -137,24 +172,35 @@ export default function NotificationBell({
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t(`${i18nPrefix}.title`)}</h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t(`${i18nPrefix}.itemCount`, { count: items.length })}</p>
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t(`${i18nPrefix}.title`)}</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length })}</p>
+            </div>
+            {aTraiter.length > 0 && (
+              <button
+                type="button"
+                onClick={toutMarquerLu}
+                className="shrink-0 text-xs font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 hover:underline"
+              >
+                {t(`${i18nPrefix}.markAllRead`)}
+              </button>
+            )}
           </div>
-          {items.length === 0 ? (
+          {affichees.length === 0 ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">{t(`${i18nPrefix}.allCaughtUp`)}</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {items.map((n) => {
+              {affichees.map((n) => {
                 const Icon = iconByType[n.type];
+                const classes = [nouvelles.has(cleDe(n)) ? "bg-brand-50/70 dark:bg-brand-500/10" : "", n.read ? "opacity-60" : ""]
+                  .filter(Boolean)
+                  .join(" ");
                 return (
-                  <li key={n.id} className={nouvelles.has(cleDe(n)) ? "bg-brand-50/70 dark:bg-brand-500/10" : undefined}>
+                  <li key={n.id} className={classes || undefined}>
                     <Link
                       to={n.link}
-                      onClick={() => {
-                        setOpen(false);
-                        setNouvelles(new Set());
-                      }}
+                      onClick={fermer}
                       className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${severityDot[n.severity]}`} />
@@ -168,6 +214,15 @@ export default function NotificationBell({
                 );
               })}
             </ul>
+          )}
+          {lues.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setAfficherLues((a) => !a)}
+              className="w-full px-4 py-2.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800 transition-colors"
+            >
+              {afficherLues ? t(`${i18nPrefix}.hideRead`) : t(`${i18nPrefix}.showRead`, { count: lues.length })}
+            </button>
           )}
         </div>
       )}

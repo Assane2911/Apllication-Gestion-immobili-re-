@@ -832,6 +832,10 @@ export const notificationVues = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     cle: text("cle").notNull(),
     seenAt: timestamp("seen_at", { mode: "date" }).notNull().defaultNow(),
+    // « Marquée comme lue » : la personne l'a écartée du panneau (bouton « Tout
+    // marquer comme lu »). Distinct de « vue » (badge, posé à l'ouverture de la
+    // cloche) : une notification vue reste listée tant qu'elle n'est pas lue.
+    readAt: timestamp("read_at", { mode: "date" }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.userId, table.cle] }),
