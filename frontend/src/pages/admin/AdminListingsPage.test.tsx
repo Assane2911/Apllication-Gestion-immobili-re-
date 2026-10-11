@@ -170,4 +170,20 @@ describe("AdminListingsPage", () => {
     expect(liens).toHaveLength(1);
     expect(liens[0]).toHaveAttribute("href", "/vitrine/annonces/a1");
   });
+  it("signale une annonce dont le compte est suspendu, et ne propose pas son lien public", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        annonce({ managerSuspendedAt: "2026-10-10T10:00:00.000Z" }),
+        annonce({ id: "a2", title: "Autre annonce" }),
+      ])
+    );
+    renderPage();
+    await screen.findByText("Villa Ngor");
+
+    expect(screen.getAllByText("Compte suspendu : non visible")).toHaveLength(1);
+    // Publiée et non modérée, mais invisible : seul l'autre exemple garde son lien public.
+    const liens = screen.getAllByRole("link", { name: /fiche publique/i });
+    expect(liens).toHaveLength(1);
+    expect(liens[0]).toHaveAttribute("href", "/vitrine/annonces/a2");
+  });
 });

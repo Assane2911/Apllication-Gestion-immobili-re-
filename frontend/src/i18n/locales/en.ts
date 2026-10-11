@@ -1693,7 +1693,7 @@ const en: TranslationSchema = {
       suspension: {
         title: "Account access",
         suspendedTitle: "Account suspended",
-        description: "Suspending prevents the agency and its collaborators from signing in and cuts their open sessions. The agency's automatic reminders (rent notices, lease endings, insurance) are also stopped; they resume when the suspension is lifted. Data is kept; tenants and owners are not affected. If the subscription renews automatically (Stripe), its billing is paused and resumes when the suspension is lifted.",
+        description: "Suspending prevents the agency and its collaborators from signing in and cuts their open sessions. The agency's automatic reminders (rent notices, lease endings, insurance) are also stopped and its listings disappear from the public showcase; everything resumes when the suspension is lifted. Data is kept; tenants and owners are not affected. If the subscription renews automatically (Stripe), its billing is paused and resumes when the suspension is lifted.",
         billingPaused: "Stripe billing paused: the agency will not be charged while the suspension lasts.",
         billingResumed: "Stripe billing resumed.",
         suspend: "Suspend account",
@@ -1813,6 +1813,7 @@ const en: TranslationSchema = {
       emptyFilteredTitle: "No listing matches",
       emptyFilteredDescription: "Change the filter or the search to see other listings.",
       hiddenBadge: "Hidden by the administration",
+      suspendedBadge: "Account suspended: not visible",
       featuredBadge: "Featured",
       manager: "Manager: {{who}}",
       hiddenSince: "Hidden on {{date}}",
