@@ -1,7 +1,7 @@
 import { Building2, FileText, UserCog, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
@@ -52,6 +52,7 @@ interface ManagerDetail {
 /** Fiche d'un gestionnaire pour l'administration : abonnement, usage, agence, facturation. */
 export default function AdminManagerDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [manager, setManager] = useState<ManagerDetail | null>(null);
@@ -65,6 +66,12 @@ export default function AdminManagerDetailPage() {
   const [erreurAction, setErreurAction] = useState<string | null>(null);
   // Résultat de la dernière suspension / réactivation côté facturation Stripe.
   const [infoFacturation, setInfoFacturation] = useState<string | null>(null);
+  // Suppression définitive (compte suspendu uniquement).
+  const [suppressionOuverte, setSuppressionOuverte] = useState(false);
+  const [emailSaisi, setEmailSaisi] = useState("");
+  const [motifSuppression, setMotifSuppression] = useState("");
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false);
+  const [erreurSuppression, setErreurSuppression] = useState<string | null>(null);
   // Ajustement manuel de l'abonnement (offrir des jours / changer de formule).
   const [jours, setJours] = useState("");
   const [motifJours, setMotifJours] = useState("");
@@ -130,6 +137,20 @@ export default function AdminManagerDetailPage() {
       setAjustementMessage({ type: "erreur", texte: apiErrorMessage(err) });
     } finally {
       setAjustementEnCours(null);
+    }
+  }
+
+  async function supprimerDefinitivement(e: React.FormEvent) {
+    e.preventDefault();
+    setSuppressionEnCours(true);
+    setErreurSuppression(null);
+    try {
+      await api.delete(`/admin/managers/${id}`, { data: { email: emailSaisi.trim(), reason: motifSuppression.trim() } });
+      // Le compte n'existe plus : sa fiche non plus.
+      navigate("/admin/gestionnaires");
+    } catch (err) {
+      setErreurSuppression(apiErrorMessage(err));
+      setSuppressionEnCours(false);
     }
   }
 
@@ -269,6 +290,76 @@ export default function AdminManagerDetailPage() {
               </p>
             )}
           </section>
+
+          {manager.suspendedAt && (
+            <section className={`${carte} border-red-300 dark:border-red-900`}>
+              <h3 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">{t("admin.managerDetail.deletion.title")}</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.deletion.description")}</p>
+              {suppressionOuverte ? (
+                <form onSubmit={supprimerDefinitivement} className="mt-3 space-y-3">
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-400">{t("admin.managerDetail.deletion.warning")}</p>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t("admin.managerDetail.deletion.emailField", { email: manager.email })}
+                    <input
+                      type="text"
+                      value={emailSaisi}
+                      onChange={(e) => setEmailSaisi(e.target.value)}
+                      autoComplete="off"
+                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                    />
+                  </label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t("admin.managerDetail.deletion.reasonField")}
+                    <textarea
+                      value={motifSuppression}
+                      onChange={(e) => setMotifSuppression(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                    />
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={
+                        suppressionEnCours ||
+                        emailSaisi.trim().toLowerCase() !== manager.email.trim().toLowerCase() ||
+                        motifSuppression.trim().length < 3
+                      }
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {suppressionEnCours ? t("admin.managerDetail.deletion.deleting") : t("admin.managerDetail.deletion.confirm")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSuppressionOuverte(false);
+                        setEmailSaisi("");
+                        setMotifSuppression("");
+                        setErreurSuppression(null);
+                      }}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                    >
+                      {t("admin.managerDetail.deletion.cancel")}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSuppressionOuverte(true)}
+                  className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+                >
+                  {t("admin.managerDetail.deletion.button")}
+                </button>
+              )}
+              {erreurSuppression && (
+                <p role="alert" className="mt-2 text-xs text-red-700 dark:text-red-400">
+                  {erreurSuppression}
+                </p>
+              )}
+            </section>
+          )}
 
           <section className={carte}>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">{t("admin.managerDetail.adjust.title")}</h3>

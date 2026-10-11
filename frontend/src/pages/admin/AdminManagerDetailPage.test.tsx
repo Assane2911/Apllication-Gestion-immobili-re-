@@ -9,7 +9,7 @@ import AdminManagerDetailPage from "./AdminManagerDetailPage";
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
-  return { ...actual, api: { get: vi.fn(), post: vi.fn() } };
+  return { ...actual, api: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } };
 });
 
 const mockedApi = vi.mocked(api, { deep: true });
@@ -62,6 +62,7 @@ function renderPage() {
         <MemoryRouter initialEntries={["/admin/gestionnaires/mgr-1"]}>
           <Routes>
             <Route path="/admin/gestionnaires/:id" element={<AdminManagerDetailPage />} />
+            <Route path="/admin/gestionnaires" element={<p>Liste des gestionnaires</p>} />
           </Routes>
         </MemoryRouter>
       </CurrencyProvider>
@@ -73,6 +74,7 @@ describe("AdminManagerDetailPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();
+    mockedApi.delete.mockReset();
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
@@ -332,6 +334,79 @@ describe("AdminManagerDetailPage", () => {
 
       expect(await screen.findByRole("alert")).toHaveTextContent("Rien n'a été modifié");
       expect(screen.queryByText("Compte suspendu")).not.toBeInTheDocument();
+    });
+  });
+  describe("suppression définitive", () => {
+    const SUSPENDU = { suspendedAt: "2026-10-10T10:00:00.000Z", suspensionReason: "Impayé" };
+
+    it("n'est proposée que pour un compte suspendu", async () => {
+      mockedApi.get.mockResolvedValue({ data: fiche() });
+      const { unmount } = renderPage();
+      await screen.findByRole("button", { name: "Suspendre le compte" });
+      expect(screen.queryByText("Suppression définitive")).not.toBeInTheDocument();
+      unmount();
+
+      mockedApi.get.mockResolvedValue({ data: fiche(SUSPENDU) });
+      renderPage();
+      expect(await screen.findByText("Suppression définitive")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Supprimer définitivement…/ })).toBeInTheDocument();
+    });
+
+    it("exige l'email du compte et un motif avant d'activer la confirmation", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche(SUSPENDU) });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: /Supprimer définitivement…/ }));
+      const confirmer = screen.getByRole("button", { name: "Supprimer définitivement" });
+      expect(confirmer).toBeDisabled();
+
+      await user.type(screen.getByLabelText(/Retapez l'email du compte/), "autre@test.local");
+      await user.type(screen.getByLabelText(/Motif \(conservé dans le journal d'audit\)/), "Demande du client");
+      // Un email différent ne suffit pas, même avec un motif.
+      expect(confirmer).toBeDisabled();
+
+      await user.clear(screen.getByLabelText(/Retapez l'email du compte/));
+      await user.type(screen.getByLabelText(/Retapez l'email du compte/), "AGENCE@test.local");
+      expect(confirmer).toBeEnabled();
+    });
+
+    it("envoie l'email et le motif, puis revient à la liste des gestionnaires", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche(SUSPENDU) });
+      mockedApi.delete.mockResolvedValueOnce({ data: { success: true } });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: /Supprimer définitivement…/ }));
+      await user.type(screen.getByLabelText(/Retapez l'email du compte/), "agence@test.local");
+      await user.type(screen.getByLabelText(/Motif \(conservé dans le journal d'audit\)/), "  Demande du client  ");
+      await user.click(screen.getByRole("button", { name: "Supprimer définitivement" }));
+
+      await waitFor(() =>
+        expect(mockedApi.delete).toHaveBeenCalledWith("/admin/managers/mgr-1", {
+          data: { email: "agence@test.local", reason: "Demande du client" },
+        })
+      );
+      expect(await screen.findByText("Liste des gestionnaires")).toBeInTheDocument();
+    });
+
+    it("affiche l'erreur du serveur et reste sur la fiche, sans prétendre que le compte est supprimé", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue({ data: fiche(SUSPENDU) });
+      mockedApi.delete.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: { data: { error: "Stripe a refusé la résiliation de l'abonnement. Rien n'a été supprimé : réessayez plus tard." } },
+      });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: /Supprimer définitivement…/ }));
+      await user.type(screen.getByLabelText(/Retapez l'email du compte/), "agence@test.local");
+      await user.type(screen.getByLabelText(/Motif \(conservé dans le journal d'audit\)/), "Demande du client");
+      await user.click(screen.getByRole("button", { name: "Supprimer définitivement" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Rien n'a été supprimé");
+      expect(screen.queryByText("Liste des gestionnaires")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Supprimer définitivement" })).toBeInTheDocument();
     });
   });
 });
