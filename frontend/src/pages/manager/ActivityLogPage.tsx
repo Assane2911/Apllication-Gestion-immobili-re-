@@ -99,12 +99,12 @@ export default function ActivityLogPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.when")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.who")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.category")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.activityLog.table.detail")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.when")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.who")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.category")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.detail")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

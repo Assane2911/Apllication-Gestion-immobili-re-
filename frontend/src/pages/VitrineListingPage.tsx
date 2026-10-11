@@ -80,7 +80,7 @@ export default function VitrineListingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen bg-canvas dark:bg-slate-950">
         <VitrineHeader />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-16 flex justify-center">
           <span className="w-8 h-8 border-[3px] border-slate-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
@@ -91,7 +91,7 @@ export default function VitrineListingPage() {
 
   if (notFound || !listing) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen bg-canvas dark:bg-slate-950">
         <VitrineHeader />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-400">{t("vitrine.notFound")}</p>
@@ -104,7 +104,7 @@ export default function VitrineListingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-canvas dark:bg-slate-950">
       <Seo title={`${listing.title} — ${listing.location} | ${t("vitrine.brand")}`} description={listing.description.slice(0, 160)} />
       <JsonLd data={buildListingJsonLd(listing)} />
       <VitrineHeader />

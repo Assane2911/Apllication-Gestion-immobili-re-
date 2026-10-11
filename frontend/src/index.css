@@ -9,7 +9,7 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 m-0 antialiased font-sans;
+    @apply bg-canvas text-slate-900 dark:bg-slate-950 dark:text-slate-100 m-0 antialiased font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 

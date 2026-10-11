@@ -199,16 +199,16 @@ export default function InvoicesPage() {
       {/* Vue tableau (écrans sm et plus) */}
       <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-left border-b border-slate-200 dark:border-slate-800">
+          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left border-b border-slate-200 dark:border-slate-800">
             <tr>
-              <th className="px-4 py-3 font-medium">{t("manager.invoices.table.period")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.invoices.table.tenant")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.invoices.table.property")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.invoices.table.amount")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.invoices.table.dueDate")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.invoices.table.method")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.invoices.table.status")}</th>
-              <th className="px-4 py-3 font-medium text-right">{t("manager.invoices.table.actions")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.period")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.tenant")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.property")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.amount")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.dueDate")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.method")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.status")}</th>
+              <th className="px-4 py-3 font-semibold text-right">{t("manager.invoices.table.actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
