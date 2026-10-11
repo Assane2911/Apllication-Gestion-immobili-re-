@@ -13,6 +13,7 @@ const ACTIONS = [
   "platform.bank_details.update",
   "manager.suspend",
   "manager.reactivate",
+  "manager.delete",
   "subscription.grant_days",
   "subscription.change_plan",
   "listing.hide",

@@ -1,14 +1,14 @@
 import * as Sentry from "@sentry/node";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config/env";
-import { db, Transaction } from "../db/client";
-import { contracts, invoices, issueReports, listings, owners, properties, tenants, users } from "../db/schema";
+import { db } from "../db/client";
+import { owners, tenants, users } from "../db/schema";
 import {
   accountAlreadyExistsEmail,
   emailVerificationEmail,
@@ -16,7 +16,7 @@ import {
   sendEmail,
 } from "../services/email.service";
 import { accorderRecompenseParrainage } from "../services/referral.service";
-import { deleteStorageObjectBestEffort } from "../services/storage.service";
+import { supprimerCompteGestionnaire } from "../services/suppressionCompte.service";
 import { consommerCodeSecours, verifierCodeTotp } from "../services/totp.service";
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -977,85 +977,9 @@ export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) 
     }
   }
 
-  // Récupère tout ce qu'il faut nettoyer sur Supabase Storage AVANT de
-  // supprimer les lignes qui en gardent la référence (chemin ou URL) — une
-  // fois ces lignes supprimées, la référence serait perdue.
-  const [managerProperties, managerListings, managerTenants, managerContracts, managerIssues] = await Promise.all([
-    db.select({ imageUrl: properties.imageUrl }).from(properties).where(eq(properties.managerId, user.id)),
-    db.select({ imageUrl: listings.imageUrl }).from(listings).where(eq(listings.managerId, user.id)),
-    db.select({ idDocument: tenants.idDocument }).from(tenants).where(eq(tenants.managerId, user.id)),
-    db
-      .select({ scannedContractUrl: contracts.scannedContractUrl })
-      .from(contracts)
-      .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .where(eq(properties.managerId, user.id)),
-    db
-      .select({ photoUrl: issueReports.photoUrl, additionalPhotos: issueReports.additionalPhotos })
-      .from(issueReports)
-      .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
-      .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .where(eq(properties.managerId, user.id)),
-  ]);
-
-  await db.transaction(async (tx: Transaction) => {
-    // contracts.propertyId / contracts.tenantId n'ont PAS de ON DELETE
-    // CASCADE (voir schema.ts) : supprimer un bien ou un locataire qui porte
-    // encore un contrat échouerait (violation de clé étrangère). Ces
-    // contrats — et tout ce qui les référence sans cascade (invoices,
-    // issueReports) — doivent donc être supprimés explicitement ici, avant
-    // de s'appuyer sur les CASCADE existants pour le reste en supprimant
-    // simplement la ligne `users`.
-    const propertyRows = await tx.select({ id: properties.id }).from(properties).where(eq(properties.managerId, user.id));
-    const tenantRows = await tx.select({ id: tenants.id }).from(tenants).where(eq(tenants.managerId, user.id));
-    const propertyIds = propertyRows.map((p: { id: string }) => p.id);
-    const tenantIds = tenantRows.map((t: { id: string }) => t.id);
-
-    const contractConditions = [];
-    if (propertyIds.length > 0) contractConditions.push(inArray(contracts.propertyId, propertyIds));
-    if (tenantIds.length > 0) contractConditions.push(inArray(contracts.tenantId, tenantIds));
-
-    if (contractConditions.length > 0) {
-      const contractRows = await tx.select({ id: contracts.id }).from(contracts).where(or(...contractConditions));
-      const contractIds = contractRows.map((c: { id: string }) => c.id);
-
-      if (contractIds.length > 0) {
-        await tx.delete(invoices).where(inArray(invoices.contractId, contractIds));
-        await tx.delete(issueReports).where(inArray(issueReports.contractId, contractIds));
-        await tx.delete(contracts).where(inArray(contracts.id, contractIds));
-      }
-    }
-
-    // Le reste (biens, locataires, propriétaires, annonces + leurs demandes,
-    // états des lieux, messages, journal d'activité, paramètres d'agence,
-    // historique des abonnements SaaS) est nettoyé par les contraintes
-    // ON DELETE CASCADE déjà déclarées sur users.id (voir schema.ts) : il
-    // suffit de supprimer la ligne `users` elle-même.
-    await tx.delete(users).where(eq(users.id, user.id));
-  });
-
-  // Nettoyage Supabase Storage best-effort, APRÈS le commit : voir le
-  // commentaire de deleteStorageObjectBestEffort — un échec ici ne doit
-  // jamais remettre en cause une suppression de compte déjà actée en base.
-  const storageCleanupTargets: Array<string | null | undefined> = [
-    ...managerProperties.map((p) => p.imageUrl),
-    ...managerListings.map((l) => l.imageUrl),
-    ...managerTenants.map((t) => t.idDocument),
-    ...managerContracts.map((c) => c.scannedContractUrl),
-    ...managerIssues.flatMap((i) => {
-      const extras: string[] = [];
-      if (i.additionalPhotos) {
-        try {
-          extras.push(...(JSON.parse(i.additionalPhotos) as string[]));
-        } catch {
-          // Champ illisible : rien à nettoyer de plus fiable que d'ignorer.
-        }
-      }
-      return [i.photoUrl, ...extras];
-    }),
-  ];
-  await Promise.allSettled(storageCleanupTargets.map((target) => deleteStorageObjectBestEffort(target)));
-
-  console.log(`[account] Compte gestionnaire supprimé définitivement (id=${user.id})`);
+  // Résiliation Stripe, suppression en base et nettoyage du stockage : voir
+  // supprimerCompteGestionnaire (partagée avec la suppression par l'administration).
+  await supprimerCompteGestionnaire(user);
 
   // Le compte n'existe plus : un cookie encore présent référencerait un
   // userId qu'authenticate ne pourrait plus jamais résoudre.

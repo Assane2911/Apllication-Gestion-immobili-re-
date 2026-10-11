@@ -448,6 +448,49 @@ export async function setStripeCollectionPaused(stripeSubscriptionId: string, pa
 }
 
 /**
+ * Résilie IMMÉDIATEMENT un abonnement Stripe à renouvellement automatique
+ * (DELETE /v1/subscriptions/:id) — pour la suppression définitive d'un compte,
+ * où il n'y a plus de période à laisser courir : un abonnement laissé actif
+ * continuerait de prélever une carte pour un compte qui n'existe plus.
+ *
+ * Comme setStripeCollectionPaused, et pour la même raison, cette fonction
+ * ÉCHOUE bruyamment (ApiError 502) : l'appelant fait l'appel AVANT de toucher
+ * à la base et renonce à la suppression en cas d'échec, plutôt que d'effacer
+ * le compte en laissant un prélèvement actif derrière lui. Un abonnement que
+ * Stripe ne connaît plus (`resource_missing`) n'a plus rien à prélever.
+ */
+export async function cancelStripeSubscriptionNow(stripeSubscriptionId: string): Promise<void> {
+  if (!env.payments.stripeSecretKey) {
+    throw new ApiError(
+      502,
+      "Stripe n'est pas configuré sur ce serveur : impossible de résilier l'abonnement par carte de ce compte."
+    );
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${env.payments.stripeSecretKey}` },
+    });
+  } catch (err) {
+    console.error(`[stripe] Échec réseau (résiliation immédiate) de l'abonnement ${stripeSubscriptionId} :`, err);
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été supprimé : réessayez plus tard.");
+  }
+
+  if (response.ok) return;
+
+  const data = (await response.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
+  if (data.error?.code === "resource_missing") return;
+
+  console.error(
+    `[stripe] Échec (résiliation immédiate) de l'abonnement ${stripeSubscriptionId} :`,
+    data.error?.message ?? response.status
+  );
+  throw new ApiError(502, "Stripe a refusé la résiliation de l'abonnement. Rien n'a été supprimé : réessayez plus tard.");
+}
+
+/**
  * PayDunya (https://paydunya.com) : agrégateur ouest-africain qui donne accès
  * à Orange Money, Wave, Free Money, MTN Money et carte bancaire derrière une
  * seule page de paiement hébergée. Voir https://developers.paydunya.com/doc/EN/http_json.

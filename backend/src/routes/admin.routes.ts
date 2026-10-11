@@ -11,6 +11,7 @@ import {
   suspendManager,
 } from "../controllers/admin.controller";
 import { exportAuditCsv, exportManagersCsv } from "../controllers/adminExport.controller";
+import { deleteManager } from "../controllers/adminSuppression.controller";
 import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
 import { changeManagerPlan, grantSubscriptionDays } from "../controllers/adminSubscription.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
@@ -30,6 +31,7 @@ router.post("/subscriptions/:id/reject-bank-transfer", rejectBankTransfer);
 router.get("/managers", listManagers);
 router.get("/managers/:id", getManagerDetail);
 router.post("/managers/:id/suspend", suspendManager);
+router.delete("/managers/:id", deleteManager);
 router.post("/managers/:id/reactivate", reactivateManager);
 router.post("/managers/:id/subscription/grant-days", grantSubscriptionDays);
 router.post("/managers/:id/subscription/change-plan", changeManagerPlan);

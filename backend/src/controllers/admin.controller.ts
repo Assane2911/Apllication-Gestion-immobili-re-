@@ -565,7 +565,7 @@ const suspendManagerSchema = z.object({
 });
 
 /** Gestionnaire propriétaire (ni collaborateur, ni administrateur) ou 404. */
-async function trouverGestionnaire(id: string) {
+export async function trouverGestionnaire(id: string) {
   const [user] = await db
     .select()
     .from(users)
