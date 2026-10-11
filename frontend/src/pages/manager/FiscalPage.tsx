@@ -358,13 +358,13 @@ export default function FiscalPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
+            <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
               <tr>
-                <th className="px-4 py-3 font-medium">{t("manager.fiscal.bilanParBien.table.property")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.fiscal.bilanParBien.table.currency")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.fiscal.bilanParBien.table.revenue")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.fiscal.bilanParBien.table.expense")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.fiscal.bilanParBien.table.net")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.property")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.currency")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.revenue")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.expense")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.net")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

@@ -309,15 +309,15 @@ export default function TenantsPage() {
       {/* Vue tableau (écrans sm et plus) */}
       <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">{t("manager.tenants.table.name")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.tenants.table.phone")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.tenants.table.email")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.tenants.table.idDocument")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.tenants.table.reliability")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.tenants.table.portal")}</th>
-              <th className="px-4 py-3 font-medium">
+              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.name")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.phone")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.email")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.idDocument")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.reliability")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.portal")}</th>
+              <th className="px-4 py-3 font-semibold">
                 <span className="sr-only">{t("manager.tenants.table.actions")}</span>
               </th>
             </tr>

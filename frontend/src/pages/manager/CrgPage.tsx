@@ -189,14 +189,14 @@ export default function CrgPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
+            <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
               <tr>
-                <th className="px-4 py-3 font-medium">{t("manager.crg.table.property")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.crg.table.currency")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.crg.table.loyers")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.crg.table.charges")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.crg.table.commission")}</th>
-                <th className="px-4 py-3 font-medium">{t("manager.crg.table.net")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.crg.table.property")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.crg.table.currency")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.crg.table.loyers")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.crg.table.charges")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.crg.table.commission")}</th>
+                <th className="px-4 py-3 font-semibold">{t("manager.crg.table.net")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

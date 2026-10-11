@@ -213,14 +213,14 @@ export default function InsurancePage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">{t("manager.insurance.table.property")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.insurance.table.insurer")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.insurance.table.policyNumber")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.insurance.table.premium")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.insurance.table.expiryDate")}</th>
-              <th className="px-4 py-3 font-medium text-right">{t("manager.insurance.table.action")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.property")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.insurer")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.policyNumber")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.premium")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.expiryDate")}</th>
+              <th className="px-4 py-3 font-semibold text-right">{t("manager.insurance.table.action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

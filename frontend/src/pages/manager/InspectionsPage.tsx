@@ -377,15 +377,15 @@ export default function InspectionsPage() {
       <>
       <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">{t("manager.inspections.table.property")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.inspections.table.tenant")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.inspections.table.type")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.inspections.table.date")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.inspections.table.status")}</th>
-              <th className="px-4 py-3 font-medium">{t("manager.inspections.table.signatures")}</th>
-              <th className="px-4 py-3 font-medium text-right">{t("manager.inspections.table.actions")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.property")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.tenant")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.type")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.date")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.status")}</th>
+              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.signatures")}</th>
+              <th className="px-4 py-3 font-semibold text-right">{t("manager.inspections.table.actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

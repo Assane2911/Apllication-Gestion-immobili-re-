@@ -67,7 +67,7 @@ export default function ManagerLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex bg-canvas dark:bg-slate-950">
       {mobileNavOpen && (
         <div
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 sm:hidden transition-opacity"

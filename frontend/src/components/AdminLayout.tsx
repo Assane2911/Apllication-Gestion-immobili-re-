@@ -23,7 +23,7 @@ export default function AdminLayout() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-canvas dark:bg-slate-950">
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div>
