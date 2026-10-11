@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import crypto from "crypto";
 import { Request, Response } from "express";
 import { env } from "../config/env";
@@ -8,6 +9,7 @@ import {
   runUpcomingRentDueReminders,
 } from "../services/reminder.service";
 import { purgerDonneesDeLaPlateforme } from "../services/conservation.service";
+import { markOverdueInvoices } from "../services/invoice.service";
 import { runRecurringExpenseGeneration } from "../services/recurringExpense.service";
 import { budgetTemps } from "../utils/budgetTemps";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -81,6 +83,40 @@ export const triggerContractEndingReminders = asyncHandler(async (req: Request, 
   res.json({ success: true, remindersSent: sent, echecs, interrompu });
 });
 
+/** Une étape du travail quotidien qui a échoué : son nom, et la raison. */
+interface EtapeEnEchec {
+  etape: string;
+  message: string;
+}
+
+/**
+ * Exécute UNE étape du travail quotidien en l'isolant des autres : une
+ * exception est journalisée, signalée à Sentry et consignée dans `echecs`, puis
+ * l'étape suivante s'exécute quand même. Renvoie `null` si l'étape a échoué.
+ *
+ * Les étapes s'enchaînaient auparavant sans protection : une exception dans la
+ * première — une panne de base passagère, une ligne mal formée — interrompait
+ * toute la route. Aucune facture n'était passée en retard ce jour-là, aucun avis
+ * d'échéance n'était envoyé, aucune dépense récurrente générée, aucun rappel
+ * d'assurance émis ; et un problème qui durait aurait bloqué tout, chaque jour,
+ * sans que rien ne dise laquelle des étapes en était la cause.
+ */
+async function executerEtape<T>(nom: string, echecs: EtapeEnEchec[], tache: () => Promise<T>): Promise<T | null> {
+  try {
+    return await tache();
+  } catch (err) {
+    console.error(`[cron] Étape « ${nom} » en échec :`, err);
+    try {
+      Sentry.captureException(err, { tags: { source: "cron.daily", etape: nom } });
+    } catch {
+      // Le suivi d'erreurs ne doit jamais casser l'isolation qu'il surveille :
+      // un échec de signalement ne doit pas faire sauter les étapes suivantes.
+    }
+    echecs.push({ etape: nom, message: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
+}
+
 /**
  * LA tâche planifiée quotidienne : c'est la seule route que vercel.json
  * déclare en fréquence journalière, et elle enchaîne tout ce qui doit être
@@ -98,6 +134,9 @@ export const triggerContractEndingReminders = asyncHandler(async (req: Request, 
  * budget est consulté avant chaque élément et ce qui n'a pas été traité est
  * repris le lendemain (voir utils/budgetTemps.ts).
  *
+ * Chaque étape est isolée des autres (voir executerEtape) : une panne dans l'une
+ * ne prive plus les suivantes de leur exécution du jour.
+ *
  * Chaque route individuelle reste disponible ci-dessous pour un déclenchement
  * manuel ou ponctuel.
  */
@@ -105,39 +144,56 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   assertCronAuthorized(req);
 
   const budget = budgetTemps(env.cronBudgetMs);
+  const etapesEnEchec: EtapeEnEchec[] = [];
+
+  // Passage en retard des factures échues, EN PREMIER et pour son propre
+  // compte : il ne dépendait que d'un effet de bord de l'envoi des rappels
+  // « avant échéance » (voir runUpcomingRentDueReminders), donc d'une étape qui
+  // pouvait ne jamais être atteinte. Idempotent : la route des rappels le refait
+  // sans dommage. Deux requêtes d'ensemble, hors budget de temps.
+  const retards = await executerEtape("passage en retard des factures échues", etapesEnEchec, () => markOverdueInvoices());
 
   // Purge des données de la PLATEFORME uniquement — jetons périmés, vieux
-  // journaux. Deux requêtes d'ensemble, donc hors budget de temps. Aucune
-  // donnée locative n'est touchée ici : voir conservation.service.ts.
-  const purge = await purgerDonneesDeLaPlateforme();
+  // journaux. Aucune donnée locative n'est touchée ici : voir
+  // conservation.service.ts.
+  const purge = await executerEtape("purge des données de la plateforme", etapesEnEchec, () => purgerDonneesDeLaPlateforme());
 
-  const contractEnding = await runContractEndingReminders(budget);
-  const upcoming = await runUpcomingRentDueReminders(budget);
-  const rentDue = await runRentDueReminders(undefined, budget);
-  const recurringExpenses = await runRecurringExpenseGeneration(budget);
-  const insurance = await runInsurancePolicyExpiryReminders(budget);
+  // Les travaux suivants se partagent UN SEUL budget de temps : ils s'exécutent
+  // dans la même fonction serverless, donc dans la même limite de durée. Le
+  // budget est consulté avant chaque élément et ce qui n'a pas été traité est
+  // repris le lendemain (voir utils/budgetTemps.ts).
+  const contractEnding = await executerEtape("rappels de fin de contrat", etapesEnEchec, () => runContractEndingReminders(budget));
+  const upcoming = await executerEtape("rappels avant échéance", etapesEnEchec, () => runUpcomingRentDueReminders(budget));
+  const rentDue = await executerEtape("avis d'échéance et facturation du mois", etapesEnEchec, () => runRentDueReminders(undefined, budget));
+  const recurringExpenses = await executerEtape("dépenses récurrentes", etapesEnEchec, () => runRecurringExpenseGeneration(budget));
+  const insurance = await executerEtape("rappels d'assurance", etapesEnEchec, () => runInsurancePolicyExpiryReminders(budget));
 
-  res.json({
-    success: true,
+  // Un échec reste visible : 500, pour que Vercel marque l'exécution en erreur,
+  // mais seulement APRÈS que toutes les autres étapes ont tourné. Les étapes
+  // qui ont réussi gardent leurs compteurs dans la réponse.
+  res.status(etapesEnEchec.length > 0 ? 500 : 200).json({
+    success: etapesEnEchec.length === 0,
+    etapesEnEchec,
+    facturesPasseesEnRetard: retards ?? 0,
     purge,
-    contractEndingRemindersSent: contractEnding.sent,
-    upcomingRentDueRemindersSent: upcoming.sent,
-    rentDueRemindersSent: rentDue.sent,
-    recurringExpensesGenerated: recurringExpenses.generees,
-    insuranceRemindersSent: insurance.sent,
+    contractEndingRemindersSent: contractEnding?.sent ?? 0,
+    upcomingRentDueRemindersSent: upcoming?.sent ?? 0,
+    rentDueRemindersSent: rentDue?.sent ?? 0,
+    recurringExpensesGenerated: recurringExpenses?.generees ?? 0,
+    insuranceRemindersSent: insurance?.sent ?? 0,
     // Les envois qui ont VRAIMENT échoué. Leur marqueur a été relâché, donc
     // ils repartiront demain — mais un cron qui annonce « 40 envoyés » sans
     // dire que 40 ont échoué ne se distingue pas d'un cron qui a réussi.
-    echecs: contractEnding.echecs + upcoming.echecs + rentDue.echecs + insurance.echecs,
+    echecs: (contractEnding?.echecs ?? 0) + (upcoming?.echecs ?? 0) + (rentDue?.echecs ?? 0) + (insurance?.echecs ?? 0),
     // Vrai dès qu'un des travaux s'est arrêté faute de temps : le reliquat
     // n'est pas perdu, il sera traité à la prochaine exécution.
     interrompu:
-      contractEnding.interrompu ||
-      upcoming.interrompu ||
-      rentDue.interrompu ||
-      recurringExpenses.interrompu ||
-      insurance.interrompu,
-    details: upcoming.details,
+      !!contractEnding?.interrompu ||
+      !!upcoming?.interrompu ||
+      !!rentDue?.interrompu ||
+      !!recurringExpenses?.interrompu ||
+      !!insurance?.interrompu,
+    details: upcoming?.details ?? [],
   });
 });
 
