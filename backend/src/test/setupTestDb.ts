@@ -128,6 +128,7 @@ const TABLES = [
   "activity_logs",
   "agency_settings",
   "platform_settings",
+  "rate_limit_hits",
 ];
 
 // Table vide avant chaque test pour qu'aucun test ne dépende de l'ordre

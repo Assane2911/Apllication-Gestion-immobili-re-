@@ -842,6 +842,30 @@ export const notificationVues = pgTable(
   })
 );
 
+// --- Compteurs de limitation de fréquence (routes d'authentification) ---
+// Les limiteurs de tentatives de connexion comptaient en MÉMOIRE, dans chaque
+// instance de la fonction serverless : les compteurs n'étaient pas partagés
+// entre instances et repartaient de zéro à chaque démarrage à froid, si bien
+// qu'un attaquant dont les requêtes tombaient sur plusieurs instances obtenait
+// un nombre de tentatives multiplié d'autant. Un compteur en base est partagé
+// par toutes les instances (voir middleware/rateLimitStore.ts).
+//
+// `cle` est l'EMPREINTE (SHA-256) de la clé de limitation, jamais l'adresse
+// email ni l'IP en clair : la table n'ajoute aucune donnée personnelle.
+export const rateLimitHits = pgTable(
+  "rate_limit_hits",
+  {
+    cle: text("cle").primaryKey(),
+    hits: integer("hits").notNull(),
+    // Avec fuseau : l'instant de remise à zéro est comparé à now() DANS la base,
+    // donc l'horloge des instances serverless n'intervient jamais.
+    resetAt: timestamp("reset_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => ({
+    resetAtIdx: index("rate_limit_hits_reset_at_idx").on(table.resetAt),
+  })
+);
+
 // --- Agency Settings (Paramètres & Marque Blanche de l'Agence) ---
 export const agencySettings = pgTable("agency_settings", {
   id: id(),

@@ -1,6 +1,6 @@
 import { eq, isNull } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { activityLogs, contracts, listingLeads, listings, tenants, users } from "../db/schema";
+import { activityLogs, contracts, listingLeads, listings, rateLimitHits, tenants, users } from "../db/schema";
 import {
   createContract,
   createManager,
@@ -112,6 +112,21 @@ describe("Purge automatique des données de la plateforme", () => {
     const restantes = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
     expect(restantes).toHaveLength(1);
     expect(resultat.journauxEffaces).toBe(1);
+  });
+
+  it("efface les compteurs de tentatives expirés depuis plus d'un jour, garde les autres", async () => {
+    const h = (n: number) => new Date(Date.now() + n * 3_600_000);
+    await testDb.insert(rateLimitHits).values([
+      { cle: "ancien", hits: 8, resetAt: h(-72) },
+      { cle: "recemment-expire", hits: 3, resetAt: h(-2) },
+      { cle: "en-cours", hits: 5, resetAt: h(1) },
+    ]);
+
+    const resultat = await purgerDonneesDeLaPlateforme();
+
+    const restants = (await testDb.select().from(rateLimitHits)).map((r: { cle: string }) => r.cle).sort();
+    expect(restants).toEqual(["en-cours", "recemment-expire"]);
+    expect(resultat.compteursEfface).toBe(1);
   });
 
   it("ne touche à aucune donnée locative", async () => {
