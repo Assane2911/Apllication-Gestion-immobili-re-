@@ -45,6 +45,26 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
     expect(res.text).toContain(tenant.firstName);
   });
 
+  it("affiche le moyen de paiement en clair sur la quittance en ligne, comme sur celle du courriel", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const virement = await createInvoice(contract.id, { status: "PAID", paidAt: new Date(), paymentMethod: "BANK_TRANSFER" });
+    const sansMoyen = await createInvoice(contract.id, { status: "PAID", paidAt: new Date(), periodMonth: 7, paymentMethod: null });
+
+    const lire = async (id: string) =>
+      (await request(app).get(`/api/documents/receipt/${id}`).set(authHeader(tokenFor(manager)))).text;
+
+    const quittance = await lire(virement.id);
+    expect(quittance).toContain("Virement bancaire");
+    expect(quittance).not.toContain("BANK_TRANSFER");
+
+    const inconnue = await lire(sansMoyen.id);
+    expect(inconnue).toContain("Non précisé");
+    expect(inconnue).not.toContain("VIREMENT");
+  });
+
   it("annonce les jours réellement couverts quand le loyer est facturé au prorata", async () => {
     // Une quittance atteste juridiquement d'un loyer réglé pour une période
     // donnée. Depuis le passage au prorata, un bail démarrant en cours de mois
@@ -212,6 +232,34 @@ describe("GET /api/documents/lease/:contractId", () => {
       .set(authHeader(tokenFor(otherManager)));
 
     expect(res.status).toBe(403);
+  });
+
+  it("imprime les clauses particulières du contrat sur le bail", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { terms: "Animaux interdits.\nSous-location prohibée." });
+
+    const res = await request(app)
+      .get(`/api/documents/lease/${contract.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("4. Clauses particulières");
+    expect(res.text).toContain("Animaux interdits.<br>Sous-location prohibée.");
+  });
+
+  it("n'affiche aucune section de clauses pour un contrat qui n'en a pas", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .get(`/api/documents/lease/${contract.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.text).not.toContain("Clauses particulières");
   });
 
   it("autorise le locataire concerné à récupérer son propre bail", async () => {

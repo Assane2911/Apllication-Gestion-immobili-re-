@@ -73,7 +73,7 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
         amount: invoice.amount,
         currency: invoice.currency || "EUR",
         paidAt: invoice.paidAt || new Date(),
-        paymentMethod: invoice.paymentMethod || "DEMO",
+        paymentMethod: invoice.paymentMethod,
         paymentRef: invoice.paymentRef,
       },
     };

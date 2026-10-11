@@ -72,7 +72,8 @@ describe("generateReceiptHtml", () => {
     expect(html).toContain("Surface : 120 m²");
     expect(html).toContain("Juin 2026");
     expect(html).toContain(`250${ESPACE_FINE}000 FCFA`);
-    expect(html).toContain("PAYDUNYA");
+    // Le moyen de paiement est écrit en clair, pas sous sa valeur technique.
+    expect(html).toContain("Mobile Money / carte (en ligne)");
     expect(html).toContain("Agence agréée n° 42");
   });
 
@@ -125,6 +126,25 @@ describe("generateReceiptHtml", () => {
     expect(html).toContain("Document émis et certifié conforme");
   });
 
+  it.each([
+    ["BANK_TRANSFER", "Virement bancaire"],
+    ["STRIPE", "Carte bancaire (en ligne)"],
+    ["PAYDUNYA", "Mobile Money / carte (en ligne)"],
+  ])("affiche « %s » en clair (%s) sur la quittance, jamais le code technique", (code, libelle) => {
+    const html = generateReceiptHtml({ ...baseReceipt, invoice: { ...baseReceipt.invoice, paymentMethod: code } });
+
+    expect(html).toContain(libelle);
+    expect(html).not.toContain(code);
+  });
+
+  it("écrit « Non précisé » quand aucun moyen de paiement n'est enregistré, sans en inventer un", () => {
+    const html = generateReceiptHtml({ ...baseReceipt, invoice: { ...baseReceipt.invoice, paymentMethod: null } });
+
+    expect(html).toContain("Non précisé");
+    expect(html).not.toContain("DEMO");
+    expect(html).not.toContain("VIREMENT");
+  });
+
   it("traduit le mois de la période en français", () => {
     const janvier = generateReceiptHtml({
       ...baseReceipt,
@@ -148,6 +168,12 @@ describe("generateReceiptPdfBuffer", () => {
     expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
     expect(buffer.length).toBeGreaterThan(1000);
     expect(buffer.subarray(-1024).toString("latin1")).toContain("%%EOF");
+  });
+
+  it("génère le PDF même sans moyen de paiement enregistré", async () => {
+    const pdf = await generateReceiptPdfBuffer({ ...baseReceipt, invoice: { ...baseReceipt.invoice, paymentMethod: null } });
+
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
   it("génère le PDF même quand toutes les informations optionnelles de l'agence sont absentes", async () => {
@@ -190,6 +216,33 @@ describe("generateLeaseHtml", () => {
     expect(html).toContain(`500${ESPACE_FINE}000 FCFA`);
     expect(html).toContain("01/01/2026");
     expect(html).toContain("01/01/2027");
+  });
+
+  it("imprime les clauses particulières, avant les signatures", () => {
+    const html = generateLeaseHtml({ ...contract, terms: "Animaux interdits.\nSous-location prohibée." }, agency);
+
+    expect(html).toContain("4. Clauses particulières");
+    expect(html).toContain("Animaux interdits.<br>Sous-location prohibée.");
+    expect(html.indexOf("4. Clauses particulières")).toBeLessThan(html.indexOf("Pour le Bailleur"));
+  });
+
+  it("garde les retours à la ligne Windows (\\r\\n) sans les doubler", () => {
+    const html = generateLeaseHtml({ ...contract, terms: "Ligne 1\r\nLigne 2" }, agency);
+
+    expect(html).toContain("Ligne 1<br>Ligne 2");
+  });
+
+  it("échappe les clauses (le bail est servi en text/html : pas de script injecté)", () => {
+    const html = generateLeaseHtml({ ...contract, terms: '<script>alert(1)</script> & "guillemets"' }, agency);
+
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;guillemets&quot;");
+  });
+
+  it.each([[undefined], [null], [""], ["   \n  "]])("omet la section clauses quand elles sont vides (%j)", (terms) => {
+    const html = generateLeaseHtml({ ...contract, terms }, agency);
+
+    expect(html).not.toContain("Clauses particulières");
   });
 
   it("échappe les champs contrôlés par l'utilisateur, devise comprise", () => {

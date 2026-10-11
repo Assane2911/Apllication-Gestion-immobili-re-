@@ -12,7 +12,7 @@ import { useCurrency } from "../../context/currency";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
 
-const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "" };
+const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "" };
 
 // Fenêtre d'affichage du workflow de renouvellement : un contrat actif dont
 // la fin tombe dans ce nombre de jours ou moins propose de renouveler ou non.
@@ -90,7 +90,9 @@ export default function ContractsPage() {
     setSaving(true);
     setError(null);
     try {
-      await api.post("/contracts", form);
+      // Les clauses vides ne sont pas envoyées : le bail n'imprime alors aucune section.
+      const { terms, ...champs } = form;
+      await api.post("/contracts", { ...champs, ...(terms.trim() ? { terms: terms.trim() } : {}) });
       setShowForm(false);
       setForm(emptyForm);
       load();
@@ -268,6 +270,19 @@ export default function ContractsPage() {
             <div>
               <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
               <input id="contract-endDate" required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+            </div>
+            <div className="md:col-span-2">
+              <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.terms")}</label>
+              <textarea
+                id="contract-terms"
+                rows={4}
+                maxLength={10000}
+                value={form.terms}
+                onChange={(e) => setForm({ ...form, terms: e.target.value })}
+                placeholder={t("manager.contracts.fields.termsPlaceholder")}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.termsHint")}</p>
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">

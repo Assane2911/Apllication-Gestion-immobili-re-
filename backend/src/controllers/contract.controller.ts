@@ -25,7 +25,9 @@ const contractSchema = z.object({
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
   status: z.enum(["ACTIVE", "ENDED", "TERMINATED"]).optional(),
-  terms: z.string().optional(),
+  // Clauses particulières imprimées sur le bail : plafonnées, un texte sans
+  // limite gonflerait le document remis au locataire.
+  terms: z.string().trim().max(10000, "Les clauses ne peuvent pas dépasser 10 000 caractères").optional(),
 });
 
 export async function resolveScannedUrl(value: string | null | undefined): Promise<string | null | undefined> {
@@ -564,6 +566,9 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
         currency: existing.currency,
         startDate: newStart,
         endDate: newEnd,
+        // Les clauses suivent le renouvellement : sans elles, le nouveau bail
+        // s'imprimerait sans les conditions du précédent.
+        terms: existing.terms,
         status: "ACTIVE",
       })
       .returning();
