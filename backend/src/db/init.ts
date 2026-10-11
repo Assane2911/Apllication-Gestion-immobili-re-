@@ -585,6 +585,15 @@ export async function initDb() {
       )
     `);
 
+    await creerTable("notification_vues", sql`
+      CREATE TABLE IF NOT EXISTS notification_vues (
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        cle TEXT NOT NULL,
+        seen_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, cle)
+      )
+    `);
+
     // Ensure columns exist on existing databases. Ces ALTER doivent
     // s'exécuter APRÈS tous les CREATE TABLE ci-dessus : sur une base
     // totalement vierge (PGlite fallback local, sans DATABASE_URL), les

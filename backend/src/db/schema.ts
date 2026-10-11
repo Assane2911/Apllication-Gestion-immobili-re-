@@ -8,6 +8,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -809,6 +810,31 @@ export const activityLogs = pgTable(
   (table) => ({
     managerIdIdx: index("activity_logs_manager_id_idx").on(table.managerId),
     createdAtIdx: index("activity_logs_created_at_idx").on(table.createdAt),
+  })
+);
+
+// --- Notifications déjà vues (cloche du gestionnaire et du locataire) ---
+// Les notifications elles-mêmes ne sont PAS stockées : elles sont recalculées à
+// la volée à partir de l'état des données (voir notification.controller.ts).
+// Cette table ne retient que « cette personne a déjà vu cette notification »,
+// pour que le badge ne compte que les nouveautés et retombe à 0 à l'ouverture
+// de la cloche, sur tous ses appareils.
+//
+// `cle` identifie une notification dans sa version courante (identifiant +
+// date de l'événement) : un nouveau message d'un même locataire change la clé,
+// donc la notification redevient « nouvelle ». userId est la PERSONNE réelle
+// (un collaborateur a son propre état, distinct de celui du propriétaire).
+export const notificationVues = pgTable(
+  "notification_vues",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    cle: text("cle").notNull(),
+    seenAt: timestamp("seen_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.cle] }),
   })
 );
 

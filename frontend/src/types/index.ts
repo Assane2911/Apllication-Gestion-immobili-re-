@@ -421,6 +421,10 @@ export interface NotificationItem {
   description: string;
   link: string;
   createdAt: string;
+  /** Version de la notification (identifiant + date) : sert à l'état « vu » côté serveur. */
+  key?: string;
+  /** Déjà vue par cette personne (badge) ; absent = non vue. */
+  seen?: boolean;
 }
 
 export type SearchResultType = "tenant" | "property" | "contract" | "invoice";
