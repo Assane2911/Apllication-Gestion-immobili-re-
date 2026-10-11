@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
+import BoutonExportCsv from "../../components/BoutonExportCsv";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 
@@ -18,6 +19,8 @@ const ACTIONS = [
   "listing.restore",
   "listing.feature",
   "listing.unfeature",
+  "export.managers",
+  "export.audit",
 ] as const;
 
 interface AuditEntry {
@@ -85,22 +88,25 @@ export default function AdminAuditPage() {
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.audit.subtitle")}</p>
       </div>
 
-      <select
-        value={action}
-        onChange={(e) => {
-          setAction(e.target.value);
-          setPage(1);
-        }}
-        aria-label={t("admin.audit.filterLabel")}
-        className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-      >
-        <option value="">{t("admin.audit.allActions")}</option>
-        {ACTIONS.map((a) => (
-          <option key={a} value={a}>
-            {t(`admin.audit.actions.${a}`)}
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <select
+          value={action}
+          onChange={(e) => {
+            setAction(e.target.value);
+            setPage(1);
+          }}
+          aria-label={t("admin.audit.filterLabel")}
+          className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+        >
+          <option value="">{t("admin.audit.allActions")}</option>
+          {ACTIONS.map((a) => (
+            <option key={a} value={a}>
+              {t(`admin.audit.actions.${a}`)}
+            </option>
+          ))}
+        </select>
+        <BoutonExportCsv chemin="/admin/exports/audit-logs.csv" params={action ? { action } : undefined} prefixeFichier="journal-audit" />
+      </div>
 
       {erreur && (
         <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3">

@@ -593,6 +593,11 @@ const en: TranslationSchema = {
     adminLayout: {
       title: "Platform Administration",
     },
+    exportCsv: {
+      button: "Export as CSV",
+      exporting: "Exporting...",
+      hint: "The current selection, up to 5,000 rows.",
+    },
   },
 
   manager: {
@@ -1776,6 +1781,8 @@ const en: TranslationSchema = {
         "listing.restore": "Listing restored",
         "listing.feature": "Listing featured",
         "listing.unfeature": "Featuring removed",
+        "export.managers": "Managers exported",
+        "export.audit": "Audit log exported",
       },
     },
     listings: {

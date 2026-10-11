@@ -21,9 +21,33 @@ export const ADMIN_AUDIT_ACTIONS = [
   "listing.restore",
   "listing.feature",
   "listing.unfeature",
+  "export.managers",
+  "export.audit",
 ] as const;
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number];
+
+/**
+ * Libellé français de chaque action, pour l'export CSV du journal. Typé
+ * `Record<AdminAuditAction, …>` : ajouter une action sans son libellé ne
+ * compile plus, au lieu de sortir une clé technique dans un fichier remis à un
+ * comptable.
+ */
+export const ADMIN_AUDIT_ACTION_LABELS: Record<AdminAuditAction, string> = {
+  "subscription.bank_transfer.confirm": "Virement confirmé",
+  "subscription.bank_transfer.reject": "Virement rejeté",
+  "platform.bank_details.update": "Coordonnées bancaires modifiées",
+  "manager.suspend": "Compte suspendu",
+  "manager.reactivate": "Suspension levée",
+  "subscription.grant_days": "Jours offerts",
+  "subscription.change_plan": "Formule modifiée",
+  "listing.hide": "Annonce masquée",
+  "listing.restore": "Annonce rétablie",
+  "listing.feature": "Annonce mise en avant",
+  "listing.unfeature": "Mise en avant retirée",
+  "export.managers": "Export des gestionnaires",
+  "export.audit": "Export du journal d'audit",
+};
 
 export interface LogAdminActionParams {
   req?: Request;

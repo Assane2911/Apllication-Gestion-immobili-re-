@@ -591,6 +591,11 @@ const fr = {
     adminLayout: {
       title: "Administration de la plateforme",
     },
+    exportCsv: {
+      button: "Exporter en CSV",
+      exporting: "Export en cours...",
+      hint: "La sélection actuelle, 5 000 lignes au plus.",
+    },
   },
 
   manager: {
@@ -1777,6 +1782,8 @@ const fr = {
         "listing.restore": "Annonce rétablie",
         "listing.feature": "Annonce mise en avant",
         "listing.unfeature": "Mise en avant retirée",
+        "export.managers": "Export des gestionnaires",
+        "export.audit": "Export du journal d'audit",
       },
     },
     listings: {

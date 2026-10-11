@@ -144,4 +144,32 @@ describe("AdminManagersPage", () => {
     expect(await screen.findByText("Impossible de charger les gestionnaires")).toBeInTheDocument();
     expect(screen.getByText("Erreur serveur")).toBeInTheDocument();
   });
+  it("exporte la sélection affichée : formule, statut et recherche sont transmis à l'export", async () => {
+    mockedApi.get.mockResolvedValue({ data: { items: [ligne()], page: 1, pageSize: 20, total: 1, totalPages: 1 } });
+    URL.createObjectURL = vi.fn(() => "blob:test");
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(
+      <MemoryRouter>
+        <AdminManagersPage />
+      </MemoryRouter>
+    );
+    await screen.findByText("Agence Alpha");
+
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: /formule/i }), "PRO");
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: /statut/i }), "SUSPENDED");
+    await userEvent.type(screen.getByRole("searchbox", { name: /rechercher/i }), "alpha");
+    // La recherche est temporisée (300 ms) : le bouton doit porter la valeur validée.
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenCalledWith("/admin/managers", expect.objectContaining({ params: expect.objectContaining({ search: "alpha" }) }))
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenCalledWith("/admin/exports/managers.csv", {
+        params: { search: "alpha", plan: "PRO", status: "SUSPENDED" },
+        responseType: "blob",
+      })
+    );
+  });
 });
