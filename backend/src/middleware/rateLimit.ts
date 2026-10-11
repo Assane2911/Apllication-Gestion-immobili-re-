@@ -1,5 +1,6 @@
 import { Request } from "express";
 import rateLimit, { ipKeyGenerator, MemoryStore } from "express-rate-limit";
+import { PostgresRateLimitStore } from "./rateLimitStore";
 
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -13,6 +14,9 @@ const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 export const authIpLimiter = rateLimit({
   windowMs: WINDOW_MS,
   limit: 20,
+  // Compteur en base, partagé entre toutes les instances du serveur (voir
+  // rateLimitStore.ts) : en mémoire, chaque instance comptait pour elle seule.
+  store: new PostgresRateLimitStore("auth-ip"),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Trop de tentatives depuis cette adresse. Réessayez dans quelques minutes." },
@@ -28,6 +32,7 @@ export const authIpLimiter = rateLimit({
 export const authEmailLimiter = rateLimit({
   windowMs: WINDOW_MS,
   limit: 8,
+  store: new PostgresRateLimitStore("auth-email"),
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => {

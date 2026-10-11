@@ -595,6 +595,14 @@ export async function initDb() {
       )
     `);
 
+    await creerTable("rate_limit_hits", sql`
+      CREATE TABLE IF NOT EXISTS rate_limit_hits (
+        cle TEXT PRIMARY KEY,
+        hits INTEGER NOT NULL,
+        reset_at TIMESTAMPTZ NOT NULL
+      )
+    `);
+
     // Ensure columns exist on existing databases. Ces ALTER doivent
     // s'exécuter APRÈS tous les CREATE TABLE ci-dessus : sur une base
     // totalement vierge (PGlite fallback local, sans DATABASE_URL), les
@@ -788,6 +796,7 @@ export async function initDb() {
     await creerIndex("vendors_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS vendors_manager_id_idx ON vendors (manager_id)`);
     await creerIndex("messages_sender_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON messages (sender_id)`);
     await creerIndex("messages_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_contract_id_idx ON messages (contract_id)`);
+    await creerIndex("rate_limit_hits_reset_at_idx", sql`CREATE INDEX IF NOT EXISTS rate_limit_hits_reset_at_idx ON rate_limit_hits (reset_at)`);
     await creerIndex("activity_logs_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
     await creerIndex("activity_logs_created_at_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs (created_at)`);
     await creerIndex("suggestions_created_at_idx", sql`CREATE INDEX IF NOT EXISTS suggestions_created_at_idx ON suggestions (created_at)`);

@@ -1,6 +1,6 @@
 import { and, desc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { activityLogs, contracts, listingLeads, tenants, users } from "../db/schema";
+import { activityLogs, contracts, listingLeads, rateLimitHits, tenants, users } from "../db/schema";
 import { jourDecale } from "../utils/dates";
 
 /**
@@ -78,13 +78,22 @@ export async function purgerDonneesDeLaPlateforme() {
     .where(lt(activityLogs.createdAt, jourDecale(-DUREES.journauxJours, maintenant)))
     .returning({ id: activityLogs.id });
 
+  // Compteurs de limitation de fréquence des routes d'authentification (voir
+  // middleware/rateLimitStore.ts) : une fenêtre dépassée ne sert plus à rien.
+  // On garde un jour de marge — la fenêtre dure 15 minutes — pour ne jamais
+  // effacer un compteur encore utile, et l'on évite ainsi que la table grossisse.
+  const compteurs = await db
+    .delete(rateLimitHits)
+    .where(lt(rateLimitHits.resetAt, jourDecale(-1, maintenant)))
+    .returning({ cle: rateLimitHits.cle });
+
   if (jetons.length || journaux.length) {
     console.log(
       `[conservation] ${jetons.length} jeton(s) périmé(s) effacé(s), ${journaux.length} entrée(s) de journal au-delà de ${DUREES.journauxJours} jours.`
     );
   }
 
-  return { jetonsEffaces: jetons.length, journauxEffaces: journaux.length };
+  return { jetonsEffaces: jetons.length, journauxEffaces: journaux.length, compteursEfface: compteurs.length };
 }
 
 type FicheSignalee = typeof tenants.$inferSelect & { finDuDernierBail?: Date | null };
