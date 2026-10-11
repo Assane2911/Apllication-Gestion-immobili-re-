@@ -321,6 +321,7 @@ export async function initDb() {
     await creerTable("properties", sql`
       CREATE TABLE IF NOT EXISTS properties (
         id TEXT PRIMARY KEY,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         title TEXT NOT NULL,
         address TEXT NOT NULL,
         surface DOUBLE PRECISION NOT NULL,
@@ -336,6 +337,7 @@ export async function initDb() {
     await creerTable("tenants", sql`
       CREATE TABLE IF NOT EXISTS tenants (
         id TEXT PRIMARY KEY,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         civility TEXT,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
@@ -570,6 +572,7 @@ export async function initDb() {
     await creerTable("activity_logs", sql`
       CREATE TABLE IF NOT EXISTS activity_logs (
         id TEXT PRIMARY KEY,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
         actor_role TEXT,
         actor_label TEXT NOT NULL,
@@ -651,11 +654,14 @@ export async function initDb() {
     // d'email — et toute requête Drizzle sur ces tables échouait, Drizzle
     // nommant explicitement chaque colonne déclarée dans schema.ts.
     //
-    // manager_id est ajouté NULLABLE ici, alors que le schéma le déclare
-    // obligatoire : une colonne NOT NULL ne peut pas être ajoutée à une table
-    // contenant déjà des lignes sans valeur par défaut. Les insertions
-    // applicatives la renseignent toujours, la contrainte n'est donc utile
-    // qu'à la création initiale de la table.
+    // manager_id : les trois CREATE TABLE ci-dessus le déclarent déjà NOT NULL
+    // avec ON DELETE CASCADE, comme schema.ts — une installation neuve n'en a
+    // donc pas besoin ici. Cet ajout ne sert qu'aux bases très anciennes dont
+    // la table existe sans la colonne : il est NULLABLE, car une colonne NOT
+    // NULL ne peut pas être ajoutée à une table déjà remplie sans valeur par
+    // défaut, et on ne resserre pas la contrainte au démarrage (ALTER … SET NOT
+    // NULL relit toute la table sous verrou exclusif, ce que #65 a justement
+    // supprimé). La production a déjà la contrainte, sans aucune ligne NULL.
     await ajouterColonne("properties", "manager_id", sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`);
     await ajouterColonne("tenants", "manager_id", sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`);
     await ajouterColonne("activity_logs", "manager_id", sql`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id)`);
