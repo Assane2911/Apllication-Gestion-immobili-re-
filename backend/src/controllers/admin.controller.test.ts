@@ -11,6 +11,7 @@ import {
   createManager,
   createPlatformSubscription,
   createProperty,
+  createTeamMember,
   createTenant,
   tokenFor,
 } from "../test/authHelpers";
@@ -523,5 +524,55 @@ describe("GET /api/admin/dashboard/stats", () => {
     expect(res.body.usage.totalProperties).toBe(3);
     expect(res.body.usage.totalTenants).toBe(2);
     expect(res.body.usage.activeContracts).toBe(1);
+  });
+});
+
+describe("GET /api/admin/dashboard/stats — clients réels et comptes suspendus", () => {
+  const stats = async (admin: Awaited<ReturnType<typeof createAdmin>>) =>
+    (await request(app).get("/api/admin/dashboard/stats").set(authHeader(tokenFor(admin)))).body;
+
+  it("ne compte que les gestionnaires propriétaires : les collaborateurs invités ne sont pas des clients", async () => {
+    const admin = await createAdmin();
+    const proprietaire = await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: daysFromNow(20) });
+    await createTeamMember(proprietaire.id);
+    await createTeamMember(proprietaire.id, { subscriptionStatus: "TRIAL", trialEndsAt: daysFromNow(3) });
+
+    const corps = await stats(admin);
+
+    expect(corps.managers).toMatchObject({ total: 1, subscriptionActive: 1, trialActive: 0, expired: 0 });
+    // Un collaborateur en « essai » ne déclenche pas non plus de relance commerciale.
+    expect(corps.trialsEndingSoon).toHaveLength(0);
+  });
+
+  it("compte les suspendus à part, sans les retirer de leur statut d'abonnement", async () => {
+    const admin = await createAdmin();
+    await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: daysFromNow(20), suspendedAt: new Date(), suspensionReason: "Impayé" });
+    await createManager({ subscriptionStatus: "TRIAL", trialEndsAt: daysFromNow(10), suspendedAt: new Date(), suspensionReason: "Abus" });
+    await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: daysFromNow(20) });
+
+    const corps = await stats(admin);
+
+    expect(corps.managers).toMatchObject({ total: 3, subscriptionActive: 2, trialActive: 1, suspended: 2 });
+  });
+
+  it("exclut un compte suspendu du revenu récurrent attendu et des relances d'essai", async () => {
+    const admin = await createAdmin();
+    const actif = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO", subscriptionEndsAt: daysFromNow(15) });
+    await createPlatformSubscription(actif.id, { plan: "PRO", amount: 29, billingCycle: "MONTHLY", status: "PAID" });
+    const suspendu = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "ENTERPRISE",
+      subscriptionEndsAt: daysFromNow(15),
+      suspendedAt: new Date(),
+      suspensionReason: "Impayé",
+    });
+    await createPlatformSubscription(suspendu.id, { plan: "ENTERPRISE", amount: 99, billingCycle: "MONTHLY", status: "PAID" });
+    await createManager({ subscriptionStatus: "TRIAL", trialEndsAt: daysFromNow(2), suspendedAt: new Date(), suspensionReason: "Abus" });
+
+    const corps = await stats(admin);
+
+    expect(corps.mrr.contributors).toBe(1);
+    expect(corps.mrr.byCurrency[0].total).toBe(29);
+    expect(corps.trialsEndingSoon).toHaveLength(0);
   });
 });

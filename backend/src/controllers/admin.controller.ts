@@ -153,24 +153,41 @@ export const rejectBankTransfer = asyncHandler(async (req: Request, res: Respons
  * confiance telle quelle à la colonne en base.
  */
 export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res: Response) => {
-  const managers = await db.select().from(users).where(eq(users.role, "MANAGER"));
+  // Seuls les gestionnaires PROPRIÉTAIRES sont des clients de la plateforme :
+  // un collaborateur invité (teamOwnerId renseigné) est aussi un compte
+  // MANAGER, mais il n'a ni abonnement ni facturation propres. Les compter
+  // gonflait le total et classait chaque collaborateur « sans accès » ou « en
+  // essai » — les mêmes règles que la liste des gestionnaires (listManagers).
+  const managers = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.role, "MANAGER"), isNull(users.teamOwnerId)));
 
   let trialActive = 0;
   let subscriptionActive = 0;
   let expired = 0;
+  // Orthogonal au statut d'abonnement (comme dans la liste des gestionnaires) :
+  // un compte suspendu reste compté dans son statut, et en plus ici.
+  let suspended = 0;
   const activeManagerIds: string[] = [];
   const trialsEndingSoon: { userId: string; email: string; trialEndsAt: Date | null; daysRemaining: number }[] = [];
 
   for (const manager of managers) {
     const info = computeSubscriptionInfo(manager);
     if (!info) continue;
+    const estSuspendu = manager.suspendedAt !== null;
+    if (estSuspendu) suspended += 1;
 
     if (info.isSubscriptionActive) {
       subscriptionActive += 1;
-      activeManagerIds.push(manager.id);
+      // Un compte suspendu n'est plus facturé (voir suspendManager) : il ne
+      // compte pas dans le revenu récurrent attendu.
+      if (!estSuspendu) activeManagerIds.push(manager.id);
     } else if (info.isTrialActive) {
       trialActive += 1;
-      if (info.trialDaysRemaining <= 7) {
+      // Pas de relance commerciale pour un compte que l'administration a
+      // elle-même suspendu.
+      if (!estSuspendu && info.trialDaysRemaining <= 7) {
         trialsEndingSoon.push({
           userId: manager.id,
           email: manager.email,
@@ -250,6 +267,7 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
       trialActive,
       subscriptionActive,
       expired,
+      suspended,
     },
     trialsEndingSoon: soonestTrials.map((t) => ({
       ...t,
