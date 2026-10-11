@@ -153,7 +153,12 @@ export const users = pgTable("users", {
   // jamais rappelée pour ce compte.
   referralRewardGrantedAt: timestamp("referral_reward_granted_at", { mode: "date" }),
   ...timestamps,
-});
+}, (table) => ({
+  // Déjà créé par initDb() (donc présent en production) mais jamais déclaré
+  // ici : la liste des filleuls d'un parrain et l'ON DELETE SET NULL de la clé
+  // étrangère parcourent cette colonne.
+  referredByUserIdIdx: index("users_referred_by_user_id_idx").on(table.referredByUserId),
+}));
 
 // --- Platform Subscriptions (Historique des paiements d'abonnements SaaS de la plateforme) ---
 export const platformSubscriptions = pgTable(
