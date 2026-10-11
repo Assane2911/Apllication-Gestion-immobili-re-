@@ -205,6 +205,7 @@ export async function initDb() {
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
+        has_password BOOLEAN NOT NULL DEFAULT TRUE,
         role TEXT NOT NULL CHECK (role IN ('MANAGER', 'TENANT', 'ADMIN', 'OWNER')),
         token_version INTEGER NOT NULL DEFAULT 0,
         subscription_status TEXT NOT NULL DEFAULT 'TRIAL' CHECK (subscription_status IN ('TRIAL', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
@@ -236,6 +237,7 @@ export async function initDb() {
       CREATE TABLE IF NOT EXISTS owners (
         id TEXT PRIMARY KEY,
         manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        civility TEXT,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
         company_name TEXT,
@@ -334,6 +336,7 @@ export async function initDb() {
     await creerTable("tenants", sql`
       CREATE TABLE IF NOT EXISTS tenants (
         id TEXT PRIMARY KEY,
+        civility TEXT,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
         phone TEXT NOT NULL,
@@ -597,6 +600,9 @@ export async function initDb() {
     await ajouterColonne("users", "currency", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`);
     await ajouterColonne("users", "suspended_at", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP`);
     await ajouterColonne("users", "suspension_reason", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT`);
+    await ajouterColonne("users", "has_password", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS has_password BOOLEAN NOT NULL DEFAULT TRUE`);
+    await ajouterColonne("owners", "civility", sql`ALTER TABLE owners ADD COLUMN IF NOT EXISTS civility TEXT`);
+    await ajouterColonne("tenants", "civility", sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS civility TEXT`);
     await ajouterColonne("listings", "hidden_by_admin_at", sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS hidden_by_admin_at TIMESTAMP`);
     await ajouterColonne("listings", "moderation_reason", sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_reason TEXT`);
     await ajouterColonne("suggestions", "status", sql`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'NEW'`);
@@ -761,6 +767,8 @@ export async function initDb() {
     await creerIndex("issue_reports_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS issue_reports_contract_id_idx ON issue_reports (contract_id)`);
     await creerIndex("issue_reports_tenant_id_idx", sql`CREATE INDEX IF NOT EXISTS issue_reports_tenant_id_idx ON issue_reports (tenant_id)`);
     await creerIndex("issue_reports_status_idx", sql`CREATE INDEX IF NOT EXISTS issue_reports_status_idx ON issue_reports (status)`);
+    await creerIndex("issue_reports_vendor_id_idx", sql`CREATE INDEX IF NOT EXISTS issue_reports_vendor_id_idx ON issue_reports (vendor_id)`);
+    await creerIndex("vendors_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS vendors_manager_id_idx ON vendors (manager_id)`);
     await creerIndex("messages_sender_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON messages (sender_id)`);
     await creerIndex("messages_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_contract_id_idx ON messages (contract_id)`);
     await creerIndex("activity_logs_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
