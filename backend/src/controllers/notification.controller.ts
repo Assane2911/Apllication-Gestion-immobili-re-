@@ -1,4 +1,4 @@
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -306,42 +306,65 @@ const lecteurDe = (req: Request) => req.user!.collaboratorId ?? req.user!.userId
 async function repondreAvecEtatVu(req: Request, res: Response, notifications: NotificationItem[]) {
   const cles = notifications.map(cleDe);
   const vues = new Set<string>();
+  const lues = new Set<string>();
   if (cles.length > 0) {
     const lignes = await db
-      .select({ cle: notificationVues.cle })
+      .select({ cle: notificationVues.cle, readAt: notificationVues.readAt })
       .from(notificationVues)
       .where(and(eq(notificationVues.userId, lecteurDe(req)), inArray(notificationVues.cle, cles)));
-    for (const l of lignes) vues.add(l.cle);
+    for (const l of lignes) {
+      vues.add(l.cle);
+      if (l.readAt) lues.add(l.cle);
+    }
   }
-  const items = notifications.map((n) => ({ ...n, key: cleDe(n), seen: vues.has(cleDe(n)) }));
+  const items = notifications.map((n) => ({
+    ...n,
+    key: cleDe(n),
+    seen: vues.has(cleDe(n)),
+    read: lues.has(cleDe(n)),
+  }));
   res.json({
     notifications: items,
     count: items.length,
     unseenCount: items.filter((n) => !n.seen).length,
+    unreadCount: items.filter((n) => !n.read).length,
   });
 }
 
 const markSeenSchema = z.object({ keys: z.array(z.string().max(300)).max(200).optional() });
 
 /**
- * Marque des notifications comme vues. `keys` = celles que la personne avait
+ * Marque des notifications comme vues (ou, avec `commeLues`, comme LUES : le
+ * bouton « Tout marquer comme lu », qui les écarte du panneau). `keys` = celles que la personne avait
  * sous les yeux (une notification arrivée entre-temps reste donc « nouvelle ») ;
  * absent, toutes les notifications actuelles. Seules les clés qui existent
  * réellement MAINTENANT sont retenues : le client ne peut rien inscrire d'autre,
  * et les lignes devenues sans objet (facture payée, message lu...) sont purgées
  * au passage, la table ne grossit pas.
  */
-async function marquerVues(req: Request, res: Response, notifications: NotificationItem[]) {
+async function marquerVues(
+  req: Request,
+  res: Response,
+  notifications: NotificationItem[],
+  commeLues = false
+) {
   const { keys } = markSeenSchema.parse(req.body ?? {});
   const courantes = notifications.map(cleDe);
   const aMarquer = keys ? courantes.filter((c) => keys.includes(c)) : courantes;
   const lecteur = lecteurDe(req);
 
   if (aMarquer.length > 0) {
-    await db
-      .insert(notificationVues)
-      .values(aMarquer.map((cle) => ({ userId: lecteur, cle })))
-      .onConflictDoNothing();
+    const insertion = db.insert(notificationVues).values(
+      aMarquer.map((cle) => ({ userId: lecteur, cle, ...(commeLues ? { readAt: new Date() } : {}) }))
+    );
+    // « Vue » est posée une fois et ne bouge plus ; « lue » s'ajoute à une ligne
+    // déjà vue sans réécrire une lecture plus ancienne (COALESCE).
+    await (commeLues
+      ? insertion.onConflictDoUpdate({
+          target: [notificationVues.userId, notificationVues.cle],
+          set: { readAt: sql`COALESCE(${notificationVues.readAt}, excluded.read_at)` },
+        })
+      : insertion.onConflictDoNothing());
   }
   await db
     .delete(notificationVues)
@@ -362,6 +385,10 @@ export const markNotificationsSeen = asyncHandler(async (req: Request, res: Resp
   await marquerVues(req, res, await calculerNotificationsGestionnaire(req.user!.userId));
 });
 
+export const markNotificationsRead = asyncHandler(async (req: Request, res: Response) => {
+  await marquerVues(req, res, await calculerNotificationsGestionnaire(req.user!.userId), true);
+});
+
 async function idLocataireOu403(req: Request): Promise<string> {
   const tenantId = await idLocataireDuCompte(req);
   if (!tenantId) throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
@@ -374,4 +401,8 @@ export const getTenantNotifications = asyncHandler(async (req: Request, res: Res
 
 export const markTenantNotificationsSeen = asyncHandler(async (req: Request, res: Response) => {
   await marquerVues(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req)));
+});
+
+export const markTenantNotificationsRead = asyncHandler(async (req: Request, res: Response) => {
+  await marquerVues(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req)), true);
 });

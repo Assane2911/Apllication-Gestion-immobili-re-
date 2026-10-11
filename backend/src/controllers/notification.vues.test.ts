@@ -228,3 +228,133 @@ describe("état « vu » des notifications du locataire (/mine)", () => {
     expect((await request(app).post("/api/notifications/mine/seen").set(authHeader(tokenFor(manager)))).status).toBe(403);
   });
 });
+
+describe("« Tout marquer comme lu » (gestionnaire)", () => {
+  const marquerLues = (header: Record<string, string>, body?: object) =>
+    request(app).post("/api/notifications/read").set(header).send(body);
+
+  it("expose l'état « lu » et le nombre d'éléments non lus", async () => {
+    const { header } = await gestionnaireAvecFactureEnRetard();
+
+    const res = await lire(header);
+
+    expect(res.body.notifications[0].read).toBe(false);
+    expect(res.body.unreadCount).toBe(1);
+  });
+
+  it("écarte les notifications du panneau (lues) et éteint le badge, sans changer le total", async () => {
+    const { header } = await gestionnaireAvecFactureEnRetard();
+
+    expect((await marquerLues(header)).status).toBe(200);
+
+    const res = await lire(header);
+    expect(res.body.count).toBe(1);
+    expect(res.body.notifications[0]).toMatchObject({ read: true, seen: true });
+    expect(res.body.unreadCount).toBe(0);
+    expect(res.body.unseenCount).toBe(0);
+  });
+
+  it("garde l'état d'un appareil à l'autre, et un nouvel événement reste non lu", async () => {
+    const { manager, header, contract } = await gestionnaireAvecFactureEnRetard();
+    await marquerLues(header);
+
+    await createInvoice(contract.id, { status: "LATE", periodMonth: 1, dueDate: new Date("2026-01-05T00:00:00Z") });
+
+    const res = await lire(authHeader(tokenFor(manager)));
+    expect(res.body.count).toBe(2);
+    expect(res.body.unreadCount).toBe(1);
+    expect(res.body.notifications.filter((n: { read: boolean }) => n.read)).toHaveLength(1);
+  });
+
+  it("n'efface pas une lecture quand l'ouverture de la cloche marque « vue » ensuite", async () => {
+    const { header } = await gestionnaireAvecFactureEnRetard();
+    await marquerLues(header);
+
+    await marquerVues(header);
+
+    expect((await lire(header)).body.unreadCount).toBe(0);
+  });
+
+  it("complète une ligne déjà vue sans la dupliquer, et garde la première date de lecture", async () => {
+    const { manager, header } = await gestionnaireAvecFactureEnRetard();
+    await marquerVues(header);
+    await marquerLues(header);
+    const [premiere] = await testDb.select().from(notificationVues).where(eq(notificationVues.userId, manager.id));
+    expect(premiere.readAt).toBeInstanceOf(Date);
+
+    await new Promise((r) => setTimeout(r, 15));
+    await marquerLues(header);
+
+    const lignes = await testDb.select().from(notificationVues).where(eq(notificationVues.userId, manager.id));
+    expect(lignes).toHaveLength(1);
+    expect(lignes[0].readAt!.getTime()).toBe(premiere.readAt!.getTime());
+  });
+
+  it("ne marque lues que les clés fournies et ignore une clé inventée", async () => {
+    const { manager, header, contract } = await gestionnaireAvecFactureEnRetard();
+    await createInvoice(contract.id, { status: "LATE", periodMonth: 1, dueDate: new Date("2026-01-05T00:00:00Z") });
+    const [premiere] = (await lire(header)).body.notifications as Notif[];
+
+    await marquerLues(header, { keys: [premiere.key, "invoice-inexistante|2026-01-01T00:00:00.000Z"] });
+
+    const res = await lire(header);
+    expect(res.body.unreadCount).toBe(1);
+    expect(res.body.notifications.find((n: Notif) => n.key === premiere.key).read).toBe(true);
+    expect(await testDb.select().from(notificationVues).where(eq(notificationVues.userId, manager.id))).toHaveLength(1);
+  });
+
+  it("rejette un corps invalide (400)", async () => {
+    const { header } = await gestionnaireAvecFactureEnRetard();
+    expect((await marquerLues(header, { keys: "pas-une-liste" })).status).toBe(400);
+  });
+
+  it("purge la ligne d'une notification devenue sans objet (facture payée)", async () => {
+    const { manager, header, invoice } = await gestionnaireAvecFactureEnRetard();
+    await marquerLues(header);
+    await testDb.update(invoices).set({ status: "PAID" }).where(eq(invoices.id, invoice.id));
+
+    await marquerLues(header);
+
+    expect(await testDb.select().from(notificationVues).where(eq(notificationVues.userId, manager.id))).toHaveLength(0);
+  });
+
+  it("donne à un collaborateur son propre état « lu »", async () => {
+    const { manager, header } = await gestionnaireAvecFactureEnRetard();
+    const collaborateur = authHeader(await tokenCollaborateur(manager));
+
+    await marquerLues(header);
+
+    expect((await lire(header)).body.unreadCount).toBe(0);
+    expect((await lire(collaborateur)).body.unreadCount).toBe(1);
+  });
+
+  it("exige l'authentification et le rôle gestionnaire", async () => {
+    const { tenant } = await gestionnaireAvecFactureEnRetard();
+    const portail = await createTenantPortalUser(tenant);
+
+    expect((await request(app).post("/api/notifications/read")).status).toBe(401);
+    expect((await marquerLues(authHeader(tokenFor(portail, tenant.id)))).status).toBe(403);
+  });
+});
+
+describe("« Tout marquer comme lu » (locataire, /mine)", () => {
+  it("écarte les notifications du panneau du locataire, sans toucher à celles du gestionnaire", async () => {
+    const { tenant, manager, header: gestionnaire } = await gestionnaireAvecFactureEnRetard();
+    const portail = await createTenantPortalUser(tenant);
+    const locataire = authHeader(tokenFor(portail, tenant.id));
+
+    const res = await request(app).post("/api/notifications/mine/read").set(locataire).send({});
+    expect(res.status).toBe(200);
+
+    const mine = await request(app).get("/api/notifications/mine").set(locataire);
+    expect(mine.body.unreadCount).toBe(0);
+    expect(mine.body.count).toBe(1);
+    expect((await lire(gestionnaire)).body.unreadCount).toBe(1);
+    expect(manager.id).toBeTruthy();
+  });
+
+  it("refuse un gestionnaire", async () => {
+    const { header } = await gestionnaireAvecFactureEnRetard();
+    expect((await request(app).post("/api/notifications/mine/read").set(header).send({})).status).toBe(403);
+  });
+});

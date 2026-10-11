@@ -425,6 +425,8 @@ export interface NotificationItem {
   key?: string;
   /** Déjà vue par cette personne (badge) ; absent = non vue. */
   seen?: boolean;
+  /** Écartée du panneau par cette personne (« Tout marquer comme lu ») ; absent = non lue. */
+  read?: boolean;
 }
 
 export type SearchResultType = "tenant" | "property" | "contract" | "invoice";

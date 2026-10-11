@@ -563,6 +563,9 @@ const es: TranslationSchema = {
       title: "Notificaciones",
       itemCount: "{{count}} elemento(s) requieren tu atención",
       allCaughtUp: "Todo está al día",
+      markAllRead: "Marcar todo como leído",
+      showRead: "Mostrar {{count}} elemento(s) leído(s)",
+      hideRead: "Ocultar los elementos leídos",
     },
     trialBanner: {
       expiredTitle: "Período de prueba expirado",
@@ -1469,6 +1472,9 @@ const es: TranslationSchema = {
       title: "Notificaciones",
       itemCount: "{{count}} elemento(s) que requieren tu atención",
       allCaughtUp: "Todo al día",
+      markAllRead: "Marcar todo como leído",
+      showRead: "Mostrar {{count}} elemento(s) leído(s)",
+      hideRead: "Ocultar los elementos leídos",
     },
     dashboard: {
       privacy: {

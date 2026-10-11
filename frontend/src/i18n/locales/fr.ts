@@ -561,6 +561,9 @@ const fr = {
       title: "Notifications",
       itemCount: "{{count}} élément(s) nécessitant votre attention",
       allCaughtUp: "Tout est à jour",
+      markAllRead: "Tout marquer comme lu",
+      showRead: "Afficher les {{count}} élément(s) lu(s)",
+      hideRead: "Masquer les éléments lus",
     },
     trialBanner: {
       expiredTitle: "Période d'essai expirée",
@@ -1468,6 +1471,9 @@ const fr = {
       title: "Notifications",
       itemCount: "{{count}} élément(s) nécessitant votre attention",
       allCaughtUp: "Tout est à jour",
+      markAllRead: "Tout marquer comme lu",
+      showRead: "Afficher les {{count}} élément(s) lu(s)",
+      hideRead: "Masquer les éléments lus",
     },
     dashboard: {
       privacy: {
