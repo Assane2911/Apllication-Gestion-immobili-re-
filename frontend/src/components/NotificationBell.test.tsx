@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -7,7 +7,7 @@ import NotificationBell from "./NotificationBell";
 
 vi.mock("../api/client", async () => {
   const actual = await vi.importActual<typeof import("../api/client")>("../api/client");
-  return { ...actual, api: { get: vi.fn() } };
+  return { ...actual, api: { get: vi.fn(), post: vi.fn() } };
 });
 
 const mockedApi = vi.mocked(api, { deep: true });
@@ -36,6 +36,8 @@ function renderBell(props: { endpoint?: string; i18nPrefix?: string } = {}) {
 describe("NotificationBell", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    mockedApi.post.mockResolvedValue({ data: { success: true } });
   });
 
   it("affiche le nombre de notifications non lues", async () => {
@@ -87,5 +89,124 @@ describe("NotificationBell", () => {
     expect(
       screen.getByText("Vos alertes : messages du gestionnaire, loyers à régler, bail arrivant à échéance.")
     ).toBeInTheDocument();
+  });
+
+  describe("état « vu »", () => {
+    const bouton = () => screen.getByLabelText("Notifications");
+
+    it("ne compte dans le badge que les notifications non vues", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: {
+          notifications: [
+            notification({ id: "a", key: "a|1", seen: true }),
+            notification({ id: "b", key: "b|1", seen: false }),
+            notification({ id: "c", key: "c|1", seen: true }),
+          ],
+        },
+      });
+      renderBell();
+
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+    });
+
+    it("n'affiche aucun badge quand tout a été vu, mais garde les éléments dans la liste", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: { notifications: [notification({ id: "a", key: "a|1", seen: true, title: "Loyer en retard" })] },
+      });
+      renderBell();
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
+
+      expect(screen.queryByText("1")).not.toBeInTheDocument();
+      fireEvent.click(bouton());
+      expect(screen.getByText("Loyer en retard")).toBeInTheDocument();
+      // Rien de nouveau : aucun enregistrement inutile.
+      expect(mockedApi.post).not.toHaveBeenCalled();
+    });
+
+    it("marque les notifications vues à l'ouverture : badge éteint, clés envoyées, nouveautés surlignées", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: {
+          notifications: [
+            notification({ id: "a", key: "a|1", seen: false, title: "Nouveau message" }),
+            notification({ id: "b", key: "b|1", seen: true, title: "Loyer en retard" }),
+          ],
+        },
+      });
+      renderBell();
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+
+      fireEvent.click(bouton());
+
+      expect(mockedApi.post).toHaveBeenCalledWith("/notifications/seen", { keys: ["a|1", "b|1"] });
+      expect(screen.queryByText("1")).not.toBeInTheDocument();
+      const nouveau = screen.getByText("Nouveau message").closest("li")!;
+      const ancien = screen.getByText("Loyer en retard").closest("li")!;
+      expect(nouveau.className).toContain("bg-brand-50");
+      expect(ancien.className).not.toContain("bg-brand-50");
+
+      // Une fois le panneau refermé, plus de surlignage.
+      fireEvent.click(bouton());
+      fireEvent.click(bouton());
+      expect(screen.getByText("Nouveau message").closest("li")!.className).not.toContain("bg-brand-50");
+    });
+
+    it("enregistre sur l'endpoint du portail utilisé (locataire)", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: { notifications: [notification({ key: "n1|1", seen: false })] } });
+      renderBell({ endpoint: "/notifications/mine", i18nPrefix: "tenant.notificationBell" });
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+
+      fireEvent.click(bouton());
+
+      expect(mockedApi.post).toHaveBeenCalledWith("/notifications/mine/seen", { keys: ["n1|1"] });
+    });
+
+    it("sans clé ni état dans la réponse (ancien backend), tout est nouveau et l'identifiant sert de clé", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: { notifications: [notification({ id: "n9" })] } });
+      renderBell();
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+
+      fireEvent.click(bouton());
+
+      expect(mockedApi.post).toHaveBeenCalledWith("/notifications/seen", { keys: ["n9"] });
+    });
+
+    it("rallume le badge si l'enregistrement échoue (l'état réel est relu)", async () => {
+      mockedApi.get
+        .mockResolvedValueOnce({ data: { notifications: [notification({ key: "n1|1", seen: false })] } })
+        .mockResolvedValueOnce({ data: { notifications: [notification({ key: "n1|1", seen: false })] } });
+      mockedApi.post.mockRejectedValueOnce(new Error("réseau"));
+      renderBell();
+      await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+
+      fireEvent.click(bouton());
+
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByText("1", { selector: "span.rounded-full" })).toBeInTheDocument());
+    });
+
+    it("un sondage parti avant l'ouverture et arrivant après ne rallume pas le badge", async () => {
+      vi.useFakeTimers();
+      try {
+        const nonVue = { data: { notifications: [notification({ key: "n1|1", seen: false })] } };
+        mockedApi.get.mockResolvedValue(nonVue);
+        renderBell();
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(10);
+        });
+        expect(screen.getByText("1")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByLabelText("Notifications"));
+        expect(screen.queryByText("1")).not.toBeInTheDocument();
+
+        // Le sondage suivant renvoie encore « non vue » (réponse calculée avant l'enregistrement).
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(30_000);
+        });
+        expect(mockedApi.get.mock.calls.length).toBeGreaterThan(1);
+        expect(screen.queryByText("1")).not.toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

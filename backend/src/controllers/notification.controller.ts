@@ -1,8 +1,9 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { Request, Response } from "express";
+import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, invoices, issueReports, messages, properties, tenants } from "../db/schema";
+import { contracts, invoices, issueReports, messages, notificationVues, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { idLocataireDuCompte } from "../utils/authorization";
 
@@ -55,8 +56,7 @@ type ContractRow = {
  * échéance). Calculé à la volée à partir de l'état actuel des données plutôt
  * que stocké dans une table dédiée — plus simple et toujours à jour.
  */
-export const getNotifications = asyncHandler(async (req: Request, res: Response) => {
-  const managerId = req.user!.userId;
+async function calculerNotificationsGestionnaire(managerId: string): Promise<NotificationItem[]> {
   const notifications: NotificationItem[] = [];
 
   // --- Messages non lus envoyés par les locataires ---
@@ -179,8 +179,8 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
 
   notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  res.json({ notifications, count: notifications.length });
-});
+  return notifications;
+}
 
 /**
  * Centre de notifications du locataire (Espace résident) : même principe que
@@ -195,10 +195,7 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
  * qui l'a lui-même déposé n'a besoin d'aucun rappel pour une action qu'il a
  * déjà effectuée — il consulte son statut depuis la page Incidents.
  */
-export const getTenantNotifications = asyncHandler(async (req: Request, res: Response) => {
-  const tenantId = await idLocataireDuCompte(req);
-  if (!tenantId) throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
-
+async function calculerNotificationsLocataire(tenantId: string): Promise<NotificationItem[]> {
   const notifications: NotificationItem[] = [];
 
   // --- Messages non lus envoyés par le gestionnaire ---
@@ -282,5 +279,99 @@ export const getTenantNotifications = asyncHandler(async (req: Request, res: Res
 
   notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  res.json({ notifications, count: notifications.length });
+  return notifications;
+}
+
+/**
+ * --- État « vu » ---
+ *
+ * Les notifications sont recalculées à chaque appel : sans autre information,
+ * une facture en retard restait « nouvelle » et gardait le badge allumé tant
+ * qu'elle n'était pas payée, même après ouverture de la cloche. On retient donc,
+ * par personne, quelles notifications elle a déjà vues (table notification_vues).
+ *
+ * La clé d'une notification est son identifiant ET la date de l'événement : un
+ * nouveau message d'un locataire, un nouvel incident ou une nouvelle échéance
+ * produit une clé jamais vue, donc une vraie nouveauté. (Le titre n'entre pas
+ * dans la clé : « se termine dans N jours » changerait chaque jour.)
+ *
+ * L'état est celui de la PERSONNE qui consulte : pour un collaborateur,
+ * req.user.userId porte l'id du propriétaire de l'agence, `collaboratorId` le
+ * sien — sans ça, un collaborateur qui ouvre la cloche la marquerait vue pour
+ * tout le monde.
+ */
+const cleDe = (n: NotificationItem) => `${n.id}|${n.createdAt}`;
+const lecteurDe = (req: Request) => req.user!.collaboratorId ?? req.user!.userId;
+
+async function repondreAvecEtatVu(req: Request, res: Response, notifications: NotificationItem[]) {
+  const cles = notifications.map(cleDe);
+  const vues = new Set<string>();
+  if (cles.length > 0) {
+    const lignes = await db
+      .select({ cle: notificationVues.cle })
+      .from(notificationVues)
+      .where(and(eq(notificationVues.userId, lecteurDe(req)), inArray(notificationVues.cle, cles)));
+    for (const l of lignes) vues.add(l.cle);
+  }
+  const items = notifications.map((n) => ({ ...n, key: cleDe(n), seen: vues.has(cleDe(n)) }));
+  res.json({
+    notifications: items,
+    count: items.length,
+    unseenCount: items.filter((n) => !n.seen).length,
+  });
+}
+
+const markSeenSchema = z.object({ keys: z.array(z.string().max(300)).max(200).optional() });
+
+/**
+ * Marque des notifications comme vues. `keys` = celles que la personne avait
+ * sous les yeux (une notification arrivée entre-temps reste donc « nouvelle ») ;
+ * absent, toutes les notifications actuelles. Seules les clés qui existent
+ * réellement MAINTENANT sont retenues : le client ne peut rien inscrire d'autre,
+ * et les lignes devenues sans objet (facture payée, message lu...) sont purgées
+ * au passage, la table ne grossit pas.
+ */
+async function marquerVues(req: Request, res: Response, notifications: NotificationItem[]) {
+  const { keys } = markSeenSchema.parse(req.body ?? {});
+  const courantes = notifications.map(cleDe);
+  const aMarquer = keys ? courantes.filter((c) => keys.includes(c)) : courantes;
+  const lecteur = lecteurDe(req);
+
+  if (aMarquer.length > 0) {
+    await db
+      .insert(notificationVues)
+      .values(aMarquer.map((cle) => ({ userId: lecteur, cle })))
+      .onConflictDoNothing();
+  }
+  await db
+    .delete(notificationVues)
+    .where(
+      courantes.length > 0
+        ? and(eq(notificationVues.userId, lecteur), notInArray(notificationVues.cle, courantes))
+        : eq(notificationVues.userId, lecteur)
+    );
+
+  res.json({ success: true });
+}
+
+export const getNotifications = asyncHandler(async (req: Request, res: Response) => {
+  await repondreAvecEtatVu(req, res, await calculerNotificationsGestionnaire(req.user!.userId));
+});
+
+export const markNotificationsSeen = asyncHandler(async (req: Request, res: Response) => {
+  await marquerVues(req, res, await calculerNotificationsGestionnaire(req.user!.userId));
+});
+
+async function idLocataireOu403(req: Request): Promise<string> {
+  const tenantId = await idLocataireDuCompte(req);
+  if (!tenantId) throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
+  return tenantId;
+}
+
+export const getTenantNotifications = asyncHandler(async (req: Request, res: Response) => {
+  await repondreAvecEtatVu(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req)));
+});
+
+export const markTenantNotificationsSeen = asyncHandler(async (req: Request, res: Response) => {
+  await marquerVues(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req)));
 });
