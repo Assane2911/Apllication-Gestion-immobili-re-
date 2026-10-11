@@ -128,4 +128,26 @@ describe("AdminAuditPage", () => {
     expect(await screen.findByText("Impossible de charger le journal d'audit")).toBeInTheDocument();
     expect(screen.getByText("Erreur serveur")).toBeInTheDocument();
   });
+  it("exporte la sélection affichée : le filtre d'action est transmis à l'export", async () => {
+    mockedApi.get.mockResolvedValue(page([entree()]));
+    URL.createObjectURL = vi.fn(() => "blob:test");
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(
+      <MemoryRouter>
+        <AdminAuditPage />
+      </MemoryRouter>
+    );
+    await screen.findByText("agence@test.local");
+
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: /filtrer/i }), "manager.suspend");
+    await userEvent.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenCalledWith("/admin/exports/audit-logs.csv", {
+        params: { action: "manager.suspend" },
+        responseType: "blob",
+      })
+    );
+  });
 });

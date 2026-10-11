@@ -303,7 +303,7 @@ function echapperLike(valeur: string): string {
   return valeur.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
-const listManagersQuerySchema = z.object({
+export const listManagersQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
   plan: z.enum(["STARTER", "PRO", "ENTERPRISE"]).optional(),
   // « SUSPENDED » est orthogonal au statut d'abonnement : filtré en SQL.
@@ -311,24 +311,17 @@ const listManagersQuerySchema = z.object({
 });
 
 /**
- * Liste paginée des gestionnaires (comptes agence) pour l'administrateur, avec
- * recherche (email ou nom d'agence) et filtres par formule et par statut.
+ * Gestionnaires (comptes agence) correspondant aux filtres, du plus récent au
+ * plus ancien, avec leur statut d'abonnement CALCULÉ — partagé par la liste
+ * paginée et par l'export CSV, pour que les deux ne puissent pas diverger.
  *
  * Les collaborateurs invités (teamOwnerId renseigné) ne sont pas des clients de
  * la plateforme : ils sont exclus. Le statut filtré est le statut CALCULÉ
  * (computeSubscriptionInfo), pas la colonne en base, qui peut être obsolète
  * tant que l'utilisateur ne s'est pas reconnecté — d'où un filtrage en
- * mémoire après la requête SQL, puis la pagination.
- *
- * Aucune donnée sensible n'est renvoyée (hash de mot de passe, secrets 2FA,
- * jetons, coordonnées bancaires de l'agence…) : réponse par liste blanche.
+ * mémoire après la requête SQL.
  */
-export const listManagers = asyncHandler(async (req: Request, res: Response) => {
-  const parsed = listManagersQuerySchema.safeParse(req.query);
-  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
-  const { search, plan, status } = parsed.data;
-  const pagination = parsePagination(req);
-
+export async function chargerGestionnaires({ search, plan, status }: z.infer<typeof listManagersQuerySchema>) {
   const conditions = [eq(users.role, "MANAGER"), isNull(users.teamOwnerId)];
   if (plan) conditions.push(eq(users.subscriptionPlan, plan));
   if (status === "SUSPENDED") conditions.push(isNotNull(users.suspendedAt));
@@ -345,21 +338,27 @@ export const listManagers = asyncHandler(async (req: Request, res: Response) => 
     .where(and(...conditions))
     .orderBy(desc(users.createdAt));
 
-  const enriched = rows
+  return rows
     .map(({ user, agencyName }) => ({ user, agencyName, info: computeSubscriptionInfo(user) }))
     .filter((r): r is typeof r & { info: NonNullable<typeof r.info> } => r.info !== null)
     .filter((r) => !status || status === "SUSPENDED" || r.info.status === status);
+}
 
-  const total = enriched.length;
-  const pageRows = enriched.slice(pagination.offset, pagination.offset + pagination.pageSize);
-  const pageIds = pageRows.map((r) => r.user.id);
+/**
+ * Lignes de la liste des gestionnaires (volumétrie comprise) pour les
+ * gestionnaires donnés. Réponse par liste blanche : aucune donnée sensible
+ * (hash de mot de passe, secrets 2FA, jetons, coordonnées bancaires de
+ * l'agence…).
+ */
+export async function resumerGestionnaires(rows: Awaited<ReturnType<typeof chargerGestionnaires>>) {
+  const ids = rows.map((r) => r.user.id);
 
   const countsFor = async (table: AnyPgTable, column: AnyPgColumn) => {
-    if (pageIds.length === 0) return new Map<string, number>();
+    if (ids.length === 0) return new Map<string, number>();
     const grouped = await db
       .select({ managerId: sql<string>`${column}`, count: sql<number>`count(*)::int` })
       .from(table)
-      .where(inArray(column, pageIds))
+      .where(inArray(column, ids))
       .groupBy(column);
     return new Map(grouped.map((g) => [g.managerId, g.count]));
   };
@@ -368,7 +367,7 @@ export const listManagers = asyncHandler(async (req: Request, res: Response) => 
     countsFor(tenants, tenants.managerId),
   ]);
 
-  const items = pageRows.map(({ user, agencyName, info }) => ({
+  return rows.map(({ user, agencyName, info }) => ({
     id: user.id,
     email: user.email,
     agencyName: agencyName ?? null,
@@ -381,8 +380,22 @@ export const listManagers = asyncHandler(async (req: Request, res: Response) => 
     suspendedAt: user.suspendedAt,
     createdAt: user.createdAt,
   }));
+}
 
-  res.json(buildPaginatedResult(items, total, pagination));
+/**
+ * Liste paginée des gestionnaires pour l'administrateur, avec recherche (email
+ * ou nom d'agence) et filtres par formule et par statut (voir
+ * chargerGestionnaires).
+ */
+export const listManagers = asyncHandler(async (req: Request, res: Response) => {
+  const parsed = listManagersQuerySchema.safeParse(req.query);
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  const pagination = parsePagination(req);
+
+  const enriched = await chargerGestionnaires(parsed.data);
+  const pageRows = enriched.slice(pagination.offset, pagination.offset + pagination.pageSize);
+
+  res.json(buildPaginatedResult(await resumerGestionnaires(pageRows), enriched.length, pagination));
 });
 
 /**
@@ -499,7 +512,7 @@ export const getManagerDetail = asyncHandler(async (req: Request, res: Response)
   });
 });
 
-const listAuditLogsQuerySchema = z.object({
+export const listAuditLogsQuerySchema = z.object({
   action: z.enum(ADMIN_AUDIT_ACTIONS).optional(),
   targetUserId: z.string().min(1).max(100).optional(),
 });

@@ -593,6 +593,11 @@ const es: TranslationSchema = {
     adminLayout: {
       title: "Administración de la plataforma",
     },
+    exportCsv: {
+      button: "Exportar a CSV",
+      exporting: "Exportando...",
+      hint: "La selección actual, hasta 5000 filas.",
+    },
   },
 
   manager: {
@@ -1778,6 +1783,8 @@ const es: TranslationSchema = {
         "listing.restore": "Anuncio restablecido",
         "listing.feature": "Anuncio destacado",
         "listing.unfeature": "Destacado retirado",
+        "export.managers": "Exportación de gestores",
+        "export.audit": "Exportación del registro de auditoría",
       },
     },
     listings: {
