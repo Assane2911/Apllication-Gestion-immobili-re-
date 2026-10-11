@@ -346,6 +346,13 @@ export const listings = pgTable(
     status: text("status").notNull().default("PUBLISHED"),
     featured: boolean("featured").notNull().default(false),
     country: text("country"),
+    // Modération par l'administration de la plateforme. Orthogonale à `status`
+    // (qui reste le choix du gestionnaire) : une annonce masquée par
+    // l'administration disparaît de la vitrine publique QUEL QUE SOIT son
+    // statut, et seul l'administrateur peut la rétablir. Le motif est montré
+    // au gestionnaire, qui doit savoir quoi corriger.
+    hiddenByAdminAt: timestamp("hidden_by_admin_at", { mode: "date" }),
+    moderationReason: text("moderation_reason"),
     ...timestamps,
   },
   (table) => ({

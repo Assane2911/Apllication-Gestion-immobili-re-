@@ -559,6 +559,10 @@ export interface Listing {
   status: ListingStatus;
   featured: boolean;
   country?: string | null;
+  // Modération par l'administration (voir listing.controller.ts) : renvoyés au
+  // gestionnaire propriétaire, jamais dans les réponses publiques.
+  hiddenByAdminAt?: string | null;
+  moderationReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }

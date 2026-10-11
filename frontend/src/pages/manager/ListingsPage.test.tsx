@@ -212,3 +212,35 @@ describe("ListingsPage (manager)", () => {
     await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/listings/list-1"));
   });
 });
+
+describe("ListingsPage (manager) — annonce masquée par l'administration", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+  });
+
+  it("explique au gestionnaire pourquoi son annonce n'est plus visible, avec le motif", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      paginated([
+        listing({ id: "l-masquee", title: "Villa masquée", hiddenByAdminAt: "2026-10-01T10:00:00.000Z", moderationReason: "Photos sans rapport avec le bien" }),
+        listing({ id: "l-normale", title: "Studio visible" }),
+      ])
+    );
+
+    renderPage();
+
+    expect(await screen.findByText("Villa masquée")).toBeInTheDocument();
+    expect(screen.getByText(/masquée de la vitrine par l'administration/i)).toBeInTheDocument();
+    expect(screen.getByText(/Motif : Photos sans rapport avec le bien/)).toBeInTheDocument();
+    // Une seule annonce est concernée : le bandeau n'apparaît pas sur l'autre.
+    expect(screen.getAllByRole("note")).toHaveLength(1);
+  });
+
+  it("n'affiche aucun bandeau pour une annonce non masquée", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([listing({ title: "Studio visible", hiddenByAdminAt: null })]));
+
+    renderPage();
+
+    expect(await screen.findByText("Studio visible")).toBeInTheDocument();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+});

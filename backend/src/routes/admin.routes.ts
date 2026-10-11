@@ -10,6 +10,7 @@ import {
   rejectBankTransfer,
   suspendManager,
 } from "../controllers/admin.controller";
+import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
 import { changeManagerPlan, grantSubscriptionDays } from "../controllers/adminSubscription.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
@@ -32,6 +33,10 @@ router.post("/managers/:id/reactivate", reactivateManager);
 router.post("/managers/:id/subscription/grant-days", grantSubscriptionDays);
 router.post("/managers/:id/subscription/change-plan", changeManagerPlan);
 router.get("/audit-logs", listAdminAuditLogs);
+router.get("/listings", listAdminListings);
+router.post("/listings/:id/hide", hideListing);
+router.post("/listings/:id/restore", restoreListing);
+router.post("/listings/:id/featured", setListingFeatured);
 router.get("/settings", getPlatformSettings);
 router.put("/settings", updatePlatformSettings);
 router.get("/suggestions", listSuggestions);
