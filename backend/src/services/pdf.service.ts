@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import { formaterMontant } from "../utils/montant";
+import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 
 /**
  * Échappe les caractères HTML spéciaux avant interpolation dans les templates
@@ -55,7 +56,7 @@ export interface ReceiptData {
     amount: number;
     currency: string;
     paidAt: Date;
-    paymentMethod: string;
+    paymentMethod?: string | null;
     paymentRef?: string | null;
   };
 }
@@ -282,7 +283,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
       <tr>
         <td>Loyer mensuel & charges locatives</td>
         <td>${periodLabel}</td>
-        <td>${escapeHtml(data.invoice.paymentMethod)}</td>
+        <td>${escapeHtml(libelleMoyenPaiement(data.invoice.paymentMethod))}</td>
         <td style="text-align:right; font-weight:600;">${escapeHtml(formaterMontant(data.invoice.amount, data.invoice.currency))}</td>
       </tr>
       <tr class="total-row">
@@ -453,7 +454,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
         .fontSize(9)
         .text("Loyer mensuel & charges locatives", col1 + 10, rowTop + 8, { width: col2 - col1 - 20 })
         .text(periodLabel, col2, rowTop + 8, { width: col3 - col2 - 10 })
-        .text(data.invoice.paymentMethod, col3, rowTop + 8, { width: col4w })
+        .text(libelleMoyenPaiement(data.invoice.paymentMethod), col3, rowTop + 8, { width: col4w })
         .font("Helvetica-Bold")
         .text(formaterMontant(data.invoice.amount, data.invoice.currency), col1, rowTop + 8, {
           width: pageWidth - 10,
@@ -554,6 +555,8 @@ export interface LeaseExportData {
   tenantSignatureUrl: string | null;
   property?: { title: string; address: string; surface: number } | null;
   tenant?: { firstName: string; lastName: string; email: string; phone: string } | null;
+  /** Clauses particulières saisies par le gestionnaire (texte libre) ; section omise quand elles sont vides. */
+  terms?: string | null;
 }
 
 /** Coordonnées d'agence affichées sur le bail — voir document.controller.ts pour le repli par défaut. */
@@ -565,6 +568,19 @@ export interface LeaseAgencyInfo {
 export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgencyInfo): string {
   const startDate = new Date(contract.startDate).toLocaleDateString("fr-FR");
   const endDate = new Date(contract.endDate).toLocaleDateString("fr-FR");
+
+  // Les clauses saisies à la création du contrat n'apparaissaient nulle part :
+  // le locataire signait un bail réduit aux parties, au bien et au loyer, alors
+  // que le contrat verrouille ces clauses comme contenu contractuel après sa
+  // signature (voir updateContract). Texte libre : échappé comme tout champ
+  // saisi (le document est servi en text/html), les retours à la ligne gardés.
+  const termes = contract.terms?.trim();
+  const clauses = termes
+    ? `<div class="section">
+    <div class="section-title">4. Clauses particulières</div>
+    <div class="box">${escapeHtml(termes).replace(/\r?\n/g, "<br>")}</div>
+  </div>`
+    : "";
 
   return `
 <!DOCTYPE html>
@@ -613,6 +629,8 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
       <strong>Dépôt de garantie :</strong> ${escapeHtml(formaterMontant(contract.deposit, contract.currency))}
     </div>
   </div>
+
+  ${clauses}
 
   <div class="signatures">
     <div class="sig-block">

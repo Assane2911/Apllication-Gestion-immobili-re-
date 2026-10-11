@@ -52,6 +52,22 @@ describe("Renouvellement d'un bail", () => {
     expect(ancien.status).toBe("ENDED");
   });
 
+  it("reporte les clauses particulières sur le nouveau bail", async () => {
+    const { manager, property, contract } = await bailActif();
+    await testDb.update(contracts).set({ terms: "Animaux interdits." }).where(eq(contracts.id, contract.id));
+
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/renew`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ months: 12 });
+
+    expect(res.status).toBe(201);
+    const [nouveau] = (await testDb.select().from(contracts).where(eq(contracts.propertyId, property.id))).filter(
+      (c: { id: string }) => c.id !== contract.id
+    );
+    expect(nouveau.terms).toBe("Animaux interdits.");
+  });
+
   it("ne crée jamais deux baux actifs quand deux requêtes arrivent ensemble", async () => {
     const { manager, property, contract } = await bailActif();
     const entete = authHeader(tokenFor(manager));

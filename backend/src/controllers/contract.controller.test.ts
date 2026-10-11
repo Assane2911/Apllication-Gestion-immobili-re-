@@ -58,6 +58,53 @@ describe("POST /api/contracts", () => {
     expect(propertyRes.body.status).toBe("OCCUPIED");
   });
 
+  it("enregistre les clauses particulières et les rend dans le bail", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { status: "AVAILABLE" });
+    const tenant = await createTenant(manager.id);
+    const token = tokenFor(manager);
+
+    const res = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(token))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: "2026-06-01",
+        endDate: "2027-05-31",
+        terms: "  Animaux interdits.  ",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.terms).toBe("Animaux interdits.");
+    const bail = await request(app).get(`/api/documents/lease/${res.body.id}`).set(authHeader(token));
+    expect(bail.text).toContain("Animaux interdits.");
+  });
+
+  it("refuse des clauses de plus de 10 000 caractères (400), sans rien créer", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { status: "AVAILABLE" });
+    const tenant = await createTenant(manager.id);
+
+    const res = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(tokenFor(manager)))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: "2026-06-01",
+        endDate: "2027-05-31",
+        terms: "x".repeat(10001),
+      });
+
+    expect(res.status).toBe(400);
+    expect(await testDb.select().from(contracts)).toHaveLength(0);
+  });
+
   it("refuse de créer un contrat sur un bien appartenant à un autre gestionnaire", async () => {
     const managerA = await createManager();
     const managerB = await createManager();

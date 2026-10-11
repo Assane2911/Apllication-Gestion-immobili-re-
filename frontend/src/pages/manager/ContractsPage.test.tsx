@@ -184,6 +184,63 @@ describe("ContractsPage (manager)", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Créer le contrat" })).not.toBeInTheDocument());
   });
 
+  it("envoie les clauses particulières saisies (sans espaces superflus), et les imprime sur le bail", async () => {
+    const user = userEvent.setup();
+    queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+    mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+    queueLoad([]);
+
+    const { container } = renderPage();
+    await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+
+    const selects = screen.getAllByRole("combobox");
+    await user.selectOptions(selects[0], "prop-1");
+    await user.selectOptions(selects[1], "ten-1");
+    const dateInputs = container.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: "2026-03-01" } });
+    fireEvent.change(dateInputs[1], { target: { value: "2027-03-01" } });
+
+    const champ = screen.getByLabelText("Clauses particulières (facultatif)");
+    expect(champ).toHaveAttribute("maxlength", "10000");
+    expect(screen.getByText(/ne pourront plus être modifiées une fois le bail signé/)).toBeInTheDocument();
+    await user.type(champ, "  Animaux interdits.  ");
+    await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+    await waitFor(() =>
+      expect(mockedApi.post).toHaveBeenCalledWith("/contracts", {
+        propertyId: "prop-1",
+        tenantId: "ten-1",
+        rent: "500",
+        deposit: "1000",
+        startDate: "2026-03-01",
+        endDate: "2027-03-01",
+        terms: "Animaux interdits.",
+      })
+    );
+  });
+
+  it("n'envoie pas de clauses quand le champ reste vide ou ne contient que des espaces", async () => {
+    const user = userEvent.setup();
+    queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+    mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+    queueLoad([]);
+
+    const { container } = renderPage();
+    await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+
+    const selects = screen.getAllByRole("combobox");
+    await user.selectOptions(selects[0], "prop-1");
+    await user.selectOptions(selects[1], "ten-1");
+    const dateInputs = container.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: "2026-03-01" } });
+    fireEvent.change(dateInputs[1], { target: { value: "2027-03-01" } });
+    await user.type(screen.getByLabelText("Clauses particulières (facultatif)"), "   ");
+    await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+    expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("terms");
+  });
+
   it("workflow de renouvellement : propose de renouveler quand le bail expire bientôt", async () => {
     const user = userEvent.setup();
     const soon = contract({ id: "c1", endDate: new Date(Date.now() + 5 * DAY_MS).toISOString() });

@@ -79,7 +79,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
       amount: invoice.amount,
       currency: invoice.currency || "EUR",
       paidAt: invoice.paidAt || invoice.createdAt,
-      paymentMethod: invoice.paymentMethod || "VIREMENT",
+      paymentMethod: invoice.paymentMethod,
       paymentRef: invoice.paymentRef,
     },
   });
