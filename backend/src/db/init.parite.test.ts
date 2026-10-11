@@ -16,9 +16,10 @@ import { initDb } from "./init";
  * été créés (vendors_manager_id_idx, issue_reports_vendor_id_idx), y compris
  * en production.
  *
- * Règle vérifiée : tout ce que schema.ts déclare — colonne, ou index nommé
- * `…_idx` — doit être créé par initDb(). Dans l'autre sens, seules les colonnes
- * sont comparées : un index de plus créé par initDb() est sans danger.
+ * Règle vérifiée, dans les deux sens : colonnes et index nommés `…_idx` sont les
+ * mêmes dans schema.ts et après initDb(). Un index créé par initDb() mais absent
+ * de schema.ts serait invisible de drizzle-kit (et d'un pushSchema neuf) ;
+ * c'était le cas de users_referred_by_user_id_idx.
  *
  * Les différences de forme sans conséquence (now() / CURRENT_TIMESTAMP, noms
  * `_key` / `_unique` des contraintes d'unicité, énumération / texte + CHECK)
@@ -67,16 +68,18 @@ describe("initDb() sur une base vierge", () => {
     const colonnesManquantes = attendu.colonnes.filter((c) => !obtenu.colonnes.includes(c));
     const colonnesEnTrop = obtenu.colonnes.filter((c) => !attendu.colonnes.includes(c));
     const indexManquants = attendu.index.filter((i) => !obtenu.index.includes(i));
+    const indexEnTrop = obtenu.index.filter((i) => !attendu.index.includes(i));
 
     // Une colonne obligatoire dans schema.ts doit l'être aussi après initDb()
     // (l'inverse — plus strict en base qu'en schéma — n'est pas comparé).
     const obligatoiresPerdues = attendu.obligatoires.filter((c) => !obtenu.obligatoires.includes(c));
     const suppressionsDifferentes = attendu.suppressions.filter((r) => !obtenu.suppressions.includes(r));
 
-    expect({ colonnesManquantes, colonnesEnTrop, indexManquants, obligatoiresPerdues, suppressionsDifferentes }).toEqual({
+    expect({ colonnesManquantes, colonnesEnTrop, indexManquants, indexEnTrop, obligatoiresPerdues, suppressionsDifferentes }).toEqual({
       colonnesManquantes: [],
       colonnesEnTrop: [],
       indexManquants: [],
+      indexEnTrop: [],
       obligatoiresPerdues: [],
       suppressionsDifferentes: [],
     });
