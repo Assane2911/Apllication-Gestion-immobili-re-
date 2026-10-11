@@ -87,7 +87,15 @@ export default function AdminDashboardPage() {
           icon={Users}
           label={t("admin.dashboard.stats.managers")}
           value={managers.total}
-          hint={t("admin.dashboard.stats.managersHint", { trial: managers.trialActive, expired: managers.expired })}
+          hint={
+            managers.suspended
+              ? t("admin.dashboard.stats.managersHintSuspended", {
+                  trial: managers.trialActive,
+                  expired: managers.expired,
+                  suspended: managers.suspended,
+                })
+              : t("admin.dashboard.stats.managersHint", { trial: managers.trialActive, expired: managers.expired })
+          }
           accent="blue"
         />
         <StatCard

@@ -596,6 +596,8 @@ export interface AdminDashboardStats {
     trialActive: number;
     subscriptionActive: number;
     expired: number;
+    // Absent d'une réponse d'un serveur plus ancien (déploiement en cours).
+    suspended?: number;
   };
   trialsEndingSoon: {
     userId: string;

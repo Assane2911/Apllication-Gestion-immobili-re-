@@ -1861,6 +1861,7 @@ const fr = {
       stats: {
         managers: "Gestionnaires",
         managersHint: "{{trial}} en essai · {{expired}} sans accès",
+        managersHintSuspended: "{{trial}} en essai · {{expired}} sans accès · {{suspended}} suspendu(s)",
         subscriptionActive: "Abonnements payants actifs",
         subscriptionActiveHint: "Sur {{total}} gestionnaire(s) au total",
         mrr: "Revenu récurrent mensuel",

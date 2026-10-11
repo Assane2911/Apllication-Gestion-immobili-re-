@@ -45,6 +45,20 @@ describe("AdminDashboardPage", () => {
     mockedApi.get.mockReset();
   });
 
+  it("signale les comptes suspendus dans la vignette des gestionnaires, et seulement s'il y en a", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: stats({ managers: { total: 12, trialActive: 4, subscriptionActive: 6, expired: 2, suspended: 3 } }) });
+    const { unmount } = renderPage();
+    expect(await screen.findByText(/3 suspendu\(s\)/)).toBeInTheDocument();
+    unmount();
+
+    // Aucun suspendu — ou un serveur plus ancien qui n'envoie pas le champ :
+    // la vignette garde son texte habituel, sans « 0 suspendu(s) ».
+    mockedApi.get.mockResolvedValueOnce({ data: stats({ managers: { total: 12, trialActive: 4, subscriptionActive: 6, expired: 2 } }) });
+    renderPage();
+    expect(await screen.findByText(/4 en essai · 2 sans accès/)).toBeInTheDocument();
+    expect(screen.queryByText(/suspendu/)).not.toBeInTheDocument();
+  });
+
   it("affiche les indicateurs clés de la plateforme", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats() });
 

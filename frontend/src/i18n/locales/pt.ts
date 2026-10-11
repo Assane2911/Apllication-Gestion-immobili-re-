@@ -1860,6 +1860,7 @@ const pt: TranslationSchema = {
       stats: {
         managers: "Gestores",
         managersHint: "{{trial}} em teste · {{expired}} sem acesso",
+        managersHintSuspended: "{{trial}} em teste · {{expired}} sem acesso · {{suspended}} suspenso(s)",
         subscriptionActive: "Assinaturas pagas ativas",
         subscriptionActiveHint: "De {{total}} gestor(es) no total",
         mrr: "Receita recorrente mensal",

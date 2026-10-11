@@ -1862,6 +1862,7 @@ const es: TranslationSchema = {
       stats: {
         managers: "Gestores",
         managersHint: "{{trial}} en prueba · {{expired}} sin acceso",
+        managersHintSuspended: "{{trial}} en prueba · {{expired}} sin acceso · {{suspended}} suspendido(s)",
         subscriptionActive: "Suscripciones de pago activas",
         subscriptionActiveHint: "De {{total}} gestor(es) en total",
         mrr: "Ingreso recurrente mensual",
