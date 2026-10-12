@@ -5,11 +5,12 @@ import { agencySettings, contractGuarantors, contracts, invoices, properties, re
 import { periodeCouverte } from "../services/invoice.service";
 import { loadInspectionForExport } from "./inspection.controller";
 import { colocatairesDuBail } from "./cotenant.controller";
+import { colocatairesActifs, nomsDesLocataires } from "../services/colocation.service";
 import { motifRevision, numeroAvenant, revisionsAppliquees } from "../services/rentRevision.service";
 import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml, generateRentRevisionHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertAccesLocataireOuGestionnaire, idLocataireDuCompte } from "../utils/authorization";
+import { assertAccesLocataireOuGestionnaire, estLocataireDuBail } from "../utils/authorization";
 import { nomAvecCivilite } from "../utils/nom";
 
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
@@ -31,7 +32,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
   // tout autre rôle, y compris ADMIN, est refusé par défaut.
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === (await idLocataireDuCompte(req)),
+    await estLocataireDuBail(req, contract),
     property?.managerId === req.user.userId
   );
 
@@ -62,7 +63,8 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
       legalNotice: agency?.legalNotice,
     },
     tenant: {
-      fullName: tenant ? nomAvecCivilite(tenant) : "Locataire",
+      // En colocation, la quittance nomme tous les locataires du bail.
+      fullName: tenant ? nomsDesLocataires([tenant, ...(await colocatairesActifs(contract.id))]) : "Locataire",
       email: tenant?.email || "",
       phone: tenant?.phone || "",
     },
@@ -105,7 +107,7 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   // pouvait lire n'importe quel bail de la plateforme.
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === (await idLocataireDuCompte(req)),
+    await estLocataireDuBail(req, contract),
     property?.managerId === req.user.userId
   );
 
@@ -146,7 +148,7 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
   // concerné et le gestionnaire propriétaire du bien y ont accès.
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    inspection.tenantId === (await idLocataireDuCompte(req)),
+    await estLocataireDuBail(req, { id: inspection.contractId, tenantId: inspection.tenantId }),
     inspection.managerId === req.user.userId
   );
 
@@ -197,7 +199,7 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === (await idLocataireDuCompte(req)),
+    await estLocataireDuBail(req, contract),
     property?.managerId === req.user.userId
   );
 
@@ -224,7 +226,7 @@ export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: R
 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
-    contract.tenantId === (await idLocataireDuCompte(req)),
+    await estLocataireDuBail(req, contract),
     property?.managerId === req.user.userId
   );
   if (revision.status === "CANCELLED") throw new ApiError(409, "Cette révision a été annulée : aucun avenant ne s'y rattache.");

@@ -10,7 +10,8 @@ import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../servi
 import { sendPartialPaymentReceiptEmail, sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertOwnership, chargerLocataireDuCompte, estLocataireDuBail } from "../utils/authorization";
+import { bauxDuLocataire } from "../services/colocation.service";
 import { resoudreDateEncaissement } from "../utils/dateEncaissement";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { solderEnLigne } from "../services/paiementEnLigne.service";
@@ -313,14 +314,16 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
   res.json(updated);
 });
 
-/** Factures du locataire connecté (portail locataire). */
+/** Factures du locataire connecté (portail locataire), y compris celles des baux dont il est colocataire. */
 export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
+  const baux = await bauxDuLocataire((await chargerLocataireDuCompte(req)).id);
+  if (baux.size === 0) return res.json([]);
   const rows = await db
     .select({ invoice: invoices, contract: contracts, property: properties })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(contracts.tenantId, (await chargerLocataireDuCompte(req)).id))
+    .where(inArray(contracts.id, [...baux.keys()]))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
 
   res.json(
@@ -356,8 +359,10 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(invoices.id, req.params.id));
 
   if (!row) throw new ApiError(404, "Facture introuvable");
-  if (row.contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
+  if (!(await estLocataireDuBail(req, row.contract))) throw new ApiError(403, "Accès refusé");
   if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée");
+  // Le payeur est le locataire connecté (titulaire ou colocataire) : c'est son email qui part au prestataire.
+  const payeur = await chargerLocataireDuCompte(req);
   if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée");
   // Réclamation atomique, AVANT tout appel au prestataire. Stripe se protège
   // lui-même via un Idempotency-Key (voir initiateStripePayment) ; l'API
@@ -395,7 +400,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
       // EUR ne doit pas partir vers un prestataire qui encaisse en FCFA.
       currency: row.invoice.currency,
       invoiceId: row.invoice.id,
-      payerEmail: row.tenant.email,
+      payerEmail: payeur.email,
       bankReference: body.bankReference,
       returnPath: "/portail/paiements",
     });

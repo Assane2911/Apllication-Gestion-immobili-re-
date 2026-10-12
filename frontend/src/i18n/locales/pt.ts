@@ -1665,6 +1665,7 @@ const pt: TranslationSchema = {
       signatureTitle: "Assinatura do contrato de arrendamento",
       signedOn: "Assinado por si em {{date}}",
       awaitingSignature: "A aguardar a sua assinatura digital",
+      cotenantNote: "É coinquilino deste contrato: o titular assina-o online, o senhor assina o exemplar impresso.",
       depositRefundTitle: "Depósito de garantia devolvido: {{amount}}",
       signMyLease: "Assinar o meu contrato",
       viewLeasePdf: "Ver o contrato em PDF",

@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { agencySettings, contracts, invoicePayments, invoices, properties, tenants } from "../db/schema";
+import { colocatairesActifs, envoyerCopieAuxColocataires, nomsDesLocataires } from "./colocation.service";
 import { sendEmail } from "./email.service";
+import { escapeHtml } from "../utils/html";
 import { periodeCouverte } from "./invoice.service";
 import { generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
 import { formaterMontant } from "../utils/montant";
@@ -55,7 +57,8 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
         legalNotice: agency?.legalNotice,
       },
       tenant: {
-        fullName: nomAvecCivilite(tenant),
+        // En colocation, la quittance nomme tous les locataires du bail.
+        fullName: nomsDesLocataires([tenant, ...(await colocatairesActifs(contract.id))]),
         email: tenant.email,
         phone: tenant.phone,
       },
@@ -86,7 +89,7 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
         <h2 style="color:#0f172a;">✅ Paiement de loyer confirmé</h2>
-        <p>Bonjour ${receiptData.tenant.fullName},</p>
+        <p>Bonjour ${escapeHtml(receiptData.tenant.fullName)},</p>
         <p>
           Nous confirmons la bonne réception de votre paiement de loyer pour
           <strong>${monthLabel} ${invoice.periodYear}</strong> concernant le logement
@@ -100,18 +103,17 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
       </div>
     `;
 
-    const result = await sendEmail(
-      tenant.email,
-      `Quittance de loyer — ${monthLabel} ${invoice.periodYear}`,
-      html,
-      [
-        {
-          filename: `quittance-${receiptData.receiptNumber}.pdf`,
-          content: pdfBuffer,
-          contentType: "application/pdf",
-        },
-      ]
-    );
+    const pieceJointe = [
+      {
+        filename: `quittance-${receiptData.receiptNumber}.pdf`,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ];
+    const sujet = `Quittance de loyer — ${monthLabel} ${invoice.periodYear}`;
+    const result = await sendEmail(tenant.email, sujet, html, pieceJointe);
+    // Chaque colocataire reçoit la même quittance (elle les nomme tous).
+    await envoyerCopieAuxColocataires(contract.id, () => ({ subject: sujet, html, attachments: pieceJointe }));
 
     return { sent: !result.simulated && !("error" in result && result.error), ...result };
   } catch (err) {
@@ -157,7 +159,7 @@ export async function sendPartialPaymentReceiptEmail(invoiceId: string, paymentI
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
         <h2 style="color:#0f172a;">Reçu de paiement partiel</h2>
-        <p>Bonjour ${nomAvecCivilite(tenant)},</p>
+        <p>Bonjour ${escapeHtml(nomAvecCivilite(tenant))},</p>
         <p>
           Nous avons bien reçu un paiement de
           <strong>${formaterMontant(paiement.amount, devise)}</strong> le ${dateReception}
@@ -180,7 +182,12 @@ export async function sendPartialPaymentReceiptEmail(invoiceId: string, paymentI
       </div>
     `;
 
-    const result = await sendEmail(tenant.email, `Reçu de paiement partiel — loyer ${monthLabel} ${invoice.periodYear}`, html);
+    const sujet = `Reçu de paiement partiel — loyer ${monthLabel} ${invoice.periodYear}`;
+    const result = await sendEmail(tenant.email, sujet, html);
+    await envoyerCopieAuxColocataires(contract.id, (colocataire) => ({
+      subject: sujet,
+      html: html.replace(`Bonjour ${escapeHtml(nomAvecCivilite(tenant))},`, `Bonjour ${escapeHtml(nomAvecCivilite(colocataire))},`),
+    }));
     return { sent: !result.simulated && !("error" in result && result.error), ...result };
   } catch (err) {
     console.error(`[receipt] Échec de l'envoi du reçu de paiement partiel pour la facture ${invoiceId}:`, err);

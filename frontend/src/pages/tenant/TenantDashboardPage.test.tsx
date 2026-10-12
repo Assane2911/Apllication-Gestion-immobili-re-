@@ -91,6 +91,15 @@ describe("TenantDashboardPage", () => {
     expect(screen.getByText("En attente de votre signature numérique")).toBeInTheDocument();
   });
 
+  it("colocataire : pas de signature électronique, une note explique qu'il signe l'exemplaire imprimé", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: null, qualite: "COLOCATAIRE" })] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
+    renderPage();
+
+    expect(await screen.findByText(/Vous êtes colocataire de ce bail/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Signer mon bail/ })).not.toBeInTheDocument();
+  });
+
   it("affiche la date de signature une fois le bail signé", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: "2026-02-01T00:00:00.000Z" })] });
     mockedApi.get.mockResolvedValueOnce(emptyInspections());

@@ -16,6 +16,7 @@ import {
   sendEmail,
 } from "./email.service";
 import { appliquerRevisionsDues } from "./rentRevision.service";
+import { envoyerCopieAuxColocataires } from "./colocation.service";
 import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import {
   envoyerMessageWhatsapp,
@@ -578,6 +579,19 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       });
     }
 
+    // Colocation : chaque colocataire reçoit sa copie de l'avis (au mieux, sans effet sur le titulaire).
+    await envoyerCopieAuxColocataires(row.invoice.contractId, (colocataire) =>
+      rentDueReminderEmail({
+        tenantName: nomAvecCivilite(colocataire),
+        propertyTitle: row.property.title,
+        amount: resteDu(row.invoice),
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+        dueDate: new Date(row.invoice.dueDate),
+        frontendUrl: env.frontendUrl,
+      })
+    );
     sent += 1;
     details.push({
       tenantName: nomComplet(row.tenant),
@@ -727,6 +741,19 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       });
     }
 
+    await envoyerCopieAuxColocataires(row.invoice.contractId, (colocataire) =>
+      rentDueSoonReminderEmail({
+        tenantName: nomAvecCivilite(colocataire),
+        propertyTitle: row.property.title,
+        amount: resteDu(row.invoice),
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+        daysLeft: joursRestants,
+        dueDate: new Date(row.invoice.dueDate),
+        frontendUrl: env.frontendUrl,
+      })
+    );
     sent += 1;
     details.push({
       tenantName: nomComplet(row.tenant),
@@ -847,6 +874,20 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   const joint = aEteJoint(emailResult, whatsappResult);
   if (!joint) {
     await db.update(invoices).set({ reminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
+  }
+  if (joint) {
+    await envoyerCopieAuxColocataires(row.invoice.contractId, (colocataire) =>
+      rentDueReminderEmail({
+        tenantName: nomAvecCivilite(colocataire),
+        propertyTitle: row.property.title,
+        amount: resteDu(row.invoice),
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+        dueDate: new Date(row.invoice.dueDate),
+        frontendUrl: env.frontendUrl,
+      })
+    );
   }
 
   // Voir signalerEchecsWhatsapp : quand l'email a réussi, `joint` est vrai

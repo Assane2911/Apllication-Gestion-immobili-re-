@@ -177,3 +177,16 @@ export async function chargerLocataireDuCompte(req: Request) {
 export async function idLocataireDuCompte(req: Request): Promise<string | null> {
   return (await ficheLocataireDuCompte(req))?.id ?? null;
 }
+
+/**
+ * Le compte connecté est-il locataire de ce bail, comme titulaire ou comme colocataire ? Pour les
+ * ressources que la colocation partage (bail, factures, documents, paiement, incidents) ; la
+ * signature électronique et la messagerie restent au titulaire (contrôle `contract.tenantId`).
+ */
+export async function estLocataireDuBail(req: Request, contract: { id: string; tenantId: string }): Promise<boolean> {
+  const moi = await idLocataireDuCompte(req);
+  if (!moi) return false;
+  if (moi === contract.tenantId) return true;
+  const { estColocataire } = await import("../services/colocation.service");
+  return estColocataire(contract.id, moi);
+}

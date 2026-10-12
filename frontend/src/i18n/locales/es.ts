@@ -1667,6 +1667,7 @@ const es: TranslationSchema = {
       signatureTitle: "Firma del contrato de alquiler",
       signedOn: "Firmado por ti el {{date}}",
       awaitingSignature: "Pendiente de tu firma digital",
+      cotenantNote: "Usted es coinquilino de este contrato: el titular lo firma en línea, usted firma el ejemplar impreso.",
       depositRefundTitle: "Fianza devuelta: {{amount}}",
       signMyLease: "Firmar mi contrato",
       viewLeasePdf: "Ver el contrato en PDF",
