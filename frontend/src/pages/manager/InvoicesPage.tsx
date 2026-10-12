@@ -23,6 +23,19 @@ function aUnAcompte(inv: Invoice): boolean {
 
 export default function InvoicesPage() {
   const { t, i18n } = useTranslation();
+
+  /** « Relance 2/3 le 20/10/2026 » sous le statut d'une facture impayée déjà relancée. */
+  function niveauRelance(inv: Invoice) {
+    if (!inv.overdueReminderLevel || inv.status === "PAID" || inv.status === "CANCELLED") return null;
+    return (
+      <span className="block mt-1 text-[11px] text-red-700 dark:text-red-400">
+        {t("manager.invoices.overdueLevel", {
+          level: inv.overdueReminderLevel,
+          date: inv.overdueReminderSentAt ? new Date(inv.overdueReminderSentAt).toLocaleDateString(i18n.language) : "",
+        })}
+      </span>
+    );
+  }
   const { formatMoney } = useCurrency();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filter, setFilter] = useState<InvoiceStatus | "ALL">("ALL");
@@ -213,6 +226,7 @@ export default function InvoicesPage() {
                 </td>
                 <td className="px-4 py-3.5">
                   <Badge status={inv.status} />
+                  {niveauRelance(inv)}
                 </td>
                 <td className="px-4 py-3.5 text-right space-x-2 whitespace-nowrap">
                   {inv.status === "PAID" && (
@@ -276,7 +290,10 @@ export default function InvoicesPage() {
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">{inv.contract?.property?.title}</p>
                 </div>
-                <Badge status={inv.status} />
+                <div className="text-right">
+                  <Badge status={inv.status} />
+                  {niveauRelance(inv)}
+                </div>
               </div>
               <div className="text-xs text-slate-600 dark:text-slate-400">
                 <p className="font-medium text-slate-700 dark:text-slate-300">

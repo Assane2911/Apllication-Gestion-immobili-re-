@@ -86,6 +86,18 @@ describe("InvoicesPage (manager)", () => {
     expect(screen.getAllByRole("button", { name: /Quittance PDF/ })).toHaveLength(2);
   });
 
+  it("indique le niveau de relance d'un impayé déjà relancé, pas celui d'une facture réglée", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      paginated([
+        invoice({ id: "inv-late", status: "LATE", overdueReminderLevel: 2, overdueReminderSentAt: "2026-10-20T09:00:00.000Z" }),
+        invoice({ id: "inv-paid", status: "PAID", overdueReminderLevel: 3, overdueReminderSentAt: "2026-10-30T09:00:00.000Z" }),
+      ])
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText(/Relance 2\/3 le/).length).toBeGreaterThan(0));
+    expect(screen.queryByText(/Relance 3\/3/)).not.toBeInTheDocument();
+  });
+
   it("affiche un message quand il n'y a aucune facture pour le filtre", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([]));
     renderPage();

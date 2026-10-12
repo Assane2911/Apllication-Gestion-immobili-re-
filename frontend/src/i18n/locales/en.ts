@@ -1070,6 +1070,7 @@ const en: TranslationSchema = {
       leaseDocTitle: "Lease Agreement - {{property}}",
     },
     invoices: {
+      overdueLevel: "Reminder {{level}}/3 on {{date}}",
       title: "Rent Payments",
       subtitle: "Track monthly payments and official PDF receipts",
       filterAll: "All invoices",
@@ -1466,6 +1467,15 @@ const en: TranslationSchema = {
       title: "Agency Identity & White Label",
       subtitle: "Customize the contact details and legal notices shown on your official receipts and contracts",
       success: "Agency settings updated successfully! Your future receipts will include this information.",
+      overdue: {
+        title: "Automatic overdue rent reminders",
+        hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants); after 90 days late, no more automatic reminders: it is up to you.",
+        enabled: "Send reminders automatically",
+        grace: "Grace period after the due date (days)",
+        interval: "Days between two reminders",
+        guarantors: "Notify guarantors with the last reminder",
+        schedule: "Friendly reminder at D+{{first}}, second reminder at D+{{second}}, last reminder at D+{{third}}.",
+      },
       fields: {
         agencyName: "Agency trading name *",
         agencyNamePlaceholder: "E.g.: Horizon Prestige Realty",

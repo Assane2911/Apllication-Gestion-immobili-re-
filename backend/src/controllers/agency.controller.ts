@@ -44,6 +44,11 @@ const updateAgencySettingsSchema = z.object({
   stampOrSignatureUrl: z.string().optional().nullable(),
   iban: ibanSchema,
   bic: bicSchema,
+  // Relances graduées des impayés (voir services/relances.service.ts) ; absents : inchangés.
+  overdueRemindersEnabled: z.boolean().optional(),
+  overdueGraceDays: z.coerce.number().int().min(0, "Délai de grâce : 0 à 30 jours").max(30, "Délai de grâce : 0 à 30 jours").optional(),
+  overdueIntervalDays: z.coerce.number().int().min(3, "Intervalle entre relances : 3 à 30 jours").max(30, "Intervalle entre relances : 3 à 30 jours").optional(),
+  overdueNotifyGuarantors: z.boolean().optional(),
 });
 
 export const updateAgencySettings = asyncHandler(async (req: Request, res: Response) => {

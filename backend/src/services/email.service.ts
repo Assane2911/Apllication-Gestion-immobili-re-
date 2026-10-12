@@ -725,3 +725,82 @@ export function ownerPayoutEmail(params: {
       </div>`,
   };
 }
+
+const MOIS_RELANCE = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/**
+ * Relance d'un loyer impayé, niveau 1 (rappel amiable) à 3 (dernière relance). Le ton monte, le
+ * contenu reste factuel : montant restant dû, période, échéance dépassée depuis N jours. Aucune
+ * menace juridique : la dernière relance dit seulement que l'agence pourra donner les suites prévues
+ * au bail.
+ */
+export function overdueReminderEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  amount: number;
+  currency?: string;
+  periodMonth: number;
+  periodYear: number;
+  dueDate: Date;
+  daysLate: number;
+  niveau: 1 | 2 | 3;
+  agencyName: string;
+}) {
+  const periode = `${MOIS_RELANCE[params.periodMonth - 1] ?? params.periodMonth} ${params.periodYear}`;
+  const echeance = new Date(params.dueDate).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const montant = escapeHtml(formaterMontant(params.amount, params.currency ?? "EUR"));
+  const titres = { 1: "Rappel : loyer non réglé", 2: "Deuxième relance : loyer impayé", 3: "Dernière relance : loyer impayé" } as const;
+  const corps = {
+    1: `Sauf erreur de notre part, le loyer de <strong>${escapeHtml(periode)}</strong> n'a pas encore été réglé. S'il s'agit d'un oubli, merci de procéder au règlement dès que possible. Si vous avez déjà payé, vous pouvez ignorer ce message.`,
+    2: `Malgré notre précédent rappel, le loyer de <strong>${escapeHtml(periode)}</strong> reste impayé. Merci de le régler sans attendre, ou de contacter votre agence si vous rencontrez une difficulté.`,
+    3: `Le loyer de <strong>${escapeHtml(periode)}</strong> reste impayé malgré nos relances. Sans règlement ou prise de contact rapide de votre part, votre agence pourra donner à cet impayé les suites prévues par votre bail.`,
+  } as const;
+  return {
+    subject: `${titres[params.niveau]} — ${periode}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: ${params.niveau === 3 ? "#7f1d1d" : "#0f172a"}; padding: 24px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">${titres[params.niveau]}</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #cbd5e1;">${escapeHtml(params.agencyName)} • ${escapeHtml(params.propertyTitle)}</p>
+        </div>
+        <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
+          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(params.tenantName)}</strong>,</p>
+          <p>${corps[params.niveau]}</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Reste à payer</span><br>
+            <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${montant}</span><br>
+            <span style="font-size: 12px; color: #64748b;">Échéance du ${escapeHtml(echeance)} — dépassée de ${params.daysLate} jour(s)</span>
+          </div>
+          <p style="font-size: 13px; color: #475569;">Vous pouvez régler ce loyer depuis votre espace locataire.</p>
+        </div>
+      </div>`,
+  };
+}
+
+/** Information du garant : le locataire qu'il garantit a un loyer impayé, relancé sans succès. */
+export function guarantorUnpaidNoticeEmail(params: {
+  guarantorName: string;
+  tenantName: string;
+  propertyTitle: string;
+  amount: number;
+  currency?: string;
+  periodMonth: number;
+  periodYear: number;
+  agencyName: string;
+}) {
+  const periode = `${MOIS_RELANCE[params.periodMonth - 1] ?? params.periodMonth} ${params.periodYear}`;
+  return {
+    subject: `Information : loyer impayé de ${params.tenantName} — ${periode}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; color: #334155; line-height: 1.6;">
+        <p>Bonjour <strong>${escapeHtml(params.guarantorName)}</strong>,</p>
+        <p>
+          Vous êtes garant du bail de <strong>${escapeHtml(params.tenantName)}</strong> pour le logement
+          <strong>${escapeHtml(params.propertyTitle)}</strong>. Nous vous informons que le loyer de
+          <strong>${escapeHtml(periode)}</strong> reste impayé malgré nos relances, pour un montant de
+          <strong>${escapeHtml(formaterMontant(params.amount, params.currency ?? "EUR"))}</strong>.
+        </p>
+        <p>Pour toute question, vous pouvez contacter ${escapeHtml(params.agencyName)}.</p>
+      </div>`,
+  };
+}
