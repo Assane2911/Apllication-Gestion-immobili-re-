@@ -14,7 +14,7 @@ import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } fr
 import Bulle from "../../components/Bulle";
 
 // Jour d'échéance proposé à la création : le 5, ce que disaient déjà les documents remis aux locataires.
-const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5" };
+const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "" };
 
 // Fenêtre d'affichage du workflow de renouvellement : un contrat actif dont
 // la fin tombe dans ce nombre de jours ou moins propose de renouveler ou non.
@@ -114,12 +114,14 @@ export default function ContractsPage() {
     setError(null);
     try {
       // Les clauses vides ne sont pas envoyées : le bail n'imprime alors aucune section.
-      const { terms, paymentDay, ...champs } = form;
+      const { terms, paymentDay, applicableLaw, ...champs } = form;
       await api.post("/contracts", {
         ...champs,
         ...(terms.trim() ? { terms: terms.trim() } : {}),
         // Vide : le jour de la date de début du bail (comportement d'avant).
         ...(paymentDay ? { paymentDay: Number(paymentDay) } : {}),
+        // Vide : aucune mention de droit applicable n'est imprimée sur le bail.
+        ...(applicableLaw.trim() ? { applicableLaw: applicableLaw.trim() } : {}),
       });
       setShowForm(false);
       setForm(emptyForm);
@@ -310,6 +312,19 @@ export default function ContractsPage() {
                 ))}
               </select>
               <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.paymentDayHint")}</p>
+            </div>
+            <div>
+              <label htmlFor="contract-leaseType" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.leaseType")}</label>
+              <select id="contract-leaseType" value={form.leaseType} onChange={(e) => setForm({ ...form, leaseType: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+                {(["HABITATION", "MEUBLE", "COMMERCIAL", "PROFESSIONNEL"] as const).map((type) => (
+                  <option key={type} value={type}>{t(`manager.contracts.fields.leaseTypes.${type}`)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="contract-applicableLaw" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.applicableLaw")}</label>
+              <input id="contract-applicableLaw" type="text" maxLength={300} value={form.applicableLaw} onChange={(e) => setForm({ ...form, applicableLaw: e.target.value })} placeholder={t("manager.contracts.fields.applicableLawPlaceholder")} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.applicableLawHint")}</p>
             </div>
             <div className="md:col-span-2">
               <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.terms")}</label>

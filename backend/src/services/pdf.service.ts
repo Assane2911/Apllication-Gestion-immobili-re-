@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit";
 import { formaterMontant } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { libelleEcheance } from "../utils/jourEcheance";
+import { libelleSurface, titreDuBail } from "../utils/typeBail";
 
 /**
  * Échappe les caractères HTML spéciaux avant interpolation dans les templates
@@ -560,6 +561,10 @@ export interface LeaseExportData {
   terms?: string | null;
   /** Jour d'échéance du loyer (1 à 31, 31 = dernier jour) ; absent : le jour de la date de début. */
   paymentDay?: number | null;
+  /** Type de bail (voir utils/typeBail.ts) ; absent : bail d'habitation. */
+  leaseType?: string | null;
+  /** Droit applicable saisi par le gestionnaire ; vide : aucune mention. */
+  applicableLaw?: string | null;
 }
 
 /** Coordonnées d'agence affichées sur le bail — voir document.controller.ts pour le repli par défaut. */
@@ -577,6 +582,11 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
   // que le contrat verrouille ces clauses comme contenu contractuel après sa
   // signature (voir updateContract). Texte libre : échappé comme tout champ
   // saisi (le document est servi en text/html), les retours à la ligne gardés.
+  // Le droit applicable est CELUI QUE LE GESTIONNAIRE A SAISI. Le bail affirmait
+  // auparavant « Conforme à la législation en vigueur relative aux baux
+  // d'habitation » sans dire laquelle, ni la vérifier : la plateforme n'atteste
+  // la conformité d'aucun bail.
+  const droitApplicable = contract.applicableLaw?.trim();
   const termes = contract.terms?.trim();
   const clauses = termes
     ? `<div class="section">
@@ -604,8 +614,8 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
   </style>
 </head>
 <body>
-  <h1>CONTRAT DE BAIL D'HABITATION</h1>
-  <p style="text-align:center; font-size:12px; color:#64748b;">Conforme à la législation en vigueur relative aux baux d'habitation</p>
+  <h1>${titreDuBail(contract.leaseType)}</h1>
+  ${droitApplicable ? `<p style="text-align:center; font-size:12px; color:#64748b;">Droit applicable : ${escapeHtml(droitApplicable)}</p>` : ""}
 
   <div class="section">
     <div class="section-title">1. Les Parties</div>
@@ -620,7 +630,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="box">
       <strong>Bien loué :</strong> ${escapeHtml(contract.property?.title)}<br>
       <strong>Adresse :</strong> ${escapeHtml(contract.property?.address)}<br>
-      <strong>Surface habitable :</strong> ${contract.property?.surface} m²
+      <strong>${libelleSurface(contract.leaseType)} :</strong> ${contract.property?.surface} m²
     </div>
   </div>
 

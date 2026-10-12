@@ -204,6 +204,29 @@ describe("generateLeaseHtml", () => {
   };
   const agency = { agencyName: "Agence Teranga", address: "12 Corniche Ouest, Dakar" };
 
+  it("n'affirme plus que le bail est « conforme à la législation » sans dire laquelle", () => {
+    const html = generateLeaseHtml(contract, agency);
+    expect(html).not.toContain("Conforme à la législation");
+    expect(html).not.toContain("Droit applicable");
+  });
+
+  it("imprime le droit applicable saisi par le gestionnaire, échappé", () => {
+    const html = generateLeaseHtml({ ...contract, applicableLaw: "Droit sénégalais <b>COCC</b>" }, agency);
+    expect(html).toContain("Droit applicable : Droit sénégalais &lt;b&gt;COCC&lt;/b&gt;");
+    expect(html).not.toContain("<b>COCC</b>");
+  });
+
+  it.each([
+    ["MEUBLE", "CONTRAT DE BAIL D'HABITATION MEUBLÉE", "Surface habitable"],
+    ["COMMERCIAL", "CONTRAT DE BAIL COMMERCIAL", "Surface :"],
+    ["PROFESSIONNEL", "CONTRAT DE BAIL PROFESSIONNEL", "Surface :"],
+  ])("un bail %s porte le titre « %s »", (leaseType, titre, surface) => {
+    const html = generateLeaseHtml({ ...contract, leaseType }, agency);
+    expect(html).toContain(titre);
+    expect(html).toContain(surface);
+    if (leaseType !== "MEUBLE") expect(html).not.toContain("Surface habitable");
+  });
+
   it("rend les parties, le bien et les conditions financières", () => {
     const html = generateLeaseHtml(contract, agency);
 

@@ -180,6 +180,7 @@ describe("ContractsPage (manager)", () => {
         startDate: "2026-03-01",
         endDate: "2027-03-01",
         paymentDay: 5,
+        leaseType: "HABITATION",
       })
     );
     await waitFor(() => expect(screen.queryByRole("button", { name: "Créer le contrat" })).not.toBeInTheDocument());
@@ -217,6 +218,7 @@ describe("ContractsPage (manager)", () => {
         endDate: "2027-03-01",
         terms: "Animaux interdits.",
         paymentDay: 5,
+        leaseType: "HABITATION",
       })
     );
   });
@@ -522,6 +524,58 @@ describe("ContractsPage (manager)", () => {
       await screen.findAllByText("Studio Centre-ville");
       expect(screen.getAllByText(/Échéance : le/).length).toBeGreaterThan(0);
       expect(screen.queryByRole("button", { name: "Modifier l'échéance" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("type de bail et droit applicable", () => {
+    async function remplir() {
+      const user = userEvent.setup();
+      queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+      queueLoad([]);
+      const { container } = renderPage();
+      await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+      await user.selectOptions(screen.getAllByRole("combobox")[0], "prop-1");
+      await user.selectOptions(screen.getAllByRole("combobox")[1], "ten-1");
+      const dates = container.querySelectorAll('input[type="date"]');
+      fireEvent.change(dates[0], { target: { value: "2026-03-01" } });
+      fireEvent.change(dates[1], { target: { value: "2027-03-01" } });
+      return user;
+    }
+
+    it("propose Habitation par défaut, avec les quatre types", async () => {
+      await remplir();
+      const champ = screen.getByLabelText("Type de bail");
+      expect(champ).toHaveValue("HABITATION");
+      expect(within(champ).getAllByRole("option").map((o) => o.textContent)).toEqual([
+        "Habitation",
+        "Habitation meublée",
+        "Commercial",
+        "Professionnel",
+      ]);
+    });
+
+    it("envoie le type choisi et le droit applicable saisi (sans espaces superflus)", async () => {
+      const user = await remplir();
+      await user.selectOptions(screen.getByLabelText("Type de bail"), "COMMERCIAL");
+      await user.type(screen.getByLabelText("Droit applicable (facultatif)"), "  Droit OHADA  ");
+      expect(screen.getByText(/ne certifie pas|n'atteste pas la conformité/)).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith(
+          "/contracts",
+          expect.objectContaining({ leaseType: "COMMERCIAL", applicableLaw: "Droit OHADA" })
+        )
+      );
+    });
+
+    it("n'envoie pas de droit applicable vide", async () => {
+      const user = await remplir();
+      await user.type(screen.getByLabelText("Droit applicable (facultatif)"), "   ");
+      await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+      expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("applicableLaw");
     });
   });
 });
