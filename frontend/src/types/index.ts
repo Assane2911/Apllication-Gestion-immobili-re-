@@ -390,6 +390,12 @@ export interface Invoice {
   paidAt?: string | null;
   paymentMethod?: PaymentMethod | null;
   paymentRef?: string | null;
+  /** Cumul des paiements partiels d'une facture non soldée (0 pour une facture payée d'un coup). */
+  amountPaid?: number;
+  /** Montant réglé : le total pour une facture PAYÉE, sinon le cumul des paiements partiels. */
+  montantRegle?: number;
+  /** Reste dû : 0 pour une facture payée ou annulée. */
+  resteDu?: number;
   contract?: Contract;
 }
 

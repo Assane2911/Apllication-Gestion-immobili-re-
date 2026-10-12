@@ -129,6 +129,7 @@ const TABLES = [
   "agency_settings",
   "platform_settings",
   "rate_limit_hits",
+  "invoice_payments",
 ];
 
 // Table vide avant chaque test pour qu'aucun test ne dépende de l'ordre

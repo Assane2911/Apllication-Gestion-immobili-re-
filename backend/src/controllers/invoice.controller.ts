@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { invoiceStatusEnum } from "../db/schema";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { contracts, invoices, properties, tenants } from "../db/schema";
+import { contracts, invoicePayments, invoices, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
@@ -13,6 +13,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { resoudreDateEncaissement } from "../utils/dateEncaissement";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
+import { arrondir, montantRegle, resteDu } from "../utils/montants";
 
 function isInvoiceStatus(value: unknown): value is (typeof invoiceStatusEnum.enumValues)[number] {
   return typeof value === "string" && (invoiceStatusEnum.enumValues as readonly string[]).includes(value);
@@ -70,6 +71,8 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
     buildPaginatedResult(
       rows.map((r: InvoiceRow) => ({
         ...r.invoice,
+        montantRegle: montantRegle(r.invoice),
+        resteDu: resteDu(r.invoice),
         contract: { ...r.contract, tenant: r.tenant, property: r.property },
       })),
       count,
@@ -90,6 +93,9 @@ export const MOYENS_SAISIS_A_LA_MAIN = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBI
 const markPaidSchema = z.object({
   paymentMethod: z.enum(MOYENS_SAISIS_A_LA_MAIN).default("BANK_TRANSFER"),
   paymentRef: z.string().trim().max(200).optional(),
+  // Montant encaissé. Absent : le reste dû (règle la facture). Inférieur au
+  // reste dû : paiement PARTIEL, la facture reste en attente.
+  amount: z.number().finite().positive().optional(),
   // Date réelle de l'encaissement (« AAAA-MM-JJ »), voir utils/dateEncaissement.ts.
   paidAt: z.string().max(40).nullish(),
 });
@@ -167,30 +173,64 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
   const maintenant = new Date();
   const encaisseLe = resoudreDateEncaissement(body.paidAt, maintenant, invoice.dueDate);
 
-  // L'écriture est CONDITIONNÉE à l'état lu : la vérification ci-dessus et la
-  // mise à jour ne sont pas atomiques à elles deux, et deux clics simultanés
-  // pourraient toutes deux la franchir. En exigeant l'état dans le WHERE, une
-  // seule des deux écritures aboutit — la seconde ne renvoie aucune ligne.
-  const [updated] = await db
-    .update(invoices)
-    .set({
-      status: "PAID",
+  // Lecture et écriture dans UNE transaction, la ligne verrouillée : deux
+  // enregistrements simultanés (deux clics, deux onglets) ne peuvent ni dépasser
+  // le montant de la facture ni la solder deux fois. Le second attend le
+  // premier, puis relit l'état à jour.
+  const resultat = await db.transaction(async (tx) => {
+    const [courante] = await tx.select().from(invoices).where(eq(invoices.id, req.params.id)).for("update");
+    if (!courante || !(ETATS_MODIFIABLES as readonly string[]).includes(courante.status)) {
+      throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.");
+    }
+
+    const reste = resteDu(courante);
+    // Sans montant : le reste dû, c'est-à-dire le comportement d'avant pour une
+    // facture sans paiement antérieur.
+    const montant = body.amount === undefined ? reste : arrondir(body.amount);
+    if (montant <= 0) throw new ApiError(400, "Le montant du paiement doit être supérieur à zéro.");
+    if (montant > reste) {
+      throw new ApiError(400, `Le montant dépasse le reste dû (${reste} ${courante.currency ?? "EUR"}).`);
+    }
+
+    const dejaRegle = arrondir(courante.amountPaid + montant);
+    const solde = arrondir(courante.amount - dejaRegle) <= 0;
+    const reference = body.paymentRef || `manuel_${Date.now()}`;
+
+    await tx.insert(invoicePayments).values({
+      invoiceId: courante.id,
+      amount: montant,
       paidAt: encaisseLe,
       paymentMethod: body.paymentMethod,
-      paymentRef: body.paymentRef || `manuel_${Date.now()}`,
-    })
-    .where(and(eq(invoices.id, req.params.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
-    .returning();
+      paymentRef: reference,
+    });
 
-  if (!updated) {
-    throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.");
+    // Tant que la facture n'est pas soldée, elle garde son état (en attente ou
+    // en retard) : seul le cumul avance. Soldée, elle devient PAYÉE, datée du
+    // DERNIER paiement, avec le moyen et la référence de ce dernier.
+    const [misAJour] = await tx
+      .update(invoices)
+      .set(
+        solde
+          ? { status: "PAID", amountPaid: arrondir(courante.amount), paidAt: encaisseLe, paymentMethod: body.paymentMethod, paymentRef: reference }
+          : { amountPaid: dejaRegle }
+      )
+      .where(eq(invoices.id, courante.id))
+      .returning();
+
+    return { facture: misAJour, montant, solde, reste: solde ? 0 : arrondir(courante.amount - dejaRegle) };
+  });
+
+  const updated = resultat.facture;
+
+  // Quittance PDF par email : seulement quand le loyer est SOLDÉ. Une quittance
+  // atteste le paiement intégral ; pour un paiement partiel, c'est un simple
+  // reçu (non encore envoyé automatiquement). Ne doit jamais faire échouer la
+  // réponse si l'email ne part pas (SMTP non configuré, etc.).
+  if (resultat.solde) {
+    await sendPaymentReceiptEmail(updated.id).catch((err) =>
+      console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
+    );
   }
-
-  // Envoi de la quittance PDF par email au locataire — ne doit jamais faire
-  // échouer la réponse si l'email ne part pas (SMTP non configuré, etc.).
-  await sendPaymentReceiptEmail(updated.id).catch((err) =>
-    console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
-  );
 
   const [row] = await db
     .select({ contract: contracts, tenant: tenants, property: properties })
@@ -198,6 +238,7 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(contracts.id, updated.contractId));
+  const devise = updated.currency ?? "EUR";
   await logActivity({
     req,
     managerId: req.user!.userId,
@@ -206,14 +247,16 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     entityId: updated.id,
     entityLabel: row ? `${row.tenant.firstName} ${row.tenant.lastName} — ${row.property.title}` : "Facture",
     details:
-      `Facture ${updated.periodMonth}/${updated.periodYear} marquée réglée (${updated.amount} ${updated.currency ?? "EUR"}, ` +
-      `${libelleMoyenPaiement(updated.paymentMethod)}` +
+      (resultat.solde
+        ? `Facture ${updated.periodMonth}/${updated.periodYear} marquée réglée (${updated.amount} ${devise}, `
+        : `Paiement partiel de ${resultat.montant} ${devise} sur la facture ${updated.periodMonth}/${updated.periodYear} (reste ${resultat.reste} ${devise}, `) +
+      `${libelleMoyenPaiement(body.paymentMethod)}` +
       // Une date d'encaissement différente d'aujourd'hui est la donnée qui
       // déplace le loyer dans les bilans : elle doit apparaître au journal.
-      `${encaisseLe.toISOString().slice(0, 10) !== maintenant.toISOString().slice(0, 10) ? `, encaissée le ${encaisseLe.toISOString().slice(0, 10)}` : ""})`,
+      `${encaisseLe.toISOString().slice(0, 10) !== maintenant.toISOString().slice(0, 10) ? `, ${resultat.solde ? "encaissée" : "encaissé"} le ${encaisseLe.toISOString().slice(0, 10)}` : ""})`,
   });
 
-  res.json(updated);
+  res.json({ ...updated, montantEnregistre: resultat.montant, resteDu: resultat.reste, solde: resultat.solde });
 });
 
 export const cancelInvoice = asyncHandler(async (req: Request, res: Response) => {
@@ -227,6 +270,16 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
   }
 
   assertFactureModifiable(invoice, "annuler");
+
+  // Une facture sur laquelle de l'argent a déjà été encaissé ne s'annule pas :
+  // elle disparaîtrait des encaissements alors que l'argent a été perçu (même
+  // raison que pour une facture réglée, voir ETATS_MODIFIABLES).
+  if (invoice.amountPaid > 0) {
+    throw new ApiError(
+      409,
+      "Des paiements ont déjà été enregistrés sur cette facture : elle ne peut plus être annulée. Passez par un avoir ou un remboursement."
+    );
+  }
 
   const [updated] = await db
     .update(invoices)
@@ -267,7 +320,12 @@ export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
         invoice: typeof invoices.$inferSelect;
         contract: typeof contracts.$inferSelect;
         property: typeof properties.$inferSelect;
-      }) => ({ ...r.invoice, contract: { ...r.contract, property: r.property } })
+      }) => ({
+        ...r.invoice,
+        montantRegle: montantRegle(r.invoice),
+        resteDu: resteDu(r.invoice),
+        contract: { ...r.contract, property: r.property },
+      })
     )
   );
 });
@@ -292,6 +350,15 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
   if (row.contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
   if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée");
   if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée");
+  // Le paiement en ligne règle le montant TOTAL de la facture : sur une facture
+  // déjà réglée en partie, il encaisserait deux fois la part déjà versée. Le
+  // reste se règle auprès du gestionnaire (voir markInvoicePaid).
+  if (row.invoice.amountPaid > 0) {
+    throw new ApiError(
+      409,
+      `Un paiement partiel a déjà été enregistré sur cette facture. Il reste ${resteDu(row.invoice)} ${row.invoice.currency ?? "EUR"} à régler : contactez votre gestionnaire.`
+    );
+  }
 
   // Réclamation atomique, AVANT tout appel au prestataire. Stripe se protège
   // lui-même via un Idempotency-Key (voir initiateStripePayment) ; l'API

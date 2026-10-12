@@ -210,6 +210,14 @@ export default function TenantInvoicesPage() {
                     {formatMoney(inv.amount, inv.currency)}
                   </span>
                   <Badge status={inv.status} />
+                  {!isPaid && inv.status !== "CANCELLED" && (inv.montantRegle ?? 0) > 0 && (inv.resteDu ?? 0) > 0 && (
+                    <span className="basis-full text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                      {t("tenant.invoices.partiallyPaid", {
+                        paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
+                        remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
+                      })}
+                    </span>
+                  )}
                   {isPaid && (
                     <Bulle texte={t("tenant.tips.viewReceipt")}>
                     <button
