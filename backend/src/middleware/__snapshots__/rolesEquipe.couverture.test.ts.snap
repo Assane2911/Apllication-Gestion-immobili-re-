@@ -15,6 +15,8 @@ exports[`couverture des rôles sur les routes réellement enregistrées > l'inst
     "POST /contracts",
     "POST /contracts/x/renew",
     "POST /contracts/x/scan",
+    "POST /import",
+    "POST /import/preview",
     "POST /inspections",
     "POST /insurance-policies",
     "POST /invoices/send-monthly-reminders",

@@ -95,6 +95,10 @@ const ECRITURES_AUTORISEES: readonly Regle[] = [
   { methodes: ["PUT"], chemin: new RegExp(`^/insurance-policies/${ID}$`), roles: ["AGENT"] },
   { methodes: ["POST"], chemin: new RegExp(`^/messages/${ID}$`), roles: ["AGENT"] },
 
+  // Import CSV de biens et de locataires : création en masse, donc réservée à l'agent
+  // (qui peut créer un bien et un locataire un par un).
+  { methodes: ["POST"], chemin: /^\/import(\/preview)?$/, roles: ["AGENT"] },
+
   // Relances de loyer : agent et comptable.
   { methodes: ["POST"], chemin: new RegExp(`^/invoices/(send-monthly-reminders|${ID}/send-reminder)$`), roles: ["AGENT", "ACCOUNTANT"] },
 
