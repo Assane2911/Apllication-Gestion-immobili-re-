@@ -213,6 +213,10 @@ export interface Contract {
   terms?: string | null;
   /** Jour d'échéance du loyer (1 à 31, 31 = dernier jour du mois) ; absent : le jour de la date de début. */
   paymentDay?: number | null;
+  /** Type de bail ; adapte le titre du document. */
+  leaseType?: "HABITATION" | "MEUBLE" | "COMMERCIAL" | "PROFESSIONNEL";
+  /** Droit applicable saisi par le gestionnaire, imprimé sur le bail. */
+  applicableLaw?: string | null;
   reminderSentAt?: string | null;
   signedByManagerAt?: string | null;
   managerSignatureUrl?: string | null;

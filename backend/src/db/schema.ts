@@ -525,6 +525,13 @@ export const contracts = pgTable(
     // mois, voir utils/jourEcheance.ts). NULL : le jour de la date de début du
     // bail — le comportement de tous les contrats créés avant ce champ.
     paymentDay: integer("payment_day"),
+    // Type de bail (HABITATION, MEUBLE, COMMERCIAL, PROFESSIONNEL — voir
+    // utils/typeBail.ts) : adapte le titre du document. Tous les contrats
+    // antérieurs sont des baux d'habitation, d'où le défaut.
+    leaseType: text("lease_type").notNull().default("HABITATION"),
+    // Droit applicable, texte libre saisi par le gestionnaire et imprimé sur le
+    // bail (ex. « Droit sénégalais »). Vide : aucune mention n'est imprimée.
+    applicableLaw: text("applicable_law"),
     reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     // Signature électronique
     signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),

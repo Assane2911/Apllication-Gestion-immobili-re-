@@ -15,6 +15,7 @@ import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
 import { deviseSchema } from "../utils/devises";
+import { TYPES_BAIL } from "../utils/typeBail";
 
 const contractSchema = z.object({
   propertyId: z.string().min(1),
@@ -31,6 +32,16 @@ const contractSchema = z.object({
   // Jour d'échéance du loyer : 1 à 31 (31 = dernier jour du mois). `null`
   // revient au jour de la date de début du bail.
   paymentDay: z.union([z.null(), z.coerce.number().int().min(1).max(31)]).optional(),
+  // Type de bail : adapte le titre du document (voir utils/typeBail.ts).
+  leaseType: z.enum(TYPES_BAIL).optional(),
+  // Droit applicable (texte libre imprimé sur le bail) ; vide ou null : aucune mention.
+  applicableLaw: z
+    .string()
+    .trim()
+    .max(300, "Le droit applicable ne peut pas dépasser 300 caractères")
+    .nullable()
+    .optional()
+    .transform((v) => (v ? v : null)),
 });
 
 export async function resolveScannedUrl(value: string | null | undefined): Promise<string | null | undefined> {
@@ -242,7 +253,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   //
   // Le statut reste modifiable : résilier ou clore un bail ne réécrit rien de
   // ce qui a été signé, et doit rester possible à tout moment.
-  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms", "paymentDay"] as const;
+  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms", "paymentDay", "leaseType", "applicableLaw"] as const;
   const toucheAuContenu = CHAMPS_CONTRACTUELS.some((champ) => body[champ] !== undefined);
   if (existing.signedByTenantAt && toucheAuContenu) {
     throw new ApiError(
@@ -573,6 +584,8 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
         // s'imprimerait sans les conditions du précédent.
         terms: existing.terms,
         paymentDay: existing.paymentDay,
+        leaseType: existing.leaseType,
+        applicableLaw: existing.applicableLaw,
         status: "ACTIVE",
       })
       .returning();
