@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { agencySettings, contracts, expenses, invoices, owners, properties } from "../db/schema";
 import { generateCrgHtml } from "../services/pdf.service";
+import { developperFactures, factureEncaissee } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
 import { nomAvecCivilite } from "../utils/nom";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
@@ -109,7 +110,7 @@ async function computeCrg(owner: OwnerRow, month: number, year: number): Promise
       ? db
           .select()
           .from(invoices)
-          .where(and(inArray(invoices.contractId, contractIds), eq(invoices.status, "PAID")))
+          .where(and(inArray(invoices.contractId, contractIds), factureEncaissee))
       : Promise.resolve([] as (typeof invoices.$inferSelect)[]),
     propertyIds.length > 0
       ? db
@@ -120,7 +121,8 @@ async function computeCrg(owner: OwnerRow, month: number, year: number): Promise
   ]);
 
   const invoiceDate = (inv: typeof invoices.$inferSelect) => new Date(inv.paidAt ?? inv.dueDate);
-  const filteredInvoices = paidInvoiceRows.filter((inv) => {
+  // Un encaissement par paiement (voir encaissements.service.ts).
+  const filteredInvoices = (await developperFactures(paidInvoiceRows)).filter((inv) => {
     const d = invoiceDate(inv);
     return d >= start && d <= end;
   });

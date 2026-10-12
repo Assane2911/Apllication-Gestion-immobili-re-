@@ -5,6 +5,7 @@ import { db } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { developperEncaissements, factureEncaissee } from "../services/encaissements.service";
 import { assertOwnership } from "../utils/authorization";
 import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
 import { deviseSchema } from "../utils/devises";
@@ -136,8 +137,9 @@ export const getFinancialSummary = asyncHandler(async (req: Request, res: Respon
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(and(eq(invoices.status, "PAID"), eq(properties.managerId, managerId)));
-  const paidInvoices = paidInvoiceRows.map((r: { invoice: typeof invoices.$inferSelect }) => r.invoice);
+    .where(and(factureEncaissee, eq(properties.managerId, managerId)));
+  // Un encaissement par paiement (voir encaissements.service.ts) : le total est la somme de l'argent reçu.
+  const paidInvoices = (await developperEncaissements(paidInvoiceRows as { invoice: typeof invoices.$inferSelect }[])).map((r) => r.invoice);
 
   // Total des dépenses (scopé aux biens du gestionnaire connecté)
   const expenseRows = await db
@@ -181,7 +183,8 @@ export const getFinancialSummary = asyncHandler(async (req: Request, res: Respon
     netCashFlowByCurrency,
     expensesByCategory,
     expenseCount: allExpenses.length,
-    paidInvoiceCount: paidInvoices.length,
+    // Factures réglées en totalité (un encaissement partiel n'est pas une facture payée).
+    paidInvoiceCount: (paidInvoiceRows as { invoice: typeof invoices.$inferSelect }[]).filter((r) => r.invoice.status === "PAID").length,
   });
 });
 
@@ -232,7 +235,7 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(and(eq(invoices.status, "PAID"), eq(properties.managerId, managerId)));
+    .where(and(factureEncaissee, eq(properties.managerId, managerId)));
 
   const expenseRows = await db
     .select({ expense: expenses, property: properties })
@@ -250,7 +253,7 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
 
   const inRange = (d: Date) => (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
 
-  const filteredInvoices = (paidInvoiceRows as PaidInvoiceRow[]).filter((r) =>
+  const filteredInvoices = (await developperEncaissements(paidInvoiceRows as PaidInvoiceRow[])).filter((r) =>
     inRange(new Date(r.invoice.paidAt ?? r.invoice.dueDate))
   );
   const filteredExpenses = (expenseRows as ExpenseRow[]).filter((r) => inRange(new Date(r.expense.expenseDate)));

@@ -79,6 +79,8 @@ describe("GET /api/dashboard/stats", () => {
       amount: 500,
       currency: "EUR",
       status: "PAID",
+      // « Revenus encaissés » compte l'argent REÇU ce mois-ci : date d'encaissement réelle.
+      paidAt: now,
     });
     await createInvoice(contractXof.id, {
       periodMonth: now.getMonth() + 1,
@@ -86,6 +88,7 @@ describe("GET /api/dashboard/stats", () => {
       amount: 250000,
       currency: "XOF",
       status: "PAID",
+      paidAt: now,
     });
 
     const res = await request(app).get("/api/dashboard/stats").set(authHeader(tokenFor(manager)));

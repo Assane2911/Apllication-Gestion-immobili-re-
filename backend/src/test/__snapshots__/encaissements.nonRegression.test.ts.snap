@@ -1,0 +1,503 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > bilan fiscal 2025 : synthèse, grand livre, FEC, SYSCOHADA 1`] = `
+{
+  "fec": "JournalCode	JournalLib	EcritureNum	EcritureDate	CompteNum	CompteLib	CompAuxNum	CompAuxLib	PieceRef	PieceDate	EcritureLib	Debit	Credit	EcritureLet	DateLet	ValidDate	Montantdevise	Idevise
+BQ	Journal de banque	000001	20251106	512000	Banque			<id>	20251106	Loyer 11/2025 - Awa Diallo (Studio A)	500.00	0.00			20251106		
+BQ	Journal de banque	000001	20251106	706100	Loyers et produits de gestion locative			<id>	20251106	Loyer 11/2025 - Awa Diallo (Studio A)	0.00	500.00			20251106		
+BQ	Journal de banque	000002	20251120	616100	Primes d'assurances			<id>	20251120	Assurance (Studio A)	300.00	0.00			20251120		
+BQ	Journal de banque	000002	20251120	512000	Banque			<id>	20251120	Assurance (Studio A)	0.00	300.00			20251120		
+BQ	Journal de banque	000003	20251206	512000	Banque			<id>	20251206	Loyer 12/2025 - Awa Diallo (Studio A)	500.00	0.00			20251206		
+BQ	Journal de banque	000003	20251206	706100	Loyers et produits de gestion locative			<id>	20251206	Loyer 12/2025 - Awa Diallo (Studio A)	0.00	500.00			20251206		",
+  "grandLivre": "﻿Grand Livre 2025
+
+Date;Bien;Type;Catégorie;Libellé;Recette;Dépense;Devise;Solde cumulé
+06/11/2025;"Studio A";Recette;"Loyer";"Loyer 11/2025 - Awa Diallo";500,00;;EUR;500,00
+20/11/2025;"Studio A";Dépense;"INSURANCE";"Assurance";;300,00;EUR;200,00
+06/12/2025;"Studio A";Recette;"Loyer";"Loyer 12/2025 - Awa Diallo";500,00;;EUR;700,00",
+  "synthese": {
+    "availableYears": [
+      2026,
+      2025,
+    ],
+    "bilanParBien": [
+      {
+        "currency": "EUR",
+        "expense": 300,
+        "net": 700,
+        "propertyTitle": "Studio A",
+        "revenue": 1000,
+      },
+    ],
+    "expensesByCategory": {
+      "INSURANCE": {
+        "EUR": 300,
+      },
+    },
+    "expensesByMonth": {
+      "2025-11": {
+        "EUR": 300,
+      },
+    },
+    "netResultByCurrency": {
+      "EUR": 700,
+    },
+    "revenueByMonth": {
+      "2025-11": {
+        "EUR": 500,
+      },
+      "2025-12": {
+        "EUR": 500,
+      },
+    },
+    "totalExpensesByCurrency": {
+      "EUR": 300,
+    },
+    "totalRevenueByCurrency": {
+      "EUR": 1000,
+    },
+    "year": 2025,
+  },
+  "syscohada": "﻿Export comptable SYSCOHADA - Exercice 2025
+ATTENTION : plan comptable provisoire, non validé par un expert-comptable agréé OHADA — à faire vérifier avant tout usage réglementaire ou déclaratif.
+
+JOURNAL
+Date;Compte;Libellé compte;Pièce;Libellé écriture;Débit;Crédit;Devise
+06/11/2025;521000;"Banques";"<id>";"Loyer 11/2025 - Awa Diallo (Studio A)";500,00;;EUR
+06/11/2025;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 11/2025 - Awa Diallo (Studio A)";;500,00;EUR
+20/11/2025;625000;"Primes d'assurance";"<id>";"Assurance (Studio A)";300,00;;EUR
+20/11/2025;521000;"Banques";"<id>";"Assurance (Studio A)";;300,00;EUR
+06/12/2025;521000;"Banques";"<id>";"Loyer 12/2025 - Awa Diallo (Studio A)";500,00;;EUR
+06/12/2025;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 12/2025 - Awa Diallo (Studio A)";;500,00;EUR
+
+GRAND LIVRE (par compte)
+Compte;Libellé compte;Devise;Date;Pièce;Libellé écriture;Débit;Crédit;Solde
+521000;"Banques";EUR;06/11/2025;"<id>";"Loyer 11/2025 - Awa Diallo (Studio A)";500,00;;500,00
+521000;"Banques";EUR;20/11/2025;"<id>";"Assurance (Studio A)";;300,00;200,00
+521000;"Banques";EUR;06/12/2025;"<id>";"Loyer 12/2025 - Awa Diallo (Studio A)";500,00;;700,00
+;;;;;Total 521000;1000,00;300,00;700,00
+625000;"Primes d'assurance";EUR;20/11/2025;"<id>";"Assurance (Studio A)";300,00;;300,00
+;;;;;Total 625000;300,00;0,00;300,00
+706000;"Loyers et produits de gestion locative";EUR;06/11/2025;"<id>";"Loyer 11/2025 - Awa Diallo (Studio A)";;500,00;-500,00
+706000;"Loyers et produits de gestion locative";EUR;06/12/2025;"<id>";"Loyer 12/2025 - Awa Diallo (Studio A)";;500,00;-1000,00
+;;;;;Total 706000;0,00;1000,00;-1000,00
+
+BALANCE GÉNÉRALE
+Compte;Libellé compte;Devise;Total Débit;Total Crédit;Solde Débiteur;Solde Créditeur
+521000;"Banques";EUR;1000,00;300,00;700,00;
+625000;"Primes d'assurance";EUR;300,00;0,00;300,00;
+706000;"Loyers et produits de gestion locative";EUR;0,00;1000,00;;1000,00
+
+;Total général EUR;;1300,00;1300,00;;",
+}
+`;
+
+exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > bilan fiscal 2026 : synthèse, grand livre, FEC, SYSCOHADA 1`] = `
+{
+  "fec": "JournalCode	JournalLib	EcritureNum	EcritureDate	CompteNum	CompteLib	CompAuxNum	CompAuxLib	PieceRef	PieceDate	EcritureLib	Debit	Credit	EcritureLet	DateLet	ValidDate	Montantdevise	Idevise
+BQ	Journal de banque	000001	20260505	512000	Banque			<id>	20260505	Loyer 5/2026 - Awa Diallo (Studio A)	500.00	0.00			20260505		
+BQ	Journal de banque	000001	20260505	706100	Loyers et produits de gestion locative			<id>	20260505	Loyer 5/2026 - Awa Diallo (Studio A)	0.00	500.00			20260505		
+BQ	Journal de banque	000002	20260706	512000	Banque			<id>	20260706	Loyer 7/2026 - Awa Diallo (Studio A)	550.00	0.00			20260706		
+BQ	Journal de banque	000002	20260706	706100	Loyers et produits de gestion locative			<id>	20260706	Loyer 7/2026 - Awa Diallo (Studio A)	0.00	550.00			20260706		
+BQ	Journal de banque	000003	20260806	512000	Banque			<id>	20260806	Loyer 8/2026 - Awa Diallo (Studio A)	550.00	0.00			20260806		
+BQ	Journal de banque	000003	20260806	706100	Loyers et produits de gestion locative			<id>	20260806	Loyer 8/2026 - Awa Diallo (Studio A)	0.00	550.00			20260806		
+BQ	Journal de banque	000004	20260906	512000	Banque			<id>	20260906	Loyer 9/2026 - Awa Diallo (Studio A)	550.00	0.00			20260906		
+BQ	Journal de banque	000004	20260906	706100	Loyers et produits de gestion locative			<id>	20260906	Loyer 9/2026 - Awa Diallo (Studio A)	0.00	550.00			20260906		
+BQ	Journal de banque	000005	20260906	512000	Banque			<id>	20260906	Loyer 9/2026 - Moussa Sy (Villa B)	250000.00	0.00			20260906		
+BQ	Journal de banque	000005	20260906	706100	Loyers et produits de gestion locative			<id>	20260906	Loyer 9/2026 - Moussa Sy (Villa B)	0.00	250000.00			20260906		
+BQ	Journal de banque	000006	20260912	615500	Entretien et r�parations			<id>	20260912	Plomberie (Studio A)	120.00	0.00			20260912		
+BQ	Journal de banque	000006	20260912	512000	Banque			<id>	20260912	Plomberie (Studio A)	0.00	120.00			20260912		
+BQ	Journal de banque	000007	20261003	615500	Entretien et r�parations			<id>	20261003	Peinture (Villa B)	80000.00	0.00			20261003		
+BQ	Journal de banque	000007	20261003	512000	Banque			<id>	20261003	Peinture (Villa B)	0.00	80000.00			20261003		
+BQ	Journal de banque	000008	20261006	512000	Banque			<id>	20261006	Loyer 10/2026 - Awa Diallo (Studio A)	550.00	0.00			20261006		
+BQ	Journal de banque	000008	20261006	706100	Loyers et produits de gestion locative			<id>	20261006	Loyer 10/2026 - Awa Diallo (Studio A)	0.00	550.00			20261006		
+BQ	Journal de banque	000009	20261006	512000	Banque			<id>	20261006	Loyer 10/2026 - Moussa Sy (Villa B)	250000.00	0.00			20261006		
+BQ	Journal de banque	000009	20261006	706100	Loyers et produits de gestion locative			<id>	20261006	Loyer 10/2026 - Moussa Sy (Villa B)	0.00	250000.00			20261006		",
+  "grandLivre": "﻿Grand Livre 2026
+
+Date;Bien;Type;Catégorie;Libellé;Recette;Dépense;Devise;Solde cumulé
+05/05/2026;"Studio A";Recette;"Loyer";"Loyer 5/2026 - Awa Diallo";500,00;;EUR;500,00
+06/07/2026;"Studio A";Recette;"Loyer";"Loyer 7/2026 - Awa Diallo";550,00;;EUR;1050,00
+06/08/2026;"Studio A";Recette;"Loyer";"Loyer 8/2026 - Awa Diallo";550,00;;EUR;1600,00
+06/09/2026;"Studio A";Recette;"Loyer";"Loyer 9/2026 - Awa Diallo";550,00;;EUR;2150,00
+06/09/2026;"Villa B";Recette;"Loyer";"Loyer 9/2026 - Moussa Sy";250000,00;;XOF;250000,00
+12/09/2026;"Studio A";Dépense;"MAINTENANCE";"Plomberie";;120,00;EUR;2030,00
+03/10/2026;"Villa B";Dépense;"MAINTENANCE";"Peinture";;80000,00;XOF;170000,00
+06/10/2026;"Studio A";Recette;"Loyer";"Loyer 10/2026 - Awa Diallo";550,00;;EUR;2580,00
+06/10/2026;"Villa B";Recette;"Loyer";"Loyer 10/2026 - Moussa Sy";250000,00;;XOF;420000,00",
+  "synthese": {
+    "availableYears": [
+      2026,
+      2025,
+    ],
+    "bilanParBien": [
+      {
+        "currency": "EUR",
+        "expense": 120,
+        "net": 2580,
+        "propertyTitle": "Studio A",
+        "revenue": 2700,
+      },
+      {
+        "currency": "XOF",
+        "expense": 80000,
+        "net": 420000,
+        "propertyTitle": "Villa B",
+        "revenue": 500000,
+      },
+    ],
+    "expensesByCategory": {
+      "MAINTENANCE": {
+        "EUR": 120,
+        "XOF": 80000,
+      },
+    },
+    "expensesByMonth": {
+      "2026-09": {
+        "EUR": 120,
+      },
+      "2026-10": {
+        "XOF": 80000,
+      },
+    },
+    "netResultByCurrency": {
+      "EUR": 2580,
+      "XOF": 420000,
+    },
+    "revenueByMonth": {
+      "2026-05": {
+        "EUR": 500,
+      },
+      "2026-07": {
+        "EUR": 550,
+      },
+      "2026-08": {
+        "EUR": 550,
+      },
+      "2026-09": {
+        "EUR": 550,
+        "XOF": 250000,
+      },
+      "2026-10": {
+        "EUR": 550,
+        "XOF": 250000,
+      },
+    },
+    "totalExpensesByCurrency": {
+      "EUR": 120,
+      "XOF": 80000,
+    },
+    "totalRevenueByCurrency": {
+      "EUR": 2700,
+      "XOF": 500000,
+    },
+    "year": 2026,
+  },
+  "syscohada": "﻿Export comptable SYSCOHADA - Exercice 2026
+ATTENTION : plan comptable provisoire, non validé par un expert-comptable agréé OHADA — à faire vérifier avant tout usage réglementaire ou déclaratif.
+
+JOURNAL
+Date;Compte;Libellé compte;Pièce;Libellé écriture;Débit;Crédit;Devise
+05/05/2026;521000;"Banques";"<id>";"Loyer 5/2026 - Awa Diallo (Studio A)";500,00;;EUR
+05/05/2026;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 5/2026 - Awa Diallo (Studio A)";;500,00;EUR
+06/07/2026;521000;"Banques";"<id>";"Loyer 7/2026 - Awa Diallo (Studio A)";550,00;;EUR
+06/07/2026;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 7/2026 - Awa Diallo (Studio A)";;550,00;EUR
+06/08/2026;521000;"Banques";"<id>";"Loyer 8/2026 - Awa Diallo (Studio A)";550,00;;EUR
+06/08/2026;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 8/2026 - Awa Diallo (Studio A)";;550,00;EUR
+06/09/2026;521000;"Banques";"<id>";"Loyer 9/2026 - Awa Diallo (Studio A)";550,00;;EUR
+06/09/2026;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 9/2026 - Awa Diallo (Studio A)";;550,00;EUR
+06/09/2026;521000;"Banques";"<id>";"Loyer 9/2026 - Moussa Sy (Villa B)";250000,00;;XOF
+06/09/2026;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 9/2026 - Moussa Sy (Villa B)";;250000,00;XOF
+12/09/2026;624000;"Entretien, réparations et maintenance";"<id>";"Plomberie (Studio A)";120,00;;EUR
+12/09/2026;521000;"Banques";"<id>";"Plomberie (Studio A)";;120,00;EUR
+03/10/2026;624000;"Entretien, réparations et maintenance";"<id>";"Peinture (Villa B)";80000,00;;XOF
+03/10/2026;521000;"Banques";"<id>";"Peinture (Villa B)";;80000,00;XOF
+06/10/2026;521000;"Banques";"<id>";"Loyer 10/2026 - Awa Diallo (Studio A)";550,00;;EUR
+06/10/2026;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 10/2026 - Awa Diallo (Studio A)";;550,00;EUR
+06/10/2026;521000;"Banques";"<id>";"Loyer 10/2026 - Moussa Sy (Villa B)";250000,00;;XOF
+06/10/2026;706000;"Loyers et produits de gestion locative";"<id>";"Loyer 10/2026 - Moussa Sy (Villa B)";;250000,00;XOF
+
+GRAND LIVRE (par compte)
+Compte;Libellé compte;Devise;Date;Pièce;Libellé écriture;Débit;Crédit;Solde
+521000;"Banques";EUR;05/05/2026;"<id>";"Loyer 5/2026 - Awa Diallo (Studio A)";500,00;;500,00
+521000;"Banques";EUR;06/07/2026;"<id>";"Loyer 7/2026 - Awa Diallo (Studio A)";550,00;;1050,00
+521000;"Banques";EUR;06/08/2026;"<id>";"Loyer 8/2026 - Awa Diallo (Studio A)";550,00;;1600,00
+521000;"Banques";EUR;06/09/2026;"<id>";"Loyer 9/2026 - Awa Diallo (Studio A)";550,00;;2150,00
+521000;"Banques";EUR;12/09/2026;"<id>";"Plomberie (Studio A)";;120,00;2030,00
+521000;"Banques";EUR;06/10/2026;"<id>";"Loyer 10/2026 - Awa Diallo (Studio A)";550,00;;2580,00
+;;;;;Total 521000;2700,00;120,00;2580,00
+521000;"Banques";XOF;06/09/2026;"<id>";"Loyer 9/2026 - Moussa Sy (Villa B)";250000,00;;250000,00
+521000;"Banques";XOF;03/10/2026;"<id>";"Peinture (Villa B)";;80000,00;170000,00
+521000;"Banques";XOF;06/10/2026;"<id>";"Loyer 10/2026 - Moussa Sy (Villa B)";250000,00;;420000,00
+;;;;;Total 521000;500000,00;80000,00;420000,00
+624000;"Entretien, réparations et maintenance";EUR;12/09/2026;"<id>";"Plomberie (Studio A)";120,00;;120,00
+;;;;;Total 624000;120,00;0,00;120,00
+624000;"Entretien, réparations et maintenance";XOF;03/10/2026;"<id>";"Peinture (Villa B)";80000,00;;80000,00
+;;;;;Total 624000;80000,00;0,00;80000,00
+706000;"Loyers et produits de gestion locative";EUR;05/05/2026;"<id>";"Loyer 5/2026 - Awa Diallo (Studio A)";;500,00;-500,00
+706000;"Loyers et produits de gestion locative";EUR;06/07/2026;"<id>";"Loyer 7/2026 - Awa Diallo (Studio A)";;550,00;-1050,00
+706000;"Loyers et produits de gestion locative";EUR;06/08/2026;"<id>";"Loyer 8/2026 - Awa Diallo (Studio A)";;550,00;-1600,00
+706000;"Loyers et produits de gestion locative";EUR;06/09/2026;"<id>";"Loyer 9/2026 - Awa Diallo (Studio A)";;550,00;-2150,00
+706000;"Loyers et produits de gestion locative";EUR;06/10/2026;"<id>";"Loyer 10/2026 - Awa Diallo (Studio A)";;550,00;-2700,00
+;;;;;Total 706000;0,00;2700,00;-2700,00
+706000;"Loyers et produits de gestion locative";XOF;06/09/2026;"<id>";"Loyer 9/2026 - Moussa Sy (Villa B)";;250000,00;-250000,00
+706000;"Loyers et produits de gestion locative";XOF;06/10/2026;"<id>";"Loyer 10/2026 - Moussa Sy (Villa B)";;250000,00;-500000,00
+;;;;;Total 706000;0,00;500000,00;-500000,00
+
+BALANCE GÉNÉRALE
+Compte;Libellé compte;Devise;Total Débit;Total Crédit;Solde Débiteur;Solde Créditeur
+521000;"Banques";EUR;2700,00;120,00;2580,00;
+521000;"Banques";XOF;500000,00;80000,00;420000,00;
+624000;"Entretien, réparations et maintenance";EUR;120,00;0,00;120,00;
+624000;"Entretien, réparations et maintenance";XOF;80000,00;0,00;80000,00;
+706000;"Loyers et produits de gestion locative";EUR;0,00;2700,00;;2700,00
+706000;"Loyers et produits de gestion locative";XOF;0,00;500000,00;;500000,00
+
+;Total général EUR;;2820,00;2820,00;;
+;Total général XOF;;580000,00;580000,00;;",
+}
+`;
+
+exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > compte-rendu de gestion du propriétaire, mois 9/2026 1`] = `
+{
+  "bic": null,
+  "iban": null,
+  "managementFeeRate": 8,
+  "month": 9,
+  "ownerCompanyName": null,
+  "ownerName": "Fatou Diop",
+  "properties": [
+    {
+      "chargesDeduites": 120,
+      "commission": 44,
+      "currency": "EUR",
+      "loyersEncaisses": 550,
+      "netAReverser": 386,
+      "propertyTitle": "Studio A",
+    },
+    {
+      "chargesDeduites": 0,
+      "commission": 20000,
+      "currency": "XOF",
+      "loyersEncaisses": 250000,
+      "netAReverser": 230000,
+      "propertyTitle": "Villa B",
+    },
+  ],
+  "totalChargesByCurrency": {
+    "EUR": 120,
+    "XOF": 0,
+  },
+  "totalCommissionByCurrency": {
+    "EUR": 44,
+    "XOF": 20000,
+  },
+  "totalLoyersByCurrency": {
+    "EUR": 550,
+    "XOF": 250000,
+  },
+  "totalNetByCurrency": {
+    "EUR": 386,
+    "XOF": 230000,
+  },
+  "year": 2026,
+}
+`;
+
+exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > compte-rendu de gestion du propriétaire, mois 10/2026 1`] = `
+{
+  "bic": null,
+  "iban": null,
+  "managementFeeRate": 8,
+  "month": 10,
+  "ownerCompanyName": null,
+  "ownerName": "Fatou Diop",
+  "properties": [
+    {
+      "chargesDeduites": 0,
+      "commission": 44,
+      "currency": "EUR",
+      "loyersEncaisses": 550,
+      "netAReverser": 506,
+      "propertyTitle": "Studio A",
+    },
+    {
+      "chargesDeduites": 80000,
+      "commission": 20000,
+      "currency": "XOF",
+      "loyersEncaisses": 250000,
+      "netAReverser": 150000,
+      "propertyTitle": "Villa B",
+    },
+  ],
+  "totalChargesByCurrency": {
+    "EUR": 0,
+    "XOF": 80000,
+  },
+  "totalCommissionByCurrency": {
+    "EUR": 44,
+    "XOF": 20000,
+  },
+  "totalLoyersByCurrency": {
+    "EUR": 550,
+    "XOF": 250000,
+  },
+  "totalNetByCurrency": {
+    "EUR": 506,
+    "XOF": 150000,
+  },
+  "year": 2026,
+}
+`;
+
+exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > résumé et export des dépenses 1`] = `
+{
+  "exportComplet": "﻿Type;Date;Bien;Détail;Description;Montant;Devise
+Revenu;06/11/2025;"Studio A";"Awa Diallo";"Loyer 11/2025";500,00;EUR
+Revenu;06/12/2025;"Studio A";"Awa Diallo";"Loyer 12/2025";500,00;EUR
+Revenu;06/07/2026;"Studio A";"Awa Diallo";"Loyer 7/2026";550,00;EUR
+Revenu;06/08/2026;"Studio A";"Awa Diallo";"Loyer 8/2026";550,00;EUR
+Revenu;06/09/2026;"Studio A";"Awa Diallo";"Loyer 9/2026";550,00;EUR
+Revenu;06/10/2026;"Studio A";"Awa Diallo";"Loyer 10/2026";550,00;EUR
+Revenu;05/05/2026;"Studio A";"Awa Diallo";"Loyer 5/2026";500,00;EUR
+Revenu;06/09/2026;"Villa B";"Moussa Sy";"Loyer 9/2026";250000,00;XOF
+Revenu;06/10/2026;"Villa B";"Moussa Sy";"Loyer 10/2026";250000,00;XOF
+Dépense;12/09/2026;"Studio A";"MAINTENANCE";"Plomberie";-120,00;EUR
+Dépense;20/11/2025;"Studio A";"INSURANCE";"Assurance";-300,00;EUR
+Dépense;03/10/2026;"Villa B";"MAINTENANCE";"Peinture";-80000,00;XOF
+
+--- Résumé par bien ---
+Bien;Revenus;Dépenses;Résultat net
+"Studio A";3700,00;420,00;3280,00
+"Villa B";500000,00;80000,00;420000,00",
+  "exportPartiel": "﻿Type;Date;Bien;Détail;Description;Montant;Devise
+Revenu;06/09/2026;"Studio A";"Awa Diallo";"Loyer 9/2026";550,00;EUR
+Revenu;06/10/2026;"Studio A";"Awa Diallo";"Loyer 10/2026";550,00;EUR
+Revenu;06/09/2026;"Villa B";"Moussa Sy";"Loyer 9/2026";250000,00;XOF
+Revenu;06/10/2026;"Villa B";"Moussa Sy";"Loyer 10/2026";250000,00;XOF
+Dépense;12/09/2026;"Studio A";"MAINTENANCE";"Plomberie";-120,00;EUR
+Dépense;03/10/2026;"Villa B";"MAINTENANCE";"Peinture";-80000,00;XOF
+
+--- Résumé par bien ---
+Bien;Revenus;Dépenses;Résultat net
+"Studio A";1100,00;120,00;980,00
+"Villa B";500000,00;80000,00;420000,00",
+  "resume": {
+    "expenseCount": 3,
+    "expensesByCategory": {
+      "INSURANCE": {
+        "EUR": 300,
+      },
+      "MAINTENANCE": {
+        "EUR": 120,
+        "XOF": 80000,
+      },
+    },
+    "netCashFlowByCurrency": {
+      "EUR": 3280,
+      "XOF": 420000,
+    },
+    "paidInvoiceCount": 9,
+    "totalExpensesByCurrency": {
+      "EUR": 420,
+      "XOF": 80000,
+    },
+    "totalRevenueByCurrency": {
+      "EUR": 3700,
+      "XOF": 500000,
+    },
+  },
+}
+`;
+
+exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > tableau de bord du gestionnaire 1`] = `
+{
+  "activeContracts": 2,
+  "expensesByMonth": {
+    "2026-09": {
+      "EUR": 120,
+    },
+    "2026-10": {
+      "XOF": 80000,
+    },
+  },
+  "lateInvoices": 1,
+  "monthlyExpectedByCurrency": {
+    "EUR": 550,
+    "XOF": 250000,
+  },
+  "monthlyRevenueByCurrency": {
+    "EUR": 550,
+    "XOF": 250000,
+  },
+  "occupancyRate": 0,
+  "openIssues": 0,
+  "propertiesByStatus": {
+    "AVAILABLE": 2,
+    "MAINTENANCE": 0,
+    "OCCUPIED": 0,
+  },
+  "revenueByMonth": {
+    "2026-07": {
+      "EUR": 550,
+    },
+    "2026-08": {
+      "EUR": 550,
+    },
+    "2026-09": {
+      "EUR": 550,
+      "XOF": 250000,
+    },
+    "2026-10": {
+      "EUR": 550,
+      "XOF": 250000,
+    },
+  },
+  "totalProperties": 2,
+  "totalTenants": 2,
+}
+`;
+
+exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > tableau de bord du propriétaire 1`] = `
+{
+  "collectedThisMonthByCurrency": {
+    "EUR": 550,
+    "XOF": 250000,
+  },
+  "managementFeeRate": 8,
+  "ownerName": "Fatou Diop",
+  "pendingThisMonthByCurrency": {},
+  "properties": [
+    {
+      "address": "1 rue du Test",
+      "collected": 550,
+      "currency": "EUR",
+      "pending": 0,
+      "title": "Studio A",
+    },
+    {
+      "address": "1 rue du Test",
+      "collected": 250000,
+      "currency": "XOF",
+      "pending": 0,
+      "title": "Villa B",
+    },
+  ],
+  "revenueByMonth": {
+    "2026-07": {
+      "EUR": 550,
+    },
+    "2026-08": {
+      "EUR": 550,
+    },
+    "2026-09": {
+      "EUR": 550,
+      "XOF": 250000,
+    },
+    "2026-10": {
+      "EUR": 550,
+      "XOF": 250000,
+    },
+  },
+}
+`;

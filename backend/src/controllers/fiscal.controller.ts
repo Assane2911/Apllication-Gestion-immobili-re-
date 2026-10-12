@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { agencySettings, contracts, expenses, invoices, properties, tenants } from "../db/schema";
+import { developperEncaissements, factureEncaissee } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
 import { csvEscape, csvMontant, CSV_BOM, fecEscapeText, fecMontant, versLatin1Fec } from "../utils/csv";
 
@@ -60,7 +61,7 @@ async function loadYearData(managerId: string, year: number) {
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .where(and(eq(invoices.status, "PAID"), eq(properties.managerId, managerId))),
+      .where(and(factureEncaissee, eq(properties.managerId, managerId))),
     db
       .select({ expense: expenses, property: properties })
       .from(expenses)
@@ -69,7 +70,9 @@ async function loadYearData(managerId: string, year: number) {
   ]);
 
   const invoiceDate = (r: PaidInvoiceRow) => new Date(r.invoice.paidAt ?? r.invoice.dueDate);
-  const filteredInvoices = (paidInvoiceRows as PaidInvoiceRow[]).filter((r) => {
+  // Une ligne par ENCAISSEMENT (voir encaissements.service.ts) : une facture
+  // réglée en plusieurs fois compte à la date et pour le montant de chaque paiement.
+  const filteredInvoices = (await developperEncaissements(paidInvoiceRows as PaidInvoiceRow[])).filter((r) => {
     const d = invoiceDate(r);
     return d >= start && d <= end;
   });
@@ -90,7 +93,7 @@ async function availableYears(managerId: string): Promise<number[]> {
       .from(invoices)
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .where(and(eq(invoices.status, "PAID"), eq(properties.managerId, managerId))),
+      .where(and(factureEncaissee, eq(properties.managerId, managerId))),
     db
       .select({ expense: expenses })
       .from(expenses)
@@ -99,7 +102,7 @@ async function availableYears(managerId: string): Promise<number[]> {
   ]);
 
   const years = new Set<number>([new Date().getFullYear()]);
-  for (const r of paidInvoiceRows as { invoice: typeof invoices.$inferSelect }[]) {
+  for (const r of await developperEncaissements(paidInvoiceRows as { invoice: typeof invoices.$inferSelect }[])) {
     years.add(new Date(r.invoice.paidAt ?? r.invoice.dueDate).getFullYear());
   }
   for (const r of expenseRows as { expense: typeof expenses.$inferSelect }[]) {
