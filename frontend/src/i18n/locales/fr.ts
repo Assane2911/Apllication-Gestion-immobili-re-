@@ -69,6 +69,9 @@ const fr = {
       PAYDUNYA: "PayDunya",
       BANK_TRANSFER: "Virement",
       DEMO: "Démo",
+      CASH: "Espèces",
+      CHEQUE: "Chèque",
+      MOBILE_MONEY: "Mobile Money",
     },
     theme: {
       tip: "Bascule entre l'affichage clair et l'affichage sombre.",
@@ -537,6 +540,18 @@ const fr = {
         "Ces 8 codes de secours permettent de vous connecter si vous perdez l'accès à votre application d'authentification. Chacun ne fonctionne qu'une seule fois. Ils ne seront plus jamais affichés : notez-les dans un endroit sûr.",
       done: "J'ai noté mes codes de secours",
     },
+    markPaidModal: {
+      title: "Marquer le loyer comme réglé",
+      intro: "Loyer de {{name}} : {{amount}}.",
+      warning: "La quittance partira immédiatement par email au locataire, et cette action est DÉFINITIVE : une facture réglée ne peut plus revenir en attente.",
+      methodLabel: "Moyen de paiement",
+      dateLabel: "Date d'encaissement",
+      dateHint: "La date à laquelle vous avez réellement reçu l'argent : c'est elle qui classe le loyer dans les bilans (mois et année).",
+      referenceLabel: "Référence (facultatif)",
+      referencePlaceholder: "N° de chèque, référence du virement...",
+      confirmButton: "Marquer réglée",
+      saving: "Enregistrement...",
+    },
     twoFactorDisable: {
       title: "Désactiver la double authentification",
       subtitle: "Confirmez votre identité pour désactiver cette protection.",
@@ -966,8 +981,6 @@ const fr = {
       sendingReminder: "Envoi...",
       markPaid: "Marquer réglée",
       markingPaid: "Enregistrement...",
-      confirmMarkPaid:
-        "Marquer le loyer de {{name}} comme réglé ({{amount}}) ?\n\nLa quittance partira immédiatement par email au locataire, et cette action est DÉFINITIVE : une facture réglée ne peut plus revenir en attente.",
       noInvoicesForFilter: "Aucune facture pour ce filtre",
       receiptTitle: "Quittance de loyer - {{period}}",
     },

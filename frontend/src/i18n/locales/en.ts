@@ -71,6 +71,9 @@ const en: TranslationSchema = {
       PAYDUNYA: "PayDunya",
       BANK_TRANSFER: "Bank transfer",
       DEMO: "Demo",
+      CASH: "Cash",
+      CHEQUE: "Cheque",
+      MOBILE_MONEY: "Mobile Money",
     },
     theme: {
       tip: "Switches between the light and dark display.",
@@ -539,6 +542,18 @@ const en: TranslationSchema = {
         "These 8 backup codes let you sign in if you lose access to your authenticator app. Each one works only once. They will never be shown again: write them down somewhere safe.",
       done: "I've written down my backup codes",
     },
+    markPaidModal: {
+      title: "Mark the rent as paid",
+      intro: "Rent of {{name}}: {{amount}}.",
+      warning: "The receipt will be emailed to the tenant straight away, and this cannot be undone: a paid invoice cannot go back to pending.",
+      methodLabel: "Payment method",
+      dateLabel: "Date received",
+      dateHint: "The day you actually received the money: it decides which month and year the rent is counted in.",
+      referenceLabel: "Reference (optional)",
+      referencePlaceholder: "Cheque no., transfer reference...",
+      confirmButton: "Mark as paid",
+      saving: "Saving...",
+    },
     twoFactorDisable: {
       title: "Disable two-factor authentication",
       subtitle: "Confirm your identity to disable this protection.",
@@ -965,8 +980,6 @@ const en: TranslationSchema = {
       sendingReminder: "Sending...",
       markPaid: "Mark as paid",
       markingPaid: "Recording...",
-      confirmMarkPaid:
-        "Mark {{name}}'s rent as paid ({{amount}})?\n\nThe receipt will be emailed to the tenant straight away, and this cannot be undone: a paid invoice cannot go back to pending.",
       noInvoicesForFilter: "No invoices for this filter",
       receiptTitle: "Rent receipt - {{period}}",
     },

@@ -373,7 +373,10 @@ export interface PlatformBankInfo {
 }
 
 export type InvoiceStatus = "PENDING" | "PAID" | "LATE" | "CANCELLED";
-export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO";
+export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO" | "CASH" | "CHEQUE" | "MOBILE_MONEY";
+
+/** Moyens que le gestionnaire peut saisir à la main en marquant un loyer réglé. */
+export type MoyenSaisiAlaMain = "BANK_TRANSFER" | "CASH" | "CHEQUE" | "MOBILE_MONEY";
 
 export interface Invoice {
   id: string;

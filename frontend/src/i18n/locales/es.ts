@@ -71,6 +71,9 @@ const es: TranslationSchema = {
       PAYDUNYA: "PayDunya",
       BANK_TRANSFER: "Transferencia",
       DEMO: "Demo",
+      CASH: "Efectivo",
+      CHEQUE: "Cheque",
+      MOBILE_MONEY: "Mobile Money",
     },
     theme: {
       tip: "Alterna entre la visualización clara y la oscura.",
@@ -539,6 +542,18 @@ const es: TranslationSchema = {
         "Estos 8 códigos de respaldo te permiten iniciar sesión si pierdes el acceso a tu aplicación de autenticación. Cada uno funciona una sola vez. No volverán a mostrarse: anótalos en un lugar seguro.",
       done: "He anotado mis códigos de respaldo",
     },
+    markPaidModal: {
+      title: "Marcar el alquiler como pagado",
+      intro: "Alquiler de {{name}}: {{amount}}.",
+      warning: "El recibo se enviará de inmediato por correo al inquilino, y esta acción es DEFINITIVA: una factura pagada no puede volver a estar pendiente.",
+      methodLabel: "Método de pago",
+      dateLabel: "Fecha de cobro",
+      dateHint: "El día en que realmente recibió el dinero: determina en qué mes y año se contabiliza el alquiler.",
+      referenceLabel: "Referencia (opcional)",
+      referencePlaceholder: "N.º de cheque, referencia de la transferencia...",
+      confirmButton: "Marcar como pagada",
+      saving: "Guardando...",
+    },
     twoFactorDisable: {
       title: "Desactivar la verificación en dos pasos",
       subtitle: "Confirma tu identidad para desactivar esta protección.",
@@ -967,8 +982,6 @@ const es: TranslationSchema = {
       sendingReminder: "Enviando...",
       markPaid: "Marcar como pagada",
       markingPaid: "Registrando...",
-      confirmMarkPaid:
-        "¿Marcar el alquiler de {{name}} como pagado ({{amount}})?\n\nEl recibo se enviará de inmediato por correo al inquilino, y esta acción es DEFINITIVA: una factura pagada no puede volver a estar pendiente.",
       noInvoicesForFilter: "Ninguna factura para este filtro",
       receiptTitle: "Recibo de alquiler - {{period}}",
     },

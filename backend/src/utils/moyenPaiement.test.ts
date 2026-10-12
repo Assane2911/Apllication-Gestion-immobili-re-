@@ -7,6 +7,9 @@ describe("libelleMoyenPaiement", () => {
     ["STRIPE", "Carte bancaire (en ligne)"],
     ["PAYDUNYA", "Mobile Money / carte (en ligne)"],
     ["DEMO", "Paiement de démonstration"],
+    ["CASH", "Espèces"],
+    ["CHEQUE", "Chèque"],
+    ["MOBILE_MONEY", "Mobile Money"],
   ])("traduit %s en « %s » : jamais le code technique", (code, attendu) => {
     expect(libelleMoyenPaiement(code)).toBe(attendu);
     expect(libelleMoyenPaiement(code)).not.toMatch(/^[A-Z_]+$/);
@@ -19,6 +22,6 @@ describe("libelleMoyenPaiement", () => {
   });
 
   it("garde une valeur inconnue visible plutôt que de la perdre", () => {
-    expect(libelleMoyenPaiement("CHEQUE")).toBe("CHEQUE");
+    expect(libelleMoyenPaiement("TROC")).toBe("TROC");
   });
 });

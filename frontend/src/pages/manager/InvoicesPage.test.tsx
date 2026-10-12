@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AxiosError } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
@@ -170,9 +171,13 @@ describe("InvoicesPage (manager)", () => {
 
     const buttons = screen.getAllByRole("button", { name: "Marquer réglée" });
     await user.click(buttons[0]);
+    await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Marquer réglée" }));
 
     await waitFor(() =>
-      expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", { paymentMethod: "BANK_TRANSFER" })
+      expect(mockedApi.post).toHaveBeenCalledWith(
+        "/invoices/inv-1/mark-paid",
+        expect.objectContaining({ paymentMethod: "BANK_TRANSFER", paidAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })
+      )
     );
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
   });
@@ -236,49 +241,86 @@ describe("InvoicesPage — marquer une facture réglée", () => {
    * Le geste est SANS RETOUR : `PAID` est un état terminal côté serveur,
    * `cancelInvoice` refuse une facture réglée, et aucun chemin ne ramène
    * jamais une facture à `PENDING`. Il déclenche en outre l'envoi immédiat de
-   * la quittance au locataire — une pièce qui atteste du paiement. Le bouton
-   * n'avait pourtant aucune confirmation, alors qu'il est voisin immédiat du
-   * bouton « Relancer ».
+   * la quittance au locataire. Une fenêtre demande donc confirmation, rappelle
+   * QUI et COMBIEN, et fait choisir le moyen et la date réelle d'encaissement.
    */
-  it("demande confirmation avant de marquer une facture réglée", async () => {
+  async function ouvrirLaFenetre() {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     mockedApi.get.mockResolvedValue(paginated([invoice()]));
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
-
     await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
+    return { user, fenetre: await screen.findByRole("dialog") };
+  }
 
-    expect(confirmSpy).toHaveBeenCalled();
+  it("ouvre une fenêtre de confirmation au lieu d'envoyer tout de suite", async () => {
+    await ouvrirLaFenetre();
     expect(mockedApi.post).not.toHaveBeenCalled();
   });
 
-  it("envoie la requête une fois la confirmation donnée", async () => {
-    const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    mockedApi.get.mockResolvedValue(paginated([invoice()]));
-    mockedApi.post.mockResolvedValue({ data: {} });
-    renderPage();
-    await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
-
-    await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
-
-    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", { paymentMethod: "BANK_TRANSFER" }));
-  });
-
-  it("nomme le locataire et le montant dans la demande de confirmation", async () => {
+  it("nomme le locataire et le montant dans la fenêtre", async () => {
     // Une confirmation qui dirait seulement « Êtes-vous sûr ? » se clique
     // sans lire. Celle-ci doit rappeler QUI et COMBIEN.
-    const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-    mockedApi.get.mockResolvedValue(paginated([invoice()]));
-    renderPage();
-    await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+    const { fenetre } = await ouvrirLaFenetre();
+    expect(fenetre).toHaveTextContent("Awa Diallo");
+    expect(fenetre).toHaveTextContent("500");
+    expect(fenetre).toHaveTextContent("DÉFINITIVE");
+  });
 
-    await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
+  it("annuler ferme la fenêtre sans rien envoyer", async () => {
+    const { user } = await ouvrirLaFenetre();
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
 
-    const message = confirmSpy.mock.calls[0][0] as string;
-    expect(message).toContain("Awa Diallo");
-    expect(message).toContain("500");
+  it("propose virement par défaut et la date du jour, sans dépasser aujourd'hui", async () => {
+    const { fenetre } = await ouvrirLaFenetre();
+    expect(within(fenetre).getByLabelText("Moyen de paiement")).toHaveValue("BANK_TRANSFER");
+    const date = within(fenetre).getByLabelText("Date d'encaissement") as HTMLInputElement;
+    const d = new Date();
+    const aujourdhui = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    expect(date.value).toBe(aujourdhui);
+    expect(date.max).toBe(aujourdhui);
+  });
+
+  it("envoie le moyen, la date réelle et la référence choisis", async () => {
+    mockedApi.post.mockResolvedValue({ data: {} });
+    const { user, fenetre } = await ouvrirLaFenetre();
+
+    await user.selectOptions(within(fenetre).getByLabelText("Moyen de paiement"), "CHEQUE");
+    fireEvent.change(within(fenetre).getByLabelText("Date d'encaissement"), { target: { value: "2025-12-28" } });
+    await user.type(within(fenetre).getByLabelText("Référence (facultatif)"), "CHQ 0045871");
+    await user.click(within(fenetre).getByRole("button", { name: "Marquer réglée" }));
+
+    await waitFor(() =>
+      expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", {
+        paymentMethod: "CHEQUE",
+        paidAt: "2025-12-28",
+        paymentRef: "CHQ 0045871",
+      })
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("n'envoie pas de référence vide", async () => {
+    mockedApi.post.mockResolvedValue({ data: {} });
+    const { user, fenetre } = await ouvrirLaFenetre();
+    await user.click(within(fenetre).getByRole("button", { name: "Marquer réglée" }));
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+    expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("paymentRef");
+  });
+
+  it("garde la fenêtre ouverte et affiche l'erreur si le serveur refuse (ex. date future)", async () => {
+    mockedApi.post.mockRejectedValue(
+      new AxiosError("Bad Request", "ERR_BAD_REQUEST", undefined, undefined, {
+        status: 400,
+        data: { error: "La date d'encaissement ne peut pas être dans le futur." },
+      } as never)
+    );
+    const { user, fenetre } = await ouvrirLaFenetre();
+    await user.click(within(fenetre).getByRole("button", { name: "Marquer réglée" }));
+    expect(await within(fenetre).findByRole("alert")).toHaveTextContent("futur");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

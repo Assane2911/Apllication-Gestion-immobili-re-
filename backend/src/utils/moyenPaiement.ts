@@ -15,6 +15,9 @@ const LIBELLES: Record<string, string> = {
   STRIPE: "Carte bancaire (en ligne)",
   PAYDUNYA: "Mobile Money / carte (en ligne)",
   DEMO: "Paiement de démonstration",
+  CASH: "Espèces",
+  CHEQUE: "Chèque",
+  MOBILE_MONEY: "Mobile Money",
 };
 
 export function libelleMoyenPaiement(moyen: string | null | undefined): string {
