@@ -521,6 +521,10 @@ export const contracts = pgTable(
     status: contractStatusEnum("status").notNull().default("ACTIVE"),
     scannedContractUrl: text("scanned_contract_url"),
     terms: text("terms"),
+    // Jour du mois où le loyer est exigible (1 à 31 ; 31 = dernier jour du
+    // mois, voir utils/jourEcheance.ts). NULL : le jour de la date de début du
+    // bail — le comportement de tous les contrats créés avant ce champ.
+    paymentDay: integer("payment_day"),
     reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     // Signature électronique
     signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),

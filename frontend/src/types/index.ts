@@ -211,6 +211,8 @@ export interface Contract {
   status: ContractStatus;
   scannedContractUrl?: string | null;
   terms?: string | null;
+  /** Jour d'échéance du loyer (1 à 31, 31 = dernier jour du mois) ; absent : le jour de la date de début. */
+  paymentDay?: number | null;
   reminderSentAt?: string | null;
   signedByManagerAt?: string | null;
   managerSignatureUrl?: string | null;

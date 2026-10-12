@@ -6,13 +6,15 @@ import Badge from "../../components/Badge";
 import DepositRefundModal from "../../components/DepositRefundModal";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
+import PaymentDayModal, { JOURS_ECHEANCE } from "../../components/PaymentDayModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
 
-const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "" };
+// Jour d'échéance proposé à la création : le 5, ce que disaient déjà les documents remis aux locataires.
+const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5" };
 
 // Fenêtre d'affichage du workflow de renouvellement : un contrat actif dont
 // la fin tombe dans ce nombre de jours ou moins propose de renouveler ou non.
@@ -36,6 +38,11 @@ function depositRefundedAmount(c: Contract): number {
   return Math.max(0, c.deposit - total);
 }
 
+/** Jour d'échéance effectif d'un contrat, comme le serveur le calcule (jour de la date de début, en UTC, à défaut de réglage). */
+function jourEcheance(c: Contract): number {
+  return c.paymentDay ?? (new Date(c.startDate).getUTCDate() || 1);
+}
+
 export default function ContractsPage() {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
@@ -50,6 +57,7 @@ export default function ContractsPage() {
 
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [depositRefundContract, setDepositRefundContract] = useState<Contract | null>(null);
+  const [editingPaymentDay, setEditingPaymentDay] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [uploadingScanContractId, setUploadingScanContractId] = useState<string | null>(null);
@@ -85,14 +93,34 @@ export default function ContractsPage() {
     return () => controller.abort();
   }, [page]);
 
+  /** Jour d'échéance du loyer, avec le moyen de le modifier tant que le locataire n'a pas signé le bail. */
+  function echeanceLigne(c: Contract) {
+    const jour = jourEcheance(c);
+    return (
+      <span className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+        {c.paymentDay === 31 ? t("manager.contracts.paymentDayRowLast") : t("manager.contracts.paymentDayRow", { day: jour })}
+        {!c.signedByTenantAt && (
+          <button type="button" onClick={() => setEditingPaymentDay(c)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+            {t("manager.contracts.editPaymentDay")}
+          </button>
+        )}
+      </span>
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
       // Les clauses vides ne sont pas envoyées : le bail n'imprime alors aucune section.
-      const { terms, ...champs } = form;
-      await api.post("/contracts", { ...champs, ...(terms.trim() ? { terms: terms.trim() } : {}) });
+      const { terms, paymentDay, ...champs } = form;
+      await api.post("/contracts", {
+        ...champs,
+        ...(terms.trim() ? { terms: terms.trim() } : {}),
+        // Vide : le jour de la date de début du bail (comportement d'avant).
+        ...(paymentDay ? { paymentDay: Number(paymentDay) } : {}),
+      });
       setShowForm(false);
       setForm(emptyForm);
       load();
@@ -271,6 +299,18 @@ export default function ContractsPage() {
               <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
               <input id="contract-endDate" required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
+            <div>
+              <label htmlFor="contract-paymentDay" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.paymentDay")}</label>
+              <select id="contract-paymentDay" value={form.paymentDay} onChange={(e) => setForm({ ...form, paymentDay: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+                <option value="">{t("manager.contracts.fields.paymentDayStart")}</option>
+                {JOURS_ECHEANCE.map((jour) => (
+                  <option key={jour} value={jour}>
+                    {jour === 31 ? t("manager.contracts.fields.paymentDayLast") : t("manager.contracts.fields.paymentDayOption", { day: jour })}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.paymentDayHint")}</p>
+            </div>
             <div className="md:col-span-2">
               <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.terms")}</label>
               <textarea
@@ -322,6 +362,7 @@ export default function ContractsPage() {
                 <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">{formatMoney(c.rent, c.currency)}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
+                  {c.status === "ACTIVE" && echeanceLigne(c)}
                   {showRenewal && (
                     <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold">
                       <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
@@ -486,6 +527,7 @@ export default function ContractsPage() {
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(c.rent, c.currency)}</span>
                 <span className="text-slate-600 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
               </div>
+              {c.status === "ACTIVE" && echeanceLigne(c)}
               {showRenewal && (
                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                   <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
@@ -652,6 +694,19 @@ export default function ContractsPage() {
           title={viewingScannedContract.title}
           fileUrl={viewingScannedContract.url}
           onClose={() => setViewingScannedContract(null)}
+        />
+      )}
+
+      {editingPaymentDay && (
+        <PaymentDayModal
+          contractId={editingPaymentDay.id}
+          paymentDay={editingPaymentDay.paymentDay ?? null}
+          startDay={new Date(editingPaymentDay.startDate).getUTCDate()}
+          onSuccess={() => {
+            setEditingPaymentDay(null);
+            load();
+          }}
+          onClose={() => setEditingPaymentDay(null)}
         />
       )}
 

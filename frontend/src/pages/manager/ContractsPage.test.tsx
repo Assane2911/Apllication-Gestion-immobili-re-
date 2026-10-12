@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -179,6 +179,7 @@ describe("ContractsPage (manager)", () => {
         deposit: "1000",
         startDate: "2026-03-01",
         endDate: "2027-03-01",
+        paymentDay: 5,
       })
     );
     await waitFor(() => expect(screen.queryByRole("button", { name: "Créer le contrat" })).not.toBeInTheDocument());
@@ -215,6 +216,7 @@ describe("ContractsPage (manager)", () => {
         startDate: "2026-03-01",
         endDate: "2027-03-01",
         terms: "Animaux interdits.",
+        paymentDay: 5,
       })
     );
   });
@@ -431,6 +433,95 @@ describe("ContractsPage (manager)", () => {
       await waitFor(() =>
         expect(mockedApi.put).toHaveBeenCalledWith("/contracts/c1/deposit-refund", { deductions: null })
       );
+    });
+  });
+
+  describe("jour d'échéance du loyer", () => {
+    it("propose le 5 par défaut à la création, avec le repli « jour du début du bail », et l'envoie", async () => {
+      const user = userEvent.setup();
+      queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+      queueLoad([]);
+      const { container } = renderPage();
+      await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+
+      const champ = screen.getByLabelText("Jour d'échéance du loyer");
+      expect(champ).toHaveValue("5");
+      expect(within(champ).getByRole("option", { name: "Jour du début du bail" })).toBeInTheDocument();
+      expect(within(champ).getByRole("option", { name: "Dernier jour du mois" })).toBeInTheDocument();
+      expect(within(champ).getAllByRole("option")).toHaveLength(30);
+
+      await user.selectOptions(screen.getAllByRole("combobox")[0], "prop-1");
+      await user.selectOptions(screen.getAllByRole("combobox")[1], "ten-1");
+      const dates = container.querySelectorAll('input[type="date"]');
+      fireEvent.change(dates[0], { target: { value: "2026-03-24" } });
+      fireEvent.change(dates[1], { target: { value: "2027-03-23" } });
+      await user.selectOptions(champ, "31");
+      await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith("/contracts", expect.objectContaining({ paymentDay: 31 }))
+      );
+    });
+
+    it("« jour du début du bail » n'envoie aucun jour (le serveur garde le comportement d'avant)", async () => {
+      const user = userEvent.setup();
+      queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+      queueLoad([]);
+      const { container } = renderPage();
+      await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+      await user.selectOptions(screen.getAllByRole("combobox")[0], "prop-1");
+      await user.selectOptions(screen.getAllByRole("combobox")[1], "ten-1");
+      const dates = container.querySelectorAll('input[type="date"]');
+      fireEvent.change(dates[0], { target: { value: "2026-03-24" } });
+      fireEvent.change(dates[1], { target: { value: "2027-03-23" } });
+      await user.selectOptions(screen.getByLabelText("Jour d'échéance du loyer"), "");
+      await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+      expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("paymentDay");
+    });
+
+    it("affiche l'échéance de chaque contrat actif : le jour réglé, sinon le jour du début du bail", async () => {
+      queueLoad([
+        contract({ id: "a", paymentDay: 5 }),
+        contract({ id: "b", paymentDay: null, startDate: "2026-01-24T00:00:00.000Z" }),
+        contract({ id: "c", paymentDay: 31 }),
+      ]);
+      renderPage();
+      await screen.findAllByText("Studio Centre-ville");
+      expect(screen.getAllByText(/Échéance : le 5/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Échéance : le 24/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Échéance : dernier jour du mois/).length).toBeGreaterThan(0);
+    });
+
+    it("modifie le jour d'un contrat existant", async () => {
+      const user = userEvent.setup();
+      queueLoad([contract({ id: "a", paymentDay: null, startDate: "2026-01-24T00:00:00.000Z" })]);
+      mockedApi.put.mockResolvedValueOnce({ data: {} });
+      queueLoad([contract({ id: "a", paymentDay: 5 })]);
+      renderPage();
+      await screen.findAllByText("Studio Centre-ville");
+
+      await user.click(screen.getAllByRole("button", { name: "Modifier l'échéance" })[0]);
+      const fenetre = await screen.findByRole("dialog");
+      const select = within(fenetre).getByLabelText("Jour d'échéance du loyer");
+      expect(select).toHaveValue("");
+      expect(within(fenetre).getByRole("option", { name: "Jour du début du bail (24)" })).toBeInTheDocument();
+      await user.selectOptions(select, "5");
+      await user.click(within(fenetre).getByRole("button", { name: "Enregistrer" }));
+
+      await waitFor(() => expect(mockedApi.put).toHaveBeenCalledWith("/contracts/a", { paymentDay: 5 }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    });
+
+    it("ne propose plus de modifier l'échéance une fois le bail signé par le locataire", async () => {
+      queueLoad([contract({ id: "a", signedByTenantAt: "2026-02-01T00:00:00.000Z" })]);
+      renderPage();
+      await screen.findAllByText("Studio Centre-ville");
+      expect(screen.getAllByText(/Échéance : le/).length).toBeGreaterThan(0);
+      expect(screen.queryByRole("button", { name: "Modifier l'échéance" })).not.toBeInTheDocument();
     });
   });
 });

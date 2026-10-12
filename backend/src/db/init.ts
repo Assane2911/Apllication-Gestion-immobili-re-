@@ -444,6 +444,7 @@ export async function initDb() {
 
     await ajouterColonne("invoices", "reminder_sent_at", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`);
     await elargirMoyensDePaiement();
+    await ajouterColonne("contracts", "payment_day", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS payment_day INTEGER`);
     await ajouterColonne("invoices", "amount_paid", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS amount_paid DOUBLE PRECISION NOT NULL DEFAULT 0`);
 
     // Historique des encaissements d'une facture (paiements partiels).
