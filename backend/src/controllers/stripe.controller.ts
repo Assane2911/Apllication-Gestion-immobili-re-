@@ -1,11 +1,13 @@
 import crypto from "crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { invoices, platformSubscriptions, users } from "../db/schema";
 import { ETATS_MODIFIABLES } from "./invoice.controller";
+import { solderEnLigne } from "../services/paiementEnLigne.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
+import { resteDu } from "../utils/montants";
 import { depuisPlusPetiteUnite } from "../services/payment.service";
 import {
   activateSubscriptionRecord,
@@ -166,9 +168,9 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
 
     if (!facture) {
       console.warn(`[stripe] Facture introuvable pour la session ${sessionId}`);
-    } else if (!montantCorrespond(montantPaye, facture.amount)) {
+    } else if (!montantCorrespond(montantPaye, resteDu(facture))) {
       console.warn(
-        `[stripe] Webhook rejeté pour la facture ${facture.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${facture.amount}).`
+        `[stripe] Webhook rejeté pour la facture ${facture.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${resteDu(facture)}).`
       );
     } else if (facture.status === "PAID") {
       console.log(`[stripe] Facture ${facture.id} déjà réglée, rien à faire.`);
@@ -191,11 +193,10 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
       // écrivaient toutes deux et envoyaient chacune une quittance — un
       // document légal, en double, pour un seul loyer. C'est la forme
       // qu'emploie déjà tout le reste du projet (invoice.controller.ts).
-      const [misAJour] = await db
-        .update(invoices)
-        .set({ status: "PAID", paidAt: new Date() })
-        .where(and(eq(invoices.id, facture.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
-        .returning();
+      // Le paiement couvre le RESTE DÛ (voir paiementEnLigne.service.ts) : il est
+      // enregistré comme un encaissement, puis la facture est soldée. La
+      // transaction à ligne verrouillée remplace le WHERE conditionnel d'avant.
+      const misAJour = await solderEnLigne(facture.id, { methode: "STRIPE" });
       if (misAJour) {
         await sendPaymentReceiptEmail(misAJour.id).catch((err) =>
           console.error("[stripe] Échec de l'envoi de la quittance après confirmation:", err)

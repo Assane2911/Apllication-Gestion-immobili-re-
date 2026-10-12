@@ -1,10 +1,12 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
-import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
+import { agencySettings, contracts, invoicePayments, invoices, properties, tenants } from "../db/schema";
 import { sendEmail } from "./email.service";
 import { periodeCouverte } from "./invoice.service";
 import { generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
 import { formaterMontant } from "../utils/montant";
+import { libelleMoyenPaiement } from "../utils/moyenPaiement";
+import { montantRegle, resteDu } from "../utils/montants";
 import { nomAvecCivilite } from "../utils/nom";
 
 const monthNames = [
@@ -114,6 +116,74 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
     return { sent: !result.simulated && !("error" in result && result.error), ...result };
   } catch (err) {
     console.error(`[receipt] Échec de la génération/envoi de la quittance pour la facture ${invoiceId}:`, err);
+    return { sent: false, reason: "error" as const };
+  }
+}
+
+/**
+ * Envoie au locataire le REÇU d'un paiement partiel : ce qui vient d'être
+ * encaissé, ce qui a déjà été réglé, ce qui reste dû.
+ *
+ * Un reçu n'est pas une quittance. La quittance atteste le paiement INTÉGRAL du
+ * loyer et n'est délivrée qu'une fois la facture soldée (voir
+ * sendPaymentReceiptEmail) ; le message le dit pour que le locataire ne prenne
+ * pas ce reçu pour une quittance. Même contrat que la quittance : n'échoue
+ * jamais bruyamment, une erreur d'envoi est journalisée et renvoyée.
+ */
+export async function sendPartialPaymentReceiptEmail(invoiceId: string, paymentId: string) {
+  try {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
+    if (!invoice) return { sent: false, reason: "invoice_not_found" as const };
+    if (invoice.status === "PAID" || invoice.status === "CANCELLED") {
+      return { sent: false, reason: "invoice_not_partial" as const };
+    }
+    const [paiement] = await db.select().from(invoicePayments).where(eq(invoicePayments.id, paymentId));
+    if (!paiement || paiement.invoiceId !== invoice.id) return { sent: false, reason: "payment_not_found" as const };
+
+    const [contract] = await db.select().from(contracts).where(eq(contracts.id, invoice.contractId));
+    if (!contract) return { sent: false, reason: "contract_not_found" as const };
+    const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
+    if (!tenant?.email) return { sent: false, reason: "no_tenant_email" as const };
+
+    const [agency] = property?.managerId
+      ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId))
+      : [];
+
+    const devise = invoice.currency || "EUR";
+    const monthLabel = monthNames[invoice.periodMonth - 1] || `${invoice.periodMonth}`;
+    const dateReception = new Date(paiement.paidAt).toLocaleDateString("fr-FR");
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">Reçu de paiement partiel</h2>
+        <p>Bonjour ${nomAvecCivilite(tenant)},</p>
+        <p>
+          Nous avons bien reçu un paiement de
+          <strong>${formaterMontant(paiement.amount, devise)}</strong> le ${dateReception}
+          (${libelleMoyenPaiement(paiement.paymentMethod)}) au titre du loyer de
+          <strong>${monthLabel} ${invoice.periodYear}</strong>, logement
+          <strong>${property?.title || "Logement"}</strong>.
+        </p>
+        <table style="border-collapse:collapse; margin:16px 0; font-size:14px;">
+          <tr><td style="padding:4px 16px 4px 0; color:#334155;">Loyer</td><td style="text-align:right;">${formaterMontant(invoice.amount, devise)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0; color:#334155;">Déjà réglé</td><td style="text-align:right;">${formaterMontant(montantRegle(invoice), devise)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;"><strong>Reste à payer</strong></td><td style="text-align:right;"><strong>${formaterMontant(resteDu(invoice), devise)}</strong></td></tr>
+        </table>
+        <p style="color:#475569; font-size:13px;">
+          Ce document est un <strong>reçu de paiement partiel</strong>, et non une quittance de loyer :
+          la quittance vous sera délivrée lorsque le loyer sera intégralement réglé.
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          ${agency?.agencyName ? `${agency.agencyName} — ` : ""}Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `;
+
+    const result = await sendEmail(tenant.email, `Reçu de paiement partiel — loyer ${monthLabel} ${invoice.periodYear}`, html);
+    return { sent: !result.simulated && !("error" in result && result.error), ...result };
+  } catch (err) {
+    console.error(`[receipt] Échec de l'envoi du reçu de paiement partiel pour la facture ${invoiceId}:`, err);
     return { sent: false, reason: "error" as const };
   }
 }
