@@ -657,3 +657,43 @@ export function rentDueSoonReminderEmail(params: {
   };
 }
 
+
+/** Avis au locataire : le loyer de son bail change à partir d'une date donnée. */
+export function rentRevisionEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  previousRent: number;
+  newRent: number;
+  currency?: string;
+  effectiveDate: Date;
+  /** Motif lisible (« indexation IRL : 142,06 → 145,47 », « +3 % »…), vide si aucun. */
+  motif?: string | null;
+  note?: string | null;
+}) {
+  const { tenantName, propertyTitle, previousRent, newRent, currency = "EUR", effectiveDate, motif, note } = params;
+  const date = new Date(effectiveDate).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+  const ancien = escapeHtml(formaterMontant(previousRent, currency));
+  const nouveau = escapeHtml(formaterMontant(newRent, currency));
+  return {
+    subject: `Révision de votre loyer à compter du ${date}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Révision du loyer</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${escapeHtml(propertyTitle)}</p>
+        </div>
+        <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
+          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(tenantName)}</strong>,</p>
+          <p>Votre loyer pour le bien <strong>${escapeHtml(propertyTitle)}</strong> est révisé à compter du <strong>${escapeHtml(date)}</strong>.</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 13px; color: #64748b;">Loyer actuel : <s>${ancien}</s></span><br>
+            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Nouveau loyer mensuel</span><br>
+            <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${nouveau}</span>
+          </div>
+          ${motif ? `<p style="font-size: 13px; color: #475569;"><strong>Base de calcul :</strong> ${escapeHtml(motif)}</p>` : ""}
+          ${note ? `<p style="font-size: 13px; color: #475569;">${escapeHtml(note)}</p>` : ""}
+          <p style="font-size: 13px; color: #475569;">Les avis d'échéance émis à partir de cette date porteront ce nouveau montant. Pour toute question, répondez à votre gestionnaire.</p>
+        </div>
+      </div>`,
+  };
+}

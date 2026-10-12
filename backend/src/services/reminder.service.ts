@@ -15,6 +15,7 @@ import {
   rentDueSoonReminderEmail,
   sendEmail,
 } from "./email.service";
+import { appliquerRevisionsDues } from "./rentRevision.service";
 import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import {
   envoyerMessageWhatsapp,
@@ -357,6 +358,15 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
+
+  // 0. Applique les révisions de loyer dont la date d'effet est arrivée, AVANT de générer les
+  //    factures du mois : la facture du mois d'effet porte ainsi le nouveau loyer. Un échec ici ne
+  //    doit jamais priver les gestionnaires de leurs avis d'échéance.
+  try {
+    await appliquerRevisionsDues(now, managerId);
+  } catch (err) {
+    console.error("[reminder] Échec de l'application des révisions de loyer :", err);
+  }
 
   // 1. S'assure que les factures du mois en cours sont générées pour les contrats actifs
   //    (scopés au gestionnaire si managerId est fourni, sinon tous les contrats actifs de la plateforme)

@@ -7,6 +7,7 @@ import DepositRefundModal from "../../components/DepositRefundModal";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
 import PaymentDayModal, { JOURS_ECHEANCE } from "../../components/PaymentDayModal";
+import RentRevisionModal from "../../components/RentRevisionModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
@@ -58,6 +59,7 @@ export default function ContractsPage() {
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [depositRefundContract, setDepositRefundContract] = useState<Contract | null>(null);
   const [editingPaymentDay, setEditingPaymentDay] = useState<Contract | null>(null);
+  const [revisingRent, setRevisingRent] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [uploadingScanContractId, setUploadingScanContractId] = useState<string | null>(null);
@@ -94,6 +96,16 @@ export default function ContractsPage() {
   }, [page]);
 
   /** Jour d'échéance du loyer, avec le moyen de le modifier tant que le locataire n'a pas signé le bail. */
+  /** Lien « Réviser » sous le loyer d'un bail actif. */
+  function revisionLien(c: Contract) {
+    if (c.status !== "ACTIVE") return null;
+    return (
+      <button type="button" onClick={() => setRevisingRent(c)} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+        {t("manager.contracts.reviseRent")}
+      </button>
+    );
+  }
+
   function echeanceLigne(c: Contract) {
     const jour = jourEcheance(c);
     return (
@@ -374,7 +386,10 @@ export default function ContractsPage() {
               <tr key={c.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 ${showRenewal ? "bg-amber-50/50 dark:bg-amber-500/10" : ""}`}>
                 <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium">{c.property?.title}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{c.tenant?.firstName} {c.tenant?.lastName}</td>
-                <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">{formatMoney(c.rent, c.currency)}</td>
+                <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">
+                  {formatMoney(c.rent, c.currency)}
+                  {revisionLien(c)}
+                </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
                   {c.status === "ACTIVE" && echeanceLigne(c)}
@@ -540,6 +555,7 @@ export default function ContractsPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(c.rent, c.currency)}</span>
+                {revisionLien(c)}
                 <span className="text-slate-600 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
               </div>
               {c.status === "ACTIVE" && echeanceLigne(c)}
@@ -709,6 +725,20 @@ export default function ContractsPage() {
           title={viewingScannedContract.title}
           fileUrl={viewingScannedContract.url}
           onClose={() => setViewingScannedContract(null)}
+        />
+      )}
+
+      {revisingRent && (
+        <RentRevisionModal
+          contractId={revisingRent.id}
+          rent={revisingRent.rent}
+          currency={revisingRent.currency}
+          endDate={revisingRent.endDate}
+          onSuccess={() => {
+            setRevisingRent(null);
+            load();
+          }}
+          onClose={() => setRevisingRent(null)}
         />
       )}
 

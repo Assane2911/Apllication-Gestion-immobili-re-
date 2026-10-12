@@ -549,6 +549,8 @@ export interface LeaseExportData {
   startDate: Date | string;
   endDate: Date | string;
   rent: number;
+  /** Révisions de loyer appliquées depuis la signature, de la plus ancienne à la plus récente. */
+  revisions?: Array<{ effectiveDate: Date | string; previousRent: number; newRent: number }>;
   currency?: string | null;
   deposit: number;
   signedByManagerAt: Date | string | null;
@@ -595,6 +597,23 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
   </div>`
     : "";
 
+  // Loyer : sans révision, une ligne. Avec des révisions appliquées depuis la signature, le bail garde le
+  // loyer SIGNÉ (celui d'avant la première révision) et liste chaque changement avec sa date d'effet :
+  // la signature du locataire ne doit jamais se lire sous un montant qu'il n'a pas accepté.
+  const revisions = contract.revisions ?? [];
+  const echeance = escapeHtml(libelleEcheance(contract));
+  const loyerHtml =
+    revisions.length === 0
+      ? `<strong>Loyer mensuel :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))} (${echeance})`
+      : [
+          `<strong>Loyer mensuel à la signature :</strong> ${escapeHtml(formaterMontant(revisions[0].previousRent, contract.currency))} (${echeance})`,
+          ...revisions.map(
+            (r) =>
+              `<strong>Révision à compter du ${escapeHtml(new Date(r.effectiveDate).toLocaleDateString("fr-FR", { timeZone: "UTC" }))} :</strong> ${escapeHtml(formaterMontant(r.newRent, contract.currency))} (au lieu de ${escapeHtml(formaterMontant(r.previousRent, contract.currency))})`
+          ),
+          `<strong>Loyer mensuel en vigueur :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))}`,
+        ].join("<br>");
+
   return `
 <!DOCTYPE html>
 <html lang="fr">
@@ -638,7 +657,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="section-title">3. Durée & Conditions Financières</div>
     <div class="box">
       <strong>Date de prise d'effet :</strong> ${startDate} | <strong>Date de fin :</strong> ${endDate}<br>
-      <strong>Loyer mensuel :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))} (${escapeHtml(libelleEcheance(contract))})<br>
+      ${loyerHtml}<br>
       <strong>Dépôt de garantie :</strong> ${escapeHtml(formaterMontant(contract.deposit, contract.currency))}
     </div>
   </div>
