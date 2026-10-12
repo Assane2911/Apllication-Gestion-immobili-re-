@@ -531,7 +531,8 @@ export function newMessageFromManagerEmail(params: {
 
 /**
  * Template d'email de rappel de loyer envoyé automatiquement au locataire
- * au 1er de chaque mois, rappelant l'échéance à régler au plus tard le 5.
+ * au 1er de chaque mois, rappelant la date limite de règlement de CE loyer
+ * (l'échéance de la facture : voir utils/jourEcheance.ts).
  */
 export function rentDueReminderEmail(params: {
   tenantName: string;
@@ -543,7 +544,7 @@ export function rentDueReminderEmail(params: {
   dueDate: Date;
   frontendUrl: string;
 }) {
-  const { tenantName, propertyTitle, amount, currency = "EUR", periodMonth, periodYear, frontendUrl } = params;
+  const { tenantName, propertyTitle, amount, currency = "EUR", periodMonth, periodYear, dueDate, frontendUrl } = params;
   const monthNames = [
     "janvier", "février", "mars", "avril", "mai", "juin",
     "juillet", "août", "septembre", "octobre", "novembre", "décembre"
@@ -553,9 +554,13 @@ export function rentDueReminderEmail(params: {
   // symbole local) : le locataire ne doit pas lire deux écritures de la même
   // somme selon qu'il regarde son espace ou sa boîte aux lettres.
   const montantAffiche = escapeHtml(formaterMontant(amount, currency));
+  // La date limite est CELLE DE LA FACTURE. Elle était écrite « le 5 » en dur,
+  // alors que la facture est due le jour du début du bail : un locataire dont
+  // le bail démarre le 24 lisait « avant le 5 » pour un loyer dû le 24.
+  const dateLimite = new Date(dueDate).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
 
   return {
-    subject: `📢 Échéance de loyer ${monthName} ${periodYear} — Règlement attendu avant le 5`,
+    subject: `📢 Échéance de loyer ${monthName} ${periodYear} — Règlement attendu au plus tard le ${dateLimite}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
@@ -572,7 +577,7 @@ export function rentDueReminderEmail(params: {
             <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Montant à régler</span>
             <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0;">${montantAffiche}</div>
             <div style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: bold; padding: 6px 14px; border-radius: 20px; border: 1px solid #fde68a;">
-              ⏰ Date limite de règlement : au plus tard le 5 ${monthName} ${periodYear}
+              ⏰ Date limite de règlement : au plus tard le ${escapeHtml(dateLimite)}
             </div>
           </div>
 

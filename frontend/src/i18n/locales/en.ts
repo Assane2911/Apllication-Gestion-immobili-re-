@@ -317,7 +317,7 @@ const en: TranslationSchema = {
       },
       reminders: {
         title: "Automatic Alerts on the 1st of the Month",
-        desc: "Reminders scheduled on the 1st of each month, noting the payment deadline of the 5th, with a secure payment link.",
+        desc: "Reminders scheduled on the 1st of each month, noting each tenant's own rent deadline, with a secure payment link.",
       },
       dashboard: {
         title: "Real-Time Dashboard & Statistics",
@@ -964,10 +964,10 @@ const en: TranslationSchema = {
       sendMonthlyAlerts: "Send 1st-of-month alerts",
       sendingMonthly: "Sending...",
       confirmSendMonthly:
-        "Send the payment due notice to all tenants for the current month right now (payment deadline: the 5th)?",
+        "Send the payment due notice to all tenants for the current month right now (each tenant receives the deadline of their own rent)?",
       infoBannerTitle: "Automated monthly alerts (on the 1st of each month)",
       infoBannerBody:
-        "A payment due notice email is <1>automatically sent to each tenant on the 1st of the month at 8:00 AM</1> reminding them to pay their rent <1>by the 5th of the month at the latest</1>.",
+        "A payment due notice email is <1>automatically sent to each tenant on the 1st of the month at 8:00 AM</1> reminding them to pay their rent <1>by the due date of their rent at the latest</1>.",
       table: {
         period: "Period",
         tenant: "Tenant",
@@ -978,7 +978,6 @@ const en: TranslationSchema = {
         status: "Status",
         actions: "Actions",
       },
-      dueDateLimit: "(Deadline: the 5th)",
       dueDatePrefix: "Due date: {{date}}",
       receiptPdf: "Receipt PDF",
       remind: "Send reminder",
