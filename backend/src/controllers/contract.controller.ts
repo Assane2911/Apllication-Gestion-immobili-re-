@@ -28,6 +28,9 @@ const contractSchema = z.object({
   // Clauses particulières imprimées sur le bail : plafonnées, un texte sans
   // limite gonflerait le document remis au locataire.
   terms: z.string().trim().max(10000, "Les clauses ne peuvent pas dépasser 10 000 caractères").optional(),
+  // Jour d'échéance du loyer : 1 à 31 (31 = dernier jour du mois). `null`
+  // revient au jour de la date de début du bail.
+  paymentDay: z.union([z.null(), z.coerce.number().int().min(1).max(31)]).optional(),
 });
 
 export async function resolveScannedUrl(value: string | null | undefined): Promise<string | null | undefined> {
@@ -239,7 +242,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   //
   // Le statut reste modifiable : résilier ou clore un bail ne réécrit rien de
   // ce qui a été signé, et doit rester possible à tout moment.
-  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms"] as const;
+  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms", "paymentDay"] as const;
   const toucheAuContenu = CHAMPS_CONTRACTUELS.some((champ) => body[champ] !== undefined);
   if (existing.signedByTenantAt && toucheAuContenu) {
     throw new ApiError(
@@ -569,6 +572,7 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
         // Les clauses suivent le renouvellement : sans elles, le nouveau bail
         // s'imprimerait sans les conditions du précédent.
         terms: existing.terms,
+        paymentDay: existing.paymentDay,
         status: "ACTIVE",
       })
       .returning();

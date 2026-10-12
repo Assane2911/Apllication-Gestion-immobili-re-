@@ -173,7 +173,13 @@ export async function generateInvoicesForContract(
     // période — new Date(year, month, 0) donne le dernier jour du mois
     // (month - 1) puisque le jour 0 recule d'un jour depuis le 1er du mois
     // suivant.
-    const dueDate = echeanceDuMois(jourEcheanceDuContrat(start), periodYear, periodMonth);
+    // Jamais AVANT le début du bail : avec un jour d'échéance fixé au 5 et un
+    // bail démarrant le 24, la première facture (au prorata) serait exigible le
+    // 5 du même mois — avant que le locataire n'entre dans les lieux, donc en
+    // retard dès sa création. Elle est alors exigible à l'entrée en vigueur.
+    const echeance = echeanceDuMois(jourEcheanceDuContrat(contract), periodYear, periodMonth);
+    const premierJour = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const dueDate = echeance < premierJour ? premierJour : echeance;
 
     const cle = `${periodMonth}-${periodYear}`;
     const notrePeriode = periodeCouverte(contract, periodMonth, periodYear);

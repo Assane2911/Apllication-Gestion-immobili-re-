@@ -558,6 +558,8 @@ export interface LeaseExportData {
   tenant?: { firstName: string; lastName: string; email: string; phone: string } | null;
   /** Clauses particulières saisies par le gestionnaire (texte libre) ; section omise quand elles sont vides. */
   terms?: string | null;
+  /** Jour d'échéance du loyer (1 à 31, 31 = dernier jour) ; absent : le jour de la date de début. */
+  paymentDay?: number | null;
 }
 
 /** Coordonnées d'agence affichées sur le bail — voir document.controller.ts pour le repli par défaut. */
@@ -626,7 +628,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="section-title">3. Durée & Conditions Financières</div>
     <div class="box">
       <strong>Date de prise d'effet :</strong> ${startDate} | <strong>Date de fin :</strong> ${endDate}<br>
-      <strong>Loyer mensuel :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))} (${escapeHtml(libelleEcheance(contract.startDate))})<br>
+      <strong>Loyer mensuel :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))} (${escapeHtml(libelleEcheance(contract))})<br>
       <strong>Dépôt de garantie :</strong> ${escapeHtml(formaterMontant(contract.deposit, contract.currency))}
     </div>
   </div>
