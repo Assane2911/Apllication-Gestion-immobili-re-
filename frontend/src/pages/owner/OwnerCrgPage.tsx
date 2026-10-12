@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled } from "../../api/client";
 import DocumentModal from "../../components/DocumentModal";
+import ReversementsSection from "../../components/ReversementsSection";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
@@ -216,6 +217,8 @@ export default function OwnerCrgPage() {
           <p className="text-xs text-slate-600 dark:text-slate-400">{t("owner.crg.noBankDetails")}</p>
         )}
       </div>
+
+      <ReversementsSection crg={crg} />
 
       {showExport && (
         <DocumentModal

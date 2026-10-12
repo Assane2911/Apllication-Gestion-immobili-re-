@@ -861,7 +861,18 @@ export interface CrgExportData {
   totalChargesByCurrency: Record<string, number>;
   totalCommissionByCurrency: Record<string, number>;
   totalNetByCurrency: Record<string, number>;
+  /** Reversements enregistrés au titre du mois (voir ownerPayout.controller.ts). */
+  reversements?: Array<{ currency: string; amount: number; paidAt: Date | string; method: string; reference: string | null }>;
+  resteAReverserByCurrency?: Record<string, number>;
 }
+
+const MOYENS_REVERSEMENT_LIBELLES: Record<string, string> = {
+  BANK_TRANSFER: "Virement",
+  CASH: "Espèces",
+  CHEQUE: "Chèque",
+  MOBILE_MONEY: "Mobile money",
+  OTHER: "Autre",
+};
 
 /**
  * Export HTML du Compte-Rendu de Gestion (CRG) mensuel d'un propriétaire —
@@ -970,6 +981,8 @@ export function generateCrgHtml(data: CrgExportData): string {
     </table>
   </div>
 
+  ${sectionReversements(data)}
+
   <div class="section">
     <div class="section-title">Coordonnées bancaires du propriétaire</div>
     <div class="box">
@@ -985,6 +998,35 @@ export function generateCrgHtml(data: CrgExportData): string {
 </body>
 </html>
   `.trim();
+}
+
+/** Reversements du mois au propriétaire, et ce qui reste à lui verser (section omise si rien à montrer). */
+function sectionReversements(data: CrgExportData): string {
+  const reversements = data.reversements ?? [];
+  const restes = Object.entries(data.resteAReverserByCurrency ?? {}).filter(([, montant]) => montant !== 0);
+  if (reversements.length === 0 && restes.length === 0) return "";
+  const lignes = reversements.length
+    ? reversements
+        .map(
+          (r) => `
+      <tr>
+        <td>${escapeHtml(new Date(r.paidAt).toLocaleDateString("fr-FR"))}</td>
+        <td>${escapeHtml(MOYENS_REVERSEMENT_LIBELLES[r.method] ?? r.method)}${r.reference ? ` — ${escapeHtml(r.reference)}` : ""}</td>
+        <td style="text-align:right; font-weight:700;">${escapeHtml(formaterMontant(r.amount, r.currency))}</td>
+      </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Aucun reversement enregistré pour ce mois</td></tr>`;
+  const reste = restes
+    .map(([devise, montant]) => `<tr class="total-row"><td colspan="2">${montant > 0 ? "Reste à reverser" : "Versé en trop"} (${escapeHtml(devise)})</td><td style="text-align:right;">${escapeHtml(formaterMontant(Math.abs(montant), devise))}</td></tr>`)
+    .join("");
+  return `<div class="section">
+    <div class="section-title">Reversements au propriétaire</div>
+    <table>
+      <thead><tr><th>Date</th><th>Moyen</th><th class="num">Montant</th></tr></thead>
+      <tbody>${lignes}${reste}</tbody>
+    </table>
+  </div>`;
 }
 
 /** Données d'un avenant de révision de loyer (voir rentRevision.service.ts). */

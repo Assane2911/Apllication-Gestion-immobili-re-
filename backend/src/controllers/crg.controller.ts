@@ -1,11 +1,12 @@
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { agencySettings, contracts, expenses, invoices, owners, properties } from "../db/schema";
+import { agencySettings, contracts, expenses, invoices, ownerPayouts, owners, properties } from "../db/schema";
 import { generateCrgHtml } from "../services/pdf.service";
 import { developperFactures, factureEncaissee } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { arrondir } from "../utils/montants";
 import { nomAvecCivilite } from "../utils/nom";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
 
@@ -54,7 +55,7 @@ function monthBounds(month: number, year: number) {
   };
 }
 
-async function loadOwnerForManager(ownerId: string, managerId: string) {
+export async function loadOwnerForManager(ownerId: string, managerId: string) {
   const [owner] = await db.select().from(owners).where(eq(owners.id, ownerId));
   assertOwnership(owner, (o) => o.managerId, managerId, "Propriétaire introuvable");
   return owner;
@@ -84,9 +85,22 @@ export type CrgSynthesis = {
   totalChargesByCurrency: Record<string, number>;
   totalCommissionByCurrency: Record<string, number>;
   totalNetByCurrency: Record<string, number>;
+  /** Reversements enregistrés au titre de ce mois, du plus ancien au plus récent. */
+  reversements: Array<{
+    id: string;
+    currency: string;
+    amount: number;
+    paidAt: Date;
+    method: string;
+    reference: string | null;
+    note: string | null;
+  }>;
+  totalReverseByCurrency: Record<string, number>;
+  /** Net du mois moins ce qui a déjà été reversé ; négatif si l'agence a versé plus que le net (encaissement corrigé depuis). */
+  resteAReverserByCurrency: Record<string, number>;
 };
 
-async function computeCrg(owner: OwnerRow, month: number, year: number): Promise<CrgSynthesis> {
+export async function computeCrg(owner: OwnerRow, month: number, year: number): Promise<CrgSynthesis> {
   const { start, end } = monthBounds(month, year);
 
   const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, owner.id));
@@ -213,6 +227,20 @@ async function computeCrg(owner: OwnerRow, month: number, year: number): Promise
     totalNetByCurrency[entry.currency] = (totalNetByCurrency[entry.currency] ?? 0) + entry.netAReverser;
   }
 
+  const reversements = await db
+    .select()
+    .from(ownerPayouts)
+    .where(and(eq(ownerPayouts.ownerId, owner.id), eq(ownerPayouts.periodMonth, month), eq(ownerPayouts.periodYear, year)))
+    .orderBy(asc(ownerPayouts.paidAt), asc(ownerPayouts.createdAt));
+  const totalReverseByCurrency: Record<string, number> = {};
+  for (const r of reversements) {
+    totalReverseByCurrency[r.currency] = arrondir((totalReverseByCurrency[r.currency] ?? 0) + r.amount);
+  }
+  const resteAReverserByCurrency: Record<string, number> = {};
+  for (const devise of new Set([...Object.keys(totalNetByCurrency), ...Object.keys(totalReverseByCurrency)])) {
+    resteAReverserByCurrency[devise] = arrondir((totalNetByCurrency[devise] ?? 0) - (totalReverseByCurrency[devise] ?? 0));
+  }
+
   return {
     ownerId: owner.id,
     ownerName: nomAvecCivilite(owner),
@@ -227,10 +255,21 @@ async function computeCrg(owner: OwnerRow, month: number, year: number): Promise
     totalChargesByCurrency,
     totalCommissionByCurrency,
     totalNetByCurrency,
+    reversements: reversements.map((r: typeof ownerPayouts.$inferSelect) => ({
+      id: r.id,
+      currency: r.currency,
+      amount: r.amount,
+      paidAt: r.paidAt,
+      method: r.method,
+      reference: r.reference,
+      note: r.note,
+    })),
+    totalReverseByCurrency,
+    resteAReverserByCurrency,
   };
 }
 
-async function loadAgencyName(managerId: string): Promise<string> {
+export async function loadAgencyName(managerId: string): Promise<string> {
   const [settings] = await db
     .select({ agencyName: agencySettings.agencyName })
     .from(agencySettings)

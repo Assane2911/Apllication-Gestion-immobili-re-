@@ -106,6 +106,9 @@ const ECRITURES_AUTORISEES: readonly Regle[] = [
   { methodes: ["POST"], chemin: new RegExp(`^/invoices/${ID}/(mark-paid|cancel)$`), roles: ["ACCOUNTANT"] },
   { methodes: ["POST"], chemin: /^\/expenses$/, roles: ["ACCOUNTANT"] },
   { methodes: ["DELETE"], chemin: new RegExp(`^/expenses/${ID}$`), roles: ["ACCOUNTANT"] },
+  // Reversements aux propriétaires : c'est de l'argent qui sort, donc la finance.
+  { methodes: ["POST"], chemin: new RegExp(`^/crg/${ID}/payouts$`), roles: ["ACCOUNTANT"] },
+  { methodes: ["DELETE"], chemin: new RegExp(`^/crg/${ID}/payouts/${ID}$`), roles: ["ACCOUNTANT"] },
 ];
 
 /**

@@ -553,6 +553,24 @@ export interface CrgSynthesis {
   totalChargesByCurrency: Record<string, number>;
   totalCommissionByCurrency: Record<string, number>;
   totalNetByCurrency: Record<string, number>;
+  /** Reversements enregistrés au titre du mois. */
+  reversements?: OwnerPayout[];
+  totalReverseByCurrency?: Record<string, number>;
+  /** Net moins ce qui a été reversé ; négatif si l'agence a versé plus que le net. */
+  resteAReverserByCurrency?: Record<string, number>;
+}
+
+export type PayoutMethod = "BANK_TRANSFER" | "CASH" | "CHEQUE" | "MOBILE_MONEY" | "OTHER";
+
+/** Argent versé par l'agence à un propriétaire au titre d'un mois de gestion. */
+export interface OwnerPayout {
+  id: string;
+  currency: string;
+  amount: number;
+  paidAt: string;
+  method: PayoutMethod;
+  reference: string | null;
+  note: string | null;
 }
 
 export type ListingType = "RENT" | "SALE" | "PROMOTION" | "LAND" | "OTHER";

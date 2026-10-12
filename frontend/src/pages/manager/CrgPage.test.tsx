@@ -41,11 +41,11 @@ function crg(overrides: Partial<CrgSynthesis> = {}): CrgSynthesis {
   };
 }
 
-function renderPage() {
+function renderPage(adresse = "/proprietaires/owner-1/crg") {
   return render(
     <AuthProvider>
       <CurrencyProvider>
-        <MemoryRouter initialEntries={["/proprietaires/owner-1/crg"]}>
+        <MemoryRouter initialEntries={[adresse]}>
           <Routes>
             <Route path="/proprietaires/:ownerId/crg" element={<CrgPage />} />
           </Routes>
@@ -127,5 +127,11 @@ describe("CrgPage", () => {
         signal: expect.anything(),
       })
     );
+  });
+
+  it("s'ouvre sur le mois indiqué dans l'adresse (lien « Reverser » de la page des propriétaires)", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg({ month: 9, year: 2025 }) });
+    renderPage("/proprietaires/owner-1/crg?month=9&year=2025");
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/crg/owner-1", { params: { month: 9, year: 2025 } }));
   });
 });
