@@ -383,6 +383,11 @@ export interface AgencySettings {
   stampOrSignatureUrl?: string | null;
   iban?: string | null;
   bic?: string | null;
+  /** Relances graduées des impayés. */
+  overdueRemindersEnabled?: boolean;
+  overdueGraceDays?: number;
+  overdueIntervalDays?: number;
+  overdueNotifyGuarantors?: boolean;
 }
 
 /** Coordonnées bancaires vues par le locataire (voir GET /api/agency/mine) — un sous-ensemble minimal, pas les paramètres complets de l'agence. */
@@ -414,6 +419,9 @@ export type MoyenSaisiAlaMain = "BANK_TRANSFER" | "CASH" | "CHEQUE" | "MOBILE_MO
 export interface Invoice {
   id: string;
   contractId: string;
+  /** Relances graduées : dernier niveau envoyé (0 à 3) et sa date. */
+  overdueReminderLevel?: number;
+  overdueReminderSentAt?: string | null;
   periodMonth: number;
   periodYear: number;
   amount: number;

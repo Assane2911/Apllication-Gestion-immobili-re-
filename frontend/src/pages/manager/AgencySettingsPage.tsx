@@ -14,6 +14,14 @@ import type { AgencySettings, RetentionEcheances, TeamMember, TeamRole } from ".
 const ROLES_EQUIPE: TeamRole[] = ["FULL", "AGENT", "ACCOUNTANT", "READ_ONLY"];
 import Bulle from "../../components/Bulle";
 
+
+/** Jours de retard auxquels partent les trois relances, pour l'aperçu des réglages (même règle que le serveur). */
+export function calendrierRelances(grace: string, intervalle: string): { first: number; second: number; third: number } {
+  const g = Math.max(1, Number(grace) || 0);
+  const i = Math.max(1, Number(intervalle) || 0);
+  return { first: g, second: g + i, third: g + 2 * i };
+}
+
 export default function AgencySettingsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -69,6 +77,10 @@ export default function AgencySettingsPage() {
     legalNotice: "",
     iban: "",
     bic: "",
+    overdueRemindersEnabled: false,
+    overdueGraceDays: "5",
+    overdueIntervalDays: "10",
+    overdueNotifyGuarantors: false,
   });
 
   useEffect(() => {
@@ -89,6 +101,10 @@ export default function AgencySettingsPage() {
           legalNotice: res.data.legalNotice || "",
           iban: res.data.iban || "",
           bic: res.data.bic || "",
+          overdueRemindersEnabled: Boolean(res.data.overdueRemindersEnabled),
+          overdueGraceDays: String(res.data.overdueGraceDays ?? 5),
+          overdueIntervalDays: String(res.data.overdueIntervalDays ?? 10),
+          overdueNotifyGuarantors: Boolean(res.data.overdueNotifyGuarantors),
         });
         setLoadError(null);
       })
@@ -184,7 +200,11 @@ export default function AgencySettingsPage() {
     setSuccess(false);
     setError(null);
     try {
-      await api.put<AgencySettings>("/agency", form);
+      await api.put<AgencySettings>("/agency", {
+        ...form,
+        overdueGraceDays: Number(form.overdueGraceDays),
+        overdueIntervalDays: Number(form.overdueIntervalDays),
+      });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
     } catch (err) {
@@ -347,6 +367,64 @@ export default function AgencySettingsPage() {
               className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
             />
           </div>
+
+          <fieldset className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t("manager.agencySettings.overdue.title")}</legend>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.agencySettings.overdue.hint")}</p>
+            <label className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={form.overdueRemindersEnabled}
+                onChange={(e) => setForm({ ...form, overdueRemindersEnabled: e.target.checked })}
+              />
+              {t("manager.agencySettings.overdue.enabled")}
+            </label>
+            {form.overdueRemindersEnabled && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="agency-grace" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t("manager.agencySettings.overdue.grace")}
+                    </label>
+                    <input
+                      id="agency-grace"
+                      type="number"
+                      min={0}
+                      max={30}
+                      value={form.overdueGraceDays}
+                      onChange={(e) => setForm({ ...form, overdueGraceDays: e.target.value })}
+                      className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="agency-interval" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t("manager.agencySettings.overdue.interval")}
+                    </label>
+                    <input
+                      id="agency-interval"
+                      type="number"
+                      min={3}
+                      max={30}
+                      value={form.overdueIntervalDays}
+                      onChange={(e) => setForm({ ...form, overdueIntervalDays: e.target.value })}
+                      className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2"
+                    />
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={form.overdueNotifyGuarantors}
+                    onChange={(e) => setForm({ ...form, overdueNotifyGuarantors: e.target.checked })}
+                  />
+                  {t("manager.agencySettings.overdue.guarantors")}
+                </label>
+                <p role="status" className="text-xs rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-300">
+                  {t("manager.agencySettings.overdue.schedule", calendrierRelances(form.overdueGraceDays, form.overdueIntervalDays))}
+                </p>
+              </>
+            )}
+          </fieldset>
 
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
             <button

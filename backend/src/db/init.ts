@@ -799,6 +799,12 @@ export async function initDb() {
     await ajouterColonne("properties", "owner_id", sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id TEXT REFERENCES owners(id) ON DELETE SET NULL`);
     await ajouterColonne("agency_settings", "iban", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS iban TEXT`);
     await ajouterColonne("agency_settings", "bic", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS bic TEXT`);
+    await ajouterColonne("agency_settings", "overdue_reminders_enabled", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS overdue_reminders_enabled BOOLEAN NOT NULL DEFAULT false`);
+    await ajouterColonne("agency_settings", "overdue_grace_days", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS overdue_grace_days INTEGER NOT NULL DEFAULT 5`);
+    await ajouterColonne("agency_settings", "overdue_interval_days", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS overdue_interval_days INTEGER NOT NULL DEFAULT 10`);
+    await ajouterColonne("agency_settings", "overdue_notify_guarantors", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS overdue_notify_guarantors BOOLEAN NOT NULL DEFAULT false`);
+    await ajouterColonne("invoices", "overdue_reminder_level", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS overdue_reminder_level INTEGER NOT NULL DEFAULT 0`);
+    await ajouterColonne("invoices", "overdue_reminder_sent_at", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS overdue_reminder_sent_at TIMESTAMP`);
     await ajouterColonne("users", "team_owner_id", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS team_owner_id TEXT REFERENCES users(id) ON DELETE CASCADE`);
     await ajouterColonne("users", "team_role", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS team_role TEXT`);
     await ajouterColonne("users", "stripe_customer_id", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`);

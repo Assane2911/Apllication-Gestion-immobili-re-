@@ -116,6 +116,43 @@ describe("AgencySettingsPage", () => {
     );
   });
 
+  it("relances des impayés : désactivées par défaut, activables avec délai, intervalle et option garants", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.put.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+    const activer = screen.getByRole("checkbox", { name: "Envoyer les relances automatiquement" });
+    expect(activer).not.toBeChecked();
+    expect(screen.queryByLabelText("Délai de grâce après l'échéance (jours)")).not.toBeInTheDocument();
+
+    await user.click(activer);
+    expect(screen.getByRole("status")).toHaveTextContent("Relance amiable à J+5, deuxième relance à J+15, dernière relance à J+25.");
+    await user.clear(screen.getByLabelText("Délai de grâce après l'échéance (jours)"));
+    await user.type(screen.getByLabelText("Délai de grâce après l'échéance (jours)"), "3");
+    await user.clear(screen.getByLabelText("Intervalle entre deux relances (jours)"));
+    await user.type(screen.getByLabelText("Intervalle entre deux relances (jours)"), "7");
+    expect(screen.getByRole("status")).toHaveTextContent("J+3, deuxième relance à J+10, dernière relance à J+17");
+    await user.click(screen.getByRole("checkbox", { name: "Prévenir les garants à la dernière relance" }));
+    await user.click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
+
+    await waitFor(() =>
+      expect(mockedApi.put).toHaveBeenCalledWith(
+        "/agency",
+        expect.objectContaining({ overdueRemindersEnabled: true, overdueGraceDays: 3, overdueIntervalDays: 7, overdueNotifyGuarantors: true })
+      )
+    );
+  });
+
+  it("relances : pré-remplit les réglages déjà enregistrés", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ overdueRemindersEnabled: true, overdueGraceDays: 2, overdueIntervalDays: 14, overdueNotifyGuarantors: true }) });
+    renderPage();
+    await waitFor(() => expect(screen.getByLabelText("Délai de grâce après l'échéance (jours)")).toHaveValue(2));
+    expect(screen.getByLabelText("Intervalle entre deux relances (jours)")).toHaveValue(14);
+    expect(screen.getByRole("checkbox", { name: "Prévenir les garants à la dernière relance" })).toBeChecked();
+  });
+
   it("affiche l'erreur du serveur quand l'IBAN saisi est invalide", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: settings() });
     mockedApi.put.mockRejectedValueOnce({

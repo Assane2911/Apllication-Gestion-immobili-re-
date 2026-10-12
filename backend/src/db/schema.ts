@@ -592,6 +592,9 @@ export const invoices = pgTable(
     // Rappel distinct envoyé quelques jours AVANT l'échéance (voir reminder.service.ts),
     // différent du rappel/avis du 1er du mois qui alimente `reminderSentAt`.
     dueSoonReminderSentAt: timestamp("due_soon_reminder_sent_at", { mode: "date" }),
+    // Relances graduées d'un impayé : dernier niveau envoyé (0 à 3) et sa date.
+    overdueReminderLevel: integer("overdue_reminder_level").notNull().default(0),
+    overdueReminderSentAt: timestamp("overdue_reminder_sent_at", { mode: "date" }),
     // Réclamation en cours d'un appel à un prestataire de paiement (voir
     // payInvoice, invoice.controller.ts). Stripe protège son propre appel via
     // un Idempotency-Key ; PayDunya n'offre aucun mécanisme équivalent, donc
@@ -1063,6 +1066,14 @@ export const agencySettings = pgTable("agency_settings", {
   // déclaration ne fait alors que masquer l'absence réelle de paiement.
   iban: text("iban"),
   bic: text("bic"),
+  // Relances graduées des impayés (voir services/relances.service.ts). Désactivées par défaut :
+  // l'agence choisit de les envoyer. Délai de grâce : jours après l'échéance avant la 1re relance ;
+  // intervalle : jours entre deux relances (3 au plus).
+  overdueRemindersEnabled: boolean("overdue_reminders_enabled").notNull().default(false),
+  overdueGraceDays: integer("overdue_grace_days").notNull().default(5),
+  overdueIntervalDays: integer("overdue_interval_days").notNull().default(10),
+  // Prévenir les garants du bail à la dernière relance.
+  overdueNotifyGuarantors: boolean("overdue_notify_guarantors").notNull().default(false),
   ...timestamps,
 });
 

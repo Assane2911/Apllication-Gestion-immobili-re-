@@ -1071,6 +1071,7 @@ const fr = {
       leaseDocTitle: "Contrat de Bail - {{property}}",
     },
     invoices: {
+      overdueLevel: "Relance {{level}}/3 le {{date}}",
       title: "Paiements de loyer",
       subtitle: "Suivi des mensualités et quittances officielles en PDF",
       filterAll: "Toutes les factures",
@@ -1467,6 +1468,15 @@ const fr = {
       title: "Identité de l'Agence & Marque Blanche",
       subtitle: "Personnalisez les coordonnées et mentions légales qui apparaîtront sur vos quittances et contrats officiels",
       success: "Paramètres de l'agence mis à jour avec succès ! Vos futures quittances intégreront ces informations.",
+      overdue: {
+        title: "Relances automatiques des impayés",
+        hint: "Désactivées par défaut. Une fois activées, chaque loyer impayé reçoit au plus trois relances par email (titulaire et colocataires) ; au-delà de 90 jours de retard, plus aucune relance automatique : la suite vous revient.",
+        enabled: "Envoyer les relances automatiquement",
+        grace: "Délai de grâce après l'échéance (jours)",
+        interval: "Intervalle entre deux relances (jours)",
+        guarantors: "Prévenir les garants à la dernière relance",
+        schedule: "Relance amiable à J+{{first}}, deuxième relance à J+{{second}}, dernière relance à J+{{third}}.",
+      },
       fields: {
         agencyName: "Nom commercial de l'agence *",
         agencyNamePlaceholder: "Ex: Horizon Immobilier Prestige",

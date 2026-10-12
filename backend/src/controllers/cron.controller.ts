@@ -11,6 +11,7 @@ import {
 import { purgerDonneesDeLaPlateforme } from "../services/conservation.service";
 import { markOverdueInvoices } from "../services/invoice.service";
 import { runRecurringExpenseGeneration } from "../services/recurringExpense.service";
+import { runOverdueReminders } from "../services/relances.service";
 import { budgetTemps } from "../utils/budgetTemps";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -164,6 +165,7 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   // repris le lendemain (voir utils/budgetTemps.ts).
   const contractEnding = await executerEtape("rappels de fin de contrat", etapesEnEchec, () => runContractEndingReminders(budget));
   const upcoming = await executerEtape("rappels avant échéance", etapesEnEchec, () => runUpcomingRentDueReminders(budget));
+  const relances = await executerEtape("relances des impayés", etapesEnEchec, () => runOverdueReminders(budget));
   const rentDue = await executerEtape("avis d'échéance et facturation du mois", etapesEnEchec, () => runRentDueReminders(undefined, budget));
   const recurringExpenses = await executerEtape("dépenses récurrentes", etapesEnEchec, () => runRecurringExpenseGeneration(budget));
   const insurance = await executerEtape("rappels d'assurance", etapesEnEchec, () => runInsurancePolicyExpiryReminders(budget));
@@ -178,18 +180,21 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
     purge,
     contractEndingRemindersSent: contractEnding?.sent ?? 0,
     upcomingRentDueRemindersSent: upcoming?.sent ?? 0,
+    overdueRemindersSent: relances?.sent ?? 0,
     rentDueRemindersSent: rentDue?.sent ?? 0,
     recurringExpensesGenerated: recurringExpenses?.generees ?? 0,
     insuranceRemindersSent: insurance?.sent ?? 0,
     // Les envois qui ont VRAIMENT échoué. Leur marqueur a été relâché, donc
     // ils repartiront demain — mais un cron qui annonce « 40 envoyés » sans
     // dire que 40 ont échoué ne se distingue pas d'un cron qui a réussi.
-    echecs: (contractEnding?.echecs ?? 0) + (upcoming?.echecs ?? 0) + (rentDue?.echecs ?? 0) + (insurance?.echecs ?? 0),
+    echecs:
+      (contractEnding?.echecs ?? 0) + (upcoming?.echecs ?? 0) + (relances?.echecs ?? 0) + (rentDue?.echecs ?? 0) + (insurance?.echecs ?? 0),
     // Vrai dès qu'un des travaux s'est arrêté faute de temps : le reliquat
     // n'est pas perdu, il sera traité à la prochaine exécution.
     interrompu:
       !!contractEnding?.interrompu ||
       !!upcoming?.interrompu ||
+      !!relances?.interrompu ||
       !!rentDue?.interrompu ||
       !!recurringExpenses?.interrompu ||
       !!insurance?.interrompu,

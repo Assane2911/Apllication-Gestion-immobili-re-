@@ -1072,6 +1072,7 @@ const es: TranslationSchema = {
       leaseDocTitle: "Contrato de Alquiler - {{property}}",
     },
     invoices: {
+      overdueLevel: "Recordatorio {{level}}/3 el {{date}}",
       title: "Pagos de alquiler",
       subtitle: "Seguimiento de las mensualidades y recibos oficiales en PDF",
       filterAll: "Todas las facturas",
@@ -1468,6 +1469,15 @@ const es: TranslationSchema = {
       title: "Identidad de la Agencia y Marca Blanca",
       subtitle: "Personaliza los datos de contacto y las menciones legales que aparecerán en tus recibos y contratos oficiales",
       success: "¡Configuración de la agencia actualizada con éxito! Tus próximos recibos incluirán esta información.",
+      overdue: {
+        title: "Recordatorios automáticos de impagos",
+        hint: "Desactivados por defecto. Una vez activados, cada alquiler impagado recibe como máximo tres recordatorios por email (titular y coinquilinos); pasados 90 días de retraso, ningún recordatorio automático más: la continuación le corresponde.",
+        enabled: "Enviar los recordatorios automáticamente",
+        grace: "Periodo de gracia tras el vencimiento (días)",
+        interval: "Días entre dos recordatorios",
+        guarantors: "Avisar a los avalistas con el último recordatorio",
+        schedule: "Recordatorio amistoso en D+{{first}}, segundo en D+{{second}}, último en D+{{third}}.",
+      },
       fields: {
         agencyName: "Nombre comercial de la agencia *",
         agencyNamePlaceholder: "Ej: Horizon Inmobiliaria Prestige",

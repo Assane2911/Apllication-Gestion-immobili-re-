@@ -1070,6 +1070,7 @@ const pt: TranslationSchema = {
       leaseDocTitle: "Contrato de Arrendamento - {{property}}",
     },
     invoices: {
+      overdueLevel: "Lembrete {{level}}/3 a {{date}}",
       title: "Pagamentos de Renda",
       subtitle: "Acompanhamento das mensalidades e recibos oficiais em PDF",
       filterAll: "Todas as faturas",
@@ -1466,6 +1467,15 @@ const pt: TranslationSchema = {
       title: "Identidade da Agência & Marca Branca",
       subtitle: "Personalize os dados de contacto e as menções legais que aparecerão nos seus recibos e contratos oficiais",
       success: "Definições da agência atualizadas com sucesso! Os seus futuros recibos incluirão estas informações.",
+      overdue: {
+        title: "Lembretes automáticos de rendas em atraso",
+        hint: "Desativados por defeito. Uma vez ativados, cada renda por pagar recebe no máximo três lembretes por email (titular e coinquilinos); após 90 dias de atraso, mais nenhum lembrete automático: a sequência cabe-lhe a si.",
+        enabled: "Enviar os lembretes automaticamente",
+        grace: "Período de carência após o vencimento (dias)",
+        interval: "Dias entre dois lembretes",
+        guarantors: "Avisar os fiadores no último lembrete",
+        schedule: "Lembrete amigável em D+{{first}}, segundo em D+{{second}}, último em D+{{third}}.",
+      },
       fields: {
         agencyName: "Nome comercial da agência *",
         agencyNamePlaceholder: "Ex.: Horizonte Imobiliário Prestígio",
