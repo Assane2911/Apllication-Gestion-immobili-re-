@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
-import { annulerRevision, creerRevision, listerRevisions, motifRevision } from "../services/rentRevision.service";
+import { annulerRevision, bauxAReviser, creerRevision, listerRevisions, motifRevision } from "../services/rentRevision.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { formaterMontant } from "../utils/montant";
@@ -99,4 +99,9 @@ export const cancelRentRevision = asyncHandler(async (req: Request, res: Respons
     details: "Révision de loyer programmée annulée.",
   });
   res.status(204).send();
+});
+
+/** Baux actifs dont la date anniversaire approche (ou vient de passer) sans révision prévue. */
+export const listRevisionsDue = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await bauxAReviser(req.user!.userId));
 });

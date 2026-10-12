@@ -14,6 +14,27 @@ import { useCurrency } from "../../context/currency";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
 
+/** Bail actif dont la date anniversaire approche sans révision prévue (GET /contracts/revisions-due). */
+interface BailAReviser {
+  contractId: string;
+  propertyTitle: string;
+  tenantName: string;
+  rent: number;
+  currency: string;
+  endDate: string;
+  anniversaire: string;
+  dateSuggeree: string;
+}
+
+/** Ce dont la fenêtre de révision a besoin, qu'on l'ouvre depuis la liste ou depuis le rappel. */
+interface BailRevisable {
+  id: string;
+  rent: number;
+  currency?: string;
+  endDate: string;
+  dateSuggeree?: string;
+}
+
 // Jour d'échéance proposé à la création : le 5, ce que disaient déjà les documents remis aux locataires.
 const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "" };
 
@@ -59,7 +80,9 @@ export default function ContractsPage() {
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [depositRefundContract, setDepositRefundContract] = useState<Contract | null>(null);
   const [editingPaymentDay, setEditingPaymentDay] = useState<Contract | null>(null);
-  const [revisingRent, setRevisingRent] = useState<Contract | null>(null);
+  const [revisingRent, setRevisingRent] = useState<BailRevisable | null>(null);
+  const [bauxAReviser, setBauxAReviser] = useState<BailAReviser[]>([]);
+  const [viewingAvenant, setViewingAvenant] = useState<string | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [uploadingScanContractId, setUploadingScanContractId] = useState<string | null>(null);
@@ -82,6 +105,13 @@ export default function ContractsPage() {
         setProperties(liste<Property>(propertiesRes.data, "items"));
         setTenants(liste<Tenant>(tenantsRes.data, "items"));
         setLoadError(null);
+        // Rappel des révisions : chargé APRÈS la liste, et jamais bloquant — une erreur ici n'empêche pas d'utiliser la page.
+        return api
+          .get<BailAReviser[]>("/contracts/revisions-due", { signal })
+          .then((res) => setBauxAReviser(liste<BailAReviser>(res.data)))
+          .catch((err) => {
+            if (!isRequestCancelled(err)) setBauxAReviser([]);
+          });
       })
       .catch((err) => {
         if (isRequestCancelled(err)) return;
@@ -100,7 +130,7 @@ export default function ContractsPage() {
   function revisionLien(c: Contract) {
     if (c.status !== "ACTIVE") return null;
     return (
-      <button type="button" onClick={() => setRevisingRent(c)} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
         {t("manager.contracts.reviseRent")}
       </button>
     );
@@ -270,6 +300,37 @@ export default function ContractsPage() {
             {t("common.actions.retry")}
           </button>
         </div>
+      )}
+
+      {bauxAReviser.length > 0 && (
+        <section aria-labelledby="baux-a-reviser" className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl px-4 py-3">
+          <h3 id="baux-a-reviser" className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+            {t("manager.contracts.revisionsDue.title", { count: bauxAReviser.length })}
+          </h3>
+          <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">{t("manager.contracts.revisionsDue.hint")}</p>
+          <ul className="mt-2 divide-y divide-amber-200/70 dark:divide-amber-500/20">
+            {bauxAReviser.map((b) => (
+              <li key={b.contractId} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-slate-800 dark:text-slate-200">
+                  <span className="font-medium">{b.propertyTitle}</span> — {b.tenantName}
+                  <span className="block text-xs text-slate-600 dark:text-slate-400">
+                    {t("manager.contracts.revisionsDue.anniversary", {
+                      date: new Date(b.anniversaire).toLocaleDateString(i18n.language, { timeZone: "UTC" }),
+                      rent: formatMoney(b.rent, b.currency),
+                    })}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRevisingRent({ id: b.contractId, rent: b.rent, currency: b.currency, endDate: b.endDate, dateSuggeree: b.dateSuggeree })}
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg"
+                >
+                  {t("manager.contracts.revisionsDue.action")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {showForm && (
@@ -734,12 +795,18 @@ export default function ContractsPage() {
           rent={revisingRent.rent}
           currency={revisingRent.currency}
           endDate={revisingRent.endDate}
+          dateSuggeree={revisingRent.dateSuggeree}
+          onOpenAvenant={setViewingAvenant}
           onSuccess={() => {
             setRevisingRent(null);
             load();
           }}
           onClose={() => setRevisingRent(null)}
         />
+      )}
+
+      {viewingAvenant && (
+        <DocumentModal title={t("manager.contracts.avenantDocTitle")} docUrl={`/documents/rent-revision/${viewingAvenant}`} onClose={() => setViewingAvenant(null)} />
       )}
 
       {editingPaymentDay && (

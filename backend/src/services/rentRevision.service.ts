@@ -279,3 +279,103 @@ export async function appliquerRevisionsDues(maintenant: Date = new Date(), mana
   }
   return { appliquees, annulees };
 }
+
+// --- Baux à réviser ------------------------------------------------------------------------------------------------
+
+/** Fenêtre de rappel autour de la date anniversaire : un mois après (oubli) à deux mois avant (préparation). */
+export const JOURS_APRES_ANNIVERSAIRE = 30;
+export const JOURS_AVANT_ANNIVERSAIRE = 60;
+const JOUR_MS = 24 * 60 * 60 * 1000;
+
+export interface BailAReviser {
+  contractId: string;
+  propertyTitle: string;
+  tenantName: string;
+  rent: number;
+  currency: string;
+  startDate: Date;
+  endDate: Date;
+  /** Date anniversaire du bail concernée (minuit UTC). */
+  anniversaire: Date;
+  /** Premier de mois proposé pour la révision : jamais avant l'anniversaire, jamais dans le passé. */
+  dateSuggeree: Date;
+  /** Date d'effet de la dernière révision appliquée, ou null. */
+  derniereRevision: Date | null;
+}
+
+/** Anniversaire de `debut` en `annee`, plafonné au dernier jour du mois (un bail du 29 février tombe le 28). */
+function anniversaireEn(debut: Date, annee: number): Date {
+  const dernierJour = new Date(Date.UTC(annee, debut.getUTCMonth() + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(annee, debut.getUTCMonth(), Math.min(debut.getUTCDate(), dernierJour)));
+}
+
+/**
+ * Baux actifs dont la date anniversaire tombe dans la fenêtre [−30 j ; +60 j] et qui n'ont pas
+ * déjà une révision (programmée ou appliquée) pour cette échéance. La plateforme ne dit pas
+ * qu'un loyer DOIT être révisé : elle rappelle seulement l'échéance au gestionnaire.
+ */
+export async function bauxAReviser(managerId: string, maintenant: Date = new Date()): Promise<BailAReviser[]> {
+  const lignes: Array<{ contrat: Contrat; titre: string; prenom: string; nom: string }> = await db
+    .select({ contrat: contracts, titre: properties.title, prenom: tenants.firstName, nom: tenants.lastName })
+    .from(contracts)
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .where(and(eq(properties.managerId, managerId), eq(contracts.status, "ACTIVE")));
+  if (lignes.length === 0) return [];
+
+  const revisions: Revision[] = await db
+    .select()
+    .from(rentRevisions)
+    .innerJoin(contracts, eq(rentRevisions.contractId, contracts.id))
+    .innerJoin(properties, eq(contracts.propertyId, properties.id))
+    .where(and(eq(properties.managerId, managerId), sql`${rentRevisions.status} <> 'CANCELLED'`))
+    .then((r: Array<{ rent_revisions: Revision }>) => r.map((x) => x.rent_revisions));
+
+  const debutFenetre = maintenant.getTime() - JOURS_APRES_ANNIVERSAIRE * JOUR_MS;
+  const finFenetre = maintenant.getTime() + JOURS_AVANT_ANNIVERSAIRE * JOUR_MS;
+  const moisCourant = debutDeMois(maintenant);
+
+  const resultat: BailAReviser[] = [];
+  for (const { contrat, titre, prenom, nom } of lignes) {
+    const debut = new Date(contrat.startDate);
+    const fin = new Date(contrat.endDate);
+    const anniversaire = [maintenant.getUTCFullYear() - 1, maintenant.getUTCFullYear(), maintenant.getUTCFullYear() + 1]
+      .map((annee) => anniversaireEn(debut, annee))
+      .find((a) => a > debut && a <= fin && a.getTime() >= debutFenetre && a.getTime() <= finFenetre);
+    if (!anniversaire) continue;
+
+    const siennes = revisions.filter((r) => r.contractId === contrat.id);
+    // Une révision programmée, ou appliquée dans les onze mois qui précèdent l'anniversaire, couvre cette échéance.
+    const seuil = Date.UTC(anniversaire.getUTCFullYear(), anniversaire.getUTCMonth() - 11, anniversaire.getUTCDate());
+    if (siennes.some((r) => r.status === "PENDING" || r.effectiveDate.getTime() >= seuil)) continue;
+
+    const apresAnniversaire =
+      anniversaire.getUTCDate() === 1 ? anniversaire : new Date(Date.UTC(anniversaire.getUTCFullYear(), anniversaire.getUTCMonth() + 1, 1));
+    const dateSuggeree = apresAnniversaire < moisCourant ? moisCourant : apresAnniversaire;
+    const appliquees = siennes.filter((r) => r.status === "APPLIED").sort((a, b) => b.effectiveDate.getTime() - a.effectiveDate.getTime());
+
+    resultat.push({
+      contractId: contrat.id,
+      propertyTitle: titre,
+      tenantName: `${prenom} ${nom}`,
+      rent: contrat.rent,
+      currency: contrat.currency,
+      startDate: debut,
+      endDate: fin,
+      anniversaire,
+      dateSuggeree,
+      derniereRevision: appliquees[0]?.effectiveDate ?? null,
+    });
+  }
+  return resultat.sort((a, b) => a.anniversaire.getTime() - b.anniversaire.getTime());
+}
+
+/** Numéro d'avenant d'une révision : son rang parmi les révisions non annulées du bail, par date d'effet. */
+export async function numeroAvenant(revision: Revision): Promise<number> {
+  const toutes = await db
+    .select()
+    .from(rentRevisions)
+    .where(and(eq(rentRevisions.contractId, revision.contractId), sql`${rentRevisions.status} <> 'CANCELLED'`))
+    .orderBy(asc(rentRevisions.effectiveDate), asc(rentRevisions.createdAt));
+  return toutes.findIndex((r: Revision) => r.id === revision.id) + 1;
+}
