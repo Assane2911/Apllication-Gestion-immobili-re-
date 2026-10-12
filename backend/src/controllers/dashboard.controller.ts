@@ -1,7 +1,8 @@
-import { and, eq, gte, inArray } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, or } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { expenses, invoices, issueReports, properties, contracts as contractsTable, tenants } from "../db/schema";
+import { developperFactures } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
@@ -57,8 +58,9 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
             .where(
               and(
                 inArray(invoices.contractId, managerContractIds),
-                eq(invoices.status, "PAID"),
-                gte(invoices.paidAt, sixMonthsAgo)
+                // Réglées récemment, OU ayant reçu au moins un acompte (le tri par
+                // date se fait ensuite, paiement par paiement).
+                or(and(eq(invoices.status, "PAID"), gte(invoices.paidAt, sixMonthsAgo)), gt(invoices.amountPaid, 0))
               )
             ),
         ])
@@ -69,12 +71,23 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
   // signification (ex: 100 EUR + 50 000 XOF = "50 100", affiché avec le
   // symbole de la devise préférée du gestionnaire, comme si c'était homogène).
   // On regroupe donc chaque total par devise plutôt que de les additionner.
+  // ENCAISSEMENTS des six derniers mois, un par paiement (voir
+  // encaissements.service.ts) : « revenus encaissés » compte l'argent REÇU, à la
+  // date où il est arrivé — même base que le bilan fiscal et le compte-rendu de
+  // gestion. « Attendu » reste, lui, le loyer DÛ pour la période du mois.
+  const encaissements = (await developperFactures(recentPaidInvoices)).filter(
+    (inv) => inv.paidAt && new Date(inv.paidAt) >= sixMonthsAgo
+  );
   const monthlyRevenueByCurrency: Record<string, number> = {};
   const monthlyExpectedByCurrency: Record<string, number> = {};
   for (const inv of monthlyInvoices) {
     const currency = inv.currency || "EUR";
     monthlyExpectedByCurrency[currency] = (monthlyExpectedByCurrency[currency] ?? 0) + inv.amount;
-    if (inv.status === "PAID") {
+  }
+  for (const inv of encaissements) {
+    const date = new Date(inv.paidAt!);
+    if (date.getFullYear() === year && date.getMonth() + 1 === month) {
+      const currency = inv.currency || "EUR";
       monthlyRevenueByCurrency[currency] = (monthlyRevenueByCurrency[currency] ?? 0) + inv.amount;
     }
   }
@@ -94,8 +107,10 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
   // Même principe que ci-dessus : regroupé par devise (mois -> devise -> montant)
   // plutôt que sommé à travers des devises différentes.
   const revenueByMonth: Record<string, Record<string, number>> = {};
-  for (const inv of recentPaidInvoices) {
-    const key = `${inv.periodYear}-${String(inv.periodMonth).padStart(2, "0")}`;
+  for (const inv of encaissements) {
+    // Mois de l'ENCAISSEMENT (et non de la période louée).
+    const date = new Date(inv.paidAt!);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const currency = inv.currency || "EUR";
     revenueByMonth[key] = revenueByMonth[key] ?? {};
     revenueByMonth[key][currency] = (revenueByMonth[key][currency] ?? 0) + inv.amount;

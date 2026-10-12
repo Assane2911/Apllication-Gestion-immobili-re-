@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -8,7 +8,9 @@ import { db, Transaction } from "../db/client";
 import { activityLogs, agencySettings, contracts, invoices, owners, properties, users } from "../db/schema";
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { logActivity } from "../services/activity.service";
+import { developperFactures } from "../services/encaissements.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { resteDu } from "../utils/montants";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { bicSchema, ibanSchema } from "../utils/iban";
@@ -454,8 +456,7 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
             .where(
               and(
                 inArray(invoices.contractId, contractIds),
-                eq(invoices.status, "PAID"),
-                gte(invoices.paidAt, sixMonthsAgo)
+                or(and(eq(invoices.status, "PAID"), gte(invoices.paidAt, sixMonthsAgo)), gt(invoices.amountPaid, 0))
               )
             ),
         ])
@@ -477,12 +478,24 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
       pending: 0,
     });
   }
+  // ENCAISSEMENTS (un par paiement, voir encaissements.service.ts) : « perçu »
+  // compte l'argent reçu ce mois-ci, à sa date ; « en attente » est le RESTE DÛ
+  // des loyers de la période du mois.
+  const encaissements = (await developperFactures(recentPaidInvoices)).filter(
+    (inv) => inv.paidAt && new Date(inv.paidAt) >= sixMonthsAgo
+  );
   for (const inv of monthlyInvoices) {
     const propertyId = contractIdToPropertyId.get(inv.contractId);
     const entry = propertyId ? perProperty.get(propertyId) : undefined;
     if (!entry) continue;
-    if (inv.status === "PAID") entry.collected += inv.amount;
-    else if (inv.status === "PENDING" || inv.status === "LATE") entry.pending += inv.amount;
+    if (inv.status === "PENDING" || inv.status === "LATE") entry.pending += resteDu(inv);
+  }
+  for (const inv of encaissements) {
+    const date = new Date(inv.paidAt!);
+    if (date.getFullYear() !== year || date.getMonth() + 1 !== month) continue;
+    const propertyId = contractIdToPropertyId.get(inv.contractId);
+    const entry = propertyId ? perProperty.get(propertyId) : undefined;
+    if (entry) entry.collected += inv.amount;
   }
 
   // Totaux, groupés par devise plutôt que sommés à travers des devises différentes.
@@ -498,8 +511,9 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
   }
 
   const revenueByMonth: Record<string, Record<string, number>> = {};
-  for (const inv of recentPaidInvoices) {
-    const key = `${inv.periodYear}-${String(inv.periodMonth).padStart(2, "0")}`;
+  for (const inv of encaissements) {
+    const date = new Date(inv.paidAt!);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const currency = inv.currency || "EUR";
     revenueByMonth[key] = revenueByMonth[key] ?? {};
     revenueByMonth[key][currency] = (revenueByMonth[key][currency] ?? 0) + inv.amount;
