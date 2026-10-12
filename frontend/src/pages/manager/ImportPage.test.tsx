@@ -143,4 +143,43 @@ describe("ImportPage", () => {
     await user.click(screen.getByRole("button", { name: /Télécharger le modèle/ }));
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/import/modele/properties", { responseType: "blob" }));
   });
+
+  it("contrats : explique que seul l'avenir est facturé et montre le mois de la première facture de chaque ligne", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({
+      data: {
+        type: "contracts",
+        delimiteur: ";",
+        resume: { total: 2, valides: 1, doublons: 0, erreurs: 1 },
+        lignes: [
+          { ligne: 2, statut: "OK", messages: [], donnees: { property: "Studio A", tenantEmail: "m@x.com", premiereFacture: "11/2026" } },
+          { ligne: 3, statut: "ERREUR", messages: ["Bien introuvable : « Villa Z »."], donnees: { property: "Villa Z", tenantEmail: "m@x.com", premiereFacture: null } },
+        ],
+      },
+    });
+    renderPage();
+
+    await user.click(screen.getByRole("radio", { name: "Contrats" }));
+    expect(screen.getByText(/bien \(titre\), email_locataire, loyer/)).toBeInTheDocument();
+    expect(screen.getByText(/Seuls les loyers à venir sont facturés/)).toBeInTheDocument();
+
+    await deposer(user, "bien;email_locataire;loyer;depot;debut;fin\nStudio A;m@x.com;1;0;01/01/2026;01/01/2027", "contrats.csv");
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/import/preview", expect.objectContaining({ type: "contracts" })));
+    expect(await screen.findByText("Studio A — m@x.com")).toBeInTheDocument();
+    expect(screen.getByText("Première facture : 11/2026")).toBeInTheDocument();
+    // Une ligne en erreur n'affiche pas de première facture.
+    expect(screen.getAllByText(/Première facture/)).toHaveLength(1);
+    expect(screen.getByText("Bien introuvable : « Villa Z »."));
+  });
+
+  it("contrats : le modèle téléchargé porte le bon nom", async () => {
+    const user = userEvent.setup();
+    URL.createObjectURL = vi.fn().mockReturnValue("blob:x");
+    URL.revokeObjectURL = vi.fn();
+    mockedApi.get.mockResolvedValueOnce({ data: new Blob(["x"]) });
+    renderPage();
+    await user.click(screen.getByRole("radio", { name: "Contrats" }));
+    await user.click(screen.getByRole("button", { name: /Télécharger le modèle/ }));
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/import/modele/contracts", { responseType: "blob" }));
+  });
 });

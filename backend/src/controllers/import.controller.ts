@@ -3,9 +3,11 @@ import { z } from "zod";
 import { logActivity } from "../services/activity.service";
 import {
   analyserBiens,
+  analyserContrats,
   analyserLocataires,
   ImportInvalide,
   importerBiens,
+  importerContrats,
   importerLocataires,
   MODELES_CSV,
   type TypeImport,
@@ -17,11 +19,11 @@ import { computeSubscriptionInfo } from "./auth.controller";
 import { maxPropertiesForPlan } from "./subscription.controller";
 
 const importSchema = z.object({
-  type: z.enum(["properties", "tenants"]),
+  type: z.enum(["properties", "tenants", "contracts"]),
   csv: z.string().min(1, "Le fichier est vide.").max(MAX_CARACTERES_IMPORT, "Le fichier est trop volumineux (1 Mo maximum)."),
 });
 
-const LIBELLES: Record<TypeImport, string> = { properties: "biens", tenants: "locataires" };
+const LIBELLES: Record<TypeImport, string> = { properties: "biens", tenants: "locataires", contracts: "contrats" };
 
 /** Lit et analyse le fichier : toute erreur de FORMAT (fichier vide, colonnes absentes…) devient un 400 lisible. */
 async function analyser(req: Request) {
@@ -31,6 +33,7 @@ async function analyser(req: Request) {
   try {
     const lu = lireCsv(csv);
     if (type === "tenants") return { type, managerId, analyse: await analyserLocataires(managerId, lu) };
+    if (type === "contracts") return { type, managerId, analyse: await analyserContrats(managerId, lu) };
 
     const manager = await chargerCompteCourant(req);
     // Même plafond que la création à la main : formule effective Pro pendant l'essai.
@@ -67,7 +70,9 @@ export const importerCsv = asyncHandler(async (req: Request, res: Response) => {
   const importees =
     type === "tenants"
       ? await importerLocataires(managerId, analyse as Awaited<ReturnType<typeof analyserLocataires>>)
-      : await importerBiens(managerId, analyse as Awaited<ReturnType<typeof analyserBiens>>);
+      : type === "contracts"
+        ? await importerContrats(managerId, analyse as Awaited<ReturnType<typeof analyserContrats>>)
+        : await importerBiens(managerId, analyse as Awaited<ReturnType<typeof analyserBiens>>);
 
   await logActivity({
     req,
@@ -83,8 +88,8 @@ export const importerCsv = asyncHandler(async (req: Request, res: Response) => {
 
 /** Modèle CSV à remplir (en-têtes attendus et une ligne d'exemple). */
 export const telechargerModele = asyncHandler(async (req: Request, res: Response) => {
-  const type = z.enum(["properties", "tenants"]).parse(req.params.type);
+  const type = z.enum(["properties", "tenants", "contracts"]).parse(req.params.type);
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="modele-import-${type === "properties" ? "biens" : "locataires"}.csv"`);
+  res.setHeader("Content-Disposition", `attachment; filename="modele-import-${LIBELLES[type]}.csv"`);
   res.send("﻿" + MODELES_CSV[type]);
 });

@@ -1,10 +1,14 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { properties, tenants } from "../db/schema";
+import { contracts, properties, tenants } from "../db/schema";
 import { DEVISES } from "../utils/devises";
-import { type CsvLu, lireNombre } from "../utils/csvImport";
+import { type CsvLu, lireDate, lireNombre } from "../utils/csvImport";
+import { debutDeLaJournee } from "../utils/dates";
+import { echeanceDuMois, jourEcheanceDuContrat } from "../utils/jourEcheance";
 import { estCiviliteConnue } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
+import { TYPES_BAIL } from "../utils/typeBail";
+import { generateInvoicesForContract } from "./invoice.service";
 
 /**
  * Import CSV de biens et de locataires (migration depuis un tableur).
@@ -16,7 +20,7 @@ import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
  * Une ligne en erreur ou en doublon n'empêche pas les autres, et un fichier
  * importé deux fois ne crée rien la seconde fois.
  */
-export type TypeImport = "properties" | "tenants";
+export type TypeImport = "properties" | "tenants" | "contracts";
 export type StatutLigne = "OK" | "DOUBLON" | "ERREUR";
 
 export interface LigneAnalysee<D> {
@@ -57,15 +61,35 @@ const COLONNES_LOCATAIRES = {
   email: ["email", "courriel", "mail", "adresseemail"],
 } as const;
 
+const COLONNES_CONTRATS = {
+  property: ["bien", "titrebien", "titre", "property", "logement"],
+  propertyAddress: ["adressebien", "adresse", "address"],
+  tenantEmail: ["emaillocataire", "email", "courriel", "mail", "tenantemail"],
+  rent: ["loyer", "rent", "loyermensuel"],
+  deposit: ["depot", "depotdegarantie", "caution", "cautionnement", "deposit"],
+  currency: ["devise", "currency", "monnaie"],
+  startDate: ["debut", "datedebut", "datededebut", "startdate", "entree", "dateentree"],
+  endDate: ["fin", "datefin", "datedefin", "enddate"],
+  paymentDay: ["jourecheance", "jourdepaiement", "jourloyer", "paymentday"],
+  leaseType: ["typedebail", "typebail", "type", "leasetype"],
+  applicableLaw: ["droitapplicable", "droit", "applicablelaw"],
+  status: ["statut", "status", "etat"],
+  billingFrom: ["facturationdepuis", "facturerapartirde", "facturationapartirde", "billingfrom"],
+} as const;
+
 export const COLONNES_OBLIGATOIRES = {
   properties: ["title", "address", "surface", "rent"],
   tenants: ["firstName", "lastName", "phone", "email"],
+  contracts: ["property", "tenantEmail", "rent", "deposit", "startDate", "endDate"],
 } as const;
 
 /** Modèles proposés au téléchargement : les noms d'en-tête canoniques, une ligne d'exemple. */
 export const MODELES_CSV: Record<TypeImport, string> = {
   properties: "titre;adresse;surface;loyer;devise;statut;description\nStudio Centre-ville;12 rue des Écoles, Dakar;28;250000;XOF;DISPONIBLE;Studio meublé au 2e étage\n",
   tenants: "civilite;prenom;nom;telephone;email\nM;Moussa;Diop;+221 77 123 45 67;moussa.diop@example.com\n",
+  contracts:
+    "bien;email_locataire;loyer;depot;debut;fin;jour_echeance;type_de_bail;droit_applicable;statut;facturation_depuis\n" +
+    "Studio Centre-ville;moussa.diop@example.com;250000;500000;01/03/2024;28/02/2026;5;habitation;Droit sénégalais;actif;01/11/2026\n",
 };
 
 function lire<C extends Record<string, readonly string[]>>(valeurs: Record<string, string>, colonnes: C, champ: keyof C): string {
@@ -295,4 +319,228 @@ export async function importerLocataires(managerId: string, analyse: Analyse<Don
 export async function compterBiens(managerId: string): Promise<number> {
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(properties).where(and(eq(properties.managerId, managerId)));
   return count;
+}
+
+
+// --- Contrats ------------------------------------------------------------------------------------------------------
+
+export interface DonneesContrat {
+  property: string;
+  propertyId: string | null;
+  tenantEmail: string;
+  tenantId: string | null;
+  rent: number | null;
+  deposit: number | null;
+  currency: string;
+  startDate: string | null;
+  endDate: string | null;
+  paymentDay: number | null;
+  leaseType: (typeof TYPES_BAIL)[number];
+  applicableLaw: string | null;
+  status: "ACTIVE" | "ENDED" | "TERMINATED";
+  /** Premier mois facturé par la plateforme (AAAA-MM-JJ) ; le passé reste hors facturation. */
+  billingFrom: string | null;
+  /** Mois de la toute première facture qui sera créée (MM/AAAA), pour l'aperçu. */
+  premiereFacture: string | null;
+}
+
+const TYPES_BAIL_ACCEPTES: Record<string, (typeof TYPES_BAIL)[number]> = {
+  HABITATION: "HABITATION", HABITATIONNEL: "HABITATION", LOGEMENT: "HABITATION", NU: "HABITATION",
+  MEUBLE: "MEUBLE", MEUBLEE: "MEUBLE", HABITATIONMEUBLEE: "MEUBLE", HABITATIONMEUBLE: "MEUBLE",
+  COMMERCIAL: "COMMERCIAL", COMMERCE: "COMMERCIAL",
+  PROFESSIONNEL: "PROFESSIONNEL", PROFESSIONNELLE: "PROFESSIONNEL", BUREAU: "PROFESSIONNEL",
+};
+
+const STATUTS_CONTRAT: Record<string, DonneesContrat["status"]> = {
+  ACTIVE: "ACTIVE", ACTIF: "ACTIVE", ENCOURS: "ACTIVE", EN_COURS: "ACTIVE",
+  ENDED: "ENDED", TERMINE: "ENDED", ECHU: "ENDED", FINI: "ENDED",
+  TERMINATED: "TERMINATED", RESILIE: "TERMINATED",
+};
+
+const sansAccents = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[\s'’-]+/g, "");
+const jour = (d: Date) => d.toISOString().slice(0, 10);
+
+export async function analyserContrats(managerId: string, csv: CsvLu, maintenant: Date = new Date()): Promise<Analyse<DonneesContrat>> {
+  verifierEntetes(csv, COLONNES_CONTRATS, COLONNES_OBLIGATOIRES.contracts);
+
+  const [biens, locataires, contratsExistants] = await Promise.all([
+    db.select({ id: properties.id, title: properties.title, address: properties.address, currency: properties.currency }).from(properties).where(eq(properties.managerId, managerId)),
+    db.select({ id: tenants.id, email: tenants.email }).from(tenants).where(eq(tenants.managerId, managerId)),
+    db
+      .select({ propertyId: contracts.propertyId, tenantId: contracts.tenantId, startDate: contracts.startDate, endDate: contracts.endDate, status: contracts.status })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(eq(properties.managerId, managerId)),
+  ]);
+  const locataireParEmail = new Map<string, string>(locataires.map((t: { id: string; email: string }) => [t.email.toLowerCase(), t.id]));
+
+  // Par défaut on ne facture que l'avenir : l'historique des loyers reste dans l'ancien outil. Le mois en cours
+  // n'est facturé que si son échéance n'est pas déjà passée — sinon sa facture naîtrait « en retard » et le
+  // locataire, peut-être à jour dans l'ancien outil, recevrait une relance. Le gestionnaire peut toujours
+  // l'inclure avec la colonne « facturation_depuis ».
+  const premierDuMois = (decalage: number) => new Date(Date.UTC(maintenant.getFullYear(), maintenant.getMonth() + decalage, 1));
+
+  const vus: Array<{ propertyId: string; tenantId: string; start: Date; end: Date; actif: boolean }> = contratsExistants.map(
+    (c: { propertyId: string; tenantId: string; startDate: Date; endDate: Date; status: string }) => ({
+      propertyId: c.propertyId, tenantId: c.tenantId, start: new Date(c.startDate), end: new Date(c.endDate), actif: c.status === "ACTIVE",
+    })
+  );
+
+  const lignes: Array<LigneAnalysee<DonneesContrat>> = csv.lignes.map(({ ligne, valeurs }) => {
+    const messages: string[] = [];
+    const titre = lire(valeurs, COLONNES_CONTRATS, "property");
+    const adresse = lire(valeurs, COLONNES_CONTRATS, "propertyAddress");
+    const email = lire(valeurs, COLONNES_CONTRATS, "tenantEmail").toLowerCase();
+    const loyerBrut = lire(valeurs, COLONNES_CONTRATS, "rent");
+    const depotBrut = lire(valeurs, COLONNES_CONTRATS, "deposit");
+    const deviseBrute = lire(valeurs, COLONNES_CONTRATS, "currency").toUpperCase();
+    const debutBrut = lire(valeurs, COLONNES_CONTRATS, "startDate");
+    const finBrute = lire(valeurs, COLONNES_CONTRATS, "endDate");
+    const jourBrut = lire(valeurs, COLONNES_CONTRATS, "paymentDay");
+    const typeBrut = lire(valeurs, COLONNES_CONTRATS, "leaseType");
+    const droit = lire(valeurs, COLONNES_CONTRATS, "applicableLaw");
+    const statutBrut = lire(valeurs, COLONNES_CONTRATS, "status");
+    const facturationBrute = lire(valeurs, COLONNES_CONTRATS, "billingFrom");
+
+    // Bien : par son titre ; l'adresse (si la colonne existe) départage deux biens de même titre.
+    let bien: (typeof biens)[number] | undefined;
+    if (!titre) messages.push("Bien manquant (titre du bien).");
+    else {
+      let candidats = biens.filter((b: { title: string }) => cleDoublon(b.title) === cleDoublon(titre));
+      if (candidats.length > 1 && adresse) candidats = candidats.filter((b: { address: string }) => cleDoublon(b.address) === cleDoublon(adresse));
+      if (candidats.length === 0) messages.push(`Bien introuvable : « ${titre} ». Importez d'abord vos biens, avec ce titre exact.`);
+      else if (candidats.length > 1) messages.push(`Plusieurs biens portent le titre « ${titre} » : ajoutez une colonne « adresse_bien » pour les distinguer.`);
+      else bien = candidats[0];
+    }
+
+    // Locataire : par son email, clé unique dans l'agence.
+    let tenantId: string | undefined;
+    if (!email) messages.push("Email du locataire manquant.");
+    else {
+      tenantId = locataireParEmail.get(email);
+      if (!tenantId) messages.push(`Locataire introuvable : « ${email} ». Importez d'abord vos locataires, avec cet email.`);
+    }
+
+    const rent = loyerBrut ? lireNombre(loyerBrut) : null;
+    if (rent === null || rent <= 0) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.");
+    const deposit = depotBrut ? lireNombre(depotBrut) : null;
+    if (deposit === null || deposit < 0) messages.push(depotBrut ? `Dépôt de garantie invalide : « ${depotBrut} ».` : "Dépôt de garantie manquant (indiquez 0 s'il n'y en a pas).");
+
+    let currency = bien?.currency || "EUR";
+    if (deviseBrute) {
+      if (DEVISES[deviseBrute]) currency = deviseBrute;
+      else messages.push(`Devise inconnue : « ${deviseBrute} ».`);
+    }
+
+    const debut = debutBrut ? lireDate(debutBrut) : null;
+    if (!debut) messages.push(debutBrut ? `Date de début invalide : « ${debutBrut} » (jj/mm/aaaa).` : "Date de début manquante.");
+    const fin = finBrute ? lireDate(finBrute) : null;
+    if (!fin) messages.push(finBrute ? `Date de fin invalide : « ${finBrute} » (jj/mm/aaaa).` : "Date de fin manquante.");
+    if (debut && fin && fin <= debut) messages.push("La date de fin doit être postérieure à la date de début.");
+
+    let paymentDay: number | null = null;
+    if (jourBrut) {
+      const n = lireNombre(jourBrut);
+      if (n !== null && Number.isInteger(n) && n >= 1 && n <= 31) paymentDay = n;
+      else messages.push(`Jour d'échéance invalide : « ${jourBrut} » (1 à 31).`);
+    }
+
+    let leaseType: DonneesContrat["leaseType"] = "HABITATION";
+    if (typeBrut) {
+      const connu = TYPES_BAIL_ACCEPTES[sansAccents(typeBrut)];
+      if (connu) leaseType = connu;
+      else messages.push(`Type de bail inconnu : « ${typeBrut} » (habitation, meublé, commercial ou professionnel).`);
+    }
+
+    if (droit.length > 300) messages.push("Le droit applicable ne peut pas dépasser 300 caractères.");
+
+    let status: DonneesContrat["status"] = "ACTIVE";
+    if (statutBrut) {
+      const connu = STATUTS_CONTRAT[sansAccents(statutBrut)];
+      if (connu) status = connu;
+      else messages.push(`Statut inconnu : « ${statutBrut} » (actif, terminé ou résilié).`);
+    }
+
+    const echeanceCourante = echeanceDuMois(
+      jourEcheanceDuContrat({ paymentDay, startDate: debut ?? maintenant }),
+      maintenant.getFullYear(),
+      maintenant.getMonth() + 1
+    );
+    let facturation = echeanceCourante < debutDeLaJournee(maintenant) ? premierDuMois(1) : premierDuMois(0);
+    if (facturationBrute) {
+      const d = lireDate(facturationBrute);
+      if (d) facturation = d;
+      else messages.push(`Date « facturation depuis » invalide : « ${facturationBrute} » (jj/mm/aaaa).`);
+    }
+
+    let premiereFacture: string | null = null;
+    if (debut && fin) {
+      const depart = facturation > debut ? facturation : debut;
+      premiereFacture = depart > fin ? null : `${String(depart.getUTCMonth() + 1).padStart(2, "0")}/${depart.getUTCFullYear()}`;
+    }
+
+    const donnees: DonneesContrat = {
+      property: titre, propertyId: bien?.id ?? null, tenantEmail: email, tenantId: tenantId ?? null,
+      rent, deposit, currency,
+      startDate: debut ? jour(debut) : null, endDate: fin ? jour(fin) : null,
+      paymentDay, leaseType, applicableLaw: droit || null, status,
+      billingFrom: jour(facturation), premiereFacture,
+    };
+    if (messages.length > 0 || !bien || !tenantId || !debut || !fin) return { ligne, statut: "ERREUR", messages, donnees };
+
+    // Doublon : même bien, même locataire, même date de début (fichier déjà importé, ou bail déjà saisi).
+    if (vus.some((c) => c.propertyId === bien!.id && c.tenantId === tenantId && c.start.getTime() === debut.getTime())) {
+      return { ligne, statut: "DOUBLON", messages: ["Un contrat de ce locataire sur ce bien, avec la même date de début, existe déjà (ou figure plus haut dans le fichier)."], donnees };
+    }
+    // Deux baux actifs ne peuvent pas se chevaucher sur un même bien.
+    if (status === "ACTIVE" && vus.some((c) => c.actif && c.propertyId === bien!.id && c.start < fin && c.end > debut)) {
+      return { ligne, statut: "ERREUR", messages: ["Ce bien a déjà un contrat actif sur cette période (déjà enregistré, ou plus haut dans le fichier)."], donnees };
+    }
+    vus.push({ propertyId: bien.id, tenantId, start: debut, end: fin, actif: status === "ACTIVE" });
+    return { ligne, statut: "OK", messages: [], donnees };
+  });
+
+  return { type: "contracts", delimiteur: csv.delimiteur, lignes, resume: resumer(lignes) };
+}
+
+/**
+ * Crée les contrats valides, et leurs factures À PARTIR DE « facturation depuis » seulement.
+ * Une transaction : tout est écrit, ou rien. Le chevauchement est revérifié sous le verrou du
+ * bien (comme à la création à la main) : une ligne devenue conflictuelle entre l'aperçu et
+ * l'écriture est ignorée, pas fatale. Renvoie le nombre de contrats écrits.
+ */
+export async function importerContrats(managerId: string, analyse: Analyse<DonneesContrat>): Promise<number> {
+  const valides = analyse.lignes.filter((l) => l.statut === "OK");
+  if (valides.length === 0) return 0;
+
+  // Les ids viennent de l'analyse rejouée côté serveur ; on revérifie quand même qu'ils sont à l'agence.
+  const biensAgence = new Set(
+    (await db.select({ id: properties.id }).from(properties).where(and(eq(properties.managerId, managerId), inArray(properties.id, valides.map((l) => l.donnees.propertyId!))))).map((b: { id: string }) => b.id)
+  );
+
+  let ecrits = 0;
+  await db.transaction(async (tx) => {
+    for (const { donnees: d } of valides) {
+      if (!biensAgence.has(d.propertyId!)) continue;
+      const debut = new Date(d.startDate!);
+      const fin = new Date(d.endDate!);
+      if (d.status === "ACTIVE") {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${d.propertyId!}))`);
+        const actifs = await tx.select().from(contracts).where(and(eq(contracts.propertyId, d.propertyId!), eq(contracts.status, "ACTIVE")));
+        if (actifs.some((c: typeof contracts.$inferSelect) => new Date(c.startDate) < fin && new Date(c.endDate) > debut)) continue;
+      }
+      const [cree] = await tx
+        .insert(contracts)
+        .values({
+          propertyId: d.propertyId!, tenantId: d.tenantId!, rent: d.rent!, deposit: d.deposit!, currency: d.currency,
+          startDate: debut, endDate: fin, status: d.status, paymentDay: d.paymentDay, leaseType: d.leaseType,
+          applicableLaw: d.applicableLaw, billingFrom: new Date(d.billingFrom!),
+        })
+        .returning();
+      if (d.status === "ACTIVE") await tx.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, d.propertyId!));
+      await generateInvoicesForContract(cree, tx);
+      ecrits++;
+    }
+  });
+  return ecrits;
 }

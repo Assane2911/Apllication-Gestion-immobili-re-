@@ -445,6 +445,7 @@ export async function initDb() {
     await ajouterColonne("invoices", "reminder_sent_at", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`);
     await elargirMoyensDePaiement();
     await ajouterColonne("contracts", "payment_day", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS payment_day INTEGER`);
+    await ajouterColonne("contracts", "billing_from", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS billing_from TIMESTAMP`);
     await ajouterColonne("contracts", "lease_type", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS lease_type TEXT NOT NULL DEFAULT 'HABITATION'`);
     await ajouterColonne("contracts", "applicable_law", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS applicable_law TEXT`);
     await ajouterColonne("invoices", "amount_paid", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS amount_paid DOUBLE PRECISION NOT NULL DEFAULT 0`);
