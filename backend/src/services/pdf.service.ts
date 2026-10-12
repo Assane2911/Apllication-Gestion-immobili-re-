@@ -3,6 +3,7 @@ import { formaterMontant } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { libelleEcheance } from "../utils/jourEcheance";
 import { libelleSurface, titreDuBail } from "../utils/typeBail";
+import { nomAvecCivilite } from "../utils/nom";
 
 /**
  * Échappe les caractères HTML spéciaux avant interpolation dans les templates
@@ -549,6 +550,16 @@ export interface LeaseExportData {
   startDate: Date | string;
   endDate: Date | string;
   rent: number;
+  /** Garants du bail (section des parties et bloc de signature chacun). */
+  guarantors?: Array<{
+    civility: string | null;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string | null;
+    address: string | null;
+    maxAmount: number | null;
+  }>;
   /** Révisions de loyer appliquées depuis la signature, de la plus ancienne à la plus récente. */
   revisions?: Array<{ effectiveDate: Date | string; previousRent: number; newRent: number }>;
   currency?: string | null;
@@ -597,6 +608,25 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
   </div>`
     : "";
 
+  // Garants : une ligne chacun dans les parties, et un bloc de signature manuscrite (pas de signature
+  // électronique pour eux : ils signent l'exemplaire imprimé).
+  const garants = contract.guarantors ?? [];
+  const garantsHtml = garants
+    .map((g) => {
+      const contact = [g.phone, g.email].filter(Boolean).map((v) => escapeHtml(v)).join(", ");
+      return `<br><strong>Garant :</strong> ${escapeHtml(nomAvecCivilite(g))}${g.address ? ` (${escapeHtml(g.address)})` : ""}${contact ? ` — ${contact}` : ""}${
+        g.maxAmount !== null ? ` — Montant maximal garanti : ${escapeHtml(formaterMontant(g.maxAmount, contract.currency))}` : ""
+      }`;
+    })
+    .join("");
+  const signaturesGarants = garants.length
+    ? `<div class="signatures" style="flex-wrap: wrap; gap: 16px; justify-content: flex-start;">${garants
+        .map(
+          (g) => `<div class="sig-block"><strong>Le Garant :</strong> ${escapeHtml(nomAvecCivilite(g))}<div style="color:#94a3b8; margin-top:20px; font-size:11px;">Signature précédée de « lu et approuvé »</div></div>`
+        )
+        .join("")}</div>`
+    : "";
+
   // Loyer : sans révision, une ligne. Avec des révisions appliquées depuis la signature, le bail garde le
   // loyer SIGNÉ (celui d'avant la première révision) et liste chaque changement avec sa date d'effet :
   // la signature du locataire ne doit jamais se lire sous un montant qu'il n'a pas accepté.
@@ -640,7 +670,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="section-title">1. Les Parties</div>
     <div class="box">
       <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"} (${escapeHtml(agency.address)})<br>
-      <strong>Le Locataire :</strong> ${escapeHtml(contract.tenant?.firstName)} ${escapeHtml(contract.tenant?.lastName)} (Email : ${escapeHtml(contract.tenant?.email)}, Tél : ${escapeHtml(contract.tenant?.phone)})
+      <strong>Le Locataire :</strong> ${escapeHtml(contract.tenant?.firstName)} ${escapeHtml(contract.tenant?.lastName)} (Email : ${escapeHtml(contract.tenant?.email)}, Tél : ${escapeHtml(contract.tenant?.phone)})${garantsHtml}
     </div>
   </div>
 
@@ -681,6 +711,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
       ` : `<div style="color:#94a3b8; margin-top:20px;">En attente de signature</div>`}
     </div>
   </div>
+  ${signaturesGarants}
 </body>
 </html>
   `.trim();

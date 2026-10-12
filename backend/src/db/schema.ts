@@ -636,6 +636,35 @@ export const invoicePayments = pgTable(
   })
 );
 
+// --- Garants d'un bail ---
+// Personnes qui se portent caution du locataire pour ce bail. Elles figurent
+// sur le bail PDF (section et bloc de signature) : une fois le bail signé par
+// le locataire, elles ne changent plus (même verrou que le contenu du bail,
+// voir contract.controller.ts).
+export const contractGuarantors = pgTable(
+  "contract_guarantors",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    civility: text("civility"),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    // Format international (E.164), comme pour un locataire.
+    phone: text("phone").notNull(),
+    email: text("email"),
+    address: text("address"),
+    // Montant maximal garanti, dans la devise du bail ; NULL : non précisé.
+    maxAmount: doublePrecision("max_amount"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (table) => ({
+    contractIdIdx: index("contract_guarantors_contract_id_idx").on(table.contractId),
+  })
+);
+
 // --- Reversements aux propriétaires ---
 // Argent réellement versé par l'agence à un propriétaire au titre d'un mois de
 // gestion (le « net à reverser » du CRG de ce mois, voir crg.controller.ts).

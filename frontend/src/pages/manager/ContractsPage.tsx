@@ -7,6 +7,7 @@ import DepositRefundModal from "../../components/DepositRefundModal";
 import DocumentModal from "../../components/DocumentModal";
 import Pagination from "../../components/Pagination";
 import PaymentDayModal, { JOURS_ECHEANCE } from "../../components/PaymentDayModal";
+import GuarantorsModal from "../../components/GuarantorsModal";
 import RentRevisionModal from "../../components/RentRevisionModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
@@ -83,6 +84,7 @@ export default function ContractsPage() {
   const [revisingRent, setRevisingRent] = useState<BailRevisable | null>(null);
   const [bauxAReviser, setBauxAReviser] = useState<BailAReviser[]>([]);
   const [viewingAvenant, setViewingAvenant] = useState<string | null>(null);
+  const [guarantorsContract, setGuarantorsContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [uploadingScanContractId, setUploadingScanContractId] = useState<string | null>(null);
@@ -126,6 +128,15 @@ export default function ContractsPage() {
   }, [page]);
 
   /** Jour d'échéance du loyer, avec le moyen de le modifier tant que le locataire n'a pas signé le bail. */
+  /** Lien « Garants (n) » : ouvre la gestion des garants du bail (consultation seule une fois signé). */
+  function garantsLien(c: Contract) {
+    return (
+      <button type="button" onClick={() => setGuarantorsContract(c)} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+        {t("manager.contracts.guarantorsLink", { count: c.guarantorsCount ?? 0 })}
+      </button>
+    );
+  }
+
   /** Lien « Réviser » sous le loyer d'un bail actif. */
   function revisionLien(c: Contract) {
     if (c.status !== "ACTIVE") return null;
@@ -450,6 +461,7 @@ export default function ContractsPage() {
                 <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">
                   {formatMoney(c.rent, c.currency)}
                   {revisionLien(c)}
+                  {garantsLien(c)}
                 </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
@@ -617,6 +629,7 @@ export default function ContractsPage() {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(c.rent, c.currency)}</span>
                 {revisionLien(c)}
+                  {garantsLien(c)}
                 <span className="text-slate-600 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
               </div>
               {c.status === "ACTIVE" && echeanceLigne(c)}
@@ -807,6 +820,16 @@ export default function ContractsPage() {
 
       {viewingAvenant && (
         <DocumentModal title={t("manager.contracts.avenantDocTitle")} docUrl={`/documents/rent-revision/${viewingAvenant}`} onClose={() => setViewingAvenant(null)} />
+      )}
+
+      {guarantorsContract && (
+        <GuarantorsModal
+          contractId={guarantorsContract.id}
+          currency={guarantorsContract.currency}
+          verrouille={Boolean(guarantorsContract.signedByTenantAt)}
+          onChange={() => load()}
+          onClose={() => setGuarantorsContract(null)}
+        />
       )}
 
       {editingPaymentDay && (

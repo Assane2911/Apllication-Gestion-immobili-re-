@@ -132,6 +132,7 @@ const TABLES = [
   "invoice_payments",
   "rent_revisions",
   "owner_payouts",
+  "contract_guarantors",
 ];
 
 // Table vide avant chaque test pour qu'aucun test ne dépende de l'ordre

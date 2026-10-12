@@ -4,7 +4,7 @@ import { z } from "zod";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { contracts, inspections, invoices, issueReports, properties, tenants } from "../db/schema";
+import { contractGuarantors, contracts, inspections, invoices, issueReports, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { depositRefundEmail, sendEmail } from "../services/email.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
@@ -121,12 +121,14 @@ async function withRelations(contractId: string) {
     .where(eq(invoices.contractId, contractId))
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
   const scannedContractUrl = await resolveScannedUrl(row.contract.scannedContractUrl);
+  const guarantors = await db.select().from(contractGuarantors).where(eq(contractGuarantors.contractId, contractId));
   return {
     ...parseDepositDeductions(row.contract),
     scannedContractUrl,
     property: row.property,
     tenant: row.tenant,
     invoices: contractInvoices,
+    guarantors,
   };
 }
 
@@ -151,12 +153,25 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
       .where(whereClause),
   ]);
 
+  // Nombre de garants par contrat de la page, en une requête.
+  const ids = rows.map((r: { contract: typeof contracts.$inferSelect }) => r.contract.id);
+  const comptes: Array<{ contractId: string; nombre: number }> =
+    ids.length > 0
+      ? await db
+          .select({ contractId: contractGuarantors.contractId, nombre: sql<number>`count(*)::int` })
+          .from(contractGuarantors)
+          .where(inArray(contractGuarantors.contractId, ids))
+          .groupBy(contractGuarantors.contractId)
+      : [];
+  const garantsParContrat = new Map(comptes.map((c) => [c.contractId, c.nombre]));
+
   const items = await Promise.all(
     rows.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
       ...parseDepositDeductions(r.contract),
       scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
       property: r.property,
       tenant: r.tenant,
+      guarantorsCount: garantsParContrat.get(r.contract.id) ?? 0,
     }))
   );
 

@@ -229,6 +229,23 @@ export interface Contract {
   property?: Property;
   tenant?: Tenant;
   invoices?: Invoice[];
+  /** Nombre de garants (liste des contrats). */
+  guarantorsCount?: number;
+  guarantors?: Guarantor[];
+}
+
+/** Garant d'un bail : figure sur le bail, figé une fois le bail signé par le locataire. */
+export interface Guarantor {
+  id: string;
+  contractId: string;
+  civility: "M" | "MME" | null;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string | null;
+  address: string | null;
+  maxAmount: number | null;
+  notes: string | null;
 }
 
 export interface DepositDeduction {

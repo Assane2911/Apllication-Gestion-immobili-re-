@@ -15,6 +15,7 @@ exports[`couverture des rôles sur les routes réellement enregistrées > l'inst
   "AGENT": [
     "PATCH /listings/leads/x",
     "POST /contracts",
+    "POST /contracts/x/guarantors",
     "POST /contracts/x/renew",
     "POST /contracts/x/rent-revisions",
     "POST /contracts/x/scan",
@@ -34,6 +35,7 @@ exports[`couverture des rôles sur les routes réellement enregistrées > l'inst
     "POST /vendors",
     "PUT /contracts/x",
     "PUT /contracts/x/deposit-refund",
+    "PUT /contracts/x/guarantors/x",
     "PUT /inspections/x",
     "PUT /insurance-policies/x",
     "PUT /issues/x/status",

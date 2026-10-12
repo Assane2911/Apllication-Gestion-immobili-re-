@@ -311,6 +311,19 @@ describe("ContractsPage (manager)", () => {
     expect(screen.queryByText("panne")).not.toBeInTheDocument();
   });
 
+  it("affiche le nombre de garants et ouvre leur gestion, en consultation seule si le bail est signé", async () => {
+    const user = userEvent.setup();
+    queueLoad([contract({ id: "c1", guarantorsCount: 2, signedByTenantAt: "2026-02-01T00:00:00.000Z" })]);
+    mockedApi.get.mockResolvedValueOnce({ data: [] }); // garants chargés à l'ouverture
+    renderPage();
+
+    const liens = await screen.findAllByRole("button", { name: "Garants (2)" });
+    await user.click(liens[0]);
+    expect(await screen.findByRole("dialog", { name: "Garants du bail" })).toBeInTheDocument();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/c1/guarantors"));
+    expect(screen.getByText(/signé par le locataire : ses garants/)).toBeInTheDocument();
+  });
+
   it("workflow de renouvellement : propose de renouveler quand le bail expire bientôt", async () => {
     const user = userEvent.setup();
     const soon = contract({ id: "c1", endDate: new Date(Date.now() + 5 * DAY_MS).toISOString() });
