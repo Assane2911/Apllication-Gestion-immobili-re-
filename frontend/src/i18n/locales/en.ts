@@ -1665,6 +1665,7 @@ const en: TranslationSchema = {
       signatureTitle: "Lease agreement signature",
       signedOn: "Signed by you on {{date}}",
       awaitingSignature: "Awaiting your digital signature",
+      cotenantNote: "You are a co-tenant on this lease: the main tenant signs it online, you sign the printed copy.",
       depositRefundTitle: "Security deposit refunded: {{amount}}",
       signMyLease: "Sign my lease",
       viewLeasePdf: "View lease PDF",

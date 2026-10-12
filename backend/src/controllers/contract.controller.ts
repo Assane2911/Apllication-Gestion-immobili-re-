@@ -9,6 +9,7 @@ import { logActivity } from "../services/activity.service";
 import { depositRefundEmail, sendEmail } from "../services/email.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
 import { colocatairesDuBail } from "./cotenant.controller";
+import { bauxDuLocataire } from "../services/colocation.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
@@ -508,11 +509,14 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
 
 /** Contrat(s) actif(s) du locataire connecté (portail locataire). */
 export const myContracts = asyncHandler(async (req: Request, res: Response) => {
+  // Baux dont il est titulaire ou colocataire (voir services/colocation.service.ts).
+  const baux = await bauxDuLocataire((await chargerLocataireDuCompte(req)).id);
+  if (baux.size === 0) return res.json([]);
   const rows = await db
     .select({ contract: contracts, property: properties })
     .from(contracts)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(contracts.tenantId, (await chargerLocataireDuCompte(req)).id))
+    .where(inArray(contracts.id, [...baux.keys()]))
     .orderBy(desc(contracts.createdAt));
 
   if (rows.length === 0) return res.json([]);
@@ -541,6 +545,8 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
       scannedContractUrl: await resolveScannedUrl(row.contract.scannedContractUrl),
       property: row.property,
       invoices: invoicesByContract.get(row.contract.id) ?? [],
+      // Le portail n'offre la signature électronique qu'au titulaire.
+      qualite: baux.get(row.contract.id) ?? "TITULAIRE",
     }))
   );
 

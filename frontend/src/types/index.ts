@@ -229,6 +229,8 @@ export interface Contract {
   property?: Property;
   tenant?: Tenant;
   invoices?: Invoice[];
+  /** Portail locataire : titulaire du bail, ou colocataire (pas de signature électronique). */
+  qualite?: "TITULAIRE" | "COLOCATAIRE";
   /** Noms des colocataires (liste des contrats). */
   cotenantNames?: string[];
   /** Nombre de garants (liste des contrats). */

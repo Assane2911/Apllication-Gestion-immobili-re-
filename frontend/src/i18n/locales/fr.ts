@@ -1666,6 +1666,7 @@ const fr = {
       signatureTitle: "Signature du contrat de bail",
       signedOn: "Signé par vous le {{date}}",
       awaitingSignature: "En attente de votre signature numérique",
+      cotenantNote: "Vous êtes colocataire de ce bail : le titulaire le signe en ligne, vous signez l'exemplaire imprimé.",
       depositRefundTitle: "Dépôt de garantie restitué : {{amount}}",
       signMyLease: "Signer mon bail",
       viewLeasePdf: "Voir le bail PDF",

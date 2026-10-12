@@ -9,7 +9,7 @@ import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertAccesLocataireOuGestionnaire, assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertAccesLocataireOuGestionnaire, assertOwnership, chargerLocataireDuCompte, estLocataireDuBail, idLocataireDuCompte } from "../utils/authorization";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
@@ -230,7 +230,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
-  if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
+  if (!(await estLocataireDuBail(req, contract))) throw new ApiError(403, "Accès refusé");
   if (contract.status !== "ACTIVE") {
     throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif");
   }

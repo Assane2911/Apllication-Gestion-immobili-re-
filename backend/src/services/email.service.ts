@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
+import { escapeHtml } from "../utils/html";
 import { formaterMontant } from "../utils/montant";
 
 let transporter: nodemailer.Transporter | null = null;
@@ -94,16 +95,6 @@ export async function sendEmail(to: string, subject: string, html: string, attac
     console.error(`[email] Échec de l'envoi vers ${masquer(destinataire)}:`, err instanceof Error ? err.message : err);
     return { simulated: false, error: true };
   }
-}
-
-function escapeHtml(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 /**

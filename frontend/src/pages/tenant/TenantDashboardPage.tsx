@@ -242,11 +242,14 @@ export default function TenantDashboardPage() {
                         <span className="text-amber-700 dark:text-amber-400 font-semibold">{t("tenant.dashboard.awaitingSignature")}</span>
                       )}
                     </p>
+                    {c.qualite === "COLOCATAIRE" && (
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">{t("tenant.dashboard.cotenantNote")}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {!c.signedByTenantAt && (
+                  {!c.signedByTenantAt && c.qualite !== "COLOCATAIRE" && (
                     <Bulle texte={t("tenant.tips.signContract")}>
                     <button
                       onClick={() => setSigningContract(c)}
