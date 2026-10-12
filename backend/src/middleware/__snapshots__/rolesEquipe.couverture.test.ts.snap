@@ -1,0 +1,42 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`couverture des rôles sur les routes réellement enregistrées > l'instantané des écritures autorisées reste lisible et revu à chaque évolution 1`] = `
+{
+  "ACCOUNTANT": [
+    "DELETE /expenses/x",
+    "POST /expenses",
+    "POST /invoices/send-monthly-reminders",
+    "POST /invoices/x/cancel",
+    "POST /invoices/x/mark-paid",
+    "POST /invoices/x/send-reminder",
+  ],
+  "AGENT": [
+    "PATCH /listings/leads/x",
+    "POST /contracts",
+    "POST /contracts/x/renew",
+    "POST /contracts/x/scan",
+    "POST /inspections",
+    "POST /insurance-policies",
+    "POST /invoices/send-monthly-reminders",
+    "POST /invoices/x/send-reminder",
+    "POST /listings",
+    "POST /messages/x",
+    "POST /owners",
+    "POST /owners/x/invite",
+    "POST /properties",
+    "POST /tenants",
+    "POST /tenants/x/portal-account",
+    "POST /vendors",
+    "PUT /contracts/x",
+    "PUT /contracts/x/deposit-refund",
+    "PUT /inspections/x",
+    "PUT /insurance-policies/x",
+    "PUT /issues/x/status",
+    "PUT /listings/x",
+    "PUT /owners/x",
+    "PUT /properties/x",
+    "PUT /tenants/x",
+    "PUT /vendors/x",
+  ],
+}
+`;

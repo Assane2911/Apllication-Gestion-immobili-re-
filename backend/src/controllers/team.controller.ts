@@ -10,6 +10,12 @@ import { logActivity } from "../services/activity.service";
 import { sendEmail, teamInvitationEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
+import {
+  LIBELLES_ROLES_EQUIPE,
+  ROLES_EQUIPE,
+  ROLE_EQUIPE_INVITATION_PAR_DEFAUT,
+  roleEquipeEffectif,
+} from "../utils/rolesEquipe";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 
 /**
@@ -37,6 +43,7 @@ export const listTeamMembers = asyncHandler(async (req: Request, res: Response) 
       id: users.id,
       email: users.email,
       createdAt: users.createdAt,
+      teamRole: users.teamRole,
       // Un collaborateur qui n'a jamais posé de mot de passe (invitation pas
       // encore acceptée) a toujours un resetPasswordTokenHash en attente.
       accepted: users.resetPasswordTokenHash,
@@ -49,6 +56,7 @@ export const listTeamMembers = asyncHandler(async (req: Request, res: Response) 
       id: c.id,
       email: c.email,
       createdAt: c.createdAt,
+      role: roleEquipeEffectif(c.teamRole),
       status: c.accepted ? "PENDING" : "ACTIVE",
     }))
   );
@@ -56,6 +64,7 @@ export const listTeamMembers = asyncHandler(async (req: Request, res: Response) 
 
 const inviteTeamMemberSchema = z.object({
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
+  role: z.enum(ROLES_EQUIPE).default(ROLE_EQUIPE_INVITATION_PAR_DEFAUT),
 });
 
 export const inviteTeamMember = asyncHandler(async (req: Request, res: Response) => {
@@ -86,6 +95,7 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
       passwordHash,
       role: "MANAGER",
       teamOwnerId: req.user!.userId,
+      teamRole: body.role,
       hasPassword: false,
       // Confiance faite au gestionnaire propriétaire, qui a saisi cet email
       // lui-même — même principe que les comptes portail locataire/
@@ -124,10 +134,35 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
     entityType: "team_member",
     entityId: collaborateur.id,
     entityLabel: body.email,
-    details: `Invitation envoyée à ${body.email} pour rejoindre l'équipe`,
+    details: `Invitation envoyée à ${body.email} pour rejoindre l'équipe (rôle : ${LIBELLES_ROLES_EQUIPE[body.role]})`,
   });
 
-  res.status(201).json({ id: collaborateur.id, email: collaborateur.email, status: "PENDING" });
+  res.status(201).json({ id: collaborateur.id, email: collaborateur.email, role: body.role, status: "PENDING" });
+});
+
+const changerRoleSchema = z.object({ role: z.enum(ROLES_EQUIPE) });
+
+/** Change le rôle d'un collaborateur. Propriétaire seul ; effet immédiat (le rôle est relu à chaque requête). */
+export const updateTeamMemberRole = asyncHandler(async (req: Request, res: Response) => {
+  assertEstProprietaire(req);
+  const body = changerRoleSchema.parse(req.body);
+
+  const [collaborateur] = await db.select().from(users).where(eq(users.id, req.params.id));
+  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable");
+
+  await db.update(users).set({ teamRole: body.role }).where(eq(users.id, collaborateur.id));
+
+  await logActivity({
+    req,
+    managerId: req.user!.userId,
+    action: "team.role",
+    entityType: "team_member",
+    entityId: collaborateur.id,
+    entityLabel: collaborateur.email,
+    details: `Rôle de ${collaborateur.email} : ${LIBELLES_ROLES_EQUIPE[roleEquipeEffectif(collaborateur.teamRole)]} → ${LIBELLES_ROLES_EQUIPE[body.role]}`,
+  });
+
+  res.json({ id: collaborateur.id, email: collaborateur.email, role: body.role });
 });
 
 export const removeTeamMember = asyncHandler(async (req: Request, res: Response) => {

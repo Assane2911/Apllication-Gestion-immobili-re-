@@ -24,6 +24,7 @@ import { chargerCompteCourant } from "../utils/authorization";
 import { clearAuthCookie, setAuthCookie } from "../utils/authCookie";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 import { deviseSchema } from "../utils/devises";
+import { roleEquipeEffectif } from "../utils/rolesEquipe";
 
 // Durée de validité du lien de confirmation d'email envoyé à l'inscription.
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
@@ -718,6 +719,9 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     tenant: tenant ?? null,
     owner: owner ?? null,
     collaboratorId: req.user.collaboratorId ?? null,
+    // Rôle dans l'équipe (voir utils/rolesEquipe.ts) : null pour le propriétaire
+    // de l'agence, qui a tous les droits.
+    teamRole: req.user.collaboratorId ? roleEquipeEffectif(identite.teamRole) : null,
     subscription,
   });
 });

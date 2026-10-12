@@ -1377,6 +1377,15 @@ const en: TranslationSchema = {
         removeButton: "Revoke",
         confirmRemove: "Revoke {{email}}'s access? This person will no longer be able to log in.",
         inviteSuccess: "Invitation sent to {{email}}.",
+        roleLabel: "Role",
+        roleAria: "Role of {{email}}",
+        roleChangeError: "Unable to change the role.",
+        roles: {
+          FULL: { label: "Manager", description: "All rights, except managing the team and the account." },
+          AGENT: { label: "Agent", description: "Properties, tenants, leases, listings, messages. No deletion or payment collection." },
+          ACCOUNTANT: { label: "Accountant", description: "Invoices, payments, expenses and accounting exports. Nothing on the portfolio." },
+          READ_ONLY: { label: "Read-only", description: "View only." },
+        },
       },
     },
     subscription: {

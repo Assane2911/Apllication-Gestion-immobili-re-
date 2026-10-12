@@ -1378,6 +1378,15 @@ const fr = {
         removeButton: "Révoquer",
         confirmRemove: "Révoquer l'accès de {{email}} ? Cette personne ne pourra plus se connecter.",
         inviteSuccess: "Invitation envoyée à {{email}}.",
+        roleLabel: "Rôle",
+        roleAria: "Rôle de {{email}}",
+        roleChangeError: "Impossible de modifier le rôle.",
+        roles: {
+          FULL: { label: "Gestionnaire", description: "Tous les droits, sauf gérer l'équipe et le compte." },
+          AGENT: { label: "Agent", description: "Biens, locataires, baux, annonces, messages. Pas de suppression ni d'encaissement." },
+          ACCOUNTANT: { label: "Comptable", description: "Factures, encaissements, dépenses et exports comptables. Rien sur le parc." },
+          READ_ONLY: { label: "Lecture seule", description: "Consultation uniquement." },
+        },
       },
     },
     subscription: {

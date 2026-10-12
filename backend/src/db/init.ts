@@ -649,6 +649,7 @@ export async function initDb() {
     await ajouterColonne("agency_settings", "iban", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS iban TEXT`);
     await ajouterColonne("agency_settings", "bic", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS bic TEXT`);
     await ajouterColonne("users", "team_owner_id", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS team_owner_id TEXT REFERENCES users(id) ON DELETE CASCADE`);
+    await ajouterColonne("users", "team_role", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS team_role TEXT`);
     await ajouterColonne("users", "stripe_customer_id", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`);
     await ajouterColonne("users", "stripe_subscription_id", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE`);
     await ajouterColonne("users", "totp_secret", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT`);

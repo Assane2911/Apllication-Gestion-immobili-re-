@@ -8,6 +8,7 @@ import { tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { AUTH_COOKIE_NAME, CSRF_HEADER_NAME } from "../utils/authCookie";
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
+import { type RoleEquipe, roleEquipeEffectif, verifierAutorisationEquipe } from "../utils/rolesEquipe";
 
 export interface AuthPayload {
   userId: string;
@@ -50,6 +51,11 @@ declare global {
        * aussi valable qu'une fiche (un gestionnaire n'en a pas).
        */
       ficheLocataire?: typeof tenants.$inferSelect | null;
+      /**
+       * Rôle du collaborateur connecté (voir utils/rolesEquipe.ts). Absent pour
+       * le gestionnaire propriétaire, qui a tous les droits.
+       */
+      roleEquipe?: RoleEquipe;
     }
   }
 }
@@ -123,12 +129,14 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     // celle du propriétaire, pour que révoquer les sessions de l'un
     // n'affecte jamais celles de l'autre.
     let tokenVersionAttendue = user.tokenVersion;
+    let roleEquipe: RoleEquipe | undefined;
     if (payload.collaboratorId) {
       const [collaborateur] = await db.select().from(users).where(eq(users.id, payload.collaboratorId));
       if (!collaborateur) {
         return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
       }
       tokenVersionAttendue = collaborateur.tokenVersion;
+      roleEquipe = roleEquipeEffectif(collaborateur.teamRole);
     }
 
     // Un jeton émis avant l'introduction du mécanisme ne porte aucun numéro :
@@ -137,6 +145,17 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     // que la première révocation, elle, portera bien sur ces jetons-là aussi.
     if ((payload.tokenVersion ?? 0) !== tokenVersionAttendue) {
       return next(new ApiError(401, "Votre session a été fermée. Veuillez vous reconnecter."));
+    }
+
+    // Rôle du collaborateur (lu en base à chaque requête : un changement de
+    // rôle par le propriétaire joue immédiatement, sans attendre un nouveau
+    // jeton). Le contrôle est central — voir utils/rolesEquipe.ts.
+    if (roleEquipe) {
+      const verdict = verifierAutorisationEquipe(roleEquipe, req.method, req.originalUrl);
+      if (!verdict.autorise) {
+        return next(new ApiError(403, verdict.message, "ROLE_EQUIPE_INSUFFISANT"));
+      }
+      req.roleEquipe = roleEquipe;
     }
 
     req.user = payload;

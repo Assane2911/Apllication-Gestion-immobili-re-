@@ -1379,6 +1379,15 @@ const es: TranslationSchema = {
         removeButton: "Revocar",
         confirmRemove: "¿Revocar el acceso de {{email}}? Esta persona ya no podrá iniciar sesión.",
         inviteSuccess: "Invitación enviada a {{email}}.",
+        roleLabel: "Rol",
+        roleAria: "Rol de {{email}}",
+        roleChangeError: "No se pudo cambiar el rol.",
+        roles: {
+          FULL: { label: "Gestor", description: "Todos los derechos, salvo gestionar el equipo y la cuenta." },
+          AGENT: { label: "Agente", description: "Inmuebles, inquilinos, contratos, anuncios, mensajes. Sin eliminar ni cobrar." },
+          ACCOUNTANT: { label: "Contable", description: "Facturas, cobros, gastos y exportaciones contables. Nada sobre el parque." },
+          READ_ONLY: { label: "Solo lectura", description: "Solo consulta." },
+        },
       },
     },
     subscription: {

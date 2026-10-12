@@ -52,6 +52,8 @@ export interface AuthUser {
    * propriétaire ordinaire.
    */
   collaboratorId?: string | null;
+  /** Rôle du collaborateur dans l'équipe ; `null` pour le gestionnaire propriétaire. */
+  teamRole?: TeamRole | null;
   subscription?: SubscriptionInfo | null;
   /** Double authentification (TOTP) activée sur CE compte — voir /auth/me. */
   twoFactorEnabled?: boolean;
@@ -63,10 +65,14 @@ export interface TwoFactorRequired {
   pendingToken: string;
 }
 
+/** Rôles des collaborateurs — voir backend/src/utils/rolesEquipe.ts. */
+export type TeamRole = "FULL" | "AGENT" | "ACCOUNTANT" | "READ_ONLY";
+
 export interface TeamMember {
   id: string;
   email: string;
   createdAt: string;
+  role: TeamRole;
   status: "PENDING" | "ACTIVE";
 }
 
