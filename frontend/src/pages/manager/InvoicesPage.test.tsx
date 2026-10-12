@@ -296,6 +296,7 @@ describe("InvoicesPage — marquer une facture réglée", () => {
     await waitFor(() =>
       expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", {
         paymentMethod: "CHEQUE",
+        amount: 500,
         paidAt: "2025-12-28",
         paymentRef: "CHQ 0045871",
       })
@@ -322,5 +323,61 @@ describe("InvoicesPage — marquer une facture réglée", () => {
     await user.click(within(fenetre).getByRole("button", { name: "Marquer réglée" }));
     expect(await within(fenetre).findByRole("alert")).toHaveTextContent("futur");
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  describe("paiement partiel", () => {
+    async function ouvrir(inv: Invoice) {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValue(paginated([inv]));
+      renderPage();
+      await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
+      return { user, fenetre: await screen.findByRole("dialog") };
+    }
+
+    it("propose le reste dû comme montant par défaut et l'indique", async () => {
+      const { fenetre } = await ouvrir(invoice({ amountPaid: 300, montantRegle: 300, resteDu: 200 }));
+      expect(within(fenetre).getByLabelText("Montant encaissé")).toHaveValue(200);
+      expect(fenetre).toHaveTextContent("Reste dû");
+      expect(fenetre).toHaveTextContent("200");
+    });
+
+    it("un montant inférieur au reste dû devient un paiement partiel : avertissement et bouton dédiés", async () => {
+      mockedApi.post.mockResolvedValue({ data: {} });
+      const { user, fenetre } = await ouvrir(invoice({ resteDu: 500 }));
+
+      fireEvent.change(within(fenetre).getByLabelText("Montant encaissé"), { target: { value: "300" } });
+
+      expect(fenetre).toHaveTextContent("Paiement partiel");
+      await user.click(within(fenetre).getByRole("button", { name: "Enregistrer le paiement partiel" }));
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", expect.objectContaining({ amount: 300 }))
+      );
+    });
+
+    it("refuse un montant nul ou supérieur au reste dû, sans appeler le serveur", async () => {
+      const { user, fenetre } = await ouvrir(invoice({ resteDu: 500 }));
+
+      for (const valeur of ["0", "750"]) {
+        fireEvent.change(within(fenetre).getByLabelText("Montant encaissé"), { target: { value: valeur } });
+        await user.click(within(fenetre).getByRole("button", { name: /Marquer réglée|partiel/ }));
+        expect(await within(fenetre).findByRole("alert")).toHaveTextContent("reste dû");
+      }
+      expect(mockedApi.post).not.toHaveBeenCalled();
+    });
+
+    it("affiche dans la liste ce qui est déjà réglé et ce qui reste", async () => {
+      mockedApi.get.mockResolvedValue(paginated([invoice({ amountPaid: 300, montantRegle: 300, resteDu: 200 })]));
+      renderPage();
+      await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+      expect(screen.getAllByText(/Réglé : .*300.* · Reste : .*200/).length).toBeGreaterThan(0);
+    });
+
+    it("n'affiche rien de tel pour une facture sans acompte", async () => {
+      mockedApi.get.mockResolvedValue(paginated([invoice({ montantRegle: 0, resteDu: 500 })]));
+      renderPage();
+      await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+      expect(screen.queryByText(/Reste :/)).not.toBeInTheDocument();
+    });
   });
 });

@@ -435,6 +435,7 @@ export async function initDb() {
         paid_at TIMESTAMP,
         payment_method TEXT CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO', 'CASH', 'CHEQUE', 'MOBILE_MONEY')),
         payment_ref TEXT,
+        amount_paid DOUBLE PRECISION NOT NULL DEFAULT 0,
         reminder_sent_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -443,6 +444,21 @@ export async function initDb() {
 
     await ajouterColonne("invoices", "reminder_sent_at", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`);
     await elargirMoyensDePaiement();
+    await ajouterColonne("invoices", "amount_paid", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS amount_paid DOUBLE PRECISION NOT NULL DEFAULT 0`);
+
+    // Historique des encaissements d'une facture (paiements partiels).
+    await creerTable("invoice_payments", sql`
+      CREATE TABLE IF NOT EXISTS invoice_payments (
+        id TEXT PRIMARY KEY,
+        invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+        amount DOUBLE PRECISION NOT NULL,
+        paid_at TIMESTAMP NOT NULL,
+        payment_method TEXT NOT NULL CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO', 'CASH', 'CHEQUE', 'MOBILE_MONEY')),
+        payment_ref TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex("invoice_payments_invoice_id_idx", sql`CREATE INDEX IF NOT EXISTS invoice_payments_invoice_id_idx ON invoice_payments (invoice_id)`);
 
     await creerIndex("invoices_contract_period_unique", sql`
       CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique

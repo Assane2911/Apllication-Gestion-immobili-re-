@@ -102,6 +102,33 @@ describe("TenantInvoicesPage", () => {
     mockedApi.post.mockReset();
   });
 
+  it("indique au locataire ce qui est déjà réglé et ce qui lui reste à payer après un paiement partiel", async () => {
+    queueGet({ data: [invoice({ id: "inv-partiel", amountPaid: 300, montantRegle: 300, resteDu: 200 })] });
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <TenantInvoicesPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+
+    expect(await screen.findByText(/Déjà réglé : .*300.* · Reste à payer : .*200/)).toBeInTheDocument();
+  });
+
+  it("n'affiche pas de reste à payer pour une facture sans acompte", async () => {
+    queueGet({ data: [invoice({ id: "inv-neuf", montantRegle: 0, resteDu: 500 })] });
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <TenantInvoicesPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+
+    await screen.findByText("Studio Centre-ville");
+    expect(screen.queryByText(/Reste à payer/)).not.toBeInTheDocument();
+  });
+
   it("affiche la liste des factures avec montant, échéance et statut", async () => {
     queueGet({
       data: [

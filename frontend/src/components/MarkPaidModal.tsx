@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
+import { useCurrency } from "../context/currency";
 import type { MoyenSaisiAlaMain } from "../types";
 
 const MOYENS: MoyenSaisiAlaMain[] = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"];
@@ -11,6 +12,9 @@ interface MarkPaidModalProps {
   /** Nom du locataire et montant déjà formaté, pour rappeler QUI et COMBIEN. */
   tenantName: string;
   amountLabel: string;
+  /** Reste dû de la facture : montant proposé par défaut, et plafond. */
+  remaining: number;
+  currency?: string;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -28,23 +32,34 @@ function aujourdhuiLocal(): string {
  * dit que la date choisie classe le loyer dans les bilans — un loyer reçu le
  * 28 décembre et saisi le 2 janvier doit être daté du 28.
  */
-export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, onSuccess, onClose }: MarkPaidModalProps) {
+export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, remaining, currency, onSuccess, onClose }: MarkPaidModalProps) {
   const { t } = useTranslation();
+  const { formatMoney } = useCurrency();
   const aujourdhui = aujourdhuiLocal();
   const [method, setMethod] = useState<MoyenSaisiAlaMain>("BANK_TRANSFER");
+  const [montant, setMontant] = useState(String(remaining));
   const [paidAt, setPaidAt] = useState(aujourdhui);
   const [reference, setReference] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const montantSaisi = Number(montant.replace(",", "."));
+  const montantValide = Number.isFinite(montantSaisi) && montantSaisi > 0 && montantSaisi <= remaining + 0.005;
+  const partiel = montantValide && montantSaisi < remaining - 0.005;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
+    if (!montantValide) {
+      setError(t("components.markPaidModal.amountInvalid"));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await api.post(`/invoices/${invoiceId}/mark-paid`, {
         paymentMethod: method,
+        amount: montantSaisi,
         paidAt: paidAt || aujourdhui,
         ...(reference.trim() ? { paymentRef: reference.trim() } : {}),
       });
@@ -89,8 +104,28 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, onSu
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <p className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
-            {t("components.markPaidModal.warning")}
+            {partiel ? t("components.markPaidModal.warningPartial") : t("components.markPaidModal.warning")}
           </p>
+
+          <div>
+            <label htmlFor="mark-paid-amount" className={etiquette}>
+              {t("components.markPaidModal.amountLabel")}
+            </label>
+            <input
+              id="mark-paid-amount"
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min="0"
+              required
+              value={montant}
+              onChange={(e) => setMontant(e.target.value)}
+              className={champ}
+            />
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              {t("components.markPaidModal.amountHint", { remaining: formatMoney(remaining, currency) })}
+            </p>
+          </div>
 
           <div>
             <label htmlFor="mark-paid-method" className={etiquette}>
@@ -151,7 +186,11 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, onSu
               disabled={saving}
               className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors"
             >
-              {saving ? t("components.markPaidModal.saving") : t("components.markPaidModal.confirmButton")}
+              {saving
+                ? t("components.markPaidModal.saving")
+                : partiel
+                ? t("components.markPaidModal.confirmPartial")
+                : t("components.markPaidModal.confirmButton")}
             </button>
           </div>
         </form>

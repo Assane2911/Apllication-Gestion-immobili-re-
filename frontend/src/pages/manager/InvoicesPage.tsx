@@ -16,6 +16,11 @@ function monthLabel(locale: string, monthIndex1to12: number) {
 
 const PAGE_SIZE = 20;
 
+/** Facture en cours de règlement : un acompte a été encaissé, il reste quelque chose à payer. */
+function aUnAcompte(inv: Invoice): boolean {
+  return inv.status !== "PAID" && inv.status !== "CANCELLED" && (inv.montantRegle ?? 0) > 0 && (inv.resteDu ?? 0) > 0;
+}
+
 export default function InvoicesPage() {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
@@ -189,7 +194,17 @@ export default function InvoicesPage() {
                   <p className="text-[11px] text-slate-600 dark:text-slate-400">{inv.contract?.tenant?.email}</p>
                 </td>
                 <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">{inv.contract?.property?.title}</td>
-                <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">{formatMoney(inv.amount, inv.currency)}</td>
+                <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">
+                  {formatMoney(inv.amount, inv.currency)}
+                  {aUnAcompte(inv) && (
+                    <span className="block text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                      {t("manager.invoices.partiallyPaid", {
+                        paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
+                        remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
+                      })}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
                   <span className="text-xs">{new Date(inv.dueDate).toLocaleDateString(i18n.language)}</span>
                   <span className="block text-[10px] text-amber-700 dark:text-amber-400 font-medium">{t("manager.invoices.dueDateLimit")}</span>
@@ -271,7 +286,17 @@ export default function InvoicesPage() {
                 <p>{inv.contract?.tenant?.email}</p>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-900 dark:text-slate-100">{formatMoney(inv.amount, inv.currency)}</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  {formatMoney(inv.amount, inv.currency)}
+                  {aUnAcompte(inv) && (
+                    <span className="block text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                      {t("manager.invoices.partiallyPaid", {
+                        paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
+                        remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
+                      })}
+                    </span>
+                  )}
+                </span>
                 <span className="text-slate-600 dark:text-slate-400">
                   {t("manager.invoices.dueDatePrefix", { date: new Date(inv.dueDate).toLocaleDateString(i18n.language) })}
                 </span>
@@ -325,6 +350,8 @@ export default function InvoicesPage() {
               : ""
           }
           amountLabel={formatMoney(factureAMarquer.amount, factureAMarquer.currency)}
+          remaining={factureAMarquer.resteDu ?? factureAMarquer.amount}
+          currency={factureAMarquer.currency}
           onSuccess={() => {
             setFactureAMarquer(null);
             setError(null);

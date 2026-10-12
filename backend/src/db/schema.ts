@@ -566,6 +566,12 @@ export const invoices = pgTable(
     paidAt: timestamp("paid_at", { mode: "date" }),
     paymentMethod: paymentMethodEnum("payment_method"),
     paymentRef: text("payment_ref"),
+    // Somme des paiements PARTIELS déjà enregistrés tant que la facture n'est
+    // pas soldée (voir invoicePayments et markInvoicePaid). Une facture PAYÉE
+    // est réglée en totalité quelle que soit cette colonne : les factures
+    // réglées avant l'introduction des paiements partiels, et celles que
+    // Stripe ou PayDunya règlent d'un coup, la laissent à 0.
+    amountPaid: doublePrecision("amount_paid").notNull().default(0),
     reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     // Rappel distinct envoyé quelques jours AVANT l'échéance (voir reminder.service.ts),
     // différent du rappel/avis du 1er du mois qui alimente `reminderSentAt`.
@@ -589,6 +595,28 @@ export const invoices = pgTable(
     contractIdIdx: index("invoices_contract_id_idx").on(table.contractId),
     statusIdx: index("invoices_status_idx").on(table.status),
     dueDateIdx: index("invoices_due_date_idx").on(table.dueDate),
+  })
+);
+
+// --- Paiements d'une facture (historique des encaissements, partiels ou non) ---
+// Une ligne par encaissement saisi par le gestionnaire. Une facture réglée
+// d'un coup avant l'introduction de cette table, ou par Stripe / PayDunya, n'en
+// a pas : elle vaut un paiement unique de son montant, à la date invoices.paidAt.
+export const invoicePayments = pgTable(
+  "invoice_payments",
+  {
+    id: id(),
+    invoiceId: text("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    amount: doublePrecision("amount").notNull(),
+    paidAt: timestamp("paid_at", { mode: "date" }).notNull(),
+    paymentMethod: paymentMethodEnum("payment_method").notNull(),
+    paymentRef: text("payment_ref"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    invoiceIdIdx: index("invoice_payments_invoice_id_idx").on(table.invoiceId),
   })
 );
 
