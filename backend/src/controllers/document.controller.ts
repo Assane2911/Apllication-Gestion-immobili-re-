@@ -4,6 +4,7 @@ import { db } from "../db/client";
 import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
 import { periodeCouverte } from "../services/invoice.service";
 import { loadInspectionForExport } from "./inspection.controller";
+import { revisionsAppliquees } from "../services/rentRevision.service";
 import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -112,9 +113,12 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
     ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId))
     : [];
 
+  const revisions = await revisionsAppliquees(contract.id);
+
   const leaseHtml = generateLeaseHtml(
     {
       ...contract,
+      revisions,
       property,
       tenant,
     },

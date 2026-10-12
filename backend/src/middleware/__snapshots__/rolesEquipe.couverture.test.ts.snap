@@ -14,6 +14,7 @@ exports[`couverture des rôles sur les routes réellement enregistrées > l'inst
     "PATCH /listings/leads/x",
     "POST /contracts",
     "POST /contracts/x/renew",
+    "POST /contracts/x/rent-revisions",
     "POST /contracts/x/scan",
     "POST /import",
     "POST /import/preview",

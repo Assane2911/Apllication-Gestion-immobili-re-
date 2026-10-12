@@ -464,6 +464,29 @@ export async function initDb() {
     `);
     await creerIndex("invoice_payments_invoice_id_idx", sql`CREATE INDEX IF NOT EXISTS invoice_payments_invoice_id_idx ON invoice_payments (invoice_id)`);
 
+    // Historique des révisions de loyer d'un bail (après contracts : FK).
+    await creerTable("rent_revisions", sql`
+      CREATE TABLE IF NOT EXISTS rent_revisions (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        previous_rent DOUBLE PRECISION NOT NULL,
+        new_rent DOUBLE PRECISION NOT NULL,
+        effective_date TIMESTAMP NOT NULL,
+        method TEXT NOT NULL,
+        percent DOUBLE PRECISION,
+        index_name TEXT,
+        index_old DOUBLE PRECISION,
+        index_new DOUBLE PRECISION,
+        note TEXT,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        applied_at TIMESTAMP,
+        tenant_notified_at TIMESTAMP,
+        created_by TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex("rent_revisions_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS rent_revisions_contract_id_idx ON rent_revisions (contract_id)`);
+
     await creerIndex("invoices_contract_period_unique", sql`
       CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique
       ON invoices (contract_id, period_month, period_year)

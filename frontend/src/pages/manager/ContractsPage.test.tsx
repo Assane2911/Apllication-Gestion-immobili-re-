@@ -245,6 +245,23 @@ describe("ContractsPage (manager)", () => {
     expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("terms");
   });
 
+  it("propose de réviser le loyer d'un bail actif seulement, et ouvre la fenêtre de révision", async () => {
+    const user = userEvent.setup();
+    queueLoad([contract({ id: "c1" }), contract({ id: "c2", status: "ENDED" })]);
+    // Historique chargé à l'ouverture de la fenêtre.
+    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Réviser le loyer" }).length).toBeGreaterThan(0));
+    // Deux contrats, un seul actif : un lien par présentation (tableau + cartes) pour le seul bail actif.
+    const liens = screen.getAllByRole("button", { name: "Réviser le loyer" });
+    expect(liens.length).toBeLessThanOrEqual(2);
+
+    await user.click(liens[0]);
+    expect(await screen.findByRole("dialog", { name: "Réviser le loyer" })).toBeInTheDocument();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/c1/rent-revisions"));
+  });
+
   it("workflow de renouvellement : propose de renouveler quand le bail expire bientôt", async () => {
     const user = userEvent.setup();
     const soon = contract({ id: "c1", endDate: new Date(Date.now() + 5 * DAY_MS).toISOString() });

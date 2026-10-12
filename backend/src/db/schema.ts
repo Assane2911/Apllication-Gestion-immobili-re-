@@ -636,6 +636,41 @@ export const invoicePayments = pgTable(
   })
 );
 
+// --- Révisions de loyer ---
+// Historique des changements de loyer d'un bail (indexation annuelle, accord
+// amiable). Une révision est PENDING tant que sa date d'effet n'est pas arrivée
+// (le cron la applique alors), APPLIED une fois le loyer du contrat modifié,
+// CANCELLED si elle a été retirée ou si le bail s'est terminé avant. Le loyer du
+// contrat (contracts.rent) reste la seule valeur lue par la facturation.
+export const rentRevisions = pgTable(
+  "rent_revisions",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    previousRent: doublePrecision("previous_rent").notNull(),
+    newRent: doublePrecision("new_rent").notNull(),
+    // Premier jour du mois à partir duquel le nouveau loyer s'applique.
+    effectiveDate: timestamp("effective_date", { mode: "date" }).notNull(),
+    // AMOUNT (montant saisi), PERCENT (pourcentage) ou INDEX (rapport de deux valeurs d'indice).
+    method: text("method").notNull(),
+    percent: doublePrecision("percent"),
+    indexName: text("index_name"),
+    indexOld: doublePrecision("index_old"),
+    indexNew: doublePrecision("index_new"),
+    note: text("note"),
+    status: text("status").notNull().default("PENDING"),
+    appliedAt: timestamp("applied_at", { mode: "date" }),
+    tenantNotifiedAt: timestamp("tenant_notified_at", { mode: "date" }),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    contractIdIdx: index("rent_revisions_contract_id_idx").on(table.contractId),
+  })
+);
+
 // --- Issue reports (signalements d'incidents avec photo) ---
 export const issueReports = pgTable(
   "issue_reports",
