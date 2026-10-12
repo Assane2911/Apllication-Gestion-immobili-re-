@@ -191,6 +191,78 @@ export function rentDueReminderWhatsappVariables(params: {
 }
 
 /**
+ * Variables `{{1}}`..`{{6}}` du modèle Meta "avis_echeance_loyer_date" (voir
+ * env.whatsapp.templateNameRentDueDated) — le même avis, avec la vraie date
+ * limite de la facture au lieu du « 5 » en dur :
+ * "Bonjour {{1}}, votre avis d'échéance de loyer pour {{2}} ({{3}}) est
+ * émis. Montant à régler : {{4}}, au plus tard le {{5}}. Payer en ligne :
+ * {{6}}"
+ */
+export function rentDueDatedReminderWhatsappVariables(params: {
+  tenantName: string;
+  propertyTitle: string;
+  amount: number;
+  currency?: string;
+  periodMonth: number;
+  periodYear: number;
+  dueDate: Date;
+  frontendUrl: string;
+}): Record<string, string> {
+  const { amount, currency = "EUR", dueDate, frontendUrl } = params;
+
+  return {
+    ...prefixeCommunRappel(params),
+    "4": formaterMontant(amount, currency),
+    // Même rédaction que l'email d'avis d'échéance (rentDueReminderEmail).
+    "5": new Date(dueDate).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" }),
+    "6": `${frontendUrl}/portail/paiements`,
+  };
+}
+
+/**
+ * Choisit le modèle de l'avis d'échéance WhatsApp et ses variables.
+ *
+ * Le modèle d'origine ("avis_echeance_loyer") écrit « au plus tard le 5 » en
+ * dur, alors que la facture est due au jour d'échéance du bail (le 24, le 29…).
+ * Le locataire recevait par WhatsApp une date fausse, contredite par l'email.
+ *
+ *  - modèle daté configuré : il est toujours utilisé, avec la vraie date ;
+ *  - sinon, l'ancien modèle n'est envoyé que si la facture est réellement due
+ *    le 5 du mois facturé — son texte est alors exact ;
+ *  - sinon, aucun modèle (nom vide) : envoyerMessageWhatsapp renvoie le même
+ *    résultat neutre qu'un modèle non configuré, et seul l'email part.
+ */
+export function avisEcheanceWhatsapp(params: {
+  tenantName: string;
+  propertyTitle: string;
+  amount: number;
+  currency?: string;
+  periodMonth: number;
+  periodYear: number;
+  dueDate: Date;
+  frontendUrl: string;
+}): { templateName: string; variables: Record<string, string> } {
+  const { templateNameRentDueDated, templateNameRentDue } = env.whatsapp;
+  if (templateNameRentDueDated) {
+    return { templateName: templateNameRentDueDated, variables: rentDueDatedReminderWhatsappVariables(params) };
+  }
+
+  const echeance = new Date(params.dueDate);
+  const dueLe5DuMois =
+    echeance.getDate() === 5 && echeance.getMonth() + 1 === params.periodMonth && echeance.getFullYear() === params.periodYear;
+  if (templateNameRentDue && !dueLe5DuMois) {
+    console.warn(
+      "[whatsapp] Avis d'échéance non envoyé : l'ancien modèle annonce « le 5 » et cette facture n'est pas due le 5 du mois — " +
+        "renseignez META_WHATSAPP_TEMPLATE_RENT_DUE_DATED (modèle avec la vraie date)."
+    );
+  }
+  return {
+    templateName: dueLe5DuMois ? templateNameRentDue : "",
+    variables: rentDueReminderWhatsappVariables(params),
+  };
+}
+
+/**
  * Variables `{{1}}`..`{{6}}` du modèle Meta "rappel_avant_echeance_loyer"
  * (voir env.whatsapp.templateNameRentDueSoon) :
  * "Bonjour {{1}}, votre loyer de {{2}} ({{3}}) n'est pas encore réglé et

@@ -20,7 +20,7 @@ import { envoyerCopieAuxColocataires } from "./colocation.service";
 import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import {
   envoyerMessageWhatsapp,
-  rentDueReminderWhatsappVariables,
+  avisEcheanceWhatsapp,
   rentDueSoonReminderWhatsappVariables,
   ResultatEnvoiWhatsapp,
 } from "./whatsapp.service";
@@ -37,6 +37,15 @@ import { resteDu } from "../utils/montants";
  * le comptent jamais comme un échec.
  */
 const WHATSAPP_NON_ELIGIBLE: ResultatEnvoiWhatsapp = { simulated: true };
+
+/**
+ * Avis d'échéance WhatsApp : le modèle (daté, ou l'ancien « le 5 » seulement
+ * quand il dit vrai) est choisi par avisEcheanceWhatsapp — voir whatsapp.service.ts.
+ */
+function envoyerAvisEcheance(telephone: string, params: Parameters<typeof avisEcheanceWhatsapp>[0]) {
+  const { templateName, variables } = avisEcheanceWhatsapp(params);
+  return envoyerMessageWhatsapp(telephone, templateName, variables);
+}
 
 /**
  * Condition SQL : l'agence n'est PAS suspendue par l'administration (voir
@@ -544,19 +553,16 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     // boucle pour les autres locataires. Voir managersEligiblesPro :
     // un gestionnaire sous Pro ne déclenche pas cet envoi.
     const whatsappResult = managersWhatsappEligibles.has(row.property.managerId)
-      ? await envoyerMessageWhatsapp(
-          row.tenant.phone,
-          env.whatsapp.templateNameRentDue,
-          rentDueReminderWhatsappVariables({
-            tenantName: nomAvecCivilite(row.tenant),
-            propertyTitle: row.property.title,
-            amount: resteDu(row.invoice),
-            currency: row.invoice.currency || "EUR",
-            periodMonth: row.invoice.periodMonth,
-            periodYear: row.invoice.periodYear,
-            frontendUrl: env.frontendUrl,
-          })
-        )
+      ? await envoyerAvisEcheance(row.tenant.phone, {
+        tenantName: nomAvecCivilite(row.tenant),
+        propertyTitle: row.property.title,
+        amount: resteDu(row.invoice),
+        currency: row.invoice.currency || "EUR",
+        periodMonth: row.invoice.periodMonth,
+        periodYear: row.invoice.periodYear,
+        dueDate: row.invoice.dueDate,
+        frontendUrl: env.frontendUrl,
+      })
       : WHATSAPP_NON_ELIGIBLE;
 
     if (!aEteJoint(emailResult, whatsappResult)) {
@@ -851,19 +857,16 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   // pas cet envoi, l'email seul (promis à sa formule) part quand même.
   const managersWhatsappEligibles = await managersEligiblesPro([managerId]);
   const whatsappResult = managersWhatsappEligibles.has(managerId)
-    ? await envoyerMessageWhatsapp(
-        row.tenant.phone,
-        env.whatsapp.templateNameRentDue,
-        rentDueReminderWhatsappVariables({
-          tenantName: nomAvecCivilite(row.tenant),
-          propertyTitle: row.property.title,
-          amount: resteDu(row.invoice),
-          currency: row.invoice.currency || "EUR",
-          periodMonth: row.invoice.periodMonth,
-          periodYear: row.invoice.periodYear,
-          frontendUrl: env.frontendUrl,
-        })
-      )
+    ? await envoyerAvisEcheance(row.tenant.phone, {
+      tenantName: nomAvecCivilite(row.tenant),
+      propertyTitle: row.property.title,
+      amount: resteDu(row.invoice),
+      currency: row.invoice.currency || "EUR",
+      periodMonth: row.invoice.periodMonth,
+      periodYear: row.invoice.periodYear,
+      dueDate: row.invoice.dueDate,
+      frontendUrl: env.frontendUrl,
+    })
     : WHATSAPP_NON_ELIGIBLE;
 
   // Le rappel manuel affirmait « envoyé » quoi qu'il arrive : `success` était

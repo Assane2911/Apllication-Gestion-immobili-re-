@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
-import { envoyerMessageWhatsapp, rentDueReminderWhatsappVariables, rentDueSoonReminderWhatsappVariables } from "./whatsapp.service";
+import {
+  avisEcheanceWhatsapp,
+  envoyerMessageWhatsapp,
+  rentDueReminderWhatsappVariables,
+  rentDueSoonReminderWhatsappVariables,
+} from "./whatsapp.service";
 
 describe("envoyerMessageWhatsapp", () => {
   const original = { ...env.whatsapp };
@@ -177,5 +182,95 @@ describe("variables des modèles WhatsApp (Message Templates)", () => {
       "5": "650 FCFA",
       "6": "https://app.example.com/portail/paiements",
     });
+  });
+});
+
+/**
+ * L'ancien modèle Meta "avis_echeance_loyer" écrit « au plus tard le 5 » en
+ * dur : le locataire d'un bail dû le 24 recevait par WhatsApp une date fausse,
+ * contredite par l'email. avisEcheanceWhatsapp choisit le modèle à envoyer.
+ */
+describe("avisEcheanceWhatsapp — la date annoncée est celle de la facture", () => {
+  const original = { ...env.whatsapp };
+  const avis = (dueDate: Date) => ({
+    tenantName: "Amine Silva",
+    propertyTitle: "Studio meublé",
+    amount: 180,
+    currency: "EUR",
+    periodMonth: 10,
+    periodYear: 2026,
+    dueDate,
+    frontendUrl: "https://app.example.com",
+  });
+
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    env.whatsapp.templateNameRentDue = original.templateNameRentDue;
+    env.whatsapp.templateNameRentDueDated = original.templateNameRentDueDated;
+    vi.restoreAllMocks();
+  });
+
+  it("utilise le modèle daté quand il est configuré, avec la vraie date limite en {{5}}", () => {
+    env.whatsapp.templateNameRentDue = "avis_echeance_loyer";
+    env.whatsapp.templateNameRentDueDated = "avis_echeance_loyer_date";
+
+    const { templateName, variables } = avisEcheanceWhatsapp(avis(new Date(2026, 9, 24)));
+
+    expect(templateName).toBe("avis_echeance_loyer_date");
+    expect(variables).toEqual({
+      "1": "Amine Silva",
+      "2": "octobre 2026",
+      "3": "Studio meublé",
+      "4": "180 €",
+      "5": "24 octobre 2026",
+      "6": "https://app.example.com/portail/paiements",
+    });
+  });
+
+  it("garde l'ancien modèle « le 5 » pour une facture réellement due le 5 du mois facturé", () => {
+    env.whatsapp.templateNameRentDue = "avis_echeance_loyer";
+    env.whatsapp.templateNameRentDueDated = "";
+
+    const { templateName, variables } = avisEcheanceWhatsapp(avis(new Date(2026, 9, 5)));
+
+    expect(templateName).toBe("avis_echeance_loyer");
+    expect(Object.keys(variables)).toEqual(["1", "2", "3", "4", "5"]);
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  it("n'envoie PAS l'ancien modèle quand la facture est due un autre jour (il annoncerait une date fausse)", () => {
+    env.whatsapp.templateNameRentDue = "avis_echeance_loyer";
+    env.whatsapp.templateNameRentDueDated = "";
+
+    expect(avisEcheanceWhatsapp(avis(new Date(2026, 9, 24))).templateName).toBe("");
+    // Le 5 d'un AUTRE mois que celui facturé n'est pas « le 5 octobre 2026 » non plus.
+    expect(avisEcheanceWhatsapp(avis(new Date(2026, 10, 5))).templateName).toBe("");
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("META_WHATSAPP_TEMPLATE_RENT_DUE_DATED"));
+  });
+
+  it("aboutit à un envoi simulé (sans appel réseau), comme un modèle non configuré", async () => {
+    env.whatsapp.templateNameRentDue = "avis_echeance_loyer";
+    env.whatsapp.templateNameRentDueDated = "";
+    const accessToken = env.whatsapp.accessToken;
+    const phoneNumberId = env.whatsapp.phoneNumberId;
+    env.whatsapp.accessToken = "un_token_permanent_meta";
+    env.whatsapp.phoneNumberId = "123456789012345";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      const { templateName, variables } = avisEcheanceWhatsapp(avis(new Date(2026, 9, 24)));
+      const resultat = await envoyerMessageWhatsapp("+221771234567", templateName, variables);
+
+      expect(resultat).toEqual({ simulated: true, raison: "modele_non_configure" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      env.whatsapp.accessToken = accessToken;
+      env.whatsapp.phoneNumberId = phoneNumberId;
+      vi.unstubAllGlobals();
+    }
   });
 });
