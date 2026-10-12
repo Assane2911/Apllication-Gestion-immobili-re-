@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
-import { agencySettings, contracts, invoices, properties, tenants } from "../db/schema";
+import { agencySettings, contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
 import { periodeCouverte } from "../services/invoice.service";
 import { loadInspectionForExport } from "./inspection.controller";
-import { revisionsAppliquees } from "../services/rentRevision.service";
-import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml } from "../services/pdf.service";
+import { motifRevision, numeroAvenant, revisionsAppliquees } from "../services/rentRevision.service";
+import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml, generateRentRevisionHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire, idLocataireDuCompte } from "../utils/authorization";
@@ -207,3 +207,43 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
   res.json({ url: fileUrl });
 });
 
+
+/** Avenant de révision de loyer : même accès que le bail (locataire du contrat ou gestionnaire du bien). */
+export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  const [revision] = await db.select().from(rentRevisions).where(eq(rentRevisions.id, req.params.revisionId));
+  if (!revision) throw new ApiError(404, "Révision introuvable");
+  const [contract] = await db.select().from(contracts).where(eq(contracts.id, revision.contractId));
+  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
+
+  assertAccesLocataireOuGestionnaire(
+    req.user.role,
+    contract.tenantId === (await idLocataireDuCompte(req)),
+    property?.managerId === req.user.userId
+  );
+  if (revision.status === "CANCELLED") throw new ApiError(409, "Cette révision a été annulée : aucun avenant ne s'y rattache.");
+
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
+  const [agency] = property?.managerId ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId)) : [];
+
+  const html = generateRentRevisionHtml(
+    {
+      numero: await numeroAvenant(revision),
+      status: revision.status,
+      previousRent: revision.previousRent,
+      newRent: revision.newRent,
+      currency: contract.currency,
+      effectiveDate: revision.effectiveDate,
+      motif: motifRevision(revision),
+      note: revision.note,
+      createdAt: revision.createdAt,
+      contract,
+      property,
+      tenant,
+    },
+    agency || { agencyName: "Agence Immobilière" }
+  );
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(html);
+});

@@ -115,4 +115,26 @@ describe("RentRevisionModal", () => {
     await user.click(screen.getByRole("button", { name: "Annuler cette révision" }));
     await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/contracts/c1/rent-revisions/r2"));
   });
+
+  it("pré-sélectionne le mois proposé par le rappel quand il fait partie des choix", async () => {
+    const suggestion = moisProposes("2099-12-31T00:00:00.000Z")[3];
+    afficher({ dateSuggeree: `${suggestion}T00:00:00.000Z` });
+    expect((screen.getByLabelText("À compter du mois de") as HTMLSelectElement).value).toBe(suggestion);
+  });
+
+  it("propose l'avenant de chaque révision non annulée", async () => {
+    const user = userEvent.setup();
+    const onOpenAvenant = vi.fn();
+    mockedApi.get.mockResolvedValue({
+      data: [
+        { id: "r1", previousRent: 500, newRent: 515, effectiveDate: "2026-10-01T00:00:00.000Z", method: "PERCENT", status: "APPLIED", percent: 3, indexName: null, indexOld: null, indexNew: null, note: null, tenantNotifiedAt: null },
+        { id: "r0", previousRent: 500, newRent: 520, effectiveDate: "2026-09-01T00:00:00.000Z", method: "AMOUNT", status: "CANCELLED", percent: null, indexName: null, indexOld: null, indexNew: null, note: null, tenantNotifiedAt: null },
+      ],
+    });
+    afficher({ onOpenAvenant });
+    const boutons = await screen.findAllByRole("button", { name: "Avenant" });
+    expect(boutons).toHaveLength(1);
+    await user.click(boutons[0]);
+    expect(onOpenAvenant).toHaveBeenCalledWith("r1");
+  });
 });

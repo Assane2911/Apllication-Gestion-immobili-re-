@@ -11,7 +11,7 @@ import {
   updateContract,
   uploadScannedContract,
 } from "../controllers/contract.controller";
-import { cancelRentRevision, createRentRevision, listRentRevisions } from "../controllers/rentRevision.controller";
+import { cancelRentRevision, createRentRevision, listRentRevisions, listRevisionsDue } from "../controllers/rentRevision.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
 import { uploadContractScan } from "../middleware/upload";
 
@@ -22,6 +22,8 @@ router.post("/:id/sign", authenticate, signContract);
 
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 router.get("/", listContracts);
+// Avant "/:id" : sinon « revisions-due » serait lu comme un identifiant de contrat.
+router.get("/revisions-due", listRevisionsDue);
 router.get("/:id", getContract);
 router.post("/", createContract);
 router.post("/:id/scan", uploadContractScan.single("scan"), uploadScannedContract);

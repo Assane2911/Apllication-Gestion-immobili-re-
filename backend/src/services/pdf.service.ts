@@ -986,3 +986,95 @@ export function generateCrgHtml(data: CrgExportData): string {
 </html>
   `.trim();
 }
+
+/** Données d'un avenant de révision de loyer (voir rentRevision.service.ts). */
+export interface RentRevisionExportData {
+  numero: number;
+  status: string;
+  previousRent: number;
+  newRent: number;
+  currency?: string | null;
+  effectiveDate: Date | string;
+  /** Base de calcul lisible (« +3 % », « IRL : 142,06 → 144 ») ; absente pour un montant saisi. */
+  motif: string | null;
+  note: string | null;
+  createdAt: Date | string;
+  contract: { startDate: Date | string; endDate: Date | string; leaseType?: string | null; applicableLaw?: string | null };
+  property?: { title: string; address: string } | null;
+  tenant?: { firstName: string; lastName: string } | null;
+}
+
+/**
+ * Avenant au bail : révision du loyer. Document à faire signer par les deux parties ; la plateforme
+ * n'y affirme aucune conformité légale (indice, plafond, délai de prévenance relèvent du droit du pays,
+ * que le gestionnaire connaît et qu'elle ne connaît pas).
+ */
+export function generateRentRevisionHtml(data: RentRevisionExportData, agency: LeaseAgencyInfo): string {
+  const date = (d: Date | string) => new Date(d).toLocaleDateString("fr-FR", { timeZone: "UTC" });
+  const montant = (n: number) => escapeHtml(formaterMontant(n, data.currency));
+  const droit = data.contract.applicableLaw?.trim();
+  const programmee = data.status === "PENDING";
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Avenant n°${data.numero} - ${escapeHtml(data.property?.title)}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; line-height: 1.6; padding: 24px; }
+    h1 { color: #0f172a; font-size: 20px; text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; }
+    .section { margin-top: 20px; }
+    .section-title { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #2563eb; margin-bottom: 6px; }
+    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 13px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; min-height: 90px; }
+  </style>
+</head>
+<body>
+  <h1>AVENANT N°${data.numero} AU ${titreDuBail(data.contract.leaseType).replace(/^CONTRAT DE /, "")}<br><span style="font-size:15px;">Révision du loyer</span></h1>
+  ${droit ? `<p style="text-align:center; font-size:12px; color:#64748b;">Droit applicable : ${escapeHtml(droit)}</p>` : ""}
+
+  <div class="section">
+    <div class="section-title">1. Les Parties</div>
+    <div class="box">
+      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"}${agency.address ? ` (${escapeHtml(agency.address)})` : ""}<br>
+      <strong>Le Locataire :</strong> ${escapeHtml(data.tenant?.firstName)} ${escapeHtml(data.tenant?.lastName)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">2. Bail concerné</div>
+    <div class="box">
+      <strong>Bien loué :</strong> ${escapeHtml(data.property?.title)}<br>
+      <strong>Adresse :</strong> ${escapeHtml(data.property?.address)}<br>
+      <strong>Bail du</strong> ${date(data.contract.startDate)} <strong>au</strong> ${date(data.contract.endDate)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3. Révision du loyer</div>
+    <div class="box">
+      <strong>Loyer mensuel avant révision :</strong> ${montant(data.previousRent)}<br>
+      <strong>Nouveau loyer mensuel :</strong> ${montant(data.newRent)}<br>
+      <strong>Date d'effet :</strong> ${date(data.effectiveDate)}${programmee ? " (révision programmée)" : ""}<br>
+      ${data.motif ? `<strong>Base de calcul :</strong> ${escapeHtml(data.motif)}<br>` : ""}
+      ${data.note ? `<strong>Observations :</strong> ${escapeHtml(data.note).replace(/\r?\n/g, "<br>")}` : ""}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">4. Autres clauses</div>
+    <div class="box">Le présent avenant modifie uniquement le montant du loyer à compter de la date d'effet ci-dessus. Toutes les autres clauses du bail demeurent inchangées.</div>
+  </div>
+
+  <p style="margin-top:24px; font-size:13px;">Établi le ${date(data.createdAt)}, en deux exemplaires.</p>
+
+  <div class="signatures">
+    <div class="sig-block"><strong>Pour le Bailleur / Gestionnaire :</strong></div>
+    <div class="sig-block"><strong>Le Locataire</strong> (« lu et approuvé ») :</div>
+  </div>
+</body>
+</html>
+  `.trim();
+}

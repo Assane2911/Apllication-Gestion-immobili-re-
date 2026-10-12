@@ -83,12 +83,13 @@ function paginated<T>(items: T[]): { data: PaginatedResponse<T> } {
   return { data: { items, page: 1, pageSize: 20, total: items.length, totalPages: 1 } };
 }
 
-// Reproduit l'ordre fixe des 3 appels du Promise.all de load() :
-// /contracts, /properties, /tenants.
-function queueLoad(contracts: Contract[], properties: Property[] = [], tenants: Tenant[] = []) {
+// Reproduit l'ordre fixe des appels de load() : /contracts, /properties, /tenants
+// (Promise.all), puis /contracts/revisions-due une fois la liste chargée.
+function queueLoad(contracts: Contract[], properties: Property[] = [], tenants: Tenant[] = [], aReviser: unknown[] = []) {
   mockedApi.get.mockResolvedValueOnce(paginated(contracts));
   mockedApi.get.mockResolvedValueOnce(paginated(properties));
   mockedApi.get.mockResolvedValueOnce(paginated(tenants));
+  mockedApi.get.mockResolvedValueOnce({ data: aReviser });
 }
 
 function renderPage() {
@@ -260,6 +261,54 @@ describe("ContractsPage (manager)", () => {
     await user.click(liens[0]);
     expect(await screen.findByRole("dialog", { name: "Réviser le loyer" })).toBeInTheDocument();
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/c1/rent-revisions"));
+  });
+
+  it("rappelle les baux à réviser et ouvre la révision au premier mois proposé", async () => {
+    const user = userEvent.setup();
+    const dans3Mois = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 3, 1)).toISOString();
+    queueLoad([contract({ id: "c1" })], [], [], [
+      {
+        contractId: "c1",
+        propertyTitle: "Studio Centre-ville",
+        tenantName: "Awa Diallo",
+        rent: 500,
+        currency: "EUR",
+        endDate: new Date(Date.now() + 400 * DAY_MS).toISOString(),
+        anniversaire: dans3Mois,
+        dateSuggeree: dans3Mois,
+      },
+    ]);
+    mockedApi.get.mockResolvedValueOnce({ data: [] }); // historique de la fenêtre
+    renderPage();
+
+    const encart = await screen.findByRole("region", { name: "Baux à réviser (1)" });
+    expect(within(encart).getByText("Studio Centre-ville")).toBeInTheDocument();
+    expect(within(encart).getByText(/loyer actuel 500 €/)).toBeInTheDocument();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/revisions-due", expect.anything()));
+
+    await user.click(within(encart).getByRole("button", { name: "Réviser" }));
+    const fenetre = await screen.findByRole("dialog", { name: "Réviser le loyer" });
+    expect((within(fenetre).getByLabelText("À compter du mois de") as HTMLSelectElement).value).toBe(dans3Mois.slice(0, 10));
+  });
+
+  it("sans bail à réviser, aucun encart", async () => {
+    queueLoad([contract({ id: "c1" })]);
+    renderPage();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/revisions-due", expect.anything()));
+    expect(screen.getAllByText(/Studio Centre-ville/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("region", { name: /Baux à réviser/ })).not.toBeInTheDocument();
+  });
+
+  it("une erreur sur le rappel des révisions ne gêne pas la page", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([contract({ id: "c1" })]));
+    mockedApi.get.mockResolvedValueOnce(paginated([]));
+    mockedApi.get.mockResolvedValueOnce(paginated([]));
+    mockedApi.get.mockRejectedValueOnce(new Error("panne"));
+    renderPage();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/revisions-due", expect.anything()));
+    expect(screen.getAllByText(/Studio Centre-ville/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("region", { name: /Baux à réviser/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("panne")).not.toBeInTheDocument();
   });
 
   it("workflow de renouvellement : propose de renouveler quand le bail expire bientôt", async () => {

@@ -27,6 +27,10 @@ interface RentRevisionModalProps {
   currency?: string;
   /** Fin du bail (ISO) : on ne propose pas de mois au-delà. */
   endDate: string;
+  /** Premier de mois proposé (rappel des baux à réviser) ; sinon le mois prochain. */
+  dateSuggeree?: string;
+  /** Ouvre l'avenant d'une révision (document à faire signer). */
+  onOpenAvenant?: (revisionId: string) => void;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -61,7 +65,7 @@ export function moisProposes(endDate: string, maintenant: Date = new Date()): st
 }
 
 /** Révision du loyer d'un bail actif : montant, pourcentage ou indice, à partir d'un premier de mois. */
-export default function RentRevisionModal({ contractId, rent, currency, endDate, onSuccess, onClose }: RentRevisionModalProps) {
+export default function RentRevisionModal({ contractId, rent, currency, endDate, dateSuggeree, onOpenAvenant, onSuccess, onClose }: RentRevisionModalProps) {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const mois = useMemo(() => moisProposes(endDate), [endDate]);
@@ -69,7 +73,8 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
   const [mode, setMode] = useState<Mode>("PERCENT");
   const [saisie, setSaisie] = useState({ percent: "", indexOld: "", indexNew: "", amount: "" });
   const [indexName, setIndexName] = useState("");
-  const [effectiveDate, setEffectiveDate] = useState(mois[1] ?? mois[0] ?? "");
+  const suggestion = dateSuggeree?.slice(0, 10);
+  const [effectiveDate, setEffectiveDate] = useState(suggestion && mois.includes(suggestion) ? suggestion : (mois[1] ?? mois[0] ?? ""));
   const [notifyTenant, setNotifyTenant] = useState(true);
   const [note, setNote] = useState("");
   const [historique, setHistorique] = useState<Revision[]>([]);
@@ -264,6 +269,11 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
                   <span className="font-medium">{libelleMois(r.effectiveDate)}</span>
                   <span>{formatMoney(r.previousRent, currency)} → {formatMoney(r.newRent, currency)}</span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">({t(`components.rentRevisionModal.status.${r.status}`)})</span>
+                  {r.status !== "CANCELLED" && onOpenAvenant && (
+                    <button type="button" onClick={() => onOpenAvenant(r.id)} className="text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+                      {t("components.rentRevisionModal.amendment")}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
