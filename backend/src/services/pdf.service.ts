@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import { formaterMontant } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
+import { libelleEcheance } from "../utils/jourEcheance";
 
 /**
  * Échappe les caractères HTML spéciaux avant interpolation dans les templates
@@ -625,7 +626,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="section-title">3. Durée & Conditions Financières</div>
     <div class="box">
       <strong>Date de prise d'effet :</strong> ${startDate} | <strong>Date de fin :</strong> ${endDate}<br>
-      <strong>Loyer mensuel :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))} (payable mensuellement avant le 5)<br>
+      <strong>Loyer mensuel :</strong> ${escapeHtml(formaterMontant(contract.rent, contract.currency))} (${escapeHtml(libelleEcheance(contract.startDate))})<br>
       <strong>Dépôt de garantie :</strong> ${escapeHtml(formaterMontant(contract.deposit, contract.currency))}
     </div>
   </div>

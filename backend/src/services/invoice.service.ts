@@ -2,6 +2,7 @@ import { and, eq, lt } from "drizzle-orm";
 import { db, DbClient } from "../db/client";
 import { contracts, invoices } from "../db/schema";
 import { debutDeLaJournee } from "../utils/dates";
+import { echeanceDuMois, jourEcheanceDuContrat } from "../utils/jourEcheance";
 
 type Contract = typeof contracts.$inferSelect;
 
@@ -172,9 +173,7 @@ export async function generateInvoicesForContract(
     // période — new Date(year, month, 0) donne le dernier jour du mois
     // (month - 1) puisque le jour 0 recule d'un jour depuis le 1er du mois
     // suivant.
-    const desiredDay = start.getDate() || 1;
-    const lastDayOfPeriodMonth = new Date(periodYear, periodMonth, 0).getDate();
-    const dueDate = new Date(periodYear, periodMonth - 1, Math.min(desiredDay, lastDayOfPeriodMonth));
+    const dueDate = echeanceDuMois(jourEcheanceDuContrat(start), periodYear, periodMonth);
 
     const cle = `${periodMonth}-${periodYear}`;
     const notrePeriode = periodeCouverte(contract, periodMonth, periodYear);

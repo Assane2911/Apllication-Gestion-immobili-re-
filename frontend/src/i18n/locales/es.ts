@@ -317,7 +317,7 @@ const es: TranslationSchema = {
       },
       reminders: {
         title: "Alertas Automáticas el Día 1 de Cada Mes",
-        desc: "Recordatorios programados el día 1 de cada mes que avisan del vencimiento del pago como máximo el día 5, con enlace de pago seguro.",
+        desc: "Recordatorios programados el día 1 de cada mes que indican a cada inquilino la fecha límite de su propio alquiler, con enlace de pago seguro.",
       },
       dashboard: {
         title: "Panel de Control y Estadísticas en Tiempo Real",
@@ -966,10 +966,10 @@ const es: TranslationSchema = {
       sendMonthlyAlerts: "Enviar alertas del día 1 de cada mes",
       sendingMonthly: "Enviando...",
       confirmSendMonthly:
-        "¿Enviar de inmediato el aviso de vencimiento a todos los inquilinos para el mes en curso (fecha límite de pago: día 5 del mes)?",
+        "¿Enviar de inmediato el aviso de vencimiento a todos los inquilinos para el mes en curso (cada inquilino recibe la fecha límite de su propio alquiler)?",
       infoBannerTitle: "Automatización de las alertas mensuales (el día 1 de cada mes)",
       infoBannerBody:
-        "Se envía <1>automáticamente un correo de aviso de vencimiento a cada inquilino el día 1 del mes a las 8:00</1> para recordarle pagar su alquiler <1>como máximo el día 5 del mes</1>.",
+        "Se envía <1>automáticamente un correo de aviso de vencimiento a cada inquilino el día 1 del mes a las 8:00</1> para recordarle pagar su alquiler <1>como máximo en la fecha de vencimiento de su alquiler</1>.",
       table: {
         period: "Período",
         tenant: "Inquilino",
@@ -980,7 +980,6 @@ const es: TranslationSchema = {
         status: "Estado",
         actions: "Acciones",
       },
-      dueDateLimit: "(Límite el día 5)",
       dueDatePrefix: "Vencimiento: {{date}}",
       receiptPdf: "Recibo PDF",
       remind: "Recordar",

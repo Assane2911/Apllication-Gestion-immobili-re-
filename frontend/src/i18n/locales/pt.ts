@@ -317,7 +317,7 @@ const pt: TranslationSchema = {
       },
       reminders: {
         title: "Alertas Automáticos no Dia 1 de Cada Mês",
-        desc: "Lembretes programados no dia 1 de cada mês, indicando o prazo de pagamento até ao dia 5, com um link de pagamento seguro.",
+        desc: "Lembretes programados no dia 1 de cada mês, indicando a cada inquilino o prazo da sua própria renda, com um link de pagamento seguro.",
       },
       dashboard: {
         title: "Painel & Estatísticas em Tempo Real",
@@ -964,10 +964,10 @@ const pt: TranslationSchema = {
       sendMonthlyAlerts: "Enviar alertas do dia 1 do mês",
       sendingMonthly: "A enviar...",
       confirmSendMonthly:
-        "Enviar imediatamente o aviso de vencimento a todos os inquilinos para o mês atual (prazo de pagamento: dia 5)?",
+        "Enviar imediatamente o aviso de vencimento a todos os inquilinos para o mês atual (cada inquilino recebe o prazo da sua própria renda)?",
       infoBannerTitle: "Automatização dos alertas mensais (dia 1 de cada mês)",
       infoBannerBody:
-        "Um email de aviso de vencimento é <1>enviado automaticamente a cada inquilino no dia 1 do mês às 8h00</1>, lembrando-o de pagar a renda <1>até ao dia 5 do mês, o mais tardar</1>.",
+        "Um email de aviso de vencimento é <1>enviado automaticamente a cada inquilino no dia 1 do mês às 8h00</1>, lembrando-o de pagar a renda <1>até à data de vencimento da renda, o mais tardar</1>.",
       table: {
         period: "Período",
         tenant: "Inquilino",
@@ -978,7 +978,6 @@ const pt: TranslationSchema = {
         status: "Estado",
         actions: "Ações",
       },
-      dueDateLimit: "(Prazo até dia 5)",
       dueDatePrefix: "Vencimento: {{date}}",
       receiptPdf: "Recibo PDF",
       remind: "Lembrar",

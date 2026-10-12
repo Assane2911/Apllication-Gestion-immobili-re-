@@ -315,7 +315,7 @@ const fr = {
       },
       reminders: {
         title: "Alertes Automatiques du 1er du Mois",
-        desc: "Rappels programmés au 1er de chaque mois rappelant l'échéance de paiement au plus tard le 5 avec lien de règlement sécurisé.",
+        desc: "Rappels programmés au 1er de chaque mois rappelant à chaque locataire la date limite de paiement de son loyer, avec lien de règlement sécurisé.",
       },
       dashboard: {
         title: "Tableau de Bord & Statistiques en Temps Réel",
@@ -965,10 +965,10 @@ const fr = {
       sendMonthlyAlerts: "Envoyer alertes du 1er du mois",
       sendingMonthly: "Envoi en cours...",
       confirmSendMonthly:
-        "Envoyer immédiatement l'avis d'échéance à tous les locataires pour le mois en cours (date limite de paiement : 5 du mois) ?",
+        "Envoyer immédiatement l'avis d'échéance à tous les locataires pour le mois en cours (chaque locataire reçoit la date limite de son propre loyer) ?",
       infoBannerTitle: "Automatisation des alertes mensuelles (Le 1er de chaque mois)",
       infoBannerBody:
-        "Un email d'avis d'échéance est <1>automatiquement envoyé à chaque locataire le 1er du mois à 8h00</1> pour lui rappeler de régler son loyer <1>au plus tard le 5 du mois</1>.",
+        "Un email d'avis d'échéance est <1>automatiquement envoyé à chaque locataire le 1er du mois à 8h00</1> pour lui rappeler de régler son loyer <1>au plus tard à la date d'échéance de son loyer</1>.",
       table: {
         period: "Période",
         tenant: "Locataire",
@@ -979,7 +979,6 @@ const fr = {
         status: "Statut",
         actions: "Actions",
       },
-      dueDateLimit: "(Limite au 5)",
       dueDatePrefix: "Échéance : {{date}}",
       receiptPdf: "Quittance PDF",
       remind: "Relancer",

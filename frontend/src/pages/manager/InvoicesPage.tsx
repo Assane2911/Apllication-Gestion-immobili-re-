@@ -207,7 +207,6 @@ export default function InvoicesPage() {
                 </td>
                 <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
                   <span className="text-xs">{new Date(inv.dueDate).toLocaleDateString(i18n.language)}</span>
-                  <span className="block text-[10px] text-amber-700 dark:text-amber-400 font-medium">{t("manager.invoices.dueDateLimit")}</span>
                 </td>
                 <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400 text-xs">
                   {inv.paymentMethod ? methodLabels[inv.paymentMethod] : "—"}
