@@ -464,6 +464,21 @@ export async function initDb() {
     `);
     await creerIndex("invoice_payments_invoice_id_idx", sql`CREATE INDEX IF NOT EXISTS invoice_payments_invoice_id_idx ON invoice_payments (invoice_id)`);
 
+    // Colocataires d'un bail (après contracts et tenants : FK).
+    await creerTable("contract_cotenants", sql`
+      CREATE TABLE IF NOT EXISTS contract_cotenants (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        tenant_id TEXT NOT NULL REFERENCES tenants(id),
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex(
+      "contract_cotenants_contract_tenant_unique",
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS contract_cotenants_contract_tenant_unique ON contract_cotenants (contract_id, tenant_id)`
+    );
+    await creerIndex("contract_cotenants_tenant_id_idx", sql`CREATE INDEX IF NOT EXISTS contract_cotenants_tenant_id_idx ON contract_cotenants (tenant_id)`);
+
     // Garants d'un bail (après contracts : FK).
     await creerTable("contract_guarantors", sql`
       CREATE TABLE IF NOT EXISTS contract_guarantors (

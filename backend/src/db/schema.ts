@@ -636,6 +636,28 @@ export const invoicePayments = pgTable(
   })
 );
 
+// --- Colocataires d'un bail ---
+// Locataires de l'agence qui partagent le bail avec son titulaire
+// (contracts.tenantId). Ils figurent sur le bail PDF (parties et signature) et,
+// comme les garants, ne changent plus une fois le bail signé par le titulaire.
+export const contractCotenants = pgTable(
+  "contract_cotenants",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    contractTenantUnique: uniqueIndex("contract_cotenants_contract_tenant_unique").on(table.contractId, table.tenantId),
+    tenantIdIdx: index("contract_cotenants_tenant_id_idx").on(table.tenantId),
+  })
+);
+
 // --- Garants d'un bail ---
 // Personnes qui se portent caution du locataire pour ce bail. Elles figurent
 // sur le bail PDF (section et bloc de signature) : une fois le bail signé par

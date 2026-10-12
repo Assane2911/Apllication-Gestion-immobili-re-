@@ -229,9 +229,17 @@ export interface Contract {
   property?: Property;
   tenant?: Tenant;
   invoices?: Invoice[];
+  /** Noms des colocataires (liste des contrats). */
+  cotenantNames?: string[];
   /** Nombre de garants (liste des contrats). */
   guarantorsCount?: number;
   guarantors?: Guarantor[];
+}
+
+/** Colocataire d'un bail : lien vers une fiche locataire de l'agence. */
+export interface Cotenant {
+  id: string;
+  tenant: Tenant;
 }
 
 /** Garant d'un bail : figure sur le bail, figé une fois le bail signé par le locataire. */

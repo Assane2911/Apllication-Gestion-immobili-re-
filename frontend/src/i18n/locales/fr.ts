@@ -559,6 +559,19 @@ const fr = {
       confirmButton: "Marquer réglée",
       saving: "Enregistrement...",
     },
+    cotenants: {
+      title: "Colocataires du bail",
+      hint: "Des locataires de votre agence qui partagent ce bail avec son titulaire. Ils figurent sur le bail et le signent. Une clause de solidarité, si vous en voulez une, se rédige dans les clauses particulières.",
+      locked: "Le bail a été signé par le locataire : ses colocataires font partie du contenu signé et ne peuvent plus changer.",
+      none: "Aucun colocataire : le titulaire est seul sur ce bail.",
+      choose: "Ajouter un colocataire",
+      placeholder: "Choisir un locataire…",
+      noneAvailable: "Aucun autre locataire disponible — créez d'abord sa fiche",
+      add: "Ajouter",
+      saving: "Ajout...",
+      remove: "Retirer {{name}}",
+      confirmRemove: "Retirer {{name}} de ce bail ?",
+    },
     guarantors: {
       title: "Garants du bail",
       locked: "Le bail a été signé par le locataire : ses garants font partie du contenu signé et ne peuvent plus changer.",
@@ -1026,6 +1039,7 @@ const fr = {
       editPaymentDay: "Modifier l'échéance",
       reviseRent: "Réviser le loyer",
       guarantorsLink: "Garants ({{count}})",
+      cotenantsLink: "Colocataires ({{count}})",
       avenantDocTitle: "Avenant au bail — révision du loyer",
       revisionsDue: {
         title: "Baux à réviser ({{count}})",

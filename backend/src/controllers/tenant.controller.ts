@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users, contractGuarantors } from "../db/schema";
+import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users, contractGuarantors, contractCotenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
 import { fetchFiabiliteParLocataire } from "../services/reliability.service";
@@ -373,6 +373,10 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
       409,
       "Impossible de supprimer un locataire associé à un historique de contrats. Veuillez d'abord supprimer les contrats associés."
     );
+  }
+  const [colocation] = await db.select({ id: contractCotenants.id }).from(contractCotenants).where(eq(contractCotenants.tenantId, req.params.id)).limit(1);
+  if (colocation) {
+    throw new ApiError(409, "Impossible de supprimer un locataire colocataire d'un bail. Retirez-le d'abord du bail.");
   }
   if (tenantIssues.length > 0) {
     throw new ApiError(

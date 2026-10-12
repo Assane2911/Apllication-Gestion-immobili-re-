@@ -561,6 +561,19 @@ const en: TranslationSchema = {
       confirmButton: "Mark as paid",
       saving: "Saving...",
     },
+    cotenants: {
+      title: "Lease co-tenants",
+      hint: "Tenants of your agency who share this lease with its main tenant. They appear on the lease and sign it. A joint-liability clause, if you want one, goes in the special clauses.",
+      locked: "The tenant has signed the lease: its co-tenants are part of the signed content and can no longer change.",
+      none: "No co-tenant: the main tenant is alone on this lease.",
+      choose: "Add a co-tenant",
+      placeholder: "Choose a tenant…",
+      noneAvailable: "No other tenant available — create their record first",
+      add: "Add",
+      saving: "Adding...",
+      remove: "Remove {{name}}",
+      confirmRemove: "Remove {{name}} from this lease?",
+    },
     guarantors: {
       title: "Lease guarantors",
       locked: "The tenant has signed the lease: its guarantors are part of the signed content and can no longer change.",
@@ -1025,6 +1038,7 @@ const en: TranslationSchema = {
       editPaymentDay: "Change due day",
       reviseRent: "Revise rent",
       guarantorsLink: "Guarantors ({{count}})",
+      cotenantsLink: "Co-tenants ({{count}})",
       avenantDocTitle: "Lease amendment — rent revision",
       revisionsDue: {
         title: "Leases to review ({{count}})",

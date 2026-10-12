@@ -561,6 +561,19 @@ const pt: TranslationSchema = {
       confirmButton: "Marcar como paga",
       saving: "A guardar...",
     },
+    cotenants: {
+      title: "Coinquilinos do contrato",
+      hint: "Inquilinos da sua agência que partilham este contrato com o titular. Constam do contrato e assinam-no. Uma cláusula de solidariedade, se a quiser, redige-se nas cláusulas particulares.",
+      locked: "O inquilino assinou o contrato: os coinquilinos fazem parte do conteúdo assinado e já não podem mudar.",
+      none: "Nenhum coinquilino: o titular está sozinho neste contrato.",
+      choose: "Adicionar um coinquilino",
+      placeholder: "Escolher um inquilino…",
+      noneAvailable: "Nenhum outro inquilino disponível — crie primeiro a ficha",
+      add: "Adicionar",
+      saving: "A adicionar...",
+      remove: "Retirar {{name}}",
+      confirmRemove: "Retirar {{name}} deste contrato?",
+    },
     guarantors: {
       title: "Fiadores do contrato",
       locked: "O inquilino assinou o contrato: os fiadores fazem parte do conteúdo assinado e já não podem mudar.",
@@ -1025,6 +1038,7 @@ const pt: TranslationSchema = {
       editPaymentDay: "Alterar vencimento",
       reviseRent: "Rever a renda",
       guarantorsLink: "Fiadores ({{count}})",
+      cotenantsLink: "Coinquilinos ({{count}})",
       avenantDocTitle: "Aditamento ao contrato — revisão da renda",
       revisionsDue: {
         title: "Contratos a rever ({{count}})",
