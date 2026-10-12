@@ -193,6 +193,43 @@ describe("GET /api/cron/daily — isolation des étapes", () => {
     expect(typeof res.body.upcomingRentDueRemindersSent).toBe("number");
   });
 
+  it("écrit une ligne de résumé dans les journaux, lisible sans le corps de la réponse", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id, {
+      status: "ACTIVE",
+      startDate: new Date(2020, 0, 1),
+      endDate: new Date(2030, 0, 1),
+    });
+
+    await lancer();
+
+    const resumes = log.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith("[cron] Résumé du jour"));
+    expect(resumes).toHaveLength(1);
+    expect(resumes[0]).toContain("— OK |");
+    expect(resumes[0]).toContain("avis d'échéance : 1");
+    expect(resumes[0]).toContain("interrompu faute de temps : non");
+    // Aucune donnée personnelle : ni l'email ni le nom du locataire.
+    expect(resumes[0]).not.toContain(tenant.email);
+    expect(resumes[0]).not.toContain(tenant.lastName);
+  });
+
+  it("en cas de panne, la ligne de résumé (en avertissement) nomme les étapes tombées, sans leur message", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    pannes.add("rappels de fin de contrat");
+    pannes.add("purge des données de la plateforme");
+
+    await lancer();
+
+    const resumes = warn.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith("[cron] Résumé du jour"));
+    expect(resumes).toHaveLength(1);
+    expect(resumes[0]).toContain("ÉCHEC de 2 étape(s) : purge des données de la plateforme, rappels de fin de contrat");
+    expect(resumes[0]).toContain("purge : non faite");
+    expect(resumes[0]).not.toContain("panne simulée");
+  });
+
   it("refuse toujours l'appel sans secret, avant d'exécuter la moindre étape", async () => {
     const res = await request(app).get("/api/cron/daily");
 

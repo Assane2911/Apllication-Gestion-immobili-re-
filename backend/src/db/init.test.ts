@@ -138,4 +138,20 @@ describe("initDb : idempotence sans verrou inutile", () => {
     expect(lignes[0].trial_ends_at).not.toBeNull();
     expect(lignes[0].subscription_status).toBe("TRIAL");
   });
+
+  it("ne pose pas d'essai fictif aux collaborateurs invités, et n'écrit rien pour eux", async () => {
+    await initDb();
+    const proprietaire = await createManager();
+    const collaborateur = await createManager({ teamOwnerId: proprietaire.id, teamRole: "AGENT", trialEndsAt: null });
+    const emises = enregistrerInstructions();
+
+    await initDb();
+
+    const resultat = await testDb.execute(sql`SELECT trial_ends_at FROM users WHERE id = ${collaborateur.id}`);
+    const lignes = (Array.isArray(resultat) ? resultat : ((resultat as { rows: unknown[] }).rows ?? [])) as Array<{
+      trial_ends_at: Date | null;
+    }>;
+    expect(lignes[0].trial_ends_at).toBeNull();
+    expect(emises.filter((q) => /\bUPDATE\b/i.test(q))).toEqual([]);
+  });
 });

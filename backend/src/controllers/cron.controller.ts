@@ -173,7 +173,7 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   // Un échec reste visible : 500, pour que Vercel marque l'exécution en erreur,
   // mais seulement APRÈS que toutes les autres étapes ont tourné. Les étapes
   // qui ont réussi gardent leurs compteurs dans la réponse.
-  res.status(etapesEnEchec.length > 0 ? 500 : 200).json({
+  const corps = {
     success: etapesEnEchec.length === 0,
     etapesEnEchec,
     facturesPasseesEnRetard: retards ?? 0,
@@ -199,8 +199,60 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
       !!recurringExpenses?.interrompu ||
       !!insurance?.interrompu,
     details: upcoming?.details ?? [],
-  });
+  };
+
+  // Une ligne lisible dans les journaux Vercel, qui n'enregistrent ni le code
+  // de réponse ni le corps JSON : c'était la seule façon de savoir, après coup,
+  // ce que l'exécution du jour avait réellement fait.
+  const ligne = ligneDeResume(corps);
+  if (corps.success) console.log(ligne);
+  else console.warn(ligne);
+
+  res.status(corps.success ? 200 : 500).json(corps);
 });
+
+/**
+ * Résumé d'une exécution quotidienne en une seule ligne de journal : étapes en
+ * échec (leur nom seulement — le message, qui peut citer une donnée, est déjà
+ * journalisé par executerEtape), puis les compteurs de chaque étape. Aucune
+ * donnée personnelle : ni email, ni nom, ni le détail des envois.
+ */
+export function ligneDeResume(corps: {
+  success: boolean;
+  etapesEnEchec: EtapeEnEchec[];
+  facturesPasseesEnRetard: number;
+  purge: { jetonsEffaces: number; journauxEffaces: number; compteursEfface: number } | null;
+  contractEndingRemindersSent: number;
+  upcomingRentDueRemindersSent: number;
+  overdueRemindersSent: number;
+  rentDueRemindersSent: number;
+  recurringExpensesGenerated: number;
+  insuranceRemindersSent: number;
+  echecs: number;
+  interrompu: boolean;
+}): string {
+  const statut = corps.success
+    ? "OK"
+    : `ÉCHEC de ${corps.etapesEnEchec.length} étape(s) : ${corps.etapesEnEchec.map((e) => e.etape).join(", ")}`;
+  const purge = corps.purge
+    ? `${corps.purge.jetonsEffaces} jeton(s), ${corps.purge.journauxEffaces} journal(aux), ${corps.purge.compteursEfface} compteur(s)`
+    : "non faite";
+  return (
+    `[cron] Résumé du jour — ${statut} | ` +
+    [
+      `factures passées en retard : ${corps.facturesPasseesEnRetard}`,
+      `purge : ${purge}`,
+      `fins de contrat : ${corps.contractEndingRemindersSent}`,
+      `rappels avant échéance : ${corps.upcomingRentDueRemindersSent}`,
+      `relances d'impayés : ${corps.overdueRemindersSent}`,
+      `avis d'échéance : ${corps.rentDueRemindersSent}`,
+      `dépenses récurrentes : ${corps.recurringExpensesGenerated}`,
+      `rappels d'assurance : ${corps.insuranceRemindersSent}`,
+      `envois en échec : ${corps.echecs}`,
+      `interrompu faute de temps : ${corps.interrompu ? "oui" : "non"}`,
+    ].join(" | ")
+  );
+}
 
 /**
  * Génération des factures du mois et avis d'échéance aux locataires.

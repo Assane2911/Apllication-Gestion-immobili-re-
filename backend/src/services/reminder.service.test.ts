@@ -4,6 +4,7 @@ import { activityLogs, invoices } from "../db/schema";
 import * as emailService from "./email.service";
 import * as invoiceService from "./invoice.service";
 import * as whatsappService from "./whatsapp.service";
+import { env } from "../config/env";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { runRentDueReminders, runUpcomingRentDueReminders, sendSingleInvoiceReminder } from "./reminder.service";
@@ -376,6 +377,67 @@ describe("sendSingleInvoiceReminder", () => {
     expect(result.whatsappSimulated).toBe(true);
 
     whatsappSpy.mockRestore();
+  });
+
+  it("annonce par WhatsApp la vraie date limite de la facture, avec le modèle daté", async () => {
+    const original = { ...env.whatsapp };
+    env.whatsapp.templateNameRentDue = "avis_echeance_loyer";
+    env.whatsapp.templateNameRentDueDated = "avis_echeance_loyer_date";
+    try {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const invoice = await createInvoice(contract.id, {
+        periodMonth: 8,
+        periodYear: 2026,
+        status: "PENDING",
+        dueDate: new Date(2026, 7, 20),
+      });
+      const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+      await sendSingleInvoiceReminder(invoice.id, manager.id);
+
+      expect(whatsappSpy).toHaveBeenCalledWith(
+        tenant.phone,
+        "avis_echeance_loyer_date",
+        expect.objectContaining({ "5": "20 août 2026" })
+      );
+      whatsappSpy.mockRestore();
+    } finally {
+      env.whatsapp.templateNameRentDue = original.templateNameRentDue;
+      env.whatsapp.templateNameRentDueDated = original.templateNameRentDueDated;
+    }
+  });
+
+  it("n'utilise pas l'ancien modèle « le 5 » pour une facture due le 20 (l'email part seul)", async () => {
+    const original = { ...env.whatsapp };
+    env.whatsapp.templateNameRentDue = "avis_echeance_loyer";
+    env.whatsapp.templateNameRentDueDated = "";
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const invoice = await createInvoice(contract.id, {
+        periodMonth: 8,
+        periodYear: 2026,
+        status: "PENDING",
+        dueDate: new Date(2026, 7, 20),
+      });
+      const whatsappSpy = vi.spyOn(whatsappService, "envoyerMessageWhatsapp");
+
+      const result = await sendSingleInvoiceReminder(invoice.id, manager.id);
+
+      expect(result.success).toBe(true);
+      expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, "", expect.anything());
+      expect(whatsappSpy).not.toHaveBeenCalledWith(tenant.phone, "avis_echeance_loyer", expect.anything());
+      whatsappSpy.mockRestore();
+    } finally {
+      env.whatsapp.templateNameRentDue = original.templateNameRentDue;
+      env.whatsapp.templateNameRentDueDated = original.templateNameRentDueDated;
+    }
   });
 
   it("n'envoie pas de message WhatsApp pour un rappel manuel déclenché par un gestionnaire Starter (hors essai)", async () => {

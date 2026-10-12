@@ -895,14 +895,19 @@ export async function initDb() {
     // aurait été incohérent.
     // Lu d'abord : l'UPDATE ne se lance que s'il y a réellement une ligne à
     // corriger (il n'y en a plus aucune en régime normal).
+    // Jamais les collaborateurs invités (team_owner_id renseigné) : ils n'ont
+    // pas d'abonnement propre — c'est celui du gestionnaire propriétaire qui
+    // compte — et sont créés sans date d'essai. Les inclure faisait repartir
+    // cette écriture, sous verrou, au premier démarrage suivant chaque
+    // invitation, pour leur poser un essai fictif.
     await alterSiBesoin(() =>
       avecVerrouBorne(async (tx) => {
         const aCorriger = lignes<{ un: number }>(
-          await tx.execute(sql`SELECT 1 AS un FROM users WHERE role = 'MANAGER' AND trial_ends_at IS NULL LIMIT 1`)
+          await tx.execute(sql`SELECT 1 AS un FROM users WHERE role = 'MANAGER' AND team_owner_id IS NULL AND trial_ends_at IS NULL LIMIT 1`)
         );
         if (aCorriger.length === 0) return;
         await tx.execute(
-          sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND trial_ends_at IS NULL`
+          sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND team_owner_id IS NULL AND trial_ends_at IS NULL`
         );
       })
     );
