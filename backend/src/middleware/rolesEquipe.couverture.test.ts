@@ -70,8 +70,10 @@ describe("couverture des rôles sur les routes réellement enregistrées", () =>
     expect(interdit).toEqual([]);
   });
 
-  it("ACCOUNTANT : n'écrit que sur les factures et les dépenses", () => {
-    const hors = autorisees("ACCOUNTANT").filter((r) => !PERSONNELLES.test(r) && !/ \/(invoices|expenses)(\/|$)/.test(r));
+  it("ACCOUNTANT : n'écrit que sur les factures, les dépenses et les reversements aux propriétaires", () => {
+    const hors = autorisees("ACCOUNTANT").filter(
+      (r) => !PERSONNELLES.test(r) && !/ \/(invoices|expenses)(\/|$)/.test(r) && !/ \/crg\/x\/payouts(\/x)?$/.test(r)
+    );
     expect(hors).toEqual([]);
   });
 

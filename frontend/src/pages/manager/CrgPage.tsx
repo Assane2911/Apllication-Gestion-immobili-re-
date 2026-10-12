@@ -1,9 +1,10 @@
 import { FileText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import DocumentModal from "../../components/DocumentModal";
+import ReversementsSection from "../../components/ReversementsSection";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
@@ -29,8 +30,12 @@ export default function CrgPage() {
   const { formatMoney } = useCurrency();
   const { ownerId } = useParams<{ ownerId: string }>();
   const now = new Date();
-  const [month, setMonth] = useState<number>(now.getMonth() + 1);
-  const [year, setYear] = useState<number>(now.getFullYear());
+  // Mois et année repris de l'adresse (lien « Reverser » de la page des propriétaires), sinon le mois en cours.
+  const [params] = useSearchParams();
+  const moisDemande = Number(params.get("month"));
+  const anneeDemandee = Number(params.get("year"));
+  const [month, setMonth] = useState<number>(moisDemande >= 1 && moisDemande <= 12 ? moisDemande : now.getMonth() + 1);
+  const [year, setYear] = useState<number>(anneeDemandee >= 2000 && anneeDemandee <= 2100 ? anneeDemandee : now.getFullYear());
   const [crg, setCrg] = useState<CrgSynthesis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -231,6 +236,8 @@ export default function CrgPage() {
           </table>
         </div>
       </div>
+
+      {ownerId && <ReversementsSection crg={crg} edition={{ ownerId, onChange: () => loadData(month, year) }} />}
 
       {showExport && ownerId && (
         <DocumentModal

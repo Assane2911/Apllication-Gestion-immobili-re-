@@ -2,6 +2,7 @@ import { Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useCurrency } from "../../context/currency";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import ChampTelephone from "../../components/ChampTelephone";
 import EmptyState from "../../components/EmptyState";
@@ -9,6 +10,22 @@ import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { Owner, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
+
+/** Synthèse des reversements d'un mois (GET /crg/payouts/summary). */
+interface SyntheseReversements {
+  month: number;
+  year: number;
+  owners: Array<{ ownerId: string; ownerName: string; hasIban: boolean; resteByCurrency: Record<string, number> }>;
+}
+
+/** Les reversements se font au début du mois suivant : on rappelle donc le mois écoulé. */
+function moisPrecedent(): { month: number; year: number } {
+  const d = new Date();
+  const precedent = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+  return { month: precedent.getMonth() + 1, year: precedent.getFullYear() };
+}
+
+const aReverser = (s: SyntheseReversements) => s.owners.filter((o) => Object.values(o.resteByCurrency).some((m) => m > 0));
 
 const emptyForm = {
   civility: "",
@@ -26,7 +43,8 @@ const emptyForm = {
 const PAGE_SIZE = 20;
 
 export default function OwnersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { formatMoney } = useCurrency();
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -40,6 +58,7 @@ export default function OwnersPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [synthese, setSynthese] = useState<SyntheseReversements | null>(null);
 
   function load(signal?: AbortSignal) {
     api
@@ -50,6 +69,14 @@ export default function OwnersPage() {
         setTotalPages(res.data.totalPages);
         setLoadError(null);
         setLoading(false);
+        // Reversements du mois écoulé : chargés APRÈS la liste, jamais bloquants.
+        const { month, year } = moisPrecedent();
+        return api
+          .get<SyntheseReversements>("/crg/payouts/summary", { params: { month, year }, signal })
+          .then((r) => setSynthese(r.data && Array.isArray(r.data.owners) ? r.data : null))
+          .catch((err) => {
+            if (!isRequestCancelled(err)) setSynthese(null);
+          });
       })
       .catch((err) => {
         if (isRequestCancelled(err)) return;
@@ -192,6 +219,38 @@ export default function OwnersPage() {
             {t("common.actions.retry")}
           </button>
         </div>
+      )}
+
+      {synthese && aReverser(synthese).length > 0 && (
+        <section aria-labelledby="reversements-du-mois" className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl px-4 py-3">
+          <h3 id="reversements-du-mois" className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+            {t("manager.owners.payoutsDue.title", {
+              period: new Date(synthese.year, synthese.month - 1, 1).toLocaleDateString(i18n.language, { month: "long", year: "numeric" }),
+              count: aReverser(synthese).length,
+            })}
+          </h3>
+          <ul className="mt-2 divide-y divide-amber-200/70 dark:divide-amber-500/20">
+            {aReverser(synthese).map((o) => (
+              <li key={o.ownerId} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-slate-800 dark:text-slate-200">
+                  <span className="font-medium">{o.ownerName}</span>
+                  {!o.hasIban && <span className="ml-2 text-xs text-amber-800 dark:text-amber-300">{t("manager.owners.payoutsDue.noIban")}</span>}
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="font-semibold tabular-nums">
+                    {Object.entries(o.resteByCurrency)
+                      .filter(([, montant]) => montant > 0)
+                      .map(([devise, montant]) => formatMoney(montant, devise))
+                      .join(" · ")}
+                  </span>
+                  <Link to={`/proprietaires/${o.ownerId}/crg?month=${synthese.month}&year=${synthese.year}`} className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                    {t("manager.owners.payoutsDue.action")}
+                  </Link>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {showForm && (

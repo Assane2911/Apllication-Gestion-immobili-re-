@@ -284,6 +284,11 @@ exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > 
       "propertyTitle": "Villa B",
     },
   ],
+  "resteAReverserByCurrency": {
+    "EUR": 386,
+    "XOF": 230000,
+  },
+  "reversements": [],
   "totalChargesByCurrency": {
     "EUR": 120,
     "XOF": 0,
@@ -300,6 +305,7 @@ exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > 
     "EUR": 386,
     "XOF": 230000,
   },
+  "totalReverseByCurrency": {},
   "year": 2026,
 }
 `;
@@ -330,6 +336,11 @@ exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > 
       "propertyTitle": "Villa B",
     },
   ],
+  "resteAReverserByCurrency": {
+    "EUR": 506,
+    "XOF": 150000,
+  },
+  "reversements": [],
   "totalChargesByCurrency": {
     "EUR": 0,
     "XOF": 80000,
@@ -346,6 +357,7 @@ exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > 
     "EUR": 506,
     "XOF": 150000,
   },
+  "totalReverseByCurrency": {},
   "year": 2026,
 }
 `;

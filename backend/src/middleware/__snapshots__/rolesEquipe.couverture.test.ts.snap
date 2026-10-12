@@ -3,7 +3,9 @@
 exports[`couverture des rôles sur les routes réellement enregistrées > l'instantané des écritures autorisées reste lisible et revu à chaque évolution 1`] = `
 {
   "ACCOUNTANT": [
+    "DELETE /crg/x/payouts/x",
     "DELETE /expenses/x",
+    "POST /crg/x/payouts",
     "POST /expenses",
     "POST /invoices/send-monthly-reminders",
     "POST /invoices/x/cancel",

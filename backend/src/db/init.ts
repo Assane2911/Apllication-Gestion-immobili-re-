@@ -464,6 +464,29 @@ export async function initDb() {
     `);
     await creerIndex("invoice_payments_invoice_id_idx", sql`CREATE INDEX IF NOT EXISTS invoice_payments_invoice_id_idx ON invoice_payments (invoice_id)`);
 
+    // Reversements aux propriétaires (après owners : FK).
+    await creerTable("owner_payouts", sql`
+      CREATE TABLE IF NOT EXISTS owner_payouts (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+        period_month INTEGER NOT NULL,
+        period_year INTEGER NOT NULL,
+        currency TEXT NOT NULL,
+        amount DOUBLE PRECISION NOT NULL,
+        paid_at TIMESTAMP NOT NULL,
+        method TEXT NOT NULL,
+        reference TEXT,
+        note TEXT,
+        owner_notified_at TIMESTAMP,
+        created_by TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex(
+      "owner_payouts_owner_period_idx",
+      sql`CREATE INDEX IF NOT EXISTS owner_payouts_owner_period_idx ON owner_payouts (owner_id, period_year, period_month)`
+    );
+
     // Historique des révisions de loyer d'un bail (après contracts : FK).
     await creerTable("rent_revisions", sql`
       CREATE TABLE IF NOT EXISTS rent_revisions (

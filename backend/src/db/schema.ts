@@ -636,6 +636,36 @@ export const invoicePayments = pgTable(
   })
 );
 
+// --- Reversements aux propriétaires ---
+// Argent réellement versé par l'agence à un propriétaire au titre d'un mois de
+// gestion (le « net à reverser » du CRG de ce mois, voir crg.controller.ts).
+// Plusieurs lignes possibles pour un même mois (versement en plusieurs fois) ;
+// une ligne par devise, comme le CRG.
+export const ownerPayouts = pgTable(
+  "owner_payouts",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => owners.id, { onDelete: "cascade" }),
+    periodMonth: integer("period_month").notNull(),
+    periodYear: integer("period_year").notNull(),
+    currency: text("currency").notNull(),
+    amount: doublePrecision("amount").notNull(),
+    paidAt: timestamp("paid_at", { mode: "date" }).notNull(),
+    // BANK_TRANSFER, CASH, CHEQUE, MOBILE_MONEY ou OTHER.
+    method: text("method").notNull(),
+    reference: text("reference"),
+    note: text("note"),
+    ownerNotifiedAt: timestamp("owner_notified_at", { mode: "date" }),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerPeriodIdx: index("owner_payouts_owner_period_idx").on(table.ownerId, table.periodYear, table.periodMonth),
+  })
+);
+
 // --- Révisions de loyer ---
 // Historique des changements de loyer d'un bail (indexation annuelle, accord
 // amiable). Une révision est PENDING tant que sa date d'effet n'est pas arrivée

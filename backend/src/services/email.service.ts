@@ -697,3 +697,40 @@ export function rentRevisionEmail(params: {
       </div>`,
   };
 }
+
+/** Avis au propriétaire : l'agence lui a versé le net d'un mois de gestion. */
+export function ownerPayoutEmail(params: {
+  ownerName: string;
+  agencyName: string;
+  amount: number;
+  currency: string;
+  periodMonth: number;
+  periodYear: number;
+  paidAt: Date;
+  methodLabel: string;
+  reference?: string | null;
+}) {
+  const mois = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  const periode = `${mois[params.periodMonth - 1] ?? params.periodMonth} ${params.periodYear}`;
+  const date = new Date(params.paidAt).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const montant = escapeHtml(formaterMontant(params.amount, params.currency));
+  return {
+    subject: `Reversement de vos loyers — ${periode}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Reversement effectué</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${escapeHtml(params.agencyName)} • ${escapeHtml(periode)}</p>
+        </div>
+        <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
+          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(params.ownerName)}</strong>,</p>
+          <p>Votre agence vous a versé le ${escapeHtml(date)} (${escapeHtml(params.methodLabel)}) la somme suivante, au titre de la gestion de <strong>${escapeHtml(periode)}</strong> :</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${montant}</span>
+            ${params.reference ? `<br><span style="font-size: 12px; color: #64748b;">Référence : ${escapeHtml(params.reference)}</span>` : ""}
+          </div>
+          <p style="font-size: 13px; color: #475569;">Le détail (loyers encaissés, charges, commission) figure dans votre compte-rendu de gestion, disponible dans votre espace propriétaire.</p>
+        </div>
+      </div>`,
+  };
+}

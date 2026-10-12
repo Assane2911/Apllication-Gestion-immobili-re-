@@ -39,6 +39,14 @@ function paginated(items: Owner[]): { data: PaginatedResponse<Owner> } {
   return { data: { items, page: 1, pageSize: 20, total: items.length, totalPages: 1 } };
 }
 
+type LigneSynthese = { ownerId: string; ownerName: string; hasIban: boolean; resteByCurrency: Record<string, number> };
+
+// Reproduit l'ordre des appels de load() : /owners, puis la synthèse des reversements du mois écoulé.
+function queueOwners(items: Owner[], synthese: LigneSynthese[] = []) {
+  mockedApi.get.mockResolvedValueOnce(paginated(items));
+  mockedApi.get.mockResolvedValueOnce({ data: { month: 9, year: 2026, owners: synthese } });
+}
+
 function renderPage() {
   return render(
     <AuthProvider>
@@ -62,7 +70,7 @@ describe("OwnersPage (manager)", () => {
   });
 
   it("affiche la liste des propriétaires (nom, téléphone, email, commission)", async () => {
-    mockedApi.get.mockResolvedValueOnce(paginated([owner()]));
+    queueOwners([owner()]);
     renderPage();
 
     await waitFor(() => expect(screen.getAllByText("Awa Diallo").length).toBeGreaterThan(0));
@@ -73,7 +81,7 @@ describe("OwnersPage (manager)", () => {
   });
 
   it("affiche l'état vide avec un bouton d'ajout", async () => {
-    mockedApi.get.mockResolvedValueOnce(paginated([]));
+    queueOwners([]);
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Aucun propriétaire pour l'instant")).toBeInTheDocument());
@@ -89,16 +97,16 @@ describe("OwnersPage (manager)", () => {
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
 
-    mockedApi.get.mockResolvedValueOnce(paginated([owner()]));
+    queueOwners([owner()]);
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getAllByText("Awa Diallo").length).toBeGreaterThan(0));
   });
 
   it("crée un propriétaire : envoie les champs renseignés, sans les champs facultatifs vides", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([]));
+    queueOwners([]);
     mockedApi.post.mockResolvedValueOnce({ data: { id: "own-new" } });
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-new" })]));
+    queueOwners([owner({ id: "own-new" })]);
 
     renderPage();
     await waitFor(() => expect(screen.getAllByRole("button", { name: "+ Ajouter un propriétaire" }).length).toBeGreaterThan(0));
@@ -135,9 +143,9 @@ describe("OwnersPage (manager)", () => {
 
   it("modifie un propriétaire existant : pré-remplit le formulaire et envoie une requête PUT", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1", companyName: "SCI Diallo" })]));
+    queueOwners([owner({ id: "own-1", companyName: "SCI Diallo" })]);
     mockedApi.put.mockResolvedValueOnce({ data: {} });
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1", lastName: "Diallo-Ndiaye" })]));
+    queueOwners([owner({ id: "own-1", lastName: "Diallo-Ndiaye" })]);
 
     renderPage();
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Modifier" }).length).toBeGreaterThan(0));
@@ -159,9 +167,9 @@ describe("OwnersPage (manager)", () => {
 
   it("supprime un propriétaire après confirmation", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1" })]));
+    queueOwners([owner({ id: "own-1" })]);
     mockedApi.delete.mockResolvedValueOnce({ data: {} });
-    mockedApi.get.mockResolvedValueOnce(paginated([]));
+    queueOwners([]);
 
     renderPage();
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Supprimer" }).length).toBeGreaterThan(0));
@@ -173,9 +181,9 @@ describe("OwnersPage (manager)", () => {
 
   it("invite un propriétaire sans accès portail, puis affiche la confirmation d'envoi", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1", portalStatus: "NONE" })]));
+    queueOwners([owner({ id: "own-1", portalStatus: "NONE" })]);
     mockedApi.post.mockResolvedValueOnce({ data: {} });
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1", portalStatus: "PENDING" })]));
+    queueOwners([owner({ id: "own-1", portalStatus: "PENDING" })]);
 
     renderPage();
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Inviter" }).length).toBeGreaterThan(0));
@@ -187,9 +195,9 @@ describe("OwnersPage (manager)", () => {
 
   it("anonymise un propriétaire après confirmation (droit à l'effacement)", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1" })]));
+    queueOwners([owner({ id: "own-1" })]);
     mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
-    mockedApi.get.mockResolvedValueOnce(paginated([owner({ id: "own-1", anonymizedAt: "2026-10-04T00:00:00.000Z" })]));
+    queueOwners([owner({ id: "own-1", anonymizedAt: "2026-10-04T00:00:00.000Z" })]);
 
     renderPage();
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Anonymiser" }).length).toBeGreaterThan(0));
@@ -199,5 +207,32 @@ describe("OwnersPage (manager)", () => {
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/owners/own-1/anonymiser"));
     await waitFor(() => expect(screen.getAllByText("Anonymisé").length).toBeGreaterThan(0));
     expect(screen.queryAllByRole("button", { name: "Anonymiser" })).toHaveLength(0);
+  });
+
+  it("rappelle les reversements du mois écoulé restant à faire, avec un lien vers le CRG de ce mois", async () => {
+    queueOwners(
+      [owner({ id: "own-1" }), owner({ id: "own-2", firstName: "Moussa" })],
+      [
+        { ownerId: "own-1", ownerName: "Mme Awa Diallo", hasIban: false, resteByCurrency: { EUR: 300 } },
+        { ownerId: "own-2", ownerName: "Moussa Diallo", hasIban: true, resteByCurrency: { EUR: 0 } },
+      ]
+    );
+    renderPage();
+
+    const encart = await screen.findByRole("region", { name: /Reversements de .* à effectuer \(1\)/ });
+    expect(encart).toHaveTextContent("Mme Awa Diallo");
+    expect(encart).toHaveTextContent("Pas d'IBAN renseigné");
+    expect(encart).not.toHaveTextContent("Moussa Diallo");
+    expect(encart.querySelector("a")?.getAttribute("href")).toBe("/proprietaires/own-1/crg?month=9&year=2026");
+    expect(mockedApi.get).toHaveBeenCalledWith("/crg/payouts/summary", expect.objectContaining({ params: expect.any(Object) }));
+  });
+
+  it("rien à reverser, ou une erreur sur la synthèse : pas d'encart, la liste reste utilisable", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([owner()]));
+    mockedApi.get.mockRejectedValueOnce(new Error("panne"));
+    renderPage();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/crg/payouts/summary", expect.anything()));
+    expect(screen.getAllByText(/Awa/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("region", { name: /Reversements de/ })).not.toBeInTheDocument();
   });
 });
