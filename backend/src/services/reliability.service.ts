@@ -66,8 +66,8 @@ export async function fetchFiabiliteParLocataire(tenantIds: string[]): Promise<M
   const lignes = await db
     .select({
       tenantId: contracts.tenantId,
-      payeATemps: sql<number>`count(*) filter (where ${invoices.status} = 'PAID' and ${invoices.paidAt} <= ${invoices.dueDate})::int`,
-      payeEnRetard: sql<number>`count(*) filter (where ${invoices.status} = 'PAID' and ${invoices.paidAt} > ${invoices.dueDate})::int`,
+      payeATemps: sql<number>`count(*) filter (where ${invoices.status} = 'PAID' and ${invoices.paidAt}::date <= ${invoices.dueDate}::date)::int`,
+      payeEnRetard: sql<number>`count(*) filter (where ${invoices.status} = 'PAID' and ${invoices.paidAt}::date > ${invoices.dueDate}::date)::int`,
       enRetardActuel: sql<number>`count(*) filter (where ${invoices.status} = 'LATE')::int`,
     })
     .from(invoices)

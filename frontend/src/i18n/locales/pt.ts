@@ -71,6 +71,9 @@ const pt: TranslationSchema = {
       PAYDUNYA: "PayDunya",
       BANK_TRANSFER: "Transferência",
       DEMO: "Demonstração",
+      CASH: "Numerário",
+      CHEQUE: "Cheque",
+      MOBILE_MONEY: "Mobile Money",
     },
     theme: {
       tip: "Alterna entre a apresentação clara e a escura.",
@@ -539,6 +542,18 @@ const pt: TranslationSchema = {
         "Estes 8 códigos de recuperação permitem iniciar sessão caso percas o acesso à tua aplicação de autenticação. Cada um funciona apenas uma vez. Não serão mostrados novamente: anota-os num local seguro.",
       done: "Anotei os meus códigos de recuperação",
     },
+    markPaidModal: {
+      title: "Marcar a renda como paga",
+      intro: "Renda de {{name}}: {{amount}}.",
+      warning: "O recibo será enviado de imediato por email ao inquilino, e esta ação é DEFINITIVA: uma fatura paga não pode voltar a pendente.",
+      methodLabel: "Meio de pagamento",
+      dateLabel: "Data de recebimento",
+      dateHint: "O dia em que recebeu realmente o dinheiro: determina em que mês e ano a renda é contabilizada.",
+      referenceLabel: "Referência (opcional)",
+      referencePlaceholder: "N.º do cheque, referência da transferência...",
+      confirmButton: "Marcar como paga",
+      saving: "A guardar...",
+    },
     twoFactorDisable: {
       title: "Desativar a verificação em duas etapas",
       subtitle: "Confirma a tua identidade para desativar esta proteção.",
@@ -965,8 +980,6 @@ const pt: TranslationSchema = {
       sendingReminder: "A enviar...",
       markPaid: "Marcar como pago",
       markingPaid: "A registar...",
-      confirmMarkPaid:
-        "Marcar a renda de {{name}} como paga ({{amount}})?\n\nO recibo será enviado de imediato por email ao inquilino, e esta ação é DEFINITIVA: uma fatura paga não pode voltar a pendente.",
       noInvoicesForFilter: "Nenhuma fatura para este filtro",
       receiptTitle: "Recibo de renda - {{period}}",
     },

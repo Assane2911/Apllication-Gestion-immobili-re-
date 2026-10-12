@@ -11,6 +11,8 @@ import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { resoudreDateEncaissement } from "../utils/dateEncaissement";
+import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 
 function isInvoiceStatus(value: unknown): value is (typeof invoiceStatusEnum.enumValues)[number] {
   return typeof value === "string" && (invoiceStatusEnum.enumValues as readonly string[]).includes(value);
@@ -77,9 +79,19 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
 });
 
 /** Le gestionnaire marque manuellement une facture comme réglée (ex: espèces). */
+/**
+ * Moyens que le gestionnaire peut enregistrer À LA MAIN. STRIPE, PAYDUNYA et
+ * DEMO ne viennent que de leur prestataire (ou du mode démonstration) : les
+ * saisir à la main ferait passer un encaissement non vérifié pour un paiement
+ * en ligne.
+ */
+export const MOYENS_SAISIS_A_LA_MAIN = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"] as const;
+
 const markPaidSchema = z.object({
-  paymentMethod: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]).default("BANK_TRANSFER"),
-  paymentRef: z.string().optional(),
+  paymentMethod: z.enum(MOYENS_SAISIS_A_LA_MAIN).default("BANK_TRANSFER"),
+  paymentRef: z.string().trim().max(200).optional(),
+  // Date réelle de l'encaissement (« AAAA-MM-JJ »), voir utils/dateEncaissement.ts.
+  paidAt: z.string().max(40).nullish(),
 });
 
 /**
@@ -152,6 +164,9 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
 
   assertFactureModifiable(invoice, "regler");
 
+  const maintenant = new Date();
+  const encaisseLe = resoudreDateEncaissement(body.paidAt, maintenant, invoice.dueDate);
+
   // L'écriture est CONDITIONNÉE à l'état lu : la vérification ci-dessus et la
   // mise à jour ne sont pas atomiques à elles deux, et deux clics simultanés
   // pourraient toutes deux la franchir. En exigeant l'état dans le WHERE, une
@@ -160,9 +175,9 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     .update(invoices)
     .set({
       status: "PAID",
-      paidAt: new Date(),
+      paidAt: encaisseLe,
       paymentMethod: body.paymentMethod,
-      paymentRef: body.paymentRef ?? `manuel_${Date.now()}`,
+      paymentRef: body.paymentRef || `manuel_${Date.now()}`,
     })
     .where(and(eq(invoices.id, req.params.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
     .returning();
@@ -190,7 +205,12 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     entityType: "invoice",
     entityId: updated.id,
     entityLabel: row ? `${row.tenant.firstName} ${row.tenant.lastName} — ${row.property.title}` : "Facture",
-    details: `Facture ${updated.periodMonth}/${updated.periodYear} marquée réglée (${updated.amount} ${updated.currency ?? "EUR"})`,
+    details:
+      `Facture ${updated.periodMonth}/${updated.periodYear} marquée réglée (${updated.amount} ${updated.currency ?? "EUR"}, ` +
+      `${libelleMoyenPaiement(updated.paymentMethod)}` +
+      // Une date d'encaissement différente d'aujourd'hui est la donnée qui
+      // déplace le loyer dans les bilans : elle doit apparaître au journal.
+      `${encaisseLe.toISOString().slice(0, 10) !== maintenant.toISOString().slice(0, 10) ? `, encaissée le ${encaisseLe.toISOString().slice(0, 10)}` : ""})`,
   });
 
   res.json(updated);

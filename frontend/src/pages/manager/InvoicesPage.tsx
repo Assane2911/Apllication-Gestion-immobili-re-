@@ -4,6 +4,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
+import MarkPaidModal from "../../components/MarkPaidModal";
 import Pagination from "../../components/Pagination";
 import { useCurrency } from "../../context/currency";
 import type { Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
@@ -22,7 +23,7 @@ export default function InvoicesPage() {
   const [filter, setFilter] = useState<InvoiceStatus | "ALL">("ALL");
   const [sendingMonthly, setSendingMonthly] = useState(false);
   const [sendingSingleId, setSendingSingleId] = useState<string | null>(null);
-  const [marquageEnCours, setMarquageEnCours] = useState<string | null>(null);
+  const [factureAMarquer, setFactureAMarquer] = useState<Invoice | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
@@ -35,6 +36,9 @@ export default function InvoicesPage() {
     PAYDUNYA: t("common.paymentMethods.PAYDUNYA"),
     BANK_TRANSFER: t("common.paymentMethods.BANK_TRANSFER"),
     DEMO: t("common.paymentMethods.DEMO"),
+    CASH: t("common.paymentMethods.CASH"),
+    CHEQUE: t("common.paymentMethods.CHEQUE"),
+    MOBILE_MONEY: t("common.paymentMethods.MOBILE_MONEY"),
   };
 
   function load(signal?: AbortSignal) {
@@ -63,43 +67,6 @@ export default function InvoicesPage() {
   function handleFilterChange(value: InvoiceStatus | "ALL") {
     setFilter(value);
     setPage(1);
-  }
-
-  /**
-   * Marquer une facture réglée à la main.
-   *
-   * Le geste est SANS RETOUR, et il l'est par décision : `PAID` est un état
-   * terminal, `cancelInvoice` refuse explicitement une facture réglée, et
-   * aucun chemin du serveur ne ramène jamais une facture à `PENDING`. Il
-   * déclenche en outre l'envoi immédiat de la quittance au locataire — un
-   * document qui, en droit, atteste du paiement. Une fois parti, rien ne le
-   * rappelle.
-   *
-   * Le bouton n'avait pourtant ni confirmation ni verrou, alors que l'envoi
-   * groupé de rappels, juste en dessous, en demande une. Il est de surcroît
-   * voisin immédiat du bouton « Relancer » : le clic de travers est réaliste,
-   * et son prix est un loyer jamais perçu qui compte dans les encaissements,
-   * fausse le bilan fiscal et le compte-rendu du propriétaire, et sort le
-   * locataire des relances.
-   */
-  async function markPaid(inv: Invoice) {
-    if (marquageEnCours) return;
-    const locataire = inv.contract?.tenant;
-    const nom = locataire ? `${locataire.firstName} ${locataire.lastName}` : "";
-    if (!window.confirm(t("manager.invoices.confirmMarkPaid", { name: nom, amount: formatMoney(inv.amount, inv.currency) }))) {
-      return;
-    }
-
-    setMarquageEnCours(inv.id);
-    try {
-      await api.post(`/invoices/${inv.id}/mark-paid`, { paymentMethod: "BANK_TRANSFER" });
-      setError(null);
-      load();
-    } catch (err) {
-      setError(apiErrorMessage(err));
-    } finally {
-      setMarquageEnCours(null);
-    }
   }
 
   async function handleSendMonthlyReminders() {
@@ -258,11 +225,10 @@ export default function InvoicesPage() {
                         )}
                       </button></Bulle>
                       <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
-                        onClick={() => markPaid(inv)}
-                        disabled={marquageEnCours === inv.id}
+                        onClick={() => setFactureAMarquer(inv)}
                         className="text-xs bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 disabled:opacity-60 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium transition-colors"
                       >
-                        {marquageEnCours === inv.id ? t("manager.invoices.markingPaid") : t("manager.invoices.markPaid")}
+                        {t("manager.invoices.markPaid")}
                       </button></Bulle>
                     </>
                   )}
@@ -335,11 +301,10 @@ export default function InvoicesPage() {
                       )}
                     </button></Bulle>
                     <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
-                      onClick={() => markPaid(inv)}
-                      disabled={marquageEnCours === inv.id}
+                      onClick={() => setFactureAMarquer(inv)}
                       className="text-xs bg-brand-50 dark:bg-brand-500/10 disabled:opacity-60 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium"
                     >
-                      {marquageEnCours === inv.id ? t("manager.invoices.markingPaid") : t("manager.invoices.markPaid")}
+                      {t("manager.invoices.markPaid")}
                     </button></Bulle>
                   </>
                 )}
@@ -350,6 +315,24 @@ export default function InvoicesPage() {
       </div>
 
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
+
+      {factureAMarquer && (
+        <MarkPaidModal
+          invoiceId={factureAMarquer.id}
+          tenantName={
+            factureAMarquer.contract?.tenant
+              ? `${factureAMarquer.contract.tenant.firstName} ${factureAMarquer.contract.tenant.lastName}`
+              : ""
+          }
+          amountLabel={formatMoney(factureAMarquer.amount, factureAMarquer.currency)}
+          onSuccess={() => {
+            setFactureAMarquer(null);
+            setError(null);
+            load();
+          }}
+          onClose={() => setFactureAMarquer(null)}
+        />
+      )}
 
       {activeReceiptInvoice && (
         <DocumentModal
