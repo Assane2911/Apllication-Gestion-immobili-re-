@@ -1,12 +1,14 @@
 import crypto from "crypto";
 import { Request, Response } from "express";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { invoices, platformSubscriptions } from "../db/schema";
 import { ETATS_MODIFIABLES } from "./invoice.controller";
 import { env } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
+import { solderEnLigne } from "../services/paiementEnLigne.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
+import { resteDu } from "../utils/montants";
 import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
 
 interface PaydunyaIpnPayload {
@@ -184,9 +186,9 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
 
     if (!invoiceRow) {
       console.warn(`[paydunya] Facture introuvable pour le token ${paydunyaToken}`);
-    } else if (!amountMatches(paidAmount, invoiceRow.amount)) {
+    } else if (!amountMatches(paidAmount, resteDu(invoiceRow))) {
       console.warn(
-        `[paydunya] IPN rejetée pour la facture ${invoiceRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${invoiceRow.amount}).`
+        `[paydunya] IPN rejetée pour la facture ${invoiceRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${resteDu(invoiceRow)}).`
       );
     } else if (!ETATS_MODIFIABLES.includes(invoiceRow.status as (typeof ETATS_MODIFIABLES)[number])) {
       // Régression corrigée : contrairement à markInvoicePaid/cancelInvoice
@@ -203,11 +205,8 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
       // lu plus haut) : entre le SELECT et cet UPDATE, la facture a pu être
       // annulée ou déjà soldée par une autre livraison de la même IPN. Voir
       // le commentaire équivalent dans stripe.controller.ts.
-      const [updated] = await db
-        .update(invoices)
-        .set({ status: "PAID", paidAt: new Date() })
-        .where(and(eq(invoices.id, invoiceRow.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
-        .returning();
+      // Le paiement couvre le RESTE DÛ (voir paiementEnLigne.service.ts).
+      const updated = await solderEnLigne(invoiceRow.id, { methode: "PAYDUNYA" });
       if (updated) {
         await sendPaymentReceiptEmail(updated.id).catch((err) =>
           console.error("[paydunya] Échec de l'envoi de la quittance après confirmation IPN:", err)

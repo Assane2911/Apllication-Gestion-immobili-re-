@@ -168,20 +168,12 @@ describe("listes de factures", () => {
     expect(lignes[ancienne.id]).toMatchObject({ montantRegle: 400, resteDu: 0, amountPaid: 0 });
   });
 
-  it("le locataire voit son reste dû, et ne peut pas payer en ligne le montant total", async () => {
+  it("le locataire voit son reste dû", async () => {
     const { manager, tenant, invoice } = await facture(500);
     await payer(manager, invoice.id, { amount: 300 });
     const jeton = await tokenLocataire(tenant.id);
 
     const liste = await request(app).get("/api/invoices/mine").set(authHeader(jeton));
     expect(liste.body[0]).toMatchObject({ montantRegle: 300, resteDu: 200 });
-
-    const paiement = await request(app)
-      .post(`/api/invoices/${invoice.id}/pay`)
-      .set(authHeader(jeton))
-      .send({ method: "DEMO" });
-    expect(paiement.status).toBe(409);
-    expect(paiement.body.error).toContain("200");
-    expect((await relire(invoice.id)).amountPaid).toBe(300);
   });
 });

@@ -7,12 +7,13 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, invoicePayments, invoices, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
-import { sendPaymentReceiptEmail } from "../services/receipt.service";
+import { sendPartialPaymentReceiptEmail, sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { resoudreDateEncaissement } from "../utils/dateEncaissement";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
+import { solderEnLigne } from "../services/paiementEnLigne.service";
 import { arrondir, montantRegle, resteDu } from "../utils/montants";
 
 function isInvoiceStatus(value: unknown): value is (typeof invoiceStatusEnum.enumValues)[number] {
@@ -196,13 +197,16 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     const solde = arrondir(courante.amount - dejaRegle) <= 0;
     const reference = body.paymentRef || `manuel_${Date.now()}`;
 
-    await tx.insert(invoicePayments).values({
-      invoiceId: courante.id,
-      amount: montant,
-      paidAt: encaisseLe,
-      paymentMethod: body.paymentMethod,
-      paymentRef: reference,
-    });
+    const [paiement] = await tx
+      .insert(invoicePayments)
+      .values({
+        invoiceId: courante.id,
+        amount: montant,
+        paidAt: encaisseLe,
+        paymentMethod: body.paymentMethod,
+        paymentRef: reference,
+      })
+      .returning();
 
     // Tant que la facture n'est pas soldée, elle garde son état (en attente ou
     // en retard) : seul le cumul avance. Soldée, elle devient PAYÉE, datée du
@@ -217,18 +221,23 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
       .where(eq(invoices.id, courante.id))
       .returning();
 
-    return { facture: misAJour, montant, solde, reste: solde ? 0 : arrondir(courante.amount - dejaRegle) };
+    return { facture: misAJour, paiementId: paiement.id, montant, solde, reste: solde ? 0 : arrondir(courante.amount - dejaRegle) };
   });
 
   const updated = resultat.facture;
 
   // Quittance PDF par email : seulement quand le loyer est SOLDÉ. Une quittance
   // atteste le paiement intégral ; pour un paiement partiel, c'est un simple
-  // reçu (non encore envoyé automatiquement). Ne doit jamais faire échouer la
+  // reçu (envoyé séparément, voir plus bas). Ne doit jamais faire échouer la
   // réponse si l'email ne part pas (SMTP non configuré, etc.).
   if (resultat.solde) {
     await sendPaymentReceiptEmail(updated.id).catch((err) =>
       console.error("[invoice] Échec de l'envoi automatique de la quittance:", err)
+    );
+  } else {
+    // Paiement partiel : un REÇU (pas une quittance) avec le reste dû.
+    await sendPartialPaymentReceiptEmail(updated.id, resultat.paiementId).catch((err) =>
+      console.error("[invoice] Échec de l'envoi du reçu de paiement partiel:", err)
     );
   }
 
@@ -350,16 +359,6 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
   if (row.contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
   if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée");
   if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée");
-  // Le paiement en ligne règle le montant TOTAL de la facture : sur une facture
-  // déjà réglée en partie, il encaisserait deux fois la part déjà versée. Le
-  // reste se règle auprès du gestionnaire (voir markInvoicePaid).
-  if (row.invoice.amountPaid > 0) {
-    throw new ApiError(
-      409,
-      `Un paiement partiel a déjà été enregistré sur cette facture. Il reste ${resteDu(row.invoice)} ${row.invoice.currency ?? "EUR"} à régler : contactez votre gestionnaire.`
-    );
-  }
-
   // Réclamation atomique, AVANT tout appel au prestataire. Stripe se protège
   // lui-même via un Idempotency-Key (voir initiateStripePayment) ; l'API
   // PayDunya n'a rien d'équivalent, donc deux clics simultanés sur "Payer"
@@ -389,7 +388,9 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
   try {
     result = await initiatePayment({
       method: body.method as PaymentMethodKey,
-      amount: row.invoice.amount,
+      // Le RESTE DÛ : sur une facture déjà réglée en partie par le gestionnaire,
+      // le locataire ne repaie pas la part déjà versée.
+      amount: resteDu(row.invoice),
       // Chaque facture porte sa devise (invoices.currency) : un loyer saisi en
       // EUR ne doit pas partir vers un prestataire qui encaisse en FCFA.
       currency: row.invoice.currency,
@@ -411,15 +412,19 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
   // pendant l'appel au prestataire (un webhook arrive vite). Sans cette
   // condition, on écraserait la référence du paiement réellement encaissé par
   // celle d'une session qui, elle, n'a rien encaissé.
-  const [updated] = await db
-    .update(invoices)
-    .set({
-      paymentMethod: result.method,
-      paymentRef: result.reference,
-      ...(result.status === "PAID" ? { status: "PAID" as const, paidAt: new Date() } : {}),
-    })
-    .where(and(eq(invoices.id, row.invoice.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
-    .returning();
+  const [enAttente] =
+    result.status === "PAID"
+      ? [undefined]
+      : await db
+          .update(invoices)
+          .set({ paymentMethod: result.method, paymentRef: result.reference })
+          .where(and(eq(invoices.id, row.invoice.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
+          .returning();
+  // Réglé sur le champ (mode démonstration) : encaissement enregistré et facture soldée.
+  const updated =
+    result.status === "PAID"
+      ? await solderEnLigne(row.invoice.id, { methode: result.method, reference: result.reference })
+      : enAttente;
 
   if (!updated) {
     throw new ApiError(409, "Cette facture vient d'être réglée. Rechargez la page.");

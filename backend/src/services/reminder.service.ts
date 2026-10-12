@@ -23,6 +23,7 @@ import {
   ResultatEnvoiWhatsapp,
 } from "./whatsapp.service";
 import { nomAvecCivilite, nomComplet } from "../utils/nom";
+import { resteDu } from "../utils/montants";
 
 /**
  * Rappels WhatsApp : avantage Pro (page tarifs, « Rappels automatiques
@@ -516,7 +517,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     const { subject, html } = rentDueReminderEmail({
       tenantName: nomAvecCivilite(row.tenant),
       propertyTitle: row.property.title,
-      amount: row.invoice.amount,
+      amount: resteDu(row.invoice),
       currency: row.invoice.currency || "EUR",
       periodMonth: row.invoice.periodMonth,
       periodYear: row.invoice.periodYear,
@@ -538,7 +539,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
           rentDueReminderWhatsappVariables({
             tenantName: nomAvecCivilite(row.tenant),
             propertyTitle: row.property.title,
-            amount: row.invoice.amount,
+            amount: resteDu(row.invoice),
             currency: row.invoice.currency || "EUR",
             periodMonth: row.invoice.periodMonth,
             periodYear: row.invoice.periodYear,
@@ -572,7 +573,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       tenantName: nomComplet(row.tenant),
       tenantEmail: row.tenant.email,
       propertyTitle: row.property.title,
-      amount: row.invoice.amount,
+      amount: resteDu(row.invoice),
       simulated: emailResult.simulated,
       whatsappSimulated: whatsappResult.simulated,
       whatsappError: whatsappResult.error === true,
@@ -665,7 +666,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
     const { subject, html } = rentDueSoonReminderEmail({
       tenantName: nomAvecCivilite(row.tenant),
       propertyTitle: row.property.title,
-      amount: row.invoice.amount,
+      amount: resteDu(row.invoice),
       currency: row.invoice.currency || "EUR",
       periodMonth: row.invoice.periodMonth,
       periodYear: row.invoice.periodYear,
@@ -685,7 +686,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
           rentDueSoonReminderWhatsappVariables({
             tenantName: nomAvecCivilite(row.tenant),
             propertyTitle: row.property.title,
-            amount: row.invoice.amount,
+            amount: resteDu(row.invoice),
             currency: row.invoice.currency || "EUR",
             periodMonth: row.invoice.periodMonth,
             periodYear: row.invoice.periodYear,
@@ -721,7 +722,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       tenantName: nomComplet(row.tenant),
       tenantEmail: row.tenant.email,
       propertyTitle: row.property.title,
-      amount: row.invoice.amount,
+      amount: resteDu(row.invoice),
       simulated: emailResult.simulated,
       whatsappSimulated: whatsappResult.simulated,
       whatsappError: whatsappResult.error === true,
@@ -799,7 +800,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   const { subject, html } = rentDueReminderEmail({
     tenantName: nomAvecCivilite(row.tenant),
     propertyTitle: row.property.title,
-    amount: row.invoice.amount,
+    amount: resteDu(row.invoice),
     currency: row.invoice.currency || "EUR",
     periodMonth: row.invoice.periodMonth,
     periodYear: row.invoice.periodYear,
@@ -819,7 +820,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
         rentDueReminderWhatsappVariables({
           tenantName: nomAvecCivilite(row.tenant),
           propertyTitle: row.property.title,
-          amount: row.invoice.amount,
+          amount: resteDu(row.invoice),
           currency: row.invoice.currency || "EUR",
           periodMonth: row.invoice.periodMonth,
           periodYear: row.invoice.periodYear,
