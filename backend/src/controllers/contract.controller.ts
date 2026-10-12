@@ -4,10 +4,11 @@ import { z } from "zod";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { contractGuarantors, contracts, inspections, invoices, issueReports, properties, tenants } from "../db/schema";
+import { contractCotenants, contractGuarantors, contracts, inspections, invoices, issueReports, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { depositRefundEmail, sendEmail } from "../services/email.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
+import { colocatairesDuBail } from "./cotenant.controller";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
@@ -122,6 +123,7 @@ async function withRelations(contractId: string) {
     .orderBy(desc(invoices.periodYear), desc(invoices.periodMonth));
   const scannedContractUrl = await resolveScannedUrl(row.contract.scannedContractUrl);
   const guarantors = await db.select().from(contractGuarantors).where(eq(contractGuarantors.contractId, contractId));
+  const cotenants = await colocatairesDuBail(contractId);
   return {
     ...parseDepositDeductions(row.contract),
     scannedContractUrl,
@@ -129,6 +131,7 @@ async function withRelations(contractId: string) {
     tenant: row.tenant,
     invoices: contractInvoices,
     guarantors,
+    cotenants,
   };
 }
 
@@ -164,6 +167,15 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
           .groupBy(contractGuarantors.contractId)
       : [];
   const garantsParContrat = new Map(comptes.map((c) => [c.contractId, c.nombre]));
+  // Colocataires de la page : leurs noms s'affichent à côté du titulaire.
+  const colocs: Array<{ contractId: string; firstName: string; lastName: string }> =
+    ids.length > 0
+      ? await db
+          .select({ contractId: contractCotenants.contractId, firstName: tenants.firstName, lastName: tenants.lastName })
+          .from(contractCotenants)
+          .innerJoin(tenants, eq(contractCotenants.tenantId, tenants.id))
+          .where(inArray(contractCotenants.contractId, ids))
+      : [];
 
   const items = await Promise.all(
     rows.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
@@ -172,6 +184,7 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
       property: r.property,
       tenant: r.tenant,
       guarantorsCount: garantsParContrat.get(r.contract.id) ?? 0,
+      cotenantNames: colocs.filter((c) => c.contractId === r.contract.id).map((c) => `${c.firstName} ${c.lastName}`),
     }))
   );
 

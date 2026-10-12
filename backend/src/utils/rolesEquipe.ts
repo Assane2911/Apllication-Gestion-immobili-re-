@@ -81,7 +81,7 @@ const ECRITURES_AUTORISEES: readonly Regle[] = [
   { methodes: ["PUT"], chemin: new RegExp(`^/owners/${ID}$`), roles: ["AGENT"] },
   { methodes: ["POST"], chemin: new RegExp(`^/owners/${ID}/invite$`), roles: ["AGENT"] },
   { methodes: ["POST"], chemin: /^\/contracts$/, roles: ["AGENT"] },
-  { methodes: ["POST"], chemin: new RegExp(`^/contracts/${ID}/(scan|renew|rent-revisions|guarantors)$`), roles: ["AGENT"] },
+  { methodes: ["POST"], chemin: new RegExp(`^/contracts/${ID}/(scan|renew|rent-revisions|guarantors|cotenants)$`), roles: ["AGENT"] },
   { methodes: ["PUT"], chemin: new RegExp(`^/contracts/${ID}/guarantors/${ID}$`), roles: ["AGENT"] },
   { methodes: ["PUT"], chemin: new RegExp(`^/contracts/${ID}(/deposit-refund)?$`), roles: ["AGENT"] },
   { methodes: ["POST"], chemin: /^\/inspections$/, roles: ["AGENT"] },

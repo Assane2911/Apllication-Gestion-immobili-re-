@@ -4,6 +4,7 @@ import { db } from "../db/client";
 import { agencySettings, contractGuarantors, contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
 import { periodeCouverte } from "../services/invoice.service";
 import { loadInspectionForExport } from "./inspection.controller";
+import { colocatairesDuBail } from "./cotenant.controller";
 import { motifRevision, numeroAvenant, revisionsAppliquees } from "../services/rentRevision.service";
 import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml, generateRentRevisionHtml } from "../services/pdf.service";
 import { getSignedUrl } from "../services/storage.service";
@@ -115,12 +116,14 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
 
   const revisions = await revisionsAppliquees(contract.id);
   const guarantors = await db.select().from(contractGuarantors).where(eq(contractGuarantors.contractId, contract.id));
+  const cotenants = (await colocatairesDuBail(contract.id)).map((c: { tenant: typeof tenants.$inferSelect }) => c.tenant);
 
   const leaseHtml = generateLeaseHtml(
     {
       ...contract,
       revisions,
       guarantors,
+      cotenants,
       property,
       tenant,
     },

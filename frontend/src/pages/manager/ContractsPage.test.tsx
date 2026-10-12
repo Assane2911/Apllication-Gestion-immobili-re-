@@ -324,6 +324,18 @@ describe("ContractsPage (manager)", () => {
     expect(screen.getByText(/signé par le locataire : ses garants/)).toBeInTheDocument();
   });
 
+  it("affiche les colocataires à côté du titulaire et ouvre leur gestion", async () => {
+    const user = userEvent.setup();
+    queueLoad([contract({ id: "c1", cotenantNames: ["Binta Kane"] })], [], [tenant({ id: "ten-1" }), tenant({ id: "ten-2", firstName: "Binta" })]);
+    mockedApi.get.mockResolvedValueOnce({ data: [] }); // colocataires chargés à l'ouverture
+    renderPage();
+
+    expect((await screen.findAllByText(/Binta Kane/)).length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole("button", { name: "Colocataires (1)" })[0]);
+    expect(await screen.findByRole("dialog", { name: "Colocataires du bail" })).toBeInTheDocument();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/c1/cotenants"));
+  });
+
   it("workflow de renouvellement : propose de renouveler quand le bail expire bientôt", async () => {
     const user = userEvent.setup();
     const soon = contract({ id: "c1", endDate: new Date(Date.now() + 5 * DAY_MS).toISOString() });

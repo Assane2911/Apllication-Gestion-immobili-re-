@@ -550,6 +550,8 @@ export interface LeaseExportData {
   startDate: Date | string;
   endDate: Date | string;
   rent: number;
+  /** Colocataires (en plus du titulaire) : une ligne dans les parties et un bloc de signature chacun. */
+  cotenants?: Array<{ civility: string | null; firstName: string; lastName: string; email: string; phone: string }>;
   /** Garants du bail (section des parties et bloc de signature chacun). */
   guarantors?: Array<{
     civility: string | null;
@@ -606,6 +608,19 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="section-title">4. Clauses particulières</div>
     <div class="box">${escapeHtml(termes).replace(/\r?\n/g, "<br>")}</div>
   </div>`
+    : "";
+
+  // Colocataires : ils signent l'exemplaire imprimé (la signature électronique reste celle du titulaire).
+  const colocataires = contract.cotenants ?? [];
+  const colocatairesHtml = colocataires
+    .map((c) => `<br><strong>Colocataire :</strong> ${escapeHtml(nomAvecCivilite(c))} (Email : ${escapeHtml(c.email)}, Tél : ${escapeHtml(c.phone)})`)
+    .join("");
+  const signaturesColocataires = colocataires.length
+    ? `<div class="signatures" style="flex-wrap: wrap; gap: 16px; justify-content: flex-start;">${colocataires
+        .map(
+          (c) => `<div class="sig-block"><strong>Le Colocataire :</strong> ${escapeHtml(nomAvecCivilite(c))}<div style="color:#94a3b8; margin-top:20px; font-size:11px;">Signature précédée de « lu et approuvé »</div></div>`
+        )
+        .join("")}</div>`
     : "";
 
   // Garants : une ligne chacun dans les parties, et un bloc de signature manuscrite (pas de signature
@@ -670,7 +685,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="section-title">1. Les Parties</div>
     <div class="box">
       <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"} (${escapeHtml(agency.address)})<br>
-      <strong>Le Locataire :</strong> ${escapeHtml(contract.tenant?.firstName)} ${escapeHtml(contract.tenant?.lastName)} (Email : ${escapeHtml(contract.tenant?.email)}, Tél : ${escapeHtml(contract.tenant?.phone)})${garantsHtml}
+      <strong>Le Locataire :</strong> ${escapeHtml(contract.tenant?.firstName)} ${escapeHtml(contract.tenant?.lastName)} (Email : ${escapeHtml(contract.tenant?.email)}, Tél : ${escapeHtml(contract.tenant?.phone)})${colocatairesHtml}${garantsHtml}
     </div>
   </div>
 
@@ -711,6 +726,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
       ` : `<div style="color:#94a3b8; margin-top:20px;">En attente de signature</div>`}
     </div>
   </div>
+  ${signaturesColocataires}
   ${signaturesGarants}
 </body>
 </html>

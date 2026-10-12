@@ -11,6 +11,7 @@ import {
   properties,
   tenants,
   users,
+  contractCotenants,
 } from "../db/schema";
 
 /**
@@ -45,13 +46,28 @@ export async function construireExportLocataire(tenantId: string) {
   const [gestionnaire] = await db.select().from(users).where(eq(users.id, tenant.managerId));
   const [agence] = await db.select().from(agencySettings).where(eq(agencySettings.userId, tenant.managerId));
 
-  const lignesContrats = await db
+  const lignesTitulaire = await db
     .select({ contract: contracts, property: properties })
     .from(contracts)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(contracts.tenantId, tenantId));
+  // Baux où il est colocataire : ils le concernent (loyer, factures), mais la signature électronique et
+  // la messagerie y sont celles du titulaire — ses données à lui, retirées de cet export.
+  const lignesColocataire = (
+    await db
+      .select({ contract: contracts, property: properties })
+      .from(contractCotenants)
+      .innerJoin(contracts, eq(contractCotenants.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(eq(contractCotenants.tenantId, tenantId))
+  ).map((l: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
+    ...l,
+    contract: { ...l.contract, tenantSignatureUrl: null },
+  }));
+  const lignesContrats = [...lignesTitulaire, ...lignesColocataire];
 
   const idsContrats = lignesContrats.map((l: { contract: typeof contracts.$inferSelect }) => l.contract.id);
+  const idsContratsTitulaire = lignesTitulaire.map((l: { contract: typeof contracts.$inferSelect }) => l.contract.id);
 
   // `inArray` sur une liste vide produit une condition toujours fausse selon
   // les dialectes, et une erreur sur d'autres : un locataire sans aucun bail
@@ -62,7 +78,7 @@ export async function construireExportLocataire(tenantId: string) {
         db.select().from(invoices).where(inArray(invoices.contractId, idsContrats)),
         db.select().from(issueReports).where(eq(issueReports.tenantId, tenantId)),
         db.select().from(inspections).where(eq(inspections.tenantId, tenantId)),
-        db.select().from(messages).where(inArray(messages.contractId, idsContrats)),
+        idsContratsTitulaire.length ? db.select().from(messages).where(inArray(messages.contractId, idsContratsTitulaire)) : Promise.resolve([]),
       ])
     : [[], await db.select().from(issueReports).where(eq(issueReports.tenantId, tenantId)), [], []];
 
@@ -116,6 +132,7 @@ export async function construireExportLocataire(tenantId: string) {
     contrats: lignesContrats.map(
       (l: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
         ...l.contract,
+        qualite: idsContratsTitulaire.includes(l.contract.id) ? "TITULAIRE" : "COLOCATAIRE",
         bien: {
           id: l.property.id,
           title: l.property.title,
