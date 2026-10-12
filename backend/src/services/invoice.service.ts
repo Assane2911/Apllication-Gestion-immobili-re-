@@ -101,7 +101,9 @@ export async function generateInvoicesForContract(
   const today = new Date();
   const cutoff = end < today ? end : today;
 
-  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  // Un bail importé en cours de route ne facture pas son passé (voir contracts.billingFrom).
+  const debut = contract.billingFrom && new Date(contract.billingFrom) > start ? new Date(contract.billingFrom) : start;
+  const cursor = new Date(debut.getFullYear(), debut.getMonth(), 1);
   const created: string[] = [];
 
   // Le mois déjà facturé par N'IMPORTE QUEL contrat de CE bien (pas

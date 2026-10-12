@@ -162,3 +162,20 @@ export function lireNombre(brut: string): number | null {
   const n = Number(normalise);
   return Number.isFinite(n) ? n : null;
 }
+
+/**
+ * Date saisie dans un tableur : « 2025-03-01 », « 01/03/2025 », « 1-3-2025 »,
+ * « 01.03.2025 » (jour avant mois, comme partout où l'on parle français). Renvoie
+ * minuit UTC, ou null pour tout ce qui n'est pas une date réelle (« 31/02/2025 »,
+ * « mars »…) — jamais une date corrigée en silence.
+ */
+export function lireDate(brut: string): Date | null {
+  const texte = brut.trim();
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(texte);
+  const fr = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(texte);
+  const [annee, mois, jour] = iso ? [iso[1], iso[2], iso[3]] : fr ? [fr[3], fr[2], fr[1]] : [];
+  if (!annee) return null;
+  const date = new Date(Date.UTC(Number(annee), Number(mois) - 1, Number(jour)));
+  const coherente = date.getUTCFullYear() === Number(annee) && date.getUTCMonth() === Number(mois) - 1 && date.getUTCDate() === Number(jour);
+  return coherente ? date : null;
+}

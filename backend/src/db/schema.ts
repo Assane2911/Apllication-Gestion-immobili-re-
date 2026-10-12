@@ -525,6 +525,11 @@ export const contracts = pgTable(
     // mois, voir utils/jourEcheance.ts). NULL : le jour de la date de début du
     // bail — le comportement de tous les contrats créés avant ce champ.
     paymentDay: integer("payment_day"),
+    // Premier mois à facturer par la plateforme (le jour est ignoré). NULL : dès
+    // le début du bail — tous les contrats créés à la main. Renseigné à l'import
+    // d'un bail déjà en cours, dont les loyers antérieurs ont été suivis ailleurs :
+    // sans lui, la génération des factures créerait des mois d'impayés fictifs.
+    billingFrom: timestamp("billing_from", { mode: "date" }),
     // Type de bail (HABITATION, MEUBLE, COMMERCIAL, PROFESSIONNEL — voir
     // utils/typeBail.ts) : adapte le titre du document. Tous les contrats
     // antérieurs sont des baux d'habitation, d'où le défaut.

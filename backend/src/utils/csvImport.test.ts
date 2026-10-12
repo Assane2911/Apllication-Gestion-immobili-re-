@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CsvInvalide, lireCsv, lireNombre, normaliserEntete, MAX_LIGNES_IMPORT } from "./csvImport";
+import { CsvInvalide, lireCsv, lireNombre, lireDate, normaliserEntete, MAX_LIGNES_IMPORT } from "./csvImport";
 
 describe("normaliserEntete", () => {
   it.each([
@@ -75,5 +75,24 @@ describe("lireNombre", () => {
 
   it.each(["", "abc", "12abc", "1,2,3x", "€500", "--5", "1,2,3", "1,250,50", "12,"])("%j n'est pas un nombre", (brut) => {
     expect(lireNombre(brut)).toBeNull();
+  });
+});
+
+describe("lireDate", () => {
+  it("lit les formats de tableur, jour avant mois, et renvoie minuit UTC", () => {
+    for (const brut of ["2025-03-01", "01/03/2025", "1/3/2025", "01-03-2025", "01.03.2025", " 01/03/2025 "]) {
+      expect(lireDate(brut)?.toISOString(), brut).toBe("2025-03-01T00:00:00.000Z");
+    }
+  });
+
+  it("refuse tout ce qui n'est pas une date réelle, sans jamais la corriger", () => {
+    for (const brut of ["", "mars 2025", "31/02/2025", "2025-13-01", "00/01/2025", "01/03/25", "2025/03/01", "1.5"]) {
+      expect(lireDate(brut), brut).toBeNull();
+    }
+  });
+
+  it("accepte le 29 février d'une année bissextile seulement", () => {
+    expect(lireDate("29/02/2024")?.toISOString()).toBe("2024-02-29T00:00:00.000Z");
+    expect(lireDate("29/02/2025")).toBeNull();
   });
 });

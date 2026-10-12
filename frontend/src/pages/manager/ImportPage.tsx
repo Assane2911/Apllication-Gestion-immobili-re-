@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 
-type TypeImport = "properties" | "tenants";
+type TypeImport = "properties" | "tenants" | "contracts";
 type StatutLigne = "OK" | "DOUBLON" | "ERREUR";
 
 interface LigneAnalysee {
@@ -40,10 +40,13 @@ function lireFichier(fichier: File): Promise<string> {
 
 /** Résumé lisible d'une ligne analysée, selon le type de fichier. */
 function libelleLigne(type: TypeImport, d: LigneAnalysee["donnees"]): string {
-  return type === "properties"
-    ? [d.title, d.address].filter(Boolean).join(" — ")
-    : [[d.firstName, d.lastName].filter(Boolean).join(" "), d.email].filter(Boolean).join(" — ");
+  if (type === "properties") return [d.title, d.address].filter(Boolean).join(" — ");
+  if (type === "contracts") return [d.property, d.tenantEmail].filter(Boolean).join(" — ");
+  return [[d.firstName, d.lastName].filter(Boolean).join(" "), d.email].filter(Boolean).join(" — ");
 }
+
+const NOMS_FICHIER: Record<TypeImport, string> = { properties: "biens", tenants: "locataires", contracts: "contrats" };
+const PAGES_LISTE: Record<TypeImport, string> = { properties: "/properties", tenants: "/tenants", contracts: "/contracts" };
 
 /**
  * Migration depuis un tableur : le gestionnaire dépose un CSV de biens ou de
@@ -85,7 +88,7 @@ export default function ImportPage() {
       const url = URL.createObjectURL(res.data as Blob);
       const lien = document.createElement("a");
       lien.href = url;
-      lien.download = `modele-import-${type === "properties" ? "biens" : "locataires"}.csv`;
+      lien.download = `modele-import-${NOMS_FICHIER[type]}.csv`;
       lien.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -144,7 +147,7 @@ export default function ImportPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div role="radiogroup" aria-label={t("manager.import.typeLabel")} className="flex flex-wrap gap-2">
-          {(["properties", "tenants"] as const).map((valeur) => (
+          {(["properties", "tenants", "contracts"] as const).map((valeur) => (
             <button
               key={valeur}
               type="button"
@@ -173,6 +176,7 @@ export default function ImportPage() {
           <li>{t("manager.import.step3")}</li>
         </ol>
         <p className="text-xs text-slate-600 dark:text-slate-400">{t(`manager.import.columns.${type}`)}</p>
+        {type === "contracts" && <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.import.contractsNote")}</p>}
 
         <div>
           <label htmlFor="import-fichier" className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg cursor-pointer">
@@ -204,7 +208,7 @@ export default function ImportPage() {
             <p>{t("manager.import.skipped", { duplicates: resultat.resume.doublons, errors: resultat.resume.erreurs })}</p>
           )}
           <p className="flex gap-4">
-            <Link to={type === "properties" ? "/properties" : "/tenants"} className="font-semibold underline">
+            <Link to={PAGES_LISTE[type]} className="font-semibold underline">
               {t("manager.import.seeList", { type: libelleType })}
             </Link>
             <button type="button" onClick={reinitialiser} className="font-semibold underline">
@@ -251,6 +255,11 @@ export default function ImportPage() {
                     <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{l.ligne}</td>
                     <td className="px-4 py-2 text-slate-900 dark:text-slate-100">
                       {libelleLigne(analyse.type, l.donnees)}
+                      {analyse.type === "contracts" && l.statut === "OK" && (
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                          {l.donnees.premiereFacture ? t("manager.import.firstInvoice", { month: l.donnees.premiereFacture }) : t("manager.import.noInvoice")}
+                        </p>
+                      )}
                       {l.messages.map((m) => (
                         <p key={m} className="text-xs text-red-700 dark:text-red-400">
                           {m}
