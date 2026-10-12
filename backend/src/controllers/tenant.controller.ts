@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users } from "../db/schema";
+import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users, contractGuarantors } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
 import { fetchFiabiliteParLocataire } from "../services/reliability.service";
@@ -280,6 +280,13 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
         .update(contracts)
         .set({ tenantSignatureUrl: null })
         .where(inArray(contracts.id, tenantContractIds));
+    }
+    // Les garants de ses baux : leur engagement suit le bail, leurs données aussi.
+    if (tenantContractIds.length > 0) {
+      await tx
+        .update(contractGuarantors)
+        .set({ civility: null, firstName: "Garant", lastName: "anonymisé", phone: "", email: null, address: null, notes: null })
+        .where(inArray(contractGuarantors.contractId, tenantContractIds));
     }
     await tx.update(inspections).set({ tenantSignatureUrl: null }).where(eq(inspections.tenantId, existing.id));
 

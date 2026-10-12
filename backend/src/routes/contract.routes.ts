@@ -12,6 +12,7 @@ import {
   uploadScannedContract,
 } from "../controllers/contract.controller";
 import { cancelRentRevision, createRentRevision, listRentRevisions, listRevisionsDue } from "../controllers/rentRevision.controller";
+import { createGuarantor, deleteGuarantor, listGuarantors, updateGuarantor } from "../controllers/guarantor.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
 import { uploadContractScan } from "../middleware/upload";
 
@@ -31,6 +32,10 @@ router.post("/:id/renew", renewContract);
 router.get("/:id/rent-revisions", listRentRevisions);
 router.post("/:id/rent-revisions", createRentRevision);
 router.delete("/:id/rent-revisions/:revisionId", cancelRentRevision);
+router.get("/:id/guarantors", listGuarantors);
+router.post("/:id/guarantors", createGuarantor);
+router.put("/:id/guarantors/:guarantorId", updateGuarantor);
+router.delete("/:id/guarantors/:guarantorId", deleteGuarantor);
 router.put("/:id/deposit-refund", recordDepositRefund);
 router.put("/:id", updateContract);
 router.delete("/:id", deleteContract);

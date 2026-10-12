@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
-import { agencySettings, contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
+import { agencySettings, contractGuarantors, contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
 import { periodeCouverte } from "../services/invoice.service";
 import { loadInspectionForExport } from "./inspection.controller";
 import { motifRevision, numeroAvenant, revisionsAppliquees } from "../services/rentRevision.service";
@@ -114,11 +114,13 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
     : [];
 
   const revisions = await revisionsAppliquees(contract.id);
+  const guarantors = await db.select().from(contractGuarantors).where(eq(contractGuarantors.contractId, contract.id));
 
   const leaseHtml = generateLeaseHtml(
     {
       ...contract,
       revisions,
+      guarantors,
       property,
       tenant,
     },
