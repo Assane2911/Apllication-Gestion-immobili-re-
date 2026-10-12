@@ -67,6 +67,8 @@ describe("READ_ONLY : consultation seulement", () => {
     ["POST", "/api/expenses"],
     ["PUT", "/api/agency"],
     ["POST", "/api/messages/c1"],
+    ["POST", "/api/import"],
+    ["POST", "/api/import/preview"],
     ["PATCH", "/api/team/u1/role"],
     ["DELETE", "/api/team/u1"],
   ])("ne peut pas %s %s", (m, u) => expect(ok("READ_ONLY", m, u)).toBe(false));
@@ -107,6 +109,8 @@ describe("AGENT : exploitation courante, sans suppression ni encaissement", () =
     ["POST", "/api/messages/c1"],
     ["POST", "/api/invoices/i1/send-reminder"],
     ["POST", "/api/invoices/send-monthly-reminders"],
+    ["POST", "/api/import"],
+    ["POST", "/api/import/preview"],
   ])("peut %s %s", (m, u) => expect(ok("AGENT", m, u)).toBe(true));
 
   it.each([
@@ -152,6 +156,7 @@ describe("ACCOUNTANT : finances seulement", () => {
     ["DELETE", "/api/properties/p1"],
     ["PUT", "/api/agency"],
     ["POST", "/api/messages/c1"],
+    ["POST", "/api/import"],
     ["POST", "/api/team"],
   ])("ne peut pas %s %s", (m, u) => expect(ok("ACCOUNTANT", m, u)).toBe(false));
 
