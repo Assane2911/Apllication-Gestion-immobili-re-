@@ -5,7 +5,7 @@ import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
 import type { Contract, PaginatedResponse, Property, Tenant } from "../../types";
-import ContractsPage from "./ContractsPage";
+import ContractsPage, { changementsDuContrat, formulaireDepuisContrat } from "./ContractsPage";
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
@@ -334,6 +334,36 @@ describe("ContractsPage (manager)", () => {
     await user.click(screen.getAllByRole("button", { name: "Colocataires (1)" })[0]);
     expect(await screen.findByRole("dialog", { name: "Colocataires du bail" })).toBeInTheDocument();
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/contracts/c1/cotenants"));
+  });
+
+  it("modifier un contrat : formulaire pré-rempli, seuls les champs changés partent au serveur", async () => {
+    const user = userEvent.setup();
+    const c = contract({ id: "c1", rent: 500, deposit: 1000, startDate: "2026-01-01T00:00:00.000Z", endDate: "2026-12-31T00:00:00.000Z", paymentDay: 5, terms: "Clause A" });
+    queueLoad([c], [property({ id: "prop-1", status: "OCCUPIED" })], [tenant({ id: "ten-1" })]);
+    mockedApi.put.mockResolvedValueOnce({ data: {} });
+    queueLoad([c]);
+    renderPage();
+
+    await user.click((await screen.findAllByRole("button", { name: "Modifier" }))[0]);
+    expect(screen.getByText("Modifier le contrat")).toBeInTheDocument();
+    // Le bien du contrat reste proposé bien qu'occupé (par ce contrat).
+    expect(screen.getByLabelText(/Bien/)).toHaveValue("prop-1");
+    expect(screen.getByLabelText(/Loyer/)).toHaveValue(500);
+    expect(screen.getByLabelText(/Date de début/)).toHaveValue("2026-01-01");
+
+    await user.clear(screen.getByLabelText(/Loyer/));
+    await user.type(screen.getByLabelText(/Loyer/), "650");
+    await user.click(screen.getByRole("button", { name: "Enregistrer les modifications" }));
+
+    await waitFor(() => expect(mockedApi.put).toHaveBeenCalledWith("/contracts/c1", { rent: 650 }));
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("pas de lien « Modifier » sur un bail signé par le locataire", async () => {
+    queueLoad([contract({ id: "c1", signedByTenantAt: "2026-02-01T00:00:00.000Z" })]);
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText(/Studio Centre-ville/).length).toBeGreaterThan(0));
+    expect(screen.queryByRole("button", { name: "Modifier" })).not.toBeInTheDocument();
   });
 
   it("workflow de renouvellement : propose de renouveler quand le bail expire bientôt", async () => {
@@ -667,6 +697,24 @@ describe("ContractsPage (manager)", () => {
       await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
       await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
       expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("applicableLaw");
+    });
+  });
+});
+
+describe("changementsDuContrat", () => {
+  const avant = formulaireDepuisContrat(contract({ rent: 500, deposit: 1000, paymentDay: 5, terms: "A", applicableLaw: "Droit X" }));
+
+  it("rien de changé : rien à envoyer", () => {
+    expect(changementsDuContrat(avant, { ...avant })).toEqual({});
+  });
+
+  it("convertit les nombres, vide le jour d'échéance en null, nettoie les textes", () => {
+    expect(changementsDuContrat(avant, { ...avant, rent: "650", deposit: "1300", paymentDay: "", terms: "  B  ", applicableLaw: "" })).toEqual({
+      rent: 650,
+      deposit: 1300,
+      paymentDay: null,
+      terms: "B",
+      applicableLaw: "",
     });
   });
 });

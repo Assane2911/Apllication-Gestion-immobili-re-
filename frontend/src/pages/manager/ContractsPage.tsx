@@ -39,6 +39,40 @@ interface BailRevisable {
 
 // Jour d'échéance proposé à la création : le 5, ce que disaient déjà les documents remis aux locataires.
 const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "" };
+type FormulaireContrat = typeof emptyForm;
+
+/** Valeurs du formulaire pour un contrat existant (dates en AAAA-MM-JJ, telles que le serveur les a enregistrées). */
+export function formulaireDepuisContrat(c: Contract): FormulaireContrat {
+  return {
+    propertyId: c.propertyId,
+    tenantId: c.tenantId,
+    rent: String(c.rent),
+    deposit: String(c.deposit),
+    startDate: c.startDate.slice(0, 10),
+    endDate: c.endDate.slice(0, 10),
+    terms: c.terms ?? "",
+    paymentDay: c.paymentDay ? String(c.paymentDay) : "",
+    leaseType: c.leaseType ?? "HABITATION",
+    applicableLaw: c.applicableLaw ?? "",
+  };
+}
+
+/**
+ * Seuls les champs réellement modifiés partent au serveur : ses garde-fous (factures émises, dépôt
+ * restitué) ne se déclenchent ainsi que sur un vrai changement, pas sur un champ renvoyé à l'identique.
+ */
+export function changementsDuContrat(avant: FormulaireContrat, apres: FormulaireContrat): Record<string, unknown> {
+  const corps: Record<string, unknown> = {};
+  for (const cle of Object.keys(apres) as Array<keyof FormulaireContrat>) {
+    if (apres[cle] === avant[cle]) continue;
+    const v = apres[cle];
+    if (cle === "rent" || cle === "deposit") corps[cle] = Number(v);
+    else if (cle === "paymentDay") corps[cle] = v ? Number(v) : null;
+    else if (cle === "terms" || cle === "applicableLaw") corps[cle] = v.trim();
+    else corps[cle] = v;
+  }
+  return corps;
+}
 
 // Fenêtre d'affichage du workflow de renouvellement : un contrat actif dont
 // la fin tombe dans ce nombre de jours ou moins propose de renouveler ou non.
@@ -87,6 +121,7 @@ export default function ContractsPage() {
   const [viewingAvenant, setViewingAvenant] = useState<string | null>(null);
   const [guarantorsContract, setGuarantorsContract] = useState<Contract | null>(null);
   const [cotenantsContract, setCotenantsContract] = useState<Contract | null>(null);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [uploadingScanContractId, setUploadingScanContractId] = useState<string | null>(null);
@@ -130,6 +165,16 @@ export default function ContractsPage() {
   }, [page]);
 
   /** Jour d'échéance du loyer, avec le moyen de le modifier tant que le locataire n'a pas signé le bail. */
+  /** Lien « Modifier » : tant que le locataire n'a pas signé, tout le contrat se modifie ici. */
+  function modifierLien(c: Contract) {
+    if (c.signedByTenantAt) return null;
+    return (
+      <button type="button" onClick={() => ouvrirModification(c)} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+        {t("manager.contracts.edit")}
+      </button>
+    );
+  }
+
   /** Lien « Colocataires (n) » : ouvre la gestion des colocataires du bail. */
   function colocatairesLien(c: Contract) {
     return (
@@ -172,11 +217,32 @@ export default function ContractsPage() {
     );
   }
 
+  function ouvrirModification(c: Contract) {
+    setEditingContract(c);
+    setForm(formulaireDepuisContrat(c));
+    setError(null);
+    setShowForm(true);
+    window.scrollTo?.({ top: 0, behavior: "smooth" });
+  }
+
+  function fermerFormulaire() {
+    setShowForm(false);
+    setEditingContract(null);
+    setForm(emptyForm);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
+      if (editingContract) {
+        const corps = changementsDuContrat(formulaireDepuisContrat(editingContract), form);
+        if (Object.keys(corps).length > 0) await api.put(`/contracts/${editingContract.id}`, corps);
+        fermerFormulaire();
+        load();
+        return;
+      }
       // Les clauses vides ne sont pas envoyées : le bail n'imprime alors aucune section.
       const { terms, paymentDay, applicableLaw, ...champs } = form;
       await api.post("/contracts", {
@@ -299,7 +365,8 @@ export default function ContractsPage() {
     }
   }
 
-  const availableProperties = properties.filter((p) => p.status !== "OCCUPIED");
+  // En modification, le bien du contrat reste proposé même s'il est occupé (par ce contrat).
+  const availableProperties = properties.filter((p) => p.status !== "OCCUPIED" || p.id === editingContract?.propertyId);
 
   return (
     <div className="space-y-6">
@@ -309,7 +376,7 @@ export default function ContractsPage() {
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.contractCreate")}>
-        <button onClick={() => setShowForm(true)} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
+        <button onClick={() => { setEditingContract(null); setForm(emptyForm); setShowForm(true); }} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
           {t("manager.contracts.addBtn")}
         </button>
         </Bulle>
@@ -357,13 +424,17 @@ export default function ContractsPage() {
 
       {showForm && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{t("manager.contracts.formTitle")}</h3>
+          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">{editingContract ? t("manager.contracts.editTitle") : t("manager.contracts.formTitle")}</h3>
+          {editingContract && <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">{t("manager.contracts.editHint")}</p>}
+          {!editingContract && <div className="mb-3" />}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="contract-property" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.property")}</label>
               <select id="contract-property" required value={form.propertyId} onChange={(e) => {
                 const prop = properties.find((p) => p.id === e.target.value);
-                setForm({ ...form, propertyId: e.target.value, rent: prop ? String(prop.rent) : form.rent, deposit: prop ? String(prop.rent * 2) : form.deposit });
+                // En modification, choisir un autre bien ne réécrit pas le loyer ni le dépôt déjà convenus.
+                if (editingContract) setForm({ ...form, propertyId: e.target.value });
+                else setForm({ ...form, propertyId: e.target.value, rent: prop ? String(prop.rent) : form.rent, deposit: prop ? String(prop.rent * 2) : form.deposit });
               }} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
                 <option value="">{t("manager.contracts.fields.selectProperty")}</option>
                 {availableProperties.map((p) => (
@@ -437,9 +508,9 @@ export default function ContractsPage() {
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                {saving ? t("common.actions.saving") : t("manager.contracts.create")}
+                {saving ? t("common.actions.saving") : editingContract ? t("manager.contracts.saveChanges") : t("manager.contracts.create")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={fermerFormulaire} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -477,6 +548,7 @@ export default function ContractsPage() {
                   {revisionLien(c)}
                   {garantsLien(c)}
                   {colocatairesLien(c)}
+                  {modifierLien(c)}
                 </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
@@ -649,6 +721,7 @@ export default function ContractsPage() {
                 {revisionLien(c)}
                   {garantsLien(c)}
                   {colocatairesLien(c)}
+                  {modifierLien(c)}
                 <span className="text-slate-600 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
               </div>
               {c.status === "ACTIVE" && echeanceLigne(c)}

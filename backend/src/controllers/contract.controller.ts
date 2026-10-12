@@ -373,6 +373,47 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   // La lecture des contrats du bien est faite DANS la transaction : lue en
   // dehors, elle pouvait dater d'avant une modification concurrente et
   // reliberer un bien encore loue.
+  // Écran de modification complet : trois changements que les factures déjà émises rendraient faux.
+  // Factures vivantes (non annulées) du contrat, chargées seulement si l'un d'eux est demandé.
+  const changeParties =
+    (body.propertyId !== undefined && body.propertyId !== existing.propertyId) || (body.tenantId !== undefined && body.tenantId !== existing.tenantId);
+  const changeDebut = body.startDate !== undefined && body.startDate.getTime() !== new Date(existing.startDate).getTime();
+  const raccourcitFin = body.endDate !== undefined && body.endDate.getTime() < new Date(existing.endDate).getTime();
+  if (changeParties || changeDebut || raccourcitFin) {
+    const facturesVivantes = await db
+      .select({ periodMonth: invoices.periodMonth, periodYear: invoices.periodYear })
+      .from(invoices)
+      .where(and(eq(invoices.contractId, existing.id), ne(invoices.status, "CANCELLED")));
+    if (facturesVivantes.length > 0 && changeParties) {
+      // Les factures suivraient le contrat : celles du locataire A passeraient au nom de B, ou sur un autre bien.
+      throw new ApiError(
+        409,
+        "Impossible de changer le bien ou le locataire d'un contrat ayant déjà des factures : elles changeraient de destinataire. Créez un nouveau contrat."
+      );
+    }
+    if (facturesVivantes.length > 0 && changeDebut) {
+      throw new ApiError(
+        409,
+        "Impossible de modifier la date de début d'un contrat ayant déjà des factures : leurs montants au prorata seraient faux. Annulez-les d'abord si elles ne sont pas payées."
+      );
+    }
+    if (raccourcitFin) {
+      const finVisee = body.endDate!;
+      const facturee = facturesVivantes
+        .filter((f: { periodMonth: number; periodYear: number }) => new Date(f.periodYear, f.periodMonth - 1, 1) > finVisee)
+        .sort((a: { periodMonth: number; periodYear: number }, b: { periodMonth: number; periodYear: number }) => a.periodYear * 12 + a.periodMonth - (b.periodYear * 12 + b.periodMonth))[0];
+      if (facturee) {
+        throw new ApiError(
+          409,
+          `La nouvelle date de fin précède un mois déjà facturé (${String(facturee.periodMonth).padStart(2, "0")}/${facturee.periodYear}). Annulez d'abord les factures concernées.`
+        );
+      }
+    }
+  }
+  if (body.deposit !== undefined && body.deposit !== existing.deposit && existing.depositRefundedAt) {
+    throw new ApiError(409, "La restitution du dépôt de garantie est déjà enregistrée : son montant ne peut plus changer.");
+  }
+
   const contract = await db.transaction(async (tx: Transaction) => {
     if (newStatus === "ACTIVE") {
       await verrouillerBienPourContrat(tx, newPropertyId);
