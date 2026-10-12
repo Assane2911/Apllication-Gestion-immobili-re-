@@ -9,7 +9,9 @@ import DeleteAccountModal from "../../components/DeleteAccountModal";
 import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
 import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
 import { useAuth } from "../../context/auth";
-import type { AgencySettings, RetentionEcheances, TeamMember } from "../../types";
+import type { AgencySettings, RetentionEcheances, TeamMember, TeamRole } from "../../types";
+
+const ROLES_EQUIPE: TeamRole[] = ["FULL", "AGENT", "ACCOUNTANT", "READ_ONLY"];
 import Bulle from "../../components/Bulle";
 
 export default function AgencySettingsPage() {
@@ -120,6 +122,8 @@ export default function AgencySettingsPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamError, setTeamError] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  // Rôle proposé par défaut : le moins de droits utiles (voir rolesEquipe.ts).
+  const [inviteRole, setInviteRole] = useState<TeamRole>("AGENT");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
@@ -142,7 +146,7 @@ export default function AgencySettingsPage() {
     setInviteError("");
     setInviteSuccess("");
     try {
-      await api.post("/team", { email: inviteEmail });
+      await api.post("/team", { email: inviteEmail, role: inviteRole });
       setInviteSuccess(t("manager.agencySettings.team.inviteSuccess", { email: inviteEmail }));
       setInviteEmail("");
       loadTeam();
@@ -150,6 +154,17 @@ export default function AgencySettingsPage() {
       setInviteError(apiErrorMessage(err));
     } finally {
       setInviting(false);
+    }
+  }
+
+  async function handleChangeRole(member: TeamMember, role: TeamRole) {
+    const ancien = member.role;
+    setTeamMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role } : m)));
+    try {
+      await api.patch(`/team/${member.id}/role`, { role });
+    } catch (err) {
+      setTeamMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: ancien } : m)));
+      setTeamError(apiErrorMessage(err) || t("manager.agencySettings.team.roleChangeError"));
     }
   }
 
@@ -540,6 +555,23 @@ export default function AgencySettingsPage() {
                     className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
+                <div className="min-w-[180px]">
+                  <label htmlFor="team-invite-role" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {t("manager.agencySettings.team.roleLabel")}
+                  </label>
+                  <select
+                    id="team-invite-role"
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as TeamRole)}
+                    className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500"
+                  >
+                    {ROLES_EQUIPE.map((r) => (
+                      <option key={r} value={r}>
+                        {t(`manager.agencySettings.team.roles.${r}.label`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="submit"
                   disabled={inviting}
@@ -549,6 +581,9 @@ export default function AgencySettingsPage() {
                 </button>
               </form>
               </Bulle>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                {t(`manager.agencySettings.team.roles.${inviteRole}.description`)}
+              </p>
               {inviteError && (
                 <p className="text-sm text-red-600 dark:text-red-400 mt-2" role="alert">
                   {inviteError}
@@ -572,6 +607,18 @@ export default function AgencySettingsPage() {
                             : t("manager.agencySettings.team.statusActive")}
                         </p>
                       </div>
+                      <select
+                        aria-label={t("manager.agencySettings.team.roleAria", { email: member.email })}
+                        value={member.role}
+                        onChange={(e) => handleChangeRole(member, e.target.value as TeamRole)}
+                        className="text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5"
+                      >
+                        {ROLES_EQUIPE.map((r) => (
+                          <option key={r} value={r}>
+                            {t(`manager.agencySettings.team.roles.${r}.label`)}
+                          </option>
+                        ))}
+                      </select>
                       <button
                         type="button"
                         onClick={() => handleRemove(member)}

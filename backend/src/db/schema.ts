@@ -125,6 +125,11 @@ export const users = pgTable("users", {
   // distinct dans le jeton garde sa propre identité (attribution dans le
   // journal d'activité, affichage "connecté en tant que ...").
   teamOwnerId: text("team_owner_id").references((): AnyPgColumn => users.id, { onDelete: "cascade" }),
+  // Rôle d'un collaborateur (FULL, AGENT, ACCOUNTANT, READ_ONLY — voir
+  // utils/rolesEquipe.ts). NULL pour un propriétaire, et pour un collaborateur
+  // invité avant l'introduction des rôles : ses droits d'avant (FULL) sont
+  // conservés tant que le propriétaire ne le restreint pas.
+  teamRole: text("team_role"),
   // Authentification à deux facteurs (TOTP, voir totp.service.ts). totpSecret
   // est renseigné dès le début de l'enrôlement (setupTwoFactor), AVANT toute
   // confirmation — c'est totpEnabledAt (NULL jusque-là) qui fait foi : lui
