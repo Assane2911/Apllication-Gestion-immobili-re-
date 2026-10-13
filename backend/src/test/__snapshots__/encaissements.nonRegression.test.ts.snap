@@ -379,9 +379,9 @@ Dépense;20/11/2025;"Studio A";"INSURANCE";"Assurance";-300,00;EUR
 Dépense;03/10/2026;"Villa B";"MAINTENANCE";"Peinture";-80000,00;XOF
 
 --- Résumé par bien ---
-Bien;Revenus;Dépenses;Résultat net
-"Studio A";3700,00;420,00;3280,00
-"Villa B";500000,00;80000,00;420000,00",
+Bien;Revenus;Dépenses;Résultat net;Devise
+"Studio A";3700,00;420,00;3280,00;EUR
+"Villa B";500000,00;80000,00;420000,00;XOF",
   "exportPartiel": "﻿Type;Date;Bien;Détail;Description;Montant;Devise
 Revenu;06/09/2026;"Studio A";"Awa Diallo";"Loyer 9/2026";550,00;EUR
 Revenu;06/10/2026;"Studio A";"Awa Diallo";"Loyer 10/2026";550,00;EUR
@@ -391,9 +391,9 @@ Dépense;12/09/2026;"Studio A";"MAINTENANCE";"Plomberie";-120,00;EUR
 Dépense;03/10/2026;"Villa B";"MAINTENANCE";"Peinture";-80000,00;XOF
 
 --- Résumé par bien ---
-Bien;Revenus;Dépenses;Résultat net
-"Studio A";1100,00;120,00;980,00
-"Villa B";500000,00;80000,00;420000,00",
+Bien;Revenus;Dépenses;Résultat net;Devise
+"Studio A";1100,00;120,00;980,00;EUR
+"Villa B";500000,00;80000,00;420000,00;XOF",
   "resume": {
     "expenseCount": 3,
     "expensesByCategory": {
