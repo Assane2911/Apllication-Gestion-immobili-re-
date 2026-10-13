@@ -65,6 +65,20 @@ describe("ReversementsSection", () => {
     expect(screen.getByText("Versé en trop : 50 EUR")).toBeInTheDocument();
   });
 
+  it("ne parle pas de « trop-versé » quand rien n'a été versé : charges supérieures aux loyers, ou rien à reverser", () => {
+    // Net négatif (charges > loyers) et aucun reversement : ce n'est pas un trop-versé, c'est un solde à régulariser.
+    const { unmount } = afficher(
+      crg({ totalNetByCurrency: { EUR: -80 }, reversements: [], totalReverseByCurrency: {}, resteAReverserByCurrency: { EUR: -80 } })
+    );
+    expect(screen.getByText("Charges supérieures aux loyers : 80 EUR à régulariser")).toBeInTheDocument();
+    expect(screen.queryByText(/Versé en trop/)).not.toBeInTheDocument();
+    unmount();
+    // Net nul, rien versé : il n'y avait rien à reverser, ce n'est pas « entièrement reversé ».
+    afficher(crg({ totalNetByCurrency: { EUR: 0 }, reversements: [], totalReverseByCurrency: {}, resteAReverserByCurrency: { EUR: 0 } }));
+    expect(screen.getByText("Rien à reverser")).toBeInTheDocument();
+    expect(screen.queryByText("Entièrement reversé")).not.toBeInTheDocument();
+  });
+
   it("gestionnaire : propose le reste dû et enregistre le reversement du mois affiché", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

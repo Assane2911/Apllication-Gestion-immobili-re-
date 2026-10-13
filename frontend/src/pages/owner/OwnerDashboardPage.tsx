@@ -72,7 +72,7 @@ export default function OwnerDashboardPage() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-5 shadow-xs">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1.5">{t("owner.dashboard.collectedThisMonth")}</p>
           {collectedCurrencies.length === 0 ? (
-            <p className="text-lg font-bold text-slate-400 dark:text-slate-600">{formatMoney(0)}</p>
+            <p className="text-lg font-bold text-slate-500 dark:text-slate-400">{formatMoney(0)}</p>
           ) : (
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               {collectedCurrencies.map((currency) => (
@@ -86,7 +86,7 @@ export default function OwnerDashboardPage() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-5 shadow-xs">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1.5">{t("owner.dashboard.pendingThisMonth")}</p>
           {pendingCurrencies.length === 0 ? (
-            <p className="text-lg font-bold text-slate-400 dark:text-slate-600">{formatMoney(0)}</p>
+            <p className="text-lg font-bold text-slate-500 dark:text-slate-400">{formatMoney(0)}</p>
           ) : (
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               {pendingCurrencies.map((currency) => (

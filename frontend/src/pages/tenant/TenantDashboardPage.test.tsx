@@ -128,6 +128,21 @@ describe("TenantDashboardPage", () => {
     expect(screen.queryByRole("button", { name: /Signer/ })).not.toBeInTheDocument();
   });
 
+  it("colocataire : pas de « en attente de votre signature numérique » ; une fois signé, c'est le titulaire qui a signé", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: null, qualite: "COLOCATAIRE" })] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
+    const { unmount } = renderPage();
+    expect(await screen.findByText(/Vous êtes colocataire de ce bail/)).toBeInTheDocument();
+    expect(screen.queryByText("En attente de votre signature numérique")).not.toBeInTheDocument();
+    unmount();
+
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: "2026-02-01T00:00:00.000Z", qualite: "COLOCATAIRE" })] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
+    renderPage();
+    expect(await screen.findByText(/Signé en ligne par le titulaire le/)).toBeInTheDocument();
+    expect(screen.queryByText(/Signé par vous le/)).not.toBeInTheDocument();
+  });
+
   it("affiche la date de signature une fois le bail signé", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: "2026-02-01T00:00:00.000Z" })] });
     mockedApi.get.mockResolvedValueOnce(emptyInspections());

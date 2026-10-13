@@ -115,3 +115,10 @@ describe("OwnerLayout", () => {
     expect(toggleTheme).toHaveBeenCalled();
   });
 });
+
+describe("OwnerLayout — titre de l'onglet", () => {
+  it("porte le nom de la page affichée", () => {
+    renderOwnerLayout("/proprietaire/crg");
+    expect(document.title).toBe("Compte-rendu de gestion | ImmoPlatform Pro");
+  });
+});

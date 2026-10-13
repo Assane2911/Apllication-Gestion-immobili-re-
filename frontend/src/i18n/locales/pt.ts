@@ -599,6 +599,8 @@ const pt: TranslationSchema = {
       remaining: "Por pagar: {{amount}}",
       settled: "Totalmente pago",
       overpaid: "Pago a mais: {{amount}}",
+      chargesExceed: "Despesas superiores às rendas: {{amount}} a regularizar",
+      nothing: "Nada a repassar",
       none: "Nenhum pagamento registado neste mês.",
       formTitle: "Registar um pagamento",
       currency: "Moeda",
@@ -712,6 +714,7 @@ const pt: TranslationSchema = {
     },
     tenantLayout: {
       title: "Área do inquilino",
+      badge: "Área do residente",
     },
     ownerLayout: {
       title: "Portal do proprietário",
@@ -1708,6 +1711,8 @@ const pt: TranslationSchema = {
       signedOn: "Assinado por si em {{date}}",
       awaitingSignature: "A aguardar a sua assinatura digital",
       cotenantNote: "É coinquilino deste contrato: o titular assina-o online, o senhor assina o exemplar impresso.",
+      signedByHolderOn: "Assinado online pelo titular em {{date}}",
+      mainHousing: "Moradia principal",
       depositRefundTitle: "Depósito de garantia devolvido: {{amount}}",
       signMyLease: "Assinar o meu contrato",
       viewLeasePdf: "Ver o contrato em PDF",

@@ -1,6 +1,6 @@
 import { LayoutDashboard, LogOut, Moon, Receipt, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
@@ -24,9 +24,13 @@ export default function OwnerLayout() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  // Titre d'onglet propre à la page : voir TenantLayout.
+  const { pathname } = useLocation();
+  const pageCourante = navItems.find((item) => item.to === pathname.replace(/\/+$/, ""));
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-slate-950">
+      {pageCourante && <title>{`${t(`nav.owner.${pageCourante.key}`)} | ${t("common.appName")}`}</title>}
       <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-2xs">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
