@@ -8,6 +8,7 @@ import type { PgDatabase, PgTransaction } from "drizzle-orm/pg-core";
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { creerClientSerialise } from "./clientSerialise";
 
 // Les deux pilotes utilisés ci-dessous (postgres-js en production, PGlite en
 // local) exposent un type de résultat bas niveau différent (leur "HKT" interne),
@@ -42,7 +43,22 @@ if (connectionString && !connectionString.includes("VOTRE_MOT_DE_PASSE")) {
   // connexions inactives au lieu de les garder ouvertes indéfiniment
   // (défaut de postgres.js) entre deux invocations d'une même instance
   // tiède.
-  const client = postgres(connectionString, { prepare: false, max: 1, idle_timeout: 20 });
+  // Requêtes exécutées une par une, connexion recréée si elle se fige : voir clientSerialise.ts
+  // (postgres-js pipeline les requêtes, et le pooler Supabase en perd au-delà de la première).
+  const creerClient = () => {
+    const brut = postgres(connectionString, { prepare: false, max: 1, idle_timeout: 20, connect_timeout: 10 });
+    // Drizzle règle les analyseurs de types (dates, JSON) sur le client qu'on lui donne : à refaire sur
+    // CHAQUE client recréé, sinon les dates reviendraient converties par postgres-js.
+    drizzlePg(brut, { schema });
+    return brut;
+  };
+  // Délais réglables sans redéployer le code : une requête isolée qui ne revient pas en 15 s (le navigateur
+  // abandonne à 20 s) ou une transaction qui dépasse 2 min est tenue pour bloquée et la connexion recréée.
+  const client = creerClientSerialise(creerClient, {
+    delaiRequeteMs: Number(process.env.DB_DELAI_REQUETE_MS) || 15_000,
+    delaiTransactionMs: Number(process.env.DB_DELAI_TRANSACTION_MS) || 120_000,
+    surRecyclage: (raison) => console.error(`[db] Connexion recréée : ${raison}.`),
+  });
   dbInstance = drizzlePg(client, { schema });
 } else {
   const dataDir = path.resolve(__dirname, "../../data/local-db");

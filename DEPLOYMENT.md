@@ -125,6 +125,38 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 
 ---
 
+## Dépannage : des requêtes qui ne reviennent jamais
+
+**Symptôme :** une page affiche « Le serveur met trop de temps à répondre », les journaux Vercel montrent
+`Vercel Runtime Timeout Error: Task timed out after 300 seconds`, et côté base une connexion de l'application
+(`application_name = Supavisor`) reste `active` avec `wait_event = ClientRead` pendant des minutes :
+
+```sql
+select pid, state, wait_event, extract(epoch from now() - xact_start)::int as secondes, left(query, 80)
+from pg_stat_activity
+where application_name = 'Supavisor' and state = 'active' and wait_event = 'ClientRead';
+```
+
+**Cause :** `postgres-js` envoie en parallèle (« pipeline ») plusieurs requêtes sur une même connexion ; derrière
+le pooler Supabase en mode transaction (port 6543), les octets des requêtes pipelinées au-delà de la première ne
+sont jamais transmis, et toutes les requêtes en file sur cette connexion attendent à jamais. Voir
+[porsager/postgres#970](https://github.com/porsager/postgres/issues/970) et la page de la documentation Supabase
+« Troubleshooting CONNECT_TIMEOUT or hanging queries in Serverless Functions ».
+
+**Ce que fait le code :** `backend/src/db/clientSerialise.ts` exécute les requêtes **une par une** (une transaction
+garde la file pour toute sa durée) et, si une requête ne revient pas dans les 15 s, l'abandonne avec une erreur
+claire et **recrée la connexion** ; la requête suivante repart sur une connexion neuve. Un `[db] Connexion
+recréée : …` dans les journaux signale chaque recyclage.
+
+**Réglages (facultatifs, variables d'environnement du backend) :**
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `DB_DELAI_REQUETE_MS` | `15000` | délai au-delà duquel une requête isolée est tenue pour bloquée |
+| `DB_DELAI_TRANSACTION_MS` | `120000` | idem pour une transaction entière (import CSV, etc.) |
+
+Ne pas régler `max_pipeline: 0` sur `postgres-js` à la place : cela casse `sql.begin`, donc toutes les transactions.
+
 ## Ce qui a changé dans le code pour cette cible de déploiement
 
 - **Base de données** : `better-sqlite3` → `postgres-js` + Drizzle en dialecte `postgresql` (`backend/src/db/`).
