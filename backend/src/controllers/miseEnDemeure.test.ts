@@ -38,6 +38,8 @@ async function agence() {
   return { manager, property, tenant, contract, h: authHeader(tokenFor(manager)) };
 }
 
+/** Antidate les mises en demeure déjà émises : une réémission identique n'est refusée que dans les 24 h. */
+const vieillir = (jours = 2) => testDb.update(formalNotices).set({ createdAt: ilYa(jours) });
 const dues = (h: Record<string, string>) => request(app).get("/api/contracts/formal-notices-due").set(h);
 const emettre = (h: Record<string, string>, contractId: string, body: object = {}) =>
   request(app).post(`/api/contracts/${contractId}/formal-notices`).set(h).send(body);
@@ -167,6 +169,52 @@ describe("POST /api/contracts/:id/formal-notices", () => {
     expect(await testDb.select().from(formalNotices)).toHaveLength(0);
   });
 
+  it("refuse une mise en demeure identique à la précédente (double envoi), sans rien écrire au locataire", async () => {
+    const { contract, h } = await agence();
+    await createInvoice(contract.id, { status: "LATE", dueDate: ilYa(40) });
+    const envoi = vi.spyOn(emailService, "sendEmail");
+    const premiere = await emettre(h, contract.id, { sendEmail: true });
+    envoi.mockClear();
+
+    const doublon = await emettre(h, contract.id, { sendEmail: true });
+
+    expect(doublon.status).toBe(409);
+    expect(doublon.body.error).toContain(`réf. ${premiere.body.reference}`);
+    expect(doublon.body.error).toContain("rien de nouveau à réclamer");
+    expect(envoi).not.toHaveBeenCalled();
+    expect(await testDb.select().from(formalNotices)).toHaveLength(1);
+  });
+
+  it("deux requêtes simultanées n'émettent qu'une seule mise en demeure", async () => {
+    const { contract, h } = await agence();
+    await createInvoice(contract.id, { status: "LATE", dueDate: ilYa(40) });
+
+    const [a, b] = await Promise.all([emettre(h, contract.id), emettre(h, contract.id)]);
+
+    expect([a.status, b.status].sort()).toEqual([201, 409]);
+    expect(await testDb.select().from(formalNotices)).toHaveLength(1);
+  });
+
+  it("une réémission est permise quand le contenu change (nouvelle facture, paiement partiel) ou après 24 h", async () => {
+    const { contract, h } = await agence();
+    const premiere = await createInvoice(contract.id, { periodMonth: 7, periodYear: 2026, amount: 500, status: "LATE", dueDate: ilYa(70) });
+    expect((await emettre(h, contract.id)).status).toBe(201);
+
+    // Une nouvelle facture échue : le contenu change.
+    await createInvoice(contract.id, { periodMonth: 8, periodYear: 2026, amount: 500, status: "LATE", dueDate: ilYa(40) });
+    expect((await emettre(h, contract.id)).status).toBe(201);
+
+    // Un paiement partiel : le reste dû change.
+    await testDb.update(invoices).set({ amountPaid: 100 }).where(eq(invoices.id, premiere.id));
+    expect((await emettre(h, contract.id)).status).toBe(201);
+
+    // Identique à la précédente, mais plus de 24 h après.
+    expect((await emettre(h, contract.id)).status).toBe(409);
+    await vieillir(2);
+    expect((await emettre(h, contract.id)).status).toBe(201);
+    expect(await testDb.select().from(formalNotices)).toHaveLength(4);
+  });
+
   it("envoie le courrier en PDF au locataire et aux colocataires, et aux garants seulement si demandé", async () => {
     const { manager, contract, h } = await agence();
     const coloc = await createTenant(manager.id, { email: "coloc@test.local" });
@@ -188,6 +236,7 @@ describe("POST /api/contracts/:id/formal-notices", () => {
     expect(pieces?.[0].content.subarray(0, 4).toString()).toBe("%PDF");
 
     envoi.mockClear();
+    await vieillir();
     const avec = await emettre(h, contract.id, { sendEmail: true, notifyGuarantors: true });
     expect(avec.body.garantsPrevenus).toBe(1);
     expect(envoi.mock.calls.map((c) => c[0])).toContain("garant@test.local");
@@ -213,6 +262,7 @@ describe("POST /api/contracts/:id/formal-notices", () => {
 
     expect((await emettre(await jeton("READ_ONLY"), contract.id)).status).toBe(403);
     expect((await emettre(await jeton("AGENT"), contract.id)).status).toBe(201);
+    await vieillir();
     expect((await emettre(await jeton("ACCOUNTANT"), contract.id)).status).toBe(201);
   });
 });

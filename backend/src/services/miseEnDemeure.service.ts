@@ -1,5 +1,5 @@
-import { and, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
-import { db } from "../db/client";
+import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { db, Transaction } from "../db/client";
 import { agencySettings, contractGuarantors, contracts, formalNotices, invoices, properties, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { debutDeLaJournee, joursEntre } from "../utils/dates";
@@ -22,6 +22,13 @@ import { NIVEAU_MAXIMAL } from "./relances.service";
 
 /** Délai de paiement proposé par défaut, en jours à compter de la réception. */
 export const DELAI_PAR_DEFAUT_JOURS = 8;
+/**
+ * Fenêtre pendant laquelle une mise en demeure IDENTIQUE (mêmes factures, mêmes restes dus) à la
+ * précédente est refusée : un double envoi accidentel (appel rejoué, double requête) ne doit pas
+ * écrire deux fois au locataire. Passé ce délai, ou dès qu'une facture ou un reste dû change, une
+ * nouvelle mise en demeure peut être émise.
+ */
+export const FENETRE_DOUBLON_HEURES = 24;
 /** Retard au-delà duquel un impayé appelle une mise en demeure quand les relances sont désactivées. */
 export const SEUIL_SANS_RELANCES_JOURS = 30;
 
@@ -234,19 +241,49 @@ export async function emettreMiseEnDemeure(params: {
     amount: f.amount,
     resteDu: resteDu(f),
   }));
-  const [notice] = await db
-    .insert(formalNotices)
-    .values({
-      contractId: contract.id,
-      managerId: params.managerId,
-      invoicesSnapshot: JSON.stringify(factures),
-      totalDue: arrondir(factures.reduce((s, f) => s + f.resteDu, 0)),
-      currency: contract.currency,
-      deadlineDays: params.deadlineDays,
-      createdBy: params.createdBy,
-      createdAt: maintenant,
-    })
-    .returning();
+  // Verrou sur le bail, puis comparaison avec la dernière mise en demeure, DANS la même transaction :
+  // deux requêtes simultanées calculent le même contenu ; la seconde attend, voit la première et
+  // se voit refuser.
+  const signature = (liste: FactureReclamee[]) =>
+    liste
+      .map((f) => `${f.invoiceId}:${f.resteDu}`)
+      .sort()
+      .join("|");
+  const notice = await db.transaction(async (tx: Transaction) => {
+    await tx.execute(sql`SELECT id FROM contracts WHERE id = ${contract.id} FOR UPDATE`);
+    const [derniere] = await tx
+      .select()
+      .from(formalNotices)
+      .where(
+        and(
+          eq(formalNotices.contractId, contract.id),
+          gte(formalNotices.createdAt, new Date(maintenant.getTime() - FENETRE_DOUBLON_HEURES * 3_600_000))
+        )
+      )
+      .orderBy(desc(formalNotices.createdAt))
+      .limit(1);
+    if (derniere && signature(lireFactures(derniere.invoicesSnapshot)) === signature(factures)) {
+      throw new ApiError(
+        409,
+        `Une mise en demeure identique (réf. ${referenceMiseEnDemeure(derniere)}) a déjà été émise le ` +
+          `${new Date(derniere.createdAt).toLocaleDateString("fr-FR")} : rien de nouveau à réclamer depuis.`
+      );
+    }
+    const [creee] = await tx
+      .insert(formalNotices)
+      .values({
+        contractId: contract.id,
+        managerId: params.managerId,
+        invoicesSnapshot: JSON.stringify(factures),
+        totalDue: arrondir(factures.reduce((s, f) => s + f.resteDu, 0)),
+        currency: contract.currency,
+        deadlineDays: params.deadlineDays,
+        createdBy: params.createdBy,
+        createdAt: maintenant,
+      })
+      .returning();
+    return creee;
+  });
 
   if (!params.envoyerParEmail) return { notice, emailEnvoye: false, colocatairesPrevenus: 0, garantsPrevenus: 0 };
 

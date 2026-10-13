@@ -27,22 +27,48 @@ function conditionDuFil(contractId: string, tenantId: string, titulaireId: strin
 
 const idDuFil = (contractId: string, tenantId: string) => `${contractId}:${tenantId}`;
 
+/** Lignes d'un résultat SQL brut, quel que soit le pilote (postgres-js : tableau ; PGlite : { rows }). */
+const lignesSql = <T>(resultat: unknown): T[] =>
+  (Array.isArray(resultat) ? resultat : ((resultat as { rows?: T[] }).rows ?? [])) as T[];
+
+/**
+ * Les fils de discussion d'un gestionnaire : un par bail pour le titulaire, un par colocataire, et
+ * un par ancien colocataire qui a écrit (son historique reste consultable). C'est CET ensemble qu'on
+ * pagine, et non les baux : un bail en colocation occupe plusieurs lignes de la liste, et la
+ * pagination d'après les baux affichait plus de lignes que la taille de page, avec un total faux.
+ */
+function filsDuGestionnaire(managerId: string) {
+  return sql`
+    WITH fils AS (
+      SELECT c.id AS contract_id, c.tenant_id AS tenant_id, 0 AS rang, c.created_at AS created_at
+      FROM contracts c JOIN properties p ON p.id = c.property_id
+      WHERE p.manager_id = ${managerId}
+      UNION ALL
+      SELECT cc.contract_id, cc.tenant_id, 1, c.created_at
+      FROM contract_cotenants cc
+      JOIN contracts c ON c.id = cc.contract_id
+      JOIN properties p ON p.id = c.property_id
+      WHERE p.manager_id = ${managerId}
+      UNION ALL
+      SELECT DISTINCT m.contract_id, m.tenant_id, 2, c.created_at
+      FROM messages m
+      JOIN contracts c ON c.id = m.contract_id
+      JOIN properties p ON p.id = c.property_id
+      WHERE p.manager_id = ${managerId}
+        AND m.tenant_id IS NOT NULL
+        AND m.tenant_id <> c.tenant_id
+        AND NOT EXISTS (
+          SELECT 1 FROM contract_cotenants cc WHERE cc.contract_id = m.contract_id AND cc.tenant_id = m.tenant_id
+        )
+    )`;
+}
+
 export const listConversations = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
   const pagination = parsePagination(req);
 
-  let whereClause;
-  let moi: Locataire | null = null;
-  let qualites = new Map<string, Qualite>();
-  if (req.user.role === "TENANT") {
-    // Titulaire OU colocataire : chaque bail où il est partie lui ouvre SON fil avec l'agence.
-    moi = await chargerLocataireDuCompte(req);
-    qualites = await bauxDuLocataire(moi.id);
-    if (qualites.size === 0) return res.json(buildPaginatedResult([], 0, pagination));
-    whereClause = inArray(contracts.id, [...qualites.keys()]);
-  } else if (req.user.role === "MANAGER") {
-    whereClause = eq(properties.managerId, req.user.userId);
-  } else {
+  if (req.user.role === "MANAGER") return listerFilsDuGestionnaire(req, res, pagination);
+  if (req.user.role !== "TENANT") {
     // Un compte ADMIN promu depuis un ancien compte MANAGER (voir
     // scripts/createAdmin.ts, qui conserve le même id utilisateur) voyait
     // auparavant cette branche `else` s'exécuter comme s'il était toujours
@@ -51,36 +77,27 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
     throw new ApiError(403, "Accès refusé");
   }
 
-  // La pagination porte sur les baux ; un bail en colocation donne, côté gestionnaire, un fil par
-  // locataire.
+  // Titulaire OU colocataire : chaque bail où il est partie lui ouvre SON fil avec l'agence — un seul
+  // par bail, donc la pagination par baux est exacte.
+  const moi = await chargerLocataireDuCompte(req);
+  const qualites = await bauxDuLocataire(moi.id);
+  if (qualites.size === 0) return res.json(buildPaginatedResult([], 0, pagination));
+  const whereClause = inArray(contracts.id, [...qualites.keys()]);
+
   const [contractList, [{ count }]] = await Promise.all([
     db
-      .select({
-        contract: contracts,
-        property: properties,
-        tenant: tenants,
-      })
+      .select({ contract: contracts, property: properties })
       .from(contracts)
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .where(whereClause)
       .orderBy(desc(contracts.createdAt))
       .limit(pagination.pageSize)
       .offset(pagination.offset),
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(contracts)
-      .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .where(whereClause),
+    db.select({ count: sql<number>`count(*)::int` }).from(contracts).where(whereClause),
   ]);
+  if (contractList.length === 0) return res.json(buildPaginatedResult([], count, pagination));
 
-  if (contractList.length === 0) {
-    return res.json(buildPaginatedResult([], count, pagination));
-  }
-
-  // Évite la requête N+1 : on charge tous les messages de CETTE PAGE de
-  // contrats en une seule requête ordonnée par date décroissante, puis on
-  // conserve le plus récent de chaque fil.
+  // Évite la requête N+1 : tous les messages de CETTE PAGE en une requête, le plus récent de chaque fil retenu.
   const contractIds = contractList.map((item) => item.contract.id);
   const titulaires = new Map<string, string>(contractList.map((item) => [item.contract.id, item.contract.tenantId]));
   const allMessages = await db
@@ -88,71 +105,70 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
     .from(messages)
     .where(inArray(messages.contractId, contractIds))
     .orderBy(desc(messages.createdAt));
-
   const dernierParFil = new Map<string, typeof messages.$inferSelect>();
   for (const msg of allMessages) {
     const cle = idDuFil(msg.contractId, msg.tenantId ?? titulaires.get(msg.contractId)!);
     if (!dernierParFil.has(cle)) dernierParFil.set(cle, msg);
   }
 
-  if (moi) {
-    const locataire = moi;
-    const conversations = contractList.map((item) => ({
-      id: idDuFil(item.contract.id, locataire.id),
-      contractId: item.contract.id,
-      tenantId: locataire.id,
-      qualite: qualites.get(item.contract.id) ?? "TITULAIRE",
-      property: item.property,
-      tenant: locataire,
-      lastMessage: dernierParFil.get(idDuFil(item.contract.id, locataire.id)) ?? null,
-    }));
-    return res.json(buildPaginatedResult(conversations, count, pagination));
-  }
-
-  // Gestionnaire : le fil du titulaire, celui de chaque colocataire, et celui d'un ancien
-  // colocataire s'il a écrit (l'historique reste consultable).
-  const colocations = await db
-    .select({ contractId: contractCotenants.contractId, tenant: tenants })
-    .from(contractCotenants)
-    .innerJoin(tenants, eq(contractCotenants.tenantId, tenants.id))
-    .where(inArray(contractCotenants.contractId, contractIds));
-  const colocatairesParBail = new Map<string, Locataire[]>();
-  for (const c of colocations) colocatairesParBail.set(c.contractId, [...(colocatairesParBail.get(c.contractId) ?? []), c.tenant]);
-
-  const anciensIds = new Set<string>();
-  for (const msg of allMessages) {
-    if (!msg.tenantId || msg.tenantId === titulaires.get(msg.contractId)) continue;
-    if (!(colocatairesParBail.get(msg.contractId) ?? []).some((t) => t.id === msg.tenantId)) anciensIds.add(msg.tenantId);
-  }
-  const anciens = anciensIds.size
-    ? await db.select().from(tenants).where(inArray(tenants.id, [...anciensIds]))
-    : [];
-  const ficheParId = new Map<string, Locataire>(anciens.map((t: Locataire) => [t.id, t]));
-
-  const conversations = contractList.flatMap((item) => {
-    const fil = (tenant: Locataire, qualite: Qualite) => ({
-      id: idDuFil(item.contract.id, tenant.id),
-      contractId: item.contract.id,
-      tenantId: tenant.id,
-      qualite,
-      property: item.property,
-      tenant,
-      lastMessage: dernierParFil.get(idDuFil(item.contract.id, tenant.id)) ?? null,
-    });
-    const colocataires = colocatairesParBail.get(item.contract.id) ?? [];
-    const dejaListes = new Set([item.tenant.id, ...colocataires.map((t) => t.id)]);
-    const anciensDuBail = [...new Set(allMessages.filter((m) => m.contractId === item.contract.id).map((m) => m.tenantId))]
-      .filter((id): id is string => !!id && !dejaListes.has(id) && ficheParId.has(id))
-      .map((id) => ficheParId.get(id)!);
-    return [
-      fil(item.tenant, "TITULAIRE"),
-      ...colocataires.map((t) => fil(t, "COLOCATAIRE")),
-      ...anciensDuBail.map((t) => fil(t, "COLOCATAIRE")),
-    ];
-  });
-
+  const conversations = contractList.map((item) => ({
+    id: idDuFil(item.contract.id, moi.id),
+    contractId: item.contract.id,
+    tenantId: moi.id,
+    qualite: qualites.get(item.contract.id) ?? "TITULAIRE",
+    property: item.property,
+    tenant: moi,
+    lastMessage: dernierParFil.get(idDuFil(item.contract.id, moi.id)) ?? null,
+  }));
   res.json(buildPaginatedResult(conversations, count, pagination));
 });
+
+async function listerFilsDuGestionnaire(req: Request, res: Response, pagination: ReturnType<typeof parsePagination>) {
+  const fils = filsDuGestionnaire(req.user!.userId);
+  const [pageBrute, compteBrut] = await Promise.all([
+    db.execute(
+      sql`${fils} SELECT contract_id, tenant_id, rang FROM fils ORDER BY created_at DESC, contract_id, rang, tenant_id LIMIT ${pagination.pageSize} OFFSET ${pagination.offset}`
+    ),
+    db.execute(sql`${fils} SELECT count(*)::int AS n FROM fils`),
+  ]);
+  const page = lignesSql<{ contract_id: string; tenant_id: string; rang: number }>(pageBrute);
+  const total = Number(lignesSql<{ n: number }>(compteBrut)[0]?.n ?? 0);
+  if (page.length === 0) return res.json(buildPaginatedResult([], total, pagination));
+
+  const contractIds = [...new Set(page.map((r) => r.contract_id))];
+  const tenantIds = [...new Set(page.map((r) => r.tenant_id))];
+  const [baux, locataires, allMessages] = await Promise.all([
+    db
+      .select({ contract: contracts, property: properties })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(inArray(contracts.id, contractIds)),
+    db.select().from(tenants).where(inArray(tenants.id, tenantIds)),
+    db.select().from(messages).where(inArray(messages.contractId, contractIds)).orderBy(desc(messages.createdAt)),
+  ]);
+  const bailParId = new Map<string, (typeof baux)[number]>(baux.map((b: (typeof baux)[number]) => [b.contract.id, b]));
+  const locataireParId = new Map<string, Locataire>(locataires.map((t: Locataire) => [t.id, t]));
+
+  const dernierParFil = new Map<string, typeof messages.$inferSelect>();
+  for (const msg of allMessages) {
+    const cle = idDuFil(msg.contractId, msg.tenantId ?? bailParId.get(msg.contractId)!.contract.tenantId);
+    if (!dernierParFil.has(cle)) dernierParFil.set(cle, msg);
+  }
+
+  const conversations = page.map((r) => {
+    const bail = bailParId.get(r.contract_id)!;
+    return {
+      id: idDuFil(r.contract_id, r.tenant_id),
+      contractId: r.contract_id,
+      tenantId: r.tenant_id,
+      qualite: (Number(r.rang) === 0 ? "TITULAIRE" : "COLOCATAIRE") as Qualite,
+      property: bail.property,
+      tenant: locataireParId.get(r.tenant_id)!,
+      lastMessage: dernierParFil.get(idDuFil(r.contract_id, r.tenant_id)) ?? null,
+    };
+  });
+  res.json(buildPaginatedResult(conversations, total, pagination));
+}
 
 /**
  * Le fil demandé, et le droit d'y accéder : un locataire n'ouvre que le sien (titulaire ou
