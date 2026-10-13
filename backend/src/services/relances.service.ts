@@ -1,14 +1,17 @@
 import { and, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { db } from "../db/client";
 import { agencySettings, contractGuarantors, contracts, invoices, properties, tenants } from "../db/schema";
+import { env } from "../config/env";
 import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, joursEntre } from "../utils/dates";
 import { formaterMontant } from "../utils/montant";
 import { resteDu } from "../utils/montants";
 import { nomAvecCivilite, nomComplet } from "../utils/nom";
 import { logActivity } from "./activity.service";
-import { envoyerCopieAuxColocataires } from "./colocation.service";
+import { envoyerCopieAuxColocataires, envoyerCopieWhatsappAuxColocataires } from "./colocation.service";
 import { guarantorUnpaidNoticeEmail, overdueReminderEmail, sendEmail } from "./email.service";
+import { aEteJoint, managersEligiblesPro, signalerEchecsWhatsapp, WHATSAPP_NON_ELIGIBLE } from "./reminder.service";
+import { envoyerMessageWhatsapp, overdueReminderWhatsappVariables } from "./whatsapp.service";
 
 /**
  * Relances graduées des loyers impayés.
@@ -56,6 +59,11 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
       )
     );
 
+  // WhatsApp, en complément de l'email : avantage de la formule Pro, et seulement si le modèle de
+  // relance est configuré (sinon l'envoi est une simulation, jamais une panne).
+  const managersWhatsapp = await managersEligiblesPro([...parGestionnaire.keys()]);
+  const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
+
   let sent = 0;
   let echecs = 0;
   let interrompu = false;
@@ -92,15 +100,42 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
     };
     const { subject, html } = overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(ligne.tenant) });
     const resultat = await sendEmail(ligne.tenant.email, subject, html);
-    if ("error" in resultat && resultat.error) {
+    const whatsappEligible = managersWhatsapp.has(ligne.property.managerId);
+    const variablesWhatsapp = (nom: string) =>
+      overdueReminderWhatsappVariables({
+        tenantName: nom,
+        propertyTitle: parametres.propertyTitle,
+        amount: reste,
+        currency: parametres.currency,
+        periodMonth: parametres.periodMonth,
+        periodYear: parametres.periodYear,
+        daysLate: joursDeRetard,
+        frontendUrl: env.frontendUrl,
+      });
+    const whatsappResultat = whatsappEligible
+      ? await envoyerMessageWhatsapp(ligne.tenant.phone, env.whatsapp.templateNameOverdue, variablesWhatsapp(nomAvecCivilite(ligne.tenant)))
+      : WHATSAPP_NON_ELIGIBLE;
+    if (!aEteJoint(resultat, whatsappResultat)) {
       // Relâché : la relance repartira à la prochaine exécution plutôt que d'être perdue.
       await db.update(invoices).set({ overdueReminderLevel: precedent, overdueReminderSentAt: ligne.invoice.overdueReminderSentAt }).where(eq(invoices.id, ligne.invoice.id));
       echecs++;
       continue;
     }
     sent++;
+    const noterEchecs = (count: number, motif?: string) => {
+      const courant = whatsappEchecsParManager.get(ligne.property.managerId);
+      whatsappEchecsParManager.set(ligne.property.managerId, { count: (courant?.count ?? 0) + count, dernierMotif: motif ?? "erreur_api" });
+    };
+    if (whatsappResultat.error) noterEchecs(1, whatsappResultat.raison);
 
     await envoyerCopieAuxColocataires(ligne.contract.id, (colocataire) => overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(colocataire) }));
+    if (whatsappEligible) {
+      const copies = await envoyerCopieWhatsappAuxColocataires(ligne.contract.id, (colocataire) => ({
+        templateName: env.whatsapp.templateNameOverdue,
+        variables: variablesWhatsapp(nomAvecCivilite(colocataire)),
+      }));
+      if (copies.echecs > 0) noterEchecs(copies.echecs, copies.dernierMotif);
+    }
 
     let garantsPrevenus = 0;
     if (niveau === NIVEAU_MAXIMAL && reglage.overdueNotifyGuarantors) {
@@ -129,6 +164,8 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
         (garantsPrevenus > 0 ? ` ; ${garantsPrevenus} garant(s) prévenu(s).` : "."),
     });
   }
+
+  await signalerEchecsWhatsapp(whatsappEchecsParManager, "relances d'impayés");
 
   if (sent > 0) console.log(`[relances] ${sent} relance(s) d'impayé envoyée(s).`);
   return { sent, echecs, interrompu };

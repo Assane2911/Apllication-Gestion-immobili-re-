@@ -3,6 +3,7 @@ import { db } from "../db/client";
 import { contractCotenants, contracts, tenants } from "../db/schema";
 import { nomAvecCivilite } from "../utils/nom";
 import { type EmailAttachment, sendEmail } from "./email.service";
+import { envoyerMessageWhatsapp } from "./whatsapp.service";
 
 /**
  * Colocation (voir contract_cotenants) : qui, au-delà du titulaire, est partie au bail.
@@ -75,4 +76,37 @@ export async function envoyerCopieAuxColocataires(
     }
   }
   return envoyees;
+}
+
+/**
+ * Pendant WhatsApp d'envoyerCopieAuxColocataires : chaque colocataire reçoit le même message sur
+ * son propre numéro. Au mieux — rien ne lève, un échec n'affecte ni le titulaire ni les autres.
+ * L'appelant décide de l'éligibilité (WhatsApp est un avantage de la formule Pro).
+ *
+ * `echecs` ne compte que les vrais échecs (numéro invalide, erreur de l'API) : un modèle ou un
+ * service non configuré est une simulation, pas une panne — voir signalerEchecsWhatsapp.
+ */
+export async function envoyerCopieWhatsappAuxColocataires(
+  contractId: string,
+  construire: (colocataire: Locataire) => { templateName: string; variables: Record<string, string> }
+): Promise<{ envoyees: number; echecs: number; dernierMotif?: string }> {
+  let envoyees = 0;
+  let echecs = 0;
+  let dernierMotif: string | undefined;
+  for (const colocataire of await colocatairesActifs(contractId)) {
+    if (!colocataire.phone) continue;
+    try {
+      const { templateName, variables } = construire(colocataire);
+      const resultat = await envoyerMessageWhatsapp(colocataire.phone, templateName, variables);
+      if (resultat.error) {
+        echecs++;
+        dernierMotif = resultat.raison ?? "erreur_api";
+      } else if (!resultat.simulated) {
+        envoyees++;
+      }
+    } catch (err) {
+      console.error(`[colocation] Copie WhatsApp non envoyée au colocataire ${colocataire.id} (bail ${contractId}) :`, err);
+    }
+  }
+  return { envoyees, echecs, dernierMotif };
 }

@@ -1499,7 +1499,7 @@ const en: TranslationSchema = {
       success: "Agency settings updated successfully! Your future receipts will include this information.",
       overdue: {
         title: "Automatic overdue rent reminders",
-        hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants); after 90 days late, no more automatic reminders: it is up to you.",
+        hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants), plus WhatsApp on the Pro plan when the reminder template is configured; after 90 days late, no more automatic reminders: it is up to you.",
         enabled: "Send reminders automatically",
         grace: "Grace period after the due date (days)",
         interval: "Days between two reminders",

@@ -1501,7 +1501,7 @@ const es: TranslationSchema = {
       success: "¡Configuración de la agencia actualizada con éxito! Tus próximos recibos incluirán esta información.",
       overdue: {
         title: "Recordatorios automáticos de impagos",
-        hint: "Desactivados por defecto. Una vez activados, cada alquiler impagado recibe como máximo tres recordatorios por email (titular y coinquilinos); pasados 90 días de retraso, ningún recordatorio automático más: la continuación le corresponde.",
+        hint: "Desactivados por defecto. Una vez activados, cada alquiler impagado recibe como máximo tres recordatorios por email (titular y coinquilinos), y por WhatsApp con la fórmula Pro si la plantilla de recordatorio está configurada; pasados 90 días de retraso, ningún recordatorio automático más: la continuación le corresponde.",
         enabled: "Enviar los recordatorios automáticamente",
         grace: "Periodo de gracia tras el vencimiento (días)",
         interval: "Días entre dos recordatorios",

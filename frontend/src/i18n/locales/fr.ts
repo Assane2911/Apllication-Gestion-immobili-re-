@@ -1500,7 +1500,7 @@ const fr = {
       success: "Paramètres de l'agence mis à jour avec succès ! Vos futures quittances intégreront ces informations.",
       overdue: {
         title: "Relances automatiques des impayés",
-        hint: "Désactivées par défaut. Une fois activées, chaque loyer impayé reçoit au plus trois relances par email (titulaire et colocataires) ; au-delà de 90 jours de retard, plus aucune relance automatique : la suite vous revient.",
+        hint: "Désactivées par défaut. Une fois activées, chaque loyer impayé reçoit au plus trois relances par email (titulaire et colocataires), et par WhatsApp avec la formule Pro si le modèle de relance est configuré ; au-delà de 90 jours de retard, plus aucune relance automatique : la suite vous revient.",
         enabled: "Envoyer les relances automatiquement",
         grace: "Délai de grâce après l'échéance (jours)",
         interval: "Intervalle entre deux relances (jours)",

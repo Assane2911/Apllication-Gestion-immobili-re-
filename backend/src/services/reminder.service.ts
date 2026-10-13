@@ -16,7 +16,7 @@ import {
   sendEmail,
 } from "./email.service";
 import { appliquerRevisionsDues } from "./rentRevision.service";
-import { envoyerCopieAuxColocataires } from "./colocation.service";
+import { envoyerCopieAuxColocataires, envoyerCopieWhatsappAuxColocataires } from "./colocation.service";
 import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import {
   envoyerMessageWhatsapp,
@@ -36,7 +36,18 @@ import { resteDu } from "../utils/montants";
  * neutre qu'un WhatsApp non configuré : aEteJoint/signalerEchecsWhatsapp ne
  * le comptent jamais comme un échec.
  */
-const WHATSAPP_NON_ELIGIBLE: ResultatEnvoiWhatsapp = { simulated: true };
+export const WHATSAPP_NON_ELIGIBLE: ResultatEnvoiWhatsapp = { simulated: true };
+
+/** Ajoute des échecs WhatsApp au décompte par gestionnaire (voir signalerEchecsWhatsapp). */
+function noterEchecsWhatsapp(
+  echecsParManager: Map<string, { count: number; dernierMotif: string }>,
+  managerId: string,
+  count: number,
+  dernierMotif: string
+) {
+  const courant = echecsParManager.get(managerId);
+  echecsParManager.set(managerId, { count: (courant?.count ?? 0) + count, dernierMotif });
+}
 
 /**
  * Avis d'échéance WhatsApp : le modèle (daté, ou l'ancien « le 5 » seulement
@@ -67,7 +78,7 @@ const AGENCE_ACTIVE = isNull(users.suspendedAt);
  * qui reçoit les rappels WhatsApp que pour les rappels de fin de bail
  * (« Alertes de fin de bail & renouvellement », avantage Pro lui aussi).
  */
-async function managersEligiblesPro(managerIds: string[]): Promise<Set<string>> {
+export async function managersEligiblesPro(managerIds: string[]): Promise<Set<string>> {
   if (managerIds.length === 0) return new Set();
   const managerUsers = await db.select().from(users).where(inArray(users.id, managerIds));
   return new Set(managerUsers.filter((u) => planAuMoins(u, "PRO")).map((u) => u.id));
@@ -93,7 +104,7 @@ async function managersEligiblesPro(managerIds: string[]): Promise<Set<string>> 
  * fait ce qu'on lui a demandé, et le traiter comme une panne ferait retenter
  * chaque jour, indéfiniment, une configuration absente.
  */
-function aEteJoint(
+export function aEteJoint(
   email: { simulated: boolean; error?: boolean },
   whatsapp: { simulated: boolean; error?: boolean }
 ): boolean {
@@ -114,7 +125,7 @@ function aEteJoint(
  * journaliser à chaque exécution du cron spammerait le journal d'activité
  * d'une agence qui n'a simplement pas encore activé WhatsApp.
  */
-async function signalerEchecsWhatsapp(
+export async function signalerEchecsWhatsapp(
   echecsParManager: Map<string, { count: number; dernierMotif: string }>,
   contexte: string
 ) {
@@ -598,6 +609,24 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
         frontendUrl: env.frontendUrl,
       })
     );
+    if (managersWhatsappEligibles.has(row.property.managerId)) {
+      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, (colocataire) =>
+        avisEcheanceWhatsapp({
+          tenantName: nomAvecCivilite(colocataire),
+          propertyTitle: row.property.title,
+          amount: resteDu(row.invoice),
+          currency: row.invoice.currency || "EUR",
+          periodMonth: row.invoice.periodMonth,
+          periodYear: row.invoice.periodYear,
+          dueDate: row.invoice.dueDate,
+          frontendUrl: env.frontendUrl,
+        })
+      );
+      if (copies.echecs > 0) {
+        whatsappEchecs += copies.echecs;
+        noterEchecsWhatsapp(whatsappEchecsParManager, row.property.managerId, copies.echecs, copies.dernierMotif ?? "erreur_api");
+      }
+    }
     sent += 1;
     details.push({
       tenantName: nomComplet(row.tenant),
@@ -760,6 +789,25 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
         frontendUrl: env.frontendUrl,
       })
     );
+    if (managersWhatsappEligibles.has(row.property.managerId)) {
+      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, (colocataire) => ({
+        templateName: env.whatsapp.templateNameRentDueSoon,
+        variables: rentDueSoonReminderWhatsappVariables({
+          tenantName: nomAvecCivilite(colocataire),
+          propertyTitle: row.property.title,
+          amount: resteDu(row.invoice),
+          currency: row.invoice.currency || "EUR",
+          periodMonth: row.invoice.periodMonth,
+          periodYear: row.invoice.periodYear,
+          daysLeft: joursRestants,
+          frontendUrl: env.frontendUrl,
+        }),
+      }));
+      if (copies.echecs > 0) {
+        whatsappEchecs += copies.echecs;
+        noterEchecsWhatsapp(whatsappEchecsParManager, row.property.managerId, copies.echecs, copies.dernierMotif ?? "erreur_api");
+      }
+    }
     sent += 1;
     details.push({
       tenantName: nomComplet(row.tenant),
@@ -891,6 +939,30 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
         frontendUrl: env.frontendUrl,
       })
     );
+    if (managersWhatsappEligibles.has(managerId)) {
+      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, (colocataire) =>
+        avisEcheanceWhatsapp({
+          tenantName: nomAvecCivilite(colocataire),
+          propertyTitle: row.property.title,
+          amount: resteDu(row.invoice),
+          currency: row.invoice.currency || "EUR",
+          periodMonth: row.invoice.periodMonth,
+          periodYear: row.invoice.periodYear,
+          dueDate: row.invoice.dueDate,
+          frontendUrl: env.frontendUrl,
+        })
+      );
+      if (copies.echecs > 0) {
+        await logActivity({
+          managerId,
+          action: "reminder.whatsapp_failed",
+          entityType: "invoice",
+          entityId: row.invoice.id,
+          entityLabel: `${nomComplet(row.tenant)} — ${row.property.title}`,
+          details: `${copies.echecs} copie(s) WhatsApp aux colocataires non délivrée(s) (${copies.dernierMotif ?? "erreur_api"}) — les emails, eux, sont bien partis.`,
+        });
+      }
+    }
   }
 
   // Voir signalerEchecsWhatsapp : quand l'email a réussi, `joint` est vrai
