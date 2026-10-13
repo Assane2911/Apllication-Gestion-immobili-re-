@@ -148,14 +148,17 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     .where(eq(issueReports.id, req.params.id))
     .returning();
 
-  // Notifie le locataire par email de la mise à jour de son signalement —
-  // ne doit jamais faire échouer la réponse si l'envoi échoue.
+  // Notifie par email la personne qui a SIGNALÉ le problème (issueReports.tenantId) de la mise à jour
+  // — et non le titulaire du bail : sur un bail en colocation, le signalement d'un colocataire
+  // arrivait chez le titulaire, qui ne savait pas de quoi on lui parlait, alors que l'auteur n'était
+  // jamais prévenu. Ne doit jamais faire échouer la réponse si l'envoi échoue.
   const [row] = await db
     .select({ tenant: tenants, contract: contracts, property: properties })
-    .from(contracts)
-    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .from(issueReports)
+    .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
+    .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(eq(contracts.id, updated.contractId));
+    .where(eq(issueReports.id, updated.id));
 
   if (row?.tenant?.email) {
     const { subject, html } = issueStatusUpdateEmail({

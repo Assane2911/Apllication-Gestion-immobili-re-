@@ -100,6 +100,34 @@ describe("TenantDashboardPage", () => {
     expect(screen.queryByRole("button", { name: /Signer mon bail/ })).not.toBeInTheDocument();
   });
 
+  it("colocataire : voit l'état des lieux finalisé du bail, sans bouton de signature ni « en attente de votre signature »", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ qualite: "COLOCATAIRE" })] });
+    mockedApi.get.mockResolvedValueOnce({
+      data: [
+        {
+          id: "insp-1",
+          contractId: "c1",
+          propertyId: "prop-1",
+          tenantId: "tenant-titulaire",
+          managerId: "manager-1",
+          type: "ENTRY",
+          status: "COMPLETED",
+          inspectionDate: "2026-01-01T00:00:00.000Z",
+          rooms: [],
+          meters: { electricity: "", water: "", gas: "" },
+          keys: [],
+          signedByTenantAt: null,
+          property: { id: "prop-1", title: "Studio Centre-ville", address: "1 rue de la Paix" },
+        },
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findByRole("button", { name: /Voir le rapport/ })).toBeInTheDocument();
+    expect(screen.queryByText("En attente de votre signature")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Signer/ })).not.toBeInTheDocument();
+  });
+
   it("affiche la date de signature une fois le bail signé", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: "2026-02-01T00:00:00.000Z" })] });
     mockedApi.get.mockResolvedValueOnce(emptyInspections());

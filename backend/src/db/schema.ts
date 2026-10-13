@@ -861,6 +861,10 @@ export const expenses = pgTable(
     // UNIQUE ci-dessous), sur le même principe que
     // invoices.(contractId, periodMonth, periodYear).
     periodIndex: integer("period_index"),
+    // Posé UNIQUEMENT sur un modèle : le plus grand numéro d'occurrence déjà généré, supprimées
+    // comprises. Sans lui, le point de reprise de la génération était le plus grand numéro EXISTANT :
+    // supprimer la dernière occurrence le faisait reculer, et le cron suivant la recréait.
+    lastPeriodIndex: integer("last_period_index"),
     ...timestamps,
   },
   (table) => ({

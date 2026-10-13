@@ -41,10 +41,11 @@ type ExpenseRow = typeof expenses.$inferSelect;
  * Génère, pour UN modèle, toutes les occurrences dont la date est déjà
  * passée (ou aujourd'hui) et qui n'existent pas encore.
  *
- * Repart du dernier `periodIndex` déjà généré (et non de 1 à chaque fois) :
+ * Repart du dernier `periodIndex` déjà traité (et non de 1 à chaque fois) :
  * sur un modèle mensuel vieux de plusieurs années, relire ce maximum coûte
  * une requête contre des dizaines de tentatives d'insertion rejetées pour
- * doublon.
+ * doublon. Le plus grand numéro est aussi mémorisé sur le modèle
+ * (`lastPeriodIndex`) : une occurrence supprimée n'est jamais recréée.
  */
 async function genererOccurrencesManquantes(template: ExpenseRow, dbClient: DbClient = db): Promise<number> {
   const cycle: BillingCycle = template.recurrence === "ANNUAL" ? "ANNUAL" : "MONTHLY";
@@ -57,16 +58,12 @@ async function genererOccurrencesManquantes(template: ExpenseRow, dbClient: DbCl
     .orderBy(desc(expenses.periodIndex))
     .limit(1);
 
-  let index = derniere?.periodIndex ?? 0;
-  // Curseur rattrapé jusqu'à la dernière occurrence déjà générée (ou laissé
-  // sur le modèle lui-même s'il n'y en a aucune), PUIS avancé d'une seule
-  // période à la fois dans la boucle ci-dessous : recalculer chaque date
-  // depuis `expenseDate` à chaque itération referait tout le chemin déjà
-  // parcouru à l'itération précédente.
-  let dateOccurrence = template.expenseDate;
-  for (let i = 0; i < index; i++) {
-    dateOccurrence = ajouterPeriode(dateOccurrence, cycle);
-  }
+  // Point de reprise : le plus grand numéro d'occurrence déjà traité, y compris celles que le
+  // gestionnaire a SUPPRIMÉES depuis (voir expenses.lastPeriodIndex). Se fier au seul maximum des
+  // lignes existantes faisait revenir la génération en arrière dès que la dernière occurrence
+  // était supprimée : le cron suivant la recréait.
+  const dejaTraite = Math.max(derniere?.periodIndex ?? 0, template.lastPeriodIndex ?? 0);
+  let index = dejaTraite;
   let generees = 0;
 
   // Borne de sécurité : un modèle mal configuré (date de fin avant la date de
@@ -78,7 +75,10 @@ async function genererOccurrencesManquantes(template: ExpenseRow, dbClient: DbCl
   while (true) {
     index++;
     if (index > GARDE_FOU) break;
-    dateOccurrence = ajouterPeriode(dateOccurrence, cycle);
+    // Toujours calculée depuis la date du MODÈLE : avancer d'une période à partir de la date
+    // précédente perdait le jour du mois à la première échéance courte (31 janvier → 28 février →
+    // 28 mars, pour toujours).
+    const dateOccurrence = ajouterPeriode(template.expenseDate, cycle, index);
     if (dateOccurrence > maintenant) break;
     if (template.recurrenceEndDate && dateOccurrence > template.recurrenceEndDate) break;
 
@@ -103,6 +103,12 @@ async function genererOccurrencesManquantes(template: ExpenseRow, dbClient: DbCl
       .returning({ id: expenses.id });
 
     if (insertedRows.length > 0) generees++;
+  }
+
+  // `index` a dépassé d'un cran la dernière occurrence traitée (celle qui a fait sortir de la boucle).
+  const dernierTraite = Math.max(dejaTraite, index - 1);
+  if (dernierTraite > (template.lastPeriodIndex ?? 0)) {
+    await dbClient.update(expenses).set({ lastPeriodIndex: dernierTraite }).where(eq(expenses.id, template.id));
   }
 
   return generees;

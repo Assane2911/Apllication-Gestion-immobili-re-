@@ -344,6 +344,32 @@ describe("GET /api/expenses/export", () => {
     expect(res.text).toContain("'=2+2");
   });
 
+  it("ne mélange pas les devises dans le résumé par bien : une ligne par bien et par devise", async () => {
+    // Une dépense peut être saisie dans une autre devise que celle du bien. Le résumé additionnait
+    // alors 100 EUR et 50 000 XOF sur une même ligne (« 50 100 »), sans devise — un total faux dans
+    // un export sur lequel on fonde une déclaration.
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const property = await createProperty(manager.id, { title: "Villa Ngor", currency: "XOF" });
+    await testDb.insert(expenses).values([
+      { propertyId: property.id, category: "MAINTENANCE", title: "Peinture", amount: 50000, currency: "XOF", expenseDate: new Date(2026, 5, 10) },
+      { propertyId: property.id, category: "INSURANCE", title: "Assurance", amount: 100, currency: "EUR", expenseDate: new Date(2026, 5, 11) },
+    ]);
+
+    const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    const lignes = res.text.split("\n");
+    const debut = lignes.findIndex((l) => l.startsWith("Bien;"));
+    expect(debut).toBeGreaterThan(-1);
+    const entete = lignes[debut].split(";");
+    expect(entete).toContain("Devise");
+    const resume = lignes.slice(debut + 1).filter((l) => l.startsWith('"Villa Ngor";'));
+    expect(resume).toHaveLength(2);
+    const parDevise = Object.fromEntries(resume.map((l) => [l.split(";")[entete.indexOf("Devise")], l.split(";")]));
+    expect(parDevise.XOF[entete.indexOf("Dépenses")]).toBe("50000,00");
+    expect(parDevise.EUR[entete.indexOf("Dépenses")]).toBe("100,00");
+  });
+
   it("exporte normalement un rapport sans caractère à risque", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const property = await createProperty(manager.id, { title: "Villa Ngor" });

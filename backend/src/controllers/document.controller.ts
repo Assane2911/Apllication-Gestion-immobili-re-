@@ -11,7 +11,6 @@ import { generateInspectionHtml, generateLeaseHtml, generateReceiptHtml, generat
 import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire, estLocataireDuBail } from "../utils/authorization";
-import { nomAvecCivilite } from "../utils/nom";
 
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -169,7 +168,12 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
     inspectionDate: inspection.inspectionDate,
     agencyName: agency?.agencyName || "Agence Immobilière",
     property: { title: inspection.property?.title || "", address: inspection.property?.address || "" },
-    tenant: { fullName: inspection.tenant ? nomAvecCivilite(inspection.tenant) : "" },
+    // En colocation, le constat nomme tous les occupants du bail (comme le bail et la quittance).
+    tenant: {
+      fullName: inspection.tenant
+        ? nomsDesLocataires([inspection.tenant, ...(await colocatairesActifs(inspection.contractId))])
+        : "",
+    },
     rooms: inspection.rooms,
     meters: inspection.meters,
     keys: inspection.keys,

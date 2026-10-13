@@ -485,13 +485,14 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
   // n'existe plus produisait un 500 sur computeSubscriptionInfo(undefined).
   const compteAvant = await chargerCompteCourant(req);
 
-  const [updatedUser] = await db
-    .update(users)
-    .set({
-      subscriptionStatus: "CANCELLED",
-    })
-    .where(eq(users.id, req.user.userId))
-    .returning();
+  // Il n'y a un abonnement payant à résilier que s'il est actif — ou déjà
+  // résilié, pour rejouer l'appel à Stripe d'une résiliation qui n'avait pas
+  // abouti. Sans ce garde-fou, résilier pendant l'essai (appel direct à l'API :
+  // l'interface n'offre pas le bouton) faisait passer le compte en CANCELLED
+  // sans aucune date de fin payée, et coupait l'accès sur-le-champ.
+  if (compteAvant.subscriptionStatus !== "ACTIVE" && compteAvant.subscriptionStatus !== "CANCELLED") {
+    throw new ApiError(409, "Aucun abonnement payant à résilier sur ce compte.");
+  }
 
   // Seul un compte ayant réellement activé le renouvellement automatique
   // (Stripe Subscriptions, voir subscribe()) a un abonnement Stripe à
@@ -500,9 +501,20 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
   // paiement, y compris ponctuel (PayDunya, virement, ou Stripe sans
   // reconduction), alors qu'aucun renouvellement automatique n'avait jamais
   // existé pour ces comptes-là.
+  //
+  // L'appel à Stripe passe AVANT la base : s'il échoue (502), rien n'est
+  // modifié et on ne dit pas au gestionnaire que le prélèvement est annulé.
   if (compteAvant.stripeSubscriptionId) {
     await cancelStripeSubscriptionAtPeriodEnd(compteAvant.stripeSubscriptionId);
   }
+
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      subscriptionStatus: "CANCELLED",
+    })
+    .where(eq(users.id, req.user.userId))
+    .returning();
 
   res.json({
     success: true,

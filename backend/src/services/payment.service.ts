@@ -364,15 +364,28 @@ async function initiateStripePayment(
  * n'en déclenchera plus aucune après elle, et enverra `customer.subscription.
  * deleted` à l'échéance (voir stripe.controller.ts).
  *
- * N'échoue jamais bruyamment : appelée depuis cancelSubscription(), qui doit
- * pouvoir résilier localement même si Stripe est injoignable — la résiliation
- * du client ne doit pas dépendre de la disponibilité du prestataire.
- * L'échec est journalisé pour un suivi opérationnel (webhook à rejouer,
- * incohérence à corriger à la main).
+ * ÉCHOUE bruyamment (ApiError 502), comme setStripeCollectionPaused et
+ * cancelStripeSubscriptionNow, et pour la même raison. Cette fonction était
+ * auparavant silencieuse « pour que la résiliation ne dépende pas de la
+ * disponibilité du prestataire » ; mais cancelSubscription répondait alors
+ * « le renouvellement automatique a été annulé » alors que Stripe n'avait rien
+ * reçu : la carte du client était prélevée à l'échéance suivante, après une
+ * résiliation qu'on lui avait confirmée. L'appelant fait donc l'appel AVANT de
+ * toucher à la base : en cas d'échec rien n'est modifié et le gestionnaire
+ * peut réessayer. Un abonnement que Stripe ne connaît plus (`resource_missing`)
+ * n'a plus rien à renouveler : on le tient pour déjà résilié.
  */
 export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: string): Promise<void> {
+  if (!env.payments.stripeSecretKey) {
+    throw new ApiError(
+      502,
+      "Stripe n'est pas configuré sur ce serveur : impossible de résilier le renouvellement automatique par carte. Rien n'a été modifié."
+    );
+  }
+
+  let response: Response;
   try {
-    const response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
+    response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.payments.stripeSecretKey}`,
@@ -380,16 +393,21 @@ export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: 
       },
       body: new URLSearchParams({ cancel_at_period_end: "true" }).toString(),
     });
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
-      console.error(
-        `[stripe] Échec de la résiliation (cancel_at_period_end) de l'abonnement ${stripeSubscriptionId} :`,
-        data.error?.message ?? response.status
-      );
-    }
   } catch (err) {
     console.error(`[stripe] Échec réseau lors de la résiliation de l'abonnement ${stripeSubscriptionId} :`, err);
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été modifié : réessayez plus tard.");
   }
+
+  if (response.ok) return;
+
+  const data = (await response.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
+  if (data.error?.code === "resource_missing") return;
+
+  console.error(
+    `[stripe] Échec de la résiliation (cancel_at_period_end) de l'abonnement ${stripeSubscriptionId} :`,
+    data.error?.message ?? response.status
+  );
+  throw new ApiError(502, "Stripe a refusé la résiliation du renouvellement automatique. Rien n'a été modifié : réessayez plus tard.");
 }
 
 /**

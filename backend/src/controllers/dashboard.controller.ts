@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, inArray, or } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, ne, or } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { expenses, invoices, issueReports, properties, contracts as contractsTable, tenants } from "../db/schema";
@@ -45,7 +45,9 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
               and(
                 inArray(invoices.contractId, managerContractIds),
                 eq(invoices.periodMonth, month),
-                eq(invoices.periodYear, year)
+                eq(invoices.periodYear, year),
+                // Une facture annulée n'est plus due : elle ne fait pas partie du loyer « attendu ».
+                ne(invoices.status, "CANCELLED")
               )
             ),
           db

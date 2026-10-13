@@ -1,9 +1,10 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, inspections, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
+import { bauxDuLocataire } from "../services/colocation.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
@@ -95,15 +96,21 @@ export const getInspection = asyncHandler(async (req: Request, res: Response) =>
   res.json({ ...parseInspection(row.inspection), property: row.property, tenant: row.tenant });
 });
 
-/** Pour le locataire : ses propres états des lieux (liste à plat, comme myContracts). */
+/**
+ * Pour le locataire : les états des lieux de ses baux (liste à plat, comme myContracts). Un
+ * colocataire voit ceux du bail qu'il occupe, au même titre que le bail lui-même ; la signature,
+ * elle, reste au titulaire (voir signInspection).
+ */
 export const myInspections = asyncHandler(async (req: Request, res: Response) => {
   const fiche = await chargerLocataireDuCompte(req);
+  const baux = await bauxDuLocataire(fiche.id);
 
   const rows = await db
     .select({ inspection: inspections, property: properties })
     .from(inspections)
     .innerJoin(properties, eq(inspections.propertyId, properties.id))
-    .where(eq(inspections.tenantId, fiche.id))
+    // inArray refuse une liste vide : un locataire sans aucun bail ne cherche que par sa fiche.
+    .where(baux.size > 0 ? or(eq(inspections.tenantId, fiche.id), inArray(inspections.contractId, [...baux.keys()])) : eq(inspections.tenantId, fiche.id))
     .orderBy(desc(inspections.createdAt));
 
   res.json(rows.map((r: { inspection: typeof inspections.$inferSelect; property: typeof properties.$inferSelect }) => ({
