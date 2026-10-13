@@ -65,6 +65,17 @@ function computePortalStatus(ownerUserId: string | null, resetPasswordTokenHash:
   return resetPasswordTokenHash ? "PENDING" : "ACTIVE";
 }
 
+/**
+ * Une fiche anonymisée (droit à l'effacement) est figée : y ressaisir des données personnelles la
+ * laisserait marquée anonymisée tout en les portant, et l'inviter au portail recréerait un compte
+ * d'accès que l'anonymisation vient de supprimer.
+ */
+function assertNonAnonymise(owner: { anonymizedAt: Date | null }) {
+  if (owner.anonymizedAt) {
+    throw new ApiError(409, "Ce propriétaire a été anonymisé : sa fiche ne peut plus être modifiée ni rattachée à un accès au portail.");
+  }
+}
+
 export const listOwners = asyncHandler(async (req: Request, res: Response) => {
   const pagination = parsePagination(req);
   const whereClause = eq(owners.managerId, req.user!.userId);
@@ -142,6 +153,7 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
 
   const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable");
+  assertNonAnonymise(existing);
 
   const [owner] = await db.update(owners).set(body).where(eq(owners.id, req.params.id)).returning();
 
@@ -301,6 +313,7 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
 export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const [owner] = await db.select().from(owners).where(eq(owners.id, req.params.id));
   assertOwnership(owner, (o) => o.managerId, req.user!.userId, "Propriétaire introuvable");
+  assertNonAnonymise(owner);
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const resetPasswordTokenHash = hashToken(rawToken);
@@ -462,22 +475,28 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
         ])
       : [[], []];
 
-  // Détail par bien : perçu / en attente ce mois-ci (une devise par bien —
-  // voir contracts/invoices, qui héritent la devise du bien à leur création).
-  const perProperty = new Map<
-    string,
-    { propertyId: string; title: string; address: string; currency: string; collected: number; pending: number }
-  >();
-  for (const p of ownerProperties) {
-    perProperty.set(p.id, {
-      propertyId: p.id,
-      title: p.title,
-      address: p.address,
-      currency: p.currency,
-      collected: 0,
-      pending: 0,
-    });
+  // Détail par bien ET par devise : la devise d'un loyer est celle de son CONTRAT (ou de la facture), pas
+  // forcément celle du bien — contract.controller.ts autorise un contrat dans une autre devise. Tout
+  // ranger sous la devise du bien affichait 500 EUR perçus comme 500 FCFA. Même règle que le
+  // compte-rendu de gestion (crg.controller.ts) : une ligne par couple (bien, devise). Chaque bien garde
+  // sa ligne dans sa propre devise, même à zéro.
+  type LigneBien = { propertyId: string; title: string; address: string; currency: string; collected: number; pending: number };
+  const perProperty = new Map<string, LigneBien>();
+  const biens = new Map<string, typeof properties.$inferSelect>(
+    ownerProperties.map((p: typeof properties.$inferSelect) => [p.id, p] as const)
+  );
+  function ligne(propertyId: string, currency: string): LigneBien | undefined {
+    const bien = biens.get(propertyId);
+    if (!bien) return undefined;
+    const cle = `${propertyId}|${currency}`;
+    let existante = perProperty.get(cle);
+    if (!existante) {
+      existante = { propertyId, title: bien.title, address: bien.address, currency, collected: 0, pending: 0 };
+      perProperty.set(cle, existante);
+    }
+    return existante;
   }
+  for (const p of ownerProperties) ligne(p.id, p.currency);
   // ENCAISSEMENTS (un par paiement, voir encaissements.service.ts) : « perçu »
   // compte l'argent reçu ce mois-ci, à sa date ; « en attente » est le RESTE DÛ
   // des loyers de la période du mois.
@@ -486,7 +505,7 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
   );
   for (const inv of monthlyInvoices) {
     const propertyId = contractIdToPropertyId.get(inv.contractId);
-    const entry = propertyId ? perProperty.get(propertyId) : undefined;
+    const entry = propertyId ? ligne(propertyId, inv.currency || "EUR") : undefined;
     if (!entry) continue;
     if (inv.status === "PENDING" || inv.status === "LATE") entry.pending += resteDu(inv);
   }
@@ -494,7 +513,7 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
     const date = new Date(inv.paidAt!);
     if (date.getFullYear() !== year || date.getMonth() + 1 !== month) continue;
     const propertyId = contractIdToPropertyId.get(inv.contractId);
-    const entry = propertyId ? perProperty.get(propertyId) : undefined;
+    const entry = propertyId ? ligne(propertyId, inv.currency || "EUR") : undefined;
     if (entry) entry.collected += inv.amount;
   }
 

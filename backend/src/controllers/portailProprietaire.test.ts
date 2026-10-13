@@ -7,9 +7,12 @@ import {
   authHeader,
   createManager,
   createOwner,
+  createContract,
+  createInvoice,
   createOwnerPortalUser,
   createPortalUser,
   createProperty,
+  createTenant,
   tokenFor,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -123,5 +126,39 @@ describe("Portail propriétaire — la fiche est résolue par le compte", () => 
       testDb.update(owners).set({ userId: compte.id }).where(eq(owners.id, ficheB.id))
     ).rejects.toThrow();
     expect(ficheA.id).toBeDefined();
+  });
+});
+
+describe("Portail propriétaire — tableau de bord multi-devises", () => {
+  it("range chaque loyer dans SA devise, pas dans celle du bien (comme le compte-rendu de gestion)", async () => {
+    // Un contrat peut être libellé dans une autre devise que le bien. Tout classer sous la devise du
+    // bien affichait 500 EUR perçus comme 500 FCFA : le propriétaire voyait un montant faux.
+    const manager = await createManager();
+    const owner = await createOwner(manager.id);
+    const bien = await createProperty(manager.id, { ownerId: owner.id, title: "Villa Ngor", currency: "XOF" });
+    const locataire = await createTenant(manager.id);
+    const bail = await createContract(bien.id, locataire.id, { status: "ACTIVE", currency: "EUR" });
+    const maintenant = new Date();
+    await createInvoice(bail.id, {
+      periodMonth: maintenant.getMonth() + 1,
+      periodYear: maintenant.getFullYear(),
+      dueDate: maintenant,
+      amount: 500,
+      currency: "EUR",
+      status: "PAID",
+      paidAt: maintenant,
+    });
+    const compte = await createOwnerPortalUser(owner);
+
+    const res = await request(app).get("/api/owners/mine/dashboard").set(authHeader(tokenFor(compte, null, owner.id)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.collectedThisMonthByCurrency).toEqual({ EUR: 500 });
+    const lignes = res.body.properties.filter((p: { propertyId: string }) => p.propertyId === bien.id);
+    const eur = lignes.find((p: { currency: string }) => p.currency === "EUR");
+    expect(eur.collected).toBe(500);
+    // Le bien garde sa ligne dans sa propre devise, à zéro : on voit qu'il n'a rien encaissé dans cette devise.
+    const xof = lignes.find((p: { currency: string }) => p.currency === "XOF");
+    expect(xof.collected).toBe(0);
   });
 });

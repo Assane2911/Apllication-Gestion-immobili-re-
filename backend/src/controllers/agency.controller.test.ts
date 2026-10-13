@@ -35,6 +35,21 @@ describe("GET /api/agency", () => {
     expect(rows).toHaveLength(1);
   });
 
+  it("n'invente aucune coordonnée ni mention légale : elles s'impriment sur les quittances et les baux", async () => {
+    // Les paramètres créés au premier accès contenaient un faux téléphone, un faux email et une fausse
+    // « carte professionnelle n°CPI 7501 » : un gestionnaire qui ouvrait la page sans rien enregistrer
+    // les voyait ensuite sur chaque document envoyé à ses locataires.
+    const manager = await createManager();
+
+    const res = await request(app).get("/api/agency").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    for (const champ of ["address", "phone", "email", "legalNotice", "siretOrId"]) {
+      expect(res.body[champ] ?? null).toBeNull();
+    }
+    expect(JSON.stringify(res.body)).not.toMatch(/CPI 7501|monagence-immo|agence\.com|40 00 00 00/);
+  });
+
   it("ne recrée pas de paramètres à un second appel", async () => {
     const manager = await createManager();
     await request(app).get("/api/agency").set(authHeader(tokenFor(manager)));

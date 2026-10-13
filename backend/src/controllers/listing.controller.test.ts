@@ -201,6 +201,20 @@ describe("POST /api/listings/public/:id/leads", () => {
    * numéro : sinon le gestionnaire découvre un prospect injoignable au
    * moment de l'appeler, la seule donnée de contact ayant été un texte libre.
    */
+  it("borne la longueur des textes d'une demande publique (route sans authentification)", async () => {
+    const manager = await createManager();
+    const listing = await createListingRow(manager.id);
+    const corps = { prospectName: "Awa Sow", prospectEmail: "awa@test.local", prospectPhone: "+221771234567" };
+    const envoyer = (surcharge: Record<string, string>) =>
+      request(app).post(`/api/listings/public/${listing.id}/leads`).send({ ...corps, ...surcharge });
+
+    expect((await envoyer({ message: "x".repeat(2001) })).status).toBe(400);
+    expect((await envoyer({ prospectName: "x".repeat(121) })).status).toBe(400);
+    expect((await envoyer({ prospectEmail: `${"x".repeat(250)}@test.local` })).status).toBe(400);
+    expect((await envoyer({ message: "x".repeat(2000) })).status).toBe(201);
+    expect(await testDb.select().from(listingLeads).where(eq(listingLeads.listingId, listing.id))).toHaveLength(1);
+  });
+
   it("rejette un numéro de téléphone qui n'en est manifestement pas un", async () => {
     const manager = await createManager();
     const listing = await createListingRow(manager.id);
@@ -250,6 +264,21 @@ describe("POST /api/listings — CRM gestionnaire", () => {
     expect(res.body.managerId).toBe(manager.id);
     expect(res.body.status).toBe("PUBLISHED");
     expect(res.body.currency).toBe("EUR");
+  });
+
+  it("normalise le code pays en majuscules : « sn » et « SN » ne font qu'un pour le filtre de la vitrine", async () => {
+    // Le filtre compare le code tel quel : une annonce saisie en « sn » n'apparaissait jamais sous
+    // « SN » et ajoutait un second pays à la liste.
+    const manager = await createManager();
+    const res = await request(app)
+      .post("/api/listings")
+      .set(authHeader(tokenFor(manager)))
+      .send({ title: "Studio Almadies", description: "Studio meublé", price: 300, location: "Almadies, Dakar", country: "sn" });
+    expect(res.status).toBe(201);
+    expect(res.body.country).toBe("SN");
+
+    const filtre = await request(app).get("/api/listings/public?country=sn");
+    expect(filtre.body.items.map((l: { id: string }) => l.id)).toContain(res.body.id);
   });
 
   it("rejette une annonce sans titre ni localisation", async () => {

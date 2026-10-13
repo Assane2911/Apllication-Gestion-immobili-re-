@@ -114,7 +114,7 @@ export default function OwnerDashboardPage() {
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {data.properties.map((p) => (
-              <div key={p.propertyId} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
+              <div key={`${p.propertyId}-${p.currency}`} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{p.title}</p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">{p.address}</p>
