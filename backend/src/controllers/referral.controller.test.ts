@@ -3,7 +3,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import { users } from "../db/schema";
-import { REFERRAL_REWARD_DAYS } from "../services/referral.service";
+import { REFERRAL_MAX_REWARDED, REFERRAL_REWARD_DAYS } from "../services/referral.service";
 import { authHeader, createManager, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { hashToken } from "../utils/token";
@@ -37,6 +37,18 @@ describe("GET /api/referral", () => {
     const res = await request(app).get("/api/referral").set(authHeader(tokenFor(manager)));
 
     expect(res.body.totalReferred).toBe(2);
+  });
+
+  it("indique le plafond de filleuls récompensés et combien en sont déjà utilisés", async () => {
+    const manager = await createManager();
+    await createManager({ referredByUserId: manager.id, referralRewardGrantedAt: new Date() });
+    await createManager({ referredByUserId: manager.id, referralRewardGrantedAt: new Date() });
+    await createManager({ referredByUserId: manager.id });
+
+    const res = await request(app).get("/api/referral").set(authHeader(tokenFor(manager)));
+
+    expect(res.body.maxRewardedReferrals).toBe(REFERRAL_MAX_REWARDED);
+    expect(res.body.rewardedReferrals).toBe(2);
   });
 
   it("reste accessible à un gestionnaire dont l'essai est expiré (pas de requireActiveSubscription)", async () => {

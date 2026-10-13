@@ -18,6 +18,8 @@ function referralInfo(overrides: Partial<ReferralInfo> = {}): ReferralInfo {
     referralUrl: "https://app.test/inscription?ref=A1B2C3D4",
     rewardDays: 15,
     totalReferred: 3,
+    maxRewardedReferrals: 10,
+    rewardedReferrals: 3,
     ...overrides,
   };
 }
@@ -29,6 +31,21 @@ function renderPage() {
 describe("ReferralPage (manager)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
+  });
+
+  it("indique combien de filleuls récompensés sont déjà utilisés sur le plafond", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: referralInfo({ rewardedReferrals: 3, maxRewardedReferrals: 10 }) });
+    renderPage();
+
+    expect(await screen.findByText("Plafond : 3 filleul(s) récompensé(s) sur 10.")).toBeInTheDocument();
+  });
+
+  it("prévient quand le plafond est atteint", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: referralInfo({ rewardedReferrals: 10, maxRewardedReferrals: 10 }) });
+    renderPage();
+
+    expect(await screen.findByText(/Plafond atteint/)).toBeInTheDocument();
+    expect(screen.queryByText(/filleul\(s\) récompensé\(s\) sur/)).not.toBeInTheDocument();
   });
 
   it("affiche le code de parrainage, le lien et le nombre de filleuls", async () => {

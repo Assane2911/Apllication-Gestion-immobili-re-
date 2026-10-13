@@ -1,9 +1,9 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, isNotNull } from "drizzle-orm";
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { users } from "../db/schema";
-import { obtenirOuCreerCodeParrainage, REFERRAL_REWARD_DAYS } from "../services/referral.service";
+import { obtenirOuCreerCodeParrainage, REFERRAL_MAX_REWARDED, REFERRAL_REWARD_DAYS } from "../services/referral.service";
 import { asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 
@@ -21,11 +21,18 @@ export const getMyReferral = asyncHandler(async (req: Request, res: Response) =>
     .select({ total: count() })
     .from(users)
     .where(and(eq(users.referredByUserId, compte.id), eq(users.role, "MANAGER")));
+  // Filleuls confirmés et déjà traités : ce sont eux qui comptent pour le plafond (voir referral.service.ts).
+  const [{ traites }] = await db
+    .select({ traites: count() })
+    .from(users)
+    .where(and(eq(users.referredByUserId, compte.id), isNotNull(users.referralRewardGrantedAt)));
 
   res.json({
     referralCode,
     referralUrl: `${env.frontendUrl}/inscription?ref=${referralCode}`,
     rewardDays: REFERRAL_REWARD_DAYS,
     totalReferred: total,
+    maxRewardedReferrals: REFERRAL_MAX_REWARDED,
+    rewardedReferrals: Math.min(traites, REFERRAL_MAX_REWARDED),
   });
 });

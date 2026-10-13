@@ -1665,6 +1665,8 @@ const es: TranslationSchema = {
       linkLabel: "Tu enlace para compartir",
       explanation: "En cuanto alguien se registre con tu código y confirme su correo, se añadirán automáticamente {{days}} días a tu prueba o a tu suscripción actual.",
       totalReferred: "Referido(s) inscrito(s)",
+      rewardCap: "Límite: {{used}} de {{max}} referidos recompensados.",
+      rewardCapReached: "Límite alcanzado: los nuevos referidos pueden registrarse, pero ya no amplían su acceso.",
     },
   },
 
