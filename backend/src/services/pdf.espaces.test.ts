@@ -57,3 +57,47 @@ describe("PDF : séparateur des milliers lisible", () => {
     expect(textes().some((t) => t.includes("bail du 1er janvier 2025"))).toBe(true);
   });
 });
+
+describe("PDF : mise en demeure avec beaucoup de loyers impayés", () => {
+  const nombreDePages = (pdf: Buffer) => (pdf.toString("latin1").match(/\/Type \/Page\b/g) ?? []).length;
+  const courrier = (loyers: number) => ({
+    reference: "MED-2026-LONG01",
+    createdAt: new Date(2026, 9, 12),
+    deadlineDays: 8,
+    currency: "XOF",
+    totalDue: loyers * 250000,
+    factures: Array.from({ length: loyers }, (_, i) => ({
+      periodMonth: (i % 12) + 1,
+      periodYear: 2024 + Math.floor(i / 12),
+      dueDate: new Date(2024 + Math.floor(i / 12), i % 12, 5).toISOString(),
+      amount: 250000,
+      resteDu: 250000,
+    })),
+    destinataires: "Madame Awa DIOP",
+    adresse: "12 rue Carnot, Dakar",
+    propertyTitle: "Appartement Plateau",
+    contractStartDate: new Date(2024, 0, 1),
+    applicableLaw: null,
+    garants: [],
+    agency: { name: "Agence Téranga", address: null, phone: null, email: null, siretOrId: null },
+  });
+
+  it("40 loyers impayés : le tableau passe à la page suivante au lieu d'ouvrir une page par cellule (42 pages avant)", async () => {
+    const pdf = await generateFormalNoticePdfBuffer(courrier(40));
+
+    expect(nombreDePages(pdf)).toBe(2);
+  });
+
+  it("un loyer unique tient sur une page", async () => {
+    expect(nombreDePages(await generateFormalNoticePdfBuffer(courrier(1)))).toBe(1);
+  });
+
+  it("l'en-tête du tableau est repris sur la page suivante, avec le total", async () => {
+    const textes = textesEcrits();
+
+    await generateFormalNoticePdfBuffer(courrier(40));
+
+    expect(textes().filter((t) => t === "Loyer")).toHaveLength(2);
+    expect(textes().some((t) => t.includes("10 000 000 FCFA"))).toBe(true);
+  });
+});

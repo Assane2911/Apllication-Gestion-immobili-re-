@@ -226,7 +226,7 @@ describe("MessagesPage (gestionnaire)", () => {
         }),
       ])
     );
-    // Fil du titulaire, ouvert d'office : sans tenantId.
+    // Fil du titulaire, ouvert d'office : le fil se désigne par son identifiant, titulaire compris.
     mockedApi.get.mockResolvedValueOnce({
       data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
     });
@@ -241,7 +241,9 @@ describe("MessagesPage (gestionnaire)", () => {
     });
 
     renderPage();
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/messages/c1", { signal: expect.anything() }));
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenCalledWith("/messages/c1", { signal: expect.anything(), params: { tenantId: "t1" } })
+    );
     expect(screen.getByText("Colocataire")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Binta Kane/ }));
@@ -255,5 +257,36 @@ describe("MessagesPage (gestionnaire)", () => {
     await waitFor(() =>
       expect(mockedApi.post).toHaveBeenCalledWith("/messages/c1", { content: "Réponse à Binta" }, { params: { tenantId: "t2" } })
     );
+  });
+
+  it("changer de page de la liste ne fait pas partir un message dans le fil du titulaire : il va au colocataire choisi", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(
+      conversationsPage(
+        [
+          conversation({ id: "c1:t1", tenantId: "t1", qualite: "TITULAIRE" }),
+          conversation({ id: "c1:t2", tenantId: "t2", qualite: "COLOCATAIRE", tenant: { firstName: "Binta", lastName: "Kane" } as Conversation["tenant"] }),
+        ],
+        { total: 25, totalPages: 2 }
+      )
+    );
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio" } } } });
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { tenant: { firstName: "Binta", lastName: "Kane" }, property: { title: "Studio" } } } });
+    // Page 2 : d'autres baux, le fil choisi n'y figure plus.
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation({ id: "c9:t9", contractId: "c9", tenantId: "t9", qualite: "TITULAIRE" })], { page: 2, total: 25, totalPages: 2 }));
+    mockedApi.post.mockResolvedValueOnce({
+      data: { id: "msg-new", contractId: "c1", senderId: "mgr-1", senderRole: "MANAGER", content: "Pour Binta", isRead: false, createdAt: "2026-06-15T11:00:00.000Z" },
+    });
+
+    renderPage();
+    await user.click(await screen.findByRole("button", { name: /Binta Kane/ }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Binta Kane" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Suivant" }));
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/messages/conversations", expect.objectContaining({ params: { page: 2, pageSize: 20 } })));
+
+    await user.type(screen.getByPlaceholderText("Écrivez votre message..."), "Pour Binta");
+    await user.click(screen.getByRole("button", { name: "Envoyer" }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/messages/c1", { content: "Pour Binta" }, { params: { tenantId: "t2" } }));
   });
 });

@@ -182,6 +182,8 @@ describe("relance d'impayé sur WhatsApp", () => {
 
     expect(resultat).toMatchObject({ sent: 1, echecs: 0 });
     expect(fetchMock).not.toHaveBeenCalled();
+    // Aucune tentative, donc aucun avertissement « modèle non configuré » dans les journaux.
+    expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining("Modèle de message"));
     expect(email.mock.calls.map((c: unknown[]) => c[0]).sort()).toEqual(["awa@example.com", "binta@example.com"]);
     expect((await testDb.select().from(invoices).where(eq(invoices.id, facture.id)))[0].overdueReminderLevel).toBe(1);
   });

@@ -1789,6 +1789,8 @@ const pt: TranslationSchema = {
       headerTitle: "Agência & Gestor",
       housing: "Habitação: {{property}}",
       yourApartment: "O seu apartamento",
+      chooseHousing: "Escolher a habitação",
+      cotenant: "Coinquilino",
       online: "Em linha",
       you: "Você",
       manager: "Gestor",

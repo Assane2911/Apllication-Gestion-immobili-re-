@@ -379,6 +379,19 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     (body.propertyId !== undefined && body.propertyId !== existing.propertyId) || (body.tenantId !== undefined && body.tenantId !== existing.tenantId);
   const changeDebut = body.startDate !== undefined && body.startDate.getTime() !== new Date(existing.startDate).getTime();
   const raccourcitFin = body.endDate !== undefined && body.endDate.getTime() < new Date(existing.endDate).getTime();
+  // Un colocataire du bail ne peut pas en devenir le titulaire : la même personne y figurerait deux
+  // fois (deux fils de messagerie, deux exemplaires de chaque avis). Il faut d'abord le retirer des
+  // colocataires. (L'inverse est déjà refusé : le titulaire ne s'ajoute pas comme colocataire.)
+  if (body.tenantId !== undefined && body.tenantId !== existing.tenantId) {
+    const [colocataire] = await db
+      .select({ id: contractCotenants.id })
+      .from(contractCotenants)
+      .where(and(eq(contractCotenants.contractId, existing.id), eq(contractCotenants.tenantId, body.tenantId)))
+      .limit(1);
+    if (colocataire) {
+      throw new ApiError(409, "Ce locataire est déjà colocataire de ce bail : retirez-le des colocataires avant d'en faire le titulaire.");
+    }
+  }
   if (changeParties || changeDebut || raccourcitFin) {
     const facturesVivantes = await db
       .select({ periodMonth: invoices.periodMonth, periodYear: invoices.periodYear })

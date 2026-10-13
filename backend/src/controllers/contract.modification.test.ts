@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { contracts, invoices } from "../db/schema";
+import { contractCotenants, contracts, invoices } from "../db/schema";
 import { authHeader, createContract, createInvoice, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -134,5 +134,36 @@ describe("isolation", () => {
     expect((await modifier(h, contract.id, { propertyId: bienEtranger.id })).status).toBe(404);
     expect((await modifier(h, contract.id, { tenantId: locataireEtranger.id })).status).toBe(404);
     expect(await testDb.select().from(invoices)).toHaveLength(0);
+  });
+});
+
+describe("PUT /api/contracts/:id — titulaire et colocataires", () => {
+  it("refuse de faire d'un colocataire le titulaire (la même personne y figurerait deux fois), puis l'accepte une fois retiré", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const h = authHeader(tokenFor(manager));
+    const property = await createProperty(manager.id);
+    const awa = await createTenant(manager.id, { firstName: "Awa" });
+    const binta = await createTenant(manager.id, { firstName: "Binta" });
+    const contract = await createContract(property.id, awa.id, { status: "ACTIVE" });
+    await testDb.insert(contractCotenants).values({ contractId: contract.id, tenantId: binta.id });
+
+    const refus = await request(app).put(`/api/contracts/${contract.id}`).set(h).send({ tenantId: binta.id });
+
+    expect(refus.status).toBe(409);
+    expect(refus.body.error).toContain("retirez-le des colocataires");
+    expect((await testDb.select().from(contracts).where(eq(contracts.id, contract.id)))[0].tenantId).toBe(awa.id);
+
+    await testDb.delete(contractCotenants);
+    expect((await request(app).put(`/api/contracts/${contract.id}`).set(h).send({ tenantId: binta.id })).status).toBe(200);
+  });
+
+  it("un titulaire inchangé dans la requête n'est pas pris pour un colocataire", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const h = authHeader(tokenFor(manager));
+    const property = await createProperty(manager.id);
+    const awa = await createTenant(manager.id);
+    const contract = await createContract(property.id, awa.id, { status: "ACTIVE" });
+
+    expect((await request(app).put(`/api/contracts/${contract.id}`).set(h).send({ tenantId: awa.id, terms: "Clause" })).status).toBe(200);
   });
 });

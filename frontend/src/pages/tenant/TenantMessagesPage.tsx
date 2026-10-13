@@ -1,10 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { useConversationThread } from "../../hooks/useConversationThread";
+import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
 
 export default function TenantMessagesPage() {
   const { t, i18n } = useTranslation();
   const {
     conversations,
+    selectedThreadId,
+    setSelectedThreadId,
     messages,
     activeContract,
     newText,
@@ -59,6 +61,22 @@ export default function TenantMessagesPage() {
               {t("tenant.messages.housing", { property: activeContract?.property?.title || t("tenant.messages.yourApartment") })}
             </p>
           </div>
+          {/* Plusieurs fils (plusieurs baux, ou titulaire d'un bail et colocataire d'un autre) : on choisit le logement. */}
+          {conversations.length > 1 && (
+            <select
+              aria-label={t("tenant.messages.chooseHousing")}
+              value={selectedThreadId ?? ""}
+              onChange={(e) => setSelectedThreadId(e.target.value)}
+              className="text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2.5 py-1.5 mx-3 min-w-0"
+            >
+              {conversations.map((c) => (
+                <option key={cleDuFil(c)} value={cleDuFil(c)}>
+                  {c.property?.title}
+                  {c.qualite === "COLOCATAIRE" ? ` · ${t("tenant.messages.cotenant")}` : ""}
+                </option>
+              ))}
+            </select>
+          )}
           <span className="text-xs bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             {t("tenant.messages.online")}
