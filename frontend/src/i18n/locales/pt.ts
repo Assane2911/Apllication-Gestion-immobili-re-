@@ -1420,6 +1420,7 @@ const pt: TranslationSchema = {
       ongoingDiscussions: "Conversas em curso",
       conversationCount: "{{count}} conversa(s)",
       noMessageYet: "Nenhuma mensagem por enquanto",
+      cotenant: "Coinquilino",
       noActiveContracts: "Nenhum contrato ou inquilino ativo.",
       loadingMessages: "A carregar as mensagens...",
       you: "Você (Agência)",

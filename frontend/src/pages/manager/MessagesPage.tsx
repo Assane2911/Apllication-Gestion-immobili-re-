@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import Pagination from "../../components/Pagination";
-import { useConversationThread } from "../../hooks/useConversationThread";
+import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
 
 export default function MessagesPage() {
   const { t, i18n } = useTranslation();
@@ -10,8 +10,8 @@ export default function MessagesPage() {
     setPage,
     total,
     totalPages,
-    selectedContractId,
-    setSelectedContractId,
+    selectedThreadId,
+    setSelectedThreadId,
     messages,
     activeContract: activeDetails,
     newText,
@@ -43,7 +43,7 @@ export default function MessagesPage() {
         {/* Liste des conversations */}
         <div
           className={`${
-            selectedContractId ? "hidden md:flex" : "flex"
+            selectedThreadId ? "hidden md:flex" : "flex"
           } w-full md:w-80 border-r border-slate-200 dark:border-slate-800 flex-col bg-slate-50/50 dark:bg-slate-950/40`}
         >
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -53,10 +53,10 @@ export default function MessagesPage() {
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
             {conversations.map((c) => (
               <button
-                key={c.contractId}
-                onClick={() => setSelectedContractId(c.contractId)}
+                key={cleDuFil(c)}
+                onClick={() => setSelectedThreadId(cleDuFil(c))}
                 className={`w-full text-left p-4 transition-colors flex items-start gap-3 ${
-                  selectedContractId === c.contractId
+                  selectedThreadId === cleDuFil(c)
                     ? "bg-brand-50 dark:bg-brand-500/10 border-l-4 border-brand-600 dark:border-brand-400"
                     : "hover:bg-slate-100/70 dark:hover:bg-slate-800/50"
                 }`}
@@ -68,6 +68,11 @@ export default function MessagesPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate">
                     {c.tenant?.firstName} {c.tenant?.lastName}
+                    {c.qualite === "COLOCATAIRE" && (
+                      <span className="ml-1.5 align-middle text-[10px] font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-1.5 py-0.5 rounded">
+                        {t("manager.messages.cotenant")}
+                      </span>
+                    )}
                   </p>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{c.property?.title}</p>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-1">
@@ -88,17 +93,17 @@ export default function MessagesPage() {
         {/* Zone de discussion */}
         <div
           className={`${
-            selectedContractId ? "flex" : "hidden md:flex"
+            selectedThreadId ? "flex" : "hidden md:flex"
           } flex-1 flex-col bg-white dark:bg-slate-900`}
         >
-          {selectedContractId && activeDetails ? (
+          {selectedThreadId && activeDetails ? (
             <>
               {/* En-tête de conversation */}
               <div className="px-4 md:px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     type="button"
-                    onClick={() => setSelectedContractId(null)}
+                    onClick={() => setSelectedThreadId(null)}
                     aria-label={t("common.actions.back")}
                     className="md:hidden shrink-0 -ml-1 p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-800"
                   >

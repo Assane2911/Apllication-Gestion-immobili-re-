@@ -1,4 +1,4 @@
-import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -69,7 +69,8 @@ async function calculerNotificationsGestionnaire(managerId: string): Promise<Not
     .select({ message: messages, contract: contracts, tenant: tenants, property: properties })
     .from(messages)
     .innerJoin(contracts, eq(messages.contractId, contracts.id))
-    .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    // Le locataire du fil (titulaire ou colocataire) ; une ligne non rattachée est au titulaire.
+    .innerJoin(tenants, sql`${tenants.id} = coalesce(${messages.tenantId}, ${contracts.tenantId})`)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(
       and(eq(messages.senderRole, "TENANT"), eq(messages.isRead, false), eq(properties.managerId, managerId))
@@ -80,7 +81,9 @@ async function calculerNotificationsGestionnaire(managerId: string): Promise<Not
     { count: number; tenantName: string; propertyTitle: string; latest: Date }
   >();
   for (const r of unreadRows) {
-    const key = r.contract.id;
+    // Un fil par locataire : le titulaire garde la clé historique (le bail seul), pour que les
+    // notifications déjà vues ne réapparaissent pas.
+    const key = r.tenant.id === r.contract.tenantId ? r.contract.id : `${r.contract.id}-${r.tenant.id}`;
     const createdAt = new Date(r.message.createdAt);
     const existing = unreadByContract.get(key);
     if (existing) {
@@ -203,7 +206,14 @@ async function calculerNotificationsLocataire(tenantId: string): Promise<Notific
     .select({ message: messages, contract: contracts })
     .from(messages)
     .innerJoin(contracts, eq(messages.contractId, contracts.id))
-    .where(and(eq(contracts.tenantId, tenantId), eq(messages.senderRole, "MANAGER"), eq(messages.isRead, false)));
+    .where(
+      and(
+        // Son fil : rattaché à sa fiche, ou ancienne ligne non rattachée d'un bail dont il est titulaire.
+        or(eq(messages.tenantId, tenantId), and(isNull(messages.tenantId), eq(contracts.tenantId, tenantId))),
+        eq(messages.senderRole, "MANAGER"),
+        eq(messages.isRead, false)
+      )
+    );
 
   if (unreadRows.length > 0) {
     const latest = unreadRows.reduce(

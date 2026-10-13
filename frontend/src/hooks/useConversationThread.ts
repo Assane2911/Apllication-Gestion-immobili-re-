@@ -6,6 +6,11 @@ import type { Conversation, Message, PaginatedResponse, Role } from "../types";
 
 const CONVERSATIONS_PAGE_SIZE = 20;
 
+/** Clé d'un fil : un bail en colocation en a un par locataire (voir Conversation.id). */
+export function cleDuFil(c: Conversation): string {
+  return c.id ?? c.contractId;
+}
+
 interface UseConversationThreadOptions {
   /**
    * Recharge la liste des conversations après l'envoi d'un message (rafraîchit
@@ -30,7 +35,7 @@ export function useConversationThread(role: Role, options: UseConversationThread
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeContract, setActiveContract] = useState<any>(null);
   const [newText, setNewText] = useState("");
@@ -50,7 +55,7 @@ export function useConversationThread(role: Role, options: UseConversationThread
         setConversations(items);
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
-        setSelectedContractId((current) => current ?? (items.length > 0 ? items[0].contractId : null));
+        setSelectedThreadId((current) => current ?? (items.length > 0 ? cleDuFil(items[0]) : null));
         setError(null);
         setLoading(false);
       })
@@ -61,7 +66,7 @@ export function useConversationThread(role: Role, options: UseConversationThread
       });
   }
 
-  // loadConversations lit selectedContractId via un setter fonctionnel (voir ci-dessus) plutôt
+  // loadConversations lit selectedThreadId via un setter fonctionnel (voir ci-dessus) plutôt
   // qu'une closure directe ; l'ajouter aux deps de l'effet ci-dessous redéclencherait un
   // rechargement à chaque sélection de conversation, alors qu'il ne doit tourner qu'au montage
   // ou quand la page change.
@@ -76,12 +81,25 @@ export function useConversationThread(role: Role, options: UseConversationThread
   // aussitôt sur B) pouvait afficher les messages de A par-dessus l'en-tête
   // de B si la réponse de A arrivait après celle de B — trompeur dans un
   // outil de messagerie, contrairement à un simple rechargement de liste.
+  /**
+   * Bail et paramètres de la requête du fil choisi. Côté gestionnaire, le fil d'un colocataire se
+   * désigne par `tenantId` ; sans lui, le serveur ouvre celui du titulaire. Un locataire n'ouvre
+   * jamais que le sien : le serveur l'identifie par son compte.
+   */
+  function cibleDuFil(threadId: string) {
+    const conversation = conversations.find((c) => cleDuFil(c) === threadId);
+    const contractId = conversation?.contractId ?? threadId.split(":")[0];
+    const params = role === "MANAGER" && conversation?.qualite === "COLOCATAIRE" ? { tenantId: conversation.tenantId } : undefined;
+    return { contractId, params };
+  }
+
   useEffect(() => {
-    if (!selectedContractId) return;
+    if (!selectedThreadId) return;
     const controller = new AbortController();
     setLoadingMessages(true);
+    const { contractId, params } = cibleDuFil(selectedThreadId);
     api
-      .get(`/messages/${selectedContractId}`, { signal: controller.signal })
+      .get(`/messages/${contractId}`, { signal: controller.signal, ...(params ? { params } : {}) })
       .then((res) => {
         setMessages(liste<Message>(res.data, "messages"));
         setActiveContract(res.data.contract);
@@ -93,14 +111,18 @@ export function useConversationThread(role: Role, options: UseConversationThread
         setLoadingMessages(false);
       });
     return () => controller.abort();
-  }, [selectedContractId]);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedThreadId]);
 
   async function handleSend(e: FormEvent) {
     e.preventDefault();
-    if (!newText.trim() || !selectedContractId) return;
+    if (!newText.trim() || !selectedThreadId) return;
     setSending(true);
     try {
-      const res = await api.post(`/messages/${selectedContractId}`, { content: newText.trim() });
+      const { contractId, params } = cibleDuFil(selectedThreadId);
+      const res = params
+        ? await api.post(`/messages/${contractId}`, { content: newText.trim() }, { params })
+        : await api.post(`/messages/${contractId}`, { content: newText.trim() });
       setMessages((prev) => [
         ...prev,
         {
@@ -123,8 +145,8 @@ export function useConversationThread(role: Role, options: UseConversationThread
     setPage,
     total,
     totalPages,
-    selectedContractId,
-    setSelectedContractId,
+    selectedThreadId,
+    setSelectedThreadId,
     messages,
     activeContract,
     newText,

@@ -8,10 +8,10 @@ import { type EmailAttachment, sendEmail } from "./email.service";
  * Colocation (voir contract_cotenants) : qui, au-delà du titulaire, est partie au bail.
  *
  * Le colocataire voit le bail, ses factures et ses documents dans son portail, peut
- * payer et signaler un incident, et reçoit une copie des avis, relances et
- * quittances. Restent au titulaire seul : la signature électronique du bail et des
- * états des lieux (une seule signature est stockée), et la messagerie (la
- * conversation existante est la sienne).
+ * payer et signaler un incident, écrire à l'agence (dans son propre fil, que les autres
+ * locataires du bail ne voient pas — voir message.controller.ts), et reçoit une copie des
+ * avis, relances et quittances. Reste au titulaire seul : la signature électronique du bail
+ * et des états des lieux (une seule signature est stockée).
  */
 type Locataire = typeof tenants.$inferSelect;
 

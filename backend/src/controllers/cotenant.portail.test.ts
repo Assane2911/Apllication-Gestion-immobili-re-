@@ -114,13 +114,18 @@ describe("portail du colocataire", () => {
   });
 
   it("ne signe pas électroniquement le bail et ne lit pas la messagerie du titulaire", async () => {
-    const { contract, hColoc } = await colocation();
+    const { contract, hColoc, hGestion } = await colocation();
     const signature = await request(app)
       .post(`/api/contracts/${contract.id}/sign`)
       .set(hColoc)
       .send({ signatureDataUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" });
     expect(signature.status).toBe(403);
-    expect((await request(app).get(`/api/messages/${contract.id}`).set(hColoc)).status).toBe(403);
+    // Le colocataire a SON fil avec l'agence ; celui du titulaire lui reste fermé.
+    await request(app).post(`/api/messages/${contract.id}`).set(hGestion).send({ content: "Message pour Awa" });
+    const fil = await request(app).get(`/api/messages/${contract.id}`).set(hColoc);
+    expect(fil.status).toBe(200);
+    expect(fil.body.qualite).toBe("COLOCATAIRE");
+    expect(fil.body.messages).toEqual([]);
   });
 
   it("retiré du bail, il perd l'accès", async () => {
