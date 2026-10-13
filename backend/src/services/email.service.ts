@@ -804,3 +804,63 @@ export function guarantorUnpaidNoticeEmail(params: {
       </div>`,
   };
 }
+
+/** Mise en demeure de payer (le courrier est joint en PDF). Voir miseEnDemeure.service.ts. */
+export function formalNoticeEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  totalDue: number;
+  currency: string;
+  deadlineDays: number;
+  agencyName: string;
+  reference: string;
+}) {
+  const montant = escapeHtml(formaterMontant(params.totalDue, params.currency));
+  return {
+    subject: `Mise en demeure de payer — ${params.propertyTitle} (réf. ${params.reference})`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: #7f1d1d; padding: 24px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Mise en demeure de payer</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #fecaca;">${escapeHtml(params.agencyName)} • ${escapeHtml(params.propertyTitle)}</p>
+        </div>
+        <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
+          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(params.tenantName)}</strong>,</p>
+          <p>Malgré nos rappels, des loyers restent impayés. Vous trouverez en pièce jointe notre mise en demeure de payer (réf. ${escapeHtml(params.reference)}), qui détaille les sommes dues.</p>
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 11px; color: #7f1d1d; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Total à régler</span><br>
+            <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${montant}</span><br>
+            <span style="font-size: 12px; color: #64748b;">sous ${params.deadlineDays} jour(s) à compter de la réception de ce courrier</span>
+          </div>
+          <p style="font-size: 13px; color: #475569;">Vous pouvez régler depuis votre espace locataire. En cas de difficulté, contactez votre agence sans attendre ; si vous avez déjà payé, ne tenez pas compte de ce message.</p>
+        </div>
+      </div>`,
+  };
+}
+
+/** Copie de la mise en demeure adressée au garant du locataire. */
+export function guarantorFormalNoticeEmail(params: {
+  guarantorName: string;
+  tenantName: string;
+  propertyTitle: string;
+  totalDue: number;
+  currency: string;
+  deadlineDays: number;
+  agencyName: string;
+  reference: string;
+}) {
+  return {
+    subject: `Copie : mise en demeure de payer adressée à ${params.tenantName} (réf. ${params.reference})`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; color: #334155; line-height: 1.6;">
+        <p>Bonjour <strong>${escapeHtml(params.guarantorName)}</strong>,</p>
+        <p>
+          En votre qualité de garant de <strong>${escapeHtml(params.tenantName)}</strong> pour le logement
+          « ${escapeHtml(params.propertyTitle)} », nous vous adressons copie de la mise en demeure de payer
+          qui lui a été notifiée : <strong>${escapeHtml(formaterMontant(params.totalDue, params.currency))}</strong>
+          restent dus, à régler sous ${params.deadlineDays} jour(s). Le courrier est joint à cet email.
+        </p>
+        <p style="font-size: 13px; color: #64748b;">${escapeHtml(params.agencyName)}</p>
+      </div>`,
+  };
+}

@@ -328,10 +328,25 @@ export function generateReceiptHtml(data: ReceiptData): string {
  * jointe de l'email envoyé automatiquement au locataire dès qu'un paiement
  * est validé (voir services/receipt.service.ts).
  */
+/**
+ * Document PDF dont chaque texte remplace l'espace fine insécable (U+202F) — séparateur des milliers
+ * d'Intl en français — par l'espace insécable classique (U+00A0) : les polices standard du PDF
+ * (Helvetica) ne connaissent pas la première, et « 250 000 FCFA » sortait « 250 /000 FCFA » sur les
+ * quittances et les mises en demeure. La seconde, elle, existe et empêche toujours de couper un
+ * montant en fin de ligne.
+ */
+function documentPdf(options: PDFKit.PDFDocumentOptions): PDFKit.PDFDocument {
+  const doc = new PDFDocument(options);
+  const texte = doc.text.bind(doc) as (...args: unknown[]) => PDFKit.PDFDocument;
+  doc.text = ((contenu: unknown, ...reste: unknown[]) =>
+    texte(typeof contenu === "string" ? contenu.replace(/\u202f/g, "\u00a0") : contenu, ...reste)) as typeof doc.text;
+  return doc;
+}
+
 export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: "A4", margin: 48 });
+      const doc = documentPdf({ size: "A4", margin: 48 });
       const chunks: Buffer[] = [];
       doc.on("data", (chunk: Buffer) => chunks.push(chunk));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -1166,4 +1181,218 @@ export function generateRentRevisionHtml(data: RentRevisionExportData, agency: L
 </body>
 </html>
   `.trim();
+}
+
+/** Courrier de mise en demeure de payer (voir services/miseEnDemeure.service.ts). */
+export interface FormalNoticeData {
+  reference: string;
+  createdAt: Date;
+  deadlineDays: number;
+  currency: string;
+  totalDue: number;
+  factures: Array<{ periodMonth: number; periodYear: number; dueDate: string; amount: number; resteDu: number }>;
+  destinataires: string;
+  adresse: string;
+  propertyTitle: string;
+  contractStartDate: Date;
+  applicableLaw: string | null;
+  garants: string[];
+  agency: { name: string; address: string | null; phone: string | null; email: string | null; siretOrId: string | null };
+}
+
+const MOIS_COURRIER = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+
+/**
+ * Le texte du courrier, partagé par sa version à l'écran (HTML) et sa version jointe à l'email
+ * (PDF) : les deux disent exactement la même chose. Rédaction volontairement neutre quant au
+ * droit applicable — l'application sert plusieurs pays ; le droit choisi sur le bail est cité.
+ */
+export function texteMiseEnDemeure(d: FormalNoticeData) {
+  // « 1er janvier », pas « 1 janvier ».
+  const date = (v: Date | string) =>
+    new Date(v).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" }).replace(/^1 /, "1er ");
+  const montant = (n: number) => formaterMontant(n, d.currency);
+  const plusieurs = d.factures.length > 1;
+  return {
+    titre: "MISE EN DEMEURE DE PAYER",
+    envoi: "Par lettre recommandée avec avis de réception, ou remise en main propre contre décharge",
+    lieuEtDate: `Le ${date(d.createdAt)}`,
+    objet: `Objet : mise en demeure de payer — loyer${plusieurs ? "s" : ""} impayé${plusieurs ? "s" : ""} — ${d.propertyTitle}`,
+    salutation: "Madame, Monsieur,",
+    constat:
+      `Sauf erreur ou omission de notre part, ${plusieurs ? "les sommes suivantes, dues" : "la somme suivante, due"} au titre du bail ` +
+      `du ${date(d.contractStartDate)} portant sur le logement « ${d.propertyTitle} »${d.adresse ? ` situé ${d.adresse}` : ""}, ` +
+      `${plusieurs ? "restent impayées" : "reste impayée"} à ce jour, malgré l'échéance dépassée :`,
+    lignes: d.factures.map((f) => ({
+      periode: `${MOIS_COURRIER[f.periodMonth - 1] ?? f.periodMonth} ${f.periodYear}`,
+      echeance: date(f.dueDate),
+      montant: montant(f.amount),
+      reste: montant(f.resteDu),
+    })),
+    total: montant(d.totalDue),
+    demande:
+      `Par la présente, nous vous mettons en demeure de régler la somme totale de ${montant(d.totalDue)} ` +
+      `dans un délai de ${d.deadlineDays} jour${d.deadlineDays > 1 ? "s" : ""} à compter de la réception de ce courrier.`,
+    suites:
+      "À défaut de règlement dans ce délai, nous nous réservons le droit d'engager toute procédure utile au recouvrement " +
+      "de ces sommes et de faire valoir les clauses du bail" +
+      (d.garants.length > 0 ? `, ainsi que l'engagement ${d.garants.length > 1 ? "des garants" : "du garant"} (${d.garants.join(", ")})` : "") +
+      ".",
+    contact:
+      "Si vous rencontrez des difficultés, nous vous invitons à prendre contact avec nous sans attendre afin d'examiner une solution. " +
+      "Si vous avez réglé ces sommes entre-temps, nous vous prions de ne pas tenir compte de ce courrier.",
+    droit: d.applicableLaw?.trim() ? `Droit applicable au bail : ${d.applicableLaw.trim()}` : null,
+    formule: "Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.",
+    signature: `Pour ${d.agency.name}`,
+  };
+}
+
+export function generateFormalNoticeHtml(d: FormalNoticeData): string {
+  const t = texteMiseEnDemeure(d);
+  const lignes = t.lignes
+    .map(
+      (l) =>
+        `<tr><td>${escapeHtml(l.periode)}</td><td>${escapeHtml(l.echeance)}</td><td class="num">${escapeHtml(l.montant)}</td><td class="num">${escapeHtml(l.reste)}</td></tr>`
+    )
+    .join("");
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Mise en demeure ${escapeHtml(d.reference)} - ${escapeHtml(d.propertyTitle)}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; line-height: 1.6; padding: 24px; font-size: 13px; }
+    .entete { display: flex; justify-content: space-between; gap: 24px; }
+    .agence strong { font-size: 15px; color: #0f172a; }
+    .destinataire { margin: 28px 0 0 auto; width: 50%; }
+    h1 { color: #7f1d1d; font-size: 18px; text-align: center; margin: 28px 0 4px; letter-spacing: 1px; }
+    .envoi { text-align: center; font-size: 11px; color: #64748b; margin: 0 0 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+    th { background: #f8fafc; font-size: 11px; text-transform: uppercase; color: #64748b; }
+    .num { text-align: right; white-space: nowrap; }
+    tfoot td { font-weight: bold; background: #fef2f2; }
+    .signature { margin-top: 32px; margin-left: auto; width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; min-height: 80px; }
+  </style>
+</head>
+<body>
+  <div class="entete">
+    <div class="agence">
+      <strong>${escapeHtml(d.agency.name)}</strong><br>
+      ${d.agency.address ? `${escapeHtml(d.agency.address)}<br>` : ""}
+      ${d.agency.phone ? `Tél : ${escapeHtml(d.agency.phone)}<br>` : ""}
+      ${d.agency.email ? `${escapeHtml(d.agency.email)}<br>` : ""}
+      ${d.agency.siretOrId ? `N° SIRET / NIF : ${escapeHtml(d.agency.siretOrId)}` : ""}
+    </div>
+    <div style="text-align:right; color:#64748b;">Réf : ${escapeHtml(d.reference)}<br>${escapeHtml(t.lieuEtDate)}</div>
+  </div>
+  <div class="destinataire">
+    <strong>${escapeHtml(d.destinataires)}</strong><br>
+    ${escapeHtml(d.adresse)}
+  </div>
+
+  <h1>${t.titre}</h1>
+  <p class="envoi">${escapeHtml(t.envoi)}</p>
+
+  <p><strong>${escapeHtml(t.objet)}</strong></p>
+  <p>${escapeHtml(t.salutation)}</p>
+  <p>${escapeHtml(t.constat)}</p>
+  <table>
+    <thead><tr><th>Loyer</th><th>Échéance</th><th class="num">Montant</th><th class="num">Reste dû</th></tr></thead>
+    <tbody>${lignes}</tbody>
+    <tfoot><tr><td colspan="3">Total restant dû</td><td class="num">${escapeHtml(t.total)}</td></tr></tfoot>
+  </table>
+  <p><strong>${escapeHtml(t.demande)}</strong></p>
+  <p>${escapeHtml(t.suites)}</p>
+  <p>${escapeHtml(t.contact)}</p>
+  ${t.droit ? `<p style="font-size:12px; color:#64748b;">${escapeHtml(t.droit)}</p>` : ""}
+  <p>${escapeHtml(t.formule)}</p>
+  <div class="signature"><strong>${escapeHtml(t.signature)}</strong></div>
+</body>
+</html>
+  `.trim();
+}
+
+export function generateFormalNoticePdfBuffer(d: FormalNoticeData): Promise<Buffer> {
+  const t = texteMiseEnDemeure(d);
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = documentPdf({ size: "A4", margin: 56 });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const gauche = doc.page.margins.left;
+      const largeur = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const dark = "#0f172a";
+      const gray = "#64748b";
+      const rouge = "#7f1d1d";
+
+      // En-tête : agence à gauche, référence et date à droite.
+      const haut = doc.y;
+      doc.fillColor(dark).font("Helvetica-Bold").fontSize(12).text(d.agency.name, gauche, haut, { width: largeur * 0.6 });
+      doc.font("Helvetica").fontSize(9).fillColor(gray);
+      for (const ligne of [d.agency.address, d.agency.phone && `Tél : ${d.agency.phone}`, d.agency.email, d.agency.siretOrId && `N° SIRET / NIF : ${d.agency.siretOrId}`]) {
+        if (ligne) doc.text(ligne, { width: largeur * 0.6 });
+      }
+      const basGauche = doc.y;
+      doc.text(`Réf : ${d.reference}`, gauche, haut, { width: largeur, align: "right" }).text(t.lieuEtDate, { width: largeur, align: "right" });
+      doc.y = Math.max(basGauche, doc.y) + 24;
+
+      // Destinataire, dans la moitié droite (fenêtre d'enveloppe).
+      doc.fillColor(dark).font("Helvetica-Bold").fontSize(10).text(d.destinataires, gauche + largeur / 2, doc.y, { width: largeur / 2 });
+      doc.font("Helvetica").text(d.adresse, { width: largeur / 2 });
+      doc.moveDown(2);
+
+      doc.fillColor(rouge).font("Helvetica-Bold").fontSize(15).text(t.titre, gauche, doc.y, { width: largeur, align: "center" });
+      doc.fillColor(gray).font("Helvetica").fontSize(8).text(t.envoi, { width: largeur, align: "center" });
+      doc.moveDown(1.5);
+
+      const paragraphe = (texte: string, gras = false) => {
+        doc.fillColor(dark).font(gras ? "Helvetica-Bold" : "Helvetica").fontSize(10).text(texte, gauche, doc.y, { width: largeur, align: "justify" });
+        doc.moveDown(0.8);
+      };
+      paragraphe(t.objet, true);
+      paragraphe(t.salutation);
+      paragraphe(t.constat);
+
+      // Tableau des loyers réclamés.
+      const colonnes = [largeur * 0.3, largeur * 0.3, largeur * 0.2, largeur * 0.2];
+      const ligneTableau = (cellules: string[], gras: boolean) => {
+        const y = doc.y;
+        let x = gauche;
+        cellules.forEach((c, i) => {
+          doc.font(gras ? "Helvetica-Bold" : "Helvetica").fontSize(9).fillColor(dark).text(c, x + 4, y, { width: colonnes[i] - 8, align: i >= 2 ? "right" : "left" });
+          x += colonnes[i];
+        });
+        doc.y = y + 16;
+        doc.moveTo(gauche, doc.y - 3).lineTo(gauche + largeur, doc.y - 3).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+      };
+      ligneTableau(["Loyer", "Échéance", "Montant", "Reste dû"], true);
+      for (const l of t.lignes) ligneTableau([l.periode, l.echeance, l.montant, l.reste], false);
+      ligneTableau(["Total restant dû", "", "", t.total], true);
+      doc.moveDown(1);
+
+      paragraphe(t.demande, true);
+      paragraphe(t.suites);
+      paragraphe(t.contact);
+      if (t.droit) {
+        doc.fillColor(gray).font("Helvetica").fontSize(9).text(t.droit, gauche, doc.y, { width: largeur });
+        doc.moveDown(0.8);
+      }
+      paragraphe(t.formule);
+      doc.moveDown(1);
+      doc.font("Helvetica-Bold").fontSize(10).fillColor(dark).text(t.signature, gauche + largeur / 2, doc.y, { width: largeur / 2 });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 }

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getContractLease, getInspectionReport, getInvoiceReceipt, getRentRevisionAmendment, getScannedLease } from "../controllers/document.controller";
+import { getFormalNoticeDocument } from "../controllers/formalNotice.controller";
 import { authenticate, requireActiveSubscription } from "../middleware/auth";
 
 const router = Router();
@@ -17,5 +18,6 @@ router.get("/lease/:contractId", getContractLease);
 router.get("/lease-scan/:contractId", getScannedLease);
 router.get("/inspection/:inspectionId", getInspectionReport);
 router.get("/rent-revision/:revisionId", getRentRevisionAmendment);
+router.get("/formal-notice/:noticeId", getFormalNoticeDocument);
 
 export default router;

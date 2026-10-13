@@ -102,6 +102,8 @@ const ECRITURES_AUTORISEES: readonly Regle[] = [
 
   // Relances de loyer : agent et comptable.
   { methodes: ["POST"], chemin: new RegExp(`^/invoices/(send-monthly-reminders|${ID}/send-reminder)$`), roles: ["AGENT", "ACCOUNTANT"] },
+  // Mise en demeure de payer : la suite des relances, donc les mêmes rôles.
+  { methodes: ["POST"], chemin: new RegExp(`^/contracts/${ID}/formal-notices$`), roles: ["AGENT", "ACCOUNTANT"] },
 
   // Comptable : encaissement, annulation, dépenses.
   { methodes: ["POST"], chemin: new RegExp(`^/invoices/${ID}/(mark-paid|cancel)$`), roles: ["ACCOUNTANT"] },

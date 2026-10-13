@@ -544,6 +544,24 @@ export async function initDb() {
     `);
     await creerIndex("rent_revisions_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS rent_revisions_contract_id_idx ON rent_revisions (contract_id)`);
 
+    // Mises en demeure de payer (après contracts : FK).
+    await creerTable("formal_notices", sql`
+      CREATE TABLE IF NOT EXISTS formal_notices (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        manager_id TEXT NOT NULL,
+        invoices_snapshot TEXT NOT NULL,
+        total_due DOUBLE PRECISION NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'EUR',
+        deadline_days INTEGER NOT NULL,
+        email_sent_at TIMESTAMP,
+        guarantors_notified INTEGER NOT NULL DEFAULT 0,
+        created_by TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex("formal_notices_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS formal_notices_contract_id_idx ON formal_notices (contract_id)`);
+
     await creerIndex("invoices_contract_period_unique", sql`
       CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique
       ON invoices (contract_id, period_month, period_year)
