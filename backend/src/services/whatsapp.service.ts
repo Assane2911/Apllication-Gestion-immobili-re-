@@ -195,8 +195,10 @@ export function rentDueReminderWhatsappVariables(params: {
  * env.whatsapp.templateNameRentDueDated) — le même avis, avec la vraie date
  * limite de la facture au lieu du « 5 » en dur :
  * "Bonjour {{1}}, votre avis d'échéance de loyer pour {{2}} ({{3}}) est
- * émis. Montant à régler : {{4}}, au plus tard le {{5}}. Payer en ligne :
- * {{6}}"
+ * émis. Le montant à régler est de {{4}}, au plus tard le {{5}}. Vous pouvez
+ * payer en ligne depuis votre espace locataire : {{6}}. Merci de votre
+ * ponctualité."
+ * (Meta refuse un modèle qui se termine par une variable : d'où la dernière phrase.)
  */
 export function rentDueDatedReminderWhatsappVariables(params: {
   tenantName: string;
@@ -265,8 +267,12 @@ export function avisEcheanceWhatsapp(params: {
 /**
  * Variables `{{1}}`..`{{6}}` du modèle Meta de relance d'impayé (voir
  * env.whatsapp.templateNameOverdue) :
- * "Bonjour {{1}}, votre loyer de {{2}} ({{3}}) reste impayé : {{4}} restant dû,
- * échéance dépassée de {{5}} jour(s). Régler en ligne : {{6}}"
+ * "Bonjour {{1}}, sauf erreur de notre part, votre loyer de {{2}} ({{3}})
+ * n'est pas encore réglé. Il reste {{4}} à payer, l'échéance étant dépassée
+ * de {{5}} jour(s). Vous pouvez régler en ligne depuis votre espace locataire :
+ * {{6}}. Si vous avez déjà payé, ne tenez pas compte de ce message."
+ * (Ton neutre et dernière phrase de texte : Meta refuse une menace de poursuites
+ * et un modèle qui se termine par une variable.)
  *
  * Un seul texte pour les trois niveaux de relance : le ton gradué est celui de l'email, qui reste
  * le canal de référence ; WhatsApp ne fait que rappeler le montant et le lien de paiement.
