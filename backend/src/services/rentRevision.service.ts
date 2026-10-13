@@ -3,6 +3,7 @@ import { db, Transaction } from "../db/client";
 import { contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { arrondir } from "../utils/montants";
+import { envoyerCopieAuxColocataires } from "./colocation.service";
 import { rentRevisionEmail, sendEmail } from "./email.service";
 
 /**
@@ -172,18 +173,19 @@ export async function creerRevision(p: CreationRevision): Promise<{ revision: Re
   });
 
   let emailEnvoye = false;
-  if (p.prevenirLocataire) emailEnvoye = await prevenirLocataire(resultat.revision, resultat.bien.title, resultat.contrat.tenantId, resultat.contrat.currency);
+  if (p.prevenirLocataire) emailEnvoye = await prevenirLocataire(resultat.revision, resultat.bien.title, resultat.contrat.id, resultat.contrat.tenantId, resultat.contrat.currency);
 
   return { revision: resultat.revision, appliquee: immediate, facturesRecalculees: resultat.recalculees, emailEnvoye };
 }
 
-/** Email au locataire ; un échec d'envoi ne défait jamais la révision. */
-async function prevenirLocataire(revision: Revision, titreBien: string, tenantId: string, devise: string): Promise<boolean> {
-  try {
-    const [locataire] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
-    if (!locataire?.email) return false;
-    const { subject, html } = rentRevisionEmail({
-      tenantName: `${locataire.firstName} ${locataire.lastName}`,
+/**
+ * Email au locataire, et une copie à chaque colocataire (le nouveau loyer s'applique à tous les occupants
+ * du bail, chacun est nommé dans SON message) ; un échec d'envoi ne défait jamais la révision.
+ */
+async function prevenirLocataire(revision: Revision, titreBien: string, contractId: string, tenantId: string, devise: string): Promise<boolean> {
+  const message = (personne: { firstName: string; lastName: string }) =>
+    rentRevisionEmail({
+      tenantName: `${personne.firstName} ${personne.lastName}`,
       propertyTitle: titreBien,
       previousRent: revision.previousRent,
       newRent: revision.newRent,
@@ -192,13 +194,31 @@ async function prevenirLocataire(revision: Revision, titreBien: string, tenantId
       motif: motifRevision(revision),
       note: revision.note,
     });
-    await sendEmail(locataire.email, subject, html);
-    await db.update(rentRevisions).set({ tenantNotifiedAt: new Date() }).where(eq(rentRevisions.id, revision.id));
-    return true;
+
+  let envoye = false;
+  try {
+    const [locataire] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
+    if (locataire?.email) {
+      const { subject, html } = message(locataire);
+      await sendEmail(locataire.email, subject, html);
+      envoye = true;
+    }
   } catch (err) {
     console.error(`[rent-revision] Email au locataire non envoyé pour la révision ${revision.id} :`, err);
-    return false;
   }
+
+  // Au mieux, et indépendamment du titulaire : un échec de l'un n'empêche pas l'autre.
+  const copies = await envoyerCopieAuxColocataires(contractId, (coloc) => message(coloc));
+  if (copies > 0) envoye = true;
+
+  if (envoye) {
+    try {
+      await db.update(rentRevisions).set({ tenantNotifiedAt: new Date() }).where(eq(rentRevisions.id, revision.id));
+    } catch (err) {
+      console.error(`[rent-revision] Horodatage de l'information non enregistré pour la révision ${revision.id} :`, err);
+    }
+  }
+  return envoye;
 }
 
 /** Révisions d'un bail, de la plus récente à la plus ancienne. */
