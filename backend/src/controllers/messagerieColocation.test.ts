@@ -3,7 +3,7 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { initDb } from "../db/init";
-import { contractCotenants, messages } from "../db/schema";
+import { contractCotenants, contracts, messages } from "../db/schema";
 import * as emailService from "../services/email.service";
 import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor, tokenLocataire } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -72,7 +72,8 @@ describe("fils de discussion en colocation", () => {
 
     const liste = await request(app).get("/api/messages/conversations").set(hGestion);
     expect(liste.status).toBe(200);
-    expect(liste.body.total).toBe(1);
+    // Un bail, deux fils (le titulaire et le colocataire) : le total compte les fils.
+    expect(liste.body.total).toBe(2);
     expect(liste.body.items.map((c: { tenantId: string; qualite: string; lastMessage: { content: string } | null }) => [c.tenantId, c.qualite, c.lastMessage?.content ?? null])).toEqual([
       [titulaire.id, "TITULAIRE", null],
       [coloc.id, "COLOCATAIRE", "Question de Binta"],
@@ -135,6 +136,85 @@ describe("fils de discussion en colocation", () => {
 
     expect(contenus(await lire(hTitulaire, contract.id))).toEqual(["Message d'avant"]);
     expect(contenus(await lire(hColoc, contract.id))).toEqual([]);
+  });
+});
+
+describe("pagination des fils du gestionnaire", () => {
+  const liste = (h: Record<string, string>, page: number, pageSize: number) =>
+    request(app).get("/api/messages/conversations").query({ page, pageSize }).set(h);
+  const cles = (res: request.Response) => res.body.items.map((c: { contractId: string; qualite: string }) => `${c.contractId.slice(-4)}:${c.qualite}`);
+
+  it("pagine les FILS, pas les baux : la taille de page, l'ordre et le total sont exacts avec une colocation", async () => {
+    const { manager, contract, hGestion } = await colocation();
+    // Dates de création explicites : B (récent) > A (colocation) > C (ancien).
+    await testDb.update(contracts).set({ createdAt: new Date(2026, 5, 1) }).where(eq(contracts.id, contract.id));
+    const bail = async (titre: string, createdAt: Date) => {
+      const bien = await createProperty(manager.id, { title: titre });
+      const locataire = await createTenant(manager.id, { firstName: titre });
+      return createContract(bien.id, locataire.id, { status: "ACTIVE", createdAt });
+    };
+    const contractB = await bail("B", new Date(2026, 8, 1));
+    const contractC = await bail("C", new Date(2026, 0, 1));
+
+    const p1 = await liste(hGestion, 1, 2);
+    const p2 = await liste(hGestion, 2, 2);
+
+    expect(p1.body).toMatchObject({ total: 4, totalPages: 2, page: 1, pageSize: 2 });
+    expect(p1.body.items).toHaveLength(2);
+    expect(p2.body.items).toHaveLength(2);
+    expect([...cles(p1), ...cles(p2)]).toEqual([
+      `${contractB.id.slice(-4)}:TITULAIRE`,
+      `${contract.id.slice(-4)}:TITULAIRE`,
+      `${contract.id.slice(-4)}:COLOCATAIRE`,
+      `${contractC.id.slice(-4)}:TITULAIRE`,
+    ]);
+    // Chaque fil n'apparaît qu'une fois, d'une page à l'autre.
+    const ids = [...p1.body.items, ...p2.body.items].map((c: { id: string }) => c.id);
+    expect(new Set(ids).size).toBe(4);
+  });
+
+  it("un titulaire ou un colocataire actuel qui a écrit ne compte pas pour un fil de plus", async () => {
+    const { contract, hGestion, hTitulaire, hColoc } = await colocation();
+    await ecrire(hTitulaire, contract.id, "D'Awa");
+    await ecrire(hColoc, contract.id, "De Binta");
+    await ecrire(hGestion, contract.id, "Réponse à Binta", contract.tenantId);
+
+    const res = await liste(hGestion, 1, 20);
+
+    expect(res.body.total).toBe(2);
+    expect(cles(res)).toEqual([`${contract.id.slice(-4)}:TITULAIRE`, `${contract.id.slice(-4)}:COLOCATAIRE`]);
+  });
+
+  it("un ancien colocataire qui a écrit compte pour UN fil, quel que soit le nombre de ses messages", async () => {
+    const { contract, hGestion, hColoc } = await colocation();
+    await ecrire(hColoc, contract.id, "Premier");
+    await ecrire(hColoc, contract.id, "Deuxième");
+    await ecrire(hColoc, contract.id, "Troisième");
+    await testDb.delete(contractCotenants);
+
+    const res = await liste(hGestion, 1, 20);
+
+    expect(res.body.total).toBe(2);
+    expect(cles(res)).toEqual([`${contract.id.slice(-4)}:TITULAIRE`, `${contract.id.slice(-4)}:COLOCATAIRE`]);
+    expect(res.body.items[1].lastMessage.content).toBe("Troisième");
+  });
+
+  it("ne compte ni ne montre les fils d'une autre agence", async () => {
+    const { hGestion } = await colocation();
+    await colocation();
+
+    const res = await liste(hGestion, 1, 20);
+
+    expect(res.body.total).toBe(2);
+  });
+
+  it("une page au-delà de la dernière est vide, avec le bon total", async () => {
+    const { hGestion } = await colocation();
+
+    const res = await liste(hGestion, 5, 20);
+
+    expect(res.body.items).toEqual([]);
+    expect(res.body.total).toBe(2);
   });
 });
 
