@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { issueReports } from "../db/schema";
+import { contractCotenants, issueReports } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -12,6 +12,7 @@ import {
   createTenantPortalUser,
   createPortalUser,
   tokenFor,
+  tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -372,5 +373,31 @@ describe("GET /api/notifications/mine (locataire)", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.count).toBe(0);
+  });
+});
+
+describe("GET /api/notifications/mine — colocataire", () => {
+  it("signale au colocataire le loyer en retard et la fin de bail du bail qu'il occupe", async () => {
+    // Les notifications ne cherchaient que les baux dont le locataire est TITULAIRE : un colocataire,
+    // qui voit pourtant ce bail et ses factures dans son portail, n'était jamais prévenu.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const titulaire = await createTenant(manager.id);
+    const coloc = await createTenant(manager.id);
+    const bientot = new Date(Date.now() + 5 * 86_400_000);
+    const contract = await createContract(property.id, titulaire.id, { status: "ACTIVE", endDate: bientot });
+    await testDb.insert(contractCotenants).values({ contractId: contract.id, tenantId: coloc.id });
+    const facture = await createInvoice(contract.id, { status: "LATE", dueDate: new Date(Date.now() - 86_400_000) });
+    const etranger = await createTenant(manager.id);
+
+    const res = await request(app).get("/api/notifications/mine").set(authHeader(await tokenLocataire(coloc.id)));
+
+    expect(res.status).toBe(200);
+    const ids = res.body.notifications.map((n: { id: string }) => n.id);
+    expect(ids).toContain(`invoice-${facture.id}`);
+    expect(ids).toContain(`contract-${contract.id}`);
+    // Un locataire étranger au bail n'en voit rien.
+    const autre = await request(app).get("/api/notifications/mine").set(authHeader(await tokenLocataire(etranger.id)));
+    expect(autre.body.notifications).toEqual([]);
   });
 });
