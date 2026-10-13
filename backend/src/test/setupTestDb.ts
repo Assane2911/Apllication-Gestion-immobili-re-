@@ -131,6 +131,7 @@ const TABLES = [
   "rate_limit_hits",
   "invoice_payments",
   "rent_revisions",
+  "formal_notices",
   "owner_payouts",
   "contract_guarantors",
   "contract_cotenants",

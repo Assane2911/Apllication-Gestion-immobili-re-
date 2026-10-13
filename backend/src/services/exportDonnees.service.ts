@@ -12,7 +12,9 @@ import {
   tenants,
   users,
   contractCotenants,
+  formalNotices,
 } from "../db/schema";
+import { lireFactures, referenceMiseEnDemeure } from "./miseEnDemeure.service";
 
 /**
  * Rassemble tout ce que le Service détient au sujet d'un locataire, pour
@@ -101,6 +103,11 @@ export async function construireExportLocataire(tenantId: string) {
   }
   const journal = await db.select().from(activityLogs).where(or(...entitesConcernees));
 
+  // Les mises en demeure sont adressées à tous les locataires du bail, colocataires compris.
+  const misesEnDemeure = idsContrats.length
+    ? await db.select().from(formalNotices).where(inArray(formalNotices.contractId, idsContrats))
+    : [];
+
   return {
     exportGenereLe: new Date().toISOString(),
     aProposDeCetExport:
@@ -142,6 +149,11 @@ export async function construireExportLocataire(tenantId: string) {
       })
     ),
     factures,
+    misesEnDemeure: misesEnDemeure.map(({ invoicesSnapshot, ...n }: typeof formalNotices.$inferSelect) => ({
+      ...n,
+      reference: referenceMiseEnDemeure(n),
+      facturesReclamees: lireFactures(invoicesSnapshot),
+    })),
     signalements,
     etatsDesLieux,
     messages: conversations,

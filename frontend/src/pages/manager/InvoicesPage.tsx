@@ -4,10 +4,11 @@ import { Trans, useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
+import FormalNoticeModal from "../../components/FormalNoticeModal";
 import MarkPaidModal from "../../components/MarkPaidModal";
 import Pagination from "../../components/Pagination";
 import { useCurrency } from "../../context/currency";
-import type { Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
+import type { FormalNoticeDue, Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
@@ -48,6 +49,9 @@ export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [aMettreEnDemeure, setAMettreEnDemeure] = useState<FormalNoticeDue[]>([]);
+  const [bailEnDemeure, setBailEnDemeure] = useState<FormalNoticeDue | null>(null);
+  const [courrierOuvert, setCourrierOuvert] = useState<string | null>(null);
 
   const methodLabels: Record<string, string> = {
     STRIPE: t("common.paymentMethods.STRIPE"),
@@ -69,10 +73,21 @@ export default function InvoicesPage() {
         setInvoices(liste<Invoice>(res.data, "items"));
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
+        chargerMisesEnDemeure(signal);
       })
       .catch((err) => {
         if (isRequestCancelled(err)) return;
         setError(apiErrorMessage(err));
+      });
+  }
+
+  /** Baux à mettre en demeure : chargé APRÈS les factures, et jamais bloquant pour la page. */
+  function chargerMisesEnDemeure(signal?: AbortSignal) {
+    Promise.resolve()
+      .then(() => api.get<FormalNoticeDue[]>("/contracts/formal-notices-due", { signal }))
+      .then((res) => setAMettreEnDemeure(liste<FormalNoticeDue>(res.data)))
+      .catch((err) => {
+        if (!isRequestCancelled(err)) setAMettreEnDemeure([]);
       });
   }
 
@@ -179,6 +194,35 @@ export default function InvoicesPage() {
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs">
           {error}
         </div>
+      )}
+
+      {aMettreEnDemeure.length > 0 && (
+        <section aria-labelledby="mises-en-demeure" className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-3">
+          <h3 id="mises-en-demeure" className="text-sm font-semibold text-red-900 dark:text-red-200">
+            {t("manager.invoices.formalNotices.title", { count: aMettreEnDemeure.length })}
+          </h3>
+          <p className="text-xs text-red-800 dark:text-red-300 mt-0.5">{t("manager.invoices.formalNotices.hint")}</p>
+          <ul className="mt-2 divide-y divide-red-200/70 dark:divide-red-500/20">
+            {aMettreEnDemeure.map((b) => (
+              <li key={b.contractId} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-slate-800 dark:text-slate-200">
+                  <span className="font-medium">{b.propertyTitle}</span> — {b.tenantName}
+                  <span className="block text-xs text-slate-600 dark:text-slate-400">
+                    {t("manager.invoices.formalNotices.line", { count: b.unpaidCount, total: formatMoney(b.totalDue, b.currency), days: b.daysLate })}
+                    {b.alreadyClaimedCount > 0 && <> · {t("manager.invoices.formalNotices.alreadyClaimed", { count: b.alreadyClaimedCount })}</>}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBailEnDemeure(b)}
+                  className="text-xs bg-red-700 hover:bg-red-800 text-white font-semibold px-3 py-1.5 rounded-lg"
+                >
+                  {t("manager.invoices.formalNotices.action")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {/* Vue tableau (écrans sm et plus) */}
@@ -375,6 +419,22 @@ export default function InvoicesPage() {
           }}
           onClose={() => setFactureAMarquer(null)}
         />
+      )}
+
+      {bailEnDemeure && (
+        <FormalNoticeModal
+          bail={bailEnDemeure}
+          onIssued={() => chargerMisesEnDemeure()}
+          onOpenDocument={(id) => {
+            setBailEnDemeure(null);
+            setCourrierOuvert(id);
+          }}
+          onClose={() => setBailEnDemeure(null)}
+        />
+      )}
+
+      {courrierOuvert && (
+        <DocumentModal title={t("components.formalNoticeModal.docTitle")} docUrl={`/documents/formal-notice/${courrierOuvert}`} onClose={() => setCourrierOuvert(null)} />
       )}
 
       {activeReceiptInvoice && (

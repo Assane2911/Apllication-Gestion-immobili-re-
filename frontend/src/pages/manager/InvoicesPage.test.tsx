@@ -15,6 +15,13 @@ vi.mock("../../api/client", async () => {
 
 const mockedApi = vi.mocked(api, { deep: true });
 
+/**
+ * La page charge les factures, puis les baux à mettre en demeure. Les réponses aux factures se
+ * programment sur `getFactures` ; les baux à mettre en demeure sur `aMettreEnDemeure`.
+ */
+const getFactures = vi.fn();
+let aMettreEnDemeure: unknown[] = [];
+
 function invoice(overrides: Partial<Invoice> = {}): Invoice {
   return {
     id: "inv-1",
@@ -60,13 +67,17 @@ function renderPage() {
 
 describe("InvoicesPage (manager)", () => {
   beforeEach(() => {
+    getFactures.mockReset();
+    aMettreEnDemeure = [];
     mockedApi.get.mockReset();
+    mockedApi.get.mockImplementation(((url: string, config?: unknown) =>
+      url === "/contracts/formal-notices-due" ? Promise.resolve({ data: aMettreEnDemeure }) : getFactures(url, config)) as never);
     mockedApi.post.mockReset();
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("affiche la liste des factures avec montant et statut (tableau + cartes mobiles)", async () => {
-    mockedApi.get.mockResolvedValueOnce(
+    getFactures.mockResolvedValueOnce(
       paginated([
         invoice({ id: "inv-pending", status: "PENDING" }),
         invoice({ id: "inv-paid", status: "PAID", amount: 650 }),
@@ -87,7 +98,7 @@ describe("InvoicesPage (manager)", () => {
   });
 
   it("indique le niveau de relance d'un impayé déjà relancé, pas celui d'une facture réglée", async () => {
-    mockedApi.get.mockResolvedValueOnce(
+    getFactures.mockResolvedValueOnce(
       paginated([
         invoice({ id: "inv-late", status: "LATE", overdueReminderLevel: 2, overdueReminderSentAt: "2026-10-20T09:00:00.000Z" }),
         invoice({ id: "inv-paid", status: "PAID", overdueReminderLevel: 3, overdueReminderSentAt: "2026-10-30T09:00:00.000Z" }),
@@ -99,13 +110,13 @@ describe("InvoicesPage (manager)", () => {
   });
 
   it("affiche un message quand il n'y a aucune facture pour le filtre", async () => {
-    mockedApi.get.mockResolvedValueOnce(paginated([]));
+    getFactures.mockResolvedValueOnce(paginated([]));
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Aucune facture pour ce filtre").length).toBeGreaterThan(0));
   });
 
   it("affiche une erreur si le chargement échoue", async () => {
-    mockedApi.get.mockRejectedValueOnce({
+    getFactures.mockRejectedValueOnce({
       response: { data: { error: "Erreur serveur" } },
       isAxiosError: true,
     });
@@ -115,12 +126,12 @@ describe("InvoicesPage (manager)", () => {
 
   it("changer le filtre de statut recharge la liste avec le bon paramètre", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([invoice({ status: "PENDING" })]));
-    mockedApi.get.mockResolvedValueOnce(paginated([invoice({ status: "LATE" })]));
+    getFactures.mockResolvedValueOnce(paginated([invoice({ status: "PENDING" })]));
+    getFactures.mockResolvedValueOnce(paginated([invoice({ status: "LATE" })]));
 
     renderPage();
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
-    expect(mockedApi.get).toHaveBeenNthCalledWith(1, "/invoices", {
+    await waitFor(() => expect(getFactures).toHaveBeenCalledTimes(1));
+    expect(getFactures).toHaveBeenNthCalledWith(1, "/invoices", {
       params: { page: 1, pageSize: 20 },
       signal: expect.anything(),
     });
@@ -128,8 +139,8 @@ describe("InvoicesPage (manager)", () => {
     const select = screen.getByRole("combobox");
     await user.selectOptions(select, "LATE");
 
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
-    expect(mockedApi.get).toHaveBeenNthCalledWith(2, "/invoices", {
+    await waitFor(() => expect(getFactures).toHaveBeenCalledTimes(2));
+    expect(getFactures).toHaveBeenNthCalledWith(2, "/invoices", {
       params: { page: 1, pageSize: 20, status: "LATE" },
       signal: expect.anything(),
     });
@@ -151,14 +162,14 @@ describe("InvoicesPage (manager)", () => {
     const firstRequest = new Promise((_resolve, reject) => {
       rejectFirst = reject;
     });
-    mockedApi.get.mockImplementationOnce((_url: string, config?: { signal?: AbortSignal }) => {
+    getFactures.mockImplementationOnce((_url: string, config?: { signal?: AbortSignal }) => {
       config?.signal?.addEventListener("abort", () => rejectFirst({ __CANCEL__: true }));
       return firstRequest;
     });
-    mockedApi.get.mockResolvedValueOnce(paginated([invoice({ status: "LATE" })]));
+    getFactures.mockResolvedValueOnce(paginated([invoice({ status: "LATE" })]));
 
     renderPage();
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getFactures).toHaveBeenCalledTimes(1));
 
     const select = screen.getByRole("combobox");
     await user.selectOptions(select, "LATE");
@@ -174,8 +185,8 @@ describe("InvoicesPage (manager)", () => {
 
   it("marquer une facture réglée : envoie la requête puis recharge la liste", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
-    mockedApi.get.mockResolvedValueOnce(paginated([invoice({ id: "inv-1", status: "PAID" })]));
+    getFactures.mockResolvedValueOnce(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+    getFactures.mockResolvedValueOnce(paginated([invoice({ id: "inv-1", status: "PAID" })]));
     mockedApi.post.mockResolvedValueOnce({ data: { invoice: invoice({ status: "PAID" }) } });
 
     renderPage();
@@ -191,12 +202,12 @@ describe("InvoicesPage (manager)", () => {
         expect.objectContaining({ paymentMethod: "BANK_TRANSFER", paidAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })
       )
     );
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(getFactures).toHaveBeenCalledTimes(2));
   });
 
   it("relancer une facture individuellement : envoie la requête et affiche le message de confirmation", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+    getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
     mockedApi.post.mockResolvedValueOnce({ data: { message: "Relance envoyée à Awa Diallo." } });
 
     renderPage();
@@ -211,7 +222,7 @@ describe("InvoicesPage (manager)", () => {
 
   it("envoyer les alertes mensuelles : demande confirmation puis envoie la requête", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+    getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
     mockedApi.post.mockResolvedValueOnce({ data: { message: "12 avis envoyés.", sent: 12 } });
 
     renderPage();
@@ -229,7 +240,7 @@ describe("InvoicesPage (manager)", () => {
   it("n'envoie pas les alertes mensuelles si la confirmation est annulée", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(false);
-    mockedApi.get.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+    getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
 
     renderPage();
     await waitFor(() =>
@@ -245,7 +256,7 @@ describe("InvoicesPage (manager)", () => {
 
 describe("InvoicesPage — marquer une facture réglée", () => {
   beforeEach(() => {
-    mockedApi.get.mockReset();
+    getFactures.mockReset();
     mockedApi.post.mockReset();
   });
 
@@ -258,7 +269,7 @@ describe("InvoicesPage — marquer une facture réglée", () => {
    */
   async function ouvrirLaFenetre() {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValue(paginated([invoice()]));
+    getFactures.mockResolvedValue(paginated([invoice()]));
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
     await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
@@ -340,7 +351,7 @@ describe("InvoicesPage — marquer une facture réglée", () => {
   describe("paiement partiel", () => {
     async function ouvrir(inv: Invoice) {
       const user = userEvent.setup();
-      mockedApi.get.mockResolvedValue(paginated([inv]));
+      getFactures.mockResolvedValue(paginated([inv]));
       renderPage();
       await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
       await user.click(screen.getAllByRole("button", { name: "Marquer réglée" })[0]);
@@ -379,17 +390,111 @@ describe("InvoicesPage — marquer une facture réglée", () => {
     });
 
     it("affiche dans la liste ce qui est déjà réglé et ce qui reste", async () => {
-      mockedApi.get.mockResolvedValue(paginated([invoice({ amountPaid: 300, montantRegle: 300, resteDu: 200 })]));
+      getFactures.mockResolvedValue(paginated([invoice({ amountPaid: 300, montantRegle: 300, resteDu: 200 })]));
       renderPage();
       await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
       expect(screen.getAllByText(/Réglé : .*300.* · Reste : .*200/).length).toBeGreaterThan(0);
     });
 
     it("n'affiche rien de tel pour une facture sans acompte", async () => {
-      mockedApi.get.mockResolvedValue(paginated([invoice({ montantRegle: 0, resteDu: 500 })]));
+      getFactures.mockResolvedValue(paginated([invoice({ montantRegle: 0, resteDu: 500 })]));
       renderPage();
       await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
       expect(screen.queryByText(/Reste :/)).not.toBeInTheDocument();
     });
+  });
+});
+
+describe("InvoicesPage — mises en demeure à émettre", () => {
+  const bail = {
+    contractId: "c1",
+    propertyTitle: "Studio Centre-ville",
+    tenantName: "Awa Diallo",
+    currency: "EUR",
+    unpaidCount: 2,
+    alreadyClaimedCount: 1,
+    totalDue: 900,
+    oldestDueDate: "2026-08-20T00:00:00.000Z",
+    daysLate: 40,
+  };
+
+  beforeEach(() => {
+    getFactures.mockReset();
+    mockedApi.post.mockReset();
+    aMettreEnDemeure = [bail];
+    mockedApi.get.mockReset();
+    mockedApi.get.mockImplementation(((url: string, config?: unknown) =>
+      url === "/contracts/formal-notices-due" ? Promise.resolve({ data: aMettreEnDemeure }) : getFactures(url, config)) as never);
+    getFactures.mockImplementation((url: string) =>
+      Promise.resolve(url.startsWith("/documents/") ? { data: "<html><body>Courrier</body></html>" } : paginated([invoice({ status: "LATE" })]))
+    );
+  });
+
+  it("n'affiche rien quand aucun bail n'est à mettre en demeure", async () => {
+    aMettreEnDemeure = [];
+    renderPage();
+    await screen.findAllByText("Studio Centre-ville");
+    expect(screen.queryByRole("heading", { name: /Mises en demeure à émettre/ })).not.toBeInTheDocument();
+  });
+
+  it("liste le bail avec ses impayés, et émet la mise en demeure avec le délai et l'envoi choisis", async () => {
+    mockedApi.post.mockResolvedValueOnce({
+      data: { id: "med-1", contractId: "c1", reference: "MED-2026-ABC123", totalDue: 900, currency: "EUR", deadlineDays: 15, emailSentAt: "2026-10-12", guarantorsNotified: 0, createdAt: "2026-10-12", emailEnvoye: true },
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    const encart = await screen.findByRole("heading", { name: "Mises en demeure à émettre (1)" });
+    const section = encart.closest("section")!;
+    expect(section).toHaveTextContent(/2 loyer\(s\) impayé\(s\) · 900\s€ · plus ancien : 40 j de retard · 1 déjà réclamé\(s\)/);
+
+    await user.click(within(section).getByRole("button", { name: "Préparer la mise en demeure" }));
+    const dialogue = screen.getByRole("dialog", { name: "Mise en demeure de payer" });
+    const delai = within(dialogue).getByLabelText("Délai de paiement (jours)");
+    await user.clear(delai);
+    await user.type(delai, "15");
+    await user.click(within(dialogue).getByLabelText("Adresser une copie aux garants"));
+    await user.click(within(dialogue).getByRole("button", { name: "Émettre la mise en demeure" }));
+
+    expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/formal-notices", { deadlineDays: 15, sendEmail: true, notifyGuarantors: true });
+    expect(await within(dialogue).findByText(/Mise en demeure MED-2026-ABC123 émise\. Elle a été envoyée par email\./)).toBeInTheDocument();
+
+    await user.click(within(dialogue).getByRole("button", { name: "Ouvrir le courrier" }));
+    await waitFor(() => expect(getFactures).toHaveBeenCalledWith("/documents/formal-notice/med-1", expect.anything()));
+  });
+
+  it("sans envoi par email, la copie aux garants ne peut pas être demandée", async () => {
+    mockedApi.post.mockResolvedValueOnce({
+      data: { id: "med-2", contractId: "c1", reference: "MED-2026-XYZ789", totalDue: 900, currency: "EUR", deadlineDays: 8, emailSentAt: null, guarantorsNotified: 0, createdAt: "2026-10-12", emailEnvoye: false },
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Préparer la mise en demeure" }));
+    const dialogue = screen.getByRole("dialog");
+    // Copie aux garants cochée, PUIS envoi par email décoché : la copie ne part pas seule.
+    await user.click(within(dialogue).getByLabelText("Adresser une copie aux garants"));
+    await user.click(within(dialogue).getByLabelText(/L'envoyer aussi par email/));
+    expect(within(dialogue).getByLabelText("Adresser une copie aux garants")).toBeDisabled();
+    await user.click(within(dialogue).getByRole("button", { name: "Émettre la mise en demeure" }));
+
+    expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/formal-notices", { deadlineDays: 8, sendEmail: false, notifyGuarantors: false });
+    expect(await within(dialogue).findByText(/Aucun email n'a été envoyé\./)).toBeInTheDocument();
+  });
+
+  it("affiche le refus du serveur dans la fenêtre", async () => {
+    mockedApi.post.mockRejectedValueOnce(
+      new AxiosError("Conflict", "409", undefined, undefined, {
+        status: 409,
+        data: { error: "Ce bail n'a aucun loyer échu impayé : il n'y a rien à réclamer." },
+      } as never)
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Préparer la mise en demeure" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Émettre la mise en demeure" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("rien à réclamer");
   });
 });

@@ -733,3 +733,30 @@ export interface RetentionEcheances {
   leadsAnciens: ListingLead[];
   total: number;
 }
+
+/** Bail dont un impayé appelle une mise en demeure (GET /contracts/formal-notices-due). */
+export interface FormalNoticeDue {
+  contractId: string;
+  propertyTitle: string;
+  tenantName: string;
+  currency: string;
+  unpaidCount: number;
+  alreadyClaimedCount: number;
+  totalDue: number;
+  oldestDueDate: string;
+  daysLate: number;
+}
+
+/** Mise en demeure émise (POST /contracts/:id/formal-notices). */
+export interface FormalNotice {
+  id: string;
+  contractId: string;
+  reference: string;
+  totalDue: number;
+  currency: string;
+  deadlineDays: number;
+  emailSentAt: string | null;
+  guarantorsNotified: number;
+  createdAt: string;
+  emailEnvoye?: boolean;
+}

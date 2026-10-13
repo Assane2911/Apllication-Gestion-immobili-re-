@@ -755,6 +755,35 @@ export const rentRevisions = pgTable(
   })
 );
 
+// --- Mises en demeure de payer (impayés d'un bail) ---
+// Le courrier fige, au moment de son émission, les factures réclamées et le
+// montant dû : un paiement ultérieur ne doit pas réécrire ce qui a été notifié.
+// Aucun nom n'y est recopié (ils sont lus à l'affichage, et suivent donc
+// l'anonymisation d'un locataire).
+export const formalNotices = pgTable(
+  "formal_notices",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    managerId: text("manager_id").notNull(),
+    // JSON : [{ invoiceId, periodMonth, periodYear, dueDate, amount, resteDu }]
+    invoicesSnapshot: text("invoices_snapshot").notNull(),
+    totalDue: doublePrecision("total_due").notNull(),
+    currency: text("currency").notNull().default("EUR"),
+    // Délai laissé au locataire pour payer, en jours à compter de la réception.
+    deadlineDays: integer("deadline_days").notNull(),
+    emailSentAt: timestamp("email_sent_at", { mode: "date" }),
+    guarantorsNotified: integer("guarantors_notified").notNull().default(0),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    contractIdIdx: index("formal_notices_contract_id_idx").on(table.contractId),
+  })
+);
+
 // --- Issue reports (signalements d'incidents avec photo) ---
 export const issueReports = pgTable(
   "issue_reports",
