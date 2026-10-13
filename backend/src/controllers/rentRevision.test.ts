@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { activityLogs, contracts, invoices, rentRevisions } from "../db/schema";
+import { activityLogs, contractCotenants, contracts, invoices, rentRevisions } from "../db/schema";
 import * as emailService from "../services/email.service";
 import { runRentDueReminders } from "../services/reminder.service";
 import { generateLeaseHtml } from "../services/pdf.service";
@@ -252,6 +252,21 @@ describe("information du locataire", () => {
     expect(html).toContain("+3 %");
     expect(html).toContain("Indexation annuelle");
     expect((await revisionsDe(contract.id))[0].tenantNotifiedAt).not.toBeNull();
+  });
+
+  it("prévient aussi les colocataires, chacun à son nom", async () => {
+    // Le nouveau loyer s'applique à tous les occupants du bail : seul le titulaire en était informé.
+    const { h, manager, contract } = await agence();
+    const coloc = await createTenant(manager.id, { email: "binta@example.com", firstName: "Binta", lastName: "Kane" });
+    await testDb.insert(contractCotenants).values({ contractId: contract.id, tenantId: coloc.id });
+
+    const res = await reviser(h, contract.id, { mode: "PERCENT", percent: 3, effectiveDate: "2026-12-01", notifyTenant: true });
+
+    expect(res.body.emailEnvoye).toBe(true);
+    const destinataires = envoi.mock.calls.map((c: unknown[]) => c[0]);
+    expect(destinataires).toEqual(["locataire@example.com", "binta@example.com"]);
+    expect(envoi.mock.calls[1][2] as string).toContain("Binta Kane");
+    expect(envoi.mock.calls[1][2] as string).not.toContain("Awa Ndiaye");
   });
 
   it("n'envoie rien par défaut, et un échec d'envoi ne défait pas la révision", async () => {

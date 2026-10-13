@@ -5,6 +5,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { contracts, invoices, issueReports, messages, notificationVues, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { bauxDuLocataire } from "../services/colocation.service";
 import { idLocataireDuCompte } from "../utils/authorization";
 
 export type NotificationType = "message" | "invoice" | "issue" | "contract_ending";
@@ -236,11 +237,18 @@ async function calculerNotificationsLocataire(tenantId: string): Promise<Notific
   const dueSoonWindowEnd = new Date(now);
   dueSoonWindowEnd.setDate(dueSoonWindowEnd.getDate() + env.reminder.rentDueSoonDays);
 
-  const invoiceRows = await db
-    .select({ invoice: invoices, contract: contracts })
-    .from(invoices)
-    .innerJoin(contracts, eq(invoices.contractId, contracts.id))
-    .where(and(eq(contracts.tenantId, tenantId), inArray(invoices.status, ["LATE", "PENDING"])));
+  // Les baux qu'il OCCUPE, titulaire ou colocataire : un colocataire voit ce bail et ses factures dans
+  // son portail, il doit aussi être prévenu d'un loyer en retard ou de la fin du bail.
+  const idsBaux = [...(await bauxDuLocataire(tenantId)).keys()];
+
+  const invoiceRows =
+    idsBaux.length === 0
+      ? []
+      : await db
+          .select({ invoice: invoices, contract: contracts })
+          .from(invoices)
+          .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+          .where(and(inArray(contracts.id, idsBaux), inArray(invoices.status, ["LATE", "PENDING"])));
 
   for (const r of invoiceRows) {
     const dueDate = new Date(r.invoice.dueDate);
@@ -263,10 +271,13 @@ async function calculerNotificationsLocataire(tenantId: string): Promise<Notific
   // Fenêtre plus large que celle des loyers "bientôt dus" ci-dessus (3 jours,
   // trop courte pour un bail) : on reprend celle du centre de notifications
   // du gestionnaire (CONTRACT_ENDING_WINDOW_DAYS), pensée pour ça.
-  const activeContractRows = await db
-    .select({ contract: contracts })
-    .from(contracts)
-    .where(and(eq(contracts.tenantId, tenantId), eq(contracts.status, "ACTIVE")));
+  const activeContractRows =
+    idsBaux.length === 0
+      ? []
+      : await db
+          .select({ contract: contracts })
+          .from(contracts)
+          .where(and(inArray(contracts.id, idsBaux), eq(contracts.status, "ACTIVE")));
 
   const contractEndingWindowEnd = new Date(now);
   contractEndingWindowEnd.setDate(contractEndingWindowEnd.getDate() + CONTRACT_ENDING_WINDOW_DAYS);

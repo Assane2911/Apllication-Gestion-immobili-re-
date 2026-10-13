@@ -1,8 +1,8 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { tenants } from "../db/schema";
-import { authHeader, createManager, createPortalUser, createTenant, tokenFor } from "../test/authHelpers";
+import { contractCotenants, tenants } from "../db/schema";
+import { authHeader, createContract, createManager, createPortalUser, createProperty, createTenant, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 /**
@@ -34,6 +34,43 @@ describe("GET /api/conservation/echeances", () => {
     // Les durées voyagent avec le résultat : l'écran doit pouvoir dire
     // POURQUOI une fiche est signalée, pas seulement qu'elle l'est.
     expect(res.body.durees.ficheSansBailJours).toBe(90);
+  });
+
+  it("ne signale pas comme « sans bail » un colocataire dont le bail est en cours", async () => {
+    // Un colocataire n'a aucun bail à SON nom : compter seulement les baux dont il est titulaire le
+    // faisait signaler comme fiche sans bail depuis plus de 90 jours, alors qu'il occupe le logement.
+    const manager = await createManager();
+    const vieux = new Date(Date.now() - 200 * 24 * 3_600_000);
+    const property = await createProperty(manager.id);
+    const titulaire = await createTenant(manager.id, { createdAt: vieux });
+    const coloc = await createTenant(manager.id, { createdAt: vieux, lastName: "Colocataire" });
+    const bail = await createContract(property.id, titulaire.id, { status: "ACTIVE" });
+    await testDb.insert(contractCotenants).values({ contractId: bail.id, tenantId: coloc.id });
+
+    const res = await request(app).get("/api/conservation/echeances").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.fichesSansBail).toEqual([]);
+    expect(res.body.bauxClosDepuisLongtemps).toEqual([]);
+  });
+
+  it("signale un colocataire dont le dernier bail est terminé depuis plus de cinq ans", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const titulaire = await createTenant(manager.id);
+    const coloc = await createTenant(manager.id, { lastName: "Ancien colocataire" });
+    const fin = new Date(Date.now() - 6 * 365 * 24 * 3_600_000);
+    const bail = await createContract(property.id, titulaire.id, {
+      status: "ENDED",
+      startDate: new Date(fin.getTime() - 365 * 24 * 3_600_000),
+      endDate: fin,
+    });
+    await testDb.insert(contractCotenants).values({ contractId: bail.id, tenantId: coloc.id });
+
+    const res = await request(app).get("/api/conservation/echeances").set(authHeader(tokenFor(manager)));
+
+    const noms = res.body.bauxClosDepuisLongtemps.map((t: { lastName: string }) => t.lastName);
+    expect(noms).toContain("Ancien colocataire");
   });
 
   it("ne supprime rien — c'est une lecture", async () => {

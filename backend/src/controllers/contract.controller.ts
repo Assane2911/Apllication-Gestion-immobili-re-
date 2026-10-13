@@ -209,6 +209,7 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
   assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable");
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+  if (tenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.");
 
   const contractStatus = body.status ?? "ACTIVE";
 
@@ -269,6 +270,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   if (body.tenantId && body.tenantId !== existing.tenantId) {
     const [newTenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
     assertOwnership(newTenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+    if (newTenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.");
   }
 
   // Une signature électronique n'a de valeur probatoire que si elle porte sur

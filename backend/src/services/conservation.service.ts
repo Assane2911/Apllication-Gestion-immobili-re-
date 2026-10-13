@@ -1,6 +1,6 @@
 import { and, desc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { activityLogs, contracts, listingLeads, rateLimitHits, tenants, users } from "../db/schema";
+import { activityLogs, contractCotenants, contracts, listingLeads, rateLimitHits, tenants, users } from "../db/schema";
 import { jourDecale } from "../utils/dates";
 
 /**
@@ -130,10 +130,38 @@ export async function donneesArriveesAEcheance(managerId: string) {
     .groupBy(tenants.id)
     .orderBy(desc(tenants.createdAt));
 
+  // Les baux qu'un locataire OCCUPE en tant que colocataire : il n'a aucun bail à son nom, mais la relation
+  // contractuelle est la même. Ne compter que les baux dont il est titulaire le faisait signaler comme
+  // « fiche sans bail » alors qu'il occupe le logement — et pousser à anonymiser un occupant.
+  const liensColocation = await db
+    .select({ tenantId: contractCotenants.tenantId, status: contracts.status, fin: contracts.endDate })
+    .from(contractCotenants)
+    .innerJoin(contracts, eq(contractCotenants.contractId, contracts.id))
+    .innerJoin(tenants, eq(contractCotenants.tenantId, tenants.id))
+    .where(eq(tenants.managerId, managerId));
+  const colocParLocataire = new Map<string, { nb: number; enCours: number; fin: Date | null }>();
+  for (const l of liensColocation) {
+    const cumul = colocParLocataire.get(l.tenantId) ?? { nb: 0, enCours: 0, fin: null };
+    cumul.nb += 1;
+    if (l.status === "ACTIVE") cumul.enCours += 1;
+    const fin = l.fin ? new Date(l.fin) : null;
+    if (fin && (!cumul.fin || fin > cumul.fin)) cumul.fin = fin;
+    colocParLocataire.set(l.tenantId, cumul);
+  }
+
   const fichesSansBail: FicheSignalee[] = [];
   const bauxClosDepuisLongtemps: FicheSignalee[] = [];
 
-  for (const ligne of fiches) {
+  for (const brute of fiches) {
+    const coloc = colocParLocataire.get(brute.tenant.id);
+    const finTitulaire = brute.finDuDernierBail ? new Date(brute.finDuDernierBail) : null;
+    const ligne = {
+      tenant: brute.tenant,
+      nbContrats: brute.nbContrats + (coloc?.nb ?? 0),
+      aUnBailEnCours: (brute.aUnBailEnCours ?? 0) + (coloc?.enCours ?? 0),
+      finDuDernierBail: coloc?.fin && (!finTitulaire || coloc.fin > finTitulaire) ? coloc.fin : finTitulaire,
+    };
+
     // Un bail en cours écarte toute échéance, quelle que soit l'ancienneté de
     // la fiche : la relation contractuelle est la raison même de conserver.
     if (ligne.aUnBailEnCours > 0) continue;

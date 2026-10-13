@@ -36,6 +36,17 @@ const tenantSchema = z.object({
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
 });
 
+/**
+ * Une fiche anonymisée (droit à l'effacement) est figée : y ressaisir des données personnelles la
+ * laisserait marquée anonymisée tout en les portant, et lui créer un accès au portail recréerait un
+ * compte de connexion que l'anonymisation vient de supprimer.
+ */
+function assertNonAnonymise(tenant: { anonymizedAt: Date | null }) {
+  if (tenant.anonymizedAt) {
+    throw new ApiError(409, "Ce locataire a été anonymisé : sa fiche ne peut plus être modifiée ni rattachée à un accès au portail.");
+  }
+}
+
 export const listTenants = asyncHandler(async (req: Request, res: Response) => {
   const pagination = parsePagination(req);
   const whereClause = eq(tenants.managerId, req.user!.userId);
@@ -127,6 +138,17 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
 
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
+  assertNonAnonymise(existing);
+
+  // Changer l'email pour celui d'un AUTRE locataire de l'agence : la base le refuse (unicité par agence),
+  // ce qui donnait une erreur 500 au lieu du 409 que renvoie déjà la création.
+  if (body.email && body.email !== existing.email) {
+    const [pris] = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(and(eq(tenants.managerId, req.user!.userId), eq(tenants.email, body.email)));
+    if (pris) throw new ApiError(409, "Un locataire avec cet email existe déjà");
+  }
 
   // La vérification de propriété doit précéder l'upload : sinon, un
   // gestionnaire pouvait faire uploader (et donc stocker, sur notre
@@ -429,6 +451,7 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
   const body = createPortalAccountSchema.parse(req.body);
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+  assertNonAnonymise(tenant);
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, tenant.email));
   const passwordHash = await bcrypt.hash(body.password, 10);

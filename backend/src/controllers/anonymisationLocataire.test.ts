@@ -232,3 +232,63 @@ describe("Anonymisation d'un locataire", () => {
     expect(intact.anonymizedAt).toBeNull();
   });
 });
+
+describe("Fiche locataire anonymisée — plus de modification, d'accès au portail ni de nouveau bail", () => {
+  async function ficheAnonymisee() {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const h = authHeader(tokenFor(manager));
+    const res = await request(app).post(`/api/tenants/${tenant.id}/anonymiser`).set(h);
+    expect(res.status).toBe(200);
+    return { manager, tenant, h };
+  }
+
+  it("refuse de modifier la fiche et d'y créer un accès au portail", async () => {
+    // Sinon le gestionnaire pouvait y ressaisir des données personnelles (la fiche restant marquée
+    // anonymisée) ou recréer un compte de connexion que l'anonymisation venait de supprimer.
+    const { tenant, h } = await ficheAnonymisee();
+
+    const modif = await request(app).put(`/api/tenants/${tenant.id}`).set(h).send({ firstName: "Awa", email: "awa@example.com" });
+    expect(modif.status).toBe(409);
+    const acces = await request(app).post(`/api/tenants/${tenant.id}/portal-account`).set(h).send({ password: "motdepasse123" });
+    expect(acces.status).toBe(409);
+
+    const [apres] = await testDb.select().from(tenants).where(eq(tenants.id, tenant.id));
+    expect(apres.firstName).toBe("Locataire");
+    expect(apres.userId).toBeNull();
+    expect(await testDb.select().from(users).where(eq(users.role, "TENANT"))).toHaveLength(0);
+  });
+
+  it("refuse un nouveau bail au nom d'un locataire anonymisé", async () => {
+    const { manager, tenant, h } = await ficheAnonymisee();
+    const property = await createProperty(manager.id);
+
+    const res = await request(app).post("/api/contracts").set(h).send({
+      propertyId: property.id,
+      tenantId: tenant.id,
+      rent: 500,
+      deposit: 500,
+      startDate: "2026-11-01",
+      endDate: "2027-10-31",
+    });
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe("Modification d'un locataire — email déjà pris", () => {
+  it("répond 409 (et non une erreur 500) quand l'email est celui d'un autre locataire de l'agence", async () => {
+    const manager = await createManager();
+    await createTenant(manager.id, { email: "awa@example.com" });
+    const autre = await createTenant(manager.id, { email: "binta@example.com" });
+
+    const res = await request(app)
+      .put(`/api/tenants/${autre.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ email: "AWA@example.com" });
+
+    expect(res.status).toBe(409);
+    const [apres] = await testDb.select().from(tenants).where(eq(tenants.id, autre.id));
+    expect(apres.email).toBe("binta@example.com");
+  });
+});
