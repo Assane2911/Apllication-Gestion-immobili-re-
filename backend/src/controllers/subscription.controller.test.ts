@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { env } from "../config/env";
 import { users } from "../db/schema";
@@ -677,7 +677,13 @@ describe("POST /api/subscription/cancel", () => {
    * n'avait jamais existé pour ces comptes-là (voir cancelStripeSubscriptionAtPeriodEnd).
    */
   describe("résiliation d'un abonnement Stripe réel (renouvellement automatique)", () => {
+    let cleOriginale: string;
+    beforeEach(() => {
+      cleOriginale = env.payments.stripeSecretKey;
+      env.payments.stripeSecretKey = "sk_test_fake_key";
+    });
     afterEach(() => {
+      env.payments.stripeSecretKey = cleOriginale;
       vi.unstubAllGlobals();
       vi.restoreAllMocks();
     });
@@ -713,21 +719,93 @@ describe("POST /api/subscription/cancel", () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it("résilie quand même localement si l'appel à Stripe échoue", async () => {
+    it("ne dit pas « résilié » quand Stripe est injoignable : 502 et le compte reste actif", async () => {
+      // Avant : la résiliation était confirmée au gestionnaire alors que Stripe n'avait rien reçu,
+      // et sa carte était prélevée à l'échéance suivante.
       const manager = await createManager({
         subscriptionStatus: "ACTIVE",
         stripeSubscriptionId: "sub_test_echec",
       });
       const fetchMock = vi.fn().mockRejectedValue(new Error("réseau indisponible"));
       vi.stubGlobal("fetch", fetchMock);
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(502);
+      expect(res.body.success).not.toBe(true);
+      const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(updated.subscriptionStatus).toBe("ACTIVE");
+    });
+
+    it("502 aussi quand Stripe refuse la résiliation, sans toucher au compte", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        stripeSubscriptionId: "sub_test_refus",
+      });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({ error: { message: "boom" } }) })
+      );
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(502);
+      const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(updated.subscriptionStatus).toBe("ACTIVE");
+    });
+
+    it("502 si Stripe n'est pas configuré alors que le compte a un abonnement par carte", async () => {
+      env.payments.stripeSecretKey = "";
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", stripeSubscriptionId: "sub_test_sans_cle" });
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+
+      const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(502);
+      expect(fetchMock).not.toHaveBeenCalled();
+      const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(updated.subscriptionStatus).toBe("ACTIVE");
+    });
+
+    it("tient pour résilié un abonnement que Stripe ne connaît plus (resource_missing)", async () => {
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", stripeSubscriptionId: "sub_disparu" });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: { code: "resource_missing" } }) })
+      );
 
       const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
       const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
       expect(updated.subscriptionStatus).toBe("CANCELLED");
     });
+
+    it("rejoue l'appel à Stripe sur un compte déjà marqué résilié (réessai)", async () => {
+      const manager = await createManager({ subscriptionStatus: "CANCELLED", stripeSubscriptionId: "sub_reessai" });
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("refuse de résilier pendant l'essai : pas d'abonnement payant, l'accès n'est pas coupé", async () => {
+    const manager = await createManager({ subscriptionStatus: "TRIAL" });
+
+    const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+    const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(updated.subscriptionStatus).toBe("TRIAL");
+    const acces = await request(app).get("/api/properties").set(authHeader(tokenFor(manager)));
+    expect(acces.status).toBe(200);
   });
 
   it("laisse l'abonnement résilié actif jusqu'au terme de la période déjà payée", async () => {

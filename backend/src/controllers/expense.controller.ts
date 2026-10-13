@@ -292,26 +292,31 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
 
   lines.push("");
   lines.push(["--- Résumé par bien ---"].join(";"));
-  lines.push(["Bien", "Revenus", "Dépenses", "Résultat net"].join(";"));
+  lines.push(["Bien", "Revenus", "Dépenses", "Résultat net", "Devise"].join(";"));
 
-  const byProperty = new Map<string, { title: string; revenue: number; expense: number }>();
-  for (const r of filteredInvoices) {
-    const entry = byProperty.get(r.property.id) ?? { title: r.property.title, revenue: 0, expense: 0 };
-    entry.revenue += r.invoice.amount;
-    byProperty.set(r.property.id, entry);
-  }
-  for (const r of filteredExpenses) {
-    const entry = byProperty.get(r.property.id) ?? { title: r.property.title, revenue: 0, expense: 0 };
-    entry.expense += r.expense.amount;
-    byProperty.set(r.property.id, entry);
-  }
-  for (const entry of byProperty.values()) {
+  // Une ligne par bien ET par devise (même règle que le bilan fiscal) : la devise d'un loyer vient de son
+  // contrat, celle d'une dépense de sa saisie, et ni l'une ni l'autre n'est forcément celle du bien.
+  // Les additionner sous le seul bien produisait un total sans signification (100 EUR + 50 000 XOF).
+  const byPropertyCurrency = new Map<string, { title: string; currency: string; revenue: number; expense: number }>();
+  const entree = (propertyId: string, title: string, currency: string) => {
+    const cle = `${propertyId}::${currency}`;
+    const existante = byPropertyCurrency.get(cle) ?? { title, currency, revenue: 0, expense: 0 };
+    byPropertyCurrency.set(cle, existante);
+    return existante;
+  };
+  for (const r of filteredInvoices) entree(r.property.id, r.property.title, r.invoice.currency || "EUR").revenue += r.invoice.amount;
+  for (const r of filteredExpenses) entree(r.property.id, r.property.title, r.expense.currency || "EUR").expense += r.expense.amount;
+  const resume = Array.from(byPropertyCurrency.values()).sort(
+    (a, b) => a.title.localeCompare(b.title) || a.currency.localeCompare(b.currency)
+  );
+  for (const entry of resume) {
     lines.push(
       [
         csvEscape(entry.title),
         csvMontant(entry.revenue),
         csvMontant(entry.expense),
         csvMontant(entry.revenue - entry.expense),
+        entry.currency,
       ].join(";")
     );
   }

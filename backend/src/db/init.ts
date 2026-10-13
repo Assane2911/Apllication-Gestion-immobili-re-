@@ -606,6 +606,7 @@ export async function initDb() {
         recurrence_end_date TIMESTAMP,
         template_id TEXT REFERENCES expenses(id) ON DELETE SET NULL,
         period_index INTEGER,
+        last_period_index INTEGER,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -955,6 +956,7 @@ export async function initDb() {
     await ajouterColonne("expenses", "recurrence_end_date", sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS recurrence_end_date TIMESTAMP`);
     await ajouterColonne("expenses", "template_id", sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS template_id TEXT REFERENCES expenses(id) ON DELETE SET NULL`);
     await ajouterColonne("expenses", "period_index", sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS period_index INTEGER`);
+    await ajouterColonne("expenses", "last_period_index", sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS last_period_index INTEGER`);
     await creerIndex(
       "expenses_template_period_unique",
       sql`CREATE UNIQUE INDEX IF NOT EXISTS expenses_template_period_unique ON expenses (template_id, period_index)`

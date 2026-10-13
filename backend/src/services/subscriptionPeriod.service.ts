@@ -246,16 +246,16 @@ function convertirVersDevise(
  * partout ailleurs en facturation : le 31 janvier + 1 mois = 28 (ou 29)
  * février.
  */
-export function ajouterPeriode(depuis: Date, cycle: BillingCycle): Date {
+export function ajouterPeriode(depuis: Date, cycle: BillingCycle, fois = 1): Date {
   const resultat = new Date(depuis);
   const jour = resultat.getDate();
 
   // Le 1er du mois ne peut jamais déborder : on s'y place avant de décaler.
   resultat.setDate(1);
   if (cycle === "ANNUAL") {
-    resultat.setFullYear(resultat.getFullYear() + 1);
+    resultat.setFullYear(resultat.getFullYear() + fois);
   } else {
-    resultat.setMonth(resultat.getMonth() + 1);
+    resultat.setMonth(resultat.getMonth() + fois);
   }
 
   resultat.setDate(Math.min(jour, dernierJourDuMois(resultat)));

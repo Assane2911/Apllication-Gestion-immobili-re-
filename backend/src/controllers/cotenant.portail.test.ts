@@ -8,6 +8,7 @@ import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/remi
 import {
   authHeader,
   createContract,
+  createInspection,
   createInvoice,
   createManager,
   createProperty,
@@ -111,6 +112,53 @@ describe("portail du colocataire", () => {
         .attach("photo", fakeJpegBuffer("img"), { filename: "fuite.jpg", contentType: "image/jpeg" });
     expect((await signaler(hEtranger)).status).toBe(403);
     expect((await signaler(hColoc)).status).toBe(201);
+  });
+
+  it("la mise à jour d'un incident signalé par le colocataire lui est envoyée à lui, pas au titulaire", async () => {
+    const { contract, hColoc, hGestion } = await colocation();
+    const signalement = await request(app)
+      .post("/api/issues")
+      .set(hColoc)
+      .field("contractId", contract.id)
+      .field("title", "Fuite d'eau")
+      .field("description", "Fuite sous l'évier de la cuisine")
+      .attach("photo", fakeJpegBuffer("img"), { filename: "fuite.jpg", contentType: "image/jpeg" });
+    expect(signalement.status).toBe(201);
+    envoi.mockClear();
+
+    const maj = await request(app)
+      .put(`/api/issues/${signalement.body.id}/status`)
+      .set(hGestion)
+      .send({ status: "IN_PROGRESS", managerNote: "Un plombier passe jeudi" });
+    expect(maj.status).toBe(200);
+
+    // L'email s'adresse à celle qui a signalé le problème, par son nom — et non au titulaire.
+    const envoyes = envoi.mock.calls.map((c: unknown[]) => c[0]);
+    expect(envoyes).toEqual(["binta@example.com"]);
+    expect(envoi.mock.calls[0][2] as string).toContain("Binta Kane");
+  });
+
+  it("voit l'état des lieux du bail, sans pouvoir le signer, et le constat nomme tous les locataires", async () => {
+    const { manager, contract, hColoc, hEtranger, hGestion } = await colocation();
+    const edl = await createInspection(contract, manager.id, { status: "COMPLETED" });
+
+    const liste = await request(app).get("/api/inspections/mine").set(hColoc);
+    expect(liste.status).toBe(200);
+    expect(liste.body.map((i: { id: string }) => i.id)).toEqual([edl.id]);
+    // Un locataire étranger au bail n'en voit aucun.
+    expect((await request(app).get("/api/inspections/mine").set(hEtranger)).body).toEqual([]);
+
+    // La signature reste au titulaire, comme celle du bail.
+    const signature = await request(app)
+      .post(`/api/inspections/${edl.id}/sign`)
+      .set(hColoc)
+      .send({ signatureDataUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" });
+    expect(signature.status).toBe(403);
+
+    // Le constat contradictoire engage tous les occupants : il les nomme tous, comme le bail et la quittance.
+    const constat = await request(app).get(`/api/documents/inspection/${edl.id}`).set(hGestion);
+    expect(constat.status).toBe(200);
+    expect(constat.text).toContain("Madame Awa Sow et Madame Binta Kane");
   });
 
   it("ne signe pas électroniquement le bail et ne lit pas la messagerie du titulaire", async () => {

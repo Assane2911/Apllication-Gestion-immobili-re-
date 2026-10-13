@@ -150,3 +150,27 @@ describe("GET /api/dashboard/stats", () => {
     expect(total).toBe(300);
   });
 });
+
+describe("GET /api/dashboard/stats — loyer attendu du mois", () => {
+  it("ne compte pas dans « attendu » une facture annulée", async () => {
+    // Une facture annulée (émise par erreur, remplacée) n'est plus due : la compter gonflait « attendu »
+    // et faisait croire à un manque à gagner qui n'existe pas.
+    const manager = await createManager();
+    const bien = await createProperty(manager.id, { status: "OCCUPIED" });
+    const locataire = await createTenant(manager.id);
+    const bail = await createContract(bien.id, locataire.id, { status: "ACTIVE" });
+    // Une facture par bail et par mois : la facture annulée est celle d'un second bail.
+    const bien2 = await createProperty(manager.id, { status: "OCCUPIED" });
+    const locataire2 = await createTenant(manager.id);
+    const bail2 = await createContract(bien2.id, locataire2.id, { status: "ACTIVE" });
+    const maintenant = new Date();
+    const periode = { periodMonth: maintenant.getMonth() + 1, periodYear: maintenant.getFullYear(), dueDate: maintenant };
+    await createInvoice(bail.id, { ...periode, amount: 500, currency: "EUR", status: "PENDING" });
+    await createInvoice(bail2.id, { ...periode, amount: 700, currency: "EUR", status: "CANCELLED" });
+
+    const res = await request(app).get("/api/dashboard/stats").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.monthlyExpectedByCurrency.EUR).toBe(500);
+  });
+});

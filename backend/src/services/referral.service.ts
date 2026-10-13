@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { env } from "../config/env";
 import { db } from "../db/client";
 import { users } from "../db/schema";
@@ -70,25 +70,51 @@ export async function obtenirOuCreerCodeParrainage(userId: string): Promise<stri
  * facturation plutôt que de la compléter.
  */
 export async function accorderRecompenseParrainage(filleul: typeof users.$inferSelect): Promise<void> {
-  if (!filleul.referredByUserId || filleul.referralRewardGrantedAt) return;
+  if (!filleul.referredByUserId) return;
+
+  // Réclamation ATOMIQUE de la récompense, avant toute écriture chez le parrain.
+  // `filleul` vient d'une lecture antérieure : deux confirmations simultanées
+  // (double clic sur le lien, deux onglets) la voient toutes deux sans
+  // referralRewardGrantedAt, et la vérifier sur cet objet les laissait passer
+  // ensemble — le parrain recevait alors 30 jours au lieu de 15. Seule la
+  // requête qui pose la date en base (WHERE referral_reward_granted_at IS NULL)
+  // continue ; l'autre s'arrête ici.
+  //
+  // La date est posée que la récompense puisse être accordée ou non (parrain
+  // EXPIRED/CANCELLED compris) : c'est le filleul qui vient de se confirmer,
+  // une seule fois, et cet évènement ne doit jamais se rejouer pour lui.
+  const [reclame] = await db
+    .update(users)
+    .set({ referralRewardGrantedAt: new Date() })
+    .where(and(eq(users.id, filleul.id), isNull(users.referralRewardGrantedAt)))
+    .returning({ id: users.id });
+  if (!reclame) return;
 
   const [parrain] = await db.select().from(users).where(eq(users.id, filleul.referredByUserId));
   if (!parrain) return;
 
-  const recompenseMs = REFERRAL_REWARD_DAYS * 24 * 60 * 60 * 1000;
+  // Les jours sont ajoutés par la base, à la date qu'elle contient AU MOMENT
+  // de l'écriture, et seulement si le statut est encore celui qu'on a lu : lire
+  // la date, y ajouter 15 jours ici puis la réécrire écrasait un renouvellement
+  // enregistré dans l'intervalle (webhook de paiement, prolongation par
+  // l'administration).
+  const joursOfferts = sql`interval '1 day' * ${REFERRAL_REWARD_DAYS}`;
   let nouvelleDate: Date | null = null;
   if (parrain.subscriptionStatus === "TRIAL" && parrain.trialEndsAt) {
-    nouvelleDate = new Date(parrain.trialEndsAt.getTime() + recompenseMs);
-    await db.update(users).set({ trialEndsAt: nouvelleDate }).where(eq(users.id, parrain.id));
+    const [maj] = await db
+      .update(users)
+      .set({ trialEndsAt: sql`${users.trialEndsAt} + ${joursOfferts}` })
+      .where(and(eq(users.id, parrain.id), eq(users.subscriptionStatus, "TRIAL"), isNotNull(users.trialEndsAt)))
+      .returning({ trialEndsAt: users.trialEndsAt });
+    nouvelleDate = maj?.trialEndsAt ?? null;
   } else if (parrain.subscriptionStatus === "ACTIVE" && parrain.subscriptionEndsAt) {
-    nouvelleDate = new Date(parrain.subscriptionEndsAt.getTime() + recompenseMs);
-    await db.update(users).set({ subscriptionEndsAt: nouvelleDate }).where(eq(users.id, parrain.id));
+    const [maj] = await db
+      .update(users)
+      .set({ subscriptionEndsAt: sql`${users.subscriptionEndsAt} + ${joursOfferts}` })
+      .where(and(eq(users.id, parrain.id), eq(users.subscriptionStatus, "ACTIVE"), isNotNull(users.subscriptionEndsAt)))
+      .returning({ subscriptionEndsAt: users.subscriptionEndsAt });
+    nouvelleDate = maj?.subscriptionEndsAt ?? null;
   }
-
-  // Posé que la récompense ait pu être accordée ou non (parrain EXPIRED/
-  // CANCELLED compris) : c'est le filleul qui vient de se confirmer, une
-  // seule fois, et cet évènement ne doit jamais se rejouer pour lui.
-  await db.update(users).set({ referralRewardGrantedAt: new Date() }).where(eq(users.id, filleul.id));
 
   if (nouvelleDate && parrain.email) {
     const { subject, html } = referralRewardEmail({

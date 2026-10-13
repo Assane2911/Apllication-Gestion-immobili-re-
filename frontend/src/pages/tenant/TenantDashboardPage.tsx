@@ -341,7 +341,7 @@ export default function TenantDashboardPage() {
                           <p className="text-xs mt-0.5">
                             {insp.status === "DRAFT" ? (
                               <span className="text-slate-600 dark:text-slate-400">{t("tenant.dashboard.inspectionAwaitingCompletion")}</span>
-                            ) : insp.signedByTenantAt ? (
+                            ) : c.qualite === "COLOCATAIRE" ? null : insp.signedByTenantAt ? (
                               <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                                 {t("tenant.dashboard.inspectionSignedByYouOn", { date: new Date(insp.signedByTenantAt).toLocaleDateString(i18n.language) })}
                               </span>
@@ -352,7 +352,7 @@ export default function TenantDashboardPage() {
                         </div>
                         {insp.status === "COMPLETED" && (
                           <div className="flex items-center gap-2">
-                            {!insp.signedByTenantAt && (
+                            {!insp.signedByTenantAt && c.qualite !== "COLOCATAIRE" && (
                               <Bulle texte={t("tenant.tips.signInspection")}>
                               <button
                                 onClick={() => setSigningInspection(insp)}
