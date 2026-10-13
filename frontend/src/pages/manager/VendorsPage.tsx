@@ -177,7 +177,7 @@ export default function VendorsPage() {
                 <th className="px-4 py-3 font-semibold">{t("manager.vendors.table.trade")}</th>
                 <th className="px-4 py-3 font-semibold">{t("manager.vendors.table.phone")}</th>
                 <th className="px-4 py-3 font-semibold">{t("manager.vendors.table.email")}</th>
-                <th className="px-4 py-3 font-semibold"></th>
+                <th className="relative px-4 py-3 font-semibold"><span className="sr-only">{t("common.actions.column")}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

@@ -97,6 +97,16 @@ describe("InvoicesPage (manager)", () => {
     expect(screen.getAllByRole("button", { name: /Quittance PDF/ })).toHaveLength(2);
   });
 
+  it("les boutons d'action du tableau passent à la ligne au lieu d'élargir le tableau hors de l'écran", async () => {
+    getFactures.mockResolvedValueOnce(paginated([invoice({ id: "inv-pending", status: "PENDING" })]));
+    renderPage();
+
+    const bouton = (await screen.findAllByRole("button", { name: "Marquer réglée" }))[0];
+    const cellule = bouton.closest("td");
+    expect(cellule?.className).not.toContain("whitespace-nowrap");
+    expect(cellule?.querySelector(".flex-wrap")).not.toBeNull();
+  });
+
   it("indique le niveau de relance d'un impayé déjà relancé, pas celui d'une facture réglée", async () => {
     getFactures.mockResolvedValueOnce(
       paginated([

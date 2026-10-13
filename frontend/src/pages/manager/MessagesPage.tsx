@@ -110,9 +110,9 @@ export default function MessagesPage() {
                     ←
                   </button>
                   <div className="min-w-0">
-                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
                       {activeDetails.tenant?.firstName} {activeDetails.tenant?.lastName}
-                    </h4>
+                    </h3>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                       {activeDetails.property?.title} — {activeDetails.property?.address}
                     </p>

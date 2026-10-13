@@ -195,7 +195,7 @@ export default function SubscriptionPage() {
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.subscription.title")}</h1>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.subscription.title")}</h2>
         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
           {t("manager.subscription.subtitle")}
         </p>

@@ -28,6 +28,7 @@ const pt: TranslationSchema = {
       missingCountry: "Este número não indica nenhum país. Escolha o indicativo para que possa receber os lembretes do WhatsApp.",
     },
     actions: {
+      column: "Ações",
       save: "Guardar",
       saving: "A guardar...",
       cancel: "Cancelar",
@@ -671,6 +672,7 @@ const pt: TranslationSchema = {
       confirmButton: "Desativar",
     },
     globalSearch: {
+      label: "Pesquisa global",
       placeholder: "Pesquisar um inquilino, um imóvel, um contrato...",
       clearAria: "Limpar a pesquisa",
       searching: "A pesquisar...",

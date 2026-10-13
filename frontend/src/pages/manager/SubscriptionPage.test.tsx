@@ -151,6 +151,17 @@ describe("SubscriptionPage", () => {
     mockedIsNativePlatform.mockReturnValue(false);
   });
 
+  it("n'a pas de second titre de niveau 1 : le h1 est celui de l'espace (layout), la page porte un h2", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+
+    renderPage();
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Abonnement & Formules SaaS" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+  });
+
   it("annonce le retour d'un paiement et nettoie l'URL", async () => {
     // Stripe et PayDunya ramènent le payeur avec ?stripe=succes. Personne ne
     // lisait ce paramètre : le client revenait sans message, son abonnement

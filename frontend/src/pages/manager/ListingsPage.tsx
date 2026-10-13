@@ -382,9 +382,9 @@ export default function ListingsPage() {
                 </div>
               )}
               <div className="p-4 sm:p-5">
-                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   {listing.title}
-                </h4>
+                </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1">
                   {listing.location}
                   {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}

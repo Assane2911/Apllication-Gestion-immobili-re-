@@ -80,6 +80,14 @@ describe("OwnersPage (manager)", () => {
     expect(screen.getAllByText("Aucun accès").length).toBeGreaterThan(0);
   });
 
+  it("la colonne des boutons d'action a un en-tête lisible par un lecteur d'écran", async () => {
+    queueOwners([owner()]);
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText("Awa Diallo").length).toBeGreaterThan(0));
+    expect(screen.getByRole("columnheader", { name: "Actions" })).toBeInTheDocument();
+  });
+
   it("affiche l'état vide avec un bouton d'ajout", async () => {
     queueOwners([]);
     renderPage();

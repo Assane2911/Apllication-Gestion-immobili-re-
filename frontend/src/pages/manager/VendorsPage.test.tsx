@@ -49,6 +49,14 @@ describe("VendorsPage (manager)", () => {
     expect(screen.getByText("fall@example.com")).toBeInTheDocument();
   });
 
+  it("la colonne des boutons d'action a un en-tête lisible par un lecteur d'écran", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [vendor()] });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Plomberie Fall")).toBeInTheDocument());
+    expect(screen.getByRole("columnheader", { name: "Actions" })).toBeInTheDocument();
+  });
+
   it("affiche l'état vide avec un bouton d'ajout", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [] });
     renderPage();

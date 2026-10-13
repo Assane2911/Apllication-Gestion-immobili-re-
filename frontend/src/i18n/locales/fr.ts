@@ -26,6 +26,7 @@ const fr = {
       missingCountry: "Ce numéro n'indique aucun pays. Choisissez l'indicatif pour qu'il puisse recevoir les rappels WhatsApp.",
     },
     actions: {
+      column: "Actions",
       save: "Enregistrer",
       saving: "Enregistrement...",
       cancel: "Annuler",
@@ -669,6 +670,7 @@ const fr = {
       confirmButton: "Désactiver",
     },
     globalSearch: {
+      label: "Recherche globale",
       placeholder: "Rechercher un locataire, un bien, un contrat...",
       clearAria: "Effacer la recherche",
       searching: "Recherche...",

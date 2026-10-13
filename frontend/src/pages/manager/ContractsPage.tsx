@@ -592,7 +592,10 @@ export default function ContractsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3"><Badge status={c.status} /></td>
-                <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                {/* Les actions passent à la ligne : sur une seule ligne, six boutons élargissaient le tableau au-delà de
+                    l'écran et « Résilier » / « Supprimer » restaient hors de vue, sans indice de défilement. */}
+                <td className="px-4 py-3 text-right max-w-[19rem]">
+                  <div className="flex flex-wrap justify-end gap-2">
                   <Bulle texte={t("manager.tips.contractViewLease")}>
                   <button
                     onClick={() => setViewingLeaseContract(c)}
@@ -686,6 +689,7 @@ export default function ContractsPage() {
                     {t("common.actions.delete")}
                   </button>
                   </Bulle>
+                  </div>
                 </td>
               </tr>
               );
@@ -801,7 +805,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractRenew")}>
                     <button
                       onClick={() => handleRenew(c)}
-                      className="text-xs bg-emerald-600 text-white font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
+                      className="text-xs bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                     >
                       <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renewShort")}
                     </button>
