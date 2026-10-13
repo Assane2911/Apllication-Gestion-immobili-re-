@@ -1663,6 +1663,8 @@ const pt: TranslationSchema = {
       linkLabel: "O seu link a partilhar",
       explanation: "Assim que alguém se inscrever com o seu código e confirmar o email, {{days}} dias são automaticamente adicionados ao seu período de teste ou à sua assinatura atual.",
       totalReferred: "Indicação(ões) inscrita(s)",
+      rewardCap: "Limite: {{used}} de {{max}} indicações recompensadas.",
+      rewardCapReached: "Limite atingido: novas indicações ainda podem se cadastrar, mas já não prolongam o seu acesso.",
     },
   },
 

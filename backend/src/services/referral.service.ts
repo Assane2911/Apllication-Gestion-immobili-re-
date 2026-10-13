@@ -1,12 +1,20 @@
 import crypto from "crypto";
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { env } from "../config/env";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { users } from "../db/schema";
 import { referralRewardEmail, sendEmail } from "./email.service";
 
 /** Jours offerts au PARRAIN quand son filleul confirme son adresse email. */
 export const REFERRAL_REWARD_DAYS = 15;
+
+/**
+ * Nombre maximal de filleuls qui rapportent des jours à un même parrain (soit 150 jours au plus).
+ * Sans plafond, des comptes ouverts avec de fausses adresses (alias d'une même boîte mail, du type
+ * nom+1@gmail.com) suffisaient à s'offrir des mois d'abonnement en série. Au-delà, un filleul est
+ * inscrit normalement mais ne rapporte plus rien.
+ */
+export const REFERRAL_MAX_REWARDED = 10;
 
 const TAILLE_CODE = 4; // 4 octets -> 8 caractères hexadécimaux
 const TENTATIVES_MAX = 5;
@@ -71,27 +79,7 @@ export async function obtenirOuCreerCodeParrainage(userId: string): Promise<stri
  */
 export async function accorderRecompenseParrainage(filleul: typeof users.$inferSelect): Promise<void> {
   if (!filleul.referredByUserId) return;
-
-  // Réclamation ATOMIQUE de la récompense, avant toute écriture chez le parrain.
-  // `filleul` vient d'une lecture antérieure : deux confirmations simultanées
-  // (double clic sur le lien, deux onglets) la voient toutes deux sans
-  // referralRewardGrantedAt, et la vérifier sur cet objet les laissait passer
-  // ensemble — le parrain recevait alors 30 jours au lieu de 15. Seule la
-  // requête qui pose la date en base (WHERE referral_reward_granted_at IS NULL)
-  // continue ; l'autre s'arrête ici.
-  //
-  // La date est posée que la récompense puisse être accordée ou non (parrain
-  // EXPIRED/CANCELLED compris) : c'est le filleul qui vient de se confirmer,
-  // une seule fois, et cet évènement ne doit jamais se rejouer pour lui.
-  const [reclame] = await db
-    .update(users)
-    .set({ referralRewardGrantedAt: new Date() })
-    .where(and(eq(users.id, filleul.id), isNull(users.referralRewardGrantedAt)))
-    .returning({ id: users.id });
-  if (!reclame) return;
-
-  const [parrain] = await db.select().from(users).where(eq(users.id, filleul.referredByUserId));
-  if (!parrain) return;
+  const parrainId = filleul.referredByUserId;
 
   // Les jours sont ajoutés par la base, à la date qu'elle contient AU MOMENT
   // de l'écriture, et seulement si le statut est encore celui qu'on a lu : lire
@@ -99,30 +87,67 @@ export async function accorderRecompenseParrainage(filleul: typeof users.$inferS
   // enregistré dans l'intervalle (webhook de paiement, prolongation par
   // l'administration).
   const joursOfferts = sql`interval '1 day' * ${REFERRAL_REWARD_DAYS}`;
-  let nouvelleDate: Date | null = null;
-  if (parrain.subscriptionStatus === "TRIAL" && parrain.trialEndsAt) {
-    const [maj] = await db
-      .update(users)
-      .set({ trialEndsAt: sql`${users.trialEndsAt} + ${joursOfferts}` })
-      .where(and(eq(users.id, parrain.id), eq(users.subscriptionStatus, "TRIAL"), isNotNull(users.trialEndsAt)))
-      .returning({ trialEndsAt: users.trialEndsAt });
-    nouvelleDate = maj?.trialEndsAt ?? null;
-  } else if (parrain.subscriptionStatus === "ACTIVE" && parrain.subscriptionEndsAt) {
-    const [maj] = await db
-      .update(users)
-      .set({ subscriptionEndsAt: sql`${users.subscriptionEndsAt} + ${joursOfferts}` })
-      .where(and(eq(users.id, parrain.id), eq(users.subscriptionStatus, "ACTIVE"), isNotNull(users.subscriptionEndsAt)))
-      .returning({ subscriptionEndsAt: users.subscriptionEndsAt });
-    nouvelleDate = maj?.subscriptionEndsAt ?? null;
-  }
 
-  if (nouvelleDate && parrain.email) {
+  const issue = await db.transaction(async (tx: Transaction) => {
+    // Le parrain est verrouillé pour toute la décision : deux filleuls qui se confirment ensemble
+    // comptent leurs prédécesseurs l'un après l'autre, et ne passent pas tous deux sous le plafond.
+    await tx.execute(sql`SELECT id FROM users WHERE id = ${parrainId} FOR UPDATE`);
+    const [parrain] = await tx.select().from(users).where(eq(users.id, parrainId));
+
+    // Réclamation ATOMIQUE de la récompense, avant toute écriture chez le parrain.
+    // `filleul` vient d'une lecture antérieure : deux confirmations simultanées
+    // (double clic sur le lien, deux onglets) la voient toutes deux sans
+    // referralRewardGrantedAt, et la vérifier sur cet objet les laissait passer
+    // ensemble — le parrain recevait alors 30 jours au lieu de 15. Seule la
+    // requête qui pose la date en base (WHERE referral_reward_granted_at IS NULL)
+    // continue ; l'autre s'arrête ici.
+    //
+    // La date est posée que la récompense puisse être accordée ou non (parrain
+    // EXPIRED/CANCELLED, plafond atteint compris) : c'est le filleul qui vient
+    // de se confirmer, une seule fois, et cet évènement ne doit jamais se
+    // rejouer pour lui.
+    const [reclame] = await tx
+      .update(users)
+      .set({ referralRewardGrantedAt: new Date() })
+      .where(and(eq(users.id, filleul.id), isNull(users.referralRewardGrantedAt)))
+      .returning({ id: users.id });
+    if (!reclame || !parrain) return null;
+
+    // Plafond : les AUTRES filleuls déjà traités par ce parrain (y compris ceux qui n'ont rien
+    // rapporté parce que le parrain était alors expiré — l'écart est négligeable et la règle reste
+    // simple à expliquer).
+    const [{ traites }] = await tx
+      .select({ traites: sql<number>`count(*)::int` })
+      .from(users)
+      .where(and(eq(users.referredByUserId, parrainId), isNotNull(users.referralRewardGrantedAt), ne(users.id, filleul.id)));
+    if (traites >= REFERRAL_MAX_REWARDED) return null;
+
+    let nouvelleDate: Date | null = null;
+    if (parrain.subscriptionStatus === "TRIAL" && parrain.trialEndsAt) {
+      const [maj] = await tx
+        .update(users)
+        .set({ trialEndsAt: sql`${users.trialEndsAt} + ${joursOfferts}` })
+        .where(and(eq(users.id, parrain.id), eq(users.subscriptionStatus, "TRIAL"), isNotNull(users.trialEndsAt)))
+        .returning({ trialEndsAt: users.trialEndsAt });
+      nouvelleDate = maj?.trialEndsAt ?? null;
+    } else if (parrain.subscriptionStatus === "ACTIVE" && parrain.subscriptionEndsAt) {
+      const [maj] = await tx
+        .update(users)
+        .set({ subscriptionEndsAt: sql`${users.subscriptionEndsAt} + ${joursOfferts}` })
+        .where(and(eq(users.id, parrain.id), eq(users.subscriptionStatus, "ACTIVE"), isNotNull(users.subscriptionEndsAt)))
+        .returning({ subscriptionEndsAt: users.subscriptionEndsAt });
+      nouvelleDate = maj?.subscriptionEndsAt ?? null;
+    }
+    return nouvelleDate ? { parrain, nouvelleDate } : null;
+  });
+
+  if (issue && issue.parrain.email) {
     const { subject, html } = referralRewardEmail({
       days: REFERRAL_REWARD_DAYS,
-      newEndDate: nouvelleDate,
+      newEndDate: issue.nouvelleDate,
       frontendUrl: env.frontendUrl,
     });
-    await sendEmail(parrain.email, subject, html).catch((err) =>
+    await sendEmail(issue.parrain.email, subject, html).catch((err) =>
       console.error("[referral] Échec de l'envoi de la notification de récompense:", err)
     );
   }

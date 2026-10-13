@@ -1663,6 +1663,8 @@ const en: TranslationSchema = {
       linkLabel: "Your link to share",
       explanation: "As soon as someone signs up with your code and confirms their email, {{days}} days are automatically added to your trial or current subscription.",
       totalReferred: "Referred signup(s)",
+      rewardCap: "Limit: {{used}} of {{max}} rewarded referrals used.",
+      rewardCapReached: "Limit reached: new referrals can still sign up, but no longer extend your access.",
     },
   },
 

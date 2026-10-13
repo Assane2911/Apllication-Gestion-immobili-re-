@@ -139,6 +139,9 @@ export interface ReferralInfo {
   referralUrl: string;
   rewardDays: number;
   totalReferred: number;
+  /** Plafond de filleuls récompensés par parrain, et nombre déjà utilisé. */
+  maxRewardedReferrals: number;
+  rewardedReferrals: number;
 }
 
 /** Résumé financier d'un bien tel que renvoyé par GET /api/owners/mine/dashboard. */

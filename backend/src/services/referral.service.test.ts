@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import { users } from "../db/schema";
 import { createManager } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
-import { accorderRecompenseParrainage, obtenirOuCreerCodeParrainage, REFERRAL_REWARD_DAYS } from "./referral.service";
+import {
+  accorderRecompenseParrainage,
+  obtenirOuCreerCodeParrainage,
+  REFERRAL_MAX_REWARDED,
+  REFERRAL_REWARD_DAYS,
+} from "./referral.service";
 
 describe("obtenirOuCreerCodeParrainage", () => {
   it("génère et persiste un code pour un compte qui n'en a pas", async () => {
@@ -115,6 +120,80 @@ describe("accorderRecompenseParrainage", () => {
 
     const [apres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
     expect(apres.subscriptionEndsAt!.getTime()).toBe(renouvele.getTime() + REFERRAL_REWARD_DAYS * 86_400_000);
+  });
+
+  describe("plafond de filleuls récompensés", () => {
+    const JOUR = 86_400_000;
+
+    /** `n` filleuls déjà traités (récompense posée) par ce parrain. */
+    async function dejaTraites(parrainId: string, n: number) {
+      for (let i = 0; i < n; i++) {
+        await createManager({ referredByUserId: parrainId, referralRewardGrantedAt: new Date() });
+      }
+    }
+
+    it("accorde encore la récompense au dernier filleul sous le plafond", async () => {
+      const trialEndsAt = new Date(Date.now() + 10 * JOUR);
+      const parrain = await createManager({ subscriptionStatus: "TRIAL", trialEndsAt });
+      await dejaTraites(parrain.id, REFERRAL_MAX_REWARDED - 1);
+      const filleul = await createManager({ referredByUserId: parrain.id });
+
+      await accorderRecompenseParrainage(filleul);
+
+      const [apres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
+      expect(apres.trialEndsAt!.getTime()).toBe(trialEndsAt.getTime() + REFERRAL_REWARD_DAYS * JOUR);
+    });
+
+    it("n'accorde plus rien au-delà du plafond, mais marque le filleul pour ne pas rejouer", async () => {
+      const trialEndsAt = new Date(Date.now() + 10 * JOUR);
+      const parrain = await createManager({ subscriptionStatus: "TRIAL", trialEndsAt });
+      await dejaTraites(parrain.id, REFERRAL_MAX_REWARDED);
+      const filleul = await createManager({ referredByUserId: parrain.id });
+
+      await accorderRecompenseParrainage(filleul);
+
+      const [parrainApres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
+      expect(parrainApres.trialEndsAt!.getTime()).toBe(trialEndsAt.getTime());
+      const [filleulApres] = await testDb.select().from(users).where(eq(users.id, filleul.id));
+      expect(filleulApres.referralRewardGrantedAt).not.toBeNull();
+    });
+
+    it("le plafond vaut aussi pour un abonnement payant", async () => {
+      const subscriptionEndsAt = new Date(Date.now() + 20 * JOUR);
+      const parrain = await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt, trialEndsAt: null });
+      await dejaTraites(parrain.id, REFERRAL_MAX_REWARDED);
+      const filleul = await createManager({ referredByUserId: parrain.id });
+
+      await accorderRecompenseParrainage(filleul);
+
+      const [apres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
+      expect(apres.subscriptionEndsAt!.getTime()).toBe(subscriptionEndsAt.getTime());
+    });
+
+    it("ne compte que les filleuls de CE parrain", async () => {
+      const trialEndsAt = new Date(Date.now() + 10 * JOUR);
+      const parrain = await createManager({ subscriptionStatus: "TRIAL", trialEndsAt });
+      const autre = await createManager();
+      await dejaTraites(autre.id, REFERRAL_MAX_REWARDED + 3);
+      const filleul = await createManager({ referredByUserId: parrain.id });
+
+      await accorderRecompenseParrainage(filleul);
+
+      const [apres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
+      expect(apres.trialEndsAt!.getTime()).toBe(trialEndsAt.getTime() + REFERRAL_REWARD_DAYS * JOUR);
+    });
+
+    it("ne compte pas un filleul qui n'est pas encore confirmé", async () => {
+      const trialEndsAt = new Date(Date.now() + 10 * JOUR);
+      const parrain = await createManager({ subscriptionStatus: "TRIAL", trialEndsAt });
+      for (let i = 0; i < REFERRAL_MAX_REWARDED + 2; i++) await createManager({ referredByUserId: parrain.id });
+      const filleul = await createManager({ referredByUserId: parrain.id });
+
+      await accorderRecompenseParrainage(filleul);
+
+      const [apres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
+      expect(apres.trialEndsAt!.getTime()).toBe(trialEndsAt.getTime() + REFERRAL_REWARD_DAYS * JOUR);
+    });
   });
 
   it("ne fait rien pour un compte sans parrain", async () => {

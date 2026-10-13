@@ -98,6 +98,17 @@ export default function ReferralPage() {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-500">{t("manager.referral.explanation", { days: info.rewardDays })}</p>
+            <p
+              className={`text-xs ${
+                info.rewardedReferrals >= info.maxRewardedReferrals
+                  ? "text-amber-700 dark:text-amber-400 font-semibold"
+                  : "text-slate-500 dark:text-slate-500"
+              }`}
+            >
+              {info.rewardedReferrals >= info.maxRewardedReferrals
+                ? t("manager.referral.rewardCapReached")
+                : t("manager.referral.rewardCap", { used: info.rewardedReferrals, max: info.maxRewardedReferrals })}
+            </p>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm">

@@ -1664,6 +1664,8 @@ const fr = {
       linkLabel: "Votre lien à partager",
       explanation: "Dès qu'une personne s'inscrit avec votre code et confirme son adresse email, {{days}} jours sont automatiquement ajoutés à votre essai ou à votre abonnement en cours.",
       totalReferred: "Filleul(s) inscrit(s)",
+      rewardCap: "Plafond : {{used}} filleul(s) récompensé(s) sur {{max}}.",
+      rewardCapReached: "Plafond atteint : vos prochains filleuls peuvent s'inscrire, mais ne prolongent plus votre accès.",
     },
   },
 
