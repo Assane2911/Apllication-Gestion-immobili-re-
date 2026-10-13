@@ -10,7 +10,7 @@ import { finDeLaJournee } from "../utils/dates";
 import { arrondir } from "../utils/montants";
 import { formaterMontant } from "../utils/montant";
 import { nomAvecCivilite } from "../utils/nom";
-import { computeCrg, loadAgencyName, loadOwnerForManager } from "./crg.controller";
+import { computeCrg, computeCrgPourProprietaires, loadAgencyName, loadOwnerForManager } from "./crg.controller";
 
 /**
  * Reversements aux propriétaires : l'agence enregistre l'argent qu'elle a
@@ -178,19 +178,19 @@ const syntheseSchema = z.object({
  */
 export const listPayoutSummary = asyncHandler(async (req: Request, res: Response) => {
   const { month, year } = syntheseSchema.parse(req.query);
-  const proprietaires = await db.select().from(owners).where(eq(owners.managerId, req.user!.userId));
-  const lignes = [];
-  for (const owner of proprietaires) {
-    if (owner.anonymizedAt) continue;
-    const crg = await computeCrg(owner, month, year);
-    lignes.push({
-      ownerId: owner.id,
-      ownerName: crg.ownerName,
-      hasIban: Boolean(owner.iban),
-      netByCurrency: crg.totalNetByCurrency,
-      reverseByCurrency: crg.totalReverseByCurrency,
-      resteByCurrency: crg.resteAReverserByCurrency,
-    });
-  }
+  const proprietaires = (await db.select().from(owners).where(eq(owners.managerId, req.user!.userId))).filter(
+    (owner: typeof owners.$inferSelect) => !owner.anonymizedAt
+  );
+  // Un seul calcul groupé pour tous les propriétaires (nombre de requêtes constant) : voir
+  // computeCrgPourProprietaires dans crg.controller.ts.
+  const synthese = await computeCrgPourProprietaires(proprietaires, month, year);
+  const lignes = proprietaires.map((owner: typeof owners.$inferSelect, i: number) => ({
+    ownerId: owner.id,
+    ownerName: synthese[i].ownerName,
+    hasIban: Boolean(owner.iban),
+    netByCurrency: synthese[i].totalNetByCurrency,
+    reverseByCurrency: synthese[i].totalReverseByCurrency,
+    resteByCurrency: synthese[i].resteAReverserByCurrency,
+  }));
   res.json({ month, year, owners: lignes.sort((a, b) => a.ownerName.localeCompare(b.ownerName)) });
 });
