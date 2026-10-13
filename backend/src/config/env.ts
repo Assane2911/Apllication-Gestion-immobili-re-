@@ -80,6 +80,9 @@ export const env = {
     // avisEcheanceWhatsapp). Prend le pas sur templateNameRentDue, dont le
     // texte approuvé écrit « le 5 » en dur.
     templateNameRentDueDated: process.env.META_WHATSAPP_TEMPLATE_RENT_DUE_DATED ?? "",
+    // Relance d'un loyer impayé (voir overdueReminderWhatsappVariables). Vide : pas de relance WhatsApp,
+    // l'email part seul — comme pour tout modèle non configuré.
+    templateNameOverdue: process.env.META_WHATSAPP_TEMPLATE_OVERDUE ?? "",
     // Code langue du modèle tel que déclaré dans le WhatsApp Manager (ex:
     // "fr" pour un modèle rédigé et approuvé en français).
     templateLanguage: process.env.META_WHATSAPP_TEMPLATE_LANGUAGE ?? "fr",

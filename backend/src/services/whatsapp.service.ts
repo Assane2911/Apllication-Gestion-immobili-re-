@@ -263,6 +263,35 @@ export function avisEcheanceWhatsapp(params: {
 }
 
 /**
+ * Variables `{{1}}`..`{{6}}` du modèle Meta de relance d'impayé (voir
+ * env.whatsapp.templateNameOverdue) :
+ * "Bonjour {{1}}, votre loyer de {{2}} ({{3}}) reste impayé : {{4}} restant dû,
+ * échéance dépassée de {{5}} jour(s). Régler en ligne : {{6}}"
+ *
+ * Un seul texte pour les trois niveaux de relance : le ton gradué est celui de l'email, qui reste
+ * le canal de référence ; WhatsApp ne fait que rappeler le montant et le lien de paiement.
+ */
+export function overdueReminderWhatsappVariables(params: {
+  tenantName: string;
+  propertyTitle: string;
+  amount: number;
+  currency?: string;
+  periodMonth: number;
+  periodYear: number;
+  daysLate: number;
+  frontendUrl: string;
+}): Record<string, string> {
+  const { amount, currency = "EUR", daysLate, frontendUrl } = params;
+
+  return {
+    ...prefixeCommunRappel(params),
+    "4": formaterMontant(amount, currency),
+    "5": `${daysLate}`,
+    "6": `${frontendUrl}/portail/paiements`,
+  };
+}
+
+/**
  * Variables `{{1}}`..`{{6}}` du modèle Meta "rappel_avant_echeance_loyer"
  * (voir env.whatsapp.templateNameRentDueSoon) :
  * "Bonjour {{1}}, votre loyer de {{2}} ({{3}}) n'est pas encore réglé et

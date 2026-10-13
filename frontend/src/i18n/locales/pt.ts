@@ -1499,7 +1499,7 @@ const pt: TranslationSchema = {
       success: "Definições da agência atualizadas com sucesso! Os seus futuros recibos incluirão estas informações.",
       overdue: {
         title: "Lembretes automáticos de rendas em atraso",
-        hint: "Desativados por defeito. Uma vez ativados, cada renda por pagar recebe no máximo três lembretes por email (titular e coinquilinos); após 90 dias de atraso, mais nenhum lembrete automático: a sequência cabe-lhe a si.",
+        hint: "Desativados por defeito. Uma vez ativados, cada renda por pagar recebe no máximo três lembretes por email (titular e coinquilinos), e por WhatsApp com o plano Pro se o modelo de lembrete estiver configurado; após 90 dias de atraso, mais nenhum lembrete automático: a sequência cabe-lhe a si.",
         enabled: "Enviar os lembretes automaticamente",
         grace: "Período de carência após o vencimento (dias)",
         interval: "Dias entre dois lembretes",
