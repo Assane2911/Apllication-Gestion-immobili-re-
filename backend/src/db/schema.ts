@@ -913,6 +913,10 @@ export const messages = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     senderRole: roleEnum("sender_role").notNull(),
+    // Le fil de discussion : chaque locataire du bail (titulaire ou colocataire) a le sien avec
+    // l'agence, que les autres ne voient pas. Nul sur une ligne antérieure au rattrapage de
+    // initDb : elle appartient alors au fil du titulaire du bail.
+    tenantId: text("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
     isRead: boolean("is_read").notNull().default(false),
     ...timestamps,
@@ -920,6 +924,7 @@ export const messages = pgTable(
   (table) => ({
     contractIdIdx: index("messages_contract_id_idx").on(table.contractId),
     senderIdIdx: index("messages_sender_id_idx").on(table.senderId),
+    tenantIdIdx: index("messages_tenant_id_idx").on(table.tenantId),
   })
 );
 

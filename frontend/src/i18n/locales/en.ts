@@ -1420,6 +1420,7 @@ const en: TranslationSchema = {
       ongoingDiscussions: "Ongoing conversations",
       conversationCount: "{{count}} conversation(s)",
       noMessageYet: "No message yet",
+      cotenant: "Co-tenant",
       noActiveContracts: "No active contract or tenant.",
       loadingMessages: "Loading messages...",
       you: "You (Agency)",

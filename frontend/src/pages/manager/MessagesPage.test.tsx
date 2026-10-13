@@ -211,4 +211,49 @@ describe("MessagesPage (gestionnaire)", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getByText("Aucun contrat ou locataire actif.")).toBeInTheDocument());
   });
+
+  it("colocation : un fil par locataire, et le fil du colocataire se lit et s'écrit avec son tenantId", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(
+      conversationsPage([
+        conversation({ id: "c1:t1", tenantId: "t1", qualite: "TITULAIRE" }),
+        conversation({
+          id: "c1:t2",
+          tenantId: "t2",
+          qualite: "COLOCATAIRE",
+          tenant: { firstName: "Binta", lastName: "Kane" } as Conversation["tenant"],
+          lastMessage: message({ content: "Question de Binta" }),
+        }),
+      ])
+    );
+    // Fil du titulaire, ouvert d'office : sans tenantId.
+    mockedApi.get.mockResolvedValueOnce({
+      data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
+    });
+    mockedApi.get.mockResolvedValueOnce({
+      data: {
+        messages: [message({ content: "Question de Binta" })],
+        contract: { tenant: { firstName: "Binta", lastName: "Kane" }, property: { title: "Studio Centre-ville" } },
+      },
+    });
+    mockedApi.post.mockResolvedValueOnce({
+      data: { id: "msg-new", contractId: "c1", senderId: "mgr-1", senderRole: "MANAGER", content: "Réponse à Binta", isRead: false, createdAt: "2026-06-15T11:00:00.000Z" },
+    });
+
+    renderPage();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/messages/c1", { signal: expect.anything() }));
+    expect(screen.getByText("Colocataire")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Binta Kane/ }));
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenCalledWith("/messages/c1", { signal: expect.anything(), params: { tenantId: "t2" } })
+    );
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Binta Kane" })).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText("Écrivez votre message..."), "Réponse à Binta");
+    await user.click(screen.getByRole("button", { name: "Envoyer" }));
+    await waitFor(() =>
+      expect(mockedApi.post).toHaveBeenCalledWith("/messages/c1", { content: "Réponse à Binta" }, { params: { tenantId: "t2" } })
+    );
+  });
 });

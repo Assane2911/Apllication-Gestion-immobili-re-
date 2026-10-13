@@ -364,7 +364,12 @@ export interface Message {
 }
 
 export interface Conversation {
+  /** Identifiant du fil : « bail:locataire ». Un bail en colocation a un fil par locataire. */
+  id?: string;
   contractId: string;
+  /** Le locataire de ce fil (titulaire ou colocataire). */
+  tenantId?: string;
+  qualite?: "TITULAIRE" | "COLOCATAIRE";
   property: Property;
   tenant: Tenant;
   lastMessage?: Message | null;

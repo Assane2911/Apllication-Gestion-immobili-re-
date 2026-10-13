@@ -665,6 +665,7 @@ export async function initDb() {
         contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
         sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         sender_role TEXT NOT NULL,
+        tenant_id TEXT REFERENCES tenants(id) ON DELETE CASCADE,
         content TEXT NOT NULL,
         is_read BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -977,6 +978,21 @@ export async function initDb() {
     await creerIndex("vendors_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS vendors_manager_id_idx ON vendors (manager_id)`);
     await creerIndex("messages_sender_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON messages (sender_id)`);
     await creerIndex("messages_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_contract_id_idx ON messages (contract_id)`);
+    // Un fil de discussion par locataire du bail (voir messages.tenant_id). Les messages existants
+    // appartiennent au titulaire : ils sont rattachés à son fil, une fois, quand la colonne naît.
+    // Pas de relecture à chaque démarrage : une ligne restée nulle est de toute façon lue comme
+    // appartenant au titulaire (voir message.controller.ts).
+    // Colonne et rattachement dans la même transaction : un rattachement qui échouerait après la
+    // création de la colonne ne serait jamais retenté.
+    if (!etat.colonnes.has("messages.tenant_id")) {
+      await alterSiBesoin(() =>
+        executerDdl(
+          sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS tenant_id TEXT REFERENCES tenants(id) ON DELETE CASCADE`,
+          sql`UPDATE messages SET tenant_id = contracts.tenant_id FROM contracts WHERE messages.contract_id = contracts.id AND messages.tenant_id IS NULL`
+        )
+      );
+    }
+    await creerIndex("messages_tenant_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_tenant_id_idx ON messages (tenant_id)`);
     await creerIndex("rate_limit_hits_reset_at_idx", sql`CREATE INDEX IF NOT EXISTS rate_limit_hits_reset_at_idx ON rate_limit_hits (reset_at)`);
     await creerIndex("activity_logs_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
     await creerIndex("activity_logs_created_at_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs (created_at)`);

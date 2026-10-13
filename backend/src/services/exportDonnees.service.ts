@@ -1,4 +1,4 @@
-import { and, eq, inArray, or, SQL } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, SQL } from "drizzle-orm";
 import { db } from "../db/client";
 import {
   activityLogs,
@@ -53,8 +53,9 @@ export async function construireExportLocataire(tenantId: string) {
     .from(contracts)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(contracts.tenantId, tenantId));
-  // Baux où il est colocataire : ils le concernent (loyer, factures), mais la signature électronique et
-  // la messagerie y sont celles du titulaire — ses données à lui, retirées de cet export.
+  // Baux où il est colocataire : ils le concernent (loyer, factures, son propre fil de discussion),
+  // mais la signature électronique et le fil du titulaire sont les données du titulaire — retirées
+  // de cet export.
   const lignesColocataire = (
     await db
       .select({ contract: contracts, property: properties })
@@ -80,7 +81,18 @@ export async function construireExportLocataire(tenantId: string) {
         db.select().from(invoices).where(inArray(invoices.contractId, idsContrats)),
         db.select().from(issueReports).where(eq(issueReports.tenantId, tenantId)),
         db.select().from(inspections).where(eq(inspections.tenantId, tenantId)),
-        idsContratsTitulaire.length ? db.select().from(messages).where(inArray(messages.contractId, idsContratsTitulaire)) : Promise.resolve([]),
+        // Ses propres fils de discussion, titulaire ou colocataire — jamais ceux des autres locataires du bail.
+        db
+          .select()
+          .from(messages)
+          .where(
+            and(
+              inArray(messages.contractId, idsContrats),
+              idsContratsTitulaire.length
+                ? or(eq(messages.tenantId, tenantId), and(isNull(messages.tenantId), inArray(messages.contractId, idsContratsTitulaire)))
+                : eq(messages.tenantId, tenantId)
+            )
+          ),
       ])
     : [[], await db.select().from(issueReports).where(eq(issueReports.tenantId, tenantId)), [], []];
 

@@ -1421,6 +1421,7 @@ const fr = {
       ongoingDiscussions: "Discussions en cours",
       conversationCount: "{{count}} conversation(s)",
       noMessageYet: "Aucun message pour le moment",
+      cotenant: "Colocataire",
       noActiveContracts: "Aucun contrat ou locataire actif.",
       loadingMessages: "Chargement des messages...",
       you: "Vous (Agence)",
