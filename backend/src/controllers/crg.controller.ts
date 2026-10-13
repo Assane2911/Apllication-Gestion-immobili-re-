@@ -101,30 +101,47 @@ export type CrgSynthesis = {
 };
 
 export async function computeCrg(owner: OwnerRow, month: number, year: number): Promise<CrgSynthesis> {
+  const [crg] = await computeCrgPourProprietaires([owner], month, year);
+  return crg;
+}
+
+/** Valeur de `groupe` pour la clé donnée, créée vide au besoin. */
+function parCle<K, V>(groupes: Map<K, V[]>, cle: K): V[] {
+  let liste = groupes.get(cle);
+  if (!liste) {
+    liste = [];
+    groupes.set(cle, liste);
+  }
+  return liste;
+}
+
+/**
+ * Compte-rendu de gestion de PLUSIEURS propriétaires pour un même mois, avec un nombre de requêtes
+ * constant : biens, baux, encaissements, dépenses et reversements de tous les propriétaires sont lus
+ * en une fois, puis répartis. La synthèse des reversements de l'agence recalculait auparavant le
+ * compte-rendu de chaque propriétaire l'un après l'autre (environ cinq requêtes chacun), et la page
+ * ralentissait avec le nombre de propriétaires. Le résultat de chacun est identique à celui d'un calcul
+ * isolé — c'est le même code (computeCrg n'est qu'un appel avec un seul propriétaire).
+ */
+export async function computeCrgPourProprietaires(proprietaires: OwnerRow[], month: number, year: number): Promise<CrgSynthesis[]> {
+  if (proprietaires.length === 0) return [];
   const { start, end } = monthBounds(month, year);
+  const ownerIds = proprietaires.map((o) => o.id);
 
-  const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, owner.id));
-  const propertyIds = ownerProperties.map((p: typeof properties.$inferSelect) => p.id);
+  const tousLesBiens: Array<typeof properties.$inferSelect> = await db.select().from(properties).where(inArray(properties.ownerId, ownerIds));
+  const propertyIds = tousLesBiens.map((p) => p.id);
 
-  const ownerContracts =
-    propertyIds.length > 0
-      ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds))
-      : [];
-  const contractIdToPropertyId = new Map(
-    ownerContracts.map((c: typeof contracts.$inferSelect) => [c.id, c.propertyId])
-  );
-  const contractIds = ownerContracts.map((c: typeof contracts.$inferSelect) => c.id);
+  const tousLesBaux: Array<typeof contracts.$inferSelect> =
+    propertyIds.length > 0 ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds)) : [];
+  const contractIds = tousLesBaux.map((c) => c.id);
 
   // paidAt est nullable (une facture PAID sans paidAt renseigné retombe sur
   // dueDate) : comme dans fiscal.controller.ts, le filtre par mois est donc
   // appliqué en mémoire après avoir choisi la bonne date par ligne, pas
   // directement en SQL.
-  const [paidInvoiceRows, expenseRows] = await Promise.all([
+  const [paidInvoiceRows, expenseRows, payoutRows] = await Promise.all([
     contractIds.length > 0
-      ? db
-          .select()
-          .from(invoices)
-          .where(and(inArray(invoices.contractId, contractIds), factureEncaissee))
+      ? db.select().from(invoices).where(and(inArray(invoices.contractId, contractIds), factureEncaissee))
       : Promise.resolve([] as (typeof invoices.$inferSelect)[]),
     propertyIds.length > 0
       ? db
@@ -132,14 +149,70 @@ export async function computeCrg(owner: OwnerRow, month: number, year: number): 
           .from(expenses)
           .where(and(inArray(expenses.propertyId, propertyIds), gte(expenses.expenseDate, start), lte(expenses.expenseDate, end)))
       : Promise.resolve([] as (typeof expenses.$inferSelect)[]),
+    db
+      .select()
+      .from(ownerPayouts)
+      .where(and(inArray(ownerPayouts.ownerId, ownerIds), eq(ownerPayouts.periodMonth, month), eq(ownerPayouts.periodYear, year)))
+      .orderBy(asc(ownerPayouts.paidAt), asc(ownerPayouts.createdAt)),
   ]);
 
   const invoiceDate = (inv: typeof invoices.$inferSelect) => new Date(inv.paidAt ?? inv.dueDate);
   // Un encaissement par paiement (voir encaissements.service.ts).
-  const filteredInvoices = (await developperFactures(paidInvoiceRows)).filter((inv) => {
+  const encaissements = (await developperFactures(paidInvoiceRows)).filter((inv) => {
     const d = invoiceDate(inv);
     return d >= start && d <= end;
   });
+
+  // Répartition par propriétaire.
+  const proprietaireDuBien = new Map(tousLesBiens.map((p) => [p.id, p.ownerId] as const));
+  const bauxParProprietaire = new Map<string, Array<typeof contracts.$inferSelect>>();
+  const proprietaireDuBail = new Map<string, string>();
+  for (const c of tousLesBaux) {
+    const ownerId = proprietaireDuBien.get(c.propertyId);
+    if (!ownerId) continue;
+    proprietaireDuBail.set(c.id, ownerId);
+    parCle(bauxParProprietaire, ownerId).push(c);
+  }
+  const biensParProprietaire = new Map<string, Array<typeof properties.$inferSelect>>();
+  for (const p of tousLesBiens) if (p.ownerId) parCle(biensParProprietaire, p.ownerId).push(p);
+  const encaissementsParProprietaire = new Map<string, Array<typeof invoices.$inferSelect>>();
+  for (const inv of encaissements) {
+    const ownerId = proprietaireDuBail.get(inv.contractId);
+    if (ownerId) parCle(encaissementsParProprietaire, ownerId).push(inv);
+  }
+  const depensesParProprietaire = new Map<string, Array<typeof expenses.$inferSelect>>();
+  for (const exp of expenseRows) {
+    const ownerId = proprietaireDuBien.get(exp.propertyId);
+    if (ownerId) parCle(depensesParProprietaire, ownerId).push(exp);
+  }
+  const reversementsParProprietaire = new Map<string, Array<typeof ownerPayouts.$inferSelect>>();
+  for (const r of payoutRows) parCle(reversementsParProprietaire, r.ownerId).push(r);
+
+  return proprietaires.map((owner) =>
+    assemblerCrg(owner, month, year, {
+      biens: biensParProprietaire.get(owner.id) ?? [],
+      baux: bauxParProprietaire.get(owner.id) ?? [],
+      encaissements: encaissementsParProprietaire.get(owner.id) ?? [],
+      depenses: depensesParProprietaire.get(owner.id) ?? [],
+      reversements: reversementsParProprietaire.get(owner.id) ?? [],
+    })
+  );
+}
+
+type DonneesCrg = {
+  biens: Array<typeof properties.$inferSelect>;
+  baux: Array<typeof contracts.$inferSelect>;
+  encaissements: Array<typeof invoices.$inferSelect>;
+  depenses: Array<typeof expenses.$inferSelect>;
+  reversements: Array<typeof ownerPayouts.$inferSelect>;
+};
+
+/** Le calcul proprement dit, sur des données d'UN propriétaire déjà lues : aucune requête. */
+function assemblerCrg(owner: OwnerRow, month: number, year: number, donnees: DonneesCrg): CrgSynthesis {
+  const ownerProperties = donnees.biens;
+  const contractIdToPropertyId = new Map(donnees.baux.map((c) => [c.id, c.propertyId]));
+  const filteredInvoices = donnees.encaissements;
+  const expenseRows = donnees.depenses;
 
   type PropertyLine = CrgSynthesis["properties"][number];
 
@@ -154,9 +227,7 @@ export async function computeCrg(owner: OwnerRow, month: number, year: number): 
   const perPropertyCurrency = new Map<string, PropertyLine>();
   const cle = (propertyId: string, currency: string) => `${propertyId}|${currency}`;
 
-  const titreParBien = new Map(
-    ownerProperties.map((p: typeof properties.$inferSelect) => [p.id, p.title] as const)
-  );
+  const titreParBien = new Map(ownerProperties.map((p) => [p.id, p.title] as const));
 
   function ligne(propertyId: string, currency: string): PropertyLine | undefined {
     const titre = titreParBien.get(propertyId);
@@ -227,11 +298,7 @@ export async function computeCrg(owner: OwnerRow, month: number, year: number): 
     totalNetByCurrency[entry.currency] = (totalNetByCurrency[entry.currency] ?? 0) + entry.netAReverser;
   }
 
-  const reversements = await db
-    .select()
-    .from(ownerPayouts)
-    .where(and(eq(ownerPayouts.ownerId, owner.id), eq(ownerPayouts.periodMonth, month), eq(ownerPayouts.periodYear, year)))
-    .orderBy(asc(ownerPayouts.paidAt), asc(ownerPayouts.createdAt));
+  const reversements = donnees.reversements;
   const totalReverseByCurrency: Record<string, number> = {};
   for (const r of reversements) {
     totalReverseByCurrency[r.currency] = arrondir((totalReverseByCurrency[r.currency] ?? 0) + r.amount);
@@ -255,7 +322,7 @@ export async function computeCrg(owner: OwnerRow, month: number, year: number): 
     totalChargesByCurrency,
     totalCommissionByCurrency,
     totalNetByCurrency,
-    reversements: reversements.map((r: typeof ownerPayouts.$inferSelect) => ({
+    reversements: reversements.map((r) => ({
       id: r.id,
       currency: r.currency,
       amount: r.amount,

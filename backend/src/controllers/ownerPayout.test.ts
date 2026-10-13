@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
+import { db } from "../db/client";
 import { activityLogs, expenses, ownerPayouts } from "../db/schema";
 import * as emailService from "../services/email.service";
 import {
@@ -162,6 +163,54 @@ describe("synthèse et accès", () => {
     const ligne = res.body.owners.find((o: { ownerId: string }) => o.ownerId === owner.id);
     expect(ligne).toMatchObject({ hasIban: true, netByCurrency: { EUR: 800 }, reverseByCurrency: { EUR: 300 }, resteByCurrency: { EUR: 500 } });
     expect((await request(app).get("/api/crg/payouts/summary").set(h)).status).toBe(400);
+  });
+
+  it("la synthèse concorde avec le CRG de chaque propriétaire (plusieurs devises, charges, reversements)", async () => {
+    const { manager, owner, property, h } = await agence();
+    await reverser(h, owner.id, { amount: 300 });
+    // Un 2e propriétaire : bien en FCFA, bail en euros, dépense en FCFA, autre taux de commission.
+    const owner2 = await createOwner(manager.id, { firstName: "Moussa", lastName: "Sy", managementFeeRate: 5 });
+    const bien2 = await createProperty(manager.id, { title: "Studio Plateau", ownerId: owner2.id, currency: "XOF" });
+    const bail2 = await createContract(bien2.id, (await createTenant(manager.id)).id, { currency: "EUR" });
+    await createInvoice(bail2.id, { periodMonth: 9, amount: 400, currency: "EUR", status: "PAID", paidAt: new Date(2026, 8, 12) });
+    await testDb.insert(expenses).values({ propertyId: bien2.id, category: "TAX", title: "Taxe", amount: 20000, currency: "XOF", expenseDate: new Date(2026, 8, 20) });
+    // Un 3e propriétaire sans aucun bien.
+    const owner3 = await createOwner(manager.id, { firstName: "Zeina", lastName: "Ba" });
+    expect(property.id).toBeDefined();
+
+    const synthese = await request(app).get("/api/crg/payouts/summary?month=9&year=2026").set(h);
+    expect(synthese.status).toBe(200);
+    expect(synthese.body.owners).toHaveLength(3);
+    for (const o of [owner, owner2, owner3]) {
+      const ligne = synthese.body.owners.find((l: { ownerId: string }) => l.ownerId === o.id);
+      const detail = (await crg(h, o.id)).body;
+      expect(ligne.netByCurrency).toEqual(detail.totalNetByCurrency);
+      expect(ligne.reverseByCurrency).toEqual(detail.totalReverseByCurrency);
+      expect(ligne.resteByCurrency).toEqual(detail.resteAReverserByCurrency);
+    }
+    const l2 = synthese.body.owners.find((l: { ownerId: string }) => l.ownerId === owner2.id);
+    expect(l2.netByCurrency).toEqual({ EUR: 380, XOF: -20000 });
+  });
+
+  it("le nombre de requêtes de la synthèse ne dépend pas du nombre de propriétaires", async () => {
+    // Elle recalculait le CRG de chaque propriétaire l'un après l'autre (environ cinq requêtes chacun) :
+    // la page ralentissait avec le nombre de propriétaires de l'agence.
+    const { manager, h } = await agence();
+    const compter = async () => {
+      const espion = vi.spyOn(db, "select");
+      const res = await request(app).get("/api/crg/payouts/summary?month=9&year=2026").set(h);
+      expect(res.status).toBe(200);
+      const n = espion.mock.calls.length;
+      espion.mockRestore();
+      return n;
+    };
+    const avecUn = await compter();
+    for (let i = 0; i < 5; i++) {
+      const proprio = await createOwner(manager.id, { firstName: `P${i}`, lastName: `N${i}` });
+      await createProperty(manager.id, { ownerId: proprio.id });
+    }
+    const avecSix = await compter();
+    expect(avecSix).toBeLessThanOrEqual(avecUn + 2);
   });
 
   it("le propriétaire voit ses reversements dans son CRG et dans l'export", async () => {
