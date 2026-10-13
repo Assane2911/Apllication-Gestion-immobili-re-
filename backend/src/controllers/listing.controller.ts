@@ -62,17 +62,19 @@ const listingSchema = z.object({
   // ci-dessous) : une annonce sans pays renseigné n'apparaîtra jamais dans un
   // filtre par pays, d'où le format contraint (mais le champ reste optionnel
   // pour rester compatible avec des lignes existantes créées hors API).
-  country: z.string().length(2).optional(),
+  country: z.string().length(2).transform((v) => v.toUpperCase()).optional(),
 });
 
 const publicFilterSchema = z.object({
-  country: z.string().length(2).optional(),
+  // Même normalisation que l'enregistrement : le filtre compare le code tel quel.
+  country: z.string().length(2).transform((v) => v.toUpperCase()).optional(),
   type: z.enum(LISTING_TYPES).optional(),
 });
 
 const leadSchema = z.object({
-  prospectName: z.string().min(2),
-  prospectEmail: z.string().email(),
+  // Route publique, sans authentification : des plafonds évitent d'y stocker des textes démesurés.
+  prospectName: z.string().min(2).max(120),
+  prospectEmail: z.string().email().max(254),
   // Un simple min(6) laissait passer n'importe quel texte ("bonjour", six
   // lettres) — un formulaire public, sans le sélecteur d'indicatif pays
   // utilisé ailleurs (ChampTelephone), ne peut pas imposer le format E.164
@@ -83,12 +85,12 @@ const leadSchema = z.object({
   prospectPhone: z.string().regex(/^[+\d][\d\s().-]{5,}$/, "Numéro de téléphone invalide"),
   requestType: z.enum(LEAD_REQUEST_TYPES).optional(),
   preferredDate: z.coerce.date().optional(),
-  message: z.string().optional(),
+  message: z.string().max(2000).optional(),
 });
 
 const leadUpdateSchema = z.object({
   status: z.enum(LEAD_STATUSES).optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(2000).optional(),
 });
 
 const leadFilterSchema = z.object({

@@ -19,13 +19,13 @@ export const getAgencySettings = asyncHandler(async (req: Request, res: Response
   if (!settings) {
     [settings] = await db
       .insert(agencySettings)
+      // Seul le nom a une valeur de repli. Les coordonnées et mentions légales restent VIDES tant que
+      // le gestionnaire ne les a pas saisies : elles s'impriment sur les quittances, les baux et les
+      // mises en demeure, et des valeurs d'exemple (faux téléphone, faux email, fausse carte
+      // professionnelle) y apparaissaient pour qui avait seulement ouvert la page.
       .values({
         userId: req.user.userId,
         agencyName: "Agence Immobilière Privée",
-        address: "Avenue Principale, Immeuble Horizon",
-        phone: "+33 1 40 00 00 00",
-        email: req.user.role === "MANAGER" ? "contact@monagence-immo.com" : "contact@agence.com",
-        legalNotice: "Société de gestion immobilière immatriculée au RCS. Carte professionnelle de gestion n°CPI 7501.",
       })
       .returning();
   }

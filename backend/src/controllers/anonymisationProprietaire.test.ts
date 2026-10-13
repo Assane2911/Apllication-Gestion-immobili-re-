@@ -39,6 +39,25 @@ describe("Anonymisation d'un propriétaire", () => {
     return { manager, owner, property };
   }
 
+  it("une fiche anonymisée ne peut plus être modifiée ni invitée au portail", async () => {
+    // Sinon le gestionnaire pouvait y ressaisir des données personnelles (la fiche restant marquée
+    // anonymisée) ou recréer un compte d'accès, ce qui défait l'effacement demandé.
+    const { manager, owner } = await proprietaireAvecBien();
+    const h = authHeader(tokenFor(manager));
+    await request(app).post(`/api/owners/${owner.id}/anonymiser`).set(h);
+
+    const modif = await request(app).put(`/api/owners/${owner.id}`).set(h).send({ firstName: "Awa", email: "awa@example.com" });
+    expect(modif.status).toBe(409);
+    const invitation = await request(app).post(`/api/owners/${owner.id}/invite`).set(h);
+    expect(invitation.status).toBe(409);
+
+    const [apres] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
+    expect(apres.firstName).toBe("Propriétaire");
+    expect(apres.userId).toBeNull();
+    const comptes = await testDb.select().from(users).where(eq(users.role, "OWNER"));
+    expect(comptes).toHaveLength(0);
+  });
+
   it("efface les données identifiantes et conserve le bien associé", async () => {
     const { manager, owner, property } = await proprietaireAvecBien();
 
