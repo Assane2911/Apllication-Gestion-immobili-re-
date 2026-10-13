@@ -1790,6 +1790,8 @@ const fr = {
       headerTitle: "Agence & Gestionnaire",
       housing: "Logement : {{property}}",
       yourApartment: "Votre appartement",
+      chooseHousing: "Choisir le logement",
+      cotenant: "Colocataire",
       online: "En ligne",
       you: "Vous",
       manager: "Gestionnaire",

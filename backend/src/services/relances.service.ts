@@ -100,7 +100,9 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
     };
     const { subject, html } = overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(ligne.tenant) });
     const resultat = await sendEmail(ligne.tenant.email, subject, html);
-    const whatsappEligible = managersWhatsapp.has(ligne.property.managerId);
+    // Sans modèle configuré, on ne tente rien : chaque tentative écrirait un avertissement dans les
+    // journaux, par destinataire et par impayé, tous les jours.
+    const whatsappEligible = managersWhatsapp.has(ligne.property.managerId) && Boolean(env.whatsapp.templateNameOverdue);
     const variablesWhatsapp = (nom: string) =>
       overdueReminderWhatsappVariables({
         tenantName: nom,

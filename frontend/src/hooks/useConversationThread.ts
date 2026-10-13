@@ -82,15 +82,14 @@ export function useConversationThread(role: Role, options: UseConversationThread
   // de B si la réponse de A arrivait après celle de B — trompeur dans un
   // outil de messagerie, contrairement à un simple rechargement de liste.
   /**
-   * Bail et paramètres de la requête du fil choisi. Côté gestionnaire, le fil d'un colocataire se
-   * désigne par `tenantId` ; sans lui, le serveur ouvre celui du titulaire. Un locataire n'ouvre
-   * jamais que le sien : le serveur l'identifie par son compte.
+   * Bail et paramètres de la requête du fil choisi, lus dans l'identifiant du fil (« bail:locataire »)
+   * et NON retrouvés dans la liste affichée : la liste change de page, le fil choisi reste. Côté
+   * gestionnaire, `tenantId` désigne le fil ; pour le titulaire le serveur reconnaît son propre
+   * locataire. Un locataire n'ouvre jamais que le sien : le serveur l'identifie par son compte.
    */
   function cibleDuFil(threadId: string) {
-    const conversation = conversations.find((c) => cleDuFil(c) === threadId);
-    const contractId = conversation?.contractId ?? threadId.split(":")[0];
-    const params = role === "MANAGER" && conversation?.qualite === "COLOCATAIRE" ? { tenantId: conversation.tenantId } : undefined;
-    return { contractId, params };
+    const [contractId, tenantId] = threadId.split(":");
+    return { contractId, params: role === "MANAGER" && tenantId ? { tenantId } : undefined };
   }
 
   useEffect(() => {

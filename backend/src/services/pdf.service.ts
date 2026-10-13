@@ -1364,7 +1364,7 @@ export function generateFormalNoticePdfBuffer(d: FormalNoticeData): Promise<Buff
 
       // Tableau des loyers réclamés.
       const colonnes = [largeur * 0.3, largeur * 0.3, largeur * 0.2, largeur * 0.2];
-      const ligneTableau = (cellules: string[], gras: boolean) => {
+      const ligneBrute = (cellules: string[], gras: boolean) => {
         const y = doc.y;
         let x = gauche;
         cellules.forEach((c, i) => {
@@ -1374,7 +1374,17 @@ export function generateFormalNoticePdfBuffer(d: FormalNoticeData): Promise<Buff
         doc.y = y + 16;
         doc.moveTo(gauche, doc.y - 3).lineTo(gauche + largeur, doc.y - 3).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
       };
-      ligneTableau(["Loyer", "Échéance", "Montant", "Reste dû"], true);
+      const enteteTableau = () => ligneBrute(["Loyer", "Échéance", "Montant", "Reste dû"], true);
+      // Une ligne écrite à une position explicite sous le bas de la page ouvrait une page PAR CELLULE
+      // (40 loyers impayés : 42 pages). On passe à la page suivante avant, en répétant l'en-tête.
+      const ligneTableau = (cellules: string[], gras: boolean) => {
+        if (doc.y + 24 > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          enteteTableau();
+        }
+        ligneBrute(cellules, gras);
+      };
+      enteteTableau();
       for (const l of t.lignes) ligneTableau([l.periode, l.echeance, l.montant, l.reste], false);
       ligneTableau(["Total restant dû", "", "", t.total], true);
       doc.moveDown(1);

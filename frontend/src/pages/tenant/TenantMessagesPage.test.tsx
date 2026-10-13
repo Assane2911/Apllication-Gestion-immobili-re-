@@ -170,4 +170,42 @@ describe("TenantMessagesPage", () => {
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith("Message refusé"));
   });
+
+  it("plusieurs fils (titulaire d'un bail, colocataire d'un autre) : un sélecteur de logement ouvre l'autre fil", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(
+      conversationsPage([
+        conversation({ id: "c1:t1", tenantId: "t1", qualite: "TITULAIRE" }),
+        conversation({ id: "c2:t1", contractId: "c2", tenantId: "t1", qualite: "COLOCATAIRE", property: { title: "Villa Almadies" } as Conversation["property"] }),
+      ])
+    );
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ content: "Fil du studio" })], contract: { property: { title: "Studio Centre-ville" } } } });
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ id: "m2", content: "Fil de la villa" })], contract: { property: { title: "Villa Almadies" } } } });
+    mockedApi.post.mockResolvedValueOnce({
+      data: { id: "msg-new", contractId: "c2", senderId: "t-user", senderRole: "TENANT", content: "Bonjour", isRead: false, createdAt: "2026-06-15T11:00:00.000Z" },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Fil du studio")).toBeInTheDocument());
+    const choix = screen.getByRole("combobox", { name: "Choisir le logement" });
+    expect(screen.getByRole("option", { name: "Villa Almadies · Colocataire" })).toBeInTheDocument();
+
+    await user.selectOptions(choix, "c2:t1");
+    await waitFor(() => expect(screen.getByText("Fil de la villa")).toBeInTheDocument());
+    expect(mockedApi.get).toHaveBeenCalledWith("/messages/c2", { signal: expect.anything() });
+
+    await user.type(screen.getByPlaceholderText("Écrivez votre message..."), "Bonjour");
+    await user.click(screen.getByRole("button", { name: "Envoyer" }));
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/messages/c2", { content: "Bonjour" }));
+  });
+
+  it("un seul fil : pas de sélecteur", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByPlaceholderText("Écrivez votre message...")).toBeInTheDocument());
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
 });
