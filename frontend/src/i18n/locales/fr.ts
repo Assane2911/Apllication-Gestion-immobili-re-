@@ -597,6 +597,8 @@ const fr = {
       remaining: "Reste à reverser : {{amount}}",
       settled: "Entièrement reversé",
       overpaid: "Versé en trop : {{amount}}",
+      chargesExceed: "Charges supérieures aux loyers : {{amount}} à régulariser",
+      nothing: "Rien à reverser",
       none: "Aucun reversement enregistré pour ce mois.",
       formTitle: "Enregistrer un reversement",
       currency: "Devise",
@@ -710,6 +712,7 @@ const fr = {
     },
     tenantLayout: {
       title: "Espace locataire",
+      badge: "Espace résident",
     },
     ownerLayout: {
       title: "Espace propriétaire",
@@ -1709,6 +1712,8 @@ const fr = {
       signedOn: "Signé par vous le {{date}}",
       awaitingSignature: "En attente de votre signature numérique",
       cotenantNote: "Vous êtes colocataire de ce bail : le titulaire le signe en ligne, vous signez l'exemplaire imprimé.",
+      signedByHolderOn: "Signé en ligne par le titulaire le {{date}}",
+      mainHousing: "Logement principal",
       depositRefundTitle: "Dépôt de garantie restitué : {{amount}}",
       signMyLease: "Signer mon bail",
       viewLeasePdf: "Voir le bail PDF",

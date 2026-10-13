@@ -599,6 +599,8 @@ const es: TranslationSchema = {
       remaining: "Pendiente de pago: {{amount}}",
       settled: "Pagado por completo",
       overpaid: "Pagado de más: {{amount}}",
+      chargesExceed: "Gastos superiores a los alquileres: {{amount}} por regularizar",
+      nothing: "Nada que transferir",
       none: "Ningún pago registrado este mes.",
       formTitle: "Registrar un pago",
       currency: "Moneda",
@@ -712,6 +714,7 @@ const es: TranslationSchema = {
     },
     tenantLayout: {
       title: "Espacio inquilino",
+      badge: "Espacio residente",
     },
     ownerLayout: {
       title: "Portal del propietario",
@@ -1710,6 +1713,8 @@ const es: TranslationSchema = {
       signedOn: "Firmado por ti el {{date}}",
       awaitingSignature: "Pendiente de tu firma digital",
       cotenantNote: "Usted es coinquilino de este contrato: el titular lo firma en línea, usted firma el ejemplar impreso.",
+      signedByHolderOn: "Firmado en línea por el titular el {{date}}",
+      mainHousing: "Vivienda principal",
       depositRefundTitle: "Fianza devuelta: {{amount}}",
       signMyLease: "Firmar mi contrato",
       viewLeasePdf: "Ver el contrato en PDF",

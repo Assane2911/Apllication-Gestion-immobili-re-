@@ -108,9 +108,15 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
                   </p>
                   <p className={`font-bold ${r < 0 ? "text-red-700 dark:text-red-300" : r === 0 ? "text-emerald-700 dark:text-emerald-300" : "text-slate-900 dark:text-slate-100"}`}>
                     {r < 0
-                      ? t("components.payouts.overpaid", { amount: formatMoney(-r, d) })
+                      ? // Rien n'a été versé : le net est négatif (charges supérieures aux loyers), ce n'est pas un « trop-versé ».
+                        (reverse[d] ?? 0) === 0
+                        ? t("components.payouts.chargesExceed", { amount: formatMoney(-r, d) })
+                        : t("components.payouts.overpaid", { amount: formatMoney(-r, d) })
                       : r === 0
-                        ? t("components.payouts.settled")
+                        ? // Net nul et rien versé : il n'y avait rien à reverser, ce n'est pas « entièrement reversé ».
+                          (crg.totalNetByCurrency[d] ?? 0) === 0 && (reverse[d] ?? 0) === 0
+                          ? t("components.payouts.nothing")
+                          : t("components.payouts.settled")
                         : t("components.payouts.remaining", { amount: formatMoney(r, d) })}
                   </p>
                 </li>

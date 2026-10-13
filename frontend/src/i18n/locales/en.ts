@@ -599,6 +599,8 @@ const en: TranslationSchema = {
       remaining: "Left to pay: {{amount}}",
       settled: "Fully paid",
       overpaid: "Overpaid: {{amount}}",
+      chargesExceed: "Charges exceed rent: {{amount}} to settle",
+      nothing: "Nothing to pay out",
       none: "No payout recorded for this month.",
       formTitle: "Record a payout",
       currency: "Currency",
@@ -712,6 +714,7 @@ const en: TranslationSchema = {
     },
     tenantLayout: {
       title: "Tenant area",
+      badge: "Resident area",
     },
     ownerLayout: {
       title: "Owner portal",
@@ -1708,6 +1711,8 @@ const en: TranslationSchema = {
       signedOn: "Signed by you on {{date}}",
       awaitingSignature: "Awaiting your digital signature",
       cotenantNote: "You are a co-tenant on this lease: the main tenant signs it online, you sign the printed copy.",
+      signedByHolderOn: "Signed online by the main tenant on {{date}}",
+      mainHousing: "Main home",
       depositRefundTitle: "Security deposit refunded: {{amount}}",
       signMyLease: "Sign my lease",
       viewLeasePdf: "View lease PDF",

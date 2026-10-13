@@ -157,7 +157,7 @@ export default function TenantDashboardPage() {
             className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden"
           >
             {/* Property Photo Header */}
-            <div className="relative h-48 sm:h-56 bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div className={`relative h-48 sm:h-56 overflow-hidden ${c.property?.imageUrl ? "bg-slate-100 dark:bg-slate-800" : "bg-slate-700 dark:bg-slate-800"}`}>
               {c.property?.imageUrl ? (
                 <img
                   src={fileUrl(c.property.imageUrl) ?? undefined}
@@ -165,7 +165,7 @@ export default function TenantDashboardPage() {
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-600">
                   <Home size={48} strokeWidth={1.5} aria-hidden="true" />
                 </div>
               )}
@@ -177,7 +177,7 @@ export default function TenantDashboardPage() {
               <div className="absolute bottom-4 left-4 right-4 z-10 text-white">
                 <div className="flex items-center gap-1.5 text-xs text-brand-200 font-medium mb-0.5">
                   <Building2 size={13} />
-                  <span>Logement principal</span>
+                  <span>{t("tenant.dashboard.mainHousing")}</span>
                 </div>
                 <h3 className="font-bold text-lg sm:text-xl text-white tracking-tight drop-shadow-xs">{c.property?.title}</h3>
                 <p className="text-xs text-slate-300 drop-shadow-xs">{c.property?.address}</p>
@@ -236,9 +236,11 @@ export default function TenantDashboardPage() {
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                       {c.signedByTenantAt ? (
                         <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                          {t("tenant.dashboard.signedOn", { date: new Date(c.signedByTenantAt).toLocaleDateString(i18n.language) })}
+                          {t(c.qualite === "COLOCATAIRE" ? "tenant.dashboard.signedByHolderOn" : "tenant.dashboard.signedOn", {
+                            date: new Date(c.signedByTenantAt).toLocaleDateString(i18n.language),
+                          })}
                         </span>
-                      ) : (
+                      ) : c.qualite === "COLOCATAIRE" ? null : (
                         <span className="text-amber-700 dark:text-amber-400 font-semibold">{t("tenant.dashboard.awaitingSignature")}</span>
                       )}
                     </p>

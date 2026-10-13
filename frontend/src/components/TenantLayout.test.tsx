@@ -102,3 +102,29 @@ describe("TenantLayout — bouton de déconnexion", () => {
     expect(conteneurControles).toContainElement(bouton);
   });
 });
+
+describe("TenantLayout — titre de l'onglet", () => {
+  it("porte le nom de la page affichée, pour qu'un changement de page soit annoncé et reconnaissable", () => {
+    render(
+      <AuthContext.Provider value={authValue(locataire)}>
+        <CurrencyProvider>
+          <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
+            <MemoryRouter initialEntries={["/portail/paiements"]}>
+              <Routes>
+                <Route path="/portail" element={<TenantLayout />}>
+                  <Route path="paiements" element={<div>Mes loyers</div>} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </ThemeContext.Provider>
+        </CurrencyProvider>
+      </AuthContext.Provider>
+    );
+    expect(document.title).toBe("Mes loyers | ImmoPlatform Pro");
+  });
+
+  it("n'affiche plus en dur « Espace résident » : le libellé suit la langue", () => {
+    renderTenantLayout();
+    expect(screen.getByText("Espace résident", { selector: "span" })).toBeInTheDocument();
+  });
+});

@@ -1,6 +1,6 @@
 import { CreditCard, Home, LogOut, MessageCircle, Moon, Sun, Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
@@ -20,9 +20,14 @@ export default function TenantLayout() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>) : sans lui, toutes les pages
+  // du portail s'appelaient pareil, et un lecteur d'écran n'annonçait aucun changement de page.
+  const { pathname } = useLocation();
+  const pageCourante = navItems.find((item) => item.to === pathname.replace(/\/+$/, ""));
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-slate-950">
+      {pageCourante && <title>{`${t(`nav.tenant.${pageCourante.key}`)} | ${t("common.appName")}`}</title>}
       <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-2xs">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
@@ -36,7 +41,7 @@ export default function TenantLayout() {
                 </h1>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-200/60 dark:border-brand-500/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Espace résident
+                  {t("components.tenantLayout.badge")}
                 </span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
