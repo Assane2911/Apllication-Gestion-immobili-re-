@@ -272,7 +272,9 @@ export default function InvoicesPage() {
                   <Badge status={inv.status} />
                   {niveauRelance(inv)}
                 </td>
-                <td className="px-4 py-3.5 text-right space-x-2 whitespace-nowrap">
+                {/* Actions à la ligne : sur une seule, elles élargissaient le tableau au-delà de l'écran. */}
+                <td className="px-4 py-3.5 text-right max-w-[19rem]">
+                  <div className="flex flex-wrap justify-end gap-2">
                   {inv.status === "PAID" && (
                     <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                       onClick={() => setActiveReceiptInvoice(inv)}
@@ -304,6 +306,7 @@ export default function InvoicesPage() {
                       </button></Bulle>
                     </>
                   )}
+                  </div>
                 </td>
               </tr>
             ))}

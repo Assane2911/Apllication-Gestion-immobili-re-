@@ -17,14 +17,14 @@ const CLASSES_PAR_NIVEAU: Record<ReliabilityLevel, string> = {
   bon: "bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400",
   moyen: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
   risque: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
-  insuffisant: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+  insuffisant: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
 };
 
 /** Badge du score interne de ponctualité de paiement — voir reliability.service.ts côté API. */
 function BadgeFiabilite({ tenant }: { tenant: Tenant }) {
   const { t } = useTranslation();
   const f = tenant.fiabilite;
-  if (!f) return <span className="text-slate-300 dark:text-slate-600">—</span>;
+  if (!f) return <span className="text-slate-500 dark:text-slate-500">—</span>;
 
   const libelle = t(`manager.tenants.reliability.${f.niveau}`);
   const texteBulle = t("manager.tips.tenantReliability", {
@@ -337,7 +337,7 @@ export default function TenantsPage() {
                       {t("manager.tenants.viewIdDocument")}
                     </button></Bulle>
                   ) : (
-                    <span className="text-slate-300 dark:text-slate-600">—</span>
+                    <span className="text-slate-500 dark:text-slate-500">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -407,7 +407,7 @@ export default function TenantsPage() {
                       {t("manager.tenants.viewIdDocumentMobile")}
                     </button></Bulle>
                   ) : (
-                    <span className="text-slate-300 dark:text-slate-600">{t("manager.tenants.noIdDocument")}</span>
+                    <span className="text-slate-500 dark:text-slate-500">{t("manager.tenants.noIdDocument")}</span>
                   )}
                   <div className="space-x-3">
                     <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button></Bulle>

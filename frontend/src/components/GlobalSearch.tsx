@@ -85,6 +85,7 @@ export default function GlobalSearch() {
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
+          aria-label={t("components.globalSearch.label")}
           placeholder={t("components.globalSearch.placeholder")}
           className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-8 py-2 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 shadow-sm"
         />

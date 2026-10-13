@@ -28,6 +28,7 @@ const en: TranslationSchema = {
       missingCountry: "This number names no country. Choose the country code so it can receive WhatsApp reminders.",
     },
     actions: {
+      column: "Actions",
       save: "Save",
       saving: "Saving...",
       cancel: "Cancel",
@@ -671,6 +672,7 @@ const en: TranslationSchema = {
       confirmButton: "Disable",
     },
     globalSearch: {
+      label: "Global search",
       placeholder: "Search a tenant, a property, a contract...",
       clearAria: "Clear the search",
       searching: "Searching...",

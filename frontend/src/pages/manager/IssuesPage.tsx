@@ -186,7 +186,7 @@ export default function IssuesPage() {
 
                 <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base">{issue.title}</h4>
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{issue.title}</h3>
                     <Badge status={issue.status} />
                   </div>
 

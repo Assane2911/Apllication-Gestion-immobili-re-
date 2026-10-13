@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
 import { CurrencySelector } from "../context/CurrencyContext";
@@ -67,9 +67,17 @@ export default function ManagerLayout() {
   const { theme, toggleTheme } = useTheme();
   const sub = user?.subscription;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>) : sans lui, les vingt pages de
+  // l'espace s'appelaient pareil, et un lecteur d'écran n'annonçait aucun changement de page. L'entrée de
+  // navigation la plus précise gagne ; le compte-rendu de gestion d'un propriétaire a son propre libellé.
+  const { pathname } = useLocation();
+  const chemin = pathname.replace(/\/+$/, "");
+  const entree = [...navItems].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
+  const libellePage = /^\/proprietaires\/[^/]+\/crg$/.test(chemin) ? t("nav.owner.crg") : entree ? t(`nav.manager.${entree.key}`) : null;
 
   return (
     <div className="min-h-screen flex bg-canvas dark:bg-slate-950">
+      {libellePage && <title>{`${libellePage} | ${t("common.appName")}`}</title>}
       {mobileNavOpen && (
         <div
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 sm:hidden transition-opacity"

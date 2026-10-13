@@ -125,6 +125,16 @@ describe("ContractsPage (manager)", () => {
     expect(screen.getAllByText("En attente").length).toBeGreaterThan(0);
   });
 
+  it("les boutons d'action du tableau passent à la ligne au lieu d'élargir le tableau hors de l'écran", async () => {
+    queueLoad([contract({ id: "c1" })]);
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText(/Studio Centre-ville/).length).toBeGreaterThan(0));
+    const cellule = screen.getAllByRole("button", { name: /Bail PDF/ })[0].closest("td");
+    expect(cellule?.className).not.toContain("whitespace-nowrap");
+    expect(cellule?.querySelector(".flex-wrap")).not.toBeNull();
+  });
+
   it("affiche le bail comme signé quand signedByManagerAt/signedByTenantAt sont renseignés", async () => {
     queueLoad([contract({ signedByManagerAt: "2026-02-01T00:00:00.000Z", signedByTenantAt: "2026-02-02T00:00:00.000Z" })]);
     renderPage();

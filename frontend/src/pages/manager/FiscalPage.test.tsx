@@ -62,6 +62,22 @@ describe("FiscalPage", () => {
     expect(screen.getByText("Villa Ngor")).toBeInTheDocument();
   });
 
+  it("le tableau du bilan par bien, défilant sur mobile, est une région atteignable au clavier", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: synthesis() });
+    renderPage();
+
+    const region = await screen.findByRole("region", { name: "Bilan foncier par bien" });
+    expect(region).toHaveAttribute("tabindex", "0");
+  });
+
+  it("la ligne année + exports passe à la ligne au lieu de déborder de l'écran", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: synthesis() });
+    renderPage();
+
+    const selecteur = await screen.findByLabelText(/Exercice|Année/i);
+    expect(selecteur.parentElement?.className).toContain("flex-wrap");
+  });
+
   it("affiche un message dédié quand aucune dépense n'est enregistrée sur l'exercice", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: synthesis({ expensesByCategory: {} }) });
     renderPage();

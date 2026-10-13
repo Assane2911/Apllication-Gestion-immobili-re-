@@ -195,7 +195,7 @@ export default function FiscalPage() {
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.fiscal.title")}</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.fiscal.subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <label htmlFor="fiscal-year-select" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
             {t("manager.fiscal.yearLabel")}
           </label>
@@ -356,7 +356,8 @@ export default function FiscalPage() {
             <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.fiscal.bilanParBien.subtitle")}</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Zone défilante : focalisable au clavier pour qu'on puisse la faire défiler sans souris. */}
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={t("manager.fiscal.bilanParBien.title")}>
           <table className="w-full text-sm">
             <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
               <tr>
