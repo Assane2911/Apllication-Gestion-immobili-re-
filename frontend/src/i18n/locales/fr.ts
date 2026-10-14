@@ -438,7 +438,7 @@ const fr = {
     },
     pricing: {
       title: "Des formules simples et transparentes",
-      subtitle: "Toutes les formules incluent 15 jours d'essai gratuit sans carte bancaire requise.",
+      subtitle: "Toutes les formules incluent 15 jours d'essai gratuit sans carte bancaire requise, avec le guide de démarrage pas à pas.",
       perMonth: "/ mois",
       starter: {
         name: "Starter",
@@ -703,7 +703,7 @@ const fr = {
       lastDay: "Dernier jour d'essai !",
       oneDayLeft: "Il vous reste 1 jour d'essai",
       daysLeft: "Il vous reste {{count}} jours d'essai gratuit",
-      trialDesc: "Profitez de toutes les fonctionnalités Pro sans engagement. Vous pouvez activer votre abonnement à tout moment.",
+      trialDesc: "Profitez de toutes les fonctionnalités Pro sans engagement, et suivez le guide de démarrage du menu pour installer votre agence. Vous pouvez activer votre abonnement à tout moment.",
       chooseOfferCta: "Choisir mon offre",
       activePlan: "Abonnement <1>Plan {{plan}}</1> actif",
       manageSubscription: "Gérer mon abonnement",

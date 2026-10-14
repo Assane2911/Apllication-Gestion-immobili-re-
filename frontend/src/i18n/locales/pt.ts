@@ -440,7 +440,7 @@ const pt: TranslationSchema = {
     },
     pricing: {
       title: "Planos simples e transparentes",
-      subtitle: "Todos os planos incluem 15 dias de teste grátis, sem necessidade de cartão bancário.",
+      subtitle: "Todos os planos incluem 15 dias de teste grátis, sem necessidade de cartão bancário, com um guia de início passo a passo.",
       perMonth: "/ mês",
       starter: {
         name: "Starter",
@@ -705,7 +705,7 @@ const pt: TranslationSchema = {
       lastDay: "Último dia do seu teste!",
       oneDayLeft: "Resta-lhe 1 dia de teste",
       daysLeft: "Restam-lhe {{count}} dias de teste grátis",
-      trialDesc: "Aproveite todas as funcionalidades Pro sem compromisso. Pode ativar a sua assinatura a qualquer momento.",
+      trialDesc: "Aproveite todas as funcionalidades Pro sem compromisso e siga o guia de início do menu para configurar a sua agência. Pode ativar a sua assinatura a qualquer momento.",
       chooseOfferCta: "Escolher o meu plano",
       activePlan: "Assinatura <1>Plano {{plan}}</1> ativa",
       manageSubscription: "Gerir a minha assinatura",

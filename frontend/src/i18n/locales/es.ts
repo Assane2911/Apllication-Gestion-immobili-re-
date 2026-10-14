@@ -440,7 +440,7 @@ const es: TranslationSchema = {
     },
     pricing: {
       title: "Planes simples y transparentes",
-      subtitle: "Todos los planes incluyen 15 días de prueba gratuita sin necesidad de tarjeta bancaria.",
+      subtitle: "Todos los planes incluyen 15 días de prueba gratuita sin necesidad de tarjeta bancaria, con una guía de inicio paso a paso.",
       perMonth: "/ mes",
       starter: {
         name: "Starter",
@@ -705,7 +705,7 @@ const es: TranslationSchema = {
       lastDay: "¡Último día de prueba!",
       oneDayLeft: "Te queda 1 día de prueba",
       daysLeft: "Te quedan {{count}} días de prueba gratuita",
-      trialDesc: "Disfruta de todas las funcionalidades Pro sin compromiso. Puedes activar tu suscripción en cualquier momento.",
+      trialDesc: "Disfruta de todas las funcionalidades Pro sin compromiso y sigue la guía de inicio del menú para configurar tu agencia. Puedes activar tu suscripción en cualquier momento.",
       chooseOfferCta: "Elegir mi plan",
       activePlan: "Suscripción <1>Plan {{plan}}</1> activa",
       manageSubscription: "Gestionar mi suscripción",

@@ -440,7 +440,7 @@ const en: TranslationSchema = {
     },
     pricing: {
       title: "Simple, transparent plans",
-      subtitle: "Every plan includes a free 15-day trial, no credit card required.",
+      subtitle: "Every plan includes a free 15-day trial, no credit card required, with a step-by-step getting started guide.",
       perMonth: "/ month",
       starter: {
         name: "Starter",
@@ -705,7 +705,7 @@ const en: TranslationSchema = {
       lastDay: "Last day of your trial!",
       oneDayLeft: "1 day left in your trial",
       daysLeft: "{{count}} days left in your free trial",
-      trialDesc: "Enjoy all Pro features with no commitment. You can activate your subscription at any time.",
+      trialDesc: "Enjoy all Pro features with no commitment, and follow the getting started guide in the menu to set up your agency. You can activate your subscription at any time.",
       chooseOfferCta: "Choose my plan",
       activePlan: "Active <1>{{plan}} Plan</1> subscription",
       manageSubscription: "Manage my subscription",
