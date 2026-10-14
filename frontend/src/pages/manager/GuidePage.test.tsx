@@ -10,12 +10,19 @@ function noop(): never {
   throw new Error("not implemented in this test");
 }
 
-function utilisateur(plan: "STARTER" | "PRO" | "ENTERPRISE"): AuthUser {
+function utilisateur(plan: "STARTER" | "PRO" | "ENTERPRISE", essai = false): AuthUser {
   return {
     id: "m1",
     email: "gestionnaire@test.local",
     role: "MANAGER",
-    subscription: { status: "ACTIVE", plan, trialDaysRemaining: 0, isTrialActive: false, isSubscriptionActive: true, isExpired: false },
+    subscription: {
+      status: essai ? "TRIAL" : "ACTIVE",
+      plan,
+      trialDaysRemaining: essai ? 10 : 0,
+      isTrialActive: essai,
+      isSubscriptionActive: !essai,
+      isExpired: false,
+    },
   };
 }
 
@@ -66,7 +73,12 @@ describe("GuidePage — guide de démarrage de la formule Agence", () => {
     expect(screen.getByRole("link", { name: /Ouvrir.*Importez vos données existantes/ })).toHaveAttribute("href", "/import");
   });
 
-  it.each(["STARTER", "PRO"] as const)("renvoie au tableau de bord un gestionnaire de la formule %s : le guide est propre à la formule Agence", (plan) => {
+  it("reste ouverte pendant l'essai gratuit : c'est alors qu'une nouvelle agence en a besoin", () => {
+    renderGuide(utilisateur("STARTER", true));
+    expect(screen.getByRole("heading", { name: "Guide de démarrage", level: 2 })).toBeInTheDocument();
+  });
+
+  it.each(["STARTER", "PRO"] as const)("renvoie au tableau de bord un gestionnaire de la formule %s hors essai : le guide est propre à la formule Agence", (plan) => {
     renderGuide(utilisateur(plan));
     expect(screen.queryByRole("heading", { name: "Guide de démarrage" })).not.toBeInTheDocument();
     expect(screen.getByText("Tableau de bord")).toBeInTheDocument();

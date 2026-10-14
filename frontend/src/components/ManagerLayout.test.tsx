@@ -21,12 +21,12 @@ function noop(): never {
 }
 
 const gestionnaire: AuthUser = { id: "m1", email: "gestionnaire@test.local", role: "MANAGER" };
-const abonnement = (plan: "STARTER" | "PRO" | "ENTERPRISE"): NonNullable<AuthUser["subscription"]> => ({
-  status: "ACTIVE",
+const abonnement = (plan: "STARTER" | "PRO" | "ENTERPRISE", essai = false): NonNullable<AuthUser["subscription"]> => ({
+  status: essai ? "TRIAL" : "ACTIVE",
   plan,
-  trialDaysRemaining: 0,
-  isTrialActive: false,
-  isSubscriptionActive: true,
+  trialDaysRemaining: essai ? 10 : 0,
+  isTrialActive: essai,
+  isSubscriptionActive: !essai,
   isExpired: false,
 });
 const agence: AuthUser = { ...gestionnaire, id: "m2", subscription: abonnement("ENTERPRISE") };
@@ -86,6 +86,11 @@ describe("ManagerLayout — titre de l'onglet", () => {
     expect(document.title).toBe("Compte-rendu de gestion | ImmoPlatform Pro");
   });
 
+  it("le guide de démarrage est visible pendant l'essai gratuit, quelle que soit la formule par défaut du compte", () => {
+    renderManagerLayout("/dashboard", { ...gestionnaire, subscription: abonnement("STARTER", true) });
+    expect(screen.getByRole("link", { name: "Guide de démarrage" })).toHaveAttribute("href", "/guide-demarrage");
+  });
+
   it("le guide de démarrage est dans le menu de la formule Agence et titre l'onglet", () => {
     renderManagerLayout("/guide-demarrage", agence);
     expect(document.title).toBe("Guide de démarrage | ImmoPlatform Pro");
@@ -96,6 +101,7 @@ describe("ManagerLayout — titre de l'onglet", () => {
     ["sans abonnement chargé", gestionnaire],
     ["Starter", { ...gestionnaire, subscription: abonnement("STARTER") }],
     ["Professionnel", { ...gestionnaire, subscription: abonnement("PRO") }],
+    ["essai terminé", { ...gestionnaire, subscription: { ...abonnement("STARTER"), status: "EXPIRED" as const, isSubscriptionActive: false, isExpired: true } }],
   ])("le guide de démarrage n'apparaît pas dans le menu : %s", (_nom, utilisateur) => {
     renderManagerLayout("/dashboard", utilisateur as AuthUser);
     expect(screen.queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
