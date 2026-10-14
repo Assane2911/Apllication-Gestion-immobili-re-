@@ -469,7 +469,7 @@ const es: TranslationSchema = {
         desc: "Para administradoras de fincas y grandes carteras.",
         features: [
           "Propiedades ilimitadas",
-          "Soporte prioritario",
+          "Soporte prioritario, respuesta en un día hábil",
           "Multiusuario y multigestor",
           "Exportación contable automatizada",
         ],

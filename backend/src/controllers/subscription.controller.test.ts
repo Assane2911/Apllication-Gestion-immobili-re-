@@ -131,6 +131,12 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     }
   });
 
+  it("chiffre le support prioritaire de la même façon partout : réponse sous un jour ouvré", () => {
+    const lignes = SUBSCRIPTION_PLANS.flatMap((plan) => plan.features).filter((f) => /^Support prioritaire/i.test(f));
+    expect(lignes).toHaveLength(2);
+    for (const ligne of lignes) expect(ligne).toContain("réponse sous un jour ouvré");
+  });
+
   it("n'annonce pas d'export Excel : les exports comptables sont des fichiers CSV ou texte", () => {
     const entreprise = SUBSCRIPTION_PLANS.find((p) => p.id === "ENTERPRISE")!;
     expect(entreprise.features.join(" ")).not.toMatch(/excel/i);

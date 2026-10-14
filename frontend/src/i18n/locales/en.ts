@@ -469,7 +469,7 @@ const en: TranslationSchema = {
         desc: "For management firms and large portfolios.",
         features: [
           "Unlimited properties",
-          "Priority support",
+          "Priority support, reply within one business day",
           "Multiple users & managers",
           "Automated accounting export",
         ],

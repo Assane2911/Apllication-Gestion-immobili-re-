@@ -467,7 +467,7 @@ const fr = {
         desc: "Pour cabinets de gestion et grands parcs.",
         features: [
           "Biens illimités",
-          "Support prioritaire",
+          "Support prioritaire, réponse sous un jour ouvré",
           "Multi-utilisateurs & gestionnaires",
           "Export comptable automatisé",
         ],

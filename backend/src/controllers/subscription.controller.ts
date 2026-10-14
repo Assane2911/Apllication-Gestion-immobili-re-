@@ -144,7 +144,7 @@ export const SUBSCRIPTION_PLANS = [
       "Jusqu'à 25 biens immobiliers",
       "Alertes de fin de bail & renouvellement",
       "Rappels automatiques multi-canaux (email + WhatsApp)",
-      "Support prioritaire",
+      "Support prioritaire : réponse sous un jour ouvré",
     ],
   },
   {
@@ -157,7 +157,7 @@ export const SUBSCRIPTION_PLANS = [
       "Gestion multi-utilisateurs & collaborateurs",
       "Export comptable avancé (grand livre, FEC, SYSCOHADA)",
       "Accompagnement à la prise en main",
-      "Support prioritaire",
+      "Support prioritaire : réponse sous un jour ouvré",
     ],
   },
 ];
