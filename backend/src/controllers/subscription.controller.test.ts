@@ -137,6 +137,12 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     for (const ligne of lignes) expect(ligne).toContain("réponse sous un jour ouvré");
   });
 
+  it("chiffre l'accompagnement à la prise en main de la formule Agence : une visioconférence de 30 minutes", () => {
+    const entreprise = SUBSCRIPTION_PLANS.find((p) => p.id === "ENTERPRISE")!;
+    const ligne = entreprise.features.find((f) => /^Accompagnement/i.test(f));
+    expect(ligne).toBe("Accompagnement à la prise en main : une visioconférence de 30 minutes");
+  });
+
   it("n'annonce pas d'export Excel : les exports comptables sont des fichiers CSV ou texte", () => {
     const entreprise = SUBSCRIPTION_PLANS.find((p) => p.id === "ENTERPRISE")!;
     expect(entreprise.features.join(" ")).not.toMatch(/excel/i);

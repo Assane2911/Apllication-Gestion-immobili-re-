@@ -156,7 +156,7 @@ export const SUBSCRIPTION_PLANS = [
       "Tout ce qui est inclus dans Pro",
       "Gestion multi-utilisateurs & collaborateurs",
       "Export comptable avancé (grand livre, FEC, SYSCOHADA)",
-      "Accompagnement à la prise en main",
+      "Accompagnement à la prise en main : une visioconférence de 30 minutes",
       "Support prioritaire : réponse sous un jour ouvré",
     ],
   },

@@ -54,7 +54,8 @@ export default function CGUPage() {
             </>,
             <>
               <strong className="text-slate-100">Entreprise</strong> — biens illimités, support prioritaire (réponse
-              sous un jour ouvré), multi-utilisateurs, export comptable.
+              sous un jour ouvré), accompagnement à la prise en main (une visioconférence de 30 minutes),
+              multi-utilisateurs, export comptable.
             </>,
           ]}
         />
