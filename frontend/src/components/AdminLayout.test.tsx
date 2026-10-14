@@ -41,6 +41,8 @@ function renderAdminLayout(initialEntry = "/admin", logout = async () => {}) {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<div>Tableau de bord admin</div>} />
               <Route path="parametres" element={<div>Paramètres admin</div>} />
+              <Route path="journal" element={<div>Journal admin</div>} />
+              <Route path="gestionnaires/:id" element={<div>Fiche gestionnaire</div>} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -93,5 +95,26 @@ describe("AdminLayout", () => {
 
     await user.click(screen.getByRole("button", { name: /Basculer le thème/i }));
     expect(toggleTheme).toHaveBeenCalled();
+  });
+});
+
+describe("AdminLayout — titre de l'onglet", () => {
+  it("porte le nom de la page affichée", () => {
+    renderAdminLayout("/admin/journal");
+    expect(document.title).toBe("Journal d'audit | ImmoPlatform Pro");
+  });
+
+  it("suit la page quand on change d'entrée de navigation", () => {
+    const { unmount } = renderAdminLayout("/admin");
+    const accueil = document.title;
+    unmount();
+    renderAdminLayout("/admin/parametres");
+    expect(accueil).toMatch(/ \| ImmoPlatform Pro$/);
+    expect(document.title).not.toBe(accueil);
+  });
+
+  it("la fiche d'un gestionnaire garde le libellé de sa section, pas celui du tableau de bord", () => {
+    renderAdminLayout("/admin/gestionnaires/abc123");
+    expect(document.title).toBe("Gestionnaires | ImmoPlatform Pro");
   });
 });

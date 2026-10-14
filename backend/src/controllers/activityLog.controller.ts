@@ -1,14 +1,17 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { activityLogs } from "../db/schema";
 import { asyncHandler } from "../utils/asyncHandler";
+import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 
 /**
- * Journal d'activité (audit log) — liste les 200 dernières actions les plus
- * récentes, filtrable par ?entityType=&entityId= (ex: l'historique d'un bien
- * ou d'un locataire précis).
+ * Journal d'activité (audit log) — actions du gestionnaire, de la plus récente
+ * à la plus ancienne, paginées (?page=&pageSize=) et filtrables par
+ * ?entityType=&entityId= (ex: l'historique d'un bien ou d'un locataire précis).
+ * Avant la pagination, seules les 200 dernières étaient renvoyées : tout ce qui
+ * était plus ancien (jusqu'à un an de journal conservé) restait introuvable.
  */
 /**
  * Filtres de la route. `.optional()` sans `.catch()` : un parametre repete ou
@@ -33,12 +36,19 @@ export const listActivityLogs = asyncHandler(async (req: Request, res: Response)
   if (entityType) conditions.push(eq(activityLogs.entityType, entityType));
   if (entityId) conditions.push(eq(activityLogs.entityId, entityId));
 
+  const pagination = parsePagination(req);
+  const where = and(...conditions);
+
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(activityLogs).where(where);
+  // `id` départage les entrées du même instant : sans lui, deux pages pourraient
+  // se recouvrir ou laisser une ligne de côté.
   const rows = await db
     .select()
     .from(activityLogs)
-    .where(and(...conditions))
-    .orderBy(desc(activityLogs.createdAt))
-    .limit(200);
+    .where(where)
+    .orderBy(desc(activityLogs.createdAt), desc(activityLogs.id))
+    .limit(pagination.pageSize)
+    .offset(pagination.offset);
 
-  res.json(rows);
+  res.json(buildPaginatedResult(rows, count, pagination));
 });

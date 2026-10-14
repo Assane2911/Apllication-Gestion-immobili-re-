@@ -32,7 +32,7 @@ describe("paramètres de requête mal formés", () => {
         .set(authHeader(tokenFor(manager)));
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
+      expect(Array.isArray(res.body.items)).toBe(true);
     });
 
     it("accepte l'absence de filtre", async () => {

@@ -1,6 +1,6 @@
 import { Building2, Landmark, LayoutDashboard, Lightbulb, Megaphone, Moon, ScrollText, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { useTheme } from "../context/theme";
 import Bulle from "./Bulle";
@@ -21,9 +21,17 @@ export default function AdminLayout() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>), comme dans l'espace gestionnaire :
+  // sans lui, les sept pages d'administration s'appelaient pareil. L'entrée la plus précise gagne (la fiche d'un
+  // gestionnaire, /admin/gestionnaires/:id, garde le libellé « Gestionnaires »).
+  const { pathname } = useLocation();
+  const chemin = pathname.replace(/\/+$/, "");
+  const entree = [...navItems].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
+  const libellePage = entree ? t(`admin.nav.${entree.key}`) : null;
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-slate-950">
+      {libellePage && <title>{`${libellePage} | ${t("common.appName")}`}</title>}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div>

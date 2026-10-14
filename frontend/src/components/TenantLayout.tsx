@@ -2,7 +2,6 @@ import { CreditCard, Home, LogOut, MessageCircle, Moon, Sun, Wrench } from "luci
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
-import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import Bulle from "./Bulle";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -51,7 +50,6 @@ export default function TenantLayout() {
           </div>
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
             <LanguageSwitcher />
-            <CurrencySelector />
             <NotificationBell endpoint="/notifications/mine" i18nPrefix="tenant.notificationBell" />
             <Bulle texte={t("common.theme.tip")} className="contents">
             <button
