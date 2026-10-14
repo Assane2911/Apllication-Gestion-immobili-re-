@@ -21,6 +21,15 @@ function noop(): never {
 }
 
 const gestionnaire: AuthUser = { id: "m1", email: "gestionnaire@test.local", role: "MANAGER" };
+const abonnement = (plan: "STARTER" | "PRO" | "ENTERPRISE"): NonNullable<AuthUser["subscription"]> => ({
+  status: "ACTIVE",
+  plan,
+  trialDaysRemaining: 0,
+  isTrialActive: false,
+  isSubscriptionActive: true,
+  isExpired: false,
+});
+const agence: AuthUser = { ...gestionnaire, id: "m2", subscription: abonnement("ENTERPRISE") };
 
 function authValue(user: AuthUser | null): AuthContextValue {
   return {
@@ -36,9 +45,9 @@ function authValue(user: AuthUser | null): AuthContextValue {
   };
 }
 
-function renderManagerLayout(entree: string) {
+function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnaire) {
   return render(
-    <AuthContext.Provider value={authValue(gestionnaire)}>
+    <AuthContext.Provider value={authValue(utilisateur)}>
       <CurrencyProvider>
         <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
           <MemoryRouter initialEntries={[entree]}>
@@ -77,10 +86,19 @@ describe("ManagerLayout — titre de l'onglet", () => {
     expect(document.title).toBe("Compte-rendu de gestion | ImmoPlatform Pro");
   });
 
-  it("le guide de démarrage est dans le menu et titre l'onglet", () => {
-    renderManagerLayout("/guide-demarrage");
+  it("le guide de démarrage est dans le menu de la formule Agence et titre l'onglet", () => {
+    renderManagerLayout("/guide-demarrage", agence);
     expect(document.title).toBe("Guide de démarrage | ImmoPlatform Pro");
     expect(screen.getByRole("link", { name: "Guide de démarrage" })).toHaveAttribute("href", "/guide-demarrage");
+  });
+
+  it.each([
+    ["sans abonnement chargé", gestionnaire],
+    ["Starter", { ...gestionnaire, subscription: abonnement("STARTER") }],
+    ["Professionnel", { ...gestionnaire, subscription: abonnement("PRO") }],
+  ])("le guide de démarrage n'apparaît pas dans le menu : %s", (_nom, utilisateur) => {
+    renderManagerLayout("/dashboard", utilisateur as AuthUser);
+    expect(screen.queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
   });
 
   it("la recherche globale a un nom accessible, pas seulement un texte d'exemple", () => {

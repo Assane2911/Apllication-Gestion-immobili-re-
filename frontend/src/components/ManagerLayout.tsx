@@ -31,6 +31,7 @@ import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
+import { aLaFormuleAgence } from "../utils/formuleAgence";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import GlobalSearch from "./GlobalSearch";
@@ -151,7 +152,7 @@ export default function ManagerLayout() {
           </div>
         </div>
         <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1" onClick={() => setMobileNavOpen(false)}>
-          {navItems.map((item) => (
+          {navItems.filter((item) => item.key !== "guide" || aLaFormuleAgence(user)).map((item) => (
             // La bulle s'ouvre à DROITE : dans une barre latérale, au-dessus
             // recouvrirait l'entrée précédente, c'est-à-dire une autre cible
             // cliquable.

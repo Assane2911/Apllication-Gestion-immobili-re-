@@ -1,9 +1,11 @@
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../../context/auth";
+import { aLaFormuleAgence } from "../../utils/formuleAgence";
 
 /**
- * Guide de démarrage : l'accompagnement à la prise en main annoncé sur les formules. Huit étapes dans
+ * Guide de démarrage : l'accompagnement à la prise en main annoncé sur la formule Agence & Multi-Comptes. Huit étapes dans
  * l'ordre où une agence nouvellement inscrite en a besoin ; chacune renvoie à la page qui la réalise
  * (les modèles de fichiers à remplir se téléchargent depuis la page d'import).
  */
@@ -20,6 +22,11 @@ const ETAPES = [
 
 export default function GuidePage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+
+  // Réservé à la formule Agence (le menu ne le propose pas non plus) : un lien enregistré ou saisi à la main
+  // ne doit pas ouvrir la page aux autres formules.
+  if (!aLaFormuleAgence(user)) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="space-y-6 max-w-3xl">

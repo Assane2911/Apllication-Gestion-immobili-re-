@@ -1,19 +1,51 @@
 import { render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
+import { AuthContext } from "../../context/auth";
+import type { AuthContextValue } from "../../context/auth";
+import type { AuthUser } from "../../types";
 import GuidePage from "./GuidePage";
 
-function renderGuide() {
+function noop(): never {
+  throw new Error("not implemented in this test");
+}
+
+function utilisateur(plan: "STARTER" | "PRO" | "ENTERPRISE"): AuthUser {
+  return {
+    id: "m1",
+    email: "gestionnaire@test.local",
+    role: "MANAGER",
+    subscription: { status: "ACTIVE", plan, trialDaysRemaining: 0, isTrialActive: false, isSubscriptionActive: true, isExpired: false },
+  };
+}
+
+function renderGuide(user: AuthUser) {
+  const auth: AuthContextValue = {
+    user,
+    loading: false,
+    login: noop,
+    register: noop,
+    loginWithGoogle: noop,
+    verifyTwoFactor: noop,
+    verifyEmail: noop,
+    logout: async () => {},
+    refreshUser: async () => user,
+  };
   return render(
-    <MemoryRouter>
-      <GuidePage />
-    </MemoryRouter>
+    <AuthContext.Provider value={auth}>
+      <MemoryRouter initialEntries={["/guide-demarrage"]}>
+        <Routes>
+          <Route path="/guide-demarrage" element={<GuidePage />} />
+          <Route path="/dashboard" element={<div>Tableau de bord</div>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthContext.Provider>
   );
 }
 
-describe("GuidePage — guide de démarrage", () => {
+describe("GuidePage — guide de démarrage de la formule Agence", () => {
   it("présente huit étapes numérotées, dans l'ordre où une nouvelle agence en a besoin", () => {
-    renderGuide();
+    renderGuide(utilisateur("ENTERPRISE"));
     expect(screen.getByRole("heading", { name: "Guide de démarrage", level: 2 })).toBeInTheDocument();
     const etapes = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(etapes).toHaveLength(8);
@@ -24,13 +56,19 @@ describe("GuidePage — guide de démarrage", () => {
   });
 
   it("chaque étape renvoie à la page qui la réalise, import avant bail", () => {
-    renderGuide();
+    renderGuide(utilisateur("ENTERPRISE"));
     const liens = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(liens).toEqual(["/agency", "/import", "/properties", "/contracts", "/tenants", "/invoices", "/agency", "/subscription"]);
   });
 
   it("nomme la destination de chaque lien pour un lecteur d'écran, pas seulement « Ouvrir »", () => {
-    renderGuide();
+    renderGuide(utilisateur("ENTERPRISE"));
     expect(screen.getByRole("link", { name: /Ouvrir.*Importez vos données existantes/ })).toHaveAttribute("href", "/import");
+  });
+
+  it.each(["STARTER", "PRO"] as const)("renvoie au tableau de bord un gestionnaire de la formule %s : le guide est propre à la formule Agence", (plan) => {
+    renderGuide(utilisateur(plan));
+    expect(screen.queryByRole("heading", { name: "Guide de démarrage" })).not.toBeInTheDocument();
+    expect(screen.getByText("Tableau de bord")).toBeInTheDocument();
   });
 });
