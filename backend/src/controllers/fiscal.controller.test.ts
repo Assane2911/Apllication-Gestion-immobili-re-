@@ -447,7 +447,7 @@ describe("GET /api/fiscal/fec", () => {
   });
 
   // Même réserve que le Grand Livre CSV (CGU §3, "export comptable avancé
-  // FEC/Excel") : un gestionnaire Pro n'y a pas accès.
+  // FEC") : un gestionnaire Pro n'y a pas accès.
   it("refuse l'export à un gestionnaire Pro (réservé à Entreprise)", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
 

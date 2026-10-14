@@ -144,7 +144,7 @@ export const SUBSCRIPTION_PLANS = [
       "Jusqu'à 25 biens immobiliers",
       "Alertes de fin de bail & renouvellement",
       "Rappels automatiques multi-canaux (email + WhatsApp)",
-      "Support prioritaire 7j/7",
+      "Support prioritaire",
     ],
   },
   {
@@ -155,9 +155,9 @@ export const SUBSCRIPTION_PLANS = [
     features: [
       "Tout ce qui est inclus dans Pro",
       "Gestion multi-utilisateurs & collaborateurs",
-      "Export comptable avancé (FEC/Excel)",
-      "Accompagnement & onboarding dédié",
-      "SLA garanti 99.9% et support VIP",
+      "Export comptable avancé (grand livre, FEC, SYSCOHADA)",
+      "Accompagnement à la prise en main",
+      "Support prioritaire",
     ],
   },
 ];

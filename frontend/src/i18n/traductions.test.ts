@@ -62,3 +62,19 @@ describe("Traductions — les quatre langues décrivent la même application", (
     }
   });
 });
+
+/**
+ * Les CGU (art. 6) ne garantissent aucune disponibilité absolue et ne promettent pas de permanence : aucun texte
+ * visible ne doit donc annoncer « 24/7 », « 7j/7 » ou un taux de disponibilité garanti, dans aucune langue.
+ */
+describe("engagements commerciaux", () => {
+  const tous: Array<[string, Arbre]> = [["fr", fr as unknown as Arbre], ...langues];
+  const textes = (arbre: Arbre): string[] =>
+    Object.values(arbre).flatMap((v) => (typeof v === "string" ? [v] : textes(v)));
+
+  it.each(tous)("%s : aucune promesse de permanence 24/7 ou de taux de disponibilité garanti", (_nom, arbre) => {
+    for (const texte of textes(arbre)) {
+      expect(texte, texte).not.toMatch(/24\s?\/\s?7|7\s?j\s?\/\s?7|\bSLA\b|99[.,]\d\s?%/);
+    }
+  });
+});

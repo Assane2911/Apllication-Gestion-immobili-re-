@@ -122,6 +122,20 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     expect(tarifPourDevise("PLAN_INEXISTANT", "EUR")).toBeNull();
   });
 
+  it("n'annonce aucun engagement que rien ne tient : ni taux de disponibilité garanti, ni permanence 24/7 ou 7j/7", () => {
+    // Les CGU (art. 6) ne garantissent aucune disponibilité absolue : une page d'abonnement qui promettait « SLA
+    // garanti 99.9% » contredisait le contrat, et aucune mesure ni aucun avoir ne la soutenait.
+    const textes = SUBSCRIPTION_PLANS.flatMap((plan) => [plan.description, ...plan.features]);
+    for (const texte of textes) {
+      expect(texte, texte).not.toMatch(/\bSLA\b|99[.,]\d\s?%|24\s?\/\s?7|7\s?j\s?\/\s?7|\bVIP\b|garanti/i);
+    }
+  });
+
+  it("n'annonce pas d'export Excel : les exports comptables sont des fichiers CSV ou texte", () => {
+    const entreprise = SUBSCRIPTION_PLANS.find((p) => p.id === "ENTERPRISE")!;
+    expect(entreprise.features.join(" ")).not.toMatch(/excel/i);
+  });
+
   it("chaque formule est tarifée dans chaque devise annoncée : aucun trou dans la grille", () => {
     for (const plan of SUBSCRIPTION_PLANS) {
       for (const devise of devisesTarifees()) {
