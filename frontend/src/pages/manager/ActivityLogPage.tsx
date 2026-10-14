@@ -3,8 +3,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
+import Pagination from "../../components/Pagination";
 import { TableRowSkeleton } from "../../components/Skeleton";
-import type { ActivityLogEntry } from "../../types";
+import type { ActivityLogEntry, PaginatedResponse } from "../../types";
+
+const PAGE_SIZE = 20;
 
 const entityTypes = ["ALL", "property", "tenant", "contract", "invoice", "issue"] as const;
 
@@ -22,6 +25,9 @@ export default function ActivityLogPage() {
   const [loading, setLoading] = useState(true);
   const [entityType, setEntityType] = useState("ALL");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   function formatDateTime(d: string) {
     return new Date(d).toLocaleString(i18n.language, {
@@ -33,15 +39,17 @@ export default function ActivityLogPage() {
     });
   }
 
-  function load(type: string, signal?: AbortSignal) {
+  function load(type: string, pageToLoad: number, signal?: AbortSignal) {
     setLoading(true);
     api
-      .get<ActivityLogEntry[]>("/activity-log", {
-        params: type !== "ALL" ? { entityType: type } : {},
+      .get<PaginatedResponse<ActivityLogEntry>>("/activity-log", {
+        params: { page: pageToLoad, pageSize: PAGE_SIZE, ...(type !== "ALL" ? { entityType: type } : {}) },
         signal,
       })
       .then((res) => {
-        setLogs(liste<ActivityLogEntry>(res.data));
+        setLogs(liste<ActivityLogEntry>(res.data, "items"));
+        setTotal(res.data.total ?? 0);
+        setTotalPages(res.data.totalPages ?? 1);
         setLoadError(null);
         setLoading(false);
       })
@@ -61,9 +69,9 @@ export default function ActivityLogPage() {
   // après une autre plus récente — même schéma que MessagesPage.tsx.
   useEffect(() => {
     const controller = new AbortController();
-    load(entityType, controller.signal);
+    load(entityType, page, controller.signal);
     return () => controller.abort();
-  }, [entityType]);
+  }, [entityType, page]);
 
   return (
     <div className="space-y-6">
@@ -77,7 +85,10 @@ export default function ActivityLogPage() {
         <select
           aria-label={t("manager.activityLog.filterByType")}
           value={entityType}
-          onChange={(e) => setEntityType(e.target.value)}
+          onChange={(e) => {
+            setEntityType(e.target.value);
+            setPage(1);
+          }}
           className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
         >
           {entityTypes.map((opt) => (
@@ -91,7 +102,7 @@ export default function ActivityLogPage() {
       {loadError && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
-          <button onClick={() => load(entityType)} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load(entityType, page)} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
           </button>
         </div>
@@ -141,6 +152,8 @@ export default function ActivityLogPage() {
           />
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import {
   Wallet,
   Wrench,
 } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bar,
@@ -37,10 +37,8 @@ const statusColors: Record<PropertyStatus, string> = {
   MAINTENANCE: "#f59e0b",
 };
 
-// Une couleur par devise pour le graphique revenus/dépenses (cas le plus
-// courant : une seule devise, donc une seule paire de couleurs utilisée).
-const REVENUE_COLORS = ["#2563eb", "#0891b2", "#7c3aed", "#be185d"];
-const EXPENSE_COLORS = ["#f59e0b", "#ea580c", "#65a30d", "#a16207"];
+const REVENUE_COLOR = "#2563eb";
+const EXPENSE_COLOR = "#f59e0b";
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -121,10 +119,10 @@ export default function DashboardPage() {
 
   // Plateforme multi-devises : chaque mois est { devise -> montant } côté API
   // (voir dashboard.controller.ts) plutôt qu'un seul nombre déjà additionné à
-  // travers des devises différentes. On trace donc une paire de barres par
-  // devise réellement présente dans les données — une seule dans le cas
-  // courant d'un gestionnaire mono-devise, le graphique est alors identique
-  // à avant.
+  // travers des devises différentes. On trace un graphique PAR devise : sur un
+  // axe commun, 600 € disparaissaient à côté de 450 000 FCFA, alors que les
+  // deux sommes sont du même ordre de grandeur réel. Un gestionnaire
+  // mono-devise (le cas courant) voit un seul graphique, comme avant.
   const monthlyCurrencies =
     allMonths.length > 0
       ? Array.from(
@@ -135,28 +133,23 @@ export default function DashboardPage() {
         ).sort()
       : Object.keys(stats.monthlyRevenueByCurrency ?? {});
 
-  const comparisonChartData =
-    allMonths.length > 0
-      ? allMonths.map((month) => {
-          const row: Record<string, string | number> = { month };
-          for (const currency of monthlyCurrencies) {
-            row[`revenue_${currency}`] = Number(revenueByMonth[month]?.[currency] ?? 0);
-            row[`expense_${currency}`] = Number(expensesByMonth[month]?.[currency] ?? 0);
-          }
-          return row;
-        })
-      : monthlyCurrencies.length > 0
-        ? [
-            monthlyCurrencies.reduce(
-              (row, currency) => ({
-                ...row,
-                [`revenue_${currency}`]: Number(stats.monthlyRevenueByCurrency?.[currency] ?? 0),
-                [`expense_${currency}`]: 0,
-              }),
-              { month: t("manager.dashboard.charts.currentMonth") } as Record<string, string | number>
-            ),
-          ]
-        : [];
+  const chartsByCurrency = monthlyCurrencies.map((currency) => ({
+    currency,
+    data:
+      allMonths.length > 0
+        ? allMonths.map((month) => ({
+            month,
+            revenue: Number(revenueByMonth[month]?.[currency] ?? 0),
+            expense: Number(expensesByMonth[month]?.[currency] ?? 0),
+          }))
+        : [
+            {
+              month: t("manager.dashboard.charts.currentMonth"),
+              revenue: Number(stats.monthlyRevenueByCurrency?.[currency] ?? 0),
+              expense: 0,
+            },
+          ],
+  }));
 
   const donutData = (Object.keys(statusLabels) as PropertyStatus[])
     .map((status) => ({
@@ -246,63 +239,56 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("manager.dashboard.charts.revenueVsExpenses")}</h3>
           </div>
-          {comparisonChartData.length === 0 ? (
+          {chartsByCurrency.length === 0 ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">
               {t("manager.dashboard.charts.noRevenueData")}
             </p>
           ) : (
-            <div className="h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonChartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-                  <Tooltip
-                    formatter={(value: any, name: any) => {
-                      const [kind, currency] = String(name).split("_");
-                      const label = kind === "revenue" ? t("manager.dashboard.charts.tooltipRevenue") : t("manager.dashboard.charts.tooltipExpense");
-                      return [
-                        formatMoney(Number(value), currency),
-                        monthlyCurrencies.length > 1 ? `${label} (${currency})` : label,
-                      ];
-                    }}
-                    contentStyle={{
-                      borderRadius: "14px",
-                      fontSize: "12px",
-                      boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
-                      backgroundColor: "var(--tw-tooltip-bg, #0f172a)",
-                      color: "#f8fafc",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      padding: "10px 14px",
-                    }}
-                    itemStyle={{ color: "#f8fafc" }}
-                  />
-                  <Legend
-                    formatter={(value) => {
-                      const [kind, currency] = String(value).split("_");
-                      const label = kind === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense");
-                      return monthlyCurrencies.length > 1 ? `${label} (${currency})` : label;
-                    }}
-                    wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-                  />
-                  {monthlyCurrencies.map((currency, idx) => (
-                    <Fragment key={currency}>
-                      <Bar
-                        dataKey={`revenue_${currency}`}
-                        name={`revenue_${currency}`}
-                        fill={REVENUE_COLORS[idx % REVENUE_COLORS.length]}
-                        radius={[6, 6, 0, 0]}
-                      />
-                      <Bar
-                        dataKey={`expense_${currency}`}
-                        name={`expense_${currency}`}
-                        fill={EXPENSE_COLORS[idx % EXPENSE_COLORS.length]}
-                        radius={[6, 6, 0, 0]}
-                      />
-                    </Fragment>
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="space-y-6">
+              {chartsByCurrency.map(({ currency, data }) => (
+                <div
+                  key={currency}
+                  role={chartsByCurrency.length > 1 ? "group" : undefined}
+                  aria-label={chartsByCurrency.length > 1 ? t("manager.dashboard.charts.chartForCurrency", { currency }) : undefined}
+                >
+                  {chartsByCurrency.length > 1 && (
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">{currency}</p>
+                  )}
+                  <div className={chartsByCurrency.length > 1 ? "h-[220px] w-full" : "h-[280px] w-full"}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
+                        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
+                        <Tooltip
+                          formatter={(value: any, name: any) => [
+                            formatMoney(Number(value), currency),
+                            name === "revenue" ? t("manager.dashboard.charts.tooltipRevenue") : t("manager.dashboard.charts.tooltipExpense"),
+                          ]}
+                          contentStyle={{
+                            borderRadius: "14px",
+                            fontSize: "12px",
+                            boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
+                            backgroundColor: "var(--tw-tooltip-bg, #0f172a)",
+                            color: "#f8fafc",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            padding: "10px 14px",
+                          }}
+                          itemStyle={{ color: "#f8fafc" }}
+                        />
+                        <Legend
+                          formatter={(value) =>
+                            value === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense")
+                          }
+                          wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
+                        />
+                        <Bar dataKey="revenue" name="revenue" fill={REVENUE_COLOR} radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="expense" name="expense" fill={EXPENSE_COLOR} radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

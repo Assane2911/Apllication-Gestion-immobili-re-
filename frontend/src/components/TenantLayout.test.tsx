@@ -128,3 +128,14 @@ describe("TenantLayout — titre de l'onglet", () => {
     expect(screen.getByText("Espace résident", { selector: "span" })).toBeInTheDocument();
   });
 });
+
+/**
+ * Chaque montant du portail locataire s'affiche dans la devise de son bail ou de sa facture : un sélecteur
+ * « EUR » à côté de montants en FCFA ne changeait rien et laissait croire l'inverse.
+ */
+describe("TenantLayout — devise", () => {
+  it("ne propose pas de sélecteur de devise, les montants étant dans la devise du contrat", () => {
+    renderTenantLayout();
+    expect(screen.queryByRole("combobox", { name: "Monnaie de règlement" })).not.toBeInTheDocument();
+  });
+});

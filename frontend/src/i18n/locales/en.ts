@@ -765,6 +765,7 @@ const en: TranslationSchema = {
         tooltipRevenue: "Revenue collected",
         tooltipExpense: "Expenses & Works",
         legendRevenue: "Revenue",
+        chartForCurrency: "Revenue and expenses in {{currency}}",
         legendExpense: "Expenses",
         statusChart: "Portfolio status",
         noProperties: "No properties registered yet.",

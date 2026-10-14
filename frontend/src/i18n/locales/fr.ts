@@ -763,6 +763,7 @@ const fr = {
         tooltipRevenue: "Revenus encaissés",
         tooltipExpense: "Dépenses & Travaux",
         legendRevenue: "Revenus",
+        chartForCurrency: "Revenus et dépenses en {{currency}}",
         legendExpense: "Dépenses",
         statusChart: "Statut du parc immobilier",
         noProperties: "Aucun bien enregistré pour l'instant.",

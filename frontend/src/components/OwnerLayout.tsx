@@ -2,7 +2,6 @@ import { LayoutDashboard, LogOut, Moon, Receipt, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
-import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import Bulle from "./Bulle";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -54,7 +53,6 @@ export default function OwnerLayout() {
           </div>
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
             <LanguageSwitcher />
-            <CurrencySelector />
             <Bulle texte={t("common.theme.tip")} className="contents">
             <button
               onClick={toggleTheme}

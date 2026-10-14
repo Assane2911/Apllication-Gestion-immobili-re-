@@ -122,3 +122,10 @@ describe("OwnerLayout — titre de l'onglet", () => {
     expect(document.title).toBe("Compte-rendu de gestion | ImmoPlatform Pro");
   });
 });
+
+describe("OwnerLayout — devise", () => {
+  it("ne propose pas de sélecteur de devise, chaque montant étant affiché dans sa devise d'origine", () => {
+    renderOwnerLayout();
+    expect(screen.queryByRole("combobox", { name: "Monnaie de règlement" })).not.toBeInTheDocument();
+  });
+});

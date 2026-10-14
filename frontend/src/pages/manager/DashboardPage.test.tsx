@@ -87,4 +87,27 @@ describe("DashboardPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     expect(reloadSpy).toHaveBeenCalled();
   });
+
+  it("trace un graphique par devise, pour que 600 € ne disparaisse pas à côté de 450 000 FCFA", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: stats({
+        monthlyRevenueByCurrency: { EUR: 600, XOF: 450000 },
+        revenueByMonth: { "2026-08": { EUR: 600, XOF: 450000 } },
+        expensesByMonth: { "2026-08": { EUR: 100, XOF: 80000 } },
+      }),
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Biens immobiliers")).toBeInTheDocument());
+    expect(screen.getByRole("group", { name: "Revenus et dépenses en EUR" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Revenus et dépenses en XOF" })).toBeInTheDocument();
+  });
+
+  it("garde un seul graphique, sans découpage par devise, pour un gestionnaire mono-devise", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: stats() });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Biens immobiliers")).toBeInTheDocument());
+    expect(screen.queryByRole("group", { name: /Revenus et dépenses en/ })).not.toBeInTheDocument();
+  });
 });

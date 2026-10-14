@@ -49,8 +49,9 @@ describe("GET /api/activity-log", () => {
     const res = await request(app).get("/api/activity-log").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].entityLabel).toBe("Mon bien");
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].entityLabel).toBe("Mon bien");
   });
 
   it("filtre par entityType", async () => {
@@ -64,8 +65,8 @@ describe("GET /api/activity-log", () => {
       .set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].entityType).toBe("tenant");
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].entityType).toBe("tenant");
   });
 
   it("filtre par entityId", async () => {
@@ -79,8 +80,8 @@ describe("GET /api/activity-log", () => {
       .set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].entityLabel).toBe("Bien B");
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].entityLabel).toBe("Bien B");
   });
 
   it("trie les entrées de la plus récente à la plus ancienne", async () => {
@@ -95,7 +96,60 @@ describe("GET /api/activity-log", () => {
     const res = await request(app).get("/api/activity-log").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(200);
-    expect(res.body[0].entityLabel).toBe("Action récente");
-    expect(res.body[1].entityLabel).toBe("Ancienne action");
+    expect(res.body.items[0].entityLabel).toBe("Action récente");
+    expect(res.body.items[1].entityLabel).toBe("Ancienne action");
+  });
+
+  it("pagine le journal au lieu de s'arrêter aux 200 dernières entrées", async () => {
+    const manager = await createManager();
+    const autre = await createManager();
+    const base = Date.now();
+    await testDb.insert(activityLogs).values(
+      Array.from({ length: 250 }, (_, i) => ({
+        managerId: manager.id,
+        actorLabel: "Gestionnaire",
+        action: "property.create",
+        entityType: "property",
+        entityId: "prop-1",
+        entityLabel: `Action ${i}`,
+        createdAt: new Date(base - i * 1000),
+      }))
+    );
+    await createActivityLog(autre.id, { entityLabel: "Bien d'un autre" });
+
+    const page1 = await request(app).get("/api/activity-log").query({ pageSize: 100 }).set(authHeader(tokenFor(manager)));
+    expect(page1.status).toBe(200);
+    expect(page1.body.items).toHaveLength(100);
+    expect(page1.body.total).toBe(250);
+    expect(page1.body.totalPages).toBe(3);
+    expect(page1.body.items[0].entityLabel).toBe("Action 0");
+
+    const page3 = await request(app).get("/api/activity-log").query({ pageSize: 100, page: 3 }).set(authHeader(tokenFor(manager)));
+    expect(page3.body.items).toHaveLength(50);
+    // La plus ancienne entrée, qu'aucune limite de 200 ne laissait atteindre.
+    expect(page3.body.items[49].entityLabel).toBe("Action 249");
+  });
+
+  it("garde un ordre stable entre les pages quand des entrées partagent le même instant", async () => {
+    const manager = await createManager();
+    const instant = new Date();
+    await testDb.insert(activityLogs).values(
+      Array.from({ length: 5 }, (_, i) => ({
+        managerId: manager.id,
+        actorLabel: "Gestionnaire",
+        action: "property.create",
+        entityType: "property",
+        entityId: "prop-1",
+        entityLabel: `Simultanée ${i}`,
+        createdAt: instant,
+      }))
+    );
+
+    const vus = new Set<string>();
+    for (const page of [1, 2, 3]) {
+      const res = await request(app).get("/api/activity-log").query({ pageSize: 2, page }).set(authHeader(tokenFor(manager)));
+      for (const e of res.body.items) vus.add(e.id);
+    }
+    expect(vus.size).toBe(5);
   });
 });
