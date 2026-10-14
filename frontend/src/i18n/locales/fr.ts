@@ -114,6 +114,7 @@ const fr = {
       agency: "Identité de l'agence : coordonnées, logo et mentions des quittances.",
       subscription: "Votre formule, vos factures et l'état de votre essai.",
       referral: "Votre code de parrainage et vos filleuls.",
+      guide: "Huit étapes pour démarrer : de l'agence à votre premier loyer encaissé.",
     },
     manager: {
       dashboard: "Tableau de bord",
@@ -136,6 +137,7 @@ const fr = {
       agency: "Mon Agence",
       subscription: "Mon Abonnement",
       referral: "Parrainage",
+      guide: "Guide de démarrage",
     },
     tipsTenant: {
       home: "Votre bail, vos documents et vos états des lieux à signer.",
@@ -436,7 +438,7 @@ const fr = {
     },
     pricing: {
       title: "Des formules simples et transparentes",
-      subtitle: "Toutes les formules incluent 15 jours d'essai gratuit sans carte bancaire requise.",
+      subtitle: "Toutes les formules incluent 15 jours d'essai gratuit sans carte bancaire requise, avec le guide de démarrage pas à pas.",
       perMonth: "/ mois",
       starter: {
         name: "Starter",
@@ -701,7 +703,7 @@ const fr = {
       lastDay: "Dernier jour d'essai !",
       oneDayLeft: "Il vous reste 1 jour d'essai",
       daysLeft: "Il vous reste {{count}} jours d'essai gratuit",
-      trialDesc: "Profitez de toutes les fonctionnalités Pro sans engagement. Vous pouvez activer votre abonnement à tout moment.",
+      trialDesc: "Profitez de toutes les fonctionnalités Pro sans engagement, et suivez le guide de démarrage du menu pour installer votre agence. Vous pouvez activer votre abonnement à tout moment.",
       chooseOfferCta: "Choisir mon offre",
       activePlan: "Abonnement <1>Plan {{plan}}</1> actif",
       manageSubscription: "Gérer mon abonnement",
@@ -1477,6 +1479,21 @@ const fr = {
         trade: "Métier",
         phone: "Téléphone",
         email: "Email",
+      },
+    },
+    guide: {
+      title: "Guide de démarrage",
+      subtitle: "Huit étapes, dans l'ordre, pour passer d'un compte vide à vos premiers loyers suivis. Chaque étape ouvre la page concernée.",
+      open: "Ouvrir",
+      steps: {
+        agency: { title: "Renseignez votre agence", desc: "Nom commercial, adresse, téléphone et mentions légales figurent sur vos baux, quittances et mises en demeure. Ajoutez l'IBAN : vos locataires le voient quand ils paient par virement." },
+        import: { title: "Importez vos données existantes", desc: "Téléchargez le modèle CSV, remplissez-le depuis votre tableur, puis déposez-le. Un aperçu ligne par ligne vous montre erreurs et doublons avant toute écriture. Importez dans l'ordre : biens, puis locataires, puis contrats." },
+        records: { title: "Complétez à la main ce qui manque", desc: "Ajoutez un bien, un locataire ou un propriétaire un par un, avec ses photos, ses coordonnées et sa pièce d'identité." },
+        contract: { title: "Créez un bail", desc: "Choisissez le bien et le locataire, le type de bail, le loyer, le dépôt de garantie et le jour d'échéance. Ajoutez au besoin des garants et des colocataires, puis faites signer le locataire en ligne." },
+        access: { title: "Ouvrez les accès à vos locataires et à vos propriétaires", desc: "Depuis la fiche d'un locataire, créez son accès au portail. Depuis la fiche d'un propriétaire, envoyez-lui son invitation : il suivra ses loyers et son compte-rendu de gestion." },
+        invoices: { title: "Suivez vos loyers", desc: "Les factures mensuelles sont générées à chaque échéance. Enregistrez les paiements reçus, envoyez des relances et téléchargez les quittances." },
+        reminders: { title: "Activez les relances automatiques", desc: "Dans les paramètres de l'agence, cochez l'envoi automatique : chaque loyer impayé reçoit au plus trois relances par email." },
+        plan: { title: "Choisissez votre formule", desc: "Votre essai gratuit dure 15 jours. Comparez les formules et payez par carte, Mobile Money ou virement quand vous êtes prêt." },
       },
     },
     activityLog: {

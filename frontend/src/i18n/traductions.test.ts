@@ -78,3 +78,24 @@ describe("engagements commerciaux", () => {
     }
   });
 });
+
+/**
+ * Le guide de démarrage est visible pendant l'essai gratuit : les deux endroits qui décrivent l'essai (page des
+ * tarifs de l'accueil, bandeau d'essai dans l'application) doivent l'annoncer, dans chaque langue.
+ */
+describe("guide de démarrage annoncé dans l'essai", () => {
+  const motsCles: Record<string, RegExp> = {
+    fr: /guide de démarrage/i,
+    en: /getting started guide/i,
+    es: /guía de inicio/i,
+    pt: /guia de início/i,
+  };
+  const lire = (arbre: Arbre, chemin: string): string =>
+    chemin.split(".").reduce<string | Arbre>((noeud, cle) => (noeud as Arbre)[cle], arbre) as string;
+  const toutes: Array<[string, Arbre]> = [["fr", fr as unknown as Arbre], ...langues];
+
+  it.each(toutes)("%s : la page des tarifs et le bandeau d'essai mentionnent le guide", (nom, arbre) => {
+    expect(lire(arbre, "landing.pricing.subtitle")).toMatch(motsCles[nom]);
+    expect(lire(arbre, "components.trialBanner.trialDesc")).toMatch(motsCles[nom]);
+  });
+});

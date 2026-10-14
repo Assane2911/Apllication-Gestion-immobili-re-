@@ -21,6 +21,15 @@ function noop(): never {
 }
 
 const gestionnaire: AuthUser = { id: "m1", email: "gestionnaire@test.local", role: "MANAGER" };
+const abonnement = (plan: "STARTER" | "PRO" | "ENTERPRISE", essai = false): NonNullable<AuthUser["subscription"]> => ({
+  status: essai ? "TRIAL" : "ACTIVE",
+  plan,
+  trialDaysRemaining: essai ? 10 : 0,
+  isTrialActive: essai,
+  isSubscriptionActive: !essai,
+  isExpired: false,
+});
+const agence: AuthUser = { ...gestionnaire, id: "m2", subscription: abonnement("ENTERPRISE") };
 
 function authValue(user: AuthUser | null): AuthContextValue {
   return {
@@ -36,9 +45,9 @@ function authValue(user: AuthUser | null): AuthContextValue {
   };
 }
 
-function renderManagerLayout(entree: string) {
+function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnaire) {
   return render(
-    <AuthContext.Provider value={authValue(gestionnaire)}>
+    <AuthContext.Provider value={authValue(utilisateur)}>
       <CurrencyProvider>
         <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
           <MemoryRouter initialEntries={[entree]}>
@@ -48,6 +57,7 @@ function renderManagerLayout(entree: string) {
                 <Route path="/tenants" element={<div>Locataires</div>} />
                 <Route path="/proprietaires/:ownerId/crg" element={<div>CRG</div>} />
                 <Route path="/proprietaires" element={<div>Propriétaires</div>} />
+                <Route path="/guide-demarrage" element={<div>Guide</div>} />
               </Route>
             </Routes>
           </MemoryRouter>
@@ -74,6 +84,27 @@ describe("ManagerLayout — titre de l'onglet", () => {
   it("le compte-rendu de gestion d'un propriétaire a son propre libellé, pas celui de la liste", () => {
     renderManagerLayout("/proprietaires/abc123/crg");
     expect(document.title).toBe("Compte-rendu de gestion | ImmoPlatform Pro");
+  });
+
+  it("le guide de démarrage est visible pendant l'essai gratuit, quelle que soit la formule par défaut du compte", () => {
+    renderManagerLayout("/dashboard", { ...gestionnaire, subscription: abonnement("STARTER", true) });
+    expect(screen.getByRole("link", { name: "Guide de démarrage" })).toHaveAttribute("href", "/guide-demarrage");
+  });
+
+  it("le guide de démarrage est dans le menu de la formule Agence et titre l'onglet", () => {
+    renderManagerLayout("/guide-demarrage", agence);
+    expect(document.title).toBe("Guide de démarrage | ImmoPlatform Pro");
+    expect(screen.getByRole("link", { name: "Guide de démarrage" })).toHaveAttribute("href", "/guide-demarrage");
+  });
+
+  it.each([
+    ["sans abonnement chargé", gestionnaire],
+    ["Starter", { ...gestionnaire, subscription: abonnement("STARTER") }],
+    ["Professionnel", { ...gestionnaire, subscription: abonnement("PRO") }],
+    ["essai terminé", { ...gestionnaire, subscription: { ...abonnement("STARTER"), status: "EXPIRED" as const, isSubscriptionActive: false, isExpired: true } }],
+  ])("le guide de démarrage n'apparaît pas dans le menu : %s", (_nom, utilisateur) => {
+    renderManagerLayout("/dashboard", utilisateur as AuthUser);
+    expect(screen.queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
   });
 
   it("la recherche globale a un nom accessible, pas seulement un texte d'exemple", () => {

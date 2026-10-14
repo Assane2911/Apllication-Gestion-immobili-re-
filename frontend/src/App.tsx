@@ -24,6 +24,7 @@ const RegisterPage = lazyWithReload(() => import("./pages/RegisterPage"));
 const ResetPasswordPage = lazyWithReload(() => import("./pages/ResetPasswordPage"));
 const VerifyEmailPage = lazyWithReload(() => import("./pages/VerifyEmailPage"));
 const ActivityLogPage = lazyWithReload(() => import("./pages/manager/ActivityLogPage"));
+const GuidePage = lazyWithReload(() => import("./pages/manager/GuidePage"));
 const AgencySettingsPage = lazyWithReload(() => import("./pages/manager/AgencySettingsPage"));
 const ContractsPage = lazyWithReload(() => import("./pages/manager/ContractsPage"));
 const CrgPage = lazyWithReload(() => import("./pages/manager/CrgPage"));
@@ -121,6 +122,7 @@ function AppRoutes() {
           <Route path="/issues" element={<IssuesPage />} />
           <Route path="/prestataires" element={<VendorsPage />} />
           <Route path="/activity-log" element={<ActivityLogPage />} />
+          <Route path="/guide-demarrage" element={<GuidePage />} />
           <Route path="/agency" element={<AgencySettingsPage />} />
           <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/parrainage" element={<ReferralPage />} />

@@ -1,13 +1,14 @@
 import {
+  BookOpen,
   Briefcase,
   Building2,
   ClipboardCheck,
   CreditCard,
   FileText,
+  FileUp,
   Gem,
   Gift,
   HardHat,
-  FileUp,
   History,
   Home,
   LayoutDashboard,
@@ -30,6 +31,7 @@ import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
+import { peutVoirLeGuide } from "../utils/accesGuide";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import GlobalSearch from "./GlobalSearch";
@@ -40,6 +42,7 @@ import BoutonSuggestion from "./BoutonSuggestion";
 
 const navItems = [
   { to: "/dashboard", key: "dashboard", icon: LayoutDashboard },
+  { to: "/guide-demarrage", key: "guide", icon: BookOpen },
   { to: "/properties", key: "properties", icon: Home },
   { to: "/tenants", key: "tenants", icon: Users },
   { to: "/proprietaires", key: "owners", icon: Briefcase },
@@ -149,7 +152,7 @@ export default function ManagerLayout() {
           </div>
         </div>
         <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1" onClick={() => setMobileNavOpen(false)}>
-          {navItems.map((item) => (
+          {navItems.filter((item) => item.key !== "guide" || peutVoirLeGuide(user)).map((item) => (
             // La bulle s'ouvre à DROITE : dans une barre latérale, au-dessus
             // recouvrirait l'entrée précédente, c'est-à-dire une autre cible
             // cliquable.

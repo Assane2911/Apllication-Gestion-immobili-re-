@@ -25,4 +25,14 @@ describe("CGUPage", () => {
 
     expect(document.title).toBe("Conditions Générales d'Utilisation et de Vente | ImmoPlatform Pro");
   });
+
+  it("annonce le guide de démarrage dans l'essai gratuit, comme dans l'accompagnement de la formule Entreprise", () => {
+    render(
+      <MemoryRouter>
+        <CGUPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/essai gratuite de 15 jours[\s\S]*guide de démarrage/)).toBeInTheDocument();
+  });
 });
