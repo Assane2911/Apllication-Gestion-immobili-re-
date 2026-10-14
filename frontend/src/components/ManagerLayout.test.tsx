@@ -48,6 +48,7 @@ function renderManagerLayout(entree: string) {
                 <Route path="/tenants" element={<div>Locataires</div>} />
                 <Route path="/proprietaires/:ownerId/crg" element={<div>CRG</div>} />
                 <Route path="/proprietaires" element={<div>Propriétaires</div>} />
+                <Route path="/guide-demarrage" element={<div>Guide</div>} />
               </Route>
             </Routes>
           </MemoryRouter>
@@ -74,6 +75,12 @@ describe("ManagerLayout — titre de l'onglet", () => {
   it("le compte-rendu de gestion d'un propriétaire a son propre libellé, pas celui de la liste", () => {
     renderManagerLayout("/proprietaires/abc123/crg");
     expect(document.title).toBe("Compte-rendu de gestion | ImmoPlatform Pro");
+  });
+
+  it("le guide de démarrage est dans le menu et titre l'onglet", () => {
+    renderManagerLayout("/guide-demarrage");
+    expect(document.title).toBe("Guide de démarrage | ImmoPlatform Pro");
+    expect(screen.getByRole("link", { name: "Guide de démarrage" })).toHaveAttribute("href", "/guide-demarrage");
   });
 
   it("la recherche globale a un nom accessible, pas seulement un texte d'exemple", () => {

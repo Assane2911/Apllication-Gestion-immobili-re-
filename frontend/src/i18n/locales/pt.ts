@@ -116,6 +116,7 @@ const pt: TranslationSchema = {
       agency: "Identidade da agência: contactos, logótipo e menções dos recibos.",
       subscription: "O seu plano, as suas faturas e o estado do seu período de teste.",
       referral: "O seu código de indicação e as suas indicações.",
+      guide: "Oito passos para começar: dos dados da agência à primeira renda cobrada.",
     },
     manager: {
       dashboard: "Painel",
@@ -138,6 +139,7 @@ const pt: TranslationSchema = {
       agency: "Minha Agência",
       subscription: "Minha Assinatura",
       referral: "Indicações",
+      guide: "Guia de início",
     },
     tipsTenant: {
       home: "O seu contrato, os seus documentos e os autos a assinar.",
@@ -1476,6 +1478,21 @@ const pt: TranslationSchema = {
         trade: "Ofício",
         phone: "Telefone",
         email: "Email",
+      },
+    },
+    guide: {
+      title: "Guia de início",
+      subtitle: "Oito passos, por ordem, para passar de uma conta vazia às suas primeiras rendas acompanhadas. Cada passo abre a página correspondente.",
+      open: "Abrir",
+      steps: {
+        agency: { title: "Preencha os dados da sua agência", desc: "O nome comercial, a morada, o telefone e as menções legais constam dos seus contratos, recibos e notificações. Adicione o IBAN: os seus inquilinos veem-no quando pagam por transferência." },
+        import: { title: "Importe os seus dados existentes", desc: "Descarregue o modelo CSV, preencha-o a partir da sua folha de cálculo e carregue-o. Uma pré-visualização linha a linha mostra erros e duplicados antes de qualquer gravação. Importe por esta ordem: imóveis, inquilinos e contratos." },
+        records: { title: "Complete à mão o que falta", desc: "Adicione um imóvel, um inquilino ou um proprietário um a um, com fotografias, contactos e documento de identificação." },
+        contract: { title: "Crie um contrato", desc: "Escolha o imóvel e o inquilino, o tipo de contrato, a renda, a caução e o dia de vencimento. Adicione fiadores e coinquilinos se necessário e faça o inquilino assinar online." },
+        access: { title: "Abra o acesso aos seus inquilinos e proprietários", desc: "Na ficha de um inquilino, crie o seu acesso ao portal. Na ficha de um proprietário, envie-lhe o convite: acompanhará as suas rendas e o relatório de gestão." },
+        invoices: { title: "Acompanhe as suas rendas", desc: "As faturas mensais são geradas em cada vencimento. Registe os pagamentos recebidos, envie lembretes e descarregue os recibos." },
+        reminders: { title: "Ative os lembretes automáticos", desc: "Nas definições da agência, marque o envio automático: cada renda em atraso recebe no máximo três lembretes por email." },
+        plan: { title: "Escolha o seu plano", desc: "O seu período experimental gratuito dura 15 dias. Compare os planos e pague por cartão, Mobile Money ou transferência quando estiver pronto." },
       },
     },
     activityLog: {

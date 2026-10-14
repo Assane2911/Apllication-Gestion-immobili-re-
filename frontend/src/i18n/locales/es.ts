@@ -116,6 +116,7 @@ const es: TranslationSchema = {
       agency: "Identidad de la agencia: datos, logotipo y menciones de los recibos.",
       subscription: "Su plan, sus facturas y el estado de su prueba.",
       referral: "Tu código de referido y tus referidos.",
+      guide: "Ocho pasos para empezar: de los datos de su agencia al primer alquiler cobrado.",
     },
     manager: {
       dashboard: "Panel de control",
@@ -138,6 +139,7 @@ const es: TranslationSchema = {
       agency: "Mi Agencia",
       subscription: "Mi Suscripción",
       referral: "Referidos",
+      guide: "Guía de inicio",
     },
     tipsTenant: {
       home: "Su contrato, sus documentos y las actas pendientes de firma.",
@@ -1478,6 +1480,21 @@ const es: TranslationSchema = {
         trade: "Oficio",
         phone: "Teléfono",
         email: "Correo",
+      },
+    },
+    guide: {
+      title: "Guía de inicio",
+      subtitle: "Ocho pasos, en orden, para pasar de una cuenta vacía a sus primeros alquileres controlados. Cada paso abre la página correspondiente.",
+      open: "Abrir",
+      steps: {
+        agency: { title: "Complete los datos de su agencia", desc: "El nombre comercial, la dirección, el teléfono y los avisos legales aparecen en sus contratos, recibos y requerimientos. Añada el IBAN: sus inquilinos lo ven cuando pagan por transferencia." },
+        import: { title: "Importe sus datos existentes", desc: "Descargue la plantilla CSV, rellénela desde su hoja de cálculo y súbala. Una vista previa línea por línea muestra errores y duplicados antes de escribir nada. Importe en este orden: inmuebles, inquilinos y contratos." },
+        records: { title: "Añada a mano lo que falte", desc: "Añada un inmueble, un inquilino o un propietario uno por uno, con sus fotos, sus datos de contacto y su documento de identidad." },
+        contract: { title: "Cree un contrato", desc: "Elija el inmueble y el inquilino, el tipo de contrato, el alquiler, la fianza y el día de vencimiento. Añada avalistas y coinquilinos si hace falta y haga firmar al inquilino en línea." },
+        access: { title: "Abra el acceso a sus inquilinos y propietarios", desc: "Desde la ficha de un inquilino, cree su acceso al portal. Desde la ficha de un propietario, envíele su invitación: seguirá sus alquileres y su informe de gestión." },
+        invoices: { title: "Controle sus alquileres", desc: "Las facturas mensuales se generan en cada vencimiento. Registre los pagos recibidos, envíe recordatorios y descargue los recibos." },
+        reminders: { title: "Active los recordatorios automáticos", desc: "En los ajustes de la agencia, marque el envío automático: cada alquiler impagado recibe como máximo tres recordatorios por email." },
+        plan: { title: "Elija su plan", desc: "Su prueba gratuita dura 15 días. Compare los planes y pague con tarjeta, Mobile Money o transferencia cuando esté listo." },
       },
     },
     activityLog: {

@@ -1,13 +1,14 @@
 import {
+  BookOpen,
   Briefcase,
   Building2,
   ClipboardCheck,
   CreditCard,
   FileText,
+  FileUp,
   Gem,
   Gift,
   HardHat,
-  FileUp,
   History,
   Home,
   LayoutDashboard,
@@ -40,6 +41,7 @@ import BoutonSuggestion from "./BoutonSuggestion";
 
 const navItems = [
   { to: "/dashboard", key: "dashboard", icon: LayoutDashboard },
+  { to: "/guide-demarrage", key: "guide", icon: BookOpen },
   { to: "/properties", key: "properties", icon: Home },
   { to: "/tenants", key: "tenants", icon: Users },
   { to: "/proprietaires", key: "owners", icon: Briefcase },

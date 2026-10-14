@@ -116,6 +116,7 @@ const en: TranslationSchema = {
       agency: "Agency identity: details, logo and the wording on receipts.",
       subscription: "Your plan, your invoices and the state of your trial.",
       referral: "Your referral code and your referred signups.",
+      guide: "Eight steps to get started: from your agency details to your first rent collected.",
     },
     manager: {
       dashboard: "Dashboard",
@@ -138,6 +139,7 @@ const en: TranslationSchema = {
       agency: "My Agency",
       subscription: "My Subscription",
       referral: "Referrals",
+      guide: "Getting started",
     },
     tipsTenant: {
       home: "Your lease, your documents and the reports awaiting your signature.",
@@ -1476,6 +1478,21 @@ const en: TranslationSchema = {
         trade: "Trade",
         phone: "Phone",
         email: "Email",
+      },
+    },
+    guide: {
+      title: "Getting started guide",
+      subtitle: "Eight steps, in order, to go from an empty account to your first rents being tracked. Each step opens the relevant page.",
+      open: "Open",
+      steps: {
+        agency: { title: "Fill in your agency details", desc: "Trading name, address, phone and legal notices appear on your leases, receipts and formal notices. Add your IBAN: your tenants see it when they pay by bank transfer." },
+        import: { title: "Import your existing data", desc: "Download the CSV template, fill it in from your spreadsheet, then upload it. A line-by-line preview shows errors and duplicates before anything is written. Import in this order: properties, then tenants, then leases." },
+        records: { title: "Add what is missing by hand", desc: "Add a property, a tenant or an owner one at a time, with photos, contact details and ID document." },
+        contract: { title: "Create a lease", desc: "Choose the property and the tenant, the lease type, the rent, the security deposit and the due day. Add guarantors and co-tenants if needed, then have the tenant sign online." },
+        access: { title: "Open access for your tenants and owners", desc: "From a tenant's record, create their portal access. From an owner's record, send their invitation: they will follow their rents and their management report." },
+        invoices: { title: "Track your rents", desc: "Monthly invoices are generated on each due date. Record the payments received, send reminders and download receipts." },
+        reminders: { title: "Turn on automatic reminders", desc: "In the agency settings, tick automatic sending: each unpaid rent receives at most three email reminders." },
+        plan: { title: "Choose your plan", desc: "Your free trial lasts 15 days. Compare the plans and pay by card, Mobile Money or bank transfer when you are ready." },
       },
     },
     activityLog: {
