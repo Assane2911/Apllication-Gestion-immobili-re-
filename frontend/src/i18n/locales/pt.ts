@@ -469,7 +469,7 @@ const pt: TranslationSchema = {
         desc: "Para empresas de gestão e grandes carteiras de imóveis.",
         features: [
           "Imóveis ilimitados",
-          "Suporte prioritário",
+          "Suporte prioritário, resposta em um dia útil",
           "Múltiplos utilizadores & gestores",
           "Exportação contabilística automatizada",
         ],

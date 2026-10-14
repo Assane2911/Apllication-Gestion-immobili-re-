@@ -53,8 +53,8 @@ export default function CGUPage() {
               électronique, suivi de rentabilité, marque blanche, messagerie.
             </>,
             <>
-              <strong className="text-slate-100">Entreprise</strong> — biens illimités, support prioritaire,
-              multi-utilisateurs, export comptable.
+              <strong className="text-slate-100">Entreprise</strong> — biens illimités, support prioritaire (réponse
+              sous un jour ouvré), multi-utilisateurs, export comptable.
             </>,
           ]}
         />
