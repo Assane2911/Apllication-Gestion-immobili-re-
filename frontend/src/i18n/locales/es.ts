@@ -2,6 +2,8 @@ import type { TranslationSchema } from "./fr";
 
 const es: TranslationSchema = {
   common: {
+    // Noms des formules : un seul nom par formule, partout dans l'interface.
+    plans: { STARTER: "Starter", PRO: "Profesional", ENTERPRISE: "Agencia y Multicuentas" },
     tips: {
       logout: "Cierra su sesión en este dispositivo.",
     },
@@ -454,7 +456,7 @@ const es: TranslationSchema = {
         cta: "Comenzar la prueba de 15 días",
       },
       pro: {
-        name: "Pro Agencia",
+        name: "Profesional",
         badge: "Recomendado",
         desc: "Para agencias y gestores en crecimiento.",
         features: [
@@ -467,7 +469,7 @@ const es: TranslationSchema = {
         cta: "Comenzar la prueba gratuita de 15 días",
       },
       enterprise: {
-        name: "Empresa",
+        name: "Agencia y Multicuentas",
         desc: "Para administradoras de fincas y grandes carteras.",
         features: [
           "Propiedades ilimitadas",
@@ -705,7 +707,7 @@ const es: TranslationSchema = {
       lastDay: "¡Último día de prueba!",
       oneDayLeft: "Te queda 1 día de prueba",
       daysLeft: "Te quedan {{count}} días de prueba gratuita",
-      trialDesc: "Disfruta de todas las funcionalidades Pro sin compromiso y sigue la guía de inicio del menú para configurar tu agencia. Puedes activar tu suscripción en cualquier momento.",
+      trialDesc: "Disfruta de todas las funcionalidades del plan Profesional sin compromiso y sigue la guía de inicio del menú para configurar tu agencia. Puedes activar tu suscripción en cualquier momento.",
       chooseOfferCta: "Elegir mi plan",
       activePlan: "Suscripción <1>Plan {{plan}}</1> activa",
       manageSubscription: "Gestionar mi suscripción",
@@ -1524,7 +1526,7 @@ const es: TranslationSchema = {
       success: "¡Configuración de la agencia actualizada con éxito! Tus próximos recibos incluirán esta información.",
       overdue: {
         title: "Recordatorios automáticos de impagos",
-        hint: "Desactivados por defecto. Una vez activados, cada alquiler impagado recibe como máximo tres recordatorios por email (titular y coinquilinos), y por WhatsApp con la fórmula Pro si la plantilla de recordatorio está configurada; pasados 90 días de retraso, ningún recordatorio automático más: la continuación le corresponde.",
+        hint: "Desactivados por defecto. Una vez activados, cada alquiler impagado recibe como máximo tres recordatorios por email (titular y coinquilinos), y por WhatsApp con la fórmula Profesional si la plantilla de recordatorio está configurada; pasados 90 días de retraso, ningún recordatorio automático más: la continuación le corresponde.",
         enabled: "Enviar los recordatorios automáticamente",
         grace: "Periodo de gracia tras el vencimiento (días)",
         interval: "Días entre dos recordatorios",
@@ -1592,7 +1594,7 @@ const es: TranslationSchema = {
       team: {
         title: "Mi equipo",
         description: "Invita a colaboradores para que accedan a los mismos inmuebles, inquilinos y contratos que tú.",
-        upsell: "Solo disponible en la formula Empresa.",
+        upsell: "Solo disponible en la fórmula Agencia y Multicuentas.",
         upsellCta: "Ver las formulas →",
         emailLabel: "Email del colaborador",
         emailPlaceholder: "colaborador@ejemplo.com",
@@ -1915,8 +1917,8 @@ const es: TranslationSchema = {
       },
       plans: {
         STARTER: "Starter",
-        PRO: "Pro",
-        ENTERPRISE: "Empresa",
+        PRO: "Profesional",
+        ENTERPRISE: "Agencia y Multicuentas",
       },
       statuses: {
         SUSPENDED: "Suspendido",

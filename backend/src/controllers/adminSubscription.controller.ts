@@ -5,10 +5,11 @@ import { db, Transaction } from "../db/client";
 import { users } from "../db/schema";
 import { logAdminAction } from "../services/adminAudit.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { NOM_FORMULE } from "../utils/formules";
 
 const JOUR_MS = 86_400_000;
 
-const PLAN_LABEL = { STARTER: "Starter", PRO: "Pro", ENTERPRISE: "Entreprise" } as const;
+const PLAN_LABEL = NOM_FORMULE;
 
 const motifSchema = z.string().trim().min(3, "Indiquez le motif de l'ajustement").max(500);
 

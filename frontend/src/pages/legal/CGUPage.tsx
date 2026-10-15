@@ -49,11 +49,11 @@ export default function CGUPage() {
               <strong className="text-slate-100">Starter</strong> — jusqu'à 5 biens gérés.
             </>,
             <>
-              <strong className="text-slate-100">Pro Agence</strong> — jusqu'à 25 biens gérés, signature
+              <strong className="text-slate-100">Professionnel</strong> — jusqu'à 25 biens gérés, signature
               électronique, suivi de rentabilité, marque blanche, messagerie.
             </>,
             <>
-              <strong className="text-slate-100">Entreprise</strong> — biens illimités, support prioritaire (réponse
+              <strong className="text-slate-100">Agence &amp; Multi-Comptes</strong> — biens illimités, support prioritaire (réponse
               sous un jour ouvré), accompagnement à la prise en main (guide de démarrage pas à pas et modèles de fichiers),
               multi-utilisateurs, export comptable.
             </>,
@@ -61,7 +61,7 @@ export default function CGUPage() {
         />
         <p>
           Chaque nouvelle inscription bénéficie d'une période d'essai gratuite de 15 jours, sans engagement et
-          sans carte bancaire requise, donnant accès à l'ensemble des fonctionnalités de la formule Pro et au
+          sans carte bancaire requise, donnant accès à l'ensemble des fonctionnalités de la formule Professionnel et au
           guide de démarrage de l'application. À l'issue de cette période, l'accès au Service est suspendu
           jusqu'à la souscription d'une formule payante.
         </p>

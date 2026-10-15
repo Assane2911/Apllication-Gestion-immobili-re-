@@ -213,7 +213,7 @@ describe("POST /api/inspections/:id/sign", () => {
       .send({ signatureDataUrl: "data:image/png;base64,fake" });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Pro Agence");
+    expect(res.body.error).toContain("Professionnel");
   });
 
   it("laisse le locataire signer même si le gestionnaire est en formule Starter", async () => {

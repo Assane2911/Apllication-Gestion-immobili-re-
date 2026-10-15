@@ -99,3 +99,42 @@ describe("guide de démarrage annoncé dans l'essai", () => {
     expect(lire(arbre, "components.trialBanner.trialDesc")).toMatch(motsCles[nom]);
   });
 });
+
+/**
+ * Une formule n'a qu'un nom. Elle s'appelait « Pro Agence » sur l'accueil et dans les CGU, « Pro » dans
+ * l'administration, « Entreprise » ailleurs, et l'interface affichait même l'identifiant brut (« Formule
+ * ENTERPRISE Active ») : un client pouvait y voir quatre offres. Les noms viennent de common.plans ; l'accueil et
+ * l'administration doivent dire la même chose, et les anciens noms ne doivent plus réapparaître.
+ */
+describe("noms des formules", () => {
+  const attendus: Record<string, [string, string, string]> = {
+    fr: ["Starter", "Professionnel", "Agence & Multi-Comptes"],
+    en: ["Starter", "Professional", "Agency & Multi-Accounts"],
+    es: ["Starter", "Profesional", "Agencia y Multicuentas"],
+    pt: ["Starter", "Profissional", "Agência e Multicontas"],
+  };
+  const anciens: Record<string, RegExp> = {
+    fr: /Pro Agence|formule Entreprise|formule Pro\b|fonctionnalités Pro\b/,
+    en: /Pro Agency|Enterprise plan|Pro plan|Pro features|Professional\/Enterprise/,
+    es: /Pro Agencia|(?:formula|fórmula|plan) Empresa|fórmula Pro\b|funcionalidades Pro\b/,
+    pt: /Pro Agência|plano Empresa|Empresarial|plano Pro\b|funcionalidades Pro\b/,
+  };
+  const tousLesTextes = (arbre: Arbre): string[] =>
+    Object.values(arbre).flatMap((v) => (typeof v === "string" ? [v] : tousLesTextes(v)));
+  const toutes: Array<[string, Arbre]> = [["fr", fr as unknown as Arbre], ...langues];
+  const lire = (arbre: Arbre, chemin: string): unknown =>
+    chemin.split(".").reduce<unknown>((noeud, cle) => (noeud as Record<string, unknown>)[cle], arbre);
+
+  it.each(toutes)("%s : les trois formules portent le même nom dans toute l'interface", (nom, arbre) => {
+    const [starter, pro, agence] = attendus[nom];
+    expect(lire(arbre, "common.plans")).toEqual({ STARTER: starter, PRO: pro, ENTERPRISE: agence });
+    expect(lire(arbre, "admin.managers.plans")).toEqual({ STARTER: starter, PRO: pro, ENTERPRISE: agence });
+    const cartesAccueil = lire(arbre, "landing.pricing") as Record<string, unknown>;
+    const nomsAccueil = tousLesTextes(cartesAccueil as unknown as Arbre);
+    for (const nomFormule of [starter, pro, agence]) expect(nomsAccueil).toContain(nomFormule);
+  });
+
+  it.each(toutes)("%s : aucun ancien nom de formule ne subsiste dans les textes", (nom, arbre) => {
+    for (const texte of tousLesTextes(arbre)) expect(texte, texte).not.toMatch(anciens[nom]);
+  });
+});

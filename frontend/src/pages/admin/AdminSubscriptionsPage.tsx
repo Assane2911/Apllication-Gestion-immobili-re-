@@ -119,7 +119,7 @@ export default function AdminSubscriptionsPage() {
                 {rows.map((row) => (
                   <tr key={row.id} className="text-slate-700 dark:text-slate-300">
                     <td className="py-3 font-semibold">{row.managerEmail}</td>
-                    <td className="py-3">{row.plan}</td>
+                    <td className="py-3">{t(`common.plans.${row.plan}`, { defaultValue: row.plan })}</td>
                     <td className="py-3">
                       {row.billingCycle === "ANNUAL" ? t("admin.subscriptions.annual") : t("admin.subscriptions.monthly")}
                     </td>

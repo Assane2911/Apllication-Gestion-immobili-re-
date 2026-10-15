@@ -8,6 +8,7 @@ import { calculerPeriodeActivation } from "../services/subscriptionPeriod.servic
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { computeSubscriptionInfo } from "./auth.controller";
+import { NOM_FORMULE } from "../utils/formules";
 
 /** Devise de repli, pour une devise utilisateur qui n'est pas tarifée. */
 export const DEVISE_PAR_DEFAUT = "EUR";
@@ -121,7 +122,7 @@ export function tarifPourDevise(planId: string, currency: string) {
 export const SUBSCRIPTION_PLANS = [
   {
     id: "STARTER",
-    name: "Starter",
+    name: NOM_FORMULE.STARTER,
     description: "Idéal pour les propriétaires indépendants et petites locations.",
     maxProperties: 5,
     features: [
@@ -136,12 +137,12 @@ export const SUBSCRIPTION_PLANS = [
   },
   {
     id: "PRO",
-    name: "Professionnel",
+    name: NOM_FORMULE.PRO,
     popular: true,
     description: "Pour les gestionnaires et agences en pleine croissance.",
     maxProperties: 25,
     features: [
-      "Tout ce qui est inclus dans Starter",
+      `Tout ce qui est inclus dans ${NOM_FORMULE.STARTER}`,
       "Jusqu'à 25 biens immobiliers",
       "Suivi des dépenses, y compris récurrentes",
       "Alertes de fin de bail & renouvellement",
@@ -151,11 +152,11 @@ export const SUBSCRIPTION_PLANS = [
   },
   {
     id: "ENTERPRISE",
-    name: "Agence & Multi-Comptes",
+    name: NOM_FORMULE.ENTERPRISE,
     description: "Pour les cabinets de gestion immobilière et syndics.",
     maxProperties: "Illimité",
     features: [
-      "Tout ce qui est inclus dans Professionnel",
+      `Tout ce qui est inclus dans ${NOM_FORMULE.PRO}`,
       "Biens immobiliers illimités",
       "Gestion multi-utilisateurs & collaborateurs",
       "Export comptable avancé (grand livre, FEC, SYSCOHADA)",

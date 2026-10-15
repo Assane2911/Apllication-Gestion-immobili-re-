@@ -11,6 +11,7 @@ import { authHeader, createManager, createPlatformSubscription, createProperty, 
   createPortalUser,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+import { NOM_FORMULE } from "../utils/formules";
 import {
   DEVISE_PAR_DEFAUT,
   SUBSCRIPTION_PLANS,
@@ -167,6 +168,11 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     const lignes = SUBSCRIPTION_PLANS.flatMap((plan) => plan.features);
     expect(new Set(lignes).size).toBe(lignes.length);
     for (const ligne of lignes) expect(ligne, ligne).not.toMatch(/\.\.\.|…/);
+  });
+
+  it("une formule n'a qu'un nom : celui de la liste est celui de la source unique, sans « Pro », « Pro Agence » ni « Entreprise »", () => {
+    expect(SUBSCRIPTION_PLANS.map((p) => p.name)).toEqual(["Starter", "Professionnel", "Agence & Multi-Comptes"]);
+    expect(SUBSCRIPTION_PLANS.map((p) => p.name)).toEqual(Object.values(NOM_FORMULE));
   });
 
   it("n'annonce pas d'export Excel : les exports comptables sont des fichiers CSV ou texte", () => {

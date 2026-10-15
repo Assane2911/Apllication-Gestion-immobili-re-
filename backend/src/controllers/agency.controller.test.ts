@@ -140,7 +140,7 @@ describe("PUT /api/agency", () => {
       .send({ agencyName: "Agence Indépendante", logoUrl: "https://exemple.test/logo.png" });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Pro Agence");
+    expect(res.body.error).toContain("Professionnel");
   });
 
   it("autorise un gestionnaire Pro à ajouter un logo", async () => {

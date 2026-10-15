@@ -9,6 +9,7 @@ import { ApiError } from "../utils/asyncHandler";
 import { AUTH_COOKIE_NAME, CSRF_HEADER_NAME } from "../utils/authCookie";
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { type RoleEquipe, roleEquipeEffectif, verifierAutorisationEquipe } from "../utils/rolesEquipe";
+import { NOM_FORMULE } from "../utils/formules";
 
 export interface AuthPayload {
   userId: string;
@@ -226,7 +227,7 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
 }
 
 const PLAN_RANK: Record<string, number> = { STARTER: 0, PRO: 1, ENTERPRISE: 2 };
-const PLAN_LABEL: Record<string, string> = { PRO: "Pro Agence", ENTERPRISE: "Entreprise" };
+const PLAN_LABEL: Record<string, string> = { PRO: NOM_FORMULE.PRO, ENTERPRISE: NOM_FORMULE.ENTERPRISE };
 
 /**
  * Vérifie qu'un gestionnaire dispose au moins de la formule demandée (audit

@@ -2,6 +2,8 @@ import type { TranslationSchema } from "./fr";
 
 const en: TranslationSchema = {
   common: {
+    // Noms des formules : un seul nom par formule, partout dans l'interface.
+    plans: { STARTER: "Starter", PRO: "Professional", ENTERPRISE: "Agency & Multi-Accounts" },
     tips: {
       logout: "Closes your session on this device.",
     },
@@ -454,7 +456,7 @@ const en: TranslationSchema = {
         cta: "Start the 15-day trial",
       },
       pro: {
-        name: "Pro Agency",
+        name: "Professional",
         badge: "Recommended",
         desc: "For growing agencies and property managers.",
         features: [
@@ -467,7 +469,7 @@ const en: TranslationSchema = {
         cta: "Start the free 15-day trial",
       },
       enterprise: {
-        name: "Enterprise",
+        name: "Agency & Multi-Accounts",
         desc: "For management firms and large portfolios.",
         features: [
           "Unlimited properties",
@@ -705,7 +707,7 @@ const en: TranslationSchema = {
       lastDay: "Last day of your trial!",
       oneDayLeft: "1 day left in your trial",
       daysLeft: "{{count}} days left in your free trial",
-      trialDesc: "Enjoy all Pro features with no commitment, and follow the getting started guide in the menu to set up your agency. You can activate your subscription at any time.",
+      trialDesc: "Enjoy all Professional features with no commitment, and follow the getting started guide in the menu to set up your agency. You can activate your subscription at any time.",
       chooseOfferCta: "Choose my plan",
       activePlan: "Active <1>{{plan}} Plan</1> subscription",
       manageSubscription: "Manage my subscription",
@@ -1522,7 +1524,7 @@ const en: TranslationSchema = {
       success: "Agency settings updated successfully! Your future receipts will include this information.",
       overdue: {
         title: "Automatic overdue rent reminders",
-        hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants), plus WhatsApp on the Pro plan when the reminder template is configured; after 90 days late, no more automatic reminders: it is up to you.",
+        hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants), plus WhatsApp on the Professional plan when the reminder template is configured; after 90 days late, no more automatic reminders: it is up to you.",
         enabled: "Send reminders automatically",
         grace: "Grace period after the due date (days)",
         interval: "Days between two reminders",
@@ -1590,7 +1592,7 @@ const en: TranslationSchema = {
       team: {
         title: "My team",
         description: "Invite collaborators to access the same properties, tenants and contracts as you.",
-        upsell: "Enterprise plan only.",
+        upsell: "Agency & Multi-Accounts plan only.",
         upsellCta: "See plans →",
         emailLabel: "Collaborator's email",
         emailPlaceholder: "collaborator@example.com",
@@ -1913,8 +1915,8 @@ const en: TranslationSchema = {
       },
       plans: {
         STARTER: "Starter",
-        PRO: "Pro",
-        ENTERPRISE: "Enterprise",
+        PRO: "Professional",
+        ENTERPRISE: "Agency & Multi-Accounts",
       },
       statuses: {
         SUSPENDED: "Suspended",

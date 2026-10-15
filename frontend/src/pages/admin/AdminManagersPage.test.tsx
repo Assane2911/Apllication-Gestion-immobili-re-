@@ -56,7 +56,7 @@ describe("AdminManagersPage", () => {
     // Les libellés « Pro » / « Actif » existent aussi dans les listes de filtres :
     // on cible donc le tableau.
     const tableau = within(screen.getByRole("table"));
-    expect(tableau.getByText("Pro")).toBeInTheDocument();
+    expect(tableau.getByText("Professionnel")).toBeInTheDocument();
     expect(tableau.getByText("Actif")).toBeInTheDocument();
     expect(tableau.getByText("3 bien(s) · 2 locataire(s)")).toBeInTheDocument();
   });

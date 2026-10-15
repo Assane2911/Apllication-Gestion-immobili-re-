@@ -49,7 +49,7 @@ describe("AdminSubscriptionsPage", () => {
     );
 
     await waitFor(() => expect(screen.getByText("agence@test.local")).toBeInTheDocument());
-    expect(screen.getByText("PRO")).toBeInTheDocument();
+    expect(screen.getByText("Professionnel")).toBeInTheDocument();
     expect(screen.getByText("29 €")).toBeInTheDocument();
     expect(screen.getByText("VIR-2026-001")).toBeInTheDocument();
   });
