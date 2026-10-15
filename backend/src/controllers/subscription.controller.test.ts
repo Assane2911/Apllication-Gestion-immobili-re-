@@ -132,8 +132,9 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
   });
 
   it("chiffre le support prioritaire de la même façon partout : réponse sous un jour ouvré", () => {
+    // Une seule fois : la formule Agence reprend « tout ce qui est inclus dans Professionnel », support compris.
     const lignes = SUBSCRIPTION_PLANS.flatMap((plan) => plan.features).filter((f) => /^Support prioritaire/i.test(f));
-    expect(lignes).toHaveLength(2);
+    expect(lignes).toHaveLength(1);
     for (const ligne of lignes) expect(ligne).toContain("réponse sous un jour ouvré");
   });
 
@@ -141,6 +142,31 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     const entreprise = SUBSCRIPTION_PLANS.find((p) => p.id === "ENTERPRISE")!;
     const ligne = entreprise.features.find((f) => /^Accompagnement/i.test(f));
     expect(ligne).toBe("Accompagnement à la prise en main : guide de démarrage pas à pas et modèles de fichiers");
+  });
+
+  it("chaque formule reprend la précédente par son vrai nom, pour qu'aucune ne paraisse plus pauvre que celle du dessous", () => {
+    const [starter, pro, agence] = SUBSCRIPTION_PLANS;
+    expect(pro.features[0]).toBe(`Tout ce qui est inclus dans ${starter.name}`);
+    expect(agence.features[0]).toBe(`Tout ce qui est inclus dans ${pro.name}`);
+  });
+
+  it("chaque formule annonce son plafond de biens, y compris l'illimité", () => {
+    const [starter, pro, agence] = SUBSCRIPTION_PLANS;
+    expect(starter.features.join(" ")).toMatch(/Jusqu'à 5 biens/);
+    expect(pro.features.join(" ")).toMatch(/Jusqu'à 25 biens/);
+    expect(agence.features.join(" ")).toMatch(/illimités/);
+  });
+
+  it("annonce le suivi des dépenses là où il est réellement ouvert, à partir de Professionnel", () => {
+    const [starter, pro] = SUBSCRIPTION_PLANS;
+    expect(starter.features.join(" ")).not.toMatch(/dépenses/i);
+    expect(pro.features.join(" ")).toMatch(/Suivi des dépenses/);
+  });
+
+  it("n'affiche aucune ligne en double d'une formule à l'autre ni aucune liste ouverte par des points de suspension", () => {
+    const lignes = SUBSCRIPTION_PLANS.flatMap((plan) => plan.features);
+    expect(new Set(lignes).size).toBe(lignes.length);
+    for (const ligne of lignes) expect(ligne, ligne).not.toMatch(/\.\.\.|…/);
   });
 
   it("n'annonce pas d'export Excel : les exports comptables sont des fichiers CSV ou texte", () => {

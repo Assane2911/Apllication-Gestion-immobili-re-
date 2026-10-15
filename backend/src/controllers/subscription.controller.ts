@@ -128,7 +128,7 @@ export const SUBSCRIPTION_PLANS = [
       "Jusqu'à 5 biens immobiliers",
       "Émission automatique des quittances",
       "Portail locataire & déclarations",
-      "Paiements en ligne & PayDunya (Orange Money, Wave...)",
+      "Paiements en ligne : carte et Mobile Money (Orange Money, Wave, Free Money, MTN)",
       "Suivi des incidents avec photos",
       "Rappels par email",
       "Support standard par email",
@@ -141,7 +141,9 @@ export const SUBSCRIPTION_PLANS = [
     description: "Pour les gestionnaires et agences en pleine croissance.",
     maxProperties: 25,
     features: [
+      "Tout ce qui est inclus dans Starter",
       "Jusqu'à 25 biens immobiliers",
+      "Suivi des dépenses, y compris récurrentes",
       "Alertes de fin de bail & renouvellement",
       "Rappels automatiques multi-canaux (email + WhatsApp)",
       "Support prioritaire : réponse sous un jour ouvré",
@@ -153,11 +155,11 @@ export const SUBSCRIPTION_PLANS = [
     description: "Pour les cabinets de gestion immobilière et syndics.",
     maxProperties: "Illimité",
     features: [
-      "Tout ce qui est inclus dans Pro",
+      "Tout ce qui est inclus dans Professionnel",
+      "Biens immobiliers illimités",
       "Gestion multi-utilisateurs & collaborateurs",
       "Export comptable avancé (grand livre, FEC, SYSCOHADA)",
       "Accompagnement à la prise en main : guide de démarrage pas à pas et modèles de fichiers",
-      "Support prioritaire : réponse sous un jour ouvré",
     ],
   },
 ];
