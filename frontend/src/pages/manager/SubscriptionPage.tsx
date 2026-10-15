@@ -36,8 +36,23 @@ interface PropertyUsage {
   exceeded: boolean;
 }
 
+/** Les lignes « Tout ce qui est inclus dans … » nomment la formule reprise, dans la langue de l'interface. */
+const FORMULE_REPRISE: Record<string, string> = { includesStarter: "STARTER", includesPro: "PRO" };
+
 export default function SubscriptionPage() {
   const { t, i18n } = useTranslation();
+
+  /** Ligne d'une carte de formule : traduite par sa clé ; le texte français du serveur reste le repli. */
+  function libelleLigne(plan: SubscriptionPlanDetail, idx: number): string {
+    const cle = plan.featureKeys?.[idx];
+    const texte = plan.features[idx];
+    if (!cle) return texte;
+    const reprise = FORMULE_REPRISE[cle];
+    return t(`manager.subscription.features.${cle}`, {
+      defaultValue: texte,
+      plan: reprise ? t(`common.plans.${reprise}`) : undefined,
+    });
+  }
   const { user, refreshUser } = useAuth();
   const { currency, formatMoney } = useCurrency();
   const [plans, setPlans] = useState<SubscriptionPlanDetail[]>([]);
@@ -391,7 +406,7 @@ export default function SubscriptionPage() {
 
               <div className="mb-4">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t(`common.plans.${plan.id}`, { defaultValue: plan.name })}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 min-h-[32px]">{plan.description}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 min-h-[32px]">{t(`manager.subscription.planDescriptions.${plan.id}`, { defaultValue: plan.description })}</p>
               </div>
 
               <div className="mb-6 flex items-baseline gap-1">
@@ -406,10 +421,10 @@ export default function SubscriptionPage() {
 
               <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-4">
                 <p className="font-semibold text-slate-900 dark:text-slate-100">{t("manager.subscription.includedInPlan")}</p>
-                {plan.features.map((feat, idx) => (
+                {plan.features.map((_feat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
                     <Check size={14} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
-                    <span>{feat}</span>
+                    <span>{libelleLigne(plan, idx)}</span>
                   </div>
                 ))}
               </div>

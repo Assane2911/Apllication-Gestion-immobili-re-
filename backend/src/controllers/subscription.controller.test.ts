@@ -175,6 +175,22 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     expect(SUBSCRIPTION_PLANS.map((p) => p.name)).toEqual(Object.values(NOM_FORMULE));
   });
 
+  it("chaque ligne de formule a une clé de traduction, unique, dans le même ordre que son texte", () => {
+    const toutes = SUBSCRIPTION_PLANS.flatMap((plan) => plan.featureKeys);
+    expect(new Set(toutes).size).toBe(toutes.length);
+    for (const plan of SUBSCRIPTION_PLANS) {
+      expect(plan.featureKeys).toHaveLength(plan.features.length);
+      for (const cle of plan.featureKeys) expect(cle).toMatch(/^[a-z][A-Za-z0-9]+$/);
+    }
+  });
+
+  it("ne présente pas WhatsApp comme déjà en service tant que le compte de production n'est pas ouvert", () => {
+    // À mettre à jour quand le compte WhatsApp Business réel est en place (voir env META_WHATSAPP_*).
+    const pro = SUBSCRIPTION_PLANS.find((p) => p.id === "PRO")!;
+    const ligne = pro.features.find((f) => /WhatsApp/.test(f))!;
+    expect(ligne).toContain("en cours de mise en service");
+  });
+
   it("n'annonce pas d'export Excel : les exports comptables sont des fichiers CSV ou texte", () => {
     const entreprise = SUBSCRIPTION_PLANS.find((p) => p.id === "ENTERPRISE")!;
     expect(entreprise.features.join(" ")).not.toMatch(/excel/i);
