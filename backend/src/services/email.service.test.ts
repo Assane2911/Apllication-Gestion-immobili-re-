@@ -188,6 +188,20 @@ describe("templates d'emails", () => {
     expect(html).toContain("Intervention prévue le");
   });
 
+  it("issueStatusUpdateEmail : donne l'heure d'intervention dans un fuseau explicite (UTC), pas dans celui du serveur", () => {
+    const { html } = issueStatusUpdateEmail({
+      tenantName: "Moussa Fall",
+      issueTitle: "Fuite d'eau",
+      propertyTitle: "Villa Almadies",
+      status: "IN_PROGRESS",
+      managerNote: null,
+      scheduledAt: new Date("2026-11-05T09:30:00.000Z"),
+      frontendUrl: "https://app.test",
+    });
+    // L'heure saisie par le gestionnaire est envoyée en UTC ; sans fuseau affiché, un locataire qui n'est pas à UTC la lirait comme son heure locale.
+    expect(html).toMatch(/5 novembre 2026 (à )?09:30 UTC/);
+  });
+
   it("issueStatusUpdateEmail : n'affiche aucun encart de rendez-vous sans date planifiée", () => {
     const { html } = issueStatusUpdateEmail({
       tenantName: "Moussa Fall",
