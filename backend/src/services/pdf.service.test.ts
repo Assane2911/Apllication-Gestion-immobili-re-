@@ -210,6 +210,29 @@ describe("generateLeaseHtml", () => {
     expect(html).not.toContain("Droit applicable");
   });
 
+  it("n'imprime pas de parenthèses vides quand l'agence n'a pas d'adresse", () => {
+    const html = generateLeaseHtml(contract, { agencyName: "Agence Teranga" });
+    expect(html).toContain("Agence Teranga");
+    expect(html).not.toContain("()");
+    expect(generateLeaseHtml(contract, agency)).toContain("Agence Teranga (12 Corniche Ouest, Dakar)");
+  });
+
+  it("dit « non précisé » quand un garant n'a pas de montant maximal, au lieu de se taire", () => {
+    const garant = { civility: null, firstName: "Ibrahima", lastName: "Fall", phone: "+221771234567", email: null, address: null };
+    const html = generateLeaseHtml(
+      { ...contract, guarantors: [{ ...garant, maxAmount: 3000000 }, { ...garant, firstName: "Moussa", maxAmount: null }] },
+      agency
+    );
+    expect(html).toContain("Ibrahima Fall");
+    expect(html).toMatch(/Ibrahima Fall[^<]*Montant maximal garanti : 3\s?000\s?000/);
+    expect(html).toMatch(/Moussa Fall[^<]*Montant maximal garanti : non précisé/);
+  });
+
+  it("empêche qu'un bloc de signature soit coupé entre deux pages à l'impression", () => {
+    const html = generateLeaseHtml(contract, agency);
+    expect(html).toMatch(/\.sig-block\s*\{[^}]*break-inside:\s*avoid/);
+  });
+
   it("imprime le droit applicable saisi par le gestionnaire, échappé", () => {
     const html = generateLeaseHtml({ ...contract, applicableLaw: "Droit sénégalais <b>COCC</b>" }, agency);
     expect(html).toContain("Droit applicable : Droit sénégalais &lt;b&gt;COCC&lt;/b&gt;");
