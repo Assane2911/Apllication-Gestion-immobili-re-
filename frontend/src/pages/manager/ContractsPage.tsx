@@ -9,6 +9,7 @@ import Pagination from "../../components/Pagination";
 import PaymentDayModal, { JOURS_ECHEANCE } from "../../components/PaymentDayModal";
 import CotenantsModal from "../../components/CotenantsModal";
 import GuarantorsModal from "../../components/GuarantorsModal";
+import { CLAUSE_CAUTION, clauseCautionIncomplete, insererClause } from "../../data/clauseCaution";
 import RentRevisionModal from "../../components/RentRevisionModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
@@ -233,8 +234,13 @@ export default function ContractsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+    // Le modèle de caution contient des passages à compléter : ils ne doivent jamais partir tels quels sur un bail.
+    if (clauseCautionIncomplete(form.terms)) {
+      setError(t("manager.contracts.clauseIncomplete"));
+      return;
+    }
+    setSaving(true);
     try {
       if (editingContract) {
         const corps = changementsDuContrat(formulaireDepuisContrat(editingContract), form);
@@ -496,7 +502,7 @@ export default function ContractsPage() {
               <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.terms")}</label>
               <textarea
                 id="contract-terms"
-                rows={4}
+                rows={form.terms.length > 300 ? 14 : 4}
                 maxLength={10000}
                 value={form.terms}
                 onChange={(e) => setForm({ ...form, terms: e.target.value })}
@@ -504,6 +510,15 @@ export default function ContractsPage() {
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
               />
               <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.termsHint")}</p>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, terms: insererClause(form.terms, CLAUSE_CAUTION) })}
+                aria-describedby="contract-terms-caution-hint"
+                className="mt-2 text-xs font-semibold text-brand-700 dark:text-brand-400 hover:underline"
+              >
+                {t("manager.contracts.fields.insertGuarantee")}
+              </button>
+              <p id="contract-terms-caution-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.insertGuaranteeHint")}</p>
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
