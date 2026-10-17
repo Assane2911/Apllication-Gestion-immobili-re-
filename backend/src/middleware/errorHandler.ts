@@ -44,7 +44,7 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   if (err instanceof multer.MulterError) {
     const message =
       err.code === "LIMIT_FILE_SIZE"
-        ? `Fichier trop volumineux (${req.originalUrl.split("?")[0].endsWith("/agency/logo") ? MAX_LOGO_SIZE_MB : MAX_UPLOAD_SIZE_MB} Mo maximum).`
+        ? `Fichier trop volumineux (${/\/agency\/(logo|stamp)$/.test(req.originalUrl.split("?")[0]) ? MAX_LOGO_SIZE_MB : MAX_UPLOAD_SIZE_MB} Mo maximum).`
         : "Envoi de fichier invalide.";
     return res.status(400).json({ error: message, code: err.code });
   }

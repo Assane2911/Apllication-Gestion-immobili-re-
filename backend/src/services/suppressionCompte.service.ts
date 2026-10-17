@@ -53,9 +53,9 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
       .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .where(eq(properties.managerId, user.id)),
-    // Le logo de l'agence vit dans le bucket PUBLIC : sans nettoyage, il resterait accessible par son adresse, sans plus
-    // aucune ligne en base pour le retrouver.
-    db.select({ logoUrl: agencySettings.logoUrl }).from(agencySettings).where(eq(agencySettings.userId, user.id)),
+    // Le logo et le tampon de l'agence vivent dans le bucket PUBLIC : sans nettoyage, ils resteraient accessibles par
+    // leur adresse, sans plus aucune ligne en base pour les retrouver.
+    db.select({ logoUrl: agencySettings.logoUrl, stampOrSignatureUrl: agencySettings.stampOrSignatureUrl }).from(agencySettings).where(eq(agencySettings.userId, user.id)),
   ]);
   const [{ collaborateurs }] = await db
     .select({ collaborateurs: sql<number>`count(*)::int` })
@@ -98,6 +98,7 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
 
   const cibles: Array<string | null | undefined> = [
     reglagesAgence?.logoUrl,
+    reglagesAgence?.stampOrSignatureUrl,
     ...managerProperties.map((p) => p.imageUrl),
     ...managerListings.map((l) => l.imageUrl),
     ...managerTenants.map((t) => t.idDocument),

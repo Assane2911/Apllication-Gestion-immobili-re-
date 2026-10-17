@@ -1,6 +1,8 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
+import { agencySettings } from "../db/schema";
+import { testDb } from "../test/setupTestDb";
 import {
   authHeader,
   createAdmin,
@@ -43,6 +45,23 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
     expect(res.status).toBe(200);
     expect(res.type).toContain("text/html");
     expect(res.text).toContain(tenant.firstName);
+  });
+
+  it("imprime le tampon de l'agence sur la quittance en ligne, seulement s'il vient du stockage de l'application", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, { status: "PAID", paidAt: new Date() });
+    const lire = async () =>
+      (await request(app).get(`/api/documents/receipt/${invoice.id}`).set(authHeader(tokenFor(manager)))).text;
+
+    const URL_TAMPON = "https://placeholder.supabase.co/storage/v1/object/public/public-uploads/agency/tampon.png";
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence", stampOrSignatureUrl: URL_TAMPON });
+    expect(await lire()).toContain(`<img class="agency-stamp" src="${URL_TAMPON}"`);
+
+    await testDb.update(agencySettings).set({ stampOrSignatureUrl: "https://tiers.example/pixel.png" });
+    expect(await lire()).not.toContain('<img class="agency-stamp"');
   });
 
   it("affiche le moyen de paiement en clair sur la quittance en ligne, comme sur celle du courriel", async () => {

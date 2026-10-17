@@ -578,3 +578,84 @@ describe("AgencySettingsPage — logo de l'agence", () => {
     expect(mockedApi.put.mock.calls[0][1]).not.toHaveProperty("logoUrl");
   });
 });
+
+describe("AgencySettingsPage — tampon de l'agence", () => {
+  const URL_TAMPON = "https://exemple.supabase.co/storage/v1/object/public/public-uploads/agency/tampon.png";
+  const URL_LOGO = "https://exemple.supabase.co/storage/v1/object/public/public-uploads/agency/logo.png";
+  const png = () => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "tampon.png", { type: "image/png" });
+
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    mockedApi.delete.mockReset();
+    mockedApi.put.mockReset();
+    mockedApi.get.mockResolvedValue({ data: echeancesVides() });
+    localStorage.clear();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+
+  it("propose d'en choisir un quand l'agence n'en a pas, sans aperçu, à côté du logo", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Choisir un tampon")).toBeInTheDocument());
+    expect(screen.getByText("Choisir un logo")).toBeInTheDocument();
+    expect(screen.queryByAltText("Tampon actuel de l'agence")).not.toBeInTheDocument();
+    expect(screen.queryByText("Retirer le tampon")).not.toBeInTheDocument();
+  });
+
+  it("envoie le fichier choisi à l'API des tampons, puis affiche l'aperçu sans toucher au logo", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ logoUrl: URL_LOGO }) });
+    mockedApi.post.mockResolvedValueOnce({ data: settings({ logoUrl: URL_LOGO, stampOrSignatureUrl: URL_TAMPON }) });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Choisir un tampon")).toBeInTheDocument());
+
+    await userEvent.setup().upload(screen.getByLabelText("Choisir un tampon"), png());
+
+    await waitFor(() => expect(screen.getByAltText("Tampon actuel de l'agence")).toHaveAttribute("src", URL_TAMPON));
+    expect(mockedApi.post).toHaveBeenCalledWith("/agency/stamp", expect.any(FormData));
+    const envoye = mockedApi.post.mock.calls[0][1] as FormData;
+    expect((envoye.get("stamp") as File).name).toBe("tampon.png");
+    expect(screen.getByText("Tampon enregistré.")).toBeInTheDocument();
+    expect(screen.getByAltText("Logo actuel de l'agence")).toHaveAttribute("src", URL_LOGO);
+  });
+
+  it("refuse sur place un fichier qui n'est pas PNG ou JPEG, ou qui dépasse 2 Mo, sans rien envoyer", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Choisir un tampon")).toBeInTheDocument());
+    const user = userEvent.setup({ applyAccept: false });
+
+    await user.upload(screen.getByLabelText("Choisir un tampon"), new File(["<svg/>"], "t.svg", { type: "image/svg+xml" }));
+    expect(await screen.findByText("Le tampon doit être une image PNG ou JPEG.")).toBeInTheDocument();
+
+    await user.upload(screen.getByLabelText("Choisir un tampon"), new File([new Uint8Array(2 * 1024 * 1024 + 1)], "gros.png", { type: "image/png" }));
+    expect(await screen.findByText("Ce fichier dépasse 2 Mo.")).toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("retire le tampon après confirmation, sans toucher au logo", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ logoUrl: URL_LOGO, stampOrSignatureUrl: URL_TAMPON }) });
+    mockedApi.delete.mockResolvedValueOnce({ data: undefined });
+    renderPage();
+    await waitFor(() => expect(screen.getByAltText("Tampon actuel de l'agence")).toBeInTheDocument());
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Retirer le tampon" }));
+
+    await waitFor(() => expect(screen.queryByAltText("Tampon actuel de l'agence")).not.toBeInTheDocument());
+    expect(mockedApi.delete).toHaveBeenCalledWith("/agency/stamp");
+    expect(screen.getByAltText("Logo actuel de l'agence")).toBeInTheDocument();
+  });
+
+  it("ne renvoie jamais le tampon avec le formulaire : l'enregistrement des coordonnées ne peut pas le toucher", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ stampOrSignatureUrl: URL_TAMPON }) });
+    mockedApi.put.mockResolvedValueOnce({ data: settings({ stampOrSignatureUrl: URL_TAMPON }) });
+    renderPage();
+    await waitFor(() => expect(screen.getByAltText("Tampon actuel de l'agence")).toBeInTheDocument());
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /Enregistrer/ }));
+
+    await waitFor(() => expect(mockedApi.put).toHaveBeenCalled());
+    expect(mockedApi.put.mock.calls[0][1]).not.toHaveProperty("stampOrSignatureUrl");
+  });
+});

@@ -1,13 +1,15 @@
 import { Router } from "express";
 import {
   deleteAgencyLogo,
+  deleteAgencyStamp,
   getAgencyBankInfoForTenant,
   getAgencySettings,
   updateAgencySettings,
   uploadLogo,
+  uploadStamp,
 } from "../controllers/agency.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
-import { uploadAgencyLogo } from "../middleware/upload";
+import { uploadAgencyLogo, uploadAgencyStamp } from "../middleware/upload";
 
 const router = Router();
 
@@ -20,5 +22,7 @@ router.get("/", getAgencySettings);
 router.put("/", updateAgencySettings);
 router.post("/logo", uploadAgencyLogo.single("logo"), uploadLogo);
 router.delete("/logo", deleteAgencyLogo);
+router.post("/stamp", uploadAgencyStamp.single("stamp"), uploadStamp);
+router.delete("/stamp", deleteAgencyStamp);
 
 export default router;

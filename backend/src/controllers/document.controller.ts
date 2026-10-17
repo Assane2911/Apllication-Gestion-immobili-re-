@@ -55,6 +55,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
     agency: {
       name: agency?.agencyName || "Agence Immobilière Privée",
       logoUrl: agency?.logoUrl,
+      stampUrl: agency?.stampOrSignatureUrl,
       address: agency?.address,
       phone: agency?.phone,
       email: agency?.email,

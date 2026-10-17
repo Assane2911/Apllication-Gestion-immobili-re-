@@ -42,7 +42,10 @@ export interface ReceiptData {
     phone?: string | null;
     email?: string | null;
     legalNotice?: string | null;
+    /** Tampon de l'agence, imprimé à côté de « QUITTANCE VALIDÉE » : adresse (HTML) ... */
     stampUrl?: string | null;
+    /** ... et octets (PNG ou JPEG) pour le PDF — voir chargerLogoAgence. Absents : pas de tampon. */
+    stampBuffer?: Buffer | null;
   };
   tenant: {
     fullName: string;
@@ -215,6 +218,16 @@ export function generateReceiptHtml(data: ReceiptData): string {
       align-items: flex-end;
       margin-top: 40px;
     }
+    .stamp-group {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    .agency-stamp {
+      max-width: 120px;
+      max-height: 100px;
+      object-fit: contain;
+    }
     .stamp-box {
       width: 200px;
       height: 100px;
@@ -321,10 +334,13 @@ export function generateReceiptHtml(data: ReceiptData): string {
         Règlement validé et enregistré électroniquement.
       </p>
     </div>
-    <div class="stamp-box stamp-certified">
-      <span style="font-size:18px;">✅</span>
-      <span style="margin-top:4px;">QUITTANCE VALIDÉE</span>
-      <span style="font-size:9px; color:#047857;">LE ${paidDateFormatted}</span>
+    <div class="stamp-group">
+      ${estUrlPubliqueDuStockage(data.agency.stampUrl) ? `<img class="agency-stamp" src="${escapeHtml(data.agency.stampUrl)}" alt="Tampon ${escapeHtml(data.agency.name)}" />` : ""}
+      <div class="stamp-box stamp-certified">
+        <span style="font-size:18px;">✅</span>
+        <span style="margin-top:4px;">QUITTANCE VALIDÉE</span>
+        <span style="font-size:9px; color:#047857;">LE ${paidDateFormatted}</span>
+      </div>
     </div>
   </div>
 
@@ -555,6 +571,15 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
         .text("Règlement validé et enregistré électroniquement.", col1, doc.y, { width: pageWidth * 0.55 });
 
       const stampX = col1 + pageWidth - 170;
+      // Tampon de l'agence, à gauche de la case de validation. Comme le logo : un fichier illisible n'empêche jamais
+      // d'émettre la quittance.
+      if (data.agency.stampBuffer) {
+        try {
+          doc.image(data.agency.stampBuffer, stampX - 16 - 80, stampTop, { fit: [80, 60], align: "right", valign: "bottom" });
+        } catch (err) {
+          console.error("[pdf] Tampon d'agence illisible, quittance émise sans tampon :", err);
+        }
+      }
       doc
         .roundedRect(stampX, stampTop, 170, 60, 6)
         .lineWidth(1)

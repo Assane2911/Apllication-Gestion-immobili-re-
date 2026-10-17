@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import ChampTelephone from "../../components/ChampTelephone";
+import SectionImageAgence from "../../components/SectionImageAgence";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
 import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
@@ -83,49 +84,9 @@ export default function AgencySettingsPage() {
     overdueNotifyGuarantors: false,
   });
 
-  // Logo de l'agence : il s'envoie à part du formulaire (fichier), et le formulaire ne le renvoie jamais.
+  // Logo et tampon de l'agence : ils s'envoient à part du formulaire (fichiers), et le formulaire ne les renvoie jamais.
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoBusy, setLogoBusy] = useState(false);
-  const [logoError, setLogoError] = useState<string | null>(null);
-  const [logoSaved, setLogoSaved] = useState(false);
-
-  async function handleLogoChosen(e: React.ChangeEvent<HTMLInputElement>) {
-    const fichier = e.target.files?.[0];
-    e.target.value = "";
-    if (!fichier) return;
-    setLogoSaved(false);
-    // Mêmes règles que le serveur, vérifiées d'abord pour répondre sans attendre l'envoi.
-    if (fichier.type !== "image/png" && fichier.type !== "image/jpeg") return setLogoError(t("manager.agencySettings.logo.wrongType"));
-    if (fichier.size > 2 * 1024 * 1024) return setLogoError(t("manager.agencySettings.logo.tooLarge"));
-    setLogoBusy(true);
-    setLogoError(null);
-    try {
-      const data = new FormData();
-      data.append("logo", fichier);
-      const res = await api.post<AgencySettings>("/agency/logo", data);
-      setLogoUrl(res.data.logoUrl ?? null);
-      setLogoSaved(true);
-    } catch (err) {
-      setLogoError(apiErrorMessage(err));
-    } finally {
-      setLogoBusy(false);
-    }
-  }
-
-  async function handleLogoRemove() {
-    if (!window.confirm(t("manager.agencySettings.logo.confirmRemove"))) return;
-    setLogoBusy(true);
-    setLogoError(null);
-    setLogoSaved(false);
-    try {
-      await api.delete("/agency/logo");
-      setLogoUrl(null);
-    } catch (err) {
-      setLogoError(apiErrorMessage(err));
-    } finally {
-      setLogoBusy(false);
-    }
-  }
+  const [stampUrl, setStampUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Sans ce `catch`, un échec de chargement affichait un formulaire VIDE,
@@ -151,6 +112,7 @@ export default function AgencySettingsPage() {
           overdueNotifyGuarantors: Boolean(res.data.overdueNotifyGuarantors),
         });
         setLogoUrl(res.data.logoUrl ?? null);
+        setStampUrl(res.data.stampOrSignatureUrl ?? null);
         setLoadError(null);
       })
       .catch((err) => setLoadError(apiErrorMessage(err)));
@@ -296,52 +258,8 @@ export default function AgencySettingsPage() {
         </div>
       )}
 
-      <section
-        aria-labelledby="agency-logo-title"
-        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6"
-      >
-        <h3 id="agency-logo-title" className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-          {t("manager.agencySettings.logo.title")}
-        </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{t("manager.agencySettings.logo.description")}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          {logoUrl && (
-            <img
-              src={logoUrl}
-              alt={t("manager.agencySettings.logo.previewAlt")}
-              className="h-14 max-w-[200px] object-contain rounded-lg border border-slate-200 dark:border-slate-700 bg-white p-1"
-            />
-          )}
-          <label
-            className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm focus-within:ring-2 focus-within:ring-brand-500 ${
-              logoBusy ? "opacity-60 cursor-wait" : "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
-            }`}
-          >
-            {logoBusy ? t("manager.agencySettings.logo.uploading") : logoUrl ? t("manager.agencySettings.logo.replace") : t("manager.agencySettings.logo.choose")}
-            <input type="file" accept="image/png,image/jpeg" className="sr-only" disabled={logoBusy} onChange={handleLogoChosen} />
-          </label>
-          {logoUrl && (
-            <button
-              type="button"
-              onClick={handleLogoRemove}
-              disabled={logoBusy}
-              className="text-sm font-semibold text-red-700 dark:text-red-400 hover:underline disabled:opacity-60"
-            >
-              {t("manager.agencySettings.logo.remove")}
-            </button>
-          )}
-        </div>
-        {logoError && (
-          <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-400">
-            {logoError}
-          </p>
-        )}
-        {logoSaved && (
-          <p role="status" className="mt-3 text-sm text-emerald-700 dark:text-emerald-400">
-            {t("manager.agencySettings.logo.saved")}
-          </p>
-        )}
-      </section>
+      <SectionImageAgence ressource="logo" url={logoUrl} onChange={setLogoUrl} />
+      <SectionImageAgence ressource="stamp" url={stampUrl} onChange={setStampUrl} />
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-5">

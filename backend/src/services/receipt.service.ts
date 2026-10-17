@@ -52,6 +52,8 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
         name: agency?.agencyName || "Agence Immobilière",
         logoUrl: agency?.logoUrl,
         logoBuffer: await chargerLogoAgence(agency?.logoUrl),
+        stampUrl: agency?.stampOrSignatureUrl,
+        stampBuffer: await chargerLogoAgence(agency?.stampOrSignatureUrl),
         address: agency?.address,
         phone: agency?.phone,
         email: agency?.email,
