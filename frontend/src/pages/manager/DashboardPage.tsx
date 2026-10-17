@@ -9,36 +9,16 @@ import {
   Wallet,
   Wrench,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { api, apiErrorMessage } from "../../api/client";
+import { COULEURS_STATUT } from "../../components/graphiques/couleurs";
+import { GraphiqueParc, GraphiqueRevenusDepenses } from "../../components/graphiques/graphiquesALaDemande";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { DashboardStats, PropertyStatus } from "../../types";
 import { formatByCurrency } from "../../utils/currencyFormat";
-
-const statusColors: Record<PropertyStatus, string> = {
-  AVAILABLE: "#10b981",
-  OCCUPIED: "#2563eb",
-  MAINTENANCE: "#f59e0b",
-};
-
-const REVENUE_COLOR = "#2563eb";
-const EXPENSE_COLOR = "#f59e0b";
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -255,37 +235,9 @@ export default function DashboardPage() {
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">{currency}</p>
                   )}
                   <div className={chartsByCurrency.length > 1 ? "h-[220px] w-full" : "h-[280px] w-full"}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
-                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-                        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-                        <Tooltip
-                          formatter={(value: any, name: any) => [
-                            formatMoney(Number(value), currency),
-                            name === "revenue" ? t("manager.dashboard.charts.tooltipRevenue") : t("manager.dashboard.charts.tooltipExpense"),
-                          ]}
-                          contentStyle={{
-                            borderRadius: "14px",
-                            fontSize: "12px",
-                            boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
-                            backgroundColor: "var(--tw-tooltip-bg, #0f172a)",
-                            color: "#f8fafc",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            padding: "10px 14px",
-                          }}
-                          itemStyle={{ color: "#f8fafc" }}
-                        />
-                        <Legend
-                          formatter={(value) =>
-                            value === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense")
-                          }
-                          wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-                        />
-                        <Bar dataKey="revenue" name="revenue" fill={REVENUE_COLOR} radius={[6, 6, 0, 0]} />
-                        <Bar dataKey="expense" name="expense" fill={EXPENSE_COLOR} radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                      <GraphiqueRevenusDepenses data={data} currency={currency} />
+                    </Suspense>
                   </div>
                 </div>
               ))}
@@ -301,45 +253,16 @@ export default function DashboardPage() {
           ) : (
             <>
               <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={donutData}
-                      dataKey="value"
-                      nameKey="status"
-                      innerRadius={55}
-                      outerRadius={80}
-                      paddingAngle={4}
-                    >
-                      {donutData.map((entry) => (
-                        <Cell key={entry.status} fill={statusColors[entry.status]} stroke="none" />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: any, _name: any, item: any) => [
-                        t("manager.dashboard.charts.propertiesCount", { count: value }),
-                        statusLabels[item.payload.status as PropertyStatus],
-                      ]}
-                      contentStyle={{
-                        borderRadius: "14px",
-                        fontSize: "12px",
-                        backgroundColor: "#0f172a",
-                        color: "#f8fafc",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
-                        padding: "8px 12px",
-                      }}
-                      itemStyle={{ color: "#f8fafc" }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<Skeleton className="h-full w-full rounded-full" />}>
+                  <GraphiqueParc data={donutData} libelles={statusLabels} />
+                </Suspense>
               </div>
               <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                 {donutData.map((entry) => (
                   <div key={entry.status} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: statusColors[entry.status] }}
+                      style={{ backgroundColor: COULEURS_STATUT[entry.status] }}
                     />
                     {statusLabels[entry.status]} ({entry.value})
                   </div>
