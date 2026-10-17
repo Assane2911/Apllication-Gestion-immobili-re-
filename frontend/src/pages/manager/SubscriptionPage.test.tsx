@@ -6,6 +6,7 @@ import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
 import type { AuthUser, SubscriptionInfo, SubscriptionPlanDetail } from "../../types";
+import i18n from "../../i18n";
 import SubscriptionPage from "./SubscriptionPage";
 
 vi.mock("../../api/client", async () => {
@@ -271,7 +272,7 @@ describe("SubscriptionPage", () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Pro")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Professionnel")).toBeInTheDocument());
 
     // La devise voyage jusqu'à la requête : sans cela le backend tarifierait en euros.
     const urls = mockedApi.get.mock.calls.map((appel) => String(appel[0]));
@@ -358,7 +359,7 @@ describe("SubscriptionPage", () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Pro")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Professionnel")).toBeInTheDocument());
 
     // La devise voyage jusqu'à la requête, et le prix revient en dirhams.
     const urls = mockedApi.get.mock.calls.map((appel) => String(appel[0]));
@@ -402,9 +403,60 @@ describe("SubscriptionPage", () => {
 
     await waitFor(() => expect(screen.getByText("Essai : 7 j restant(s)")).toBeInTheDocument());
     expect(screen.getByText("Starter")).toBeInTheDocument();
-    expect(screen.getByText("Pro")).toBeInTheDocument();
+    expect(screen.getByText("Professionnel")).toBeInTheDocument();
     expect(screen.getByText("19 €")).toBeInTheDocument();
     expect(screen.getByText("39 €")).toBeInTheDocument();
+  });
+
+  describe("lignes des formules traduites", () => {
+    const formulesAvecCles = () => [
+      plan({ id: "STARTER", features: ["Jusqu'à 5 biens immobiliers"], featureKeys: ["maxProperties5"] }),
+      plan({
+        id: "PRO",
+        name: "Professionnel",
+        features: ["Tout ce qui est inclus dans Starter", "Jusqu'à 25 biens immobiliers"],
+        featureKeys: ["includesStarter", "maxProperties25"],
+      }),
+    ];
+
+    it("affiche les lignes en français, la formule reprise portant son nom", async () => {
+      seedUser(authUser());
+      queueGet({ data: formulesAvecCles() });
+      queueGet({ data: { history: [] } });
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getByText("Tout ce qui est inclus dans Starter")).toBeInTheDocument());
+      expect(screen.getByText("Jusqu'à 25 biens immobiliers")).toBeInTheDocument();
+    });
+
+    it("affiche les lignes dans la langue de l'interface plutôt qu'en français pour tout le monde", async () => {
+      await i18n.changeLanguage("en");
+      try {
+        seedUser(authUser());
+        queueGet({ data: formulesAvecCles() });
+        queueGet({ data: { history: [] } });
+
+        renderPage();
+
+        await waitFor(() => expect(screen.getByText("Everything included in Starter")).toBeInTheDocument());
+        expect(screen.getByText("Up to 25 properties")).toBeInTheDocument();
+        expect(screen.getByText("Professional")).toBeInTheDocument();
+        expect(screen.queryByText("Jusqu'à 25 biens immobiliers")).not.toBeInTheDocument();
+      } finally {
+        await i18n.changeLanguage("fr");
+      }
+    });
+
+    it("garde le texte du serveur pour une ligne sans clé (serveur plus ancien)", async () => {
+      seedUser(authUser());
+      queueGet({ data: [plan({ id: "STARTER", features: ["Ligne sans clé"] })] });
+      queueGet({ data: { history: [] } });
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getByText("Ligne sans clé")).toBeInTheDocument());
+    });
   });
 
   it("désactive le bouton de la formule déjà active", async () => {
@@ -414,7 +466,7 @@ describe("SubscriptionPage", () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Formule Professionnel Active")).toBeInTheDocument());
     const currentPlanBtn = screen.getByRole("button", { name: "Votre formule actuelle" });
     expect(currentPlanBtn).toBeDisabled();
     expect(screen.getByRole("button", { name: "Choisir Starter" })).not.toBeDisabled();
@@ -651,7 +703,7 @@ describe("SubscriptionPage", () => {
 
     await waitFor(() => expect(screen.getByText("Essai : 7 j restant(s)")).toBeInTheDocument());
     expect(screen.queryByText("Starter")).not.toBeInTheDocument();
-    expect(screen.queryByText("Pro")).not.toBeInTheDocument();
+    expect(screen.queryByText("Professionnel")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Choisir/ })).not.toBeInTheDocument();
     expect(
       screen.getByText(/Pour souscrire ou changer d'offre, connectez-vous depuis le site web/)
@@ -670,7 +722,7 @@ describe("SubscriptionPage", () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Formule Professionnel Active")).toBeInTheDocument());
     expect(screen.queryByText("Starter")).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Pour souscrire ou changer d'offre, connectez-vous depuis le site web/)
@@ -817,7 +869,7 @@ describe("SubscriptionPage", () => {
       queueGet({ data: { history: [] } });
 
       renderPage();
-      await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText("Formule Professionnel Active")).toBeInTheDocument());
 
       await user.click(screen.getByRole("button", { name: "Résilier mon abonnement" }));
 
@@ -849,7 +901,7 @@ describe("SubscriptionPage", () => {
       });
 
       renderPage();
-      await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText("Formule Professionnel Active")).toBeInTheDocument());
 
       await user.click(screen.getByRole("button", { name: "Résilier mon abonnement" }));
 
@@ -871,7 +923,7 @@ describe("SubscriptionPage", () => {
       queueGet({ data: { history: [] } });
 
       renderPage();
-      await waitFor(() => expect(screen.getByText("Formule PRO Active")).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText("Formule Professionnel Active")).toBeInTheDocument());
       await user.click(screen.getByRole("button", { name: "Résilier mon abonnement" }));
 
       expect(mockedApi.post).not.toHaveBeenCalled();

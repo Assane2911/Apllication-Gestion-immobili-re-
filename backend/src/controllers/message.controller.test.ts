@@ -197,7 +197,7 @@ describe("Messages API (/api/messages)", () => {
       .send({ content: "Bonjour" });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Pro Agence");
+    expect(res.body.error).toContain("Professionnel");
   });
 
   // Le locataire, lui, n'est jamais restreint par la formule de son

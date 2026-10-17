@@ -36,8 +36,23 @@ interface PropertyUsage {
   exceeded: boolean;
 }
 
+/** Les lignes « Tout ce qui est inclus dans … » nomment la formule reprise, dans la langue de l'interface. */
+const FORMULE_REPRISE: Record<string, string> = { includesStarter: "STARTER", includesPro: "PRO" };
+
 export default function SubscriptionPage() {
   const { t, i18n } = useTranslation();
+
+  /** Ligne d'une carte de formule : traduite par sa clé ; le texte français du serveur reste le repli. */
+  function libelleLigne(plan: SubscriptionPlanDetail, idx: number): string {
+    const cle = plan.featureKeys?.[idx];
+    const texte = plan.features[idx];
+    if (!cle) return texte;
+    const reprise = FORMULE_REPRISE[cle];
+    return t(`manager.subscription.features.${cle}`, {
+      defaultValue: texte,
+      plan: reprise ? t(`common.plans.${reprise}`) : undefined,
+    });
+  }
   const { user, refreshUser } = useAuth();
   const { currency, formatMoney } = useCurrency();
   const [plans, setPlans] = useState<SubscriptionPlanDetail[]>([]);
@@ -256,7 +271,7 @@ export default function SubscriptionPage() {
           <div className="flex items-center gap-3 mt-1">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
               {sub?.status === "ACTIVE"
-                ? t("manager.subscription.planActive", { plan: sub.plan })
+                ? t("manager.subscription.planActive", { plan: t(`common.plans.${sub.plan}`, { defaultValue: sub.plan }) })
                 : sub?.status === "TRIAL"
                 ? t("manager.subscription.trialStatus")
                 : t("manager.subscription.expiredStatus")}
@@ -390,8 +405,8 @@ export default function SubscriptionPage() {
               )}
 
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{plan.name}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 min-h-[32px]">{plan.description}</p>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t(`common.plans.${plan.id}`, { defaultValue: plan.name })}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 min-h-[32px]">{t(`manager.subscription.planDescriptions.${plan.id}`, { defaultValue: plan.description })}</p>
               </div>
 
               <div className="mb-6 flex items-baseline gap-1">
@@ -406,10 +421,10 @@ export default function SubscriptionPage() {
 
               <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-4">
                 <p className="font-semibold text-slate-900 dark:text-slate-100">{t("manager.subscription.includedInPlan")}</p>
-                {plan.features.map((feat, idx) => (
+                {plan.features.map((_feat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
                     <Check size={14} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
-                    <span>{feat}</span>
+                    <span>{libelleLigne(plan, idx)}</span>
                   </div>
                 ))}
               </div>
@@ -428,7 +443,7 @@ export default function SubscriptionPage() {
                     : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white hover:shadow"
                 }`}
               >
-                {isCurrentPlan ? t("manager.subscription.currentPlanBtn") : t("manager.subscription.choosePlanBtn", { plan: plan.name })}
+                {isCurrentPlan ? t("manager.subscription.currentPlanBtn") : t("manager.subscription.choosePlanBtn", { plan: t(`common.plans.${plan.id}`, { defaultValue: plan.name }) })}
               </button>
             </div>
           );
@@ -448,7 +463,7 @@ export default function SubscriptionPage() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: selectedPlan.name })}</h3>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: t(`common.plans.${selectedPlan.id}`, { defaultValue: selectedPlan.name }) })}</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                   {t("manager.subscription.amountToPay")}{" "}
                   <strong>
@@ -588,7 +603,7 @@ export default function SubscriptionPage() {
                 {history.map((h) => (
                   <tr key={h.id} className="text-slate-700 dark:text-slate-300">
                     <td className="py-3">{new Date(h.createdAt).toLocaleDateString(i18n.language)}</td>
-                    <td className="py-3 font-semibold">{h.plan}</td>
+                    <td className="py-3 font-semibold">{t(`common.plans.${h.plan}`, { defaultValue: h.plan })}</td>
                     <td className="py-3">{h.billingCycle === "ANNUAL" ? t("manager.subscription.annual") : t("manager.subscription.monthly")}</td>
                     {/* Chaque ligne porte sa propre devise (voir platformSubscriptions.currency
                         côté backend) : un abonnement réglé en FCFA ne doit jamais s'afficher en

@@ -25,6 +25,8 @@ export interface SubscriptionPlanDetail {
   maxProperties: string | number;
   popular?: boolean;
   features: string[];
+  /** Clé de traduction de chaque ligne de `features`, dans le même ordre (absente d'un serveur plus ancien). */
+  featureKeys?: string[];
 }
 
 export interface AuthUser {

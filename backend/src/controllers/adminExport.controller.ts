@@ -11,6 +11,7 @@ import {
   listManagersQuerySchema,
   resumerGestionnaires,
 } from "./admin.controller";
+import { NOM_FORMULE } from "../utils/formules";
 
 /**
  * Exports CSV de l'administration : la liste des gestionnaires et le journal
@@ -31,7 +32,7 @@ import {
 export const MAX_LIGNES_EXPORT = 5000;
 
 const STATUT_LABEL: Record<string, string> = { TRIAL: "Essai", ACTIVE: "Actif", CANCELLED: "Résilié", EXPIRED: "Expiré" };
-const PLAN_LABEL: Record<string, string> = { STARTER: "Starter", PRO: "Pro", ENTERPRISE: "Entreprise" };
+const PLAN_LABEL: Record<string, string> = NOM_FORMULE;
 
 const jour = (d: Date | string | null) => (d ? new Date(d).toISOString().slice(0, 10) : "");
 const dateHeure = (d: Date | string) => new Date(d).toISOString().slice(0, 19).replace("T", " ");

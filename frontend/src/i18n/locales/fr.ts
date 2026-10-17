@@ -1,5 +1,7 @@
 const fr = {
   common: {
+    // Noms des formules : un seul nom par formule, partout dans l'interface.
+    plans: { STARTER: "Starter", PRO: "Professionnel", ENTERPRISE: "Agence & Multi-Comptes" },
     tips: {
       logout: "Ferme votre session sur cet appareil.",
     },
@@ -452,7 +454,7 @@ const fr = {
         cta: "Démarrer l'essai 15j",
       },
       pro: {
-        name: "Pro Agence",
+        name: "Professionnel",
         badge: "Recommandé",
         desc: "Pour agences et gestionnaires en croissance.",
         features: [
@@ -465,7 +467,7 @@ const fr = {
         cta: "Démarrer l'essai 15j gratuit",
       },
       enterprise: {
-        name: "Entreprise",
+        name: "Agence & Multi-Comptes",
         desc: "Pour cabinets de gestion et grands parcs.",
         features: [
           "Biens illimités",
@@ -703,7 +705,7 @@ const fr = {
       lastDay: "Dernier jour d'essai !",
       oneDayLeft: "Il vous reste 1 jour d'essai",
       daysLeft: "Il vous reste {{count}} jours d'essai gratuit",
-      trialDesc: "Profitez de toutes les fonctionnalités Pro sans engagement, et suivez le guide de démarrage du menu pour installer votre agence. Vous pouvez activer votre abonnement à tout moment.",
+      trialDesc: "Profitez de toutes les fonctionnalités de la formule Professionnel sans engagement, et suivez le guide de démarrage du menu pour installer votre agence. Vous pouvez activer votre abonnement à tout moment.",
       chooseOfferCta: "Choisir mon offre",
       activePlan: "Abonnement <1>Plan {{plan}}</1> actif",
       manageSubscription: "Gérer mon abonnement",
@@ -1523,7 +1525,7 @@ const fr = {
       success: "Paramètres de l'agence mis à jour avec succès ! Vos futures quittances intégreront ces informations.",
       overdue: {
         title: "Relances automatiques des impayés",
-        hint: "Désactivées par défaut. Une fois activées, chaque loyer impayé reçoit au plus trois relances par email (titulaire et colocataires), et par WhatsApp avec la formule Pro si le modèle de relance est configuré ; au-delà de 90 jours de retard, plus aucune relance automatique : la suite vous revient.",
+        hint: "Désactivées par défaut. Une fois activées, chaque loyer impayé reçoit au plus trois relances par email (titulaire et colocataires), et par WhatsApp avec la formule Professionnel si le modèle de relance est configuré ; au-delà de 90 jours de retard, plus aucune relance automatique : la suite vous revient.",
         enabled: "Envoyer les relances automatiquement",
         grace: "Délai de grâce après l'échéance (jours)",
         interval: "Intervalle entre deux relances (jours)",
@@ -1591,7 +1593,7 @@ const fr = {
       team: {
         title: "Mon équipe",
         description: "Invitez des collaborateurs à accéder aux mêmes biens, locataires et contrats que vous.",
-        upsell: "Réservé à la formule Entreprise.",
+        upsell: "Réservé à la formule Agence & Multi-Comptes.",
         upsellCta: "Voir les formules →",
         emailLabel: "Email du collaborateur",
         emailPlaceholder: "collaborateur@exemple.com",
@@ -1618,6 +1620,31 @@ const fr = {
       title: "Abonnement & Formules SaaS",
       subtitle: "Gérez votre formule de gestion immobilière et vos options de facturation.",
       currentStatus: "Votre statut actuel",
+      features: {
+        maxProperties5: "Jusqu'à 5 biens immobiliers",
+        receipts: "Émission automatique des quittances",
+        portal: "Portail locataire & déclarations",
+        onlinePayments: "Paiements en ligne : carte et Mobile Money (Orange Money, Wave, Free Money, MTN)",
+        issues: "Suivi des incidents avec photos",
+        emailReminders: "Rappels par email",
+        standardSupport: "Support standard par email",
+        includesStarter: "Tout ce qui est inclus dans {{plan}}",
+        maxProperties25: "Jusqu'à 25 biens immobiliers",
+        expenses: "Suivi des dépenses, y compris récurrentes",
+        leaseAlerts: "Alertes de fin de bail & renouvellement",
+        multiChannelReminders: "Rappels automatiques par email ; WhatsApp en cours de mise en service",
+        prioritySupport: "Support prioritaire : réponse sous un jour ouvré",
+        includesPro: "Tout ce qui est inclus dans {{plan}}",
+        unlimitedProperties: "Biens immobiliers illimités",
+        team: "Gestion multi-utilisateurs & collaborateurs",
+        accountingExports: "Export comptable avancé (grand livre, FEC, SYSCOHADA)",
+        onboardingGuide: "Accompagnement à la prise en main : guide de démarrage pas à pas et modèles de fichiers",
+      },
+      planDescriptions: {
+        STARTER: "Idéal pour les propriétaires indépendants et petites locations.",
+        PRO: "Pour les gestionnaires et agences en pleine croissance.",
+        ENTERPRISE: "Pour les cabinets de gestion immobilière et syndics.",
+      },
       planActive: "Formule {{plan}} Active",
       trialStatus: "Période d'essai gratuit (15 jours)",
       expiredStatus: "Abonnement Expiré",
@@ -1914,8 +1941,8 @@ const fr = {
       },
       plans: {
         STARTER: "Starter",
-        PRO: "Pro",
-        ENTERPRISE: "Entreprise",
+        PRO: "Professionnel",
+        ENTERPRISE: "Agence & Multi-Comptes",
       },
       statuses: {
         SUSPENDED: "Suspendu",

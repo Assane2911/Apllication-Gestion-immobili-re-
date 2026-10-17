@@ -2,6 +2,8 @@ import type { TranslationSchema } from "./fr";
 
 const pt: TranslationSchema = {
   common: {
+    // Noms des formules : un seul nom par formule, partout dans l'interface.
+    plans: { STARTER: "Starter", PRO: "Profissional", ENTERPRISE: "Agência e Multicontas" },
     tips: {
       logout: "Termina a sua sessão neste dispositivo.",
     },
@@ -454,7 +456,7 @@ const pt: TranslationSchema = {
         cta: "Iniciar o teste de 15 dias",
       },
       pro: {
-        name: "Pro Agência",
+        name: "Profissional",
         badge: "Recomendado",
         desc: "Para agências e gestores em crescimento.",
         features: [
@@ -467,7 +469,7 @@ const pt: TranslationSchema = {
         cta: "Iniciar o teste grátis de 15 dias",
       },
       enterprise: {
-        name: "Empresa",
+        name: "Agência e Multicontas",
         desc: "Para empresas de gestão e grandes carteiras de imóveis.",
         features: [
           "Imóveis ilimitados",
@@ -705,7 +707,7 @@ const pt: TranslationSchema = {
       lastDay: "Último dia do seu teste!",
       oneDayLeft: "Resta-lhe 1 dia de teste",
       daysLeft: "Restam-lhe {{count}} dias de teste grátis",
-      trialDesc: "Aproveite todas as funcionalidades Pro sem compromisso e siga o guia de início do menu para configurar a sua agência. Pode ativar a sua assinatura a qualquer momento.",
+      trialDesc: "Aproveite todas as funcionalidades do plano Profissional sem compromisso e siga o guia de início do menu para configurar a sua agência. Pode ativar a sua assinatura a qualquer momento.",
       chooseOfferCta: "Escolher o meu plano",
       activePlan: "Assinatura <1>Plano {{plan}}</1> ativa",
       manageSubscription: "Gerir a minha assinatura",
@@ -1522,7 +1524,7 @@ const pt: TranslationSchema = {
       success: "Definições da agência atualizadas com sucesso! Os seus futuros recibos incluirão estas informações.",
       overdue: {
         title: "Lembretes automáticos de rendas em atraso",
-        hint: "Desativados por defeito. Uma vez ativados, cada renda por pagar recebe no máximo três lembretes por email (titular e coinquilinos), e por WhatsApp com o plano Pro se o modelo de lembrete estiver configurado; após 90 dias de atraso, mais nenhum lembrete automático: a sequência cabe-lhe a si.",
+        hint: "Desativados por defeito. Uma vez ativados, cada renda por pagar recebe no máximo três lembretes por email (titular e coinquilinos), e por WhatsApp com o plano Profissional se o modelo de lembrete estiver configurado; após 90 dias de atraso, mais nenhum lembrete automático: a sequência cabe-lhe a si.",
         enabled: "Enviar os lembretes automaticamente",
         grace: "Período de carência após o vencimento (dias)",
         interval: "Dias entre dois lembretes",
@@ -1590,7 +1592,7 @@ const pt: TranslationSchema = {
       team: {
         title: "A minha equipa",
         description: "Convide colaboradores para aceder aos mesmos imóveis, inquilinos e contratos que você.",
-        upsell: "Reservado ao plano Empresa.",
+        upsell: "Reservado ao plano Agência e Multicontas.",
         upsellCta: "Ver os planos →",
         emailLabel: "Email do colaborador",
         emailPlaceholder: "colaborador@exemplo.com",
@@ -1617,6 +1619,31 @@ const pt: TranslationSchema = {
       title: "Assinatura & Planos SaaS",
       subtitle: "Gira o seu plano de gestão imobiliária e as suas opções de faturação.",
       currentStatus: "O seu estado atual",
+      features: {
+        maxProperties5: "Até 5 imóveis",
+        receipts: "Emissão automática de recibos",
+        portal: "Portal do inquilino e declarações",
+        onlinePayments: "Pagamentos online: cartão e Mobile Money (Orange Money, Wave, Free Money, MTN)",
+        issues: "Acompanhamento de incidentes com fotografias",
+        emailReminders: "Lembretes por email",
+        standardSupport: "Suporte padrão por email",
+        includesStarter: "Tudo o que está incluído em {{plan}}",
+        maxProperties25: "Até 25 imóveis",
+        expenses: "Acompanhamento de despesas, incluindo recorrentes",
+        leaseAlerts: "Alertas de fim de contrato e renovação",
+        multiChannelReminders: "Lembretes automáticos por email; WhatsApp em fase de ativação",
+        prioritySupport: "Suporte prioritário: resposta em um dia útil",
+        includesPro: "Tudo o que está incluído em {{plan}}",
+        unlimitedProperties: "Imóveis ilimitados",
+        team: "Gestão multiutilizador e colaboradores",
+        accountingExports: "Exportação contabilística avançada (razão geral, FEC, SYSCOHADA)",
+        onboardingGuide: "Acompanhamento de arranque: guia de início passo a passo e modelos de ficheiros",
+      },
+      planDescriptions: {
+        STARTER: "Ideal para proprietários independentes e pequenos arrendamentos.",
+        PRO: "Para gestores e agências em crescimento.",
+        ENTERPRISE: "Para gabinetes de gestão imobiliária e administradores de condomínio.",
+      },
       planActive: "Plano {{plan}} Ativo",
       trialStatus: "Período de teste grátis (15 dias)",
       expiredStatus: "Assinatura Expirada",
@@ -1913,8 +1940,8 @@ const pt: TranslationSchema = {
       },
       plans: {
         STARTER: "Starter",
-        PRO: "Pro",
-        ENTERPRISE: "Empresarial",
+        PRO: "Profissional",
+        ENTERPRISE: "Agência e Multicontas",
       },
       statuses: {
         SUSPENDED: "Suspenso",

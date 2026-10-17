@@ -273,7 +273,7 @@ describe("GET /api/fiscal/grand-livre", () => {
     const res = await request(app).get("/api/fiscal/grand-livre?year=2026").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Entreprise");
+    expect(res.body.error).toContain("Agence & Multi-Comptes");
   });
 });
 
@@ -454,7 +454,7 @@ describe("GET /api/fiscal/fec", () => {
     const res = await request(app).get("/api/fiscal/fec?year=2026").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Entreprise");
+    expect(res.body.error).toContain("Agence & Multi-Comptes");
   });
 });
 
@@ -576,6 +576,6 @@ describe("GET /api/fiscal/syscohada", () => {
     const res = await request(app).get("/api/fiscal/syscohada?year=2026").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Entreprise");
+    expect(res.body.error).toContain("Agence & Multi-Comptes");
   });
 });

@@ -422,7 +422,7 @@ describe("Cloisonnement par formule d'abonnement", () => {
     const res = await request(app).get("/api/expenses").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Pro Agence");
+    expect(res.body.error).toContain("Professionnel");
   });
 
   it("autorise la liste des dépenses à un gestionnaire Pro", async () => {
@@ -441,7 +441,7 @@ describe("Cloisonnement par formule d'abonnement", () => {
     const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Entreprise");
+    expect(res.body.error).toContain("Agence & Multi-Comptes");
   });
 
   it("autorise l'export comptable à un gestionnaire Entreprise", async () => {

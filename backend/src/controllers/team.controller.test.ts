@@ -62,7 +62,7 @@ describe("POST /api/team — inviter un collaborateur", () => {
       .send({ email: "nouveau@test.local" });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Entreprise");
+    expect(res.body.error).toContain("Agence & Multi-Comptes");
   });
 
   it("crée un compte collaborateur (role MANAGER, rattaché) via un token à usage unique", async () => {

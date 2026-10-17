@@ -206,7 +206,7 @@ describe("POST /api/admin/managers/:id/subscription/change-plan", () => {
     const lignes = await testDb.select().from(adminAuditLogs);
     expect(lignes).toHaveLength(1);
     expect(lignes[0]).toMatchObject({ action: "subscription.change_plan", targetUserId: manager.id });
-    expect(lignes[0].details).toContain("Starter → Entreprise");
+    expect(lignes[0].details).toContain("Starter → Agence & Multi-Comptes");
     expect(lignes[0].details).toContain("Geste commercial");
   });
 

@@ -633,7 +633,7 @@ describe("POST /api/contracts/:id/sign", () => {
       .send({ signatureDataUrl: SIGNATURE_DATA_URL });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Pro Agence");
+    expect(res.body.error).toContain("Professionnel");
     const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
     expect(apres.signedByManagerAt).toBeNull();
   });

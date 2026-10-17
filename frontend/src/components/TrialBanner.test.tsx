@@ -86,7 +86,7 @@ describe("TrialBanner", () => {
   it("affiche le bandeau d'abonnement actif avec le plan souscrit", () => {
     renderBanner(gestionnaire({ status: "ACTIVE", isTrialActive: false, plan: "PRO" }));
 
-    expect(screen.getByText(/Plan PRO/)).toBeInTheDocument();
+    expect(screen.getByText(/Plan Professionnel/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Gérer mon abonnement" })).toHaveAttribute("href", "/subscription");
   });
 

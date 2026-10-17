@@ -35,4 +35,18 @@ describe("CGUPage", () => {
 
     expect(screen.getByText(/essai gratuite de 15 jours[\s\S]*guide de démarrage/)).toBeInTheDocument();
   });
+
+  it("nomme les formules comme le reste de l'application : Starter, Professionnel, Agence & Multi-Comptes", () => {
+    render(
+      <MemoryRouter>
+        <CGUPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Starter")).toBeInTheDocument();
+    expect(screen.getByText("Professionnel")).toBeInTheDocument();
+    expect(screen.getByText("Agence & Multi-Comptes")).toBeInTheDocument();
+    expect(screen.queryByText("Pro Agence")).not.toBeInTheDocument();
+    expect(screen.queryByText("Entreprise")).not.toBeInTheDocument();
+  });
 });

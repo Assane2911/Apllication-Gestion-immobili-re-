@@ -61,7 +61,7 @@ describe("GET /api/admin/exports/managers.csv", () => {
     const cellules = ligne.split(";");
     expect(cellules[0]).toBe(`"${manager.email}"`);
     expect(cellules[1]).toBe('"Agence du Port"');
-    expect(cellules.slice(2, 5)).toEqual(["Pro", "Actif", "Non"]);
+    expect(cellules.slice(2, 5)).toEqual(["Professionnel", "Actif", "Non"]);
     expect(cellules[6]).toBe(jours(20).toISOString().slice(0, 10));
     expect(cellules.slice(7, 9)).toEqual(["2", "1"]);
     expect(bien.id).toBeTruthy();

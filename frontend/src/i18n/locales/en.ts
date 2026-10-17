@@ -2,6 +2,8 @@ import type { TranslationSchema } from "./fr";
 
 const en: TranslationSchema = {
   common: {
+    // Noms des formules : un seul nom par formule, partout dans l'interface.
+    plans: { STARTER: "Starter", PRO: "Professional", ENTERPRISE: "Agency & Multi-Accounts" },
     tips: {
       logout: "Closes your session on this device.",
     },
@@ -454,7 +456,7 @@ const en: TranslationSchema = {
         cta: "Start the 15-day trial",
       },
       pro: {
-        name: "Pro Agency",
+        name: "Professional",
         badge: "Recommended",
         desc: "For growing agencies and property managers.",
         features: [
@@ -467,7 +469,7 @@ const en: TranslationSchema = {
         cta: "Start the free 15-day trial",
       },
       enterprise: {
-        name: "Enterprise",
+        name: "Agency & Multi-Accounts",
         desc: "For management firms and large portfolios.",
         features: [
           "Unlimited properties",
@@ -705,7 +707,7 @@ const en: TranslationSchema = {
       lastDay: "Last day of your trial!",
       oneDayLeft: "1 day left in your trial",
       daysLeft: "{{count}} days left in your free trial",
-      trialDesc: "Enjoy all Pro features with no commitment, and follow the getting started guide in the menu to set up your agency. You can activate your subscription at any time.",
+      trialDesc: "Enjoy all Professional features with no commitment, and follow the getting started guide in the menu to set up your agency. You can activate your subscription at any time.",
       chooseOfferCta: "Choose my plan",
       activePlan: "Active <1>{{plan}} Plan</1> subscription",
       manageSubscription: "Manage my subscription",
@@ -1522,7 +1524,7 @@ const en: TranslationSchema = {
       success: "Agency settings updated successfully! Your future receipts will include this information.",
       overdue: {
         title: "Automatic overdue rent reminders",
-        hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants), plus WhatsApp on the Pro plan when the reminder template is configured; after 90 days late, no more automatic reminders: it is up to you.",
+        hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants), plus WhatsApp on the Professional plan when the reminder template is configured; after 90 days late, no more automatic reminders: it is up to you.",
         enabled: "Send reminders automatically",
         grace: "Grace period after the due date (days)",
         interval: "Days between two reminders",
@@ -1590,7 +1592,7 @@ const en: TranslationSchema = {
       team: {
         title: "My team",
         description: "Invite collaborators to access the same properties, tenants and contracts as you.",
-        upsell: "Enterprise plan only.",
+        upsell: "Agency & Multi-Accounts plan only.",
         upsellCta: "See plans →",
         emailLabel: "Collaborator's email",
         emailPlaceholder: "collaborator@example.com",
@@ -1617,6 +1619,31 @@ const en: TranslationSchema = {
       title: "Subscription & SaaS Plans",
       subtitle: "Manage your property management plan and billing options.",
       currentStatus: "Your current status",
+      features: {
+        maxProperties5: "Up to 5 properties",
+        receipts: "Automatic rent receipts",
+        portal: "Tenant portal & declarations",
+        onlinePayments: "Online payments: card and Mobile Money (Orange Money, Wave, Free Money, MTN)",
+        issues: "Issue tracking with photos",
+        emailReminders: "Email reminders",
+        standardSupport: "Standard email support",
+        includesStarter: "Everything included in {{plan}}",
+        maxProperties25: "Up to 25 properties",
+        expenses: "Expense tracking, including recurring expenses",
+        leaseAlerts: "Lease-end & renewal alerts",
+        multiChannelReminders: "Automatic email reminders; WhatsApp being set up",
+        prioritySupport: "Priority support: reply within one business day",
+        includesPro: "Everything included in {{plan}}",
+        unlimitedProperties: "Unlimited properties",
+        team: "Multi-user management & team members",
+        accountingExports: "Advanced accounting export (general ledger, FEC, SYSCOHADA)",
+        onboardingGuide: "Onboarding support: step-by-step getting started guide and file templates",
+      },
+      planDescriptions: {
+        STARTER: "Ideal for independent landlords and small rental portfolios.",
+        PRO: "For growing property managers and agencies.",
+        ENTERPRISE: "For property management firms and co-ownership managers.",
+      },
       planActive: "{{plan}} Plan Active",
       trialStatus: "Free trial period (15 days)",
       expiredStatus: "Subscription Expired",
@@ -1913,8 +1940,8 @@ const en: TranslationSchema = {
       },
       plans: {
         STARTER: "Starter",
-        PRO: "Pro",
-        ENTERPRISE: "Enterprise",
+        PRO: "Professional",
+        ENTERPRISE: "Agency & Multi-Accounts",
       },
       statuses: {
         SUSPENDED: "Suspended",

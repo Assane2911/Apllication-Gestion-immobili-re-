@@ -85,7 +85,7 @@ export default function TrialBanner() {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>
-            <Trans i18nKey="components.trialBanner.activePlan" values={{ plan }} components={{ 1: <strong /> }} />
+            <Trans i18nKey="components.trialBanner.activePlan" values={{ plan: t(`common.plans.${plan}`, { defaultValue: plan }) }} components={{ 1: <strong /> }} />
           </span>
         </div>
         <Link to="/subscription" className="text-emerald-700 dark:text-emerald-400 hover:underline font-medium">

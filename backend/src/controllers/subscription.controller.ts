@@ -8,6 +8,7 @@ import { calculerPeriodeActivation } from "../services/subscriptionPeriod.servic
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { computeSubscriptionInfo } from "./auth.controller";
+import { NOM_FORMULE, type IdFormule } from "../utils/formules";
 
 /** Devise de repli, pour une devise utilisateur qui n'est pas tarifée. */
 export const DEVISE_PAR_DEFAUT = "EUR";
@@ -118,47 +119,67 @@ export function tarifPourDevise(planId: string, currency: string) {
   return TARIFS[planId]?.[currency] ?? null;
 }
 
+/**
+ * Lignes affichées sur la carte d'une formule : `cle` identifie la ligne pour l'interface, qui la traduit
+ * (manager.subscription.features.<cle>) ; `texte` est la version française, renvoyée telle quelle par l'API
+ * (`features`) et reprise par l'interface si une langue n'a pas la clé.
+ */
+const ligne = (cle: string, texte: string) => ({ cle, texte });
+
+const LIGNES: Record<IdFormule, ReturnType<typeof ligne>[]> = {
+  STARTER: [
+    ligne("maxProperties5", "Jusqu'à 5 biens immobiliers"),
+    ligne("receipts", "Émission automatique des quittances"),
+    ligne("portal", "Portail locataire & déclarations"),
+    ligne("onlinePayments", "Paiements en ligne : carte et Mobile Money (Orange Money, Wave, Free Money, MTN)"),
+    ligne("issues", "Suivi des incidents avec photos"),
+    ligne("emailReminders", "Rappels par email"),
+    ligne("standardSupport", "Support standard par email"),
+  ],
+  PRO: [
+    ligne("includesStarter", `Tout ce qui est inclus dans ${NOM_FORMULE.STARTER}`),
+    ligne("maxProperties25", "Jusqu'à 25 biens immobiliers"),
+    ligne("expenses", "Suivi des dépenses, y compris récurrentes"),
+    ligne("leaseAlerts", "Alertes de fin de bail & renouvellement"),
+    ligne("multiChannelReminders", "Rappels automatiques par email ; WhatsApp en cours de mise en service"),
+    ligne("prioritySupport", "Support prioritaire : réponse sous un jour ouvré"),
+  ],
+  ENTERPRISE: [
+    ligne("includesPro", `Tout ce qui est inclus dans ${NOM_FORMULE.PRO}`),
+    ligne("unlimitedProperties", "Biens immobiliers illimités"),
+    ligne("team", "Gestion multi-utilisateurs & collaborateurs"),
+    ligne("accountingExports", "Export comptable avancé (grand livre, FEC, SYSCOHADA)"),
+    ligne("onboardingGuide", "Accompagnement à la prise en main : guide de démarrage pas à pas et modèles de fichiers"),
+  ],
+};
+
+const formule = (id: IdFormule) => ({
+  features: LIGNES[id].map((l) => l.texte),
+  featureKeys: LIGNES[id].map((l) => l.cle),
+});
+
 export const SUBSCRIPTION_PLANS = [
   {
     id: "STARTER",
-    name: "Starter",
+    name: NOM_FORMULE.STARTER,
     description: "Idéal pour les propriétaires indépendants et petites locations.",
     maxProperties: 5,
-    features: [
-      "Jusqu'à 5 biens immobiliers",
-      "Émission automatique des quittances",
-      "Portail locataire & déclarations",
-      "Paiements en ligne & PayDunya (Orange Money, Wave...)",
-      "Suivi des incidents avec photos",
-      "Rappels par email",
-      "Support standard par email",
-    ],
+    ...formule("STARTER"),
   },
   {
     id: "PRO",
-    name: "Professionnel",
+    name: NOM_FORMULE.PRO,
     popular: true,
     description: "Pour les gestionnaires et agences en pleine croissance.",
     maxProperties: 25,
-    features: [
-      "Jusqu'à 25 biens immobiliers",
-      "Alertes de fin de bail & renouvellement",
-      "Rappels automatiques multi-canaux (email + WhatsApp)",
-      "Support prioritaire : réponse sous un jour ouvré",
-    ],
+    ...formule("PRO"),
   },
   {
     id: "ENTERPRISE",
-    name: "Agence & Multi-Comptes",
+    name: NOM_FORMULE.ENTERPRISE,
     description: "Pour les cabinets de gestion immobilière et syndics.",
     maxProperties: "Illimité",
-    features: [
-      "Tout ce qui est inclus dans Pro",
-      "Gestion multi-utilisateurs & collaborateurs",
-      "Export comptable avancé (grand livre, FEC, SYSCOHADA)",
-      "Accompagnement à la prise en main : guide de démarrage pas à pas et modèles de fichiers",
-      "Support prioritaire : réponse sous un jour ouvré",
-    ],
+    ...formule("ENTERPRISE"),
   },
 ];
 
