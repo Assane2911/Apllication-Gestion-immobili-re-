@@ -5,6 +5,7 @@ import { app } from "../app";
 import { env } from "../config/env";
 import {
   adminAuditLogs,
+  agencySettings,
   contracts,
   invoices,
   listingLeads,
@@ -206,6 +207,17 @@ describe("suppression d'un compte suspendu", () => {
     await supprimer(cible.id, token, { email: cible.email, reason: MOTIF });
 
     expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith("https://stockage.test/biens/photo-1.jpg");
+  });
+
+  it("supprime aussi le logo de l'agence du stockage public : il survivrait sinon, sans plus aucune référence pour le retrouver", async () => {
+    const token = await adminToken();
+    const cible = await suspendu();
+    const logo = "https://stockage.test/storage/v1/object/public/public-uploads/agency/logo-agence.png";
+    await testDb.insert(agencySettings).values({ userId: cible.id, agencyName: "Agence Teranga", logoUrl: logo });
+
+    await supprimer(cible.id, token, { email: cible.email, reason: MOTIF });
+
+    expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith(logo);
   });
 
   it("trace la suppression avec l'email et la volumétrie, la trace survivant au compte", async () => {

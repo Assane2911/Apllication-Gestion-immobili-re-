@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { SUPPORTED_LANGUAGES } from "../i18n";
+import { changerLangue, SUPPORTED_LANGUAGES } from "../i18n";
 
 interface LanguageSwitcherProps {
   className?: string;
@@ -22,7 +22,7 @@ export default function LanguageSwitcher({ className = "", variant = "dark" }: L
     <div className={`relative inline-flex items-center ${className}`}>
       <select
         value={i18n.resolvedLanguage || i18n.language}
-        onChange={(e) => i18n.changeLanguage(e.target.value)}
+        onChange={(e) => void changerLangue(e.target.value)}
         aria-label={t("common.language.selectAria")}
         title={t("common.language.selectAria")}
         className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 cursor-pointer shadow-sm transition-all ${

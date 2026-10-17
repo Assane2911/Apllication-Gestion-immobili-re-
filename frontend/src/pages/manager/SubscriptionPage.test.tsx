@@ -6,7 +6,7 @@ import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
 import type { AuthUser, SubscriptionInfo, SubscriptionPlanDetail } from "../../types";
-import i18n from "../../i18n";
+import { changerLangue } from "../../i18n";
 import SubscriptionPage from "./SubscriptionPage";
 
 vi.mock("../../api/client", async () => {
@@ -431,7 +431,7 @@ describe("SubscriptionPage", () => {
     });
 
     it("affiche les lignes dans la langue de l'interface plutôt qu'en français pour tout le monde", async () => {
-      await i18n.changeLanguage("en");
+      await changerLangue("en");
       try {
         seedUser(authUser());
         queueGet({ data: formulesAvecCles() });
@@ -444,7 +444,7 @@ describe("SubscriptionPage", () => {
         expect(screen.getByText("Professional")).toBeInTheDocument();
         expect(screen.queryByText("Jusqu'à 25 biens immobiliers")).not.toBeInTheDocument();
       } finally {
-        await i18n.changeLanguage("fr");
+        await changerLangue("fr");
       }
     });
 
