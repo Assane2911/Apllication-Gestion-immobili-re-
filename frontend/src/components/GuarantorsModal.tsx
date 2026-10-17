@@ -15,6 +15,13 @@ interface GuarantorsModalProps {
   onClose: () => void;
 }
 
+/** Lit un plafond saisi à la main : « 1 500 000,50 » vaut 1500000.5 ; « » vaut sans plafond ; tout autre texte est illisible. */
+function lirePlafond(saisie: string): number | null | "illisible" {
+  const texte = saisie.replace(/[\s\u00a0\u202f]/g, "").replace(",", ".");
+  if (texte === "") return null;
+  return /^\d+(\.\d+)?$/.test(texte) ? Number(texte) : "illisible";
+}
+
 const vide = { civility: "", firstName: "", lastName: "", phone: "", email: "", address: "", maxAmount: "", notes: "" };
 
 /** Garants d'un bail : liste, ajout, modification, retrait (jusqu'à la signature du locataire). */
@@ -53,8 +60,13 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
 
   async function enregistrer(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+    const plafond = lirePlafond(form.maxAmount);
+    if (plafond === "illisible") {
+      setError(t("components.guarantors.maxAmountInvalid"));
+      return;
+    }
+    setSaving(true);
     const corps = {
       civility: form.civility || null,
       firstName: form.firstName,
@@ -62,7 +74,7 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
       phone: form.phone,
       email: form.email.trim() || null,
       address: form.address.trim() || null,
-      maxAmount: form.maxAmount.trim() === "" ? null : Number(form.maxAmount.replace(",", ".")),
+      maxAmount: plafond,
       notes: form.notes.trim() || null,
     };
     try {
@@ -166,7 +178,8 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
             </div>
             <div>
               <label htmlFor="g-email" className={etiquette}>{t("components.guarantors.email")}</label>
-              <input id="g-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={champ} />
+              <input id="g-email" type="email" aria-describedby="g-email-hint" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={champ} />
+              <p id="g-email-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("components.guarantors.emailHint")}</p>
             </div>
             <div>
               <label htmlFor="g-maxAmount" className={etiquette}>{t("components.guarantors.maxAmount")}</label>

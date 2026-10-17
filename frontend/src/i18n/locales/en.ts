@@ -596,6 +596,8 @@ const en: TranslationSchema = {
       remove: "Remove {{name}}",
       confirmDelete: "Remove {{name}} from this lease's guarantors?",
       maxAmountRow: "Maximum guaranteed amount: {{amount}}",
+      emailHint: "Without an email, this guarantor will receive neither reminders nor a copy of a formal notice.",
+      maxAmountInvalid: "Unreadable maximum guaranteed amount: enter a number, for example 1500000.",
     },
     payouts: {
       title: "Payouts to the owner",
@@ -634,6 +636,8 @@ const en: TranslationSchema = {
       doneEmail: "It was sent by email.",
       doneEmailFailed: "The email could not be sent: print the letter and send it by registered mail.",
       doneNoEmail: "No email was sent.",
+      doneGuarantors: "Copy sent to {{count}} guarantor(s).",
+      doneGuarantorsNone: "No guarantor received the copy: missing email or sending failed. Check the lease's guarantors.",
       open: "Open the letter",
       docTitle: "Formal notice to pay",
     },

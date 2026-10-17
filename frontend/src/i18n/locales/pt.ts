@@ -596,6 +596,8 @@ const pt: TranslationSchema = {
       remove: "Retirar {{name}}",
       confirmDelete: "Retirar {{name}} dos fiadores deste contrato?",
       maxAmountRow: "Montante máximo garantido: {{amount}}",
+      emailHint: "Sem email, este fiador não receberá lembretes nem cópia de uma notificação de pagamento.",
+      maxAmountInvalid: "Montante máximo garantido ilegível: introduza um número, por exemplo 1500000.",
     },
     payouts: {
       title: "Pagamentos ao proprietário",
@@ -634,6 +636,8 @@ const pt: TranslationSchema = {
       doneEmail: "Foi enviada por email.",
       doneEmailFailed: "Não foi possível enviar o email: imprima a carta e envie-a por correio registado.",
       doneNoEmail: "Nenhum email foi enviado.",
+      doneGuarantors: "Cópia enviada a {{count}} fiador(es).",
+      doneGuarantorsNone: "Nenhum fiador recebeu a cópia: falta o email ou o envio falhou. Verifique os fiadores do contrato.",
       open: "Abrir a carta",
       docTitle: "Notificação para pagamento",
     },

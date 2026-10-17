@@ -149,6 +149,37 @@ describe("relances graduées", () => {
     expect(avisGarant[1]).toContain("loyer impayé de Awa Sow");
   });
 
+  it("n'annonce pas avoir prévenu un garant dont l'email n'est pas parti", async () => {
+    const { manager, contract } = await agence({ overdueRemindersEnabled: true, overdueNotifyGuarantors: true });
+    await testDb.insert(contractGuarantors).values({ contractId: contract.id, firstName: "Ibrahima", lastName: "Fall", phone: "+221771234567", email: "garant@example.com" });
+    await facture(contract.id, 5);
+    aLaDate(2026, 9, 30); // niveau 3 : le garant est visé
+    // Le locataire est joint, pas le garant (échec d'envoi : `sendEmail` ne lève pas, il renvoie `error`).
+    envoi.mockImplementation((async (to: string) => (to === "garant@example.com" ? { simulated: false, error: true } : { simulated: true })) as never);
+
+    await runOverdueReminders();
+
+    const journal = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
+    expect(journal.some((l: { details: string | null }) => (l.details ?? "").includes("garant(s) prévenu(s)"))).toBe(false);
+  });
+
+  it("rappelle au garant le montant maximal qu'il a garanti, quand il y en a un", async () => {
+    const { contract } = await agence({ overdueRemindersEnabled: true, overdueNotifyGuarantors: true });
+    await testDb.insert(contractGuarantors).values([
+      { contractId: contract.id, firstName: "Ibrahima", lastName: "Fall", phone: "+221771234567", email: "plafonne@example.com", maxAmount: 300 },
+      { contractId: contract.id, firstName: "Moussa", lastName: "Ba", phone: "+221771234568", email: "illimite@example.com" },
+    ]);
+    await facture(contract.id, 5);
+    aLaDate(2026, 9, 30);
+
+    await runOverdueReminders();
+
+    const html = (a: string) => String(envoi.mock.calls.find((c: unknown[]) => c[0] === a)![2]);
+    expect(html("plafonne@example.com")).toContain("montant maximal que vous avez garanti");
+    expect(html("plafonne@example.com")).toContain("300");
+    expect(html("illimite@example.com")).not.toContain("montant maximal que vous avez garanti");
+  });
+
   it("sans l'option, le garant n'est jamais prévenu", async () => {
     const { contract } = await agence();
     await testDb.insert(contractGuarantors).values({ contractId: contract.id, firstName: "I", lastName: "F", phone: "+221771234567", email: "garant@example.com" });

@@ -110,4 +110,40 @@ describe("GuarantorsModal", () => {
     await user.click(screen.getByRole("button", { name: "Enregistrer le garant" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("au plus 5 garants");
   });
+
+  it("accepte un plafond saisi avec des espaces et une virgule", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValue({ data: [] });
+    mockedApi.post.mockResolvedValueOnce({ data: garant() });
+    afficher();
+    await user.click(await screen.findByRole("button", { name: "+ Ajouter un garant" }));
+    await user.type(screen.getByLabelText("Prénom"), "A");
+    await user.type(screen.getByLabelText("Nom"), "B");
+    await user.type(screen.getByLabelText("Téléphone"), "771234567");
+    await user.type(screen.getByLabelText("Montant maximal garanti (facultatif)"), "1 500 000,50");
+    await user.click(screen.getByRole("button", { name: "Enregistrer le garant" }));
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/guarantors", expect.objectContaining({ maxAmount: 1500000.5 })));
+  });
+
+  it("refuse un plafond illisible au lieu de l'enregistrer sans plafond", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValue({ data: [] });
+    afficher();
+    await user.click(await screen.findByRole("button", { name: "+ Ajouter un garant" }));
+    await user.type(screen.getByLabelText("Prénom"), "A");
+    await user.type(screen.getByLabelText("Nom"), "B");
+    await user.type(screen.getByLabelText("Téléphone"), "771234567");
+    await user.type(screen.getByLabelText("Montant maximal garanti (facultatif)"), "un million");
+    await user.click(screen.getByRole("button", { name: "Enregistrer le garant" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Montant maximal garanti illisible");
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("prévient qu'un garant sans email ne recevra aucun courrier", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValue({ data: [] });
+    afficher();
+    await user.click(await screen.findByRole("button", { name: "+ Ajouter un garant" }));
+    expect(screen.getByLabelText("Email (facultatif)")).toHaveAccessibleDescription(/ne recevra ni relance ni copie de mise en demeure/);
+  });
 });
