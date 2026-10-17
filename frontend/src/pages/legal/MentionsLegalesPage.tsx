@@ -15,14 +15,16 @@ export default function MentionsLegalesPage() {
           items={[
             <>Nom : <strong className="text-slate-100">{COMPANY.fullName}</strong></>,
             <>Statut juridique : {COMPANY.legalStatus}</>,
+            <>Représentant légal : {COMPANY.representative} (membre unique)</>,
             <>Numéro SIRET : {COMPANY.siret}</>,
+            <>Numéro d'identification fiscale américain (EIN) : {COMPANY.ein}</>,
             <>Adresse : {COMPANY.address}</>,
             <>Email de contact : {COMPANY.contactEmail}</>,
             <>Pays : {COMPANY.country}</>,
           ]}
         />
         <p>
-          Directeur de la publication : {COMPANY.fullName}.
+          Directeur de la publication : {COMPANY.representative}.
         </p>
       </LegalSection>
 

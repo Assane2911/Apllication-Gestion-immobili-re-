@@ -1,41 +1,39 @@
 /**
  * Informations juridiques de l'éditeur d'ImmoPlatform Pro.
  *
- * Statut actuel (21 sept. 2026) : le service est édité par une personne physique,
- * en cours de constitution d'une société (LLC américaine, Wyoming — dossier Doola,
- * EIN attendu ~nov. 2026). Ces informations seront mises à jour dès que la LLC sera
- * juridiquement finalisée (nom social, EIN, adresse officielle).
+ * Le service est édité par ImmoPlatform Pro LLC, société à responsabilité limitée
+ * de droit américain immatriculée dans l'État du Wyoming. Son numéro d'identification
+ * fiscale (EIN) a été attribué par l'IRS le 8 octobre 2026 ; l'adresse est celle
+ * qui figure sur la lettre de l'IRS (adresse du registered agent). Le dirigeant
+ * est son membre unique.
  *
- * ⚠️ "address" porte une formulation TRANSITOIRE, pas une adresse. La mention
- * d'une adresse est obligatoire pour un éditeur de service en ligne, et elle
- * n'est pas encore connue : plutôt que d'afficher un « [À COMPLÉTER] » — qui
- * donnait au visiteur un chantier inachevé là où il vient précisément vérifier
- * à qui il confie ses données — on indique par quel moyen l'obtenir, ce qui est
- * l'objet même de l'obligation. À remplacer par l'adresse réelle (registered
- * agent de la LLC, ou domiciliation) dès qu'elle existe : c'est la seule ligne
- * à changer, les 3 pages légales lisent ce fichier.
+ * La date d'immatriculation de la LLC n'est pas affichée : elle ne figure pas sur
+ * la lettre de l'IRS, et on n'affiche pas une date que l'on n'a pas vérifiée.
  *
- * Une fois complétées, ce fichier est la seule source à modifier : les 3 pages
- * légales (mentions-legales, cgu, confidentialite) l'importent toutes.
+ * Ce fichier est la seule source à modifier : les 3 pages légales (mentions-legales,
+ * cgu, confidentialite) l'importent toutes.
  */
 export const COMPANY = {
-  /** Nom et prénom de l'éditeur, personne physique (société en cours de formation). */
-  fullName: "Imame Assane Thiam",
+  /** Dénomination sociale de l'éditeur. */
+  fullName: "ImmoPlatform Pro LLC",
+  /** Représentant légal (membre unique) ; aussi directeur de la publication. */
+  representative: "Imame Assane Thiam",
   /** Nom commercial utilisé pour le service. */
   tradeName: "ImmoPlatform Pro",
   /** Statut juridique. */
-  legalStatus:
-    "Personne physique, société en cours de formation (future entité américaine ImmoPlatform Pro LLC, Wyoming, en cours d'immatriculation)",
-  /** Numéro SIRET (14 chiffres) — non applicable, la structure en formation est une LLC américaine. */
-  siret: "Non applicable (entité en cours de formation aux États-Unis)",
-  /** Adresse professionnelle — voir l'avertissement en tête de fichier. */
-  address: "communiquée sur demande à l'adresse email de contact (société en cours d'immatriculation)",
+  legalStatus: "Société à responsabilité limitée de droit américain (LLC), immatriculée dans l'État du Wyoming (États-Unis)",
+  /** Numéro d'identification fiscale américain (EIN), attribué par l'IRS. */
+  ein: "30-1510500",
+  /** Numéro SIRET (14 chiffres) — non applicable : société de droit américain. */
+  siret: "Non applicable (société de droit américain)",
+  /** Adresse professionnelle (celle de la lettre de l'IRS). */
+  address: "30 N Gould St, Ste R, Sheridan, WY 82801, États-Unis",
   /** Email de contact pour les questions légales, contractuelles et RGPD. */
   contactEmail: "assane@immoplatformpro.com",
   /** Pays et droit applicable. */
   country: "France",
   /** Date de dernière mise à jour des documents légaux (à mettre à jour à chaque révision). */
-  lastUpdated: "24 septembre 2026",
+  lastUpdated: "17 octobre 2026",
 };
 
 /** Sous-traitants techniques mentionnés dans la politique de confidentialité. */
