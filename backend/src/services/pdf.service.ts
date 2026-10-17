@@ -24,6 +24,12 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
+/**
+ * Mention de pied de la quittance quand l'agence n'a saisi aucune mention légale. Elle dit seulement qui a émis le
+ * document : la plateforme n'atteste la conformité d'aucun document (voir le bail).
+ */
+export const MENTION_PIED_QUITTANCE = "Document émis par le système de gestion locative immobilière.";
+
 export interface ReceiptData {
   receiptNumber: string;
   agency: {
@@ -323,7 +329,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
   </div>
 
   <div class="footer-legal">
-    ${escapeHtml(data.agency.legalNotice) || "Document émis et certifié conforme par le système de gestion locative immobilière."}
+    ${escapeHtml(data.agency.legalNotice) || MENTION_PIED_QUITTANCE}
     <br>Cette quittance annule tous les reçus qui auraient pu être donnés pour acompte versé sur le présent terme.
   </div>
 </body>
@@ -573,8 +579,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
         .fontSize(8)
         .fillColor("#94a3b8")
         .text(
-          data.agency.legalNotice ||
-            "Document émis et certifié conforme par le système de gestion locative immobilière.",
+          data.agency.legalNotice || MENTION_PIED_QUITTANCE,
           doc.page.margins.left,
           doc.page.height - doc.page.margins.bottom - 40,
           { width: pageWidth, align: "center" }
