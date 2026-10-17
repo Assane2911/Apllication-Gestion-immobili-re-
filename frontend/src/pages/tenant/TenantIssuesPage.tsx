@@ -265,7 +265,7 @@ export default function TenantIssuesPage() {
                 <div>
                   {/* Galerie photos */}
                   <div className="relative">
-                    <div className="flex gap-2 overflow-x-auto p-3 bg-slate-900 dark:bg-black/40">
+                    <div className="surface-sombre flex gap-2 overflow-x-auto p-3 bg-slate-900 dark:bg-black/40">
                       {allPhotos.map((url, idx) => (
                         <div
                           key={idx}

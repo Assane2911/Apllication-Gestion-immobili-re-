@@ -196,7 +196,7 @@ export default function ManagerLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+      <main data-surface="app" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between gap-3 mb-6">
           <button
             onClick={() => setMobileNavOpen(true)}
