@@ -5,6 +5,7 @@ import {
   generateInspectionHtml,
   generateLeaseHtml,
   generateReceiptHtml,
+  colonnesRecapQuittance,
   generateReceiptPdfBuffer,
   InspectionExportData,
   ReceiptData,
@@ -359,6 +360,22 @@ describe("generateLeaseHtml", () => {
   });
 });
 
+describe("colonnesRecapQuittance — tableau de la quittance PDF", () => {
+  it("arrête la colonne « Moyen de paiement » avant le montant, quelle que soit sa longueur", () => {
+    const largeurPage = 485;
+    for (const largeurMontant of [60, 75, 110]) {
+      const c = colonnesRecapQuittance(largeurPage, largeurMontant);
+      // Le texte du moyen occupe [moyenX, moyenX + moyenLargeur] ; le montant commence à (largeurPage - 10 - largeurMontant).
+      expect(c.moyenX + c.moyenLargeur).toBeLessThan(largeurPage - 10 - largeurMontant);
+      expect(c.periodeX + c.periodeLargeur).toBeLessThan(c.moyenX);
+    }
+  });
+
+  it("garde une largeur lisible pour le libellé du moyen de paiement", () => {
+    expect(colonnesRecapQuittance(485, 75).moyenLargeur).toBeGreaterThanOrEqual(100);
+  });
+});
+
 describe("generateInspectionHtml", () => {
   const baseInspection: InspectionExportData = {
     reference: "EDL-2026-06-A1B2C3",
@@ -391,6 +408,29 @@ describe("generateInspectionHtml", () => {
     expect(html).toContain("Bon état");
     expect(html).toContain("Clé principale");
     expect(html).toContain("Aucune remarque.");
+  });
+
+  it("garde les retours à la ligne saisis dans les observations des pièces et les observations générales", () => {
+    const html = generateInspectionHtml({
+      ...baseInspection,
+      rooms: [{ name: "Cuisine", condition: "MOYEN", notes: "Évier ébréché.\nHotte graisseuse." }],
+      generalComments: "Logement propre.\nClés remises en main propre.",
+    });
+    expect(html).toContain("Évier ébréché.<br>Hotte graisseuse.");
+    expect(html).toContain("Logement propre.<br>Clés remises en main propre.");
+  });
+
+  it("garde l'échappement quand il garde les retours à la ligne", () => {
+    const html = generateInspectionHtml({ ...baseInspection, rooms: [{ name: "Salon", condition: "BON", notes: "<b>a</b>\nb" }], generalComments: "<i>c</i>\nd" });
+    expect(html).toContain("&lt;b&gt;a&lt;/b&gt;<br>b");
+    expect(html).toContain("&lt;i&gt;c&lt;/i&gt;<br>d");
+    expect(html).not.toContain("<b>a</b>");
+  });
+
+  it("empêche qu'un cadre de signature ou une ligne de tableau soit coupé entre deux pages à l'impression", () => {
+    const html = generateInspectionHtml(baseInspection);
+    expect(html).toMatch(/\.sig-block\s*\{[^}]*break-inside:\s*avoid/);
+    expect(html).toMatch(/tr\s*\{[^}]*break-inside:\s*avoid/);
   });
 
   // Même principe que generateReceiptHtml/generateLeaseHtml : ce document HTML
@@ -505,6 +545,32 @@ describe("generateCrgHtml", () => {
     expect(html).toContain(formaterMontant(223765.5, "EUR"));
     expect(html).not.toContain("1234.5 EUR");
     expect(html).not.toContain("25000 EUR");
+  });
+
+  it("titre la ligne de total avec le symbole de la devise (« Total FCFA »), pas son code ISO", () => {
+    const xof = {
+      ...baseCrg,
+      properties: [{ ...baseCrg.properties[0], currency: "XOF" }],
+      totalLoyersByCurrency: { XOF: 250000 },
+      totalChargesByCurrency: { XOF: 0 },
+      totalCommissionByCurrency: { XOF: 25000 },
+      totalNetByCurrency: { XOF: 225000 },
+    };
+    const html = generateCrgHtml(xof);
+    expect(html).toContain("Total FCFA");
+    expect(html).not.toContain("Total XOF");
+    // Devise sans symbole connu : le code brut reste affiché plutôt qu'un libellé inventé.
+    expect(generateCrgHtml({ ...xof, properties: [{ ...xof.properties[0], currency: "ZZZ" }], totalLoyersByCurrency: { ZZZ: 1 }, totalChargesByCurrency: {}, totalCommissionByCurrency: {}, totalNetByCurrency: {} })).toContain("Total ZZZ");
+  });
+
+  it("écrit le taux de commission comme le reste des documents (« 10 % », espace avant le signe)", () => {
+    const html = generateCrgHtml(baseCrg);
+    expect(html).toContain("Taux de commission :</strong> 10 %");
+    expect(html).not.toContain("10%");
+  });
+
+  it("empêche qu'une ligne de tableau soit coupée entre deux pages à l'impression", () => {
+    expect(generateCrgHtml(baseCrg)).toMatch(/tr\s*\{[^}]*break-inside:\s*avoid/);
   });
 });
 

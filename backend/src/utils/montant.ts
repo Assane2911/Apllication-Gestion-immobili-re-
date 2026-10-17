@@ -33,3 +33,9 @@ export function formaterMontant(montant: number, devise?: string | null): string
     ? `${presentation.symbole}${nombre}`
     : `${nombre} ${presentation.symbole}`;
 }
+
+/** Le symbole d'une devise (« FCFA », « € »), ou son code ISO brut quand elle est inconnue : pour titrer une colonne ou un total. */
+export function symboleDevise(devise?: string | null): string {
+  const code = devise || "EUR";
+  return DEVISES[code]?.symbole ?? code;
+}

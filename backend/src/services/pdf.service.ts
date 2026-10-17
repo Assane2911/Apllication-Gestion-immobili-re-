@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit";
-import { formaterMontant } from "../utils/montant";
+import { formaterMontant, symboleDevise } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { libelleEcheance } from "../utils/jourEcheance";
 import { libelleSurface, titreDuBail } from "../utils/typeBail";
@@ -353,6 +353,23 @@ function documentPdf(options: PDFKit.PDFDocumentOptions): PDFKit.PDFDocument {
   return doc;
 }
 
+/**
+ * Colonnes du tableau récapitulatif de la quittance PDF. Le montant est aligné à droite dans la même zone que
+ * « Moyen de paiement » : la colonne du moyen s'arrête donc avant lui (largeur du montant + marge), sinon un libellé
+ * long (« Mobile Money / carte (en ligne) ») s'imprimait par-dessus le montant. Le libellé passe à la ligne au besoin.
+ */
+export function colonnesRecapQuittance(largeurPage: number, largeurMontant: number) {
+  const periodeX = largeurPage * 0.38;
+  const moyenX = largeurPage * 0.58;
+  const montantGauche = largeurPage - 10 - largeurMontant;
+  return {
+    periodeX,
+    periodeLargeur: moyenX - periodeX - 10,
+    moyenX,
+    moyenLargeur: Math.max(40, montantGauche - 12 - moyenX),
+  };
+}
+
 export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
@@ -471,9 +488,12 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
       // --- Tableau récapitulatif ---
       const tableTop = doc.y;
       const col1 = doc.page.margins.left;
-      const col2 = col1 + pageWidth * 0.4;
-      const col3 = col1 + pageWidth * 0.65;
-      const col4w = pageWidth * 0.35 - 10;
+      doc.font("Helvetica-Bold").fontSize(9);
+      const montantRecu = formaterMontant(data.invoice.amount, data.invoice.currency);
+      const colonnes = colonnesRecapQuittance(pageWidth, doc.widthOfString(montantRecu));
+      const col2 = col1 + colonnes.periodeX;
+      const col3 = col1 + colonnes.moyenX;
+      const col4w = colonnes.moyenLargeur;
 
       doc.rect(col1, tableTop, pageWidth, 24).fill(dark);
       doc
@@ -491,7 +511,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
         .font("Helvetica")
         .fontSize(9)
         .text("Loyer mensuel & charges locatives", col1 + 10, rowTop + 8, { width: col2 - col1 - 20 })
-        .text(periodLabel, col2, rowTop + 8, { width: col3 - col2 - 10 })
+        .text(periodLabel, col2, rowTop + 8, { width: colonnes.periodeLargeur })
         .text(libelleMoyenPaiement(data.invoice.paymentMethod), col3, rowTop + 8, { width: col4w })
         .font("Helvetica-Bold")
         .text(formaterMontant(data.invoice.amount, data.invoice.currency), col1, rowTop + 8, {
@@ -822,7 +842,7 @@ export function generateInspectionHtml(data: InspectionExportData): string {
       <tr>
         <td>${escapeHtml(room.name)}</td>
         <td><span style="color:${conditionColor[room.condition] || "#475569"}; font-weight:600;">${escapeHtml(conditionLabel[room.condition] || room.condition)}</span></td>
-        <td>${escapeHtml(room.notes) || "—"}</td>
+        <td>${escapeHtml(room.notes).replace(/\r?\n/g, "<br>") || "—"}</td>
       </tr>`
         )
         .join("")
@@ -856,7 +876,8 @@ export function generateInspectionHtml(data: InspectionExportData): string {
     .meter-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; }
     .meter-value { font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 2px; }
     .signatures { display: flex; justify-content: space-between; margin-top: 32px; }
-    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; }
+    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; break-inside: avoid; }
+    tr { break-inside: avoid; }
     .sig-img { max-height: 60px; margin-top: 8px; }
     .stamp-certified { display:inline-block; margin-top: 16px; color: #059669; font-weight: 700; border: 1px dashed #059669; background: #ecfdf5; border-radius: 8px; padding: 8px 16px; font-size: 12px; }
   </style>
@@ -903,7 +924,7 @@ export function generateInspectionHtml(data: InspectionExportData): string {
     data.generalComments
       ? `<div class="section">
     <div class="section-title">5. Observations Générales</div>
-    <div class="box">${escapeHtml(data.generalComments)}</div>
+    <div class="box">${escapeHtml(data.generalComments).replace(/\r?\n/g, "<br>")}</div>
   </div>`
       : ""
   }
@@ -1019,7 +1040,7 @@ export function generateCrgHtml(data: CrgExportData): string {
         .map(
           (currency) => `
       <tr class="total-row">
-        <td>Total ${escapeHtml(currency)}</td>
+        <td>Total ${escapeHtml(symboleDevise(currency))}</td>
         <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalLoyersByCurrency[currency] ?? 0, currency))}</td>
         <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalChargesByCurrency[currency] ?? 0, currency))}</td>
         <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalCommissionByCurrency[currency] ?? 0, currency))}</td>
@@ -1047,6 +1068,7 @@ export function generateCrgHtml(data: CrgExportData): string {
     th { background: #0f172a; color: #fff; text-align: left; padding: 8px 10px; }
     th.num, td.num { text-align: right; }
     td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    tr { break-inside: avoid; }
     .total-row td { font-weight: 700; background: #f1f5f9; border-top: 2px solid #0f172a; }
     .footer-legal { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; }
   </style>
@@ -1060,7 +1082,7 @@ export function generateCrgHtml(data: CrgExportData): string {
     <div class="box">
       <strong>Agence / Mandataire :</strong> ${escapeHtml(data.agencyName)}<br>
       <strong>Propriétaire :</strong> ${escapeHtml(data.ownerName)}${data.ownerCompanyName ? ` (${escapeHtml(data.ownerCompanyName)})` : ""}<br>
-      <strong>Taux de commission :</strong> ${data.managementFeeRate}%
+      <strong>Taux de commission :</strong> ${data.managementFeeRate} %
     </div>
   </div>
 
