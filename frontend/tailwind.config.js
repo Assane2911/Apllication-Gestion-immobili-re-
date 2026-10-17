@@ -44,21 +44,25 @@ export default {
       // Les teintes des ombres sont celles du texte (slate-900), pas du noir pur :
       // plus douces sur fond clair. `xs` et `2xs` n'existent pas dans Tailwind 3 (ce
       // sont des noms de la v4) : les ~50 éléments qui les utilisaient n'avaient
-      // aucune ombre — d'où des cartes plates. Elles sont définies ici, et les
-      // ombres courantes (sm, DEFAULT, md) sont renforcées pour le thème clair. En
-      // thème sombre elles restent à peine visibles sur fond sombre, sans gêne.
+      // aucune ombre — d'où des cartes plates. Elles sont définies ici. Chaque
+      // ombre superpose deux couches (une ombre de contact serrée + une ombre
+      // portée diffuse) : c'est ce qui donne du relief sans alourdir. En thème
+      // sombre elles restent à peine visibles sur fond sombre, sans gêne.
       boxShadow: {
-        "2xs": "0 1px 1px 0 rgb(15 23 42 / 0.06)",
-        xs: "0 1px 2px 0 rgb(15 23 42 / 0.08)",
-        sm: "0 1px 3px 0 rgb(15 23 42 / 0.1), 0 1px 2px -1px rgb(15 23 42 / 0.08)",
-        DEFAULT: "0 2px 6px -1px rgb(15 23 42 / 0.12), 0 1px 3px -1px rgb(15 23 42 / 0.08)",
-        md: "0 6px 14px -3px rgb(15 23 42 / 0.14), 0 2px 6px -2px rgb(15 23 42 / 0.08)",
+        "2xs": "0 1px 2px 0 rgb(15 23 42 / 0.09), 0 1px 4px -1px rgb(15 23 42 / 0.07)",
+        xs: "0 1px 2px 0 rgb(15 23 42 / 0.12), 0 3px 8px -2px rgb(15 23 42 / 0.1)",
+        sm: "0 1px 3px 0 rgb(15 23 42 / 0.12), 0 4px 10px -4px rgb(15 23 42 / 0.12)",
+        DEFAULT: "0 2px 4px -1px rgb(15 23 42 / 0.12), 0 6px 14px -4px rgb(15 23 42 / 0.14)",
+        md: "0 4px 8px -2px rgb(15 23 42 / 0.12), 0 12px 24px -6px rgb(15 23 42 / 0.16)",
+        lg: "0 8px 16px -4px rgb(15 23 42 / 0.14), 0 20px 40px -10px rgb(15 23 42 / 0.18)",
+        xl: "0 12px 24px -6px rgb(15 23 42 / 0.16), 0 32px 56px -14px rgb(15 23 42 / 0.22)",
       },
-      // Contour des cartes et champs : slate-200 (#e2e8f0) disparaissait sur fond
-      // clair. Seule l'utilité `border-slate-200` est resserrée (le texte et les
-      // fonds en slate-200 gardent leur teinte).
+      // Contours et séparateurs : slate-200 (#e2e8f0) et slate-100 (#f1f5f9)
+      // disparaissaient sur fond clair (les `divide-slate-100` des listes
+      // étaient invisibles). Seules les utilités `border-*`/`divide-*` sont
+      // resserrées (le texte et les fonds en slate-100/200 gardent leur teinte).
       borderColor: {
-        slate: { 200: "#d4dce8" },
+        slate: { 100: "#e3e9f1", 200: "#d4dce8" },
       },
       keyframes: {
         float: {

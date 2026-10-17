@@ -99,7 +99,7 @@ export default function OwnerLayout() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main data-surface="app" className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Outlet />
       </main>
 
