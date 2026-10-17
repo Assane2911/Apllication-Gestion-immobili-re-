@@ -238,6 +238,9 @@ export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: R
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
   const [agency] = property?.managerId ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId)) : [];
 
+  const guarantors = await db.select().from(contractGuarantors).where(eq(contractGuarantors.contractId, contract.id));
+  const cotenants = (await colocatairesDuBail(contract.id)).map((c: { tenant: typeof tenants.$inferSelect }) => c.tenant);
+
   const html = generateRentRevisionHtml(
     {
       numero: await numeroAvenant(revision),
@@ -252,6 +255,8 @@ export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: R
       contract,
       property,
       tenant,
+      guarantors,
+      cotenants,
     },
     agency || { agencyName: "Agence Immobilière" }
   );

@@ -1,7 +1,7 @@
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { rentRevisions } from "../db/schema";
+import { contractCotenants, contractGuarantors, rentRevisions } from "../db/schema";
 import { bauxAReviser } from "../services/rentRevision.service";
 import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor, tokenLocataire } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -149,6 +149,43 @@ describe("avenant de révision", () => {
     expect(res.text).not.toContain("<annuelle>");
     expect(res.text).toContain("Toutes les autres clauses du bail demeurent inchangées");
     expect(res.text).not.toMatch(/conforme/i);
+  });
+
+  it("cite les colocataires et les garants du bail, avec un cadre de signature chacun : la révision change ce qu'ils doivent ou garantissent", async () => {
+    const { manager, h, contract, revision } = await avecRevision();
+    const coloc = await createTenant(manager.id, { email: "binta@example.com", firstName: "Binta", lastName: "Sy" });
+    await testDb.insert(contractCotenants).values({ contractId: contract.id, tenantId: coloc.id });
+    await testDb.insert(contractGuarantors).values([
+      { contractId: contract.id, firstName: "Ibrahima", lastName: "Fall", phone: "+221771234567", maxAmount: 3000 },
+      { contractId: contract.id, firstName: "Moussa", lastName: "Ba", phone: "+221771234568" },
+    ]);
+
+    const res = await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(h);
+
+    expect(res.text).toContain("Colocataire :</strong> Binta Sy");
+    expect(res.text).toMatch(/Garant :<\/strong> Ibrahima Fall[^<]*Montant maximal garanti : 3\s?000/);
+    expect(res.text).toMatch(/Garant :<\/strong> Moussa Ba[^<]*Montant maximal garanti : non précisé/);
+    expect(res.text).toContain("Le Colocataire :</strong> Binta Sy");
+    expect(res.text).toContain("Le Garant :</strong> Ibrahima Fall");
+    expect(res.text).toContain("Le Garant :</strong> Moussa Ba");
+    // « En deux exemplaires » ne tient plus avec quatre signataires de plus.
+    expect(res.text).toContain("en autant d'exemplaires que de signataires");
+    expect(res.text).not.toContain("en deux exemplaires");
+  });
+
+  it("un bail sans colocataire ni garant garde un avenant à deux signatures", async () => {
+    const { h, revision } = await avecRevision();
+    const res = await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(h);
+    expect(res.text).not.toContain("Garant :");
+    expect(res.text).not.toContain("Colocataire :");
+    expect(res.text.match(/class="sig-block"/g)).toHaveLength(2);
+    expect(res.text).toContain("en deux exemplaires");
+  });
+
+  it("empêche qu'un cadre de signature soit coupé entre deux pages à l'impression", async () => {
+    const { h, revision } = await avecRevision();
+    const res = await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(h);
+    expect(res.text).toMatch(/\.sig-block\s*\{[^}]*break-inside:\s*avoid/);
   });
 
   it("numérote les avenants successifs et signale une révision programmée", async () => {
