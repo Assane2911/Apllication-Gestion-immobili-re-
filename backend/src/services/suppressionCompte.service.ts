@@ -1,6 +1,6 @@
 import { eq, inArray, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
-import { contracts, invoices, issueReports, listings, properties, tenants, users } from "../db/schema";
+import { agencySettings, contracts, invoices, issueReports, listings, properties, tenants, users } from "../db/schema";
 import { cancelStripeSubscriptionNow } from "./payment.service";
 import { deleteStorageObjectBestEffort } from "./storage.service";
 
@@ -38,7 +38,7 @@ import { deleteStorageObjectBestEffort } from "./storage.service";
 export async function supprimerCompteGestionnaire(user: typeof users.$inferSelect) {
   if (user.stripeSubscriptionId) await cancelStripeSubscriptionNow(user.stripeSubscriptionId);
 
-  const [managerProperties, managerListings, managerTenants, managerContracts, managerIssues] = await Promise.all([
+  const [managerProperties, managerListings, managerTenants, managerContracts, managerIssues, [reglagesAgence]] = await Promise.all([
     db.select({ imageUrl: properties.imageUrl }).from(properties).where(eq(properties.managerId, user.id)),
     db.select({ imageUrl: listings.imageUrl }).from(listings).where(eq(listings.managerId, user.id)),
     db.select({ idDocument: tenants.idDocument }).from(tenants).where(eq(tenants.managerId, user.id)),
@@ -53,6 +53,9 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
       .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .where(eq(properties.managerId, user.id)),
+    // Le logo de l'agence vit dans le bucket PUBLIC : sans nettoyage, il resterait accessible par son adresse, sans plus
+    // aucune ligne en base pour le retrouver.
+    db.select({ logoUrl: agencySettings.logoUrl }).from(agencySettings).where(eq(agencySettings.userId, user.id)),
   ]);
   const [{ collaborateurs }] = await db
     .select({ collaborateurs: sql<number>`count(*)::int` })
@@ -94,6 +97,7 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
   });
 
   const cibles: Array<string | null | undefined> = [
+    reglagesAgence?.logoUrl,
     ...managerProperties.map((p) => p.imageUrl),
     ...managerListings.map((l) => l.imageUrl),
     ...managerTenants.map((t) => t.idDocument),
