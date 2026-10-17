@@ -6,6 +6,7 @@ import { sendEmail } from "./email.service";
 import { escapeHtml } from "../utils/html";
 import { periodeCouverte } from "./invoice.service";
 import { generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
+import { chargerLogoAgence } from "./storage.service";
 import { formaterMontant } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { montantRegle, resteDu } from "../utils/montants";
@@ -50,6 +51,7 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
       agency: {
         name: agency?.agencyName || "Agence Immobilière",
         logoUrl: agency?.logoUrl,
+        logoBuffer: await chargerLogoAgence(agency?.logoUrl),
         address: agency?.address,
         phone: agency?.phone,
         email: agency?.email,

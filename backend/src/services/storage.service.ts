@@ -1,5 +1,5 @@
 import path from "path";
-import { STORAGE_BUCKETS, supabaseAdmin } from "../config/supabase";
+import { STORAGE_BUCKETS, SUPABASE_URL_EFFECTIVE, supabaseAdmin } from "../config/supabase";
 import { ApiError } from "../utils/asyncHandler";
 
 function uniqueObjectPath(folder: string, originalName: string) {
@@ -18,7 +18,7 @@ function uniqueObjectPath(folder: string, originalName: string) {
  * l'intérieur du logement d'un locataire et ne doivent pas être
  * devinables/accessibles sans autorisation (voir issue.controller.ts).
  */
-export async function uploadPublicFile(file: Express.Multer.File, folder: "properties" | "listings") {
+export async function uploadPublicFile(file: Express.Multer.File, folder: "properties" | "listings" | "agency") {
   const objectPath = uniqueObjectPath(folder, file.originalname);
 
   const { error } = await supabaseAdmin.storage
@@ -104,5 +104,42 @@ export async function deleteStorageObjectBestEffort(value: string | null | undef
     }
   } catch (err) {
     console.error("[storage] Échec de la suppression best-effort d'un objet :", err);
+  }
+}
+
+/**
+ * Vrai si `url` est une URL publique de NOTRE bucket public (même hôte que le stockage configuré, même
+ * bucket). Un logo d'agence est affiché dans des documents et récupéré côté serveur pour les PDF : accepter
+ * n'importe quelle adresse y ferait entrer un pixel espion ou une requête vers un service interne.
+ */
+export function estUrlPubliqueDuStockage(url: string | null | undefined): url is string {
+  if (!url) return false;
+  try {
+    return new URL(url).origin === new URL(SUPABASE_URL_EFFECTIVE).origin && extractPublicObjectPath(url) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Octets du logo d'une agence, pour l'incruster dans un PDF — `null` si l'URL n'est pas la nôtre, si l'objet est
+ * introuvable ou si ce n'est pas un PNG ou un JPEG (les seuls formats que savent dessiner les PDF produits ici).
+ * N'échoue jamais : un logo illisible ne doit pas empêcher d'émettre une quittance. Le téléchargement passe par
+ * le client de stockage, avec le CHEMIN de l'objet, jamais par une requête vers l'URL fournie.
+ */
+export async function chargerLogoAgence(url: string | null | undefined): Promise<Buffer | null> {
+  if (!estUrlPubliqueDuStockage(url)) return null;
+  const objectPath = extractPublicObjectPath(url);
+  if (!objectPath) return null;
+  try {
+    const { data, error } = await supabaseAdmin.storage.from(STORAGE_BUCKETS.public).download(objectPath);
+    if (error || !data) return null;
+    const octets = Buffer.from(await data.arrayBuffer());
+    const png = octets.length > 8 && octets[0] === 0x89 && octets[1] === 0x50 && octets[2] === 0x4e && octets[3] === 0x47;
+    const jpeg = octets.length > 3 && octets[0] === 0xff && octets[1] === 0xd8 && octets[2] === 0xff;
+    return png || jpeg ? octets : null;
+  } catch (err) {
+    console.error("[storage] Logo d'agence illisible :", err);
+    return null;
   }
 }

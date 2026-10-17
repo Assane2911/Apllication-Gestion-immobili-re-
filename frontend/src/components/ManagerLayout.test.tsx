@@ -88,13 +88,16 @@ describe("ManagerLayout — titre de l'onglet", () => {
 
   it("le guide de démarrage est visible pendant l'essai gratuit, quelle que soit la formule par défaut du compte", () => {
     renderManagerLayout("/dashboard", { ...gestionnaire, subscription: abonnement("STARTER", true) });
-    expect(screen.getByRole("link", { name: "Guide de démarrage" })).toHaveAttribute("href", "/guide-demarrage");
+    // Deux entrées : le menu, et le raccourci à côté du bouton « Une suggestion ? ».
+    const liens = screen.getAllByRole("link", { name: "Guide de démarrage" });
+    expect(liens).toHaveLength(2);
+    for (const lien of liens) expect(lien).toHaveAttribute("href", "/guide-demarrage");
   });
 
   it("le guide de démarrage est dans le menu de la formule Agence et titre l'onglet", () => {
     renderManagerLayout("/guide-demarrage", agence);
     expect(document.title).toBe("Guide de démarrage | ImmoPlatform Pro");
-    expect(screen.getByRole("link", { name: "Guide de démarrage" })).toHaveAttribute("href", "/guide-demarrage");
+    expect(screen.getAllByRole("link", { name: "Guide de démarrage" })[0]).toHaveAttribute("href", "/guide-demarrage");
   });
 
   it.each([
@@ -104,6 +107,19 @@ describe("ManagerLayout — titre de l'onglet", () => {
     ["essai terminé", { ...gestionnaire, subscription: { ...abonnement("STARTER"), status: "EXPIRED" as const, isSubscriptionActive: false, isExpired: true } }],
   ])("le guide de démarrage n'apparaît pas dans le menu : %s", (_nom, utilisateur) => {
     renderManagerLayout("/dashboard", utilisateur as AuthUser);
+    expect(screen.queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
+  });
+
+  it("propose aussi le guide de démarrage à côté du bouton « Une suggestion ? », pour qui y a droit", () => {
+    renderManagerLayout("/dashboard", agence);
+    const suggestion = screen.getByRole("button", { name: /suggestion/i });
+    const raccourci = screen.getAllByRole("link", { name: "Guide de démarrage" }).find((l) => suggestion.parentElement?.contains(l));
+    expect(raccourci).toBeDefined();
+    expect(raccourci).toHaveAttribute("href", "/guide-demarrage");
+  });
+
+  it("ne propose pas ce raccourci aux comptes sans accès au guide", () => {
+    renderManagerLayout("/dashboard", { ...gestionnaire, subscription: abonnement("PRO") });
     expect(screen.queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
   });
 

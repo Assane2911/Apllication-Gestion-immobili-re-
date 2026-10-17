@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { agencySettings } from "../db/schema";
 import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor,
@@ -8,6 +8,21 @@ import { authHeader, createContract, createManager, createProperty, createTenant
   tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+
+// Le stockage réel n'est jamais joint : on simule l'envoi, en renvoyant une URL publique de NOTRE bucket (même
+// hôte, même chemin) — la seule forme qu'accepte l'application pour un logo.
+const URL_LOGO = "https://placeholder.supabase.co/storage/v1/object/public/public-uploads/agency/logo-test.png";
+vi.mock("../services/storage.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../services/storage.service")>()),
+  uploadPublicFile: vi.fn().mockResolvedValue("https://placeholder.supabase.co/storage/v1/object/public/public-uploads/agency/logo-test.png"),
+  deleteStorageObjectBestEffort: vi.fn().mockResolvedValue(undefined),
+}));
+
+/** PNG minimal valide (1×1), la signature « magique » étant vérifiée sur le contenu réel. */
+const PNG_1X1 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 describe("GET /api/agency", () => {
   it("refuse l'accès sans authentification", async () => {
@@ -131,28 +146,90 @@ describe("PUT /api/agency", () => {
     expect(res.body.agencyName).toBe("Agence Indépendante");
   });
 
-  it("refuse à un gestionnaire Starter d'ajouter un logo", async () => {
+  it("refuse à un gestionnaire Starter d'envoyer un logo", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
 
     const res = await request(app)
-      .put("/api/agency")
+      .post("/api/agency/logo")
       .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Agence Indépendante", logoUrl: "https://exemple.test/logo.png" });
+      .attach("logo", PNG_1X1, { filename: "logo.png", contentType: "image/png" });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("Professionnel");
   });
 
-  it("autorise un gestionnaire Pro à ajouter un logo", async () => {
+  it("autorise un gestionnaire Pro à envoyer son logo, qui s'enregistre sur son agence", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app)
+      .post("/api/agency/logo")
+      .set(authHeader(tokenFor(manager)))
+      .attach("logo", PNG_1X1, { filename: "logo.png", contentType: "image/png" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.logoUrl).toBe(URL_LOGO);
+    const [ligne] = await testDb.select().from(agencySettings).where(eq(agencySettings.userId, manager.id));
+    expect(ligne.logoUrl).toBe(URL_LOGO);
+  });
+
+  it("refuse un fichier qui n'est pas une image PNG ou JPEG, même sous un type déclaré valide", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const faux = await request(app)
+      .post("/api/agency/logo")
+      .set(authHeader(tokenFor(manager)))
+      .attach("logo", Buffer.from("<html><script>alert(1)</script></html>"), { filename: "logo.png", contentType: "image/png" });
+    expect(faux.status).toBe(400);
+
+    const gif = await request(app)
+      .post("/api/agency/logo")
+      .set(authHeader(tokenFor(manager)))
+      .attach("logo", Buffer.from("GIF89a"), { filename: "logo.gif", contentType: "image/gif" });
+    expect(gif.status).toBe(400);
+  });
+
+  it("refuse un logo dépassant 2 Mo avec la limite propre au logo", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app)
+      .post("/api/agency/logo")
+      .set(authHeader(tokenFor(manager)))
+      .attach("logo", Buffer.concat([PNG_1X1, Buffer.alloc(2 * 1024 * 1024 + 1)]), { filename: "gros.png", contentType: "image/png" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("2 Mo");
+  });
+
+  it("n'enregistre jamais une adresse de logo saisie à la main : seul l'envoi du fichier le permet", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
 
     const res = await request(app)
       .put("/api/agency")
       .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Agence Pro", logoUrl: "https://exemple.test/logo.png" });
+      .send({ agencyName: "Agence Pro", logoUrl: "https://exemple.test/pixel-espion.png" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.logoUrl).toBe("https://exemple.test/logo.png");
+    expect(res.status).toBe(400);
+  });
+
+  it("garde le logo à chaque enregistrement du formulaire, et permet de le retirer", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+    await request(app)
+      .post("/api/agency/logo")
+      .set(authHeader(tokenFor(manager)))
+      .attach("logo", PNG_1X1, { filename: "logo.png", contentType: "image/png" });
+
+    // Le formulaire renvoie le logo actuel tel quel : l'enregistrement ne doit ni le refuser ni le perdre.
+    const garde = await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Agence Pro", logoUrl: URL_LOGO });
+    expect(garde.status).toBe(200);
+    expect(garde.body.logoUrl).toBe(URL_LOGO);
+
+    const retire = await request(app).delete("/api/agency/logo").set(authHeader(tokenFor(manager)));
+    expect(retire.status).toBe(204);
+    const [ligne] = await testDb.select().from(agencySettings).where(eq(agencySettings.userId, manager.id));
+    expect(ligne.logoUrl).toBeNull();
   });
 
   it("refuse l'accès à un locataire", async () => {

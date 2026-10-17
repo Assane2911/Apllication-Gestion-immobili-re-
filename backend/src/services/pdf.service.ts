@@ -4,6 +4,7 @@ import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { libelleEcheance } from "../utils/jourEcheance";
 import { libelleSurface, titreDuBail } from "../utils/typeBail";
 import { nomAvecCivilite } from "../utils/nom";
+import { estUrlPubliqueDuStockage } from "./storage.service";
 
 /**
  * Échappe les caractères HTML spéciaux avant interpolation dans les templates
@@ -28,6 +29,8 @@ export interface ReceiptData {
   agency: {
     name: string;
     logoUrl?: string | null;
+    /** Octets du logo (PNG ou JPEG) pour le PDF — voir chargerLogoAgence. Absents : en-tête sans image. */
+    logoBuffer?: Buffer | null;
     siretOrId?: string | null;
     address?: string | null;
     phone?: string | null;
@@ -125,6 +128,12 @@ export function generateReceiptHtml(data: ReceiptData): string {
       border-bottom: 2px solid #0f172a;
       padding-bottom: 16px;
       margin-bottom: 24px;
+    }
+    .agency-logo {
+      display: block;
+      max-width: 160px;
+      max-height: 56px;
+      margin-bottom: 8px;
     }
     .agency-title {
       font-size: 20px;
@@ -236,6 +245,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
 <body>
   <div class="header">
     <div>
+      ${estUrlPubliqueDuStockage(data.agency.logoUrl) ? `<img class="agency-logo" src="${escapeHtml(data.agency.logoUrl)}" alt="Logo ${escapeHtml(data.agency.name)}" />` : ""}
       <h1 class="agency-title">${escapeHtml(data.agency.name)}</h1>
       <div class="agency-info">
         ${data.agency.address ? `<p style="margin:2px 0;">${escapeHtml(data.agency.address)}</p>` : ""}
@@ -363,7 +373,17 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
       const gray = "#64748b";
 
       // --- En-tête : identité de l'agence + titre du document ---
-      doc.fillColor(dark).font("Helvetica-Bold").fontSize(16).text(data.agency.name, { width: pageWidth * 0.6 });
+      // Logo de l'agence, au-dessus de son nom. Un fichier que PDFKit ne sait pas lire ne doit jamais empêcher
+      // d'émettre la quittance : on l'omet alors.
+      if (data.agency.logoBuffer) {
+        try {
+          doc.image(data.agency.logoBuffer, doc.page.margins.left, doc.page.margins.top, { fit: [150, 52] });
+          doc.y = doc.page.margins.top + 52 + 8;
+        } catch (err) {
+          console.error("[pdf] Logo d'agence illisible, quittance émise sans logo :", err);
+        }
+      }
+      doc.fillColor(dark).font("Helvetica-Bold").fontSize(16).text(data.agency.name, doc.page.margins.left, doc.y, { width: pageWidth * 0.6 });
       doc.font("Helvetica").fontSize(9).fillColor(gray);
       if (data.agency.address) doc.text(data.agency.address, { width: pageWidth * 0.6 });
       if (data.agency.phone) doc.text(`Tél : ${data.agency.phone}`, { width: pageWidth * 0.6 });

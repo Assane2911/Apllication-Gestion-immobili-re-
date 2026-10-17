@@ -485,3 +485,96 @@ describe("AgencySettingsPage", () => {
     });
   });
 });
+
+describe("AgencySettingsPage — logo de l'agence", () => {
+  const URL_LOGO = "https://exemple.supabase.co/storage/v1/object/public/public-uploads/agency/logo.png";
+  const png = () => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "logo.png", { type: "image/png" });
+
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    mockedApi.delete.mockReset();
+    mockedApi.get.mockResolvedValue({ data: echeancesVides() });
+    localStorage.clear();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+
+  it("propose d'en choisir un quand l'agence n'en a pas, sans aperçu", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Choisir un logo")).toBeInTheDocument());
+    expect(screen.queryByAltText("Logo actuel de l'agence")).not.toBeInTheDocument();
+    expect(screen.queryByText("Retirer le logo")).not.toBeInTheDocument();
+  });
+
+  it("envoie le fichier choisi à l'API des logos, puis affiche l'aperçu", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.post.mockResolvedValueOnce({ data: settings({ logoUrl: URL_LOGO }) });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Choisir un logo")).toBeInTheDocument());
+
+    await userEvent.setup().upload(screen.getByLabelText("Choisir un logo"), png());
+
+    await waitFor(() => expect(screen.getByAltText("Logo actuel de l'agence")).toHaveAttribute("src", URL_LOGO));
+    expect(mockedApi.post).toHaveBeenCalledWith("/agency/logo", expect.any(FormData));
+    const envoye = mockedApi.post.mock.calls[0][1] as FormData;
+    expect((envoye.get("logo") as File).name).toBe("logo.png");
+    expect(screen.getByText("Logo enregistré.")).toBeInTheDocument();
+    expect(screen.getByText("Remplacer le logo")).toBeInTheDocument();
+  });
+
+  it("refuse sur place un fichier qui n'est pas PNG ou JPEG, ou qui dépasse 2 Mo, sans rien envoyer", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Choisir un logo")).toBeInTheDocument());
+    const user = userEvent.setup({ applyAccept: false });
+
+    await user.upload(screen.getByLabelText("Choisir un logo"), new File(["<svg/>"], "logo.svg", { type: "image/svg+xml" }));
+    expect(await screen.findByText("Le logo doit être une image PNG ou JPEG.")).toBeInTheDocument();
+
+    const gros = new File([new Uint8Array(2 * 1024 * 1024 + 1)], "gros.png", { type: "image/png" });
+    await user.upload(screen.getByLabelText("Choisir un logo"), gros);
+    expect(await screen.findByText("Ce fichier dépasse 2 Mo.")).toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("affiche le refus du serveur, par exemple pour une formule qui n'inclut pas le logo", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.post.mockRejectedValueOnce({
+      response: { data: { error: "Cette fonctionnalité est réservée à la formule Professionnel ou supérieure." } },
+      isAxiosError: true,
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Choisir un logo")).toBeInTheDocument());
+
+    await userEvent.setup().upload(screen.getByLabelText("Choisir un logo"), png());
+
+    expect(await screen.findByText(/réservée à la formule Professionnel/)).toBeInTheDocument();
+    expect(screen.queryByAltText("Logo actuel de l'agence")).not.toBeInTheDocument();
+  });
+
+  it("retire le logo après confirmation", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ logoUrl: URL_LOGO }) });
+    mockedApi.delete.mockResolvedValueOnce({ data: undefined });
+    renderPage();
+    await waitFor(() => expect(screen.getByAltText("Logo actuel de l'agence")).toBeInTheDocument());
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Retirer le logo" }));
+
+    await waitFor(() => expect(screen.queryByAltText("Logo actuel de l'agence")).not.toBeInTheDocument());
+    expect(mockedApi.delete).toHaveBeenCalledWith("/agency/logo");
+  });
+
+  it("ne renvoie jamais le logo avec le formulaire : l'enregistrement des coordonnées ne peut pas le toucher", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ logoUrl: URL_LOGO }) });
+    mockedApi.put.mockResolvedValueOnce({ data: settings({ logoUrl: URL_LOGO }) });
+    renderPage();
+    await waitFor(() => expect(screen.getByAltText("Logo actuel de l'agence")).toBeInTheDocument());
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /Enregistrer/ }));
+
+    await waitFor(() => expect(mockedApi.put).toHaveBeenCalled());
+    expect(mockedApi.put.mock.calls[0][1]).not.toHaveProperty("logoUrl");
+  });
+});

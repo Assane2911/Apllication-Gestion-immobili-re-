@@ -7,6 +7,8 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bicSchema, ibanSchema } from "../utils/iban";
 import { chargerCompteCourant, chargerLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
+import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
+import { deleteStorageObjectBestEffort, uploadPublicFile } from "../services/storage.service";
 
 export const getAgencySettings = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -60,15 +62,20 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
     .from(agencySettings)
     .where(eq(agencySettings.userId, req.user.userId));
 
-  // Marque blanche (logo, tampon) : fonctionnalité Pro (CGU §3). Le reste des
-  // réglages d'agence (coordonnées bancaires, mentions légales...) reste
-  // accessible à toutes les formules — un gestionnaire Starter doit pouvoir
-  // renseigner son IBAN pour encaisser un virement, par exemple. On ne
-  // restreint donc que le CHANGEMENT effectif de ces deux champs, jamais le
-  // reste du formulaire (envoyé en entier à chaque enregistrement).
-  const changeLogo = !!body.logoUrl && body.logoUrl !== (existing?.logoUrl ?? null);
+  // Le logo ne s'enregistre que par l'envoi d'un fichier (POST /logo) : une adresse libre ferait afficher
+  // sur les documents, et télécharger par le serveur, n'importe quelle image d'un site tiers. Le formulaire
+  // renvoie le logo actuel tel quel à chaque enregistrement : seule une VALEUR DIFFÉRENTE est refusée
+  // (le retirer, en envoyant null, reste permis).
+  if (body.logoUrl && body.logoUrl !== (existing?.logoUrl ?? null)) {
+    throw new ApiError(400, "Logo : envoyez le fichier image depuis les paramètres de l'agence.");
+  }
+
+  // Tampon : fonctionnalité Pro (CGU §3), comme le logo. Le reste des réglages d'agence (coordonnées
+  // bancaires, mentions légales...) reste accessible à toutes les formules — un gestionnaire Starter doit
+  // pouvoir renseigner son IBAN pour encaisser un virement, par exemple. On ne restreint donc que le
+  // CHANGEMENT effectif du tampon, jamais le reste du formulaire (envoyé en entier à chaque enregistrement).
   const changeStamp = !!body.stampOrSignatureUrl && body.stampOrSignatureUrl !== (existing?.stampOrSignatureUrl ?? null);
-  if (changeLogo || changeStamp) {
+  if (changeStamp) {
     assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
   }
 
@@ -120,4 +127,42 @@ export const getAgencyBankInfoForTenant = asyncHandler(async (req: Request, res:
     iban: settings?.iban ?? null,
     bic: settings?.bic ?? null,
   });
+});
+
+/**
+ * Logo de l'agence, imprimé sur les quittances. Envoi d'un fichier PNG ou JPEG (2 Mo au plus) : le contenu est
+ * vérifié, le fichier part dans le stockage public, et l'ancien logo en est retiré. Marque blanche : formule
+ * Professionnel et au-delà, comme le tampon (CGU §3).
+ */
+export const uploadLogo = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
+  if (!req.file) throw new ApiError(400, "Aucun fichier reçu.");
+  assertFileContentMatchesDeclaredType(req.file);
+
+  const logoUrl = await uploadPublicFile(req.file, "agency");
+  const [existing] = await db.select().from(agencySettings).where(eq(agencySettings.userId, req.user.userId));
+
+  const [saved] = existing
+    ? await db
+        .update(agencySettings)
+        .set({ logoUrl, updatedAt: new Date() })
+        .where(eq(agencySettings.userId, req.user.userId))
+        .returning()
+    : await db.insert(agencySettings).values({ userId: req.user.userId, logoUrl }).returning();
+
+  // Après l'enregistrement : un échec de nettoyage laisse un fichier orphelin, jamais un logo perdu.
+  await deleteStorageObjectBestEffort(existing?.logoUrl);
+  res.status(201).json(saved);
+});
+
+/** Retire le logo : les quittances reviennent à l'en-tête sans image. Toujours permis, quelle que soit la formule. */
+export const deleteAgencyLogo = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise");
+  const [existing] = await db.select().from(agencySettings).where(eq(agencySettings.userId, req.user.userId));
+  if (!existing?.logoUrl) return res.status(204).send();
+
+  await db.update(agencySettings).set({ logoUrl: null, updatedAt: new Date() }).where(eq(agencySettings.userId, req.user.userId));
+  await deleteStorageObjectBestEffort(existing.logoUrl);
+  res.status(204).send();
 });

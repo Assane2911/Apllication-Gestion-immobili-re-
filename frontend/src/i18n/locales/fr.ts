@@ -826,7 +826,7 @@ const fr = {
       listingEdit: "Modifie l'annonce telle qu'elle apparaît sur la vitrine publique.",
       listingCreate: "Rédige une annonce et la publie sur votre vitrine publique.",
       ownerCreate: "Ouvre le formulaire d'un nouveau propriétaire pour qui vous gérez.",
-      invoiceSendMonthly: "Envoie en une fois un rappel à TOUS les locataires dont le loyer est impayé, par email et WhatsApp.",
+      invoiceSendMonthly: "Envoie en une fois un rappel à TOUS les locataires dont le loyer est impayé, par email, et en plus par WhatsApp si votre formule le permet (Professionnel et au-delà) et que WhatsApp est en service.",
       agencyDeleteAccount: "Ouvre la procédure de fermeture définitive de l'agence et de toutes ses données.",
       agencyLogoutAll: "Déconnecte immédiatement tous vos appareils. Il faudra vous reconnecter partout.",
       agencyTwoFactorEnable: "Ouvre la configuration de la double authentification (QR code + code de vérification).",
@@ -861,7 +861,7 @@ const fr = {
       vendorEdit: "Modifie la fiche : nom, métier, téléphone, email.",
       vendorDelete: "Supprime le prestataire du carnet. Les incidents déjà traités conservent leur historique.",
       invoiceReceipt: "Ouvre la quittance en PDF, prête à être envoyée ou imprimée.",
-      invoiceRemind: "Envoie un rappel au locataire, par email et par WhatsApp.",
+      invoiceRemind: "Envoie un rappel au locataire, par email, et en plus par WhatsApp si votre formule le permet (Professionnel et au-delà) et que WhatsApp est en service.",
       invoiceMarkPaid: "Enregistre le paiement et génère la quittance correspondante.",
     },
     tenants: {
@@ -1589,6 +1589,19 @@ const fr = {
         description:
           "Supprimer votre compte efface immédiatement et définitivement toutes les données de votre agence (biens, locataires, contrats, factures, documents). Cette action est irréversible.",
         deleteButton: "Supprimer mon compte",
+      },
+      logo: {
+        title: "Logo de l'agence",
+        description: "Imprimé en tête de vos quittances. Image PNG ou JPEG, 2 Mo au plus. Inclus à partir de la formule Professionnel.",
+        choose: "Choisir un logo",
+        replace: "Remplacer le logo",
+        remove: "Retirer le logo",
+        uploading: "Envoi du logo...",
+        tooLarge: "Ce fichier dépasse 2 Mo.",
+        wrongType: "Le logo doit être une image PNG ou JPEG.",
+        previewAlt: "Logo actuel de l'agence",
+        confirmRemove: "Retirer le logo de vos quittances ?",
+        saved: "Logo enregistré.",
       },
       team: {
         title: "Mon équipe",

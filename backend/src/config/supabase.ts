@@ -24,6 +24,9 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
+/** Adresse du stockage (hôte compris) : sert à reconnaître nos propres URL publiques. */
+export const SUPABASE_URL_EFFECTIVE = supabaseUrl;
+
 export const STORAGE_BUCKETS = {
   // Bucket public : images de biens et photos d'incidents (peu sensibles,
   // affichées directement dans l'app sans authentification supplémentaire).
