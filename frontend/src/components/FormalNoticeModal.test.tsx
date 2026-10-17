@@ -16,10 +16,10 @@ const devise = { formatMoney: (n: number, c?: string) => `${n} ${c ?? "EUR"}` } 
 const bail: FormalNoticeDue = { contractId: "c1", propertyTitle: "Studio A", tenantName: "Awa Sow", currency: "XOF", unpaidCount: 2, alreadyClaimedCount: 0, totalDue: 900000, oldestDueDate: "2026-07-01", daysLate: 90 };
 const emise = (extra: Partial<FormalNotice> = {}): FormalNotice => ({ id: "n1", contractId: "c1", reference: "MED-2026-001", totalDue: 900000, currency: "XOF", deadlineDays: 8, emailSentAt: "2026-10-17T10:00:00Z", guarantorsNotified: 0, createdAt: "2026-10-17T10:00:00Z", emailEnvoye: true, ...extra });
 
-function afficher() {
+function afficher(extra: Partial<FormalNoticeDue> = {}) {
   render(
     <CurrencyContext.Provider value={devise}>
-      <FormalNoticeModal bail={bail} onOpenDocument={vi.fn()} onIssued={vi.fn()} onClose={vi.fn()} />
+      <FormalNoticeModal bail={{ ...bail, ...extra }} onOpenDocument={vi.fn()} onIssued={vi.fn()} onClose={vi.fn()} />
     </CurrencyContext.Provider>
   );
 }
@@ -51,5 +51,19 @@ describe("FormalNoticeModal — copie aux garants", () => {
     afficher();
     await user.click(screen.getByRole("button", { name: "Émettre la mise en demeure" }));
     expect(await screen.findByRole("status")).not.toHaveTextContent(/garant/i);
+  });
+});
+
+describe("FormalNoticeModal — agence injoignable", () => {
+  it("prévient, avant l'émission, que le courrier ne dira pas comment joindre l'agence", () => {
+    afficher({ agencyReachable: false });
+    expect(screen.getByRole("note")).toHaveTextContent("ni téléphone ni email");
+    expect(screen.getByRole("note")).toHaveTextContent("Mon Agence");
+    expect(screen.getByRole("button", { name: "Émettre la mise en demeure" })).toBeEnabled();
+  });
+
+  it.each([[true], [undefined]])("ne dit rien quand l'agence est joignable ou l'information absente (%s)", (agencyReachable) => {
+    afficher({ agencyReachable });
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });

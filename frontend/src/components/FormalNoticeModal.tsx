@@ -132,6 +132,11 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
               {t("components.formalNoticeModal.notifyGuarantors")}
             </label>
             <p className="text-xs text-slate-600 dark:text-slate-400">{t("components.formalNoticeModal.registeredMail")}</p>
+            {bail.agencyReachable === false && (
+              <p role="note" className="text-xs rounded-lg border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-amber-900 dark:text-amber-200">
+                {t("components.formalNoticeModal.agencyUnreachable")}
+              </p>
+            )}
             {error && (
               <p role="alert" className="text-sm text-red-700 dark:text-red-400">
                 {error}

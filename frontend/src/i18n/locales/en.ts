@@ -636,6 +636,7 @@ const en: TranslationSchema = {
       doneEmail: "It was sent by email.",
       doneEmailFailed: "The email could not be sent: print the letter and send it by registered mail.",
       doneNoEmail: "No email was sent.",
+      agencyUnreachable: "Your agency profile has neither a phone number nor an email: the letter will not tell the tenant how to reach you. Complete “My Agency” before issuing, especially if the letter is sent by email (the attached PDF is not changed after sending).",
       doneGuarantors: "Copy sent to {{count}} guarantor(s).",
       doneGuarantorsNone: "No guarantor received the copy: missing email or sending failed. Check the lease's guarantors.",
       open: "Open the letter",
