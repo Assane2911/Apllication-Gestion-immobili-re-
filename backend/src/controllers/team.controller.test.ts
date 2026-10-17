@@ -118,6 +118,24 @@ describe("POST /api/team — inviter un collaborateur", () => {
     expect(res.status).toBe(409);
   });
 
+  it("l'invitation reste valable 7 jours, et l'email le dit (et non « 1 heure »)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const envoi = vi.spyOn(emailService, "sendEmail");
+
+    const avant = Date.now();
+    const res = await request(app).post("/api/team").set(authHeader(tokenFor(manager))).send({ email: "sept-jours@test.local" });
+
+    expect(res.status).toBe(201);
+    const [created] = await testDb.select().from(users).where(eq(users.email, "sept-jours@test.local"));
+    const restant = new Date(created.resetPasswordExpiresAt as Date).getTime() - avant;
+    expect(restant).toBeGreaterThan(7 * 24 * 3_600_000 - 60_000);
+    expect(restant).toBeLessThan(7 * 24 * 3_600_000 + 60_000);
+    const html = String(envoi.mock.calls.find((c) => c[0] === "sept-jours@test.local")![2]);
+    expect(html).toContain("<strong>7 jours</strong>");
+    expect(html).not.toContain("1 heure");
+    envoi.mockRestore();
+  });
+
   it("refuse à un collaborateur d'inviter un autre collaborateur", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const token = await tokenCollaborateur(manager);

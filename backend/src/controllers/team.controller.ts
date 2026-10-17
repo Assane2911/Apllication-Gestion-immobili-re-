@@ -16,7 +16,7 @@ import {
   ROLE_EQUIPE_INVITATION_PAR_DEFAUT,
   roleEquipeEffectif,
 } from "../utils/rolesEquipe";
-import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
+import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
 
 /**
  * Gestion de l'équipe (multi-utilisateurs, formule Entreprise — CGU §3).
@@ -81,7 +81,7 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const resetPasswordTokenHash = hashToken(rawToken);
-  const resetPasswordExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+  const resetPasswordExpiresAt = new Date(Date.now() + INVITATION_TOKEN_TTL_MS);
   // Mot de passe inutilisable en l'état (jamais communiqué) : seul le lien
   // d'invitation (token à usage unique ci-dessus) permet d'en poser un vrai,
   // via resetPassword — même principe que EMPREINTE_FACTICE côté login et

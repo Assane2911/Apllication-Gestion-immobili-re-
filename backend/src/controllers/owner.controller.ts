@@ -16,7 +16,7 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { bicSchema, ibanSchema } from "../utils/iban";
 import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
-import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
+import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
 
 // Champs déjà présents en base (voir schema.ts) — créés directement en SQL en
 // parallèle de ce chantier, avant que l'Espace propriétaire (résumé financier
@@ -317,7 +317,7 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const resetPasswordTokenHash = hashToken(rawToken);
-  const resetPasswordExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+  const resetPasswordExpiresAt = new Date(Date.now() + INVITATION_TOKEN_TTL_MS);
 
   let targetUserId: string;
 

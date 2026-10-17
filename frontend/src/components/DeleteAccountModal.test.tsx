@@ -163,6 +163,6 @@ describe("DeleteAccountModal", () => {
 
     await user.click(await screen.findByRole("button", { name: "Simuler échec script Google" }));
 
-    expect(await screen.findByText("La connexion avec Google a échoué. Réessaie.")).toBeInTheDocument();
+    expect(await screen.findByText("La connexion avec Google a échoué. Réessayez.")).toBeInTheDocument();
   });
 });

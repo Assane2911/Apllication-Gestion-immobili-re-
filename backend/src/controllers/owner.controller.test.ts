@@ -315,6 +315,25 @@ describe("POST /api/owners/:id/invite", () => {
     sendEmailSpy.mockRestore();
   });
 
+  it("l'invitation reste valable 7 jours, et l'email le dit (et non « 1 heure »)", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { email: "sept-jours-proprio@test.local" });
+    const envoi = vi.spyOn(emailService, "sendEmail");
+
+    const avant = Date.now();
+    const res = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    const [created] = await testDb.select().from(users).where(eq(users.email, "sept-jours-proprio@test.local"));
+    const restant = new Date(created.resetPasswordExpiresAt as Date).getTime() - avant;
+    expect(restant).toBeGreaterThan(7 * 24 * 3_600_000 - 60_000);
+    expect(restant).toBeLessThan(7 * 24 * 3_600_000 + 60_000);
+    const html = String(envoi.mock.calls.find((c) => c[0] === "sept-jours-proprio@test.local")![2]);
+    expect(html).toContain("<strong>7 jours</strong>");
+    expect(html).not.toContain("1 heure");
+    envoi.mockRestore();
+  });
+
   it("permet de renvoyer l'invitation tant qu'elle n'a pas été activée", async () => {
     const manager = await createManager();
     const owner = await createOwner(manager.id, { email: "relance@test.local" });

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
 import { formaterMontant } from "../utils/montant";
 import {
+  accountAlreadyExistsEmail,
   contractEndingReminderEmail,
   depositRefundEmail,
   emailVerificationEmail,
@@ -12,7 +13,9 @@ import {
   referralRewardEmail,
   rentDueReminderEmail,
   rentDueSoonReminderEmail,
+  ownerInvitationEmail,
   sendEmail,
+  teamInvitationEmail,
 } from "./email.service";
 
 vi.mock("nodemailer", () => ({
@@ -135,6 +138,35 @@ describe("templates d'emails", () => {
     expect(html).toContain("https://app.test/verify?token=xyz789");
   });
 
+  // Un seul registre dans les emails : le vouvoiement, comme le reste du produit.
+  // Lettres Unicode (et non \b, qui voit « tes » dans « n'êtes ») : un mot entier seulement.
+  const TUTOIEMENT = /(?<![\p{L}])(tu|ton|ta|tes|toi|te)(?![\p{L}])|(?<![\p{L}])t'|-toi(?![\p{L}])|connecte-|réinitialise-/iu;
+
+  it("emailVerificationEmail et accountAlreadyExistsEmail vouvoient, sans tutoiement", () => {
+    for (const m of [
+      emailVerificationEmail({ verifyUrl: "https://app.test/v" }),
+      accountAlreadyExistsEmail({ loginUrl: "https://app.test/login", resetUrl: "https://app.test/r" }),
+    ]) {
+      const texte = `${m.subject} ${m.html.replace(/<[^>]+>/g, " ")}`;
+      expect(texte).not.toMatch(TUTOIEMENT);
+      expect(texte).toMatch(/\bvous\b|\bvotre\b|\bvos\b/i);
+    }
+  });
+
+  it("les emails d'invitation disent que le lien est valable 7 jours", () => {
+    for (const m of [
+      teamInvitationEmail({ agencyName: "Agence Teranga", ownerName: "Assane", inviteUrl: "https://app.test/i" }),
+      ownerInvitationEmail({ ownerName: "Ibrahima Fall", agencyName: "Agence Teranga", inviteUrl: "https://app.test/i" }),
+    ]) {
+      expect(m.html).toContain("<strong>7 jours</strong>");
+      expect(m.html).not.toContain("1 heure");
+    }
+  });
+
+  it("passwordResetEmail garde un lien valable 1 heure (inchangé)", () => {
+    expect(passwordResetEmail({ resetUrl: "https://app.test/r" }).html).toContain("<strong>1 heure</strong>");
+  });
+
   it("contractEndingReminderEmail : formate la date en français et inclut le nombre de jours restants", () => {
     const { subject, html } = contractEndingReminderEmail({
       tenantName: "Fatou Ndiaye",
@@ -186,6 +218,20 @@ describe("templates d'emails", () => {
       frontendUrl: "https://app.test",
     });
     expect(html).toContain("Intervention prévue le");
+  });
+
+  it("issueStatusUpdateEmail : donne l'heure d'intervention dans un fuseau explicite (UTC), pas dans celui du serveur", () => {
+    const { html } = issueStatusUpdateEmail({
+      tenantName: "Moussa Fall",
+      issueTitle: "Fuite d'eau",
+      propertyTitle: "Villa Almadies",
+      status: "IN_PROGRESS",
+      managerNote: null,
+      scheduledAt: new Date("2026-11-05T09:30:00.000Z"),
+      frontendUrl: "https://app.test",
+    });
+    // L'heure saisie par le gestionnaire est envoyée en UTC ; sans fuseau affiché, un locataire qui n'est pas à UTC la lirait comme son heure locale.
+    expect(html).toMatch(/5 novembre 2026 (à )?09:30 UTC/);
   });
 
   it("issueStatusUpdateEmail : n'affiche aucun encart de rendez-vous sans date planifiée", () => {
