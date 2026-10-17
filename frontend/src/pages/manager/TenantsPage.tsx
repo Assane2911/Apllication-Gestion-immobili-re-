@@ -24,7 +24,7 @@ const CLASSES_PAR_NIVEAU: Record<ReliabilityLevel, string> = {
 function BadgeFiabilite({ tenant }: { tenant: Tenant }) {
   const { t } = useTranslation();
   const f = tenant.fiabilite;
-  if (!f) return <span className="text-slate-500 dark:text-slate-500">—</span>;
+  if (!f) return <span className="text-slate-500 dark:text-slate-400">—</span>;
 
   const libelle = t(`manager.tenants.reliability.${f.niveau}`);
   const texteBulle = t("manager.tips.tenantReliability", {
@@ -337,7 +337,7 @@ export default function TenantsPage() {
                       {t("manager.tenants.viewIdDocument")}
                     </button></Bulle>
                   ) : (
-                    <span className="text-slate-500 dark:text-slate-500">—</span>
+                    <span className="text-slate-500 dark:text-slate-400">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -407,7 +407,7 @@ export default function TenantsPage() {
                       {t("manager.tenants.viewIdDocumentMobile")}
                     </button></Bulle>
                   ) : (
-                    <span className="text-slate-500 dark:text-slate-500">{t("manager.tenants.noIdDocument")}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t("manager.tenants.noIdDocument")}</span>
                   )}
                   <div className="space-x-3">
                     <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button></Bulle>

@@ -78,12 +78,12 @@ export default function LegalLayout({ title, description, children }: LegalLayou
         </div>
 
         <h1 className="text-2xl font-bold text-white mb-2">{title}</h1>
-        <p className="text-xs text-slate-500 mb-10">Dernière mise à jour : {COMPANY.lastUpdated}</p>
+        <p className="text-xs text-slate-400 mb-10">Dernière mise à jour : {COMPANY.lastUpdated}</p>
 
         <div className="text-sm leading-relaxed text-slate-300 space-y-8">{children}</div>
       </div>
 
-      <footer className="border-t border-slate-800/80 py-8 px-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-800/80 py-8 px-6 text-center text-xs text-slate-400">
         <p>
           © 2026 {COMPANY.tradeName}. {COMPANY.legalStatus} — {COMPANY.country}.
         </p>

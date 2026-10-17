@@ -97,12 +97,12 @@ export default function ReferralPage() {
               </div>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-500">{t("manager.referral.explanation", { days: info.rewardDays })}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t("manager.referral.explanation", { days: info.rewardDays })}</p>
             <p
               className={`text-xs ${
                 info.rewardedReferrals >= info.maxRewardedReferrals
                   ? "text-amber-700 dark:text-amber-400 font-semibold"
-                  : "text-slate-500 dark:text-slate-500"
+                  : "text-slate-500 dark:text-slate-400"
               }`}
             >
               {info.rewardedReferrals >= info.maxRewardedReferrals

@@ -78,6 +78,14 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
                 : emise.emailEnvoye
                   ? t("components.formalNoticeModal.doneEmail")
                   : t("components.formalNoticeModal.doneEmailFailed")}
+              {sendEmail && notifyGuarantors && (
+                <>
+                  {" "}
+                  {emise.guarantorsNotified > 0
+                    ? t("components.formalNoticeModal.doneGuarantors", { count: emise.guarantorsNotified })
+                    : t("components.formalNoticeModal.doneGuarantorsNone")}
+                </>
+              )}
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-400">{t("components.formalNoticeModal.registeredMail")}</p>
             <div className="flex justify-end gap-2">

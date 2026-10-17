@@ -596,6 +596,8 @@ const es: TranslationSchema = {
       remove: "Retirar a {{name}}",
       confirmDelete: "¿Retirar a {{name}} de los avalistas de este contrato?",
       maxAmountRow: "Importe máximo garantizado: {{amount}}",
+      emailHint: "Sin email, este garante no recibirá ni recordatorios ni copia de una intimación de pago.",
+      maxAmountInvalid: "Importe máximo garantizado ilegible: introduzca un número, por ejemplo 1500000.",
     },
     payouts: {
       title: "Pagos al propietario",
@@ -634,6 +636,8 @@ const es: TranslationSchema = {
       doneEmail: "Se ha enviado por email.",
       doneEmailFailed: "No se pudo enviar el email: imprima la carta y envíela por correo certificado.",
       doneNoEmail: "No se ha enviado ningún email.",
+      doneGuarantors: "Copia enviada a {{count}} garante(s).",
+      doneGuarantorsNone: "Ningún garante recibió la copia: falta el email o el envío falló. Revise los garantes del contrato.",
       open: "Abrir la carta",
       docTitle: "Requerimiento de pago",
     },

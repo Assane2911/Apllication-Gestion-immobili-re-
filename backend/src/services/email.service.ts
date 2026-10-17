@@ -777,9 +777,16 @@ export function overdueReminderEmail(params: {
   };
 }
 
+/** Rappel du plafond de l'engagement d'un garant, quand il en a un : sans lui, le montant total dû paraît être le sien. */
+function rappelPlafondGarant(maxAmount: number | null | undefined, currency: string): string {
+  if (maxAmount === null || maxAmount === undefined) return "";
+  return `<p>Pour mémoire, le montant maximal que vous avez garanti est de <strong>${escapeHtml(formaterMontant(maxAmount, currency))}</strong>.</p>`;
+}
+
 /** Information du garant : le locataire qu'il garantit a un loyer impayé, relancé sans succès. */
 export function guarantorUnpaidNoticeEmail(params: {
   guarantorName: string;
+  maxAmount?: number | null;
   tenantName: string;
   propertyTitle: string;
   amount: number;
@@ -800,6 +807,7 @@ export function guarantorUnpaidNoticeEmail(params: {
           <strong>${escapeHtml(periode)}</strong> reste impayé malgré nos relances, pour un montant de
           <strong>${escapeHtml(formaterMontant(params.amount, params.currency ?? "EUR"))}</strong>.
         </p>
+        ${rappelPlafondGarant(params.maxAmount, params.currency ?? "EUR")}
         <p>Pour toute question, vous pouvez contacter ${escapeHtml(params.agencyName)}.</p>
       </div>`,
   };
@@ -841,6 +849,7 @@ export function formalNoticeEmail(params: {
 /** Copie de la mise en demeure adressée au garant du locataire. */
 export function guarantorFormalNoticeEmail(params: {
   guarantorName: string;
+  maxAmount?: number | null;
   tenantName: string;
   propertyTitle: string;
   totalDue: number;
@@ -860,6 +869,7 @@ export function guarantorFormalNoticeEmail(params: {
           qui lui a été notifiée : <strong>${escapeHtml(formaterMontant(params.totalDue, params.currency))}</strong>
           restent dus, à régler sous ${params.deadlineDays} jour(s). Le courrier est joint à cet email.
         </p>
+        ${rappelPlafondGarant(params.maxAmount, params.currency)}
         <p style="font-size: 13px; color: #64748b;">${escapeHtml(params.agencyName)}</p>
       </div>`,
   };

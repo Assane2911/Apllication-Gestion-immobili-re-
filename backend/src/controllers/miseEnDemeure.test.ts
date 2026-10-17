@@ -242,6 +242,24 @@ describe("POST /api/contracts/:id/formal-notices", () => {
     expect(envoi.mock.calls.map((c) => c[0])).toContain("garant@test.local");
   });
 
+  it("la copie au garant rappelle son plafond ; un échec d'envoi à un garant n'est pas compté", async () => {
+    const { contract, h } = await agence();
+    await testDb.insert(contractGuarantors).values([
+      { contractId: contract.id, firstName: "Moussa", lastName: "Sow", phone: "+221770000000", email: "plafonne@test.local", maxAmount: 250 },
+      { contractId: contract.id, firstName: "Awa", lastName: "Ba", phone: "+221770000001", email: "injoignable@test.local" },
+    ]);
+    await createInvoice(contract.id, { status: "LATE", dueDate: ilYa(40) });
+    const envoi = vi.spyOn(emailService, "sendEmail").mockImplementation((async (to: string) => (to === "injoignable@test.local" ? { simulated: false, error: true } : { simulated: true })) as never);
+
+    const res = await emettre(h, contract.id, { sendEmail: true, notifyGuarantors: true });
+
+    expect(res.body.garantsPrevenus).toBe(1);
+    const plafonne = envoi.mock.calls.find((c) => c[0] === "plafonne@test.local")!;
+    expect(String(plafonne[2])).toContain("montant maximal que vous avez garanti");
+    const injoignable = envoi.mock.calls.find((c) => c[0] === "injoignable@test.local")!;
+    expect(String(injoignable[2])).not.toContain("montant maximal que vous avez garanti");
+  });
+
   it("n'écrit à personne sans demande d'envoi, même avec des garants", async () => {
     const { contract, h } = await agence();
     await testDb.insert(contractGuarantors).values({ contractId: contract.id, firstName: "Moussa", lastName: "Sow", phone: "+221770000000", email: "garant@test.local" });

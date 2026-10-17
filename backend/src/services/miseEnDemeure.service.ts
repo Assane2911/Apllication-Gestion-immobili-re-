@@ -320,6 +320,7 @@ export async function emettreMiseEnDemeure(params: {
       try {
         const { subject, html } = guarantorFormalNoticeEmail({
           guarantorName: nomAvecCivilite(garant),
+          maxAmount: garant.maxAmount,
           tenantName: nomComplet(tenant),
           propertyTitle: donnees.propertyTitle,
           totalDue: donnees.totalDue,

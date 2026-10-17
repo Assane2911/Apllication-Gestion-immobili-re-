@@ -371,7 +371,7 @@ export default function LandingPage() {
         </Reveal>
 
         <Reveal delay={320}>
-          <p className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+          <p className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400">
             <Apple className="w-4 h-4 shrink-0" aria-hidden="true" />
             <Smartphone className="w-4 h-4 shrink-0" aria-hidden="true" />
             {t("landing.hero.mobileSoon")}

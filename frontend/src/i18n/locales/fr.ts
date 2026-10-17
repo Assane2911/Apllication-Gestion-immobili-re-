@@ -594,6 +594,8 @@ const fr = {
       remove: "Retirer {{name}}",
       confirmDelete: "Retirer {{name}} des garants de ce bail ?",
       maxAmountRow: "Montant maximal garanti : {{amount}}",
+      emailHint: "Sans email, ce garant ne recevra ni relance ni copie de mise en demeure.",
+      maxAmountInvalid: "Montant maximal garanti illisible : saisissez un nombre, par exemple 1500000.",
     },
     payouts: {
       title: "Reversements au propriétaire",
@@ -632,6 +634,8 @@ const fr = {
       doneEmail: "Elle a été envoyée par email.",
       doneEmailFailed: "L'email n'a pas pu partir : imprimez le courrier et envoyez-le en recommandé.",
       doneNoEmail: "Aucun email n'a été envoyé.",
+      doneGuarantors: "Copie envoyée à {{count}} garant(s).",
+      doneGuarantorsNone: "Aucun garant n'a reçu la copie : email manquant ou envoi échoué. Vérifiez les garants du bail.",
       open: "Ouvrir le courrier",
       docTitle: "Mise en demeure de payer",
     },

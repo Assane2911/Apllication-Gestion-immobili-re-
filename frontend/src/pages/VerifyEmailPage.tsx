@@ -41,7 +41,7 @@ export default function VerifyEmailPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-        <Link to="/login" className="text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors">
+        <Link to="/login" className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors">
           {t("auth.verifyEmail.backToLogin")}
         </Link>
         <LanguageSwitcher />
