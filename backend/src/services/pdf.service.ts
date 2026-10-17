@@ -623,6 +623,46 @@ export interface LeaseAgencyInfo {
   address?: string | null;
 }
 
+type Colocataire = { civility: string | null; firstName: string; lastName: string; email: string; phone: string };
+type Garant = {
+  civility: string | null;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string | null;
+  address: string | null;
+  maxAmount: number | null;
+};
+
+/** Colocataires : une ligne chacun dans les parties (ils signent l'exemplaire imprimé). */
+function lignesColocataires(colocataires: Colocataire[]): string {
+  return colocataires
+    .map((c) => `<br><strong>Colocataire :</strong> ${escapeHtml(nomAvecCivilite(c))} (Email : ${escapeHtml(c.email)}, Tél : ${escapeHtml(c.phone)})`)
+    .join("");
+}
+
+/** Garants : une ligne chacun dans les parties, avec leur plafond, ou « non précisé » : le silence ne distingue pas « pas de plafond » d'un oubli. */
+function lignesGarants(garants: Garant[], currency?: string | null): string {
+  return garants
+    .map((g) => {
+      const contact = [g.phone, g.email].filter(Boolean).map((v) => escapeHtml(v)).join(", ");
+      return `<br><strong>Garant :</strong> ${escapeHtml(nomAvecCivilite(g))}${g.address ? ` (${escapeHtml(g.address)})` : ""}${contact ? ` — ${contact}` : ""}${
+        g.maxAmount !== null ? ` — Montant maximal garanti : ${escapeHtml(formaterMontant(g.maxAmount, currency))}` : " — Montant maximal garanti : non précisé"
+      }`;
+    })
+    .join("");
+}
+
+/** Un cadre de signature manuscrite par personne (pas de signature électronique pour elles : elles signent l'exemplaire imprimé). */
+function cadresSignature(libelle: string, personnes: Array<{ civility: string | null; firstName: string; lastName: string }>): string {
+  if (personnes.length === 0) return "";
+  return `<div class="signatures" style="flex-wrap: wrap; gap: 16px; justify-content: flex-start;">${personnes
+    .map(
+      (p) => `<div class="sig-block"><strong>${libelle} :</strong> ${escapeHtml(nomAvecCivilite(p))}<div style="color:#94a3b8; margin-top:20px; font-size:11px;">Signature précédée de « lu et approuvé »</div></div>`
+    )
+    .join("")}</div>`;
+}
+
 export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgencyInfo): string {
   const startDate = new Date(contract.startDate).toLocaleDateString("fr-FR");
   const endDate = new Date(contract.endDate).toLocaleDateString("fr-FR");
@@ -645,38 +685,12 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
   </div>`
     : "";
 
-  // Colocataires : ils signent l'exemplaire imprimé (la signature électronique reste celle du titulaire).
   const colocataires = contract.cotenants ?? [];
-  const colocatairesHtml = colocataires
-    .map((c) => `<br><strong>Colocataire :</strong> ${escapeHtml(nomAvecCivilite(c))} (Email : ${escapeHtml(c.email)}, Tél : ${escapeHtml(c.phone)})`)
-    .join("");
-  const signaturesColocataires = colocataires.length
-    ? `<div class="signatures" style="flex-wrap: wrap; gap: 16px; justify-content: flex-start;">${colocataires
-        .map(
-          (c) => `<div class="sig-block"><strong>Le Colocataire :</strong> ${escapeHtml(nomAvecCivilite(c))}<div style="color:#94a3b8; margin-top:20px; font-size:11px;">Signature précédée de « lu et approuvé »</div></div>`
-        )
-        .join("")}</div>`
-    : "";
-
-  // Garants : une ligne chacun dans les parties, et un bloc de signature manuscrite (pas de signature
-  // électronique pour eux : ils signent l'exemplaire imprimé).
+  const colocatairesHtml = lignesColocataires(colocataires);
+  const signaturesColocataires = cadresSignature("Le Colocataire", colocataires);
   const garants = contract.guarantors ?? [];
-  const garantsHtml = garants
-    .map((g) => {
-      const contact = [g.phone, g.email].filter(Boolean).map((v) => escapeHtml(v)).join(", ");
-      return `<br><strong>Garant :</strong> ${escapeHtml(nomAvecCivilite(g))}${g.address ? ` (${escapeHtml(g.address)})` : ""}${contact ? ` — ${contact}` : ""}${
-        // Sans plafond saisi, on le dit : le silence ne distingue pas « pas de plafond » d'un oubli.
-        g.maxAmount !== null ? ` — Montant maximal garanti : ${escapeHtml(formaterMontant(g.maxAmount, contract.currency))}` : " — Montant maximal garanti : non précisé"
-      }`;
-    })
-    .join("");
-  const signaturesGarants = garants.length
-    ? `<div class="signatures" style="flex-wrap: wrap; gap: 16px; justify-content: flex-start;">${garants
-        .map(
-          (g) => `<div class="sig-block"><strong>Le Garant :</strong> ${escapeHtml(nomAvecCivilite(g))}<div style="color:#94a3b8; margin-top:20px; font-size:11px;">Signature précédée de « lu et approuvé »</div></div>`
-        )
-        .join("")}</div>`
-    : "";
+  const garantsHtml = lignesGarants(garants, contract.currency);
+  const signaturesGarants = cadresSignature("Le Garant", garants);
 
   // Loyer : sans révision, une ligne. Avec des révisions appliquées depuis la signature, le bail garde le
   // loyer SIGNÉ (celui d'avant la première révision) et liste chaque changement avec sa date d'effet :
@@ -1129,6 +1143,9 @@ export interface RentRevisionExportData {
   contract: { startDate: Date | string; endDate: Date | string; leaseType?: string | null; applicableLaw?: string | null };
   property?: { title: string; address: string } | null;
   tenant?: { firstName: string; lastName: string } | null;
+  /** Colocataires et garants du bail : la révision change ce qu'ils doivent ou garantissent. */
+  cotenants?: Colocataire[];
+  guarantors?: Garant[];
 }
 
 /**
@@ -1155,7 +1172,7 @@ export function generateRentRevisionHtml(data: RentRevisionExportData, agency: L
     .section-title { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #2563eb; margin-bottom: 6px; }
     .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 13px; }
     .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
-    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; min-height: 90px; }
+    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; min-height: 90px; break-inside: avoid; }
   </style>
 </head>
 <body>
@@ -1166,7 +1183,7 @@ export function generateRentRevisionHtml(data: RentRevisionExportData, agency: L
     <div class="section-title">1. Les Parties</div>
     <div class="box">
       <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"}${agency.address ? ` (${escapeHtml(agency.address)})` : ""}<br>
-      <strong>Le Locataire :</strong> ${escapeHtml(data.tenant?.firstName)} ${escapeHtml(data.tenant?.lastName)}
+      <strong>Le Locataire :</strong> ${escapeHtml(data.tenant?.firstName)} ${escapeHtml(data.tenant?.lastName)}${lignesColocataires(data.cotenants ?? [])}${lignesGarants(data.guarantors ?? [], data.currency)}
     </div>
   </div>
 
@@ -1195,12 +1212,14 @@ export function generateRentRevisionHtml(data: RentRevisionExportData, agency: L
     <div class="box">Le présent avenant modifie uniquement le montant du loyer à compter de la date d'effet ci-dessus. Toutes les autres clauses du bail demeurent inchangées.</div>
   </div>
 
-  <p style="margin-top:24px; font-size:13px;">Établi le ${date(data.createdAt)}, en deux exemplaires.</p>
+  <p style="margin-top:24px; font-size:13px;">Établi le ${date(data.createdAt)}, ${(data.cotenants ?? []).length + (data.guarantors ?? []).length > 0 ? "en autant d'exemplaires que de signataires" : "en deux exemplaires"}.</p>
 
   <div class="signatures">
     <div class="sig-block"><strong>Pour le Bailleur / Gestionnaire :</strong></div>
     <div class="sig-block"><strong>Le Locataire</strong> (« lu et approuvé ») :</div>
   </div>
+  ${cadresSignature("Le Colocataire", data.cotenants ?? [])}
+  ${cadresSignature("Le Garant", data.guarantors ?? [])}
 </body>
 </html>
   `.trim();
