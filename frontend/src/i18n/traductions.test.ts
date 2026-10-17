@@ -138,3 +138,30 @@ describe("noms des formules", () => {
     for (const texte of tousLesTextes(arbre)) expect(texte, texte).not.toMatch(anciens[nom]);
   });
 });
+
+/**
+ * Les infobulles des boutons de relance annonçaient « par email et par WhatsApp » sans condition. WhatsApp ne
+ * s'AJOUTE à l'email que si la formule le permet (Professionnel et au-delà) et si WhatsApp est en service : sinon,
+ * seul l'email part. Les deux infobulles doivent donc dire que WhatsApp est conditionnel, dans chaque langue.
+ */
+describe("infobulles des relances", () => {
+  const formule: Record<string, RegExp> = {
+    fr: /Professionnel/,
+    en: /Professional/,
+    es: /Profesional/,
+    pt: /Profissional/,
+  };
+  const inconditionnel = /par email et (par )?WhatsApp|by email and WhatsApp|por correo y (por )?WhatsApp|por email e (por )?WhatsApp/;
+  const lire = (arbre: Arbre, chemin: string): string =>
+    chemin.split(".").reduce<string | Arbre>((noeud, cle) => (noeud as Arbre)[cle], arbre) as string;
+  const toutes: Array<[string, Arbre]> = [["fr", fr as unknown as Arbre], ...langues];
+
+  it.each(toutes)("%s : WhatsApp est présenté comme conditionnel à la formule et au service", (nom, arbre) => {
+    for (const chemin of ["manager.tips.invoiceSendMonthly", "manager.tips.invoiceRemind"]) {
+      const texte = lire(arbre, chemin);
+      expect(texte, chemin).not.toMatch(inconditionnel);
+      expect(texte, chemin).toMatch(formule[nom]);
+      expect(texte, chemin).toMatch(/WhatsApp/);
+    }
+  });
+});

@@ -827,7 +827,7 @@ const pt: TranslationSchema = {
       listingEdit: "Altera o anúncio tal como aparece na montra pública.",
       listingCreate: "Redige um anúncio e publica-o na sua montra pública.",
       ownerCreate: "Abre o formulário de um novo proprietário para quem gere.",
-      invoiceSendMonthly: "Envia de uma vez um lembrete a TODOS os inquilinos com a renda em atraso, por email e WhatsApp.",
+      invoiceSendMonthly: "Envia de uma vez um lembrete a TODOS os inquilinos com a renda em atraso, por email e, além disso, por WhatsApp se o seu plano o permitir (Profissional e superior) e o WhatsApp estiver em serviço.",
       agencyDeleteAccount: "Abre o procedimento de encerramento definitivo da agência e de todos os seus dados.",
       agencyLogoutAll: "Termina de imediato a sessão em todos os seus dispositivos. Terá de entrar novamente.",
       agencyTwoFactorEnable: "Abre a configuração da verificação em duas etapas (código QR + código de verificação).",
@@ -862,7 +862,7 @@ const pt: TranslationSchema = {
       vendorEdit: "Altera a ficha: nome, ofício, telefone, email.",
       vendorDelete: "Remove o prestador do diretório. Os incidentes já tratados mantêm o seu histórico.",
       invoiceReceipt: "Abre o recibo em PDF, pronto a enviar ou a imprimir.",
-      invoiceRemind: "Envia um lembrete ao inquilino, por email e por WhatsApp.",
+      invoiceRemind: "Envia um lembrete ao inquilino, por email e, além disso, por WhatsApp se o seu plano o permitir (Profissional e superior) e o WhatsApp estiver em serviço.",
       invoiceMarkPaid: "Regista o pagamento e gera o recibo correspondente.",
     },
     tenants: {

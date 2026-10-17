@@ -827,7 +827,7 @@ const en: TranslationSchema = {
       listingEdit: "Edits the advert as it appears on the public showcase.",
       listingCreate: "Writes an advert and publishes it on your public showcase.",
       ownerCreate: "Opens the form for a new landlord you manage for.",
-      invoiceSendMonthly: "Sends one reminder to EVERY tenant whose rent is unpaid, by email and WhatsApp.",
+      invoiceSendMonthly: "Sends one reminder to EVERY tenant whose rent is unpaid, by email, plus WhatsApp if your plan allows it (Professional and above) and WhatsApp is in service.",
       agencyDeleteAccount: "Opens the procedure to permanently close the agency and all its data.",
       agencyLogoutAll: "Signs out all your devices immediately. You will have to sign in again everywhere.",
       agencyTwoFactorEnable: "Opens two-factor authentication setup (QR code + verification code).",
@@ -862,7 +862,7 @@ const en: TranslationSchema = {
       vendorEdit: "Edit the record: name, trade, phone, email.",
       vendorDelete: "Removes the provider from the directory. Issues already handled keep their history.",
       invoiceReceipt: "Opens the receipt as a PDF, ready to send or print.",
-      invoiceRemind: "Sends the tenant a reminder, by email and WhatsApp.",
+      invoiceRemind: "Sends the tenant a reminder, by email, plus WhatsApp if your plan allows it (Professional and above) and WhatsApp is in service.",
       invoiceMarkPaid: "Records the payment and issues the matching receipt.",
     },
     tenants: {
