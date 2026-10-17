@@ -7,6 +7,7 @@ import {
   generateReceiptHtml,
   colonnesRecapQuittance,
   generateReceiptPdfBuffer,
+  MENTION_PIED_QUITTANCE,
   InspectionExportData,
   ReceiptData,
 } from "./pdf.service";
@@ -124,7 +125,16 @@ describe("generateReceiptHtml", () => {
     expect(html).toContain("Agence Minimale");
     expect(html).not.toContain("Tél :");
     expect(html).not.toContain("N° SIRET / NIF :");
-    expect(html).toContain("Document émis et certifié conforme");
+    expect(html).toContain("Document émis par le système de gestion locative immobilière.");
+    // La plateforme n'atteste la conformité d'aucun document (voir le bail) : pas de « certifié conforme » par défaut.
+    expect(html).not.toContain("certifié conforme");
+  });
+
+  it("la mention par défaut du pied de quittance ne prétend pas à une conformité, en HTML comme en PDF", () => {
+    expect(MENTION_PIED_QUITTANCE).toBe("Document émis par le système de gestion locative immobilière.");
+    expect(MENTION_PIED_QUITTANCE).not.toMatch(/conforme/i);
+    // Les mentions légales saisies par l'agence la remplacent toujours.
+    expect(generateReceiptHtml({ ...baseReceipt, agency: { ...baseReceipt.agency, legalNotice: "Agence agréée n° 42" } })).not.toContain(MENTION_PIED_QUITTANCE);
   });
 
   it.each([
