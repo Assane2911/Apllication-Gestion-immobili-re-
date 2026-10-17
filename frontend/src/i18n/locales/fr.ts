@@ -116,7 +116,6 @@ const fr = {
       agency: "Identité de l'agence : coordonnées, logo et mentions des quittances.",
       subscription: "Votre formule, vos factures et l'état de votre essai.",
       referral: "Votre code de parrainage et vos filleuls.",
-      guide: "Huit étapes pour démarrer : de l'agence à votre premier loyer encaissé.",
     },
     manager: {
       dashboard: "Tableau de bord",

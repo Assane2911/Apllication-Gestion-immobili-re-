@@ -40,9 +40,12 @@ import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
 import BoutonSuggestion from "./BoutonSuggestion";
 
+// Pages sans entrée dans le menu latéral, mais qui titrent l'onglet : le guide
+// de démarrage s'ouvre depuis le raccourci à côté de « Une suggestion ? ».
+const pagesHorsMenu = [{ to: "/guide-demarrage", key: "guide" }];
+
 const navItems = [
   { to: "/dashboard", key: "dashboard", icon: LayoutDashboard },
-  { to: "/guide-demarrage", key: "guide", icon: BookOpen },
   { to: "/properties", key: "properties", icon: Home },
   { to: "/tenants", key: "tenants", icon: Users },
   { to: "/proprietaires", key: "owners", icon: Briefcase },
@@ -75,7 +78,7 @@ export default function ManagerLayout() {
   // navigation la plus précise gagne ; le compte-rendu de gestion d'un propriétaire a son propre libellé.
   const { pathname } = useLocation();
   const chemin = pathname.replace(/\/+$/, "");
-  const entree = [...navItems].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
+  const entree = [...navItems, ...pagesHorsMenu].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
   const libellePage = /^\/proprietaires\/[^/]+\/crg$/.test(chemin) ? t("nav.owner.crg") : entree ? t(`nav.manager.${entree.key}`) : null;
 
   return (
@@ -152,7 +155,7 @@ export default function ManagerLayout() {
           </div>
         </div>
         <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1" onClick={() => setMobileNavOpen(false)}>
-          {navItems.filter((item) => item.key !== "guide" || peutVoirLeGuide(user)).map((item) => (
+          {navItems.map((item) => (
             // La bulle s'ouvre à DROITE : dans une barre latérale, au-dessus
             // recouvrirait l'entrée précédente, c'est-à-dire une autre cible
             // cliquable.

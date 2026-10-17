@@ -118,7 +118,6 @@ const es: TranslationSchema = {
       agency: "Identidad de la agencia: datos, logotipo y menciones de los recibos.",
       subscription: "Su plan, sus facturas y el estado de su prueba.",
       referral: "Tu código de referido y tus referidos.",
-      guide: "Ocho pasos para empezar: de los datos de su agencia al primer alquiler cobrado.",
     },
     manager: {
       dashboard: "Panel de control",

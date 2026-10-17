@@ -118,7 +118,6 @@ const pt: TranslationSchema = {
       agency: "Identidade da agência: contactos, logótipo e menções dos recibos.",
       subscription: "O seu plano, as suas faturas e o estado do seu período de teste.",
       referral: "O seu código de indicação e as suas indicações.",
-      guide: "Oito passos para começar: dos dados da agência à primeira renda cobrada.",
     },
     manager: {
       dashboard: "Painel",
