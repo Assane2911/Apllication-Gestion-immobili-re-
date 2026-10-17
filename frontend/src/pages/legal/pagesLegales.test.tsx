@@ -51,4 +51,36 @@ describe("Pages légales", () => {
     expect(texte).toMatch(/Adresse\s*:\s*\S/);
     expect(texte).toContain("assane@immoplatformpro.com");
   });
+
+  it("présente l'éditeur comme la LLC immatriculée, avec son EIN, son État et son adresse — plus comme une société « en cours de formation »", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <MentionsLegalesPage />
+      </MemoryRouter>
+    );
+
+    const texte = container.textContent ?? "";
+    expect(texte).toContain("ImmoPlatform Pro LLC");
+    expect(texte).toContain("Wyoming");
+    expect(texte).toContain("EIN");
+    expect(texte).toContain("30-1510500");
+    expect(texte).toContain("30 N Gould St");
+    expect(texte).toContain("Sheridan");
+    expect(texte).toMatch(/Représentant légal\s*:\s*Imame Assane Thiam/);
+    expect(texte).toMatch(/Directeur de la publication\s*:\s*Imame Assane Thiam/);
+    for (const perime of ["en cours de formation", "en cours d'immatriculation", "Personne physique", "communiquée sur demande"]) {
+      expect(texte).not.toContain(perime);
+    }
+  });
+
+  it.each(PAGES)("%s ne parle plus d'une société en cours de constitution", (_nom, Page) => {
+    const { container } = render(
+      <MemoryRouter>
+        <Page />
+      </MemoryRouter>
+    );
+    const texte = container.textContent ?? "";
+    expect(texte).not.toMatch(/en cours (de formation|d'immatriculation|de constitution)/);
+    expect(texte).toContain("ImmoPlatform Pro LLC");
+  });
 });
