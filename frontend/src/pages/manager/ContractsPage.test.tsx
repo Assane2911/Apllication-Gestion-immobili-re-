@@ -256,6 +256,53 @@ describe("ContractsPage (manager)", () => {
     expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("terms");
   });
 
+  it("insère le modèle de clause de caution, et refuse d'enregistrer tant qu'il reste des passages entre crochets", async () => {
+    const user = userEvent.setup();
+    queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+
+    const { container } = renderPage();
+    await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+    const selects = screen.getAllByRole("combobox");
+    await user.selectOptions(selects[0], "prop-1");
+    await user.selectOptions(selects[1], "ten-1");
+    const dateInputs = container.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: "2026-03-01" } });
+    fireEvent.change(dateInputs[1], { target: { value: "2027-03-01" } });
+
+    const champ = screen.getByLabelText("Clauses particulières (facultatif)") as HTMLTextAreaElement;
+    await user.click(screen.getByRole("button", { name: "Insérer un modèle de clause de caution" }));
+    expect(champ.value).toContain("Engagement de caution");
+    expect(screen.getByText(/faites-le valider par un juriste/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+    expect(await screen.findByText(/complétez-les ou retirez-les avant d.enregistrer/)).toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("enregistre la clause de caution une fois complétée", async () => {
+    const user = userEvent.setup();
+    queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+    mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+    queueLoad([]);
+
+    const { container } = renderPage();
+    await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+    const selects = screen.getAllByRole("combobox");
+    await user.selectOptions(selects[0], "prop-1");
+    await user.selectOptions(selects[1], "ten-1");
+    const dateInputs = container.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: "2026-03-01" } });
+    fireEvent.change(dateInputs[1], { target: { value: "2027-03-01" } });
+
+    const champ = screen.getByLabelText("Clauses particulières (facultatif)") as HTMLTextAreaElement;
+    await user.click(screen.getByRole("button", { name: "Insérer un modèle de clause de caution" }));
+    fireEvent.change(champ, { target: { value: champ.value.replace(/\[[^\]]*\]/g, "X") } });
+    await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+    expect(String((mockedApi.post.mock.calls[0][1] as { terms: string }).terms)).toContain("Engagement de caution");
+  });
+
   it("propose de réviser le loyer d'un bail actif seulement, et ouvre la fenêtre de révision", async () => {
     const user = userEvent.setup();
     queueLoad([contract({ id: "c1" }), contract({ id: "c2", status: "ENDED" })]);
