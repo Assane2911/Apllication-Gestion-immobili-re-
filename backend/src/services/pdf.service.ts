@@ -665,7 +665,8 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     .map((g) => {
       const contact = [g.phone, g.email].filter(Boolean).map((v) => escapeHtml(v)).join(", ");
       return `<br><strong>Garant :</strong> ${escapeHtml(nomAvecCivilite(g))}${g.address ? ` (${escapeHtml(g.address)})` : ""}${contact ? ` — ${contact}` : ""}${
-        g.maxAmount !== null ? ` — Montant maximal garanti : ${escapeHtml(formaterMontant(g.maxAmount, contract.currency))}` : ""
+        // Sans plafond saisi, on le dit : le silence ne distingue pas « pas de plafond » d'un oubli.
+        g.maxAmount !== null ? ` — Montant maximal garanti : ${escapeHtml(formaterMontant(g.maxAmount, contract.currency))}` : " — Montant maximal garanti : non précisé"
       }`;
     })
     .join("");
@@ -708,8 +709,10 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     .section-title { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #2563eb; margin-bottom: 6px; }
     .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 13px; }
     .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
-    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; }
+    .sig-block { width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; font-size: 12px; break-inside: avoid; }
     .sig-img { max-height: 60px; margin-top: 8px; }
+    /* Un titre de section ne reste pas seul en bas de page. */
+    .section-title { break-after: avoid; }
   </style>
 </head>
 <body>
@@ -719,7 +722,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
   <div class="section">
     <div class="section-title">1. Les Parties</div>
     <div class="box">
-      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"} (${escapeHtml(agency.address)})<br>
+      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"}${agency.address ? ` (${escapeHtml(agency.address)})` : ""}<br>
       <strong>Le Locataire :</strong> ${escapeHtml(contract.tenant?.firstName)} ${escapeHtml(contract.tenant?.lastName)} (Email : ${escapeHtml(contract.tenant?.email)}, Tél : ${escapeHtml(contract.tenant?.phone)})${colocatairesHtml}${garantsHtml}
     </div>
   </div>
