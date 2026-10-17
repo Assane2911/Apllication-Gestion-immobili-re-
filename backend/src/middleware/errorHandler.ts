@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import multer from "multer";
 import { ZodError } from "zod";
 import { ApiError } from "../utils/asyncHandler";
-import { MAX_UPLOAD_SIZE_MB } from "./upload";
+import { MAX_LOGO_SIZE_MB, MAX_UPLOAD_SIZE_MB } from "./upload";
 
 export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ error: `Route introuvable: ${req.method} ${req.path}` });
@@ -44,7 +44,7 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   if (err instanceof multer.MulterError) {
     const message =
       err.code === "LIMIT_FILE_SIZE"
-        ? `Fichier trop volumineux (${MAX_UPLOAD_SIZE_MB} Mo maximum).`
+        ? `Fichier trop volumineux (${req.originalUrl.split("?")[0].endsWith("/agency/logo") ? MAX_LOGO_SIZE_MB : MAX_UPLOAD_SIZE_MB} Mo maximum).`
         : "Envoi de fichier invalide.";
     return res.status(400).json({ error: message, code: err.code });
   }

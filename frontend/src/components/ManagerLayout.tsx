@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
@@ -215,7 +215,18 @@ export default function ManagerLayout() {
       {/* Une idée arrive en travaillant, devant l'écran qui la provoque :
           le bouton est donc présent sur tout l'espace, pas rangé dans une
           page de contact. */}
-      <BoutonSuggestion />
+      <BoutonSuggestion
+        aCote={
+          peutVoirLeGuide(user) && (
+            <Link
+              to="/guide-demarrage"
+              className="flex items-center gap-2 rounded-full bg-white/95 dark:bg-slate-800/95 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-600 text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur transition-colors"
+            >
+              <BookOpen size={14} aria-hidden="true" /> {t("nav.manager.guide")}
+            </Link>
+          )
+        }
+      />
     </div>
   );
 }

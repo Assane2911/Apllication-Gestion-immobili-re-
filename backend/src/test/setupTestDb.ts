@@ -56,6 +56,7 @@ vi.mock("../config/supabase", () => ({
     storage: {
       from: () => ({
         upload: async () => ({ error: null }),
+        download: async () => ({ data: null, error: { message: "introuvable (stockage simulé)" } }),
         getPublicUrl: (objectPath: string) => ({ data: { publicUrl: `http://test.local/${objectPath}` } }),
         createSignedUrl: async (objectPath: string) => ({
           data: { signedUrl: `http://test.local/signed/${objectPath}` },
@@ -65,6 +66,8 @@ vi.mock("../config/supabase", () => ({
     },
   },
   STORAGE_BUCKETS: { public: "public-uploads", private: "private-uploads" },
+  // Hôte du stockage : sert à reconnaître nos propres URL publiques (logo d'agence).
+  SUPABASE_URL_EFFECTIVE: "https://placeholder.supabase.co",
 }));
 
 // JWT_SECRET est requis au chargement de config/env.ts (voir `required()`) ;

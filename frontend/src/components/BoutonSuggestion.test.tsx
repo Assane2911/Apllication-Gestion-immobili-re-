@@ -119,7 +119,7 @@ describe("Bouton de suggestion", () => {
     // rendrait tout le reste inutile.
     for (const espace of ["ManagerLayout", "TenantLayout", "OwnerLayout"]) {
       const source = readFileSync(`src/components/${espace}.tsx`, "utf-8");
-      expect(source, `${espace} n'affiche pas le bouton de suggestion`).toContain("<BoutonSuggestion />");
+      expect(source, `${espace} n'affiche pas le bouton de suggestion`).toMatch(/<BoutonSuggestion[\s/>]/);
     }
   });
 });

@@ -484,3 +484,41 @@ describe("generateCrgHtml", () => {
     expect(html).not.toContain("25000 EUR");
   });
 });
+
+/**
+ * Logo de l'agence sur la quittance (la « facture » remise au locataire). Il n'apparaît que s'il vient de NOTRE
+ * stockage : une adresse libre ferait charger dans le document une image d'un site tiers (pixel espion).
+ */
+describe("logo de l'agence sur la quittance", () => {
+  const URL_LOGO = "https://placeholder.supabase.co/storage/v1/object/public/public-uploads/agency/logo.png";
+  const PNG_1X1 = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "base64"
+  );
+
+  it("s'affiche en tête de la quittance HTML quand il vient du stockage de l'application", () => {
+    const html = generateReceiptHtml({ ...baseReceipt, agency: { ...baseReceipt.agency, logoUrl: URL_LOGO } });
+    expect(html).toContain(`<img class="agency-logo" src="${URL_LOGO}"`);
+    expect(html.indexOf("agency-logo\" src")).toBeLessThan(html.indexOf("Agence Teranga</h1>"));
+  });
+
+  it("n'affiche aucune image qui vienne d'ailleurs, ni sans logo", () => {
+    const etranger = generateReceiptHtml({ ...baseReceipt, agency: { ...baseReceipt.agency, logoUrl: "https://tiers.example/pixel.png" } });
+    expect(etranger).not.toContain('<img class="agency-logo"');
+    expect(etranger).not.toContain("tiers.example");
+    expect(generateReceiptHtml(baseReceipt)).not.toContain('<img class="agency-logo"');
+  });
+
+  it("est incrusté dans le PDF quand ses octets sont fournis, et la quittance reste émise sans lui", async () => {
+    const avec = await generateReceiptPdfBuffer({ ...baseReceipt, agency: { ...baseReceipt.agency, logoBuffer: PNG_1X1 } });
+    const sans = await generateReceiptPdfBuffer(baseReceipt);
+    expect(avec.toString("latin1")).toContain("/Subtype /Image");
+    expect(sans.toString("latin1")).not.toContain("/Subtype /Image");
+    expect(sans.subarray(0, 5).toString()).toBe("%PDF-");
+
+    // Octets illisibles : pas d'image, pas d'échec.
+    const casse = await generateReceiptPdfBuffer({ ...baseReceipt, agency: { ...baseReceipt.agency, logoBuffer: Buffer.from("pas une image") } });
+    expect(casse.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(casse.toString("latin1")).not.toContain("/Subtype /Image");
+  });
+});

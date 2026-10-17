@@ -1,5 +1,5 @@
 import { Lightbulb } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { api, apiErrorMessage } from "../api/client";
@@ -23,7 +23,7 @@ import { api, apiErrorMessage } from "../api/client";
  * ignorer — d'où la taille réduite, le coin bas, et un retrait sur mobile où
  * la place manque vraiment.
  */
-export default function BoutonSuggestion() {
+export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) {
   const { t } = useTranslation();
   const emplacement = useLocation();
   const [ouvert, setOuvert] = useState(false);
@@ -71,13 +71,17 @@ export default function BoutonSuggestion() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOuvert(true)}
-        className="hidden sm:flex fixed bottom-4 right-4 z-40 items-center gap-2 rounded-full bg-slate-900/90 dark:bg-slate-700/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur transition-colors"
-      >
-        <Lightbulb size={14} aria-hidden="true" /> {t("suggestions.button")}
-      </button>
+      {/* `aCote` : un raccourci rangé à gauche du bouton (le guide de démarrage, dans l'espace gestionnaire). */}
+      <div className="hidden sm:flex fixed bottom-4 right-4 z-40 items-center gap-2">
+        {aCote}
+        <button
+          type="button"
+          onClick={() => setOuvert(true)}
+          className="flex items-center gap-2 rounded-full bg-slate-900/90 dark:bg-slate-700/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur transition-colors"
+        >
+          <Lightbulb size={14} aria-hidden="true" /> {t("suggestions.button")}
+        </button>
+      </div>
 
       {ouvert && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
