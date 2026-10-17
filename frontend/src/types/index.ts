@@ -755,6 +755,8 @@ export interface FormalNoticeDue {
   totalDue: number;
   oldestDueDate: string;
   daysLate: number;
+  /** Faux quand la fiche de l'agence n'a ni téléphone ni email : le courrier ne dirait pas comment la joindre. */
+  agencyReachable?: boolean;
 }
 
 /** Mise en demeure émise (POST /contracts/:id/formal-notices). */
