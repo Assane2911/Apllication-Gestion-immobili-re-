@@ -634,6 +634,7 @@ const fr = {
       doneEmail: "Elle a été envoyée par email.",
       doneEmailFailed: "L'email n'a pas pu partir : imprimez le courrier et envoyez-le en recommandé.",
       doneNoEmail: "Aucun email n'a été envoyé.",
+      agencyUnreachable: "La fiche de votre agence n'indique ni téléphone ni email : le courrier ne dira pas au locataire comment vous joindre. Complétez « Mon Agence » avant d'émettre, surtout si le courrier part par email (le PDF joint n'est pas modifié après l'envoi).",
       doneGuarantors: "Copie envoyée à {{count}} garant(s).",
       doneGuarantorsNone: "Aucun garant n'a reçu la copie : email manquant ou envoi échoué. Vérifiez les garants du bail.",
       open: "Ouvrir le courrier",

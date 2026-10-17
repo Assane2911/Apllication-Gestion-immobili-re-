@@ -636,6 +636,7 @@ const es: TranslationSchema = {
       doneEmail: "Se ha enviado por email.",
       doneEmailFailed: "No se pudo enviar el email: imprima la carta y envíela por correo certificado.",
       doneNoEmail: "No se ha enviado ningún email.",
+      agencyUnreachable: "La ficha de su agencia no indica ni teléfono ni email: la carta no dirá al inquilino cómo contactarle. Complete «Mi Agencia» antes de emitirla, sobre todo si se envía por email (el PDF adjunto no se modifica tras el envío).",
       doneGuarantors: "Copia enviada a {{count}} garante(s).",
       doneGuarantorsNone: "Ningún garante recibió la copia: falta el email o el envío falló. Revise los garantes del contrato.",
       open: "Abrir la carta",

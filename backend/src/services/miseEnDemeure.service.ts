@@ -144,6 +144,8 @@ export async function bauxAMettreEnDemeure(managerId: string, maintenant: Date =
     parBail.set(ligne.contract.id, entree);
   }
 
+  // Le courrier invite le locataire à contacter l'agence : sans téléphone ni email sur sa fiche, il ne saurait pas comment.
+  const agenceJoignable = Boolean(reglages?.phone?.trim() || reglages?.email?.trim());
   const resultat = [];
   for (const [contractId, { ligne, impayes, mures, dejaReclamees: reclamees }] of parBail) {
     if (mures === 0) continue;
@@ -158,6 +160,7 @@ export async function bauxAMettreEnDemeure(managerId: string, maintenant: Date =
       totalDue: arrondir(impayes.reduce((s, f) => s + resteDu(f), 0)),
       oldestDueDate: plusAncienne.dueDate,
       daysLate: joursEntre(new Date(plusAncienne.dueDate), debutDeLaJournee(maintenant)),
+      agencyReachable: agenceJoignable,
     });
   }
   return resultat.sort((a, b) => b.daysLate - a.daysLate);

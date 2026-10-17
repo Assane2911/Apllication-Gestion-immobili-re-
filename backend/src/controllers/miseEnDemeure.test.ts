@@ -69,6 +69,19 @@ describe("factureMure — quand un impayé appelle une mise en demeure", () => {
 });
 
 describe("GET /api/contracts/formal-notices-due", () => {
+  it("signale si l'agence est joignable : sans téléphone ni email, le courrier ne dirait pas comment la contacter", async () => {
+    const { manager, contract, h } = await agence();
+    await createInvoice(contract.id, { periodMonth: 7, periodYear: 2026, amount: 500, status: "LATE", dueDate: ilYa(40) });
+
+    expect((await dues(h)).body[0].agencyReachable).toBe(false);
+
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence Teranga", phone: "   ", email: "" });
+    expect((await dues(h)).body[0].agencyReachable).toBe(false);
+
+    await testDb.update(agencySettings).set({ email: "contact@teranga.test" }).where(eq(agencySettings.userId, manager.id));
+    expect((await dues(h)).body[0].agencyReachable).toBe(true);
+  });
+
   it("liste le bail dont un loyer est impayé depuis plus d'un mois, avec le total de TOUS ses impayés", async () => {
     const { contract, h } = await agence();
     await createInvoice(contract.id, { periodMonth: 7, periodYear: 2026, amount: 500, amountPaid: 100, status: "LATE", dueDate: ilYa(40) });
