@@ -288,7 +288,7 @@ describe("LoginPage — connexion avec Google (VITE_GOOGLE_CLIENT_ID configuré)
 
     await user.click(screen.getByRole("button", { name: "Simuler échec script Google" }));
 
-    expect(await screen.findByText("La connexion avec Google a échoué. Réessaie.")).toBeInTheDocument();
+    expect(await screen.findByText("La connexion avec Google a échoué. Réessayez.")).toBeInTheDocument();
   });
 
   /** Régression a11y : le formulaire ne vivait dans aucun repère <main>. */

@@ -136,7 +136,7 @@ export function passwordResetEmail(params: { resetUrl: string }) {
  * Email d'invitation envoyé à un propriétaire par son gestionnaire pour lui
  * ouvrir l'accès à son espace propriétaire (résumé financier en lecture
  * seule). Réutilise le même lien/mécanisme que la réinitialisation de mot de
- * passe (token à usage unique, valable 1 heure) : cliquer dessus laisse le
+ * passe (token à usage unique, valable 7 jours) : cliquer dessus laisse le
  * propriétaire choisir lui-même son mot de passe — voir owner.controller.ts
  * (inviteOwnerPortalAccount) et auth.controller.ts (resetPassword).
  */
@@ -153,7 +153,7 @@ export function teamInvitationEmail(params: { agencyName: string; ownerName: str
           <strong>${escapeHtml(ownerName)}</strong> vous invite à rejoindre <strong>${escapeHtml(agencyName)}</strong>
           en tant que collaborateur : vous aurez accès aux mêmes biens, locataires et contrats que le reste de
           l'agence. Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et activer votre accès.
-          Ce lien est valable <strong>1 heure</strong>.
+          Ce lien est valable <strong>7 jours</strong>.
         </p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${inviteUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
@@ -184,7 +184,7 @@ export function ownerInvitationEmail(params: { ownerName: string; agencyName: st
           <strong>${escapeHtml(agencyName)}</strong> vous invite à accéder à votre espace propriétaire :
           vous pourrez y suivre le loyer perçu et en attente pour vos biens.
           Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et activer votre accès.
-          Ce lien est valable <strong>1 heure</strong>.
+          Ce lien est valable <strong>7 jours</strong>.
         </p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${inviteUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
@@ -211,14 +211,14 @@ export function ownerInvitationEmail(params: { ownerName: string; agencyName: st
 export function emailVerificationEmail(params: { verifyUrl: string }) {
   const { verifyUrl } = params;
   return {
-    subject: "✅ Confirme ton adresse email",
+    subject: "✅ Confirmez votre adresse email",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">✅ Confirme ton adresse email</h2>
+        <h2 style="color:#0f172a;">✅ Confirmez votre adresse email</h2>
         <p>Bonjour,</p>
         <p>
-          Merci de ton inscription ! Il ne reste qu'une étape avant de pouvoir
-          te connecter : confirme ton adresse email en cliquant sur le bouton
+          Merci de votre inscription ! Il ne reste qu'une étape avant de pouvoir
+          vous connecter : confirmez votre adresse email en cliquant sur le bouton
           ci-dessous. Ce lien est valable <strong>24 heures</strong>.
         </p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
@@ -227,7 +227,7 @@ export function emailVerificationEmail(params: { verifyUrl: string }) {
           </a>
         </div>
         <p style="color:#6b7280; font-size:12px;">
-          Si tu n'es pas à l'origine de cette inscription, tu peux ignorer cet email sans risque :
+          Si vous n'êtes pas à l'origine de cette inscription, vous pouvez ignorer cet email sans risque :
           aucun compte ne sera activé sans confirmation.
         </p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
@@ -253,14 +253,14 @@ export function emailVerificationEmail(params: { verifyUrl: string }) {
 export function accountAlreadyExistsEmail(params: { loginUrl: string; resetUrl: string }) {
   const { loginUrl, resetUrl } = params;
   return {
-    subject: "Tu as déjà un compte chez nous",
+    subject: "Vous avez déjà un compte chez nous",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">Tu as déjà un compte</h2>
+        <h2 style="color:#0f172a;">Vous avez déjà un compte</h2>
         <p>Bonjour,</p>
         <p>
           Une inscription vient d'être tentée avec cette adresse email, mais un
-          compte existe déjà. Pas besoin d'en créer un second : connecte-toi
+          compte existe déjà. Pas besoin d'en créer un second : connectez-vous
           directement.
         </p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
@@ -269,11 +269,11 @@ export function accountAlreadyExistsEmail(params: { loginUrl: string; resetUrl: 
           </a>
         </div>
         <p style="color:#6b7280; font-size:12px;">
-          Mot de passe oublié ? <a href="${escapeHtml(resetUrl)}">Réinitialise-le ici</a>.
+          Mot de passe oublié ? <a href="${escapeHtml(resetUrl)}">Réinitialisez-le ici</a>.
         </p>
         <p style="color:#6b7280; font-size:12px;">
-          Si tu n'es pas à l'origine de cette tentative, tu peux ignorer cet
-          email : ton compte n'a pas été modifié et personne n'y a eu accès.
+          Si vous n'êtes pas à l'origine de cette tentative, vous pouvez ignorer cet
+          email : votre compte n'a pas été modifié et personne n'y a eu accès.
         </p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
           Cet email a été envoyé automatiquement par votre application de gestion immobilière.

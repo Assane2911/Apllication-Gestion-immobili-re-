@@ -165,3 +165,24 @@ describe("infobulles des relances", () => {
     }
   });
 });
+
+/**
+ * Le français s'adresse à l'utilisateur au vouvoiement partout (les emails aussi). Les écrans de connexion,
+ * d'inscription, de mot de passe oublié et de double authentification tutoyaient : deux registres dans le même parcours.
+ */
+function valeursDe(noeud: unknown): string[] {
+  if (typeof noeud === "string") return [noeud];
+  if (noeud && typeof noeud === "object") return Object.values(noeud).flatMap(valeursDe);
+  return [];
+}
+
+describe("Traductions — le français vouvoie", () => {
+  const PRONOMS = /(?<![\p{L}])(ton|ta|tes|toi|tu)(?![\p{L}])|(?<![\p{L}])t'/iu;
+  const IMPERATIFS_TU = /^(Vérifie|Clique|Choisis|Réessaie|Pense|Indique|Saisis|Renseigne|Crée ton|Entre le code)(?![\p{L}])/u;
+
+  it("n'emploie aucun pronom ni impératif de tutoiement", () => {
+    const fautes = valeursDe(fr).filter((v) => PRONOMS.test(v) || IMPERATIFS_TU.test(v));
+    expect(fautes, fautes.slice(0, 10).join(" | ")).toEqual([]);
+  });
+});
+

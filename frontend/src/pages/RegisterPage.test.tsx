@@ -92,7 +92,7 @@ describe("RegisterPage", () => {
     await fillForm(user);
     await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
 
-    expect(await screen.findByText("Vérifie ta boîte mail")).toBeInTheDocument();
+    expect(await screen.findByText("Vérifiez votre boîte mail")).toBeInTheDocument();
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/register", {
       email: "nouvelle-agence@test.local",
       password: "Password123!",
@@ -132,7 +132,7 @@ describe("RegisterPage", () => {
     await user.type(screen.getByLabelText("Code de parrainage (facultatif)"), "parrain1");
     await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
 
-    expect(await screen.findByText("Vérifie ta boîte mail")).toBeInTheDocument();
+    expect(await screen.findByText("Vérifiez votre boîte mail")).toBeInTheDocument();
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/register", {
       email: "nouvelle-agence@test.local",
       password: "Password123!",
@@ -170,7 +170,7 @@ describe("RegisterPage — inscription avec Google (VITE_GOOGLE_CLIENT_ID config
 
     await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/google", { credential: "fake-google-credential" });
-    expect(screen.queryByText("Vérifie ta boîte mail")).not.toBeInTheDocument();
+    expect(screen.queryByText("Vérifiez votre boîte mail")).not.toBeInTheDocument();
   });
 
   it("affiche l'erreur du serveur si la connexion Google est refusée", async () => {
@@ -194,7 +194,7 @@ describe("RegisterPage — inscription avec Google (VITE_GOOGLE_CLIENT_ID config
 
     await user.click(screen.getByRole("button", { name: "Simuler échec script Google" }));
 
-    expect(await screen.findByText("La connexion avec Google a échoué. Réessaie.")).toBeInTheDocument();
+    expect(await screen.findByText("La connexion avec Google a échoué. Réessayez.")).toBeInTheDocument();
   });
 
   /** Régression a11y : le formulaire ne vivait dans aucun repère <main>. */
