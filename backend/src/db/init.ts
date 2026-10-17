@@ -600,7 +600,6 @@ export async function initDb() {
         amount DOUBLE PRECISION NOT NULL,
         currency TEXT NOT NULL DEFAULT 'EUR',
         expense_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        receipt_url TEXT,
         notes TEXT,
         recurrence TEXT,
         recurrence_end_date TIMESTAMP,

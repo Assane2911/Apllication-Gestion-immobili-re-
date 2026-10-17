@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { agencySettings } from "../db/schema";
 import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor,
@@ -8,6 +8,7 @@ import { authHeader, createContract, createManager, createProperty, createTenant
   tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
+import { deleteStorageObjectBestEffort, uploadPublicFile } from "../services/storage.service";
 
 // Le stockage réel n'est jamais joint : on simule l'envoi, en renvoyant une URL publique de NOTRE bucket (même
 // hôte, même chemin) — la seule forme qu'accepte l'application pour un logo.
@@ -238,6 +239,113 @@ describe("PUT /api/agency", () => {
       .set(authHeader(tokenFor(await createPortalUser("TENANT"), "tenant-1")))
       .send({ agencyName: "Tentative" });
     expect(res.status).toBe(403);
+  });
+});
+
+/**
+ * Tampon de l'agence, imprimé sur les quittances. Même règle que le logo : envoi d'un fichier PNG/JPEG
+ * (jamais une adresse libre), formule Pro, retrait toujours permis.
+ */
+describe("Tampon de l'agence", () => {
+  const URL_TAMPON = "https://placeholder.supabase.co/storage/v1/object/public/public-uploads/agency/tampon-test.png";
+  // Le stockage simulé répond selon le champ envoyé : une réponse « une fois » restée en file (envoi refusé
+  // avant le stockage) fausserait le test suivant.
+  beforeEach(() => {
+    vi.mocked(uploadPublicFile).mockImplementation(async (file) => (file.fieldname === "stamp" ? URL_TAMPON : URL_LOGO));
+  });
+  const envoyerTampon = (manager: Awaited<ReturnType<typeof createManager>>, fichier = PNG_1X1) => {
+    return request(app)
+      .post("/api/agency/stamp")
+      .set(authHeader(tokenFor(manager)))
+      .attach("stamp", fichier, { filename: "tampon.png", contentType: "image/png" });
+  };
+
+  it("refuse à un gestionnaire Starter d'envoyer un tampon", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+
+    const res = await envoyerTampon(manager);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Professionnel");
+  });
+
+  it("autorise un gestionnaire Pro à envoyer son tampon, sans toucher à son logo", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+    await request(app)
+      .post("/api/agency/logo")
+      .set(authHeader(tokenFor(manager)))
+      .attach("logo", PNG_1X1, { filename: "logo.png", contentType: "image/png" });
+
+    const res = await envoyerTampon(manager);
+
+    expect(res.status).toBe(201);
+    expect(res.body.stampOrSignatureUrl).toBe(URL_TAMPON);
+    const [ligne] = await testDb.select().from(agencySettings).where(eq(agencySettings.userId, manager.id));
+    expect(ligne.stampOrSignatureUrl).toBe(URL_TAMPON);
+    expect(ligne.logoUrl).toBe(URL_LOGO);
+  });
+
+  it("refuse un fichier qui n'est pas une image PNG ou JPEG, même sous un type déclaré valide", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const faux = await envoyerTampon(manager, Buffer.from("<html><script>alert(1)</script></html>"));
+    expect(faux.status).toBe(400);
+
+    const gif = await request(app)
+      .post("/api/agency/stamp")
+      .set(authHeader(tokenFor(manager)))
+      .attach("stamp", Buffer.from("GIF89a"), { filename: "tampon.gif", contentType: "image/gif" });
+    expect(gif.status).toBe(400);
+    expect(gif.body.error).toContain("Tampon");
+  });
+
+  it("refuse un tampon dépassant 2 Mo avec la limite propre aux images d'agence", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await envoyerTampon(manager, Buffer.concat([PNG_1X1, Buffer.alloc(2 * 1024 * 1024 + 1)]));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("2 Mo");
+  });
+
+  it("n'enregistre jamais une adresse de tampon saisie à la main, même Pro", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+
+    const res = await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Agence Pro", stampOrSignatureUrl: "https://exemple.test/pixel-espion.png" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("garde le tampon à chaque enregistrement du formulaire, et permet de le retirer", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+    await envoyerTampon(manager);
+
+    const garde = await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Agence Pro", stampOrSignatureUrl: URL_TAMPON });
+    expect(garde.status).toBe(200);
+    expect(garde.body.stampOrSignatureUrl).toBe(URL_TAMPON);
+
+    const retire = await request(app).delete("/api/agency/stamp").set(authHeader(tokenFor(manager)));
+    expect(retire.status).toBe(204);
+    const [ligne] = await testDb.select().from(agencySettings).where(eq(agencySettings.userId, manager.id));
+    expect(ligne.stampOrSignatureUrl).toBeNull();
+    expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith(URL_TAMPON);
+  });
+
+  it("laisse un gestionnaire repassé en Starter retirer son tampon", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "A", stampOrSignatureUrl: URL_TAMPON });
+
+    const retire = await request(app).delete("/api/agency/stamp").set(authHeader(tokenFor(manager)));
+
+    expect(retire.status).toBe(204);
+    const [ligne] = await testDb.select().from(agencySettings).where(eq(agencySettings.userId, manager.id));
+    expect(ligne.stampOrSignatureUrl).toBeNull();
   });
 });
 

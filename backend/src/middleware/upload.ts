@@ -33,18 +33,22 @@ export const uploadIssuePhoto = multer({ storage, fileFilter, limits });
 export const uploadContractScan = multer({ storage, fileFilter, limits });
 export const uploadListingImage = multer({ storage, fileFilter, limits });
 
-/** Logo d'agence : PNG ou JPEG seulement (les formats que savent dessiner les PDF), 2 Mo au plus. */
+/** Images d'agence (logo, tampon) : PNG ou JPEG seulement (les formats que savent dessiner les PDF), 2 Mo au plus. */
 export const MAX_LOGO_SIZE_MB = 2;
-export const uploadAgencyLogo = multer({
-  storage,
-  limits: { fileSize: MAX_LOGO_SIZE_MB * 1024 * 1024 },
-  fileFilter(_req, file, cb) {
-    if (file.mimetype !== "image/png" && file.mimetype !== "image/jpeg") {
-      return cb(new ApiError(400, "Logo : image PNG ou JPEG uniquement"));
-    }
-    cb(null, true);
-  },
-});
+function imageAgence(libelle: string) {
+  return multer({
+    storage,
+    limits: { fileSize: MAX_LOGO_SIZE_MB * 1024 * 1024 },
+    fileFilter(_req, file, cb) {
+      if (file.mimetype !== "image/png" && file.mimetype !== "image/jpeg") {
+        return cb(new ApiError(400, `${libelle} : image PNG ou JPEG uniquement`));
+      }
+      cb(null, true);
+    },
+  });
+}
+export const uploadAgencyLogo = imageAgence("Logo");
+export const uploadAgencyStamp = imageAgence("Tampon");
 
 /**
  * `fileFilter` ci-dessus ne contrôle que le champ `Content-Type` envoyé par

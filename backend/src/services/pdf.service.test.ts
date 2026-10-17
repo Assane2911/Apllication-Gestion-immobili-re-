@@ -621,3 +621,48 @@ describe("logo de l'agence sur la quittance", () => {
     expect(casse.toString("latin1")).not.toContain("/Subtype /Image");
   });
 });
+
+/**
+ * Tampon de l'agence sur la quittance, à côté de « QUITTANCE VALIDÉE ». Même règle que le logo : il ne
+ * s'imprime que s'il vient de NOTRE stockage.
+ */
+describe("tampon de l'agence sur la quittance", () => {
+  const URL_TAMPON = "https://placeholder.supabase.co/storage/v1/object/public/public-uploads/agency/tampon.png";
+  const PNG_1X1 = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "base64"
+  );
+
+  it("s'affiche dans la quittance HTML, avant la case « QUITTANCE VALIDÉE », quand il vient du stockage", () => {
+    const html = generateReceiptHtml({ ...baseReceipt, agency: { ...baseReceipt.agency, stampUrl: URL_TAMPON } });
+    expect(html).toContain(`<img class="agency-stamp" src="${URL_TAMPON}"`);
+    expect(html.indexOf('class="agency-stamp"')).toBeLessThan(html.indexOf("QUITTANCE VALIDÉE"));
+  });
+
+  it("n'affiche aucune image qui vienne d'ailleurs, ni sans tampon", () => {
+    const etranger = generateReceiptHtml({ ...baseReceipt, agency: { ...baseReceipt.agency, stampUrl: "https://tiers.example/pixel.png" } });
+    expect(etranger).not.toContain('class="agency-stamp"');
+    expect(etranger).not.toContain("tiers.example");
+    expect(generateReceiptHtml(baseReceipt)).not.toContain('class="agency-stamp"');
+  });
+
+  it("est incrusté dans le PDF quand ses octets sont fournis, et la quittance reste émise sans lui", async () => {
+    const avec = await generateReceiptPdfBuffer({ ...baseReceipt, agency: { ...baseReceipt.agency, stampBuffer: PNG_1X1 } });
+    const sans = await generateReceiptPdfBuffer(baseReceipt);
+    expect(avec.toString("latin1")).toContain("/Subtype /Image");
+    expect(sans.toString("latin1")).not.toContain("/Subtype /Image");
+
+    // Octets illisibles : pas d'image, pas d'échec.
+    const casse = await generateReceiptPdfBuffer({ ...baseReceipt, agency: { ...baseReceipt.agency, stampBuffer: Buffer.from("pas une image") } });
+    expect(casse.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(casse.toString("latin1")).not.toContain("/Subtype /Image");
+  });
+
+  it("le logo et le tampon sont deux images distinctes dans le PDF", async () => {
+    const deux = await generateReceiptPdfBuffer({
+      ...baseReceipt,
+      agency: { ...baseReceipt.agency, logoBuffer: PNG_1X1, stampBuffer: PNG_1X1 },
+    });
+    expect(deux.toString("latin1").match(/\/Subtype \/Image/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+});

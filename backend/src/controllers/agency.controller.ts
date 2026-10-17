@@ -70,13 +70,11 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
     throw new ApiError(400, "Logo : envoyez le fichier image depuis les paramètres de l'agence.");
   }
 
-  // Tampon : fonctionnalité Pro (CGU §3), comme le logo. Le reste des réglages d'agence (coordonnées
-  // bancaires, mentions légales...) reste accessible à toutes les formules — un gestionnaire Starter doit
-  // pouvoir renseigner son IBAN pour encaisser un virement, par exemple. On ne restreint donc que le
-  // CHANGEMENT effectif du tampon, jamais le reste du formulaire (envoyé en entier à chaque enregistrement).
-  const changeStamp = !!body.stampOrSignatureUrl && body.stampOrSignatureUrl !== (existing?.stampOrSignatureUrl ?? null);
-  if (changeStamp) {
-    assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
+  // Même règle pour le tampon (POST /stamp, formule Pro — CGU §3) : le reste des réglages d'agence
+  // (coordonnées bancaires, mentions légales...) reste accessible à toutes les formules, un gestionnaire
+  // Starter doit pouvoir renseigner son IBAN. Seule une VALEUR DIFFÉRENTE du tampon actuel est refusée.
+  if (body.stampOrSignatureUrl && body.stampOrSignatureUrl !== (existing?.stampOrSignatureUrl ?? null)) {
+    throw new ApiError(400, "Tampon : envoyez le fichier image depuis les paramètres de l'agence.");
   }
 
   if (!existing) {
@@ -129,40 +127,47 @@ export const getAgencyBankInfoForTenant = asyncHandler(async (req: Request, res:
   });
 });
 
+type ImageAgence = "logoUrl" | "stampOrSignatureUrl";
+
 /**
- * Logo de l'agence, imprimé sur les quittances. Envoi d'un fichier PNG ou JPEG (2 Mo au plus) : le contenu est
- * vérifié, le fichier part dans le stockage public, et l'ancien logo en est retiré. Marque blanche : formule
- * Professionnel et au-delà, comme le tampon (CGU §3).
+ * Envoi d'une image d'agence (logo ou tampon), imprimée sur les quittances. PNG ou JPEG (2 Mo au plus) : le
+ * contenu est vérifié, le fichier part dans le stockage public, et l'ancienne image en est retirée. Marque
+ * blanche : formule Professionnel et au-delà (CGU §3).
  */
-export const uploadLogo = asyncHandler(async (req: Request, res: Response) => {
+async function envoyerImageAgence(req: Request, res: Response, champ: ImageAgence) {
   if (!req.user) throw new ApiError(401, "Authentification requise");
   assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
   if (!req.file) throw new ApiError(400, "Aucun fichier reçu.");
   assertFileContentMatchesDeclaredType(req.file);
 
-  const logoUrl = await uploadPublicFile(req.file, "agency");
+  const url = await uploadPublicFile(req.file, "agency");
   const [existing] = await db.select().from(agencySettings).where(eq(agencySettings.userId, req.user.userId));
 
   const [saved] = existing
     ? await db
         .update(agencySettings)
-        .set({ logoUrl, updatedAt: new Date() })
+        .set({ [champ]: url, updatedAt: new Date() })
         .where(eq(agencySettings.userId, req.user.userId))
         .returning()
-    : await db.insert(agencySettings).values({ userId: req.user.userId, logoUrl }).returning();
+    : await db.insert(agencySettings).values({ userId: req.user.userId, [champ]: url }).returning();
 
-  // Après l'enregistrement : un échec de nettoyage laisse un fichier orphelin, jamais un logo perdu.
-  await deleteStorageObjectBestEffort(existing?.logoUrl);
+  // Après l'enregistrement : un échec de nettoyage laisse un fichier orphelin, jamais une image perdue.
+  await deleteStorageObjectBestEffort(existing?.[champ]);
   res.status(201).json(saved);
-});
+}
 
-/** Retire le logo : les quittances reviennent à l'en-tête sans image. Toujours permis, quelle que soit la formule. */
-export const deleteAgencyLogo = asyncHandler(async (req: Request, res: Response) => {
+/** Retire une image d'agence : les quittances reviennent sans elle. Toujours permis, quelle que soit la formule. */
+async function retirerImageAgence(req: Request, res: Response, champ: ImageAgence) {
   if (!req.user) throw new ApiError(401, "Authentification requise");
   const [existing] = await db.select().from(agencySettings).where(eq(agencySettings.userId, req.user.userId));
-  if (!existing?.logoUrl) return res.status(204).send();
+  if (!existing?.[champ]) return res.status(204).send();
 
-  await db.update(agencySettings).set({ logoUrl: null, updatedAt: new Date() }).where(eq(agencySettings.userId, req.user.userId));
-  await deleteStorageObjectBestEffort(existing.logoUrl);
+  await db.update(agencySettings).set({ [champ]: null, updatedAt: new Date() }).where(eq(agencySettings.userId, req.user.userId));
+  await deleteStorageObjectBestEffort(existing[champ]);
   res.status(204).send();
-});
+}
+
+export const uploadLogo = asyncHandler((req: Request, res: Response) => envoyerImageAgence(req, res, "logoUrl"));
+export const deleteAgencyLogo = asyncHandler((req: Request, res: Response) => retirerImageAgence(req, res, "logoUrl"));
+export const uploadStamp = asyncHandler((req: Request, res: Response) => envoyerImageAgence(req, res, "stampOrSignatureUrl"));
+export const deleteAgencyStamp = asyncHandler((req: Request, res: Response) => retirerImageAgence(req, res, "stampOrSignatureUrl"));

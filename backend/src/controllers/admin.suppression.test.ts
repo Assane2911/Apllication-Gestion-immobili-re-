@@ -220,6 +220,17 @@ describe("suppression d'un compte suspendu", () => {
     expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith(logo);
   });
 
+  it("supprime aussi le tampon de l'agence du stockage public, comme le logo", async () => {
+    const token = await adminToken();
+    const cible = await suspendu();
+    const tampon = "https://stockage.test/storage/v1/object/public/public-uploads/agency/tampon-agence.png";
+    await testDb.insert(agencySettings).values({ userId: cible.id, agencyName: "Agence Teranga", stampOrSignatureUrl: tampon });
+
+    await supprimer(cible.id, token, { email: cible.email, reason: MOTIF });
+
+    expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith(tampon);
+  });
+
   it("trace la suppression avec l'email et la volumétrie, la trace survivant au compte", async () => {
     const admin = await createAdmin();
     const cible = await suspendu();

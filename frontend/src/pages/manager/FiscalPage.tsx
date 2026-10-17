@@ -1,19 +1,14 @@
 import { BookText, FileSpreadsheet, Landmark, Scale, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, apiErrorMessage } from "../../api/client";
+import { GraphiqueComparaisonFiscale } from "../../components/graphiques/graphiquesALaDemande";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { AnnualFiscalSynthesis, ExpenseCategory } from "../../types";
 import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
-
-// Mêmes couleurs que DashboardPage.tsx (revenus/dépenses par mois), pour que
-// le module Bilan Fiscal reste visuellement cohérent avec le tableau de bord.
-const REVENUE_COLORS = ["#2563eb", "#0891b2", "#7c3aed", "#be185d"];
-const EXPENSE_COLORS = ["#f59e0b", "#ea580c", "#65a30d", "#a16207"];
 
 const categoryDotColors: Record<ExpenseCategory, string> = {
   MAINTENANCE: "#f59e0b",
@@ -274,54 +269,9 @@ export default function FiscalPage() {
             <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.fiscal.charts.noData")}</p>
           ) : (
             <div className="h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonChartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-                  <Tooltip
-                    formatter={(value: number | string, name: string) => {
-                      const [kind, currency] = String(name).split("_");
-                      const label = kind === "revenue" ? t("manager.fiscal.charts.tooltipRevenue") : t("manager.fiscal.charts.tooltipExpense");
-                      return [formatMoney(Number(value), currency), monthlyCurrencies.length > 1 ? `${label} (${currency})` : label];
-                    }}
-                    contentStyle={{
-                      borderRadius: "14px",
-                      fontSize: "12px",
-                      boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
-                      backgroundColor: "#0f172a",
-                      color: "#f8fafc",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      padding: "10px 14px",
-                    }}
-                    itemStyle={{ color: "#f8fafc" }}
-                  />
-                  <Legend
-                    formatter={(value) => {
-                      const [kind, currency] = String(value).split("_");
-                      const label = kind === "revenue" ? t("manager.fiscal.charts.legendRevenue") : t("manager.fiscal.charts.legendExpense");
-                      return monthlyCurrencies.length > 1 ? `${label} (${currency})` : label;
-                    }}
-                    wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-                  />
-                  {monthlyCurrencies.map((currency, idx) => (
-                    <Fragment key={currency}>
-                      <Bar
-                        dataKey={`revenue_${currency}`}
-                        name={`revenue_${currency}`}
-                        fill={REVENUE_COLORS[idx % REVENUE_COLORS.length]}
-                        radius={[6, 6, 0, 0]}
-                      />
-                      <Bar
-                        dataKey={`expense_${currency}`}
-                        name={`expense_${currency}`}
-                        fill={EXPENSE_COLORS[idx % EXPENSE_COLORS.length]}
-                        radius={[6, 6, 0, 0]}
-                      />
-                    </Fragment>
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                <GraphiqueComparaisonFiscale data={comparisonChartData} devises={monthlyCurrencies} />
+              </Suspense>
             </div>
           )}
         </div>
