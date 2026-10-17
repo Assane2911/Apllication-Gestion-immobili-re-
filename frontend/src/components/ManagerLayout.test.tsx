@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../context/auth";
@@ -86,18 +86,24 @@ describe("ManagerLayout — titre de l'onglet", () => {
     expect(document.title).toBe("Compte-rendu de gestion | ImmoPlatform Pro");
   });
 
-  it("le guide de démarrage est visible pendant l'essai gratuit, quelle que soit la formule par défaut du compte", () => {
-    renderManagerLayout("/dashboard", { ...gestionnaire, subscription: abonnement("STARTER", true) });
-    // Deux entrées : le menu, et le raccourci à côté du bouton « Une suggestion ? ».
-    const liens = screen.getAllByRole("link", { name: "Guide de démarrage" });
-    expect(liens).toHaveLength(2);
-    for (const lien of liens) expect(lien).toHaveAttribute("href", "/guide-demarrage");
+  it("le guide de démarrage n'est plus dans le menu latéral : un seul accès, à côté de « Une suggestion ? »", () => {
+    renderManagerLayout("/dashboard", agence);
+    const menu = screen.getByRole("navigation");
+    expect(within(menu).queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Guide de démarrage" })).toHaveLength(1);
   });
 
-  it("le guide de démarrage est dans le menu de la formule Agence et titre l'onglet", () => {
+  it("le raccourci du guide est visible pendant l'essai gratuit, quelle que soit la formule par défaut du compte", () => {
+    renderManagerLayout("/dashboard", { ...gestionnaire, subscription: abonnement("STARTER", true) });
+    const suggestion = screen.getByRole("button", { name: /suggestion/i });
+    const raccourci = screen.getByRole("link", { name: "Guide de démarrage" });
+    expect(suggestion.parentElement).toContainElement(raccourci);
+    expect(raccourci).toHaveAttribute("href", "/guide-demarrage");
+  });
+
+  it("la page du guide titre toujours l'onglet, bien qu'elle ne soit plus dans le menu", () => {
     renderManagerLayout("/guide-demarrage", agence);
     expect(document.title).toBe("Guide de démarrage | ImmoPlatform Pro");
-    expect(screen.getAllByRole("link", { name: "Guide de démarrage" })[0]).toHaveAttribute("href", "/guide-demarrage");
   });
 
   it.each([
@@ -105,21 +111,8 @@ describe("ManagerLayout — titre de l'onglet", () => {
     ["Starter", { ...gestionnaire, subscription: abonnement("STARTER") }],
     ["Professionnel", { ...gestionnaire, subscription: abonnement("PRO") }],
     ["essai terminé", { ...gestionnaire, subscription: { ...abonnement("STARTER"), status: "EXPIRED" as const, isSubscriptionActive: false, isExpired: true } }],
-  ])("le guide de démarrage n'apparaît pas dans le menu : %s", (_nom, utilisateur) => {
+  ])("le raccourci du guide n'apparaît pas : %s", (_nom, utilisateur) => {
     renderManagerLayout("/dashboard", utilisateur as AuthUser);
-    expect(screen.queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
-  });
-
-  it("propose aussi le guide de démarrage à côté du bouton « Une suggestion ? », pour qui y a droit", () => {
-    renderManagerLayout("/dashboard", agence);
-    const suggestion = screen.getByRole("button", { name: /suggestion/i });
-    const raccourci = screen.getAllByRole("link", { name: "Guide de démarrage" }).find((l) => suggestion.parentElement?.contains(l));
-    expect(raccourci).toBeDefined();
-    expect(raccourci).toHaveAttribute("href", "/guide-demarrage");
-  });
-
-  it("ne propose pas ce raccourci aux comptes sans accès au guide", () => {
-    renderManagerLayout("/dashboard", { ...gestionnaire, subscription: abonnement("PRO") });
     expect(screen.queryByRole("link", { name: "Guide de démarrage" })).not.toBeInTheDocument();
   });
 

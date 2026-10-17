@@ -118,7 +118,6 @@ const en: TranslationSchema = {
       agency: "Agency identity: details, logo and the wording on receipts.",
       subscription: "Your plan, your invoices and the state of your trial.",
       referral: "Your referral code and your referred signups.",
-      guide: "Eight steps to get started: from your agency details to your first rent collected.",
     },
     manager: {
       dashboard: "Dashboard",
