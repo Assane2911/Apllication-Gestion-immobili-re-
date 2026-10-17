@@ -837,7 +837,6 @@ export const expenses = pgTable(
     amount: doublePrecision("amount").notNull(),
     currency: text("currency").notNull().default("EUR"),
     expenseDate: timestamp("expense_date", { mode: "date" }).notNull().defaultNow(),
-    receiptUrl: text("receipt_url"),
     notes: text("notes"),
     // Dépenses récurrentes (voir recurringExpense.service.ts) : NULL partout
     // sauf sur la dépense MODÈLE elle-même, qui reste une dépense normale

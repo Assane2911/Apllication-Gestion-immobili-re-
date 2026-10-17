@@ -325,7 +325,6 @@ export interface Expense {
   amount: number;
   currency: string;
   expenseDate: string;
-  receiptUrl?: string | null;
   notes?: string | null;
   /** Renseigné uniquement sur le modèle d'une dépense récurrente. */
   recurrence?: ExpenseRecurrence | null;
