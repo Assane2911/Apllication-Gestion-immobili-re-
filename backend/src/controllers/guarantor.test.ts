@@ -154,3 +154,28 @@ describe("garants sur le bail et effacement", () => {
     expect(intact.firstName).toBe("Reste");
   });
 });
+
+/**
+ * Régression : « 1e999 » est converti en Infinity par z.coerce.number() et passait `positive()` — même défaut que
+ * pour les dépenses et les polices d'assurance. Le montant maximal garanti s'imprime sur le bail et sur l'avenant
+ * (« Montant maximal garanti : … ») : un montant infini ou absurde n'a pas sa place dans un document signé.
+ */
+describe("garants d'un bail — montant garanti aberrant", () => {
+  it("refuse un montant infini ou absurdement grand, à la création comme à la modification", async () => {
+    const { contract, h } = await agence();
+    expect((await ajouter(h, contract.id, { ...GARANT, maxAmount: "1e999" })).status).toBe(400);
+    expect((await ajouter(h, contract.id, { ...GARANT, maxAmount: 1e15 })).status).toBe(400);
+
+    const cree = await ajouter(h, contract.id);
+    expect(cree.status).toBe(201);
+    const modif = await request(app).put(`/api/contracts/${contract.id}/guarantors/${cree.body.id}`).set(h).send({ maxAmount: "1e999" });
+    expect(modif.status).toBe(400);
+    const [intact] = await testDb.select().from(contractGuarantors).where(eq(contractGuarantors.id, cree.body.id));
+    expect(intact.maxAmount).toBe(1500000);
+  });
+
+  it("accepte un montant élevé mais réaliste (francs CFA)", async () => {
+    const { contract, h } = await agence();
+    expect((await ajouter(h, contract.id, { ...GARANT, maxAmount: 250_000_000 })).status).toBe(201);
+  });
+});

@@ -166,11 +166,11 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
             </div>
             <div>
               <label htmlFor="g-firstName" className={etiquette}>{t("components.guarantors.firstName")}</label>
-              <input id="g-firstName" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={champ} />
+              <input id="g-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={champ} />
             </div>
             <div>
               <label htmlFor="g-lastName" className={etiquette}>{t("components.guarantors.lastName")}</label>
-              <input id="g-lastName" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={champ} />
+              <input id="g-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={champ} />
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="g-phone" className={etiquette}>{t("components.guarantors.phone")}</label>

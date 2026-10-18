@@ -30,7 +30,11 @@ const garantSchema = z.object({
     .optional()
     .transform((v) => (v ? v.toLowerCase() : null)),
   address: z.string().trim().max(300).nullable().optional().transform((v) => v || null),
-  maxAmount: z.union([z.null(), z.coerce.number().positive("Le montant garanti doit être positif")]).optional(),
+  // .finite() : « 1e999 » est converti en Infinity par la coercition et passait `positive()` ; le montant s'imprime sur
+  // le bail. Le plafond écarte une faute de frappe manifeste sans gêner les francs CFA.
+  maxAmount: z
+    .union([z.null(), z.coerce.number().finite("Le montant garanti est invalide").positive("Le montant garanti doit être positif").max(1_000_000_000_000, "Le montant garanti est trop élevé")])
+    .optional(),
   notes: z.string().trim().max(1000).nullable().optional().transform((v) => v || null),
 });
 
