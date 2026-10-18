@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { agencySettings } from "../db/schema";
+import { activityLogs, agencySettings } from "../db/schema";
 import { authHeader, createContract, createManager, createProperty, createTenant, tokenFor,
   createPortalUser,
   tokenLocataire,
@@ -455,5 +455,106 @@ describe("GET /api/agency/mine (portail locataire)", () => {
     expect(res.status).toBe(200);
     expect(res.body.iban).toBeNull();
     expect(res.body.bic).toBeNull();
+  });
+});
+
+describe("PUT /api/agency — champs omis", () => {
+  /**
+   * Régression : `ibanSchema`/`bicSchema` transformaient un champ ABSENT en null,
+   * et `.set({ iban: null })` l'écrivait. Toute requête qui ne renvoyait pas
+   * l'IBAN (client API, ancienne version de l'application) effaçait en silence
+   * les coordonnées bancaires affichées aux locataires pour leurs virements.
+   */
+  it("ne touche ni à l'IBAN ni au BIC quand la requête ne les mentionne pas", async () => {
+    const manager = await createManager();
+    await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Horizon Immobilier", iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" });
+
+    const res = await request(app)
+      .put("/api/agency")
+      .set(authHeader(tokenFor(manager)))
+      .send({ agencyName: "Horizon Immobilier 2" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.agencyName).toBe("Horizon Immobilier 2");
+    expect(res.body.iban).toBe("FR7630006000011234567890189");
+    expect(res.body.bic).toBe("BNPAFRPPXXX");
+  });
+});
+
+describe("PUT /api/agency — bornes des champs", () => {
+  it("refuse des mentions légales démesurées et un nom d'agence démesuré", async () => {
+    const manager = await createManager();
+    const put = (corps: Record<string, unknown>) =>
+      request(app).put("/api/agency").set(authHeader(tokenFor(manager))).send({ agencyName: "Horizon", ...corps });
+
+    expect((await put({ legalNotice: "x".repeat(5001) })).status).toBe(400);
+    expect((await put({ agencyName: "N".repeat(201) })).status).toBe(400);
+    expect((await put({ address: "a".repeat(501) })).status).toBe(400);
+    expect((await put({ legalNotice: "x".repeat(5000), address: "a".repeat(500) })).status).toBe(200);
+  });
+});
+
+/**
+ * Régression : modifier les réglages de l'agence — dont l'IBAN que les
+ * locataires voient pour leurs virements — ne laissait aucune trace. Un IBAN
+ * remplacé (compte détourné, collaborateur indélicat) ne pouvait plus être
+ * attribué ni daté. Le journal nomme les champs modifiés, jamais leur valeur
+ * complète.
+ */
+describe("journal d'activité des réglages d'agence", () => {
+  type Ligne = typeof activityLogs.$inferSelect;
+  const IBAN = "FR7630006000011234567890189";
+  const journal = (managerId: string) =>
+    testDb.select().from(activityLogs).where(and(eq(activityLogs.managerId, managerId), eq(activityLogs.entityType, "agency")));
+
+  it("trace un changement d'IBAN sans écrire l'IBAN en entier", async () => {
+    const manager = await createManager();
+    const put = (corps: Record<string, unknown>) =>
+      request(app).put("/api/agency").set(authHeader(tokenFor(manager))).send({ agencyName: "Horizon", ...corps });
+    await put({});
+    await put({ iban: IBAN });
+
+    const logs = await journal(manager.id);
+    const entree = logs.find((l: Ligne) => l.details?.includes("IBAN"));
+    expect(entree).toBeDefined();
+    expect(entree!.action).toBe("agency.update");
+    expect(entree!.details).toContain("…0189");
+    expect(entree!.details).not.toContain(IBAN);
+    expect(entree!.details).not.toContain("3000 6000");
+  });
+
+  it("nomme les champs modifiés et ne trace rien quand rien ne change", async () => {
+    const manager = await createManager();
+    const put = (corps: Record<string, unknown>) =>
+      request(app).put("/api/agency").set(authHeader(tokenFor(manager))).send({ agencyName: "Horizon", ...corps });
+    await put({ address: "1 rue A" });
+    const avant = (await journal(manager.id)).length;
+
+    await put({ address: "1 rue A" });
+    expect((await journal(manager.id)).length).toBe(avant);
+
+    await put({ address: "2 rue B", phone: "+221770001122" });
+    const logs = await journal(manager.id);
+    expect(logs.length).toBe(avant + 1);
+    const derniere = logs.sort((a: Ligne, b: Ligne) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+    expect(derniere.details).toContain("adresse");
+    expect(derniere.details).toContain("téléphone");
+    expect(derniere.details).not.toContain("rue B");
+  });
+
+  it("trace l'envoi puis le retrait du logo", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+    await request(app)
+      .post("/api/agency/logo")
+      .set(authHeader(tokenFor(manager)))
+      .attach("logo", PNG_1X1, { filename: "logo.png", contentType: "image/png" })
+      .expect(201);
+    await request(app).delete("/api/agency/logo").set(authHeader(tokenFor(manager))).expect(204);
+
+    const actions = (await journal(manager.id)).map((l: Ligne) => l.action).sort();
+    expect(actions).toEqual(["agency.image_delete", "agency.image_upload"]);
   });
 });

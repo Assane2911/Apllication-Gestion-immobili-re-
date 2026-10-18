@@ -62,7 +62,9 @@ export const ibanSchema = z
   .string()
   .optional()
   .nullable()
-  .transform((valeur) => (valeur ? normaliserIban(valeur) : valeur || null))
+  // Un champ ABSENT reste absent (undefined) : l'écriture en base l'ignore. Le transformer en null
+  // effaçait l'IBAN de toute requête qui ne le mentionnait pas ; seul « null » ou « "" » l'efface.
+  .transform((valeur) => (valeur === undefined ? undefined : valeur ? normaliserIban(valeur) : null))
   .refine((valeur) => !valeur || ibanValide(valeur), {
     message: "IBAN invalide — vérifiez qu'il est complet et sans erreur de saisie.",
   });
@@ -71,7 +73,7 @@ export const bicSchema = z
   .string()
   .optional()
   .nullable()
-  .transform((valeur) => (valeur ? normaliserBic(valeur) : valeur || null))
+  .transform((valeur) => (valeur === undefined ? undefined : valeur ? normaliserBic(valeur) : null))
   .refine((valeur) => !valeur || bicValide(valeur), {
     message: "BIC/SWIFT invalide — 8 ou 11 caractères attendus (ex: BNPAFRPPXXX).",
   });

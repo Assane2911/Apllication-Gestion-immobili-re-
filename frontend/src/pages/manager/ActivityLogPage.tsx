@@ -1,4 +1,4 @@
-import { Building2, Clock, FileText, Receipt, Wrench, Users } from "lucide-react";
+import { Banknote, Building2, Clock, FileText, Receipt, Settings, Wrench, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
@@ -9,7 +9,7 @@ import type { ActivityLogEntry, PaginatedResponse } from "../../types";
 
 const PAGE_SIZE = 20;
 
-const entityTypes = ["ALL", "property", "tenant", "contract", "invoice", "issue"] as const;
+const entityTypes = ["ALL", "property", "tenant", "contract", "invoice", "issue", "expense", "agency"] as const;
 
 const iconByEntityType: Record<string, typeof Building2> = {
   property: Building2,
@@ -17,6 +17,8 @@ const iconByEntityType: Record<string, typeof Building2> = {
   contract: FileText,
   invoice: Receipt,
   issue: Wrench,
+  expense: Banknote,
+  agency: Settings,
 };
 
 export default function ActivityLogPage() {

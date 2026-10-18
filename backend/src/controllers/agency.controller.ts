@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { agencySettings, tenants } from "../db/schema";
+import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bicSchema, ibanSchema } from "../utils/iban";
 import { chargerCompteCourant, chargerLocataireDuCompte } from "../utils/authorization";
@@ -36,14 +37,15 @@ export const getAgencySettings = asyncHandler(async (req: Request, res: Response
 });
 
 const updateAgencySettingsSchema = z.object({
-  agencyName: z.string().min(1),
-  logoUrl: z.string().optional().nullable(),
-  siretOrId: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  email: z.string().optional().nullable(),
-  legalNotice: z.string().optional().nullable(),
-  stampOrSignatureUrl: z.string().optional().nullable(),
+  // Ces textes s'impriment sur chaque quittance, bail et mise en demeure : bornés.
+  agencyName: z.string().min(1).max(200),
+  logoUrl: z.string().max(2000).optional().nullable(),
+  siretOrId: z.string().max(100).optional().nullable(),
+  address: z.string().max(500).optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
+  email: z.string().max(254).optional().nullable(),
+  legalNotice: z.string().max(5000).optional().nullable(),
+  stampOrSignatureUrl: z.string().max(2000).optional().nullable(),
   iban: ibanSchema,
   bic: bicSchema,
   // Relances graduées des impayés (voir services/relances.service.ts) ; absents : inchangés.
@@ -52,6 +54,38 @@ const updateAgencySettingsSchema = z.object({
   overdueIntervalDays: z.coerce.number().int().min(3, "Intervalle entre relances : 3 à 30 jours").max(30, "Intervalle entre relances : 3 à 30 jours").optional(),
   overdueNotifyGuarantors: z.boolean().optional(),
 });
+
+/**
+ * Réglages dont une modification est tracée au journal d'activité, avec le libellé affiché. Le journal
+ * nomme les champs changés sans jamais reproduire leur valeur : un IBAN complet n'a rien à y faire, et seuls
+ * ses quatre derniers caractères permettent de reconnaître de quel compte il s'agit.
+ */
+const REGLAGES_TRACES = [
+  ["agencyName", "nom de l'agence"],
+  ["siretOrId", "SIRET / identifiant"],
+  ["address", "adresse"],
+  ["phone", "téléphone"],
+  ["email", "email"],
+  ["legalNotice", "mentions légales"],
+  ["iban", "IBAN"],
+  ["bic", "BIC"],
+  ["overdueRemindersEnabled", "relances des impayés"],
+  ["overdueGraceDays", "délai de grâce des relances"],
+  ["overdueIntervalDays", "intervalle des relances"],
+  ["overdueNotifyGuarantors", "relances aux garants"],
+] as const;
+
+function reglagesModifies(existant: Record<string, unknown> | undefined, body: Record<string, unknown>): string[] {
+  const modifies: string[] = [];
+  for (const [champ, libelle] of REGLAGES_TRACES) {
+    const nouveau = body[champ];
+    if (nouveau === undefined) continue;
+    const avant = existant?.[champ] ?? null;
+    if ((nouveau ?? null) === avant) continue;
+    modifies.push(champ === "iban" && typeof nouveau === "string" ? `${libelle} (…${nouveau.slice(-4)})` : libelle);
+  }
+  return modifies;
+}
 
 export const updateAgencySettings = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -85,6 +119,7 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
         ...body,
       })
       .returning();
+    await tracerReglages(req, created, reglagesModifies(undefined, body));
     return res.json(created);
   }
 
@@ -97,8 +132,23 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
     .where(eq(agencySettings.userId, req.user.userId))
     .returning();
 
+  await tracerReglages(req, updated, reglagesModifies(existing, body));
   res.json(updated);
 });
+
+/** Une entrée de journal par enregistrement qui change vraiment quelque chose (le formulaire renvoie tout à chaque fois). */
+async function tracerReglages(req: Request, reglages: { id: string; agencyName: string }, modifies: string[]) {
+  if (modifies.length === 0) return;
+  await logActivity({
+    req,
+    managerId: req.user!.userId,
+    action: "agency.update",
+    entityType: "agency",
+    entityId: reglages.id,
+    entityLabel: reglages.agencyName,
+    details: `Réglages de l'agence modifiés : ${modifies.join(", ")}.`,
+  });
+}
 
 /**
  * Coordonnées bancaires de SON agence, pour le locataire qui choisit
@@ -153,7 +203,22 @@ async function envoyerImageAgence(req: Request, res: Response, champ: ImageAgenc
 
   // Après l'enregistrement : un échec de nettoyage laisse un fichier orphelin, jamais une image perdue.
   await deleteStorageObjectBestEffort(existing?.[champ]);
+  await tracerImage(req, saved, champ, "upload");
   res.status(201).json(saved);
+}
+
+const LIBELLE_IMAGE: Record<ImageAgence, string> = { logoUrl: "logo", stampOrSignatureUrl: "tampon" };
+
+async function tracerImage(req: Request, reglages: { id: string; agencyName: string }, champ: ImageAgence, geste: "upload" | "delete") {
+  await logActivity({
+    req,
+    managerId: req.user!.userId,
+    action: `agency.image_${geste}`,
+    entityType: "agency",
+    entityId: reglages.id,
+    entityLabel: reglages.agencyName,
+    details: `${geste === "upload" ? "Envoi du" : "Retrait du"} ${LIBELLE_IMAGE[champ]} de l'agence.`,
+  });
 }
 
 /** Retire une image d'agence : les quittances reviennent sans elle. Toujours permis, quelle que soit la formule. */
@@ -164,6 +229,7 @@ async function retirerImageAgence(req: Request, res: Response, champ: ImageAgenc
 
   await db.update(agencySettings).set({ [champ]: null, updatedAt: new Date() }).where(eq(agencySettings.userId, req.user.userId));
   await deleteStorageObjectBestEffort(existing[champ]);
+  await tracerImage(req, existing, champ, "delete");
   res.status(204).send();
 }
 
