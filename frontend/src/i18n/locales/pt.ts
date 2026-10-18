@@ -2258,6 +2258,14 @@ const pt: TranslationSchema = {
       },
       save: "Guardar",
       saving: "A guardar...",
+      twoFactor: {
+        title: "Segurança da conta de administrador",
+        description:
+          "Esta conta confirma transferências e suspende ou elimina agências. Exija, além da palavra-passe, um código de utilização única gerado por uma aplicação de autenticação em cada início de sessão.",
+        enabled: "Autenticação de dois fatores ativada",
+        enableButton: "Ativar a autenticação de dois fatores",
+        disableButton: "Desativar",
+      },
     },
   },
 

@@ -2259,6 +2259,14 @@ const fr = {
       },
       save: "Enregistrer",
       saving: "Enregistrement...",
+      twoFactor: {
+        title: "Sécurité du compte administrateur",
+        description:
+          "Ce compte confirme les virements, suspend et supprime des agences. Exigez, en plus du mot de passe, un code à usage unique généré par une application d'authentification à chaque connexion.",
+        enabled: "Double authentification activée",
+        enableButton: "Activer la double authentification",
+        disableButton: "Désactiver",
+      },
     },
   },
 

@@ -31,27 +31,42 @@ const updatePlatformSettingsSchema = z.object({
   bic: bicSchema,
 });
 
-// L'IBAN/BIC n'est volontairement PAS recopié dans le journal : on y garde la
-// trace du changement (qui, quand), pas la valeur, pour que le journal ne
-// devienne pas un second endroit où lire des coordonnées bancaires.
-const journaliserModification = (req: Request) =>
-  logAdminAction({
-    req,
-    action: "platform.bank_details.update",
-    details: "Coordonnées bancaires de la plateforme modifiées",
-  });
+// L'IBAN/BIC complet n'est volontairement PAS recopié dans le journal : on y garde la trace du changement
+// (qui, quand, quel champ), pas la valeur, pour que le journal ne devienne pas un second endroit où lire des
+// coordonnées bancaires. Les quatre derniers caractères de l'IBAN suffisent à reconnaître le compte : c'est
+// celui sur lequel toutes les agences virent leur abonnement, un remplacement doit se voir au premier coup d'œil.
+function champsModifies(existant: { iban: string | null; bic: string | null } | undefined, body: { iban?: string | null; bic?: string | null }) {
+  const modifies: string[] = [];
+  if (body.iban !== undefined && (body.iban ?? null) !== (existant?.iban ?? null)) {
+    modifies.push(body.iban ? `IBAN (…${body.iban.slice(-4)})` : "IBAN (effacé)");
+  }
+  if (body.bic !== undefined && (body.bic ?? null) !== (existant?.bic ?? null)) {
+    modifies.push(body.bic ? "BIC" : "BIC (effacé)");
+  }
+  return modifies;
+}
+
+const journaliserModification = (req: Request, modifies: string[]) =>
+  modifies.length === 0
+    ? Promise.resolve()
+    : logAdminAction({
+        req,
+        action: "platform.bank_details.update",
+        details: `Coordonnées bancaires de la plateforme modifiées : ${modifies.join(", ")}`,
+      });
 
 export const updatePlatformSettings = asyncHandler(async (req: Request, res: Response) => {
   const body = updatePlatformSettingsSchema.parse(req.body);
 
   const [existing] = await db.select().from(platformSettings).where(eq(platformSettings.id, PLATFORM_SETTINGS_ID));
+  const modifies = champsModifies(existing, body);
 
   if (!existing) {
     const [created] = await db
       .insert(platformSettings)
       .values({ id: PLATFORM_SETTINGS_ID, ...body })
       .returning();
-    await journaliserModification(req);
+    await journaliserModification(req, modifies);
     return res.json(created);
   }
 
@@ -61,7 +76,7 @@ export const updatePlatformSettings = asyncHandler(async (req: Request, res: Res
     .where(eq(platformSettings.id, PLATFORM_SETTINGS_ID))
     .returning();
 
-  await journaliserModification(req);
+  await journaliserModification(req, modifies);
   res.json(updated);
 });
 

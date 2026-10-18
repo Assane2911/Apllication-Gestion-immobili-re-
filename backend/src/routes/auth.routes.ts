@@ -63,9 +63,9 @@ router.delete("/account", authenticate, requireRole("MANAGER"), deleteMyAccount)
 // nouveau (confirmer, désactiver, régénérer les codes de secours) restent
 // brute-forçables avec un jeton volé : elles partagent la limite d'ÉCHECS par
 // compte du second facteur.
-router.post("/2fa/setup", authenticate, requireRole("MANAGER"), setupTwoFactor);
-router.post("/2fa/confirm", authenticate, requireRole("MANAGER"), authSecondFacteurLimiter, confirmTwoFactor);
-router.post("/2fa/disable", authenticate, requireRole("MANAGER"), authSecondFacteurLimiter, disableTwoFactor);
-router.post("/2fa/backup-codes/regenerate", authenticate, requireRole("MANAGER"), authSecondFacteurLimiter, regenerateBackupCodes);
+router.post("/2fa/setup", authenticate, requireRole("MANAGER", "ADMIN"), setupTwoFactor);
+router.post("/2fa/confirm", authenticate, requireRole("MANAGER", "ADMIN"), authSecondFacteurLimiter, confirmTwoFactor);
+router.post("/2fa/disable", authenticate, requireRole("MANAGER", "ADMIN"), authSecondFacteurLimiter, disableTwoFactor);
+router.post("/2fa/backup-codes/regenerate", authenticate, requireRole("MANAGER", "ADMIN"), authSecondFacteurLimiter, regenerateBackupCodes);
 
 export default router;

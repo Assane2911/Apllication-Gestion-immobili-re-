@@ -2,10 +2,16 @@ import { CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
+import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
+import { useAuth } from "../../context/auth";
 import type { PlatformSettings } from "../../types";
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation();
+  const { user, refreshUser } = useAuth();
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [showTwoFactorDisable, setShowTwoFactorDisable] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +128,62 @@ export default function AdminSettingsPage() {
         </form>
       </div>
       </>
+      )}
+
+      {/*
+        Le compte administrateur est le plus puissant de la plateforme : il confirme les virements et suspend ou
+        supprime des agences. Il doit pouvoir être protégé par un second facteur, comme n'importe quel compte de
+        gestionnaire. Hors du bloc ci-dessus : l'échec du chargement des coordonnées bancaires ne doit pas
+        priver l'administrateur de cette protection.
+      */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+          {t("admin.settings.twoFactor.title")}
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{t("admin.settings.twoFactor.description")}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {user?.twoFactorEnabled ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 rounded-full px-3 py-1.5">
+                <CheckCircle2 size={14} aria-hidden="true" /> {t("admin.settings.twoFactor.enabled")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowTwoFactorDisable(true)}
+                className="border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              >
+                {t("admin.settings.twoFactor.disableButton")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowTwoFactorSetup(true)}
+              className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              {t("admin.settings.twoFactor.enableButton")}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showTwoFactorSetup && (
+        <TwoFactorSetupModal
+          onSuccess={() => {
+            setShowTwoFactorSetup(false);
+            refreshUser();
+          }}
+          onClose={() => setShowTwoFactorSetup(false)}
+        />
+      )}
+      {showTwoFactorDisable && (
+        <TwoFactorDisableModal
+          onSuccess={() => {
+            setShowTwoFactorDisable(false);
+            refreshUser();
+          }}
+          onClose={() => setShowTwoFactorDisable(false)}
+        />
       )}
     </div>
   );
