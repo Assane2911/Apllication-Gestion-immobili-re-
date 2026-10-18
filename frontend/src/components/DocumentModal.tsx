@@ -29,6 +29,8 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
   useEffect(() => {
     setLoading(true);
     setError(null);
+    // Le document précédent ne doit pas rester affiché sous le suivant, ni sous son erreur.
+    setHtmlContent(null);
     const controller = new AbortController();
     api
       .get(docUrl, { responseType: "text", signal: controller.signal })

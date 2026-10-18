@@ -467,3 +467,45 @@ describe("GET /api/documents/inspection/:inspectionId", () => {
   });
 });
 
+
+/**
+ * Régression : aucun de ces documents ne demandait au navigateur de ne pas le
+ * conserver. Un bail (identité, garants), une quittance ou une URL signée vers
+ * un contrat scanné restaient donc dans le cache du navigateur, lisibles depuis
+ * un poste partagé après la déconnexion.
+ */
+describe("documents — pas de mise en cache", () => {
+  async function cas() {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { scannedContractUrl: "contracts/test-scan.pdf" } as any);
+    const invoice = await createInvoice(contract.id, { status: "PAID", paidAt: new Date() });
+    const inspection = await createInspection(contract, manager.id, { status: "COMPLETED" });
+    return { manager, contract, invoice, inspection };
+  }
+
+  it("interdit la mise en cache de la quittance, du bail, du scan et de l'état des lieux", async () => {
+    const { manager, contract, invoice, inspection } = await cas();
+    for (const chemin of [
+      `/api/documents/receipt/${invoice.id}`,
+      `/api/documents/lease/${contract.id}`,
+      `/api/documents/lease-scan/${contract.id}`,
+      `/api/documents/inspection/${inspection.id}`,
+    ]) {
+      const res = await request(app).get(chemin).set(authHeader(tokenFor(manager)));
+      expect(res.status, chemin).toBe(200);
+      expect(res.headers["cache-control"], chemin).toContain("no-store");
+    }
+  });
+
+  it("interdit aussi la mise en cache d'un refus", async () => {
+    const { contract } = await cas();
+    const intrus = await createManager();
+
+    const res = await request(app).get(`/api/documents/lease/${contract.id}`).set(authHeader(tokenFor(intrus)));
+
+    expect(res.status).toBe(403);
+    expect(res.headers["cache-control"]).toContain("no-store");
+  });
+});
