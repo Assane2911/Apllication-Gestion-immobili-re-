@@ -11,6 +11,13 @@ const router = Router();
 // servent AUSSI les locataires et les propriétaires : le middleware les
 // laisse passer sans condition (voir requireActiveSubscription), ils ne sont
 // donc jamais pénalisés par l'abonnement de leur gestionnaire.
+//
+// Ces réponses portent des données personnelles (identité, garants, paiements) :
+// `no-store` pour qu'aucun navigateur ne les garde en cache, y compris un refus.
+router.use((_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
 router.use(authenticate, requireActiveSubscription);
 
 router.get("/receipt/:invoiceId", getInvoiceReceipt);
