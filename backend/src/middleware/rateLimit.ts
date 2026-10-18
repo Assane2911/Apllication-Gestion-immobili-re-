@@ -1,5 +1,7 @@
 import { Request } from "express";
 import rateLimit, { ipKeyGenerator, MemoryStore } from "express-rate-limit";
+import jwt from "jsonwebtoken";
+import { env } from "../config/env";
 import { PostgresRateLimitStore } from "./rateLimitStore";
 
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -38,6 +40,44 @@ export const authEmailLimiter = rateLimit({
   keyGenerator: (req: Request) => {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     return email ? `email:${email}` : ipKeyGenerator(req.ip ?? "unknown");
+  },
+  message: { error: "Trop de tentatives pour ce compte. Réessayez dans quelques minutes." },
+});
+
+/**
+ * Compte visé par une requête qui porte le SECOND FACTEUR : l'utilisateur connecté (gestes authentifiés), ou, pour
+ * /2fa/verify-login, celui du jeton intermédiaire émis après le mot de passe. Le jeton est VÉRIFIÉ (signature et
+ * usage) : un jeton forgé ne désigne personne, sinon n'importe qui pourrait épuiser le quota d'un compte à sa place.
+ */
+function compteDuSecondFacteur(req: Request): string | null {
+  if (req.user) return req.user.collaboratorId ?? req.user.userId;
+  const jeton = req.body?.pendingToken;
+  if (typeof jeton !== "string") return null;
+  try {
+    const charge = jwt.verify(jeton, env.jwtSecret) as Record<string, unknown>;
+    return charge.purpose === "2fa_pending" && typeof charge.userId === "string" ? charge.userId : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Limite par COMPTE sur les gestes qui exigent le second facteur (code TOTP ou de secours) ou le mot de passe à
+ * nouveau : 8 échecs par fenêtre de 15 minutes. La limite par IP seule (20) laissait un attaquant qui connaît le
+ * mot de passe, et dispose de plusieurs adresses, deviner un code à 6 chiffres — trois codes sont valides à tout
+ * instant — sans plafond. Seuls les ÉCHECS comptent (`skipSuccessfulRequests`) : une connexion normale ne s'en
+ * approche jamais. Retombe sur l'IP quand aucun compte n'est identifiable.
+ */
+export const authSecondFacteurLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 8,
+  skipSuccessfulRequests: true,
+  store: new PostgresRateLimitStore("auth-2fa-compte"),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const compte = compteDuSecondFacteur(req);
+    return compte ? `2fa:${compte}` : ipKeyGenerator(req.ip ?? "unknown");
   },
   message: { error: "Trop de tentatives pour ce compte. Réessayez dans quelques minutes." },
 });

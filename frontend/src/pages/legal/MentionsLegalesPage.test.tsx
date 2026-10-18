@@ -18,6 +18,19 @@ describe("MentionsLegalesPage", () => {
     expect(screen.getByText(COMPANY.siret, { exact: false })).toBeInTheDocument();
   });
 
+  it("situe l'éditeur aux États-Unis, là où se trouvent son siège et sa société : jamais en France", () => {
+    render(
+      <MemoryRouter>
+        <MentionsLegalesPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Pays : États-Unis")).toBeInTheDocument();
+    expect(screen.queryByText(/Pays : France/)).not.toBeInTheDocument();
+    expect(COMPANY.country).toBe("États-Unis");
+    expect(COMPANY.address).toMatch(/États-Unis/);
+  });
+
   it("définit un titre d'onglet propre à la page", () => {
     render(
       <MemoryRouter>

@@ -1264,6 +1264,15 @@ export function generateRentRevisionHtml(data: RentRevisionExportData, agency: L
     <div class="box">Le présent avenant modifie uniquement le montant du loyer à compter de la date d'effet ci-dessus. Toutes les autres clauses du bail demeurent inchangées.</div>
   </div>
 
+  ${
+    (data.guarantors ?? []).length > 0
+      ? `<div class="section">
+    <div class="section-title">5. Engagement des garants</div>
+    <div class="box">La signature du garant atteste qu'il a pris connaissance de la révision du loyer ci-dessus. Elle ne remplace pas un acte de cautionnement : lorsque la révision aggrave l'engagement du garant (hausse au-delà de ce que prévoit son acte de caution, prolongation de sa durée), un nouvel acte de cautionnement, avec les mentions exigées par le droit applicable, est nécessaire.</div>
+  </div>`
+      : ""
+  }
+
   <p style="margin-top:24px; font-size:13px;">Établi le ${date(data.createdAt)}, ${(data.cotenants ?? []).length + (data.guarantors ?? []).length > 0 ? "en autant d'exemplaires que de signataires" : "en deux exemplaires"}.</p>
 
   <div class="signatures">

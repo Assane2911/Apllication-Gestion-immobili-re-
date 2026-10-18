@@ -21,7 +21,7 @@ import {
   setupTwoFactor,
 } from "../controllers/twoFactor.controller";
 import { authenticate, requireRole } from "../middleware/auth";
-import { authEmailLimiter, authIpLimiter } from "../middleware/rateLimit";
+import { authEmailLimiter, authIpLimiter, authSecondFacteurLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
@@ -37,9 +37,10 @@ router.post("/register", authIpLimiter, authEmailLimiter, registerManager);
 router.post("/login", authIpLimiter, authEmailLimiter, login);
 // Pas de authEmailLimiter ici : la requête ne porte ni email ni mot de passe
 // en clair, seulement le jeton intermédiaire émis par login() (déjà borné à
-// 5 minutes) et un code à 6 ou 10 caractères — authIpLimiter suffit contre un
-// brute-force du code, comme pour /google ci-dessous.
-router.post("/2fa/verify-login", authIpLimiter, verifyTwoFactorLogin);
+// 5 minutes) et un code à 6 ou 10 caractères. authIpLimiter borne le volume
+// par adresse ; authSecondFacteurLimiter borne les ÉCHECS par compte (lu dans
+// le jeton intermédiaire), même répartis sur plusieurs adresses.
+router.post("/2fa/verify-login", authIpLimiter, authSecondFacteurLimiter, verifyTwoFactorLogin);
 // Pas de authEmailLimiter ici : la requête ne porte pas d'email en clair
 // (seulement un jeton Google) — authIpLimiter suffit, comme pour
 // verify-email/reset-password ci-dessous.
@@ -57,14 +58,14 @@ router.post("/logout-all", authenticate, logoutAllDevices);
 router.delete("/account", authenticate, requireRole("MANAGER"), deleteMyAccount);
 
 // Double authentification (TOTP) — réservée aux gestionnaires pour l'instant
-// (voir twoFactor.controller.ts). Pas de limite de fréquence ici, comme
-// /logout-all et /account juste au-dessus : ces routes exigent déjà un jeton
-// de session valide (authenticate), contrairement à /login, /google ou
-// /2fa/verify-login ci-dessus qui ne prouvent encore aucune identité au
-// moment de la requête.
+// (voir twoFactor.controller.ts). Ces routes exigent un jeton de session valide
+// (authenticate), mais celles qui demandent un code ou le mot de passe à
+// nouveau (confirmer, désactiver, régénérer les codes de secours) restent
+// brute-forçables avec un jeton volé : elles partagent la limite d'ÉCHECS par
+// compte du second facteur.
 router.post("/2fa/setup", authenticate, requireRole("MANAGER"), setupTwoFactor);
-router.post("/2fa/confirm", authenticate, requireRole("MANAGER"), confirmTwoFactor);
-router.post("/2fa/disable", authenticate, requireRole("MANAGER"), disableTwoFactor);
-router.post("/2fa/backup-codes/regenerate", authenticate, requireRole("MANAGER"), regenerateBackupCodes);
+router.post("/2fa/confirm", authenticate, requireRole("MANAGER"), authSecondFacteurLimiter, confirmTwoFactor);
+router.post("/2fa/disable", authenticate, requireRole("MANAGER"), authSecondFacteurLimiter, disableTwoFactor);
+router.post("/2fa/backup-codes/regenerate", authenticate, requireRole("MANAGER"), authSecondFacteurLimiter, regenerateBackupCodes);
 
 export default router;

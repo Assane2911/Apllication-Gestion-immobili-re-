@@ -173,6 +173,26 @@ describe("avenant de révision", () => {
     expect(res.text).not.toContain("en deux exemplaires");
   });
 
+  it("précise au garant que sa signature ne remplace pas un acte de cautionnement quand la révision aggrave son engagement", async () => {
+    const { contract, h, revision } = await avecRevision();
+    await testDb.insert(contractGuarantors).values({ contractId: contract.id, firstName: "Ibrahima", lastName: "Fall", phone: "+221771234567", maxAmount: 3000 });
+
+    const res = await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(h);
+
+    expect(res.text).toContain("Engagement des garants");
+    expect(res.text).toMatch(/atteste (?:qu'il|que le garant) a pris connaissance de la révision/);
+    expect(res.text).toContain("ne remplace pas un acte de cautionnement");
+    expect(res.text).toMatch(/aggrave l'engagement[^<]*nouvel acte de cautionnement/);
+    // La plateforme n'atteste la validité d'aucun engagement : le texte ne doit jamais l'affirmer.
+    expect(res.text).not.toMatch(/valable|valide|conforme/i);
+  });
+
+  it("n'ajoute aucun paragraphe sur les garants à un avenant sans garant", async () => {
+    const { h, revision } = await avecRevision();
+    const res = await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(h);
+    expect(res.text).not.toContain("Engagement des garants");
+  });
+
   it("un bail sans colocataire ni garant garde un avenant à deux signatures", async () => {
     const { h, revision } = await avecRevision();
     const res = await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(h);

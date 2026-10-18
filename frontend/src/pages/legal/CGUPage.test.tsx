@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
+import { COMPANY } from "../../legal/companyInfo";
 import CGUPage from "./CGUPage";
 
 describe("CGUPage", () => {
@@ -14,6 +15,20 @@ describe("CGUPage", () => {
     expect(screen.getByRole("heading", { name: "Conditions Générales d'Utilisation et de Vente", level: 1 })).toBeInTheDocument();
     expect(screen.getByText("1. Objet")).toBeInTheDocument();
     expect(screen.getByText("3. Formules d'abonnement et essai gratuit")).toBeInTheDocument();
+  });
+
+  it("énonce le droit applicable comme un choix distinct du pays de l'éditeur", () => {
+    render(
+      <MemoryRouter>
+        <CGUPage />
+      </MemoryRouter>
+    );
+
+    // Le droit applicable (choix contractuel) ne se déduit pas du pays du siège : l'éditeur est américain.
+    expect(COMPANY.country).toBe("États-Unis");
+    expect(COMPANY.governingLaw).toBe("droit français");
+    expect(screen.getByText(/sont soumises au droit français/)).toBeInTheDocument();
+    expect(screen.queryByText(/droit États-Unis/)).not.toBeInTheDocument();
   });
 
   it("définit un titre d'onglet propre à la page", () => {
