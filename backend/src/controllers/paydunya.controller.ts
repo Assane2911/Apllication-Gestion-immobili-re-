@@ -7,6 +7,7 @@ import { ETATS_MODIFIABLES } from "./invoice.controller";
 import { env } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
 import { solderEnLigne } from "../services/paiementEnLigne.service";
+import { signalerAbonnementNonRapproche, signalerPaiementNonRapproche } from "../services/paiementNonRapproche.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { resteDu } from "../utils/montants";
 import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
@@ -160,10 +161,12 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
 
     if (!subscriptionRow) {
       console.warn(`[paydunya] Abonnement introuvable pour le token ${paydunyaToken}`);
+      signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "abonnement introuvable pour ce jeton" });
     } else if (!amountMatches(paidAmount, subscriptionRow.amount)) {
       console.warn(
         `[paydunya] IPN rejetée pour l'abonnement ${subscriptionRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${subscriptionRow.amount}).`
       );
+      signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "montant différent de l'abonnement attendu" });
     } else {
       // Marque l'historique de paiement PAID ET active réellement l'accès du
       // compte (subscriptionStatus/plan/endsAt) — voir subscriptionActivation.service.ts.
@@ -184,22 +187,35 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
       .from(invoices)
       .where(and(eq(invoices.paymentRef, paydunyaToken), eq(invoices.paymentMethod, "PAYDUNYA")));
 
+    // Un paiement réellement encaissé par PayDunya que la facture ne peut plus recevoir ne doit pas disparaître en
+    // silence : le gestionnaire est prévenu (voir paiementNonRapproche.service.ts) pour rembourser ou régulariser.
+    const signaler = (raison: string) =>
+      signalerPaiementNonRapproche({
+        prestataire: "PAYDUNYA",
+        referenceFacture: ourReference,
+        referencePrestataire: paydunyaToken,
+        montant: Number.isFinite(paidAmount) ? paidAmount : 0,
+        devise: "",
+        raison,
+      });
+
     if (!invoiceRow) {
       console.warn(`[paydunya] Facture introuvable pour le token ${paydunyaToken}`);
+      await signaler("la facture ne porte plus ce paiement : elle a été réglée autrement ou un autre paiement a été lancé depuis");
+    } else if (invoiceRow.status === "PAID") {
+      // Rejeu de l'IPN qui a soldé la facture (le jeton en est la référence) : rien à faire.
+      console.log(`[paydunya] Facture ${invoiceRow.id} déjà réglée, IPN ignorée.`);
+    } else if (!ETATS_MODIFIABLES.includes(invoiceRow.status as (typeof ETATS_MODIFIABLES)[number])) {
+      // Une facture CANCELLED ne doit jamais être ressuscitée en PAID par une confirmation arrivée après l'annulation.
+      console.warn(
+        `[paydunya] Facture ${invoiceRow.id} dans un état non modifiable (${invoiceRow.status}) : IPN ignorée.`
+      );
+      await signaler("la facture a été annulée");
     } else if (!amountMatches(paidAmount, resteDu(invoiceRow))) {
       console.warn(
         `[paydunya] IPN rejetée pour la facture ${invoiceRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${resteDu(invoiceRow)}).`
       );
-    } else if (!ETATS_MODIFIABLES.includes(invoiceRow.status as (typeof ETATS_MODIFIABLES)[number])) {
-      // Régression corrigée : contrairement à markInvoicePaid/cancelInvoice
-      // (invoice.controller.ts), cette IPN n'inspectait jamais le statut
-      // courant avant d'écrire — une facture déjà PAID (réglée autrement, ou
-      // IPN rejouée par PayDunya) voyait son paidAt et sa quittance
-      // régénérés à chaque rejeu, et une facture CANCELLED pouvait être
-      // ressuscitée en PAID par une confirmation arrivée après l'annulation.
-      console.warn(
-        `[paydunya] Facture ${invoiceRow.id} dans un état non modifiable (${invoiceRow.status}) : IPN ignorée.`
-      );
+      await signaler("le montant payé ne correspond plus au reste dû, qui a changé depuis le début du paiement");
     } else {
       // Condition de statut dans le WHERE (et pas seulement dans le garde
       // lu plus haut) : entre le SELECT et cet UPDATE, la facture a pu être

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { env } from "../config/env";
 import { ApiError } from "../utils/asyncHandler";
 
@@ -320,9 +321,16 @@ async function initiateStripePayment(
         Authorization: `Bearer ${env.payments.stripeSecretKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
         // Deux clics sur « Payer » pour la même facture renvoient la même
-        // session au lieu d'en créer deux. La référence suffit comme clé :
-        // elle identifie précisément ce qui est réglé.
-        "Idempotency-Key": `checkout_${reference}`,
+        // session au lieu d'en créer deux. La clé porte la référence, mais AUSSI le
+        // montant et le payeur : Stripe refuse pendant 24 h toute requête qui rejoue
+        // une clé avec d'autres paramètres, ce qui empêchait de payer par carte un
+        // reste dû qui venait de baisser (paiement partiel enregistré entre-temps)
+        // ou un colocataire qui payait à son tour.
+        "Idempotency-Key": `checkout_${reference}_${versPlusPetiteUnite(amount, currency)}_${crypto
+          .createHash("sha256")
+          .update(payerEmail.toLowerCase())
+          .digest("hex")
+          .slice(0, 12)}`,
       },
       body: corps.toString(),
     });
