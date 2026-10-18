@@ -186,7 +186,7 @@ export function computeSubscriptionInfo(user: typeof users.$inferSelect) {
  */
 const REPONSE_INSCRIPTION = {
   pendingVerification: true,
-  message: "Compte créé. Vérifie ta boîte email pour confirmer ton adresse et activer ton compte.",
+  message: "Compte créé. Vérifiez votre boîte email pour confirmer votre adresse et activer votre compte.",
 } as const;
 
 export const registerManager = asyncHandler(async (req: Request, res: Response) => {
@@ -384,7 +384,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   if (user.role === "MANAGER" && !user.emailVerifiedAt) {
     throw new ApiError(
       403,
-      "Merci de confirmer ton email avant de te connecter. Vérifie ta boîte de réception (et tes spams).",
+      "Merci de confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception (et vos spams).",
       "EMAIL_NOT_VERIFIED"
     );
   }
@@ -486,7 +486,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
   // adresse non confirmée (cas rare, ex. certains comptes Workspace) suffirait
   // à prouver une identité que ni nous ni Google n'avons vérifiée.
   if (!payload.email_verified) {
-    throw new ApiError(403, "Ton adresse email Google n'est pas vérifiée");
+    throw new ApiError(403, "Votre adresse email Google n'est pas vérifiée");
   }
 
   const email = payload.email.trim().toLowerCase();
