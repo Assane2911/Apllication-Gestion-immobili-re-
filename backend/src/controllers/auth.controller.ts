@@ -503,6 +503,18 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
       // bloqué malgré une identité désormais vérifiée.
       if (!user.emailVerifiedAt) {
         updates.emailVerifiedAt = new Date();
+        // Pré-détournement : ce compte n'a JAMAIS prouvé son adresse, donc son mot de passe a été choisi par
+        // quelqu'un qui n'avait pas à la posséder — peut-être pas par son titulaire. Google prouve l'ADRESSE ;
+        // il ne valide pas un secret posé avant cette preuve. On l'efface (compte Google seul, comme à la
+        // création), on ferme toute session déjà émise et on invalide les liens en circulation : le titulaire
+        // pourra se définir un mot de passe par « mot de passe oublié », l'inscripteur n'a plus rien.
+        updates.passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+        updates.hasPassword = false;
+        updates.tokenVersion = user.tokenVersion + 1;
+        updates.emailVerificationTokenHash = null;
+        updates.emailVerificationExpiresAt = null;
+        updates.resetPasswordTokenHash = null;
+        updates.resetPasswordExpiresAt = null;
       }
 
       [user] = await db.update(users).set(updates).where(eq(users.id, user.id)).returning();
