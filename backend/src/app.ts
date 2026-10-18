@@ -6,7 +6,7 @@ import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env";
 import { initDb } from "./db/init";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { errorHandler, notFoundHandler, OrigineNonAutorisee } from "./middleware/errorHandler";
 import activityLogRoutes from "./routes/activityLog.routes";
 import adminRoutes from "./routes/admin.routes";
 import suggestionRoutes from "./routes/suggestion.routes";
@@ -122,7 +122,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("Non autorisé par CORS"));
+        callback(new OrigineNonAutorisee());
       }
     },
     credentials: true,

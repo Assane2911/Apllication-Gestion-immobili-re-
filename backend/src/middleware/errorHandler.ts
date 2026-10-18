@@ -5,6 +5,37 @@ import { ZodError } from "zod";
 import { ApiError } from "../utils/asyncHandler";
 import { MAX_LOGO_SIZE_MB, MAX_UPLOAD_SIZE_MB } from "./upload";
 
+/** Marqueur posé par la vérification d'origine (voir app.ts) pour une origine non autorisée. */
+export class OrigineNonAutorisee extends Error {
+  constructor() {
+    super("Non autorisé par CORS");
+    this.name = "OrigineNonAutorisee";
+  }
+}
+
+/**
+ * Traduit une erreur d'Express/body-parser/CORS (requête du client) en réponse 4xx lisible, ou `null` si
+ * l'erreur est une vraie panne. Seuls les statuts 400-499 posés par ces couches sont repris : le message brut
+ * d'une erreur n'est jamais renvoyé, il peut contenir des détails internes.
+ */
+function erreurDeRequete(err: unknown): { status: number; message: string; code: string } | null {
+  if (err instanceof OrigineNonAutorisee) {
+    return { status: 403, message: "Origine non autorisée.", code: "ORIGINE_NON_AUTORISEE" };
+  }
+  if (typeof err !== "object" || err === null) return null;
+  const { status, statusCode, type } = err as { status?: unknown; statusCode?: unknown; type?: unknown };
+  const code = typeof status === "number" ? status : typeof statusCode === "number" ? statusCode : null;
+  if (code === null || code < 400 || code >= 500) return null;
+
+  if (code === 413 || type === "entity.too.large") {
+    return { status: 413, message: "Requête trop volumineuse.", code: "CORPS_TROP_VOLUMINEUX" };
+  }
+  if (type === "entity.parse.failed") {
+    return { status: 400, message: "Corps de requête illisible : le JSON envoyé est invalide.", code: "CORPS_ILLISIBLE" };
+  }
+  return { status: code, message: "Requête invalide.", code: "REQUETE_INVALIDE" };
+}
+
 export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ error: `Route introuvable: ${req.method} ${req.path}` });
 }
@@ -58,6 +89,16 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   // inutile sur le chemin de réponse.
   if (err instanceof ApiError && err.statusCode < 500) {
     return res.status(err.statusCode).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
+  }
+
+  // Erreurs que produisent les couches d'Express AVANT nos routes — lecteur de corps de requête (JSON
+  // illisible, corps trop gros), URL mal encodée, contrôle CORS. Elles portent déjà un statut 4xx : c'est une
+  // requête mal formée ou non autorisée, pas une panne. Sans ce cas, elles tombaient dans la branche 500
+  // ci-dessous — message trompeur, journal bruyant, attente de Sentry — et n'importe qui, sans compte, pouvait
+  // les provoquer à volonté.
+  const clientError = erreurDeRequete(err);
+  if (clientError) {
+    return res.status(clientError.status).json({ error: clientError.message, code: clientError.code });
   }
 
   console.error(err);
