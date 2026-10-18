@@ -77,11 +77,12 @@ export default function CGUPage() {
           dans l'interface.
         </p>
         <p>
-          Les paiements de loyer effectués par les Locataires via le Service (carte bancaire, mobile money ou
-          virement déclaré) sont traités directement par les prestataires de paiement Stripe et PayDunya ; le
-          Service n'a à aucun moment accès aux données de carte bancaire ou de compte mobile money des
-          utilisateurs, qui transitent exclusivement par ces prestataires et ne sont jamais enregistrées par
-          le Service.
+          Les loyers ne transitent pas par le Service : le Locataire les règle directement à son Gestionnaire,
+          par virement bancaire sur le compte de l'agence, et peut déclarer ce virement dans le Service.
+          L'éditeur n'encaisse, ne détient ni ne reverse aucun loyer. Les prestataires de paiement Stripe et
+          PayDunya ne servent qu'à régler l'abonnement du Gestionnaire ; le Service n'a à aucun moment accès
+          aux données de carte bancaire ou de compte mobile money, qui transitent exclusivement par ces
+          prestataires et ne sont jamais enregistrées par le Service.
         </p>
         <p>
           Le Service enregistre en revanche les coordonnées bancaires (IBAN et BIC) que le Gestionnaire y

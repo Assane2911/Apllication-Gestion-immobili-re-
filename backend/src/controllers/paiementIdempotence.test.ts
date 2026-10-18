@@ -31,10 +31,11 @@ import { testDb } from "../test/setupTestDb";
  * payable, sans qu'aucune des deux ne solde jamais l'autre.
  */
 describe("payInvoice — idempotence PayDunya", () => {
-  const original = { paydunya: { ...env.payments.paydunya } };
+  const original = { paydunya: { ...env.payments.paydunya }, rentOnline: env.payments.rentOnline };
 
   afterEach(() => {
     env.payments.demoMode = true;
+    env.payments.rentOnline = original.rentOnline;
     env.payments.paydunya = { ...original.paydunya };
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -53,6 +54,8 @@ describe("payInvoice — idempotence PayDunya", () => {
     const tenantToken = await tokenLocataire(tenant.id);
 
     env.payments.demoMode = false;
+    // Ce fichier teste le comportement du paiement en ligne QUAND il est activé (voir loyerEnLigne.test.ts).
+    env.payments.rentOnline = true;
     env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk" };
 
     return { manager, property, tenant, contract, invoice, tenantToken };

@@ -142,7 +142,7 @@ const fr = {
     },
     tipsTenant: {
       home: "Votre bail, vos documents et vos états des lieux à signer.",
-      payments: "Vos loyers appelés : payer en ligne et récupérer vos quittances.",
+      payments: "Vos loyers appelés : régler par virement et récupérer vos quittances.",
       messages: "Écrire à votre gestionnaire, bail par bail.",
       issues: "Signaler une panne avec photo, et suivre sa prise en charge.",
     },
@@ -189,11 +189,11 @@ const fr = {
       resendVerificationSent: "Email renvoyé ! Vérifiez votre boîte de réception (et vos spams).",
       panel: {
         title: "La gestion locative, enfin simple.",
-        subtitle: "Quittances automatiques, signature électronique et paiements en ligne — tout au même endroit.",
+        subtitle: "Quittances automatiques, signature électronique et relances des impayés — tout au même endroit.",
         highlights: [
           "Quittances PDF certifiées générées automatiquement",
           "Signature électronique des baux en quelques clics",
-          "Paiements en ligne sécurisés (carte, mobile money, virement)",
+          "Relances automatiques des loyers impayés",
           "Interface disponible en français, anglais, portugais et espagnol",
         ],
         trialNote: "15 jours d'essai gratuit, sans carte bancaire.",
@@ -230,7 +230,7 @@ const fr = {
         highlights: [
           "Quittances PDF certifiées générées automatiquement",
           "Signature électronique des baux en quelques clics",
-          "Paiements en ligne sécurisés (carte, mobile money, virement)",
+          "Relances automatiques des loyers impayés",
           "Interface disponible en français, anglais, portugais et espagnol",
         ],
         trialNote: "15 jours d'essai gratuit, sans carte bancaire.",
@@ -377,7 +377,7 @@ const fr = {
       },
       tenant: {
         title: "Une expérience locataire fluide",
-        desc: "Paiement en ligne, historique des quittances et messagerie directe : vos locataires ne vous appellent plus pour un oui ou un non.",
+        desc: "Quittances, documents à signer et messagerie directe : vos locataires ne vous appellent plus pour un oui ou un non.",
       },
     },
     forWho: {
@@ -420,7 +420,7 @@ const fr = {
         },
         {
           q: "Quels moyens de paiement mes locataires peuvent-ils utiliser ?",
-          a: "Carte bancaire (Stripe), mobile money et carte bancaire via PayDunya (Orange Money, Wave, Free Money, MTN...) pour l'Afrique francophone, ou virement bancaire classique.",
+          a: "Le virement bancaire vers le compte de votre agence : le locataire le déclare dans l'application, puis vous marquez la facture comme réglée à réception. Le paiement du loyer par carte ou Mobile Money n'est pas proposé pour le moment.",
         },
         {
           q: "Puis-je annuler mon abonnement à tout moment ?",
@@ -1664,7 +1664,6 @@ const fr = {
         maxProperties5: "Jusqu'à 5 biens immobiliers",
         receipts: "Émission automatique des quittances",
         portal: "Portail locataire & déclarations",
-        onlinePayments: "Paiements en ligne : carte et Mobile Money (Orange Money, Wave, Free Money, MTN)",
         issues: "Suivi des incidents avec photos",
         emailReminders: "Rappels par email",
         standardSupport: "Support standard par email",

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { z } from "zod";
 import { moyensDePaiementDisponibles } from "../services/payment.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
@@ -18,11 +19,18 @@ import { asyncHandler } from "../utils/asyncHandler";
  * (indisponibilite dans payment.service.ts) : l'interface ne peut donc pas
  * proposer un moyen que le serveur refuserait.
  */
+const methodesQuerySchema = z.object({
+  currency: z.string().optional(),
+  // « abonnement » (défaut) : une agence paie la plateforme. « loyer » : un locataire paie son agence.
+  usage: z.enum(["abonnement", "loyer"]).default("abonnement"),
+});
+
 export const getAvailableMethods = asyncHandler(async (req: Request, res: Response) => {
-  const currency = (typeof req.query.currency === "string" ? req.query.currency : "EUR").toUpperCase();
+  const query = methodesQuerySchema.parse(req.query);
+  const currency = (query.currency ?? "EUR").toUpperCase();
 
   res.json({
     currency,
-    methods: moyensDePaiementDisponibles(currency),
+    methods: moyensDePaiementDisponibles(currency, query.usage === "loyer" ? "LOYER" : "ABONNEMENT"),
   });
 });

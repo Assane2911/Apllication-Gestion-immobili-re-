@@ -75,7 +75,7 @@ export default function SubscriptionPage() {
   // configurées et dans quelle devise le compte encaisse. Les masquer en dur
   // ici — comme c'était le cas pour Stripe et DEMO — laissait l'interface et
   // le serveur diverger : le bouton s'affichait, le paiement échouait.
-  const moyensDisponibles = useMoyensDePaiement(currency);
+  const moyensDisponibles = useMoyensDePaiement(currency, "abonnement");
   const paymentMethods = (moyensDisponibles ?? []).map((key) => ({
     key: key as PaymentMethod,
     label: t(`manager.subscription.paymentMethods.${key}.label`),

@@ -144,7 +144,7 @@ const en: TranslationSchema = {
     },
     tipsTenant: {
       home: "Your lease, your documents and the reports awaiting your signature.",
-      payments: "Rent called in: pay online and collect your receipts.",
+      payments: "Rent called in: pay by bank transfer and collect your receipts.",
       messages: "Write to your property manager, lease by lease.",
       issues: "Report a fault with a photo, and follow how it is handled.",
     },
@@ -191,11 +191,11 @@ const en: TranslationSchema = {
       resendVerificationSent: "Email resent! Check your inbox (and spam folder).",
       panel: {
         title: "Rental management, finally made simple.",
-        subtitle: "Automatic receipts, electronic signature and online payments — all in one place.",
+        subtitle: "Automatic receipts, electronic signature and overdue reminders — all in one place.",
         highlights: [
           "Certified PDF receipts generated automatically",
           "Electronic lease signature in a few clicks",
-          "Secure online payments (card, mobile money, bank transfer)",
+          "Automatic reminders for unpaid rent",
           "Interface available in French, English, Portuguese and Spanish",
         ],
         trialNote: "15-day free trial, no credit card required.",
@@ -232,7 +232,7 @@ const en: TranslationSchema = {
         highlights: [
           "Certified PDF receipts generated automatically",
           "Electronic lease signature in a few clicks",
-          "Secure online payments (card, mobile money, bank transfer)",
+          "Automatic reminders for unpaid rent",
           "Interface available in French, English, Portuguese and Spanish",
         ],
         trialNote: "15-day free trial, no credit card required.",
@@ -379,7 +379,7 @@ const en: TranslationSchema = {
       },
       tenant: {
         title: "A smooth tenant experience",
-        desc: "Online payment, receipt history and direct messaging: your tenants no longer need to call you for every little thing.",
+        desc: "Receipts, documents to sign and direct messaging: your tenants no longer need to call you for every little thing.",
       },
     },
     forWho: {
@@ -422,7 +422,7 @@ const en: TranslationSchema = {
         },
         {
           q: "What payment methods can my tenants use?",
-          a: "Credit card (Stripe), mobile money and card via PayDunya (Orange Money, Wave, Free Money, MTN...) for French-speaking Africa, or a standard bank transfer.",
+          a: "A bank transfer to your agency's account: the tenant declares it in the app, then you mark the invoice as paid once the money arrives. Paying rent by card or Mobile Money is not offered for now.",
         },
         {
           q: "Can I cancel my subscription at any time?",
@@ -1663,7 +1663,6 @@ const en: TranslationSchema = {
         maxProperties5: "Up to 5 properties",
         receipts: "Automatic rent receipts",
         portal: "Tenant portal & declarations",
-        onlinePayments: "Online payments: card and Mobile Money (Orange Money, Wave, Free Money, MTN)",
         issues: "Issue tracking with photos",
         emailReminders: "Email reminders",
         standardSupport: "Standard email support",

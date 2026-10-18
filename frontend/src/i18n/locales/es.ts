@@ -144,7 +144,7 @@ const es: TranslationSchema = {
     },
     tipsTenant: {
       home: "Su contrato, sus documentos y las actas pendientes de firma.",
-      payments: "Sus alquileres emitidos: pagar en línea y obtener sus recibos.",
+      payments: "Sus alquileres emitidos: pagar por transferencia y obtener sus recibos.",
       messages: "Escribir a su gestor, contrato por contrato.",
       issues: "Comunicar una avería con foto y seguir su tramitación.",
     },
@@ -191,11 +191,11 @@ const es: TranslationSchema = {
       resendVerificationSent: "¡Correo reenviado! Revisa tu bandeja de entrada (y la carpeta de spam).",
       panel: {
         title: "La gestión de alquileres, por fin sencilla.",
-        subtitle: "Recibos automáticos, firma electrónica y pagos en línea — todo en un solo lugar.",
+        subtitle: "Recibos automáticos, firma electrónica y recordatorios de impagos — todo en un solo lugar.",
         highlights: [
           "Recibos en PDF certificados generados automáticamente",
           "Firma electrónica de los contratos en unos pocos clics",
-          "Pagos en línea seguros (tarjeta, mobile money, transferencia)",
+          "Recordatorios automáticos de alquileres impagados",
           "Interfaz disponible en francés, inglés, portugués y español",
         ],
         trialNote: "15 días de prueba gratuita, sin tarjeta bancaria.",
@@ -232,7 +232,7 @@ const es: TranslationSchema = {
         highlights: [
           "Recibos en PDF certificados generados automáticamente",
           "Firma electrónica de los contratos en unos pocos clics",
-          "Pagos en línea seguros (tarjeta, mobile money, transferencia)",
+          "Recordatorios automáticos de alquileres impagados",
           "Interfaz disponible en francés, inglés, portugués y español",
         ],
         trialNote: "15 días de prueba gratuita, sin tarjeta bancaria.",
@@ -379,7 +379,7 @@ const es: TranslationSchema = {
       },
       tenant: {
         title: "Una experiencia fluida para el inquilino",
-        desc: "Pago en línea, historial de recibos y mensajería directa: tus inquilinos ya no te llaman por cualquier motivo.",
+        desc: "Recibos, documentos para firmar y mensajería directa: tus inquilinos ya no te llaman por cualquier motivo.",
       },
     },
     forWho: {
@@ -422,7 +422,7 @@ const es: TranslationSchema = {
         },
         {
           q: "¿Qué métodos de pago pueden usar mis inquilinos?",
-          a: "Tarjeta bancaria (Stripe), mobile money y tarjeta vía PayDunya (Orange Money, Wave, Free Money, MTN...) para África francófona, o transferencia bancaria tradicional.",
+          a: "La transferencia bancaria a la cuenta de su agencia: el inquilino la declara en la aplicación y usted marca la factura como pagada al recibirla. Por ahora no se ofrece el pago del alquiler con tarjeta ni Mobile Money.",
         },
         {
           q: "¿Puedo cancelar mi suscripción en cualquier momento?",
@@ -1665,7 +1665,6 @@ const es: TranslationSchema = {
         maxProperties5: "Hasta 5 inmuebles",
         receipts: "Emisión automática de recibos",
         portal: "Portal del inquilino y declaraciones",
-        onlinePayments: "Pagos en línea: tarjeta y Mobile Money (Orange Money, Wave, Free Money, MTN)",
         issues: "Seguimiento de incidencias con fotos",
         emailReminders: "Recordatorios por email",
         standardSupport: "Soporte estándar por email",

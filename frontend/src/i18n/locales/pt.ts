@@ -144,7 +144,7 @@ const pt: TranslationSchema = {
     },
     tipsTenant: {
       home: "O seu contrato, os seus documentos e os autos a assinar.",
-      payments: "As suas rendas emitidas: pagar online e obter os seus recibos.",
+      payments: "As suas rendas emitidas: pagar por transferência e obter os seus recibos.",
       messages: "Escrever ao seu gestor, contrato a contrato.",
       issues: "Comunicar uma avaria com fotografia e acompanhar o tratamento.",
     },
@@ -191,11 +191,11 @@ const pt: TranslationSchema = {
       resendVerificationSent: "Email reenviado! Verifique a sua caixa de entrada (e os spams).",
       panel: {
         title: "A gestão de arrendamento, finalmente simples.",
-        subtitle: "Recibos automáticos, assinatura eletrónica e pagamentos online — tudo num só lugar.",
+        subtitle: "Recibos automáticos, assinatura eletrónica e lembretes de rendas em atraso — tudo num só lugar.",
         highlights: [
           "Recibos em PDF certificados gerados automaticamente",
           "Assinatura eletrónica dos contratos em poucos cliques",
-          "Pagamentos online seguros (cartão, mobile money, transferência)",
+          "Lembretes automáticos de rendas em atraso",
           "Interface disponível em francês, inglês, português e espanhol",
         ],
         trialNote: "15 dias de teste grátis, sem cartão bancário.",
@@ -232,7 +232,7 @@ const pt: TranslationSchema = {
         highlights: [
           "Recibos em PDF certificados gerados automaticamente",
           "Assinatura eletrónica dos contratos em poucos cliques",
-          "Pagamentos online seguros (cartão, mobile money, transferência)",
+          "Lembretes automáticos de rendas em atraso",
           "Interface disponível em francês, inglês, português e espanhol",
         ],
         trialNote: "15 dias de teste grátis, sem cartão bancário.",
@@ -379,7 +379,7 @@ const pt: TranslationSchema = {
       },
       tenant: {
         title: "Uma experiência fluida para o inquilino",
-        desc: "Pagamento online, histórico de recibos e mensagens diretas: os seus inquilinos deixam de lhe ligar por qualquer motivo.",
+        desc: "Recibos, documentos para assinar e mensagens diretas: os seus inquilinos deixam de lhe ligar por qualquer motivo.",
       },
     },
     forWho: {
@@ -422,7 +422,7 @@ const pt: TranslationSchema = {
         },
         {
           q: "Que meios de pagamento os meus inquilinos podem utilizar?",
-          a: "Cartão bancário (Stripe), mobile money e cartão via PayDunya (Orange Money, Wave, Free Money, MTN...) para África francófona, ou transferência bancária clássica.",
+          a: "A transferência bancária para a conta da sua agência: o inquilino declara-a na aplicação e você marca a fatura como paga quando a receber. O pagamento da renda por cartão ou Mobile Money não é oferecido por agora.",
         },
         {
           q: "Posso cancelar a minha subscrição a qualquer momento?",
@@ -1663,7 +1663,6 @@ const pt: TranslationSchema = {
         maxProperties5: "Até 5 imóveis",
         receipts: "Emissão automática de recibos",
         portal: "Portal do inquilino e declarações",
-        onlinePayments: "Pagamentos online: cartão e Mobile Money (Orange Money, Wave, Free Money, MTN)",
         issues: "Acompanhamento de incidentes com fotografias",
         emailReminders: "Lembretes por email",
         standardSupport: "Suporte padrão por email",

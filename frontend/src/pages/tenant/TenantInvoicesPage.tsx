@@ -31,7 +31,7 @@ export default function TenantInvoicesPage() {
   // interroge donc le serveur pour la facture en cours de règlement, pas une
   // fois pour toutes.
   const factureEnCours = invoices.find((inv) => inv.id === payingId) ?? null;
-  const moyensDisponibles = useMoyensDePaiement(factureEnCours?.currency ?? null);
+  const moyensDisponibles = useMoyensDePaiement(factureEnCours?.currency ?? null, "loyer");
   const methods = (moyensDisponibles ?? []).map((key) => ({
     key: key as PaymentMethod,
     label: t(`tenant.invoices.methods.${key}.label`),
