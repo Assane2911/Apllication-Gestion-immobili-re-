@@ -14,6 +14,7 @@ import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
+import { TAILLE_MAX_SIGNATURE } from "../utils/signature";
 import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
 import { deviseSchema } from "../utils/devises";
@@ -711,7 +712,6 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
 // tient en quelques dizaines de kilooctets au format PNG. 500 Ko de base64
 // laisse une marge confortable pour un canvas haute résolution tout en
 // écartant un abus qui alourdirait chaque lecture de la table contracts.
-const TAILLE_MAX_SIGNATURE = 500_000;
 const signContractSchema = z.object({
   signatureDataUrl: z
     .string()

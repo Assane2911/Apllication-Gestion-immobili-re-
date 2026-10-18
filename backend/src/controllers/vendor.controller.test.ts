@@ -143,3 +143,47 @@ describe("DELETE /api/vendors/:id", () => {
     expect(await testDb.select().from(vendors).where(eq(vendors.id, vendor.id))).toHaveLength(1);
   });
 });
+
+/**
+ * Régression : aucun champ texte d'un prestataire n'était borné — une seule
+ * fiche pouvait embarquer plusieurs Mo de « notes », resservis à chaque
+ * ouverture du carnet (liste complète, sans pagination) et du sélecteur
+ * d'assignation d'un incident.
+ */
+describe("POST/PUT /api/vendors — bornes des champs", () => {
+  const valide = { name: "Plomberie Sow", phone: "+221770001122" };
+
+  it("refuse des notes démesurées à la création", async () => {
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/vendors")
+      .set(authHeader(tokenFor(manager)))
+      .send({ ...valide, notes: "x".repeat(5001) });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("refuse un nom démesuré à la modification", async () => {
+    const manager = await createManager();
+    const vendor = await createVendor(manager.id);
+
+    const res = await request(app)
+      .put(`/api/vendors/${vendor.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ name: "N".repeat(201) });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepte des champs de taille raisonnable", async () => {
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/vendors")
+      .set(authHeader(tokenFor(manager)))
+      .send({ ...valide, trade: "Plombier", notes: "n".repeat(5000) });
+
+    expect(res.status).toBe(201);
+  });
+});

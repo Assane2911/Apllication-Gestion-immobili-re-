@@ -259,6 +259,7 @@ export default function InspectionsPage() {
                   <input
                     placeholder={t("manager.inspections.roomName")}
                     value={room.name}
+                    maxLength={200}
                     onChange={(e) => updateRoom(i, { name: e.target.value })}
                     className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
                   />
@@ -274,6 +275,7 @@ export default function InspectionsPage() {
                   <input
                     placeholder={t("manager.inspections.roomNotes")}
                     value={room.notes}
+                    maxLength={2000}
                     onChange={(e) => updateRoom(i, { notes: e.target.value })}
                     className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
                   />
@@ -283,7 +285,7 @@ export default function InspectionsPage() {
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addRoom} className="mt-2 text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold">
+            <button type="button" onClick={addRoom} disabled={editForm.rooms.length >= 100} className="mt-2 text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
               {t("manager.inspections.addRoom")}
             </button>
           </div>
@@ -293,15 +295,15 @@ export default function InspectionsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="meter-electricity" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("manager.inspections.meterElectricity")}</label>
-                <input id="meter-electricity" value={editForm.meters.electricity} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, electricity: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
+                <input id="meter-electricity" maxLength={100} value={editForm.meters.electricity} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, electricity: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
               </div>
               <div>
                 <label htmlFor="meter-water" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("manager.inspections.meterWater")}</label>
-                <input id="meter-water" value={editForm.meters.water} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, water: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
+                <input id="meter-water" maxLength={100} value={editForm.meters.water} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, water: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
               </div>
               <div>
                 <label htmlFor="meter-gas" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("manager.inspections.meterGas")}</label>
-                <input id="meter-gas" value={editForm.meters.gas} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, gas: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
+                <input id="meter-gas" maxLength={100} value={editForm.meters.gas} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, gas: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
               </div>
             </div>
           </div>
@@ -315,12 +317,14 @@ export default function InspectionsPage() {
                   <input
                     placeholder={t("manager.inspections.keyLabel")}
                     value={key.label}
+                    maxLength={200}
                     onChange={(e) => updateKey(i, { label: e.target.value })}
                     className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
                   />
                   <input
                     type="number"
                     min={0}
+                    max={1000}
                     placeholder={t("manager.inspections.keyQuantity")}
                     value={key.quantity}
                     onChange={(e) => updateKey(i, { quantity: Number(e.target.value) })}
@@ -332,7 +336,7 @@ export default function InspectionsPage() {
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addKey} className="mt-2 text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold">
+            <button type="button" onClick={addKey} disabled={editForm.keys.length >= 50} className="mt-2 text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
               {t("manager.inspections.addKey")}
             </button>
           </div>
@@ -343,6 +347,7 @@ export default function InspectionsPage() {
               id="inspection-comments"
               rows={3}
               value={editForm.generalComments}
+              maxLength={20000}
               onChange={(e) => setEditForm({ ...editForm, generalComments: e.target.value })}
               className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
             />
