@@ -267,15 +267,15 @@ export default function OwnersPage() {
             </div>
             <div>
               <label htmlFor="owner-firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.firstName")}</label>
-              <input id="owner-firstName" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="owner-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="owner-lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.lastName")}</label>
-              <input id="owner-lastName" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="owner-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
               <label htmlFor="owner-companyName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.companyName")}</label>
-              <input id="owner-companyName" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="owner-companyName" maxLength={200} value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="owner-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.phone")}</label>
@@ -283,11 +283,11 @@ export default function OwnersPage() {
             </div>
             <div>
               <label htmlFor="owner-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.email")}</label>
-              <input id="owner-email" required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="owner-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
               <label htmlFor="owner-address" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.address")}</label>
-              <input id="owner-address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="owner-address" maxLength={300} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="owner-iban" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.iban")}</label>
