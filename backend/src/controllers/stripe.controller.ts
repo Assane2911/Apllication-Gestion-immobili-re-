@@ -5,6 +5,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { invoices, platformSubscriptions, users } from "../db/schema";
 import { ETATS_MODIFIABLES } from "./invoice.controller";
+import { signalerEchecPrelevement } from "../services/echecPrelevement.service";
 import { solderEnLigne } from "../services/paiementEnLigne.service";
 import { signalerAbonnementNonRapproche, signalerPaiementNonRapproche } from "../services/paiementNonRapproche.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
@@ -43,6 +44,10 @@ interface StripeInvoice {
   // chaque renouvellement automatique suivant — le seul cas qui nous
   // intéresse ici.
   billing_reason?: string;
+  /** Présents sur `invoice.payment_failed` : numéro de l'essai, prochain essai automatique (timestamp, ou null). */
+  attempt_count?: number;
+  next_payment_attempt?: number | null;
+  amount_due?: number;
 }
 
 /** Objet "subscription" Stripe — reçu quand un abonnement cesse d'exister côté Stripe. */
@@ -87,6 +92,11 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
   // On répond 200 aux autres, sinon Stripe les rejouerait indéfiniment.
   if (evenement.type === "invoice.paid") {
     await traiterFactureRenouvellement((evenement.data?.object ?? {}) as StripeInvoice);
+    return res.json({ received: true });
+  }
+
+  if (evenement.type === "invoice.payment_failed") {
+    await traiterEchecPrelevement((evenement.data?.object ?? {}) as StripeInvoice);
     return res.json({ received: true });
   }
 
@@ -255,6 +265,26 @@ async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<voi
     console.warn(`[stripe] Renouvellement non appliqué pour la facture ${facture.id} (abonnement introuvable ou montant/devise incohérents).`);
     signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: facture.id, montant: montantPaye, raison: "renouvellement non appliqué (abonnement introuvable ou montant/devise incohérents)" });
   }
+}
+
+/**
+ * Traite l'échec du prélèvement d'un renouvellement automatique (`invoice.payment_failed`) : le gestionnaire en
+ * est prévenu (voir echecPrelevement.service.ts). Seul un CYCLE de renouvellement compte : la toute première
+ * facture d'un abonnement se règle dans la page de paiement Stripe, où le client voit lui-même l'échec.
+ */
+async function traiterEchecPrelevement(facture: StripeInvoice): Promise<void> {
+  if (facture.billing_reason !== "subscription_cycle" || !facture.subscription || !facture.id) return;
+
+  const devise = (facture.currency ?? "").toUpperCase();
+  const montant = typeof facture.amount_due === "number" ? depuisPlusPetiteUnite(facture.amount_due, devise) : 0;
+  await signalerEchecPrelevement({
+    stripeSubscriptionId: facture.subscription,
+    stripeInvoiceId: facture.id,
+    tentative: facture.attempt_count ?? 1,
+    prochainEssai: typeof facture.next_payment_attempt === "number" ? new Date(facture.next_payment_attempt * 1000) : null,
+    montant: Number.isFinite(montant) ? montant : 0,
+    devise,
+  });
 }
 
 /** Tolère un léger écart d'arrondi (montants en `doublePrecision`). */
