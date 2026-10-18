@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { contractCotenants, issueReports, listingLeads, listings } from "../db/schema";
+import { contractCotenants, invoices, issueReports, listingLeads, listings } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -452,5 +452,61 @@ describe("GET /api/notifications/mine — colocataire", () => {
     // Un locataire étranger au bail n'en voit rien.
     const autre = await request(app).get("/api/notifications/mine").set(authHeader(await tokenLocataire(etranger.id)));
     expect(autre.body.notifications).toEqual([]);
+  });
+});
+
+/**
+ * Régression : la cloche envoie TOUTES les clés de notifications qu'elle affiche (« vues » à l'ouverture,
+ * « lues » au clic sur « Tout marquer comme lu »), mais le serveur refusait au-delà de 200 clés (400). Une
+ * agence qui a plus de 200 notifications — un portefeuille de quelques centaines de baux avec des loyers en
+ * retard — ne pouvait donc plus jamais éteindre son badge : chaque ouverture de la cloche échouait en silence et
+ * le compteur revenait.
+ */
+describe("POST /api/notifications/seen et /read — beaucoup de notifications", () => {
+  async function agenceAvecNotifications(nombre: number) {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    await testDb.insert(invoices).values(
+      Array.from({ length: nombre }, (_, i) => ({
+        contractId: contract.id,
+        periodMonth: 1,
+        periodYear: 3000 + i,
+        amount: 500,
+        status: "LATE" as const,
+        dueDate: new Date(2026, 0, 1 + (i % 28)),
+      }))
+    );
+    return { h: authHeader(tokenFor(manager)) };
+  }
+
+  it("marque comme vues plus de 200 notifications d'un coup, et éteint le badge", async () => {
+    const { h } = await agenceAvecNotifications(250);
+    const avant = await request(app).get("/api/notifications").set(h);
+    expect(avant.body.unseenCount).toBe(250);
+
+    const res = await request(app)
+      .post("/api/notifications/seen")
+      .set(h)
+      .send({ keys: avant.body.notifications.map((n: { key: string }) => n.key) });
+
+    expect(res.status).toBe(200);
+    const apres = await request(app).get("/api/notifications").set(h);
+    expect(apres.body.unseenCount).toBe(0);
+  });
+
+  it("marque comme lues plus de 200 notifications d'un coup (« Tout marquer comme lu »)", async () => {
+    const { h } = await agenceAvecNotifications(250);
+    const avant = await request(app).get("/api/notifications").set(h);
+
+    const res = await request(app)
+      .post("/api/notifications/read")
+      .set(h)
+      .send({ keys: avant.body.notifications.map((n: { key: string }) => n.key) });
+
+    expect(res.status).toBe(200);
+    const apres = await request(app).get("/api/notifications").set(h);
+    expect(apres.body.unreadCount).toBe(0);
   });
 });

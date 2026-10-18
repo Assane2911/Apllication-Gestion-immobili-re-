@@ -373,7 +373,9 @@ async function repondreAvecEtatVu(req: Request, res: Response, notifications: No
   });
 }
 
-const markSeenSchema = z.object({ keys: z.array(z.string().max(300)).max(200).optional() });
+// La cloche envoie TOUTES les clés qu'elle affiche : une limite basse (200) rendait impossible d'éteindre le badge
+// d'une agence qui a plus de notifications que cela. 5000 laisse une large marge tout en bornant le corps de requête.
+const markSeenSchema = z.object({ keys: z.array(z.string().max(300)).max(5000).optional() });
 
 /**
  * Marque des notifications comme vues (ou, avec `commeLues`, comme LUES : le
@@ -392,7 +394,8 @@ async function marquerVues(
 ) {
   const { keys } = markSeenSchema.parse(req.body ?? {});
   const courantes = notifications.map(cleDe);
-  const aMarquer = keys ? courantes.filter((c) => keys.includes(c)) : courantes;
+  const demandees = keys ? new Set(keys) : null;
+  const aMarquer = demandees ? courantes.filter((c) => demandees.has(c)) : courantes;
   const lecteur = lecteurDe(req);
 
   if (aMarquer.length > 0) {
