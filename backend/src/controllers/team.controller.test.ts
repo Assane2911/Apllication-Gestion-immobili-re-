@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { users } from "../db/schema";
+import { agencySettings, users } from "../db/schema";
 import * as emailService from "../services/email.service";
 import {
   authHeader,
@@ -17,7 +17,7 @@ import { testDb } from "../test/setupTestDb";
 describe("GET /api/team", () => {
   it("liste les collaborateurs de l'agence, en attente ou actifs", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
-    await createTeamMember(manager.id, { email: "awa@test.local", resetPasswordTokenHash: "en-attente" });
+    await createTeamMember(manager.id, { email: "awa@test.local", resetPasswordTokenHash: "en-attente", hasPassword: false });
     await createTeamMember(manager.id, { email: "moussa@test.local", resetPasswordTokenHash: null });
 
     const res = await request(app).get("/api/team").set(authHeader(tokenFor(manager)));
@@ -221,5 +221,96 @@ describe("Collaborateur : accès aux données de l'agence", () => {
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("propriétaire");
+  });
+});
+
+describe("invitations d'équipe : statut, renvoi, sujet", () => {
+  const entreprise = () => createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+  const demain = () => new Date(Date.now() + 24 * 3_600_000);
+  const hier = () => new Date(Date.now() - 24 * 3_600_000);
+
+  it("un collaborateur actif qui demande « mot de passe oublié » n'est pas de nouveau « en attente »", async () => {
+    const manager = await entreprise();
+    await createTeamMember(manager.id, { email: "actif@test.local", hasPassword: true, resetPasswordTokenHash: "reinit-en-cours", resetPasswordExpiresAt: demain() });
+
+    const res = await request(app).get("/api/team").set(authHeader(tokenFor(manager)));
+
+    expect(res.body[0].status).toBe("ACTIVE");
+  });
+
+  it("signale une invitation expirée, sans changer son statut « en attente »", async () => {
+    const manager = await entreprise();
+    await createTeamMember(manager.id, { email: "expire@test.local", hasPassword: false, resetPasswordTokenHash: "vieux", resetPasswordExpiresAt: hier() });
+    await createTeamMember(manager.id, { email: "valide@test.local", hasPassword: false, resetPasswordTokenHash: "frais", resetPasswordExpiresAt: demain() });
+
+    const res = await request(app).get("/api/team").set(authHeader(tokenFor(manager)));
+
+    const expire = res.body.find((c: { email: string }) => c.email === "expire@test.local");
+    const valide = res.body.find((c: { email: string }) => c.email === "valide@test.local");
+    expect(expire).toMatchObject({ status: "PENDING", expired: true });
+    expect(valide).toMatchObject({ status: "PENDING", expired: false });
+  });
+
+  it("le sujet de l'invitation montre le nom de l'agence tel quel : « & » ne devient pas « &amp; »", async () => {
+    const manager = await entreprise();
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Martin & Fils" });
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+
+    await request(app).post("/api/team").set(authHeader(tokenFor(manager))).send({ email: "sujet@test.local" });
+
+    const [, sujet, html] = envoi.mock.calls[0];
+    expect(sujet).toContain("Martin & Fils");
+    expect(sujet).not.toContain("&amp;");
+    expect(html).toContain("Martin &amp; Fils");
+    envoi.mockRestore();
+  });
+
+  it("renvoie l'invitation : nouveau lien valable 7 jours, ancien lien invalidé, email envoyé", async () => {
+    const manager = await entreprise();
+    const membre = await createTeamMember(manager.id, { email: "renvoi@test.local", hasPassword: false, resetPasswordTokenHash: "ancien-hash", resetPasswordExpiresAt: hier() });
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+
+    const res = await request(app).post(`/api/team/${membre.id}/resend`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(users).where(eq(users.id, membre.id));
+    expect(apres.resetPasswordTokenHash).not.toBe("ancien-hash");
+    expect(new Date(apres.resetPasswordExpiresAt as Date).getTime() - Date.now()).toBeGreaterThan(7 * 24 * 3_600_000 - 60_000);
+    expect(envoi).toHaveBeenCalledTimes(1);
+    expect(envoi.mock.calls[0][0]).toBe("renvoi@test.local");
+    expect(String(envoi.mock.calls[0][2])).toContain("/reinitialiser-mot-de-passe?token=");
+    envoi.mockRestore();
+  });
+
+  it("refuse de renvoyer une invitation déjà acceptée, celle d'une autre agence, et à un collaborateur", async () => {
+    const manager = await entreprise();
+    const autre = await entreprise();
+    const accepte = await createTeamMember(manager.id, { hasPassword: true, resetPasswordTokenHash: null });
+    const etranger = await createTeamMember(autre.id, { hasPassword: false, resetPasswordTokenHash: "x", resetPasswordExpiresAt: demain() });
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+
+    expect((await request(app).post(`/api/team/${accepte.id}/resend`).set(authHeader(tokenFor(manager)))).status).toBe(409);
+    expect((await request(app).post(`/api/team/${etranger.id}/resend`).set(authHeader(tokenFor(manager)))).status).toBe(404);
+    const jeton = await tokenCollaborateur(manager);
+    expect((await request(app).post(`/api/team/${accepte.id}/resend`).set(authHeader(jeton))).status).toBe(403);
+    expect(envoi).not.toHaveBeenCalled();
+    envoi.mockRestore();
+  });
+});
+
+describe("PATCH /api/auth/currency par un collaborateur", () => {
+  it("la devise est celle de l'agence : seul un collaborateur « tous droits » peut la changer, jamais un lecteur ou un agent", async () => {
+    const manager = await createManager({ currency: "EUR" });
+    for (const roleEquipe of ["READ_ONLY", "AGENT", "ACCOUNTANT"] as const) {
+      const jeton = await tokenCollaborateur(manager, { teamRole: roleEquipe });
+      const res = await request(app).patch("/api/auth/currency").set(authHeader(jeton)).send({ currency: "XOF" });
+      expect(res.status).toBe(403);
+    }
+    const [intacte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(intacte.currency).toBe("EUR");
+
+    const complet = await tokenCollaborateur(manager, { teamRole: "FULL" });
+    expect((await request(app).patch("/api/auth/currency").set(authHeader(complet)).send({ currency: "XOF" })).status).toBe(200);
+    expect((await request(app).patch("/api/auth/currency").set(authHeader(tokenFor(manager))).send({ currency: "USD" })).status).toBe(200);
   });
 });

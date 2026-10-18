@@ -44,23 +44,58 @@ export const listTeamMembers = asyncHandler(async (req: Request, res: Response) 
       email: users.email,
       createdAt: users.createdAt,
       teamRole: users.teamRole,
-      // Un collaborateur qui n'a jamais posé de mot de passe (invitation pas
-      // encore acceptée) a toujours un resetPasswordTokenHash en attente.
-      accepted: users.resetPasswordTokenHash,
+      // Invitation pas encore acceptée = aucun mot de passe posé (hasPassword) ET un lien en attente. Le lien
+      // seul ne suffisait pas : un collaborateur actif qui demande « mot de passe oublié » en a un aussi.
+      hasPassword: users.hasPassword,
+      lien: users.resetPasswordTokenHash,
+      lienExpireLe: users.resetPasswordExpiresAt,
     })
     .from(users)
     .where(eq(users.teamOwnerId, req.user.userId));
 
+  const maintenant = Date.now();
   res.json(
-    collaborateurs.map((c) => ({
-      id: c.id,
-      email: c.email,
-      createdAt: c.createdAt,
-      role: roleEquipeEffectif(c.teamRole),
-      status: c.accepted ? "PENDING" : "ACTIVE",
-    }))
+    collaborateurs.map((c) => {
+      const enAttente = !c.hasPassword && !!c.lien;
+      return {
+        id: c.id,
+        email: c.email,
+        createdAt: c.createdAt,
+        role: roleEquipeEffectif(c.teamRole),
+        status: enAttente ? "PENDING" : "ACTIVE",
+        // Lien d'invitation périmé : le propriétaire peut le renvoyer (POST /team/:id/resend).
+        expired: enAttente && (!c.lienExpireLe || c.lienExpireLe.getTime() < maintenant),
+      };
+    })
   );
 });
+
+/**
+ * Envoie (ou renvoie) l'email d'invitation à rejoindre l'agence : lien à usage unique valable
+ * INVITATION_TOKEN_TTL_MS, pour choisir son mot de passe (voir resetPassword).
+ */
+async function envoyerInvitationEquipe(proprietaireId: string, email: string, rawToken: string) {
+  const [settings] = await db
+    .select({ agencyName: agencySettings.agencyName })
+    .from(agencySettings)
+    .where(eq(agencySettings.userId, proprietaireId));
+  const [proprietaire] = await db.select().from(users).where(eq(users.id, proprietaireId));
+
+  const inviteUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
+  const { subject, html } = teamInvitationEmail({
+    agencyName: settings?.agencyName || "Votre agence",
+    ownerName: proprietaire?.email || "Votre gestionnaire",
+    inviteUrl,
+  });
+  // Attendu avant la réponse : sur Vercel (serverless), l'exécution peut
+  // s'arrêter juste après l'envoi de la réponse, avant qu'un envoi non
+  // attendu ait eu le temps de partir (même bug déjà corrigé ailleurs — voir
+  // errorHandler.ts). `.catch()` garantit quand même que l'échec de l'email
+  // ne fait jamais échouer l'action appelante.
+  await sendEmail(email, subject, html).catch((err) => {
+    console.error("[team] Échec de l'envoi de l'email d'invitation:", err);
+  });
+}
 
 const inviteTeamMemberSchema = z.object({
   email: z.string().email().transform((v) => v.trim().toLowerCase()),
@@ -106,26 +141,7 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
     })
     .returning();
 
-  const [settings] = await db
-    .select({ agencyName: agencySettings.agencyName })
-    .from(agencySettings)
-    .where(eq(agencySettings.userId, req.user!.userId));
-  const [proprietaire] = await db.select().from(users).where(eq(users.id, req.user!.userId));
-
-  const inviteUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
-  const { subject, html } = teamInvitationEmail({
-    agencyName: settings?.agencyName || "Votre agence",
-    ownerName: proprietaire?.email || "Votre gestionnaire",
-    inviteUrl,
-  });
-  // Attendu avant la réponse : sur Vercel (serverless), l'exécution peut
-  // s'arrêter juste après l'envoi de la réponse, avant qu'un envoi non
-  // attendu ait eu le temps de partir (même bug déjà corrigé ailleurs — voir
-  // errorHandler.ts). `.catch()` garantit quand même que l'échec de l'email
-  // ne fait jamais échouer la création du compte collaborateur.
-  await sendEmail(body.email, subject, html).catch((err) => {
-    console.error("[team] Échec de l'envoi de l'email d'invitation:", err);
-  });
+  await envoyerInvitationEquipe(req.user!.userId, body.email, rawToken);
 
   await logActivity({
     req,
@@ -191,4 +207,40 @@ export const removeTeamMember = asyncHandler(async (req: Request, res: Response)
   });
 
   res.status(204).send();
+});
+
+/**
+ * Renvoie l'invitation d'un collaborateur qui ne l'a pas encore acceptée (lien perdu ou périmé) : nouveau lien,
+ * l'ancien cesse de fonctionner. Sans cela, l'email restait réservé (un compte existe déjà) et le propriétaire ne
+ * pouvait que supprimer puis réinviter, sans rien lui dire qu'une invitation était périmée.
+ */
+export const resendTeamInvitation = asyncHandler(async (req: Request, res: Response) => {
+  assertEstProprietaire(req);
+
+  const [collaborateur] = await db.select().from(users).where(eq(users.id, req.params.id));
+  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable");
+
+  if (collaborateur.hasPassword || !collaborateur.resetPasswordTokenHash) {
+    throw new ApiError(409, "Cette invitation a déjà été acceptée.");
+  }
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  await db
+    .update(users)
+    .set({ resetPasswordTokenHash: hashToken(rawToken), resetPasswordExpiresAt: new Date(Date.now() + INVITATION_TOKEN_TTL_MS) })
+    .where(eq(users.id, collaborateur.id));
+
+  await envoyerInvitationEquipe(req.user!.userId, collaborateur.email, rawToken);
+
+  await logActivity({
+    req,
+    managerId: req.user!.userId,
+    action: "team.invite_resend",
+    entityType: "team_member",
+    entityId: collaborateur.id,
+    entityLabel: collaborateur.email,
+    details: `Invitation renvoyée à ${collaborateur.email}`,
+  });
+
+  res.json({ id: collaborateur.id, email: collaborateur.email, status: "PENDING", expired: false });
 });

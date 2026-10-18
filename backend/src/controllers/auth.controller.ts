@@ -825,6 +825,13 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
   });
   const { currency } = currencySchema.parse(req.body);
 
+  // La devise est celle du COMPTE de l'agence (req.user.userId désigne le propriétaire pour un collaborateur) :
+  // la changer la change pour toute l'équipe. Un lecteur ou un agent n'a pas à le faire ; la matrice de rôles
+  // ouvre pourtant tout /auth/ à tous (session, double authentification), d'où cette garde ici.
+  if (req.user.collaboratorId && req.roleEquipe !== "FULL") {
+    throw new ApiError(403, "Seul le propriétaire de l'agence, ou un collaborateur « tous droits », peut changer la devise de l'agence.");
+  }
+
   // Le compte est chargé AVANT l'écriture : sans cela, l'UPDATE ne touchait
   // aucune ligne pour un jeton dont le compte a été supprimé, et la lecture
   // de `updated.currency` sur `undefined` transformait ce cas prévisible en

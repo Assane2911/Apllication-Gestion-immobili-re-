@@ -76,6 +76,8 @@ export interface TeamMember {
   createdAt: string;
   role: TeamRole;
   status: "PENDING" | "ACTIVE";
+  /** Invitation en attente dont le lien est périmé (elle peut être renvoyée). */
+  expired?: boolean;
 }
 
 export type PropertyStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
