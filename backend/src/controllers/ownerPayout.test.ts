@@ -229,6 +229,25 @@ describe("synthèse et accès", () => {
     expect((await reverser(hProprio, owner.id, { amount: 10 })).status).toBe(403);
   });
 
+  it("la note interne d'un reversement reste à l'agence : elle n'apparaît ni dans le CRG du propriétaire, ni dans son export", async () => {
+    const { owner, h } = await agence();
+    const noteInterne = "Propriétaire difficile à joindre, relancer avant virement";
+    await reverser(h, owner.id, { amount: 500, reference: "VIR-0925", note: noteInterne });
+    const hProprio = authHeader(await tokenProprietaire(owner));
+
+    // Côté agence, la note est bien conservée et affichée.
+    expect(JSON.stringify((await crg(h, owner.id)).body)).toContain(noteInterne);
+
+    // Côté propriétaire : ni dans la réponse de l'API (que lit son navigateur), ni dans l'export imprimable.
+    const mien = await request(app).get("/api/crg/mine?month=9&year=2026").set(hProprio);
+    expect(mien.body.reversements).toHaveLength(1);
+    expect(mien.body.reversements[0]).toMatchObject({ amount: 500, reference: "VIR-0925" });
+    expect(mien.body.reversements[0]).not.toHaveProperty("note");
+    expect(JSON.stringify(mien.body)).not.toContain("difficile à joindre");
+    const exporte = await request(app).get("/api/crg/mine/export?month=9&year=2026").set(hProprio);
+    expect(exporte.text).not.toContain("difficile à joindre");
+  });
+
   it("équipe : le comptable enregistre et supprime ; l'agent ne fait ni l'un ni l'autre", async () => {
     const { manager, owner, h } = await agence();
     const comptable = await createTeamMember(manager.id, { teamRole: "ACCOUNTANT" });
