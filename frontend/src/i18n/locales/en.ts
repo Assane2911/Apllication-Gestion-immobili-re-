@@ -2130,6 +2130,7 @@ const en: TranslationSchema = {
       emptyFilteredDescription: "Change the filter or the search to see other listings.",
       hiddenBadge: "Hidden by the administration",
       suspendedBadge: "Account suspended: not visible",
+      expiredBadge: "Subscription ended: not visible",
       featuredBadge: "Featured",
       manager: "Manager: {{who}}",
       hiddenSince: "Hidden on {{date}}",

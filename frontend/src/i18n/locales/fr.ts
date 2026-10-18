@@ -2131,6 +2131,7 @@ const fr = {
       emptyFilteredDescription: "Changez de filtre ou de recherche pour voir d'autres annonces.",
       hiddenBadge: "Masquée par l'administration",
       suspendedBadge: "Compte suspendu : non visible",
+      expiredBadge: "Abonnement terminé : non visible",
       featuredBadge: "À la une",
       manager: "Gestionnaire : {{who}}",
       hiddenSince: "Masquée le {{date}}",

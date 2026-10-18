@@ -186,4 +186,20 @@ describe("AdminListingsPage", () => {
     expect(liens).toHaveLength(1);
     expect(liens[0]).toHaveAttribute("href", "/vitrine/annonces/a2");
   });
+
+  it("signale une annonce dont l'abonnement du gestionnaire est terminé, et ne propose pas son lien public", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        annonce({ managerSubscriptionExpired: true }),
+        annonce({ id: "a2", title: "Autre annonce", managerSubscriptionExpired: false }),
+      ])
+    );
+    renderPage();
+    await screen.findByText("Villa Ngor");
+
+    expect(screen.getAllByText("Abonnement terminé : non visible")).toHaveLength(1);
+    const liens = screen.getAllByRole("link", { name: /fiche publique/i });
+    expect(liens).toHaveLength(1);
+    expect(liens[0]).toHaveAttribute("href", "/vitrine/annonces/a2");
+  });
 });

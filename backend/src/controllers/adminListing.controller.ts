@@ -7,7 +7,7 @@ import { logActivity } from "../services/activity.service";
 import { logAdminAction } from "../services/adminAudit.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { visibleSurLaVitrine } from "./listing.controller";
+import { abonnementEnCours, visibleSurLaVitrine } from "./listing.controller";
 
 /**
  * Modération des annonces de la vitrine publique par l'administration de la
@@ -35,8 +35,8 @@ const listListingsQuerySchema = z.object({
 /**
  * Liste paginée de toutes les annonces, tous gestionnaires confondus, avec
  * recherche (titre, lieu, email ou nom d'agence) et filtres. « VISIBLE » est la
- * visibilité RÉELLE sur la vitrine (publiée, non masquée ET compte non
- * suspendu — voir visibleSurLaVitrine), pas le seul statut choisi par le
+ * visibilité RÉELLE sur la vitrine (publiée, non masquée ET compte ni
+ * suspendu ni sans abonnement — voir visibleSurLaVitrine), pas le seul statut choisi par le
  * gestionnaire.
  *
  * Réponse par liste blanche : ni coordonnées de contact de l'annonce, ni donnée
@@ -91,6 +91,8 @@ export const listAdminListings = asyncHandler(async (req: Request, res: Response
         managerId: listings.managerId,
         managerEmail: users.email,
         managerSuspendedAt: users.suspendedAt,
+        // Abonnement terminé : le gestionnaire n'a plus accès à son espace, ses annonces ne sont plus sur la vitrine.
+        managerSubscriptionExpired: sql<boolean>`not coalesce(${abonnementEnCours}, false)`,
         agencyName: agencySettings.agencyName,
       })
       .from(listings)

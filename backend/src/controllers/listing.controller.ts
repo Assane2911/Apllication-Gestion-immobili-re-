@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, notExists, sql } from "drizzle-orm";
+import { and, desc, eq, exists, gt, isNull, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -109,26 +109,43 @@ function toPublicListing(listing: typeof listings.$inferSelect) {
 }
 
 /**
+ * Le gestionnaire a-t-il encore accès à son espace ? Même règle que requireActiveSubscription (middleware/auth.ts) :
+ * essai en cours, abonnement actif (sans date de fin : à vie), ou abonnement résilié jusqu'au terme de la période déjà
+ * payée. Écrite en SQL pour pouvoir filtrer la vitrine sans charger les comptes, avec l'heure de la BASE (`now()`) :
+ * une date calculée ici serait figée au chargement du module.
+ */
+export const abonnementEnCours = or(
+  and(eq(users.subscriptionStatus, "TRIAL"), gt(users.trialEndsAt, sql`now()`)),
+  and(eq(users.subscriptionStatus, "ACTIVE"), or(isNull(users.subscriptionEndsAt), gt(users.subscriptionEndsAt, sql`now()`))),
+  and(eq(users.subscriptionStatus, "CANCELLED"), gt(users.subscriptionEndsAt, sql`now()`))
+);
+
+/**
  * Une annonce est visible de tous si le gestionnaire l'a publiée, que
  * l'administration ne l'a pas masquée, ET que le compte de son gestionnaire
- * n'est pas suspendu. Condition UNIQUE pour toutes les lectures publiques (et
- * pour la visibilité « réelle » affichée à l'administration) : en oublier une
- * laisserait une annonce modérée accessible par cette seule voie.
+ * n'est ni suspendu ni arrivé au terme de son abonnement. Condition UNIQUE pour
+ * toutes les lectures publiques (et pour la visibilité « réelle » affichée à
+ * l'administration) : en oublier une laisserait une annonce modérée accessible
+ * par cette seule voie.
  *
- * Le compte suspendu est évalué À LA LECTURE (sous-requête), pas recopié dans
- * les annonces : rien n'est modifié à la suspension, et la levée de la
- * suspension rétablit les annonces d'elle-même, sans qu'on ait à distinguer
- * ce que la suspension a masqué de ce que le gestionnaire avait déjà dépublié
- * ou que l'administration avait déjà modéré.
+ * L'état du compte est évalué À LA LECTURE (sous-requête), pas recopié dans
+ * les annonces : rien n'est modifié à la suspension ni à l'expiration, et la
+ * levée de la suspension ou le renouvellement rétablissent les annonces
+ * d'eux-mêmes, sans qu'on ait à distinguer ce que le compte a masqué de ce que
+ * le gestionnaire avait déjà dépublié ou que l'administration avait déjà modéré.
+ *
+ * Un abonnement terminé ferme le CRM du gestionnaire (402) : laisser sa vitrine
+ * ouverte faisait répondre « demande envoyée » à des visiteurs dont personne ne
+ * pouvait lire la demande.
  */
 export const visibleSurLaVitrine = and(
   eq(listings.status, "PUBLISHED"),
   isNull(listings.hiddenByAdminAt),
-  notExists(
+  exists(
     db
       .select({ un: sql`1` })
       .from(users)
-      .where(and(eq(users.id, listings.managerId), isNotNull(users.suspendedAt)))
+      .where(and(eq(users.id, listings.managerId), isNull(users.suspendedAt), abonnementEnCours))
   )
 );
 
