@@ -50,19 +50,31 @@ const ownerSchema = z.object({
 });
 
 /**
- * Statut de l'accès au portail propriétaire, dérivé de owners.userId et de
- * users.resetPasswordTokenHash (jamais exposé tel quel au frontend) :
+ * Statut de l'accès au portail propriétaire, dérivé de owners.userId et du compte lié (jamais exposé tel quel au
+ * frontend) :
  *  - NONE : aucun compte "portail" créé (owner.userId est null)
- *  - PENDING : compte créé par inviteOwnerPortalAccount, en attente que le
- *    propriétaire pose son mot de passe via le lien de réinitialisation
- *  - ACTIVE : mot de passe déjà posé (resetPasswordTokenHash retombé à null,
- *    voir resetPassword dans auth.controller.ts)
+ *  - PENDING : compte créé par inviteOwnerPortalAccount, en attente que le propriétaire pose son mot de passe via
+ *    le lien d'invitation
+ *  - ACTIVE : mot de passe déjà posé
+ *
+ * Le lien de réinitialisation (resetPasswordTokenHash) sert AUSSI à « mot de passe oublié » : sa seule présence
+ * faisait repasser « en attente » un propriétaire actif qui en demandait un. Ce qui distingue une invitation restée
+ * sans réponse, c'est que le mot de passe n'a JAMAIS été posé : resetPassword incrémente tokenVersion en le posant
+ * (un compte créé par l'invitation part de 0), donc un lien en attente sur un compte dont tokenVersion a bougé est
+ * un « mot de passe oublié », pas une invitation. Vaut aussi pour les invitations déjà envoyées, sans migration.
  */
 type PortalStatus = "NONE" | "PENDING" | "ACTIVE";
 
-function computePortalStatus(ownerUserId: string | null, resetPasswordTokenHash: string | null | undefined): PortalStatus {
+function invitationEnAttente(compte: { resetPasswordTokenHash: string | null; tokenVersion: number }): boolean {
+  return !!compte.resetPasswordTokenHash && compte.tokenVersion === 0;
+}
+
+function computePortalStatus(
+  ownerUserId: string | null,
+  compte: { resetPasswordTokenHash: string | null; tokenVersion: number } | null | undefined
+): PortalStatus {
   if (!ownerUserId) return "NONE";
-  return resetPasswordTokenHash ? "PENDING" : "ACTIVE";
+  return compte && invitationEnAttente(compte) ? "PENDING" : "ACTIVE";
 }
 
 /**
@@ -82,7 +94,7 @@ export const listOwners = asyncHandler(async (req: Request, res: Response) => {
 
   const [rows, [{ count }]] = await Promise.all([
     db
-      .select({ owner: owners, resetPasswordTokenHash: users.resetPasswordTokenHash })
+      .select({ owner: owners, resetPasswordTokenHash: users.resetPasswordTokenHash, tokenVersion: users.tokenVersion })
       .from(owners)
       .leftJoin(users, eq(users.id, owners.userId))
       .where(whereClause)
@@ -92,9 +104,9 @@ export const listOwners = asyncHandler(async (req: Request, res: Response) => {
     db.select({ count: sql<number>`count(*)::int` }).from(owners).where(whereClause),
   ]);
 
-  const items = rows.map(({ owner, resetPasswordTokenHash }) => ({
+  const items = rows.map(({ owner, resetPasswordTokenHash, tokenVersion }) => ({
     ...owner,
-    portalStatus: computePortalStatus(owner.userId, resetPasswordTokenHash),
+    portalStatus: computePortalStatus(owner.userId, { resetPasswordTokenHash, tokenVersion: tokenVersion ?? 0 }),
   }));
 
   res.json(buildPaginatedResult(items, count, pagination));
@@ -102,7 +114,7 @@ export const listOwners = asyncHandler(async (req: Request, res: Response) => {
 
 export const getOwner = asyncHandler(async (req: Request, res: Response) => {
   const [row] = await db
-    .select({ owner: owners, resetPasswordTokenHash: users.resetPasswordTokenHash })
+    .select({ owner: owners, resetPasswordTokenHash: users.resetPasswordTokenHash, tokenVersion: users.tokenVersion })
     .from(owners)
     .leftJoin(users, eq(users.id, owners.userId))
     .where(eq(owners.id, req.params.id));
@@ -112,7 +124,7 @@ export const getOwner = asyncHandler(async (req: Request, res: Response) => {
 
   res.json({
     ...row.owner,
-    portalStatus: computePortalStatus(row.owner.userId, row.resetPasswordTokenHash),
+    portalStatus: computePortalStatus(row.owner.userId, { resetPasswordTokenHash: row.resetPasswordTokenHash, tokenVersion: row.tokenVersion ?? 0 }),
     properties: ownerProperties,
   });
 });
@@ -307,8 +319,8 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
  * inventer un second.
  *
  * Rappelable tant que l'invitation n'a pas été activée (le token de reset est
- * régénéré et renvoyé) ; une fois le mot de passe défini, resetPasswordTokenHash
- * repasse à null (voir resetPassword) et une nouvelle invitation est refusée.
+ * régénéré et renvoyé) ; une fois le mot de passe défini (tokenVersion incrémenté,
+ * voir resetPassword), une nouvelle invitation est refusée.
  */
 export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const [owner] = await db.select().from(owners).where(eq(owners.id, req.params.id));
@@ -324,7 +336,7 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
   if (owner.userId) {
     const [existingUser] = await db.select().from(users).where(eq(users.id, owner.userId));
     if (!existingUser) throw new ApiError(404, "Compte du portail propriétaire introuvable");
-    if (!existingUser.resetPasswordTokenHash) {
+    if (!invitationEnAttente(existingUser)) {
       throw new ApiError(409, "Un accès au portail existe déjà pour ce propriétaire");
     }
     await db
