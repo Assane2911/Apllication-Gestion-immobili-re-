@@ -112,7 +112,7 @@ export default function RegisterPage() {
     setGoogleError(null);
     setGoogleLoading(true);
     try {
-      const result = await loginWithGoogle(credential);
+      const result = await loginWithGoogle(credential, referralCode.trim() || undefined);
       // Cas marginal : ce compte Google est déjà lié à un compte gestionnaire
       // existant (voir loginWithGoogle, auth.controller.ts) qui a depuis
       // activé la double authentification — la page d'inscription n'a pas de

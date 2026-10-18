@@ -173,6 +173,21 @@ describe("RegisterPage — inscription avec Google (VITE_GOOGLE_CLIENT_ID config
     expect(screen.queryByText("Vérifiez votre boîte mail")).not.toBeInTheDocument();
   });
 
+  // Le code du lien de parrainage (?ref=) ou saisi dans le champ était ignoré dans ce parcours : le parrain ne recevait
+  // jamais ses jours pour un filleul inscrit avec Google.
+  it("transmet le code de parrainage (lien ou champ) à l'inscription Google", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({
+      data: { token: "tok_google_ref", user: { id: "mgr-google-3", email: "filleul@test.local", role: "MANAGER" } },
+    });
+    renderPage("/inscription?ref=ab12cd34");
+
+    await user.click(screen.getByRole("button", { name: "Simuler connexion Google" }));
+
+    await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
+    expect(mockedApi.post).toHaveBeenCalledWith("/auth/google", { credential: "fake-google-credential", referralCode: "AB12CD34" });
+  });
+
   it("affiche l'erreur du serveur si la connexion Google est refusée", async () => {
     const user = userEvent.setup();
     mockedApi.post.mockRejectedValueOnce({

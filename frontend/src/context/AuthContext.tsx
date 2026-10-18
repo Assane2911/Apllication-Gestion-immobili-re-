@@ -120,10 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * la réponse contient directement un token exploitable : Google a déjà
    * vérifié l'adresse, il n'y a pas d'étape de confirmation par email.
    */
-  async function loginWithGoogle(credential: string): Promise<AuthUser | TwoFactorRequired> {
+  async function loginWithGoogle(credential: string, referralCode?: string): Promise<AuthUser | TwoFactorRequired> {
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/google", { credential });
+      // Le code de parrainage n'a d'effet qu'à la création du compte (voir loginWithGoogle côté serveur).
+      const { data } = await api.post("/auth/google", referralCode ? { credential, referralCode } : { credential });
       if (data.twoFactorRequired) return data as TwoFactorRequired;
       return installSession(data);
     } finally {

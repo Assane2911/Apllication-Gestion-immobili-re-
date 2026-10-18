@@ -6,7 +6,7 @@ export interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser | TwoFactorRequired>;
   register: (email: string, password: string, referralCode?: string) => Promise<{ pendingVerification: boolean }>;
-  loginWithGoogle: (credential: string) => Promise<AuthUser | TwoFactorRequired>;
+  loginWithGoogle: (credential: string, referralCode?: string) => Promise<AuthUser | TwoFactorRequired>;
   /** Deuxième étape d'une connexion qui a renvoyé `twoFactorRequired` — voir login/loginWithGoogle. */
   verifyTwoFactor: (pendingToken: string, code: string) => Promise<AuthUser>;
   verifyEmail: (token: string) => Promise<AuthUser>;
