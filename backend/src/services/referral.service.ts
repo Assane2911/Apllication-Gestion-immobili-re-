@@ -61,6 +61,21 @@ export async function obtenirOuCreerCodeParrainage(userId: string): Promise<stri
 }
 
 /**
+ * Parrain désigné par un code saisi à l'inscription (par email ou avec Google), ou `null`. Seul un compte gestionnaire
+ * PROPRIÉTAIRE (teamOwnerId NULL) peut être parrain — un collaborateur invité n'a pas de code qui lui soit propre.
+ * Un code introuvable ou mal saisi est ignoré en silence plutôt que de bloquer l'inscription : ce n'est qu'une
+ * attribution de récompense.
+ */
+export async function trouverParrainParCode(code: string | undefined): Promise<string | null> {
+  if (!code) return null;
+  const [parrain] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.referralCode, code.trim().toUpperCase()), eq(users.role, "MANAGER"), isNull(users.teamOwnerId)));
+  return parrain?.id ?? null;
+}
+
+/**
  * Accorde au PARRAIN sa récompense quand son filleul confirme son adresse
  * email (voir verifyEmail, auth.controller.ts) — jamais à l'inscription
  * seule, pour qu'un compte jamais confirmé ne rapporte rien.

@@ -186,6 +186,58 @@ describe("POST /api/auth/google", () => {
 });
 
 /**
+ * Parrainage : un filleul qui s'inscrit avec Google, depuis un lien de parrainage, doit rapporter ses jours à son
+ * parrain comme celui qui s'inscrit par email. Google atteste déjà l'adresse : la récompense est accordée à la création
+ * du compte, sans attendre une confirmation par email qui n'existe pas dans ce parcours.
+ */
+describe("POST /api/auth/google — parrainage", () => {
+  beforeEach(() => {
+    env.googleClientId = "test-google-client-id";
+  });
+  afterEach(() => {
+    mockVerifyIdToken.mockReset();
+    env.googleClientId = "";
+  });
+
+  const payload = (sub: string) => ({ sub, email: `${sub}@test.local`, email_verified: true });
+
+  it("rattache le nouveau compte à son parrain et lui offre ses jours dès la création", async () => {
+    const trialEndsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+    const parrain = await createManager({ subscriptionStatus: "TRIAL", trialEndsAt, referralCode: "ABCD1234" });
+    mockGooglePayload(payload("filleul-google"));
+
+    const res = await request(app).post("/api/auth/google").send({ credential: "fake-id-token", referralCode: "abcd1234" });
+
+    expect(res.status).toBe(200);
+    const [filleul] = await testDb.select().from(users).where(eq(users.email, "filleul-google@test.local"));
+    expect(filleul.referredByUserId).toBe(parrain.id);
+    expect(filleul.referralRewardGrantedAt).not.toBeNull();
+    const [apres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
+    expect(new Date(apres.trialEndsAt as Date).getTime() - trialEndsAt.getTime()).toBe(15 * 24 * 60 * 60 * 1000);
+  });
+
+  it("ignore en silence un code inconnu ou celui d'un collaborateur, et ne l'applique jamais à un compte déjà existant", async () => {
+    const parrain = await createManager({ referralCode: "ZZZZ9999" });
+    const avant = new Date(parrain.trialEndsAt as Date).getTime();
+    mockGooglePayload(payload("sans-parrain"));
+
+    const inconnu = await request(app).post("/api/auth/google").send({ credential: "t", referralCode: "INCONNU1" });
+    expect(inconnu.status).toBe(200);
+    const [sansParrain] = await testDb.select().from(users).where(eq(users.email, "sans-parrain@test.local"));
+    expect(sansParrain.referredByUserId).toBeNull();
+
+    // Un compte qui existe déjà ne peut pas se « parrainer » après coup en se reconnectant avec un code.
+    const existant = await createManager({ email: "existant@test.local" });
+    mockGooglePayload({ sub: "sub-existant", email: existant.email, email_verified: true });
+    await request(app).post("/api/auth/google").send({ credential: "t", referralCode: "ZZZZ9999" });
+    const [inchange] = await testDb.select().from(users).where(eq(users.id, existant.id));
+    expect(inchange.referredByUserId).toBeNull();
+    const [parrainApres] = await testDb.select().from(users).where(eq(users.id, parrain.id));
+    expect(new Date(parrainApres.trialEndsAt as Date).getTime()).toBe(avant);
+  });
+});
+
+/**
  * Un gestionnaire créé uniquement via "Se connecter avec Google" n'a jamais eu
  * de vrai mot de passe (voir loginWithGoogle : passwordHash y contient un hash
  * bcrypt d'une valeur aléatoire inatteignable). deleteMyAccount doit donc lui

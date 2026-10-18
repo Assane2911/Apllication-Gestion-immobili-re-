@@ -15,7 +15,7 @@ import {
   passwordResetEmail,
   sendEmail,
 } from "../services/email.service";
-import { accorderRecompenseParrainage } from "../services/referral.service";
+import { accorderRecompenseParrainage, trouverParrainParCode } from "../services/referral.service";
 import { supprimerCompteGestionnaire } from "../services/suppressionCompte.service";
 import { consommerCodeSecours, verifierCodeTotp } from "../services/totp.service";
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
@@ -48,6 +48,8 @@ const googleLoginSchema = z.object({
   // Jeton d'identité (JWT) renvoyé par Google Identity Services côté
   // navigateur — jamais un code d'autorisation ni, a fortiori, un secret.
   credential: z.string().min(1),
+  // Code de parrainage saisi ou repris du lien de parrainage : n'a d'effet qu'à la CRÉATION du compte.
+  referralCode: z.string().trim().min(1).optional(),
 });
 
 // Un seul client, sans Client ID passé au constructeur : l'audience attendue
@@ -230,26 +232,8 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
   const emailVerificationTokenHash = hashToken(rawToken);
   const emailVerificationExpiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
 
-  // Programme de parrainage (voir referral.service.ts) : seul un compte
-  // gestionnaire PROPRIÉTAIRE (teamOwnerId NULL) peut être parrain — un
-  // collaborateur invité n'a pas de code qui lui soit propre (voir
-  // schema.ts::teamOwnerId). Un code introuvable ou mal saisi est ignoré en
-  // silence plutôt que de bloquer l'inscription : ce n'est qu'une
-  // attribution de récompense.
-  let referredByUserId: string | null = null;
-  if (body.referralCode) {
-    const [parrain] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(
-        and(
-          eq(users.referralCode, body.referralCode.toUpperCase()),
-          eq(users.role, "MANAGER"),
-          isNull(users.teamOwnerId)
-        )
-      );
-    referredByUserId = parrain?.id ?? null;
-  }
+  // Programme de parrainage (voir referral.service.ts, trouverParrainParCode).
+  const referredByUserId = await trouverParrainParCode(body.referralCode);
 
   const [user] = await db
     .insert(users)
@@ -532,12 +516,15 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
       const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
       const trialEndsAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 jours d'essai
 
+      const referredByUserId = await trouverParrainParCode(body.referralCode);
+
       [user] = await db
         .insert(users)
         .values({
           email,
           passwordHash,
           googleId,
+          referredByUserId,
           hasPassword: false,
           role: "MANAGER",
           subscriptionStatus: "TRIAL",
@@ -546,6 +533,14 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
           emailVerifiedAt: new Date(),
         })
         .returning();
+
+      // Google atteste déjà l'adresse : il n'y aura pas de confirmation par email pour déclencher la récompense du
+      // parrain (voir verifyEmail), elle est accordée ici. Ne doit jamais faire échouer la connexion.
+      try {
+        await accorderRecompenseParrainage(user);
+      } catch (err) {
+        console.error("[referral] Échec de l'attribution de la récompense de parrainage:", err);
+      }
     }
   }
 
