@@ -477,7 +477,7 @@ export interface IssueReport {
   scheduledAt?: string | null;
 }
 
-export type NotificationType = "message" | "invoice" | "issue" | "contract_ending";
+export type NotificationType = "message" | "invoice" | "issue" | "contract_ending" | "lead";
 export type NotificationSeverity = "info" | "warning" | "danger";
 
 export interface NotificationItem {

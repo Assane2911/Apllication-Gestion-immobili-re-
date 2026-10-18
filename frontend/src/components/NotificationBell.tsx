@@ -1,4 +1,4 @@
-import { AlertTriangle, Bell, CalendarClock, MessageSquare, Wrench } from "lucide-react";
+import { AlertTriangle, Bell, CalendarClock, MessageSquare, UserPlus, Wrench } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -11,6 +11,7 @@ const iconByType: Record<NotificationType, typeof Bell> = {
   invoice: AlertTriangle,
   issue: Wrench,
   contract_ending: CalendarClock,
+  lead: UserPlus,
 };
 
 const severityDot: Record<string, string> = {

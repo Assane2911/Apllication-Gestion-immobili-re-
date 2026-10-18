@@ -311,6 +311,11 @@ export const updateListing = asyncHandler(async (req: Request, res: Response) =>
     .where(eq(listings.id, existing.id))
     .returning();
 
+  // L'ancienne image part du stockage PUBLIC avec son remplacement : sinon elle restait accessible par son adresse, sans
+  // plus aucune ligne en base pour la retrouver. Après l'enregistrement, best-effort (un stockage indisponible ne doit
+  // pas faire échouer la modification).
+  if (imageUrl && existing.imageUrl) await deleteStorageObjectBestEffort(existing.imageUrl).catch(() => undefined);
+
   await logActivity({
     req,
     managerId: listing.managerId,
