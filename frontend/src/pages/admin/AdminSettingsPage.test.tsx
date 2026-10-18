@@ -2,15 +2,44 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
-import type { PlatformSettings } from "../../types";
+import { AuthContext } from "../../context/auth";
+import type { AuthContextValue } from "../../context/auth";
+import type { AuthUser, PlatformSettings } from "../../types";
 import AdminSettingsPage from "./AdminSettingsPage";
 
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
-  return { ...actual, api: { get: vi.fn(), put: vi.fn() } };
+  return { ...actual, api: { get: vi.fn(), put: vi.fn(), post: vi.fn() } };
 });
 
 const mockedApi = vi.mocked(api, { deep: true });
+
+function noop(): never {
+  throw new Error("not implemented in this test");
+}
+
+function authValue(user: AuthUser): AuthContextValue {
+  return {
+    user,
+    loading: false,
+    login: noop,
+    register: noop,
+    loginWithGoogle: noop,
+    verifyTwoFactor: noop,
+    verifyEmail: noop,
+    logout: async () => {},
+    refreshUser: async () => user,
+  };
+}
+
+function renderPage(twoFactorEnabled = false) {
+  const admin: AuthUser = { id: "a1", email: "admin@test.local", role: "ADMIN", twoFactorEnabled };
+  return render(
+    <AuthContext.Provider value={authValue(admin)}>
+      <AdminSettingsPage />
+    </AuthContext.Provider>
+  );
+}
 
 function settings(overrides: Partial<PlatformSettings> = {}): PlatformSettings {
   return {
@@ -25,13 +54,14 @@ describe("AdminSettingsPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.put.mockReset();
+    mockedApi.post.mockReset();
   });
 
   it("pré-remplit le formulaire avec l'IBAN et le BIC déjà configurés", async () => {
     mockedApi.get.mockResolvedValueOnce({
       data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }),
     });
-    render(<AdminSettingsPage />);
+    renderPage();
 
     await waitFor(() =>
       expect(screen.getByLabelText("IBAN de la plateforme")).toHaveValue("FR7630001007941234567890185")
@@ -41,7 +71,7 @@ describe("AdminSettingsPage", () => {
 
   it("laisse le formulaire vide quand rien n'est encore configuré", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: settings() });
-    render(<AdminSettingsPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
     expect(screen.getByLabelText("IBAN de la plateforme")).toHaveValue("");
@@ -54,7 +84,7 @@ describe("AdminSettingsPage", () => {
     mockedApi.put.mockResolvedValueOnce({
       data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }),
     });
-    render(<AdminSettingsPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
     await user.type(screen.getByLabelText("IBAN de la plateforme"), "FR7630001007941234567890185");
@@ -77,7 +107,7 @@ describe("AdminSettingsPage", () => {
       response: { data: { error: "Requête invalide : données manquantes ou incorrectes (champ concerné : iban)." } },
       isAxiosError: true,
     });
-    render(<AdminSettingsPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
     await user.type(screen.getByLabelText("IBAN de la plateforme"), "FR00INVALIDE");
@@ -93,11 +123,40 @@ describe("AdminSettingsPage", () => {
       response: { data: { error: "Erreur serveur" } },
       isAxiosError: true,
     });
-    render(<AdminSettingsPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
+  });
+
+  // Le compte administrateur est le plus puissant de la plateforme : il doit pouvoir activer sa propre
+  // double authentification, comme un gestionnaire (la page n'offrait aucun moyen de le faire).
+  it("propose d'activer la double authentification et lance l'enrôlement", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.post.mockResolvedValueOnce({ data: { secret: "ABCDEFGH", qrCodeDataUrl: "data:image/png;base64,AAAA" } });
+    renderPage(false);
+
+    await user.click(await screen.findByRole("button", { name: "Activer la double authentification" }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/auth/2fa/setup"));
+  });
+
+  it("indique que la double authentification est activée et propose de la désactiver", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage(true);
+
+    expect(await screen.findByText("Double authentification activée")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Désactiver" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Activer la double authentification" })).not.toBeInTheDocument();
+  });
+
+  it("garde la sécurité du compte accessible même quand les coordonnées bancaires ne se chargent pas", async () => {
+    mockedApi.get.mockRejectedValueOnce(new Error("réseau"));
+    renderPage(false);
+
+    expect(await screen.findByRole("button", { name: "Activer la double authentification" })).toBeInTheDocument();
   });
 });

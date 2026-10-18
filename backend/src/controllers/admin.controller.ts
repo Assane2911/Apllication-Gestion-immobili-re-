@@ -73,7 +73,14 @@ export const confirmBankTransfer = asyncHandler(async (req: Request, res: Respon
     throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire");
   }
 
+  // Déjà confirmé (double clic, deux administrateurs) : l'activation est idempotente et ne rouvre rien,
+  // mais une seconde entrée « confirmé » ferait croire à deux encaissements dans le journal d'audit.
+  const dejaConfirme = record.status === "PAID";
   const updated = await activateSubscriptionRecord(id);
+  if (dejaConfirme) {
+    res.json({ success: true, record: updated });
+    return;
+  }
 
   await logAdminAction({
     req,
