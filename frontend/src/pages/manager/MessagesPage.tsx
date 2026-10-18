@@ -164,6 +164,7 @@ export default function MessagesPage() {
                   aria-label={t("manager.messages.writeMessage")}
                   placeholder={t("manager.messages.writeMessage")}
                   value={newText}
+                  maxLength={5000}
                   onChange={(e) => setNewText(e.target.value)}
                   className="flex-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />

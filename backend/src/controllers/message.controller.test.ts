@@ -216,4 +216,47 @@ describe("Messages API (/api/messages)", () => {
 
     expect(res.status).toBe(201);
   });
+
+  // Un message sans borne de taille (la limite du corps JSON est de 10 Mo) gonflait la base et chaque réponse qui
+  // renvoie tout le fil ; un message d'espaces passait pour « non vide ».
+  it("POST /api/messages/:id — refuse un message vide ou d'espaces, et un message démesuré", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const h = authHeader(tokenFor(manager));
+
+    expect((await request(app).post(`/api/messages/${contract.id}`).set(h).send({ content: "     \n  " })).status).toBe(400);
+    const trop = await request(app).post(`/api/messages/${contract.id}`).set(h).send({ content: "a".repeat(5001) });
+    expect(trop.status).toBe(400);
+    expect(trop.body.error).toContain("content");
+
+    const ok = await request(app).post(`/api/messages/${contract.id}`).set(h).send({ content: "  Bonjour  " });
+    expect(ok.status).toBe(201);
+    expect(ok.body.content).toBe("Bonjour");
+    expect((await request(app).post(`/api/messages/${contract.id}`).set(h).send({ content: "a".repeat(5000) })).status).toBe(201);
+  });
+
+  // L'écran n'utilise que `senderRole` ; l'adresse de connexion du gestionnaire (ou du propriétaire de l'agence, pour
+  // un message écrit par un collaborateur) n'a pas à être renvoyée au navigateur du locataire.
+  it("GET /api/messages/:id (locataire) — ne révèle pas l'adresse de connexion du gestionnaire", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const portalUser = await createTenantPortalUser(tenant);
+    await request(app).post(`/api/messages/${contract.id}`).set(authHeader(tokenFor(manager))).send({ content: "Bonjour, voici votre quittance." });
+
+    const tenantView = await request(app).get(`/api/messages/${contract.id}`).set(authHeader(tokenFor(portalUser, tenant.id)));
+
+    expect(tenantView.status).toBe(200);
+    expect(tenantView.body.messages).toHaveLength(1);
+    expect(tenantView.body.messages[0].content).toBe("Bonjour, voici votre quittance.");
+    expect(tenantView.body.messages[0].senderRole).toBe("MANAGER");
+    expect(JSON.stringify(tenantView.body)).not.toContain(manager.email);
+
+    // Le gestionnaire, lui, retrouve l'auteur de chaque message.
+    const managerView = await request(app).get(`/api/messages/${contract.id}`).set(authHeader(tokenFor(manager)));
+    expect(managerView.body.messages[0].sender.email).toBe(manager.email);
+  });
 });

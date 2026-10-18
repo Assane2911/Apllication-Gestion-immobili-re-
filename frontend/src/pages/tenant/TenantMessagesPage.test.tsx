@@ -153,6 +153,15 @@ describe("TenantMessagesPage", () => {
     expect(screen.getByPlaceholderText("Écrivez votre message...")).toHaveValue("");
   });
 
+  it("limite le message à 5 000 caractères, comme le serveur (qui ne dit pas pourquoi il refuse au-delà)", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByPlaceholderText("Écrivez votre message...")).toHaveAttribute("maxlength", "5000"));
+  });
+
   it("affiche une alerte si l'envoi du message échoue", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));

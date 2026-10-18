@@ -247,17 +247,20 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
     },
     tenantId: fil.tenant.id,
     qualite: fil.qualite,
+    // L'auteur (id et adresse de connexion) n'est renvoyé qu'au gestionnaire : l'écran du locataire ne s'appuie que sur
+    // `senderRole`, et l'adresse de connexion du gestionnaire — ou du propriétaire de l'agence, pour un message écrit
+    // par un collaborateur — n'a pas à quitter l'espace gestionnaire.
     messages: msgList.map(
-      (m: { message: typeof messages.$inferSelect; sender: { id: string; email: string; role: string } }) => ({
-        ...m.message,
-        sender: m.sender,
-      })
+      (m: { message: typeof messages.$inferSelect; sender: { id: string; email: string; role: string } }) =>
+        req.user!.role === "MANAGER" ? { ...m.message, sender: m.sender } : { ...m.message, senderId: undefined }
     ),
   });
 });
 
+// Borné : sans plafond, un message pouvait peser jusqu'à la limite du corps JSON (10 Mo) et alourdissait la base et
+// chaque réponse qui renvoie le fil entier. Rogné avant le test de vacuité : « espaces » n'est pas un message.
 const sendMessageSchema = z.object({
-  content: z.string().min(1, "Le message ne peut pas être vide"),
+  content: z.string().trim().min(1, "Le message ne peut pas être vide").max(5000, "Le message ne peut pas dépasser 5 000 caractères"),
 });
 
 export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
