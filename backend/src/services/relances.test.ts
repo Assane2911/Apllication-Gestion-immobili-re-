@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { activityLogs, agencySettings, contractCotenants, contractGuarantors, invoices, tenants } from "../db/schema";
+import { activityLogs, agencySettings, contractCotenants, contractGuarantors, invoices, tenants, users } from "../db/schema";
 import * as emailService from "./email.service";
 import { niveauAttendu, runOverdueReminders } from "./relances.service";
 import { authHeader, createContract, createInvoice, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
@@ -218,3 +218,20 @@ describe("réglages de l'agence", () => {
     expect((await request(app).put("/api/agency").set(h).send({ agencyName: "A", overdueIntervalDays: 2 })).status).toBe(400);
   });
 });
+
+describe("relances et suspension de l'agence", () => {
+  it("une agence suspendue par l'administration n'envoie aucune relance, et les reprend à sa réactivation", async () => {
+    const { manager, contract } = await agence();
+    const f = await facture(contract.id, 5);
+    await testDb.update(users).set({ suspendedAt: new Date(), suspensionReason: "Impayé" }).where(eq(users.id, manager.id));
+
+    expect(await runOverdueReminders()).toMatchObject({ sent: 0 });
+    expect(envoi).not.toHaveBeenCalled();
+    expect(await niveauDe(f.id)).toBe(0);
+
+    await testDb.update(users).set({ suspendedAt: null, suspensionReason: null }).where(eq(users.id, manager.id));
+    expect(await runOverdueReminders()).toMatchObject({ sent: 1 });
+    expect(await niveauDe(f.id)).toBe(1);
+  });
+});
+

@@ -70,7 +70,7 @@ function envoyerAvisEcheance(telephone: string, params: Parameters<typeof avisEc
  * « non envoyé » et sera repris à la réactivation tant que sa fenêtre n'est pas
  * échue. Suppose que la requête joint `users` sur `properties.managerId`.
  */
-const AGENCE_ACTIVE = isNull(users.suspendedAt);
+export const AGENCE_ACTIVE = isNull(users.suspendedAt);
 
 /**
  * Gestionnaires (parmi la liste donnée) dont la formule effective (essai

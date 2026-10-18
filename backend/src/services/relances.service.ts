@@ -1,6 +1,6 @@
 import { and, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { db } from "../db/client";
-import { agencySettings, contractGuarantors, contracts, invoices, properties, tenants } from "../db/schema";
+import { agencySettings, contractGuarantors, contracts, invoices, properties, tenants, users } from "../db/schema";
 import { env } from "../config/env";
 import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, joursEntre } from "../utils/dates";
@@ -10,7 +10,7 @@ import { nomAvecCivilite, nomComplet } from "../utils/nom";
 import { logActivity } from "./activity.service";
 import { envoyerCopieAuxColocataires, envoyerCopieWhatsappAuxColocataires } from "./colocation.service";
 import { guarantorUnpaidNoticeEmail, overdueReminderEmail, sendEmail } from "./email.service";
-import { aEteJoint, managersEligiblesPro, signalerEchecsWhatsapp, WHATSAPP_NON_ELIGIBLE } from "./reminder.service";
+import { AGENCE_ACTIVE, aEteJoint, managersEligiblesPro, signalerEchecsWhatsapp, WHATSAPP_NON_ELIGIBLE } from "./reminder.service";
 import { envoyerMessageWhatsapp, overdueReminderWhatsappVariables } from "./whatsapp.service";
 
 /**
@@ -48,8 +48,12 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
+    .innerJoin(users, eq(users.id, properties.managerId))
     .where(
       and(
+        // Agence suspendue : ni relance au locataire ni avis aux garants en son nom (voir AGENCE_ACTIVE).
+        // Filtré ici, avant la réclamation du niveau : la relance reste due et repart à la réactivation.
+        AGENCE_ACTIVE,
         or(eq(invoices.status, "PENDING"), eq(invoices.status, "LATE")),
         lt(invoices.dueDate, aujourdhui),
         gte(invoices.dueDate, plusAncienne),
