@@ -3,7 +3,7 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { invoices, properties } from "../db/schema";
-import { uploadPublicFile } from "../services/storage.service";
+import { deleteStorageObjectBestEffort, uploadPublicFile } from "../services/storage.service";
 import {
   authHeader,
   createContract,
@@ -457,5 +457,30 @@ describe("POST /api/properties — plafond de biens par formule", () => {
       .send({ title: "6e bien", address: "1 rue du Test", surface: 30, rent: 400 });
 
     expect(res.status).toBe(201);
+  });
+});
+
+describe("PUT /api/properties/:id — remplacement de l'image", () => {
+  it("retire du stockage public l'ancienne image quand une nouvelle la remplace, jamais sans nouvelle image", async () => {
+    const manager = await createManager();
+    const ancienne = "http://test.local/storage/v1/object/public/public-uploads/properties/ancienne.png";
+    const property = await createProperty(manager.id, { imageUrl: ancienne });
+    vi.mocked(deleteStorageObjectBestEffort).mockClear();
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "base64"
+    );
+
+    const sans = await request(app).put(`/api/properties/${property.id}`).set(authHeader(tokenFor(manager))).send({ title: "Villa rénovée" });
+    expect(sans.status).toBe(200);
+    expect(deleteStorageObjectBestEffort).not.toHaveBeenCalled();
+
+    const avec = await request(app)
+      .put(`/api/properties/${property.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .attach("image", png, { filename: "nouvelle.png", contentType: "image/png" });
+    expect(avec.status).toBe(200);
+    expect(avec.body.imageUrl).toBe("http://test.local/mock-image.png");
+    expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith(ancienne);
   });
 });

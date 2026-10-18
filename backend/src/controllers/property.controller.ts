@@ -203,6 +203,10 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
     .where(eq(properties.id, req.params.id))
     .returning();
 
+  // L'ancienne image part du stockage PUBLIC avec son remplacement : sinon elle restait accessible par son adresse, sans
+  // plus aucune ligne en base pour la retrouver. Après l'enregistrement, best-effort.
+  if (imageUrl && existing.imageUrl) await deleteStorageObjectBestEffort(existing.imageUrl).catch(() => undefined);
+
   await logActivity({
     req,
     managerId: property.managerId,

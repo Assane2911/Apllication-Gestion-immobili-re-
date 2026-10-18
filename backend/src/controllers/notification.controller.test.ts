@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { contractCotenants, issueReports } from "../db/schema";
+import { contractCotenants, issueReports, listingLeads, listings } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -190,6 +190,59 @@ describe("GET /api/notifications", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.count).toBe(0);
+  });
+});
+
+/**
+ * Une demande de visite ou d'information déposée sur la vitrine publique est la SEULE écriture sans compte du service :
+ * sans signalement, elle dormait dans le CRM tant que le gestionnaire n'ouvrait pas cette page.
+ */
+describe("GET /api/notifications — demandes reçues via la vitrine", () => {
+  async function annonceAvecDemande(managerId: string, demande: Partial<typeof listingLeads.$inferInsert> = {}) {
+    const [annonce] = await testDb
+      .insert(listings)
+      .values({ managerId, title: "Villa Ngor", description: "Belle villa", price: 250000, location: "Ngor, Dakar" })
+      .returning();
+    const [lead] = await testDb
+      .insert(listingLeads)
+      .values({
+        listingId: annonce.id,
+        managerId,
+        prospectName: "Awa Diop",
+        prospectEmail: "awa@example.com",
+        prospectPhone: "+221771234567",
+        requestType: "VISIT",
+        ...demande,
+      })
+      .returning();
+    return { annonce, lead };
+  }
+
+  it("signale une nouvelle demande, avec son auteur et l'annonce visée, et renvoie vers le CRM des demandes", async () => {
+    const manager = await createManager();
+    await annonceAvecDemande(manager.id);
+
+    const res = await request(app).get("/api/notifications").set(authHeader(tokenFor(manager)));
+
+    const lead = res.body.notifications.find((n: { type: string }) => n.type === "lead");
+    expect(lead).toMatchObject({ severity: "info", link: "/leads" });
+    expect(lead.title).toContain("Awa Diop");
+    expect(lead.title.toLowerCase()).toContain("visite");
+    expect(lead.description).toContain("Villa Ngor");
+  });
+
+  it("ne signale que les demandes encore nouvelles, et seulement celles de SON agence", async () => {
+    const manager = await createManager();
+    const autre = await createManager();
+    await annonceAvecDemande(manager.id, { status: "CONTACTED", prospectName: "Déjà contacté" });
+    await annonceAvecDemande(manager.id, { status: "ARCHIVED", prospectName: "Archivé" });
+    await annonceAvecDemande(autre.id, { prospectName: "Autre agence" });
+
+    const res = await request(app).get("/api/notifications").set(authHeader(tokenFor(manager)));
+
+    expect(res.body.notifications.filter((n: { type: string }) => n.type === "lead")).toHaveLength(0);
+    const chezAutre = await request(app).get("/api/notifications").set(authHeader(tokenFor(autre)));
+    expect(chezAutre.body.notifications.filter((n: { type: string }) => n.type === "lead")).toHaveLength(1);
   });
 });
 

@@ -3,12 +3,12 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, invoices, issueReports, messages, notificationVues, properties, tenants } from "../db/schema";
+import { contracts, invoices, issueReports, listingLeads, listings, messages, notificationVues, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bauxDuLocataire } from "../services/colocation.service";
 import { idLocataireDuCompte } from "../utils/authorization";
 
-export type NotificationType = "message" | "invoice" | "issue" | "contract_ending";
+export type NotificationType = "message" | "invoice" | "issue" | "contract_ending" | "lead";
 export type NotificationSeverity = "info" | "warning" | "danger";
 
 export interface NotificationItem {
@@ -150,6 +150,27 @@ async function calculerNotificationsGestionnaire(managerId: string): Promise<Not
       description: `${r.property.title} · ${r.tenant.firstName} ${r.tenant.lastName}`,
       link: "/issues",
       createdAt: new Date(r.issue.createdAt).toISOString(),
+    });
+  }
+
+  // --- Demandes reçues via la vitrine publique, pas encore traitées ---
+  // C'est la seule écriture sans compte du service : sans signalement, une demande de visite dormait dans le CRM
+  // tant que le gestionnaire n'ouvrait pas cette page.
+  const nouvellesDemandes = await db
+    .select({ lead: listingLeads, listing: listings })
+    .from(listingLeads)
+    .innerJoin(listings, eq(listingLeads.listingId, listings.id))
+    .where(and(eq(listingLeads.status, "NEW"), eq(listingLeads.managerId, managerId)));
+
+  for (const r of nouvellesDemandes) {
+    notifications.push({
+      id: `lead-${r.lead.id}`,
+      type: "lead",
+      severity: "info",
+      title: `${r.lead.requestType === "INFO" ? "Demande d'information" : "Demande de visite"} — ${r.lead.prospectName}`,
+      description: r.listing.title,
+      link: "/leads",
+      createdAt: new Date(r.lead.createdAt).toISOString(),
     });
   }
 

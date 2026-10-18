@@ -91,6 +91,27 @@ describe("NotificationBell", () => {
     ).toBeInTheDocument();
   });
 
+  // Une demande reçue via la vitrine est une notification de type « lead » : sans icône associée, l'élément ne se
+  // rendait pas et faisait tomber la cloche entière dès la première demande.
+  it("affiche une demande reçue via la vitrine, avec un lien vers le CRM des demandes", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: {
+        notifications: [
+          notification({ id: "lead-1", type: "lead", title: "Demande de visite — Awa Diop", description: "Villa Ngor", link: "/leads" }),
+        ],
+      },
+    });
+    renderBell();
+
+    await waitFor(() => expect(screen.getByLabelText("Notifications")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText("Notifications"));
+
+    expect(await screen.findByText("Demande de visite — Awa Diop")).toBeInTheDocument();
+    expect(screen.getByText("Villa Ngor")).toBeInTheDocument();
+    expect(screen.getByText("Demande de visite — Awa Diop").closest("a")).toHaveAttribute("href", "/leads");
+  });
+
   describe("état « vu »", () => {
     const bouton = () => screen.getByLabelText("Notifications");
 

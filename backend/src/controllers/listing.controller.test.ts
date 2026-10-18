@@ -3,7 +3,7 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { listingLeads, listings } from "../db/schema";
-import { uploadPublicFile } from "../services/storage.service";
+import { deleteStorageObjectBestEffort, uploadPublicFile } from "../services/storage.service";
 import { authHeader, createManager, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -344,6 +344,32 @@ describe("PUT /api/listings/:id — ordre upload / vérification de propriété"
     expect(res.status).toBe(200);
     expect(res.body.price).toBe(900);
     expect(res.body.status).toBe("ARCHIVED");
+  });
+});
+
+const PNG_1X1 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "base64"
+);
+
+describe("PUT /api/listings/:id — remplacement de l'image", () => {
+  it("retire du stockage public l'ancienne image quand une nouvelle la remplace, jamais sans nouvelle image", async () => {
+    const manager = await createManager();
+    const ancienne = "http://test.local/storage/v1/object/public/public-uploads/listings/ancienne.png";
+    const listing = await createListingRow(manager.id, { imageUrl: ancienne });
+    vi.mocked(deleteStorageObjectBestEffort).mockClear();
+
+    const sans = await request(app).put(`/api/listings/${listing.id}`).set(authHeader(tokenFor(manager))).send({ price: 300000 });
+    expect(sans.status).toBe(200);
+    expect(deleteStorageObjectBestEffort).not.toHaveBeenCalled();
+
+    const avec = await request(app)
+      .put(`/api/listings/${listing.id}`)
+      .set(authHeader(tokenFor(manager)))
+      .attach("image", PNG_1X1, { filename: "nouvelle.png", contentType: "image/png" });
+    expect(avec.status).toBe(200);
+    expect(avec.body.imageUrl).toBe("http://test.local/mock-image.png");
+    expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith(ancienne);
   });
 });
 
