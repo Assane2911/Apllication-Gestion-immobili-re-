@@ -4,25 +4,46 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { insurancePolicies, properties } from "../db/schema";
+import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { deviseSchema } from "../utils/devises";
 
 const insurancePolicyBodySchema = z.object({
   propertyId: z.string().min(1),
-  insurerName: z.string().min(1),
-  policyNumber: z.string().min(1),
-  premiumAmount: z.coerce.number().positive().optional(),
+  insurerName: z.string().trim().min(1).max(200),
+  policyNumber: z.string().trim().min(1).max(100),
+  // .finite() : « 1e999 » est converti en Infinity par la coercition et passait `positive()`.
+  premiumAmount: z.coerce.number().finite().positive().max(1_000_000_000_000).optional(),
   currency: deviseSchema.optional(),
   startDate: z.coerce.date().optional(),
   expiryDate: z.coerce.date(),
-  notes: z.string().optional(),
+  notes: z.string().max(5000).optional(),
 });
 
 function assertDatesCoherentes(startDate: Date | undefined, expiryDate: Date) {
   if (startDate && expiryDate <= startDate) {
     throw new ApiError(400, "La date d'échéance doit être postérieure à la date de prise d'effet.");
   }
+}
+
+/** Une police d'assurance protège un bien et déclenche des rappels : qui l'a changée doit rester visible. */
+async function tracer(
+  req: Request,
+  action: "insurance.create" | "insurance.update" | "insurance.delete",
+  policy: { id: string; insurerName: string; policyNumber: string },
+  titreBien: string,
+  verbe: string
+) {
+  await logActivity({
+    req,
+    managerId: req.user!.userId,
+    action,
+    entityType: "insurance",
+    entityId: policy.id,
+    entityLabel: `${policy.insurerName} — ${policy.policyNumber}`,
+    details: `Police d'assurance ${verbe} : ${policy.insurerName}, n° ${policy.policyNumber} (${titreBien})`,
+  });
 }
 
 const listInsurancePoliciesQuerySchema = z.object({
@@ -85,6 +106,7 @@ export const createInsurancePolicy = asyncHandler(async (req: Request, res: Resp
     })
     .returning();
 
+  await tracer(req, "insurance.create", policy, prop.title, "ajoutée");
   res.status(201).json(policy);
 });
 
@@ -125,6 +147,7 @@ export const updateInsurancePolicy = asyncHandler(async (req: Request, res: Resp
     .where(eq(insurancePolicies.id, req.params.id))
     .returning();
 
+  await tracer(req, "insurance.update", updated, prop.title, "modifiée");
   res.json(updated);
 });
 
@@ -137,5 +160,6 @@ export const deleteInsurancePolicy = asyncHandler(async (req: Request, res: Resp
   assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Police d'assurance introuvable");
 
   await db.delete(insurancePolicies).where(eq(insurancePolicies.id, req.params.id));
+  await tracer(req, "insurance.delete", row.policy, row.property.title, "supprimée");
   res.json({ success: true, message: "Police d'assurance supprimée" });
 });
