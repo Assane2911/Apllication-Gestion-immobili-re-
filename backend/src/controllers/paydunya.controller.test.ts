@@ -3,7 +3,8 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { invoices, platformSubscriptions, users } from "../db/schema";
+import { activityLogs, invoices, platformSubscriptions, users } from "../db/schema";
+import * as emailService from "../services/email.service";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -336,5 +337,36 @@ describe("POST /api/payments/paydunya/ipn", () => {
     const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
     expect(apres.status).toBe("PAID");
     expect(apres.paidAt?.getTime()).toBe(paidAtOrigine.getTime());
+  });
+
+  it("prévient le gestionnaire d'un paiement encaissé que la facture ne peut plus recevoir, sans toucher à la facture", async () => {
+    const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    // 200 déjà encaissés par le gestionnaire pendant que le locataire payait la totalité.
+    const invoice = await createInvoice(contract.id, {
+      status: "PENDING",
+      paymentMethod: "PAYDUNYA",
+      paymentRef: "pd_token_orphelin",
+      amount: 500,
+      amountPaid: 200,
+    });
+    mockConfirmation({ totalAmount: 500, reference: invoice.id });
+    const envoyer = () =>
+      request(app).post("/api/payments/paydunya/ipn").send(ipnBody({ token: "pd_token_orphelin", reference: invoice.id }));
+
+    expect((await envoyer()).status).toBe(200);
+    expect((await envoyer()).status).toBe(200);
+
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("PENDING");
+    expect(apres.amountPaid).toBe(200);
+    expect(envoiEmail).toHaveBeenCalledTimes(1);
+    expect(envoiEmail.mock.calls[0][0]).toBe(manager.email);
+    expect(envoiEmail.mock.calls[0][2]).toContain("pd_token_orphelin");
+    const entrees = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
+    expect(entrees.map((e: { action: string }) => e.action)).toEqual(["paiement_en_ligne.non_rapproche"]);
   });
 });

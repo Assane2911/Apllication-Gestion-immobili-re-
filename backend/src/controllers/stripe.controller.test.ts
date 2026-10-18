@@ -3,7 +3,8 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { invoices, platformSubscriptions, users } from "../db/schema";
+import { activityLogs, invoices, platformSubscriptions, users } from "../db/schema";
+import * as Sentry from "@sentry/node";
 import * as emailService from "../services/email.service";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
@@ -309,6 +310,36 @@ describe("POST /api/payments/stripe/webhook", () => {
     expect(compte.subscriptionStatus).toBe("ACTIVE");
   });
 
+  it("signale à Sentry un paiement d'abonnement encaissé qu'on ne peut pas appliquer, sans activer l'accès", async () => {
+    const signal = vi.spyOn(Sentry, "captureMessage");
+    const manager = await createManager({ subscriptionStatus: "EXPIRED" });
+    const [abonnement] = await testDb
+      .insert(platformSubscriptions)
+      .values({
+        userId: manager.id,
+        plan: "PRO",
+        amount: 29,
+        currency: "EUR",
+        status: "PENDING",
+        paymentMethod: "STRIPE",
+        paymentRef: "cs_test_abo_montant",
+        startDate: new Date(2026, 8, 1),
+        endDate: new Date(2026, 9, 1),
+      })
+      .returning();
+
+    // 5 EUR encaissés pour un abonnement à 29 EUR.
+    const corps = evenementSession({ id: "cs_test_abo_montant", reference: `sub_${manager.id}_123`, amountTotal: 500 });
+    const res = await envoyer(corps, signer(corps));
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, abonnement.id));
+    expect(apres.status).toBe("PENDING");
+    expect(signal).toHaveBeenCalledTimes(1);
+    expect(signal.mock.calls[0][0]).toContain("abonnement");
+    expect(signal.mock.calls[0][1]).toMatchObject({ extra: { referencePrestataire: "cs_test_abo_montant" } });
+  });
+
   it("est idempotent : un même événement rejoué ne change rien la seconde fois", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
@@ -357,6 +388,83 @@ describe("POST /api/payments/stripe/webhook", () => {
     const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
     expect(apres.status).toBe("CANCELLED");
     expect(apres.paidAt).toBeNull();
+  });
+
+  /**
+   * Un paiement par carte que Stripe a bien encaissé mais que la facture ne peut plus recevoir (réglée en partie
+   * ou en entier entre-temps par le gestionnaire, annulée, ou session remplacée) ne doit jamais disparaître en
+   * silence : la facture reste intacte, et le gestionnaire est prévenu pour rembourser ou régulariser.
+   */
+  describe("paiement encaissé mais non rapprochable", () => {
+    async function factureStripe(overrides: Partial<typeof invoices.$inferInsert> = {}) {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const invoice = await createInvoice(contract.id, {
+        status: "PENDING",
+        paymentMethod: "STRIPE",
+        paymentRef: "cs_test_orphelin",
+        amount: 500,
+        ...overrides,
+      });
+      return { manager, invoice };
+    }
+    const journal = (managerId: string) =>
+      testDb.select().from(activityLogs).where(eq(activityLogs.managerId, managerId));
+
+    it("prévient le gestionnaire quand le reste dû a baissé pendant que le locataire payait", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      // 200 déjà encaissés par le gestionnaire : le reste dû n'est plus 500 mais 300, et le locataire vient de payer 500.
+      const { manager, invoice } = await factureStripe({ amountPaid: 200 });
+
+      const corps = evenementSession({ id: "cs_test_orphelin", reference: invoice.id, amountTotal: 50000 });
+      const res = await envoyer(corps, signer(corps));
+
+      expect(res.status).toBe(200);
+      const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+      expect(apres.status).toBe("PENDING");
+      expect(apres.amountPaid).toBe(200);
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+      expect(envoiEmail.mock.calls[0][0]).toBe(manager.email);
+      expect(envoiEmail.mock.calls[0][2]).toContain("cs_test_orphelin");
+      const entrees = await journal(manager.id);
+      expect(entrees.map((e: { action: string }) => e.action)).toContain("paiement_en_ligne.non_rapproche");
+    });
+
+    it("prévient aussi pour une facture annulée, et pour une session qui n'est plus celle de la facture", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      const annulee = await factureStripe({ status: "CANCELLED" });
+      const corpsAnnulee = evenementSession({ id: "cs_test_orphelin", reference: annulee.invoice.id, amountTotal: 50000 });
+      await envoyer(corpsAnnulee, signer(corpsAnnulee));
+
+      // Facture réglée à la main entre-temps : sa référence de paiement n'est plus la session Stripe.
+      const reglee = await factureStripe({ status: "PAID", paymentMethod: "CASH", paymentRef: "manuel_1", amountPaid: 500 });
+      const corpsReglee = evenementSession({ id: "cs_test_double", reference: reglee.invoice.id, amountTotal: 50000 });
+      await envoyer(corpsReglee, signer(corpsReglee));
+
+      expect(envoiEmail).toHaveBeenCalledTimes(2);
+      expect(envoiEmail.mock.calls.map((c) => c[0])).toEqual([annulee.manager.email, reglee.manager.email]);
+    });
+
+    it("ne prévient pas deux fois pour le même paiement rejoué, et jamais pour un rejeu d'un paiement bien rapproché", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      const orphelin = await factureStripe({ amountPaid: 200 });
+      const corps = evenementSession({ id: "cs_test_orphelin", reference: orphelin.invoice.id, amountTotal: 50000 });
+      await envoyer(corps, signer(corps));
+      await envoyer(corps, signer(corps));
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+
+      // Paiement normal, rejoué : la facture est déjà soldée par cette session, rien à signaler.
+      envoiEmail.mockClear();
+      const normale = await factureStripe({ paymentRef: "cs_test_normal" });
+      const corpsNormal = evenementSession({ id: "cs_test_normal", reference: normale.invoice.id, amountTotal: 50000 });
+      await envoyer(corpsNormal, signer(corpsNormal));
+      envoiEmail.mockClear();
+      await envoyer(corpsNormal, signer(corpsNormal));
+      expect(envoiEmail).not.toHaveBeenCalled();
+      expect(await journal(normale.manager.id)).toHaveLength(0);
+    });
   });
 
   /**

@@ -6,6 +6,7 @@ import { db } from "../db/client";
 import { invoices, platformSubscriptions, users } from "../db/schema";
 import { ETATS_MODIFIABLES } from "./invoice.controller";
 import { solderEnLigne } from "../services/paiementEnLigne.service";
+import { signalerAbonnementNonRapproche, signalerPaiementNonRapproche } from "../services/paiementNonRapproche.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { resteDu } from "../utils/montants";
 import { depuisPlusPetiteUnite } from "../services/payment.service";
@@ -130,10 +131,12 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
 
     if (!abonnement) {
       console.warn(`[stripe] Abonnement introuvable pour la session ${sessionId}`);
+      signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "abonnement introuvable pour cette session" });
     } else if (!montantCorrespond(montantPaye, abonnement.amount)) {
       console.warn(
         `[stripe] Webhook rejeté pour l'abonnement ${abonnement.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${abonnement.amount}).`
       );
+      signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "montant différent de l'abonnement attendu" });
     } else {
       // Idempotent : un abonnement déjà PAID est renvoyé tel quel. Stripe
       // rejoue ses webhooks en cas de doute, et un double clic ne doit pas
@@ -166,17 +169,26 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
       .from(invoices)
       .where(and(eq(invoices.paymentRef, sessionId), eq(invoices.paymentMethod, "STRIPE")));
 
+    // Un paiement réellement encaissé par Stripe que la facture ne peut plus recevoir ne doit pas disparaître en
+    // silence : le gestionnaire est prévenu (voir paiementNonRapproche.service.ts) pour rembourser ou régulariser.
+    const signaler = (raison: string) =>
+      signalerPaiementNonRapproche({
+        prestataire: "STRIPE",
+        referenceFacture: notreReference,
+        referencePrestataire: sessionId,
+        montant: Number.isFinite(montantPaye) ? montantPaye : 0,
+        devise,
+        raison,
+      });
+
     if (!facture) {
       console.warn(`[stripe] Facture introuvable pour la session ${sessionId}`);
-    } else if (!montantCorrespond(montantPaye, resteDu(facture))) {
-      console.warn(
-        `[stripe] Webhook rejeté pour la facture ${facture.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${resteDu(facture)}).`
-      );
+      await signaler("la facture ne porte plus cette session de paiement : elle a été réglée autrement ou un autre paiement a été lancé depuis");
     } else if (facture.status === "PAID") {
+      // Rejeu de la livraison qui a soldé la facture (la session en est la référence) : rien à faire.
       console.log(`[stripe] Facture ${facture.id} déjà réglée, rien à faire.`);
     } else if (!ETATS_MODIFIABLES.includes(facture.status as (typeof ETATS_MODIFIABLES)[number])) {
-      // Régression corrigée : seul le cas PAID était un no-op ci-dessus ; une
-      // facture CANCELLED tombait dans le `else` suivant et repassait PAID.
+      // Régression corrigée : une facture CANCELLED tombait dans le `else` suivant et repassait PAID.
       // Stripe rejoue ses webhooks (doute réseau, redémarrage) — un paiement
       // confirmé APRÈS l'annulation d'une facture (contrat résilié pendant
       // qu'un paiement était en cours, ou simple rejeu tardif) ne doit jamais
@@ -184,6 +196,12 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
       console.warn(
         `[stripe] Facture ${facture.id} dans un état non modifiable (${facture.status}) : confirmation de paiement ignorée.`
       );
+      await signaler("la facture a été annulée");
+    } else if (!montantCorrespond(montantPaye, resteDu(facture))) {
+      console.warn(
+        `[stripe] Webhook rejeté pour la facture ${facture.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${resteDu(facture)}).`
+      );
+      await signaler("le montant payé ne correspond plus au reste dû, qui a changé depuis le début du paiement");
     } else {
       // Condition de statut portée par le WHERE, et pas seulement par le
       // garde lu plus haut : entre le SELECT et cet UPDATE, la facture a pu
@@ -235,6 +253,7 @@ async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<voi
   });
   if (!resultat) {
     console.warn(`[stripe] Renouvellement non appliqué pour la facture ${facture.id} (abonnement introuvable ou montant/devise incohérents).`);
+    signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: facture.id, montant: montantPaye, raison: "renouvellement non appliqué (abonnement introuvable ou montant/devise incohérents)" });
   }
 }
 

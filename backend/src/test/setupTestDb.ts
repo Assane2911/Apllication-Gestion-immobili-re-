@@ -42,6 +42,7 @@ vi.mock("@sentry/node", () => ({
   init: () => {},
   setupExpressErrorHandler: () => {},
   flush: async () => true,
+  captureMessage: () => "",
 }));
 
 // @supabase/supabase-js instancie un client "realtime" (WebSocket + timers de

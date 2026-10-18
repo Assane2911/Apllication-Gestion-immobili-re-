@@ -228,6 +228,36 @@ describe("initiatePayment", () => {
     expect(corps.get("line_items[0][price_data][unit_amount]")).toBe("2900");
   });
 
+  it("STRIPE : une nouvelle tentative avec un autre montant ou un autre payeur n'est pas refusée par la clé d'idempotence", async () => {
+    // Stripe refuse (« Keys for idempotent requests can only be used with the same parameters ») toute requête
+    // qui rejoue une clé avec d'autres paramètres, pendant 24 h. Avec une clé qui ne portait que la facture, un
+    // locataire dont le reste dû avait baissé (paiement partiel du gestionnaire) ou un colocataire qui payait à
+    // son tour ne pouvait plus payer par carte pendant une journée, avec un message d'erreur de Stripe en anglais.
+    env.payments.demoMode = false;
+    env.payments.stripeSecretKey = "sk_test_fake_key";
+    env.payments.stripeWebhookSecret = "whsec_test";
+    env.payments.stripeCurrencies = ["EUR"];
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "cs_test_1", url: "https://checkout.stripe.com/c/pay/cs_test_1" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const cle = (i: number) => fetchMock.mock.calls[i][1].headers["Idempotency-Key"] as string;
+    const base = { method: "STRIPE" as const, currency: "EUR", invoiceId: "inv-1", payerEmail: "a@test.local" };
+
+    await initiatePayment({ ...base, amount: 500 });
+    await initiatePayment({ ...base, amount: 500 });
+    await initiatePayment({ ...base, amount: 300 });
+    await initiatePayment({ ...base, amount: 500, payerEmail: "colocataire@test.local" });
+
+    // Deux clics identiques gardent la même clé (c'est le but de l'idempotence)...
+    expect(cle(0)).toBe(cle(1));
+    // ... mais un autre montant, ou un autre payeur, change de clé.
+    expect(cle(2)).not.toBe(cle(0));
+    expect(cle(3)).not.toBe(cle(0));
+    expect(cle(0)).toContain("inv-1");
+  });
+
   it("STRIPE : n'ajoute pas de centimes à une devise qui n'en a pas (XOF)", async () => {
     // Le piège symétrique de celui de PayDunya : Stripe attend la plus petite
     // unité de la devise, mais le franc CFA n'a pas de sous-unité. Multiplier
