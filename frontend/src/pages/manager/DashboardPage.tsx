@@ -19,9 +19,10 @@ import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { DashboardStats, PropertyStatus } from "../../types";
 import { formatByCurrency } from "../../utils/currencyFormat";
+import { fenetreDesMois, libelleDuMois } from "../../utils/moisDuGraphique";
 
 export default function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,10 +93,8 @@ export default function DashboardPage() {
     MAINTENANCE: 0,
   };
 
-  // Combine revenus et dépenses par mois pour le graphique
-  const allMonths = Array.from(
-    new Set([...Object.keys(revenueByMonth), ...Object.keys(expensesByMonth)])
-  ).sort((a, b) => a.localeCompare(b));
+  // Axe des mois : toujours les six derniers (vides compris), voir moisDuGraphique.ts.
+  const allMonths = fenetreDesMois(new Date(), [...Object.keys(revenueByMonth), ...Object.keys(expensesByMonth)]);
 
   // Plateforme multi-devises : chaque mois est { devise -> montant } côté API
   // (voir dashboard.controller.ts) plutôt qu'un seul nombre déjà additionné à
@@ -103,32 +102,22 @@ export default function DashboardPage() {
   // axe commun, 600 € disparaissaient à côté de 450 000 FCFA, alors que les
   // deux sommes sont du même ordre de grandeur réel. Un gestionnaire
   // mono-devise (le cas courant) voit un seul graphique, comme avant.
-  const monthlyCurrencies =
-    allMonths.length > 0
-      ? Array.from(
-          new Set([
-            ...allMonths.flatMap((m) => Object.keys(revenueByMonth[m] ?? {})),
-            ...allMonths.flatMap((m) => Object.keys(expensesByMonth[m] ?? {})),
-          ])
-        ).sort()
-      : Object.keys(stats.monthlyRevenueByCurrency ?? {});
+  const devisesDesMois = Array.from(
+    new Set([
+      ...allMonths.flatMap((m) => Object.keys(revenueByMonth[m] ?? {})),
+      ...allMonths.flatMap((m) => Object.keys(expensesByMonth[m] ?? {})),
+    ])
+  ).sort();
+  // Aucun mouvement sur la période mais un loyer attendu ce mois-ci : on trace quand même la devise du compte.
+  const monthlyCurrencies = devisesDesMois.length > 0 ? devisesDesMois : Object.keys(stats.monthlyRevenueByCurrency ?? {});
 
   const chartsByCurrency = monthlyCurrencies.map((currency) => ({
     currency,
-    data:
-      allMonths.length > 0
-        ? allMonths.map((month) => ({
-            month,
-            revenue: Number(revenueByMonth[month]?.[currency] ?? 0),
-            expense: Number(expensesByMonth[month]?.[currency] ?? 0),
-          }))
-        : [
-            {
-              month: t("manager.dashboard.charts.currentMonth"),
-              revenue: Number(stats.monthlyRevenueByCurrency?.[currency] ?? 0),
-              expense: 0,
-            },
-          ],
+    data: allMonths.map((month) => ({
+      month: libelleDuMois(month, i18n.language),
+      revenue: Number(revenueByMonth[month]?.[currency] ?? 0),
+      expense: Number(expensesByMonth[month]?.[currency] ?? 0),
+    })),
   }));
 
   const donutData = (Object.keys(statusLabels) as PropertyStatus[])
