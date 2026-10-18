@@ -468,6 +468,85 @@ describe("POST /api/payments/stripe/webhook", () => {
   });
 
   /**
+   * Échec de prélèvement d'un renouvellement par carte (`invoice.payment_failed`) : sans cela, le gestionnaire
+   * ne l'apprenait qu'à l'expiration de son accès, sans rien avoir pu corriger.
+   */
+  describe("échec de prélèvement d'un renouvellement", () => {
+    function evenementEchec(overrides: { id?: string; subscription?: string; attemptCount?: number; nextAttempt?: number | null; billingReason?: string }) {
+      return JSON.stringify({
+        type: "invoice.payment_failed",
+        data: {
+          object: {
+            id: overrides.id ?? "in_echec_1",
+            subscription: overrides.subscription ?? "sub_stripe_echec",
+            billing_reason: overrides.billingReason ?? "subscription_cycle",
+            attempt_count: overrides.attemptCount ?? 1,
+            next_payment_attempt: overrides.nextAttempt === undefined ? Math.floor(Date.UTC(2026, 9, 23, 12) / 1000) : overrides.nextAttempt,
+            amount_due: 2900,
+            currency: "eur",
+          },
+        },
+      });
+    }
+    const livrer = (corps: string) => envoyer(corps, signer(corps));
+
+    it("prévient le gestionnaire par email : la date du nouvel essai et le lien pour renouveler", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      const manager = await createManager({ stripeSubscriptionId: "sub_stripe_echec", subscriptionStatus: "ACTIVE" });
+
+      const res = await livrer(evenementEchec({}));
+
+      expect(res.status).toBe(200);
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+      const [destinataire, sujet, html] = envoiEmail.mock.calls[0];
+      expect(destinataire).toBe(manager.email);
+      expect(sujet).toContain("prélèvement");
+      expect(html).toContain("23 octobre 2026");
+      expect(html).toContain("/subscription");
+      expect(html).not.toMatch(/\btu\b|\bton\b|\bta\b/i);
+      const entrees = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
+      expect(entrees.map((e: { action: string }) => e.action)).toEqual(["abonnement.prelevement_echoue"]);
+      // L'accès n'est pas touché : Stripe réessaie, et la fin d'accès reste déterminée par subscriptionEndsAt.
+      const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(compte.subscriptionStatus).toBe("ACTIVE");
+    });
+
+    it("dit qu'aucun nouvel essai n'aura lieu quand c'était le dernier", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      await createManager({ stripeSubscriptionId: "sub_stripe_echec" });
+
+      await livrer(evenementEchec({ attemptCount: 4, nextAttempt: null }));
+
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+      expect(envoiEmail.mock.calls[0][2]).toContain("aucun nouvel essai");
+    });
+
+    it("ne prévient qu'une fois par tentative : un rejeu ne renvoie rien, une nouvelle tentative oui", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      await createManager({ stripeSubscriptionId: "sub_stripe_echec" });
+
+      await livrer(evenementEchec({ attemptCount: 1 }));
+      await livrer(evenementEchec({ attemptCount: 1 }));
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+
+      await livrer(evenementEchec({ attemptCount: 2 }));
+      expect(envoiEmail).toHaveBeenCalledTimes(2);
+    });
+
+    it("ignore une facture qui n'est pas un renouvellement, et un abonnement inconnu", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      await createManager({ stripeSubscriptionId: "sub_stripe_echec" });
+
+      const premiere = await livrer(evenementEchec({ billingReason: "subscription_create" }));
+      const inconnu = await livrer(evenementEchec({ subscription: "sub_inconnu" }));
+
+      expect(premiere.status).toBe(200);
+      expect(inconnu.status).toBe(200);
+      expect(envoiEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
    * Renouvellement automatique réel (Stripe Subscriptions) : la session créée
    * en mode "subscription" (autoRenew, voir payment.service.ts) renvoie un
    * Customer et une Subscription Stripe, rattachés au compte à l'activation.
