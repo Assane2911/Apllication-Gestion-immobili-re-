@@ -303,7 +303,7 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
  * portail locataire (mot de passe choisi par le gestionnaire, voir
  * createTenantPortalAccount), le propriétaire choisit lui-même son mot de
  * passe : on réutilise exactement le mécanisme de réinitialisation de mot de
- * passe (token à usage unique, 1h, voir auth.controller.ts) plutôt que d'en
+ * passe (token à usage unique, valable 7 jours, voir auth.controller.ts) plutôt que d'en
  * inventer un second.
  *
  * Rappelable tant que l'invitation n'a pas été activée (le token de reset est

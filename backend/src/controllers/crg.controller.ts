@@ -350,11 +350,24 @@ export const getCrgForOwner = asyncHandler(async (req: Request, res: Response) =
   res.json(await computeCrg(owner, month, year));
 });
 
+/**
+ * Compte-rendu tel que le PROPRIÉTAIRE peut le lire : sans les notes internes de l'agence. La note d'un
+ * reversement est libellée « Note interne » côté agence (« propriétaire difficile à joindre »...), mais l'API du
+ * propriétaire la renvoyait avec le reste : invisible à l'écran, lisible dans la réponse réseau.
+ */
+type CrgPourProprietaire = Omit<CrgSynthesis, "reversements"> & {
+  reversements: Array<Omit<CrgSynthesis["reversements"][number], "note">>;
+};
+
+function sansNotesInternes(crg: CrgSynthesis): CrgPourProprietaire {
+  return { ...crg, reversements: crg.reversements.map(({ note: _note, ...visible }) => visible) };
+}
+
 export const getMyCrg = asyncHandler(async (req: Request, res: Response) => {
   const owner = await chargerProprietaireDuCompte(req);
 
   const { month, year } = resolveMonthYear(req);
-  res.json(await computeCrg(owner, month, year));
+  res.json(sansNotesInternes(await computeCrg(owner, month, year)));
 });
 
 export const exportCrgForOwner = asyncHandler(async (req: Request, res: Response) => {
@@ -372,7 +385,7 @@ export const exportMyCrg = asyncHandler(async (req: Request, res: Response) => {
   const owner = await chargerProprietaireDuCompte(req);
 
   const { month, year } = resolveMonthYear(req);
-  const crg = await computeCrg(owner, month, year);
+  const crg = sansNotesInternes(await computeCrg(owner, month, year));
   const agencyName = await loadAgencyName(owner.managerId);
 
   const html = generateCrgHtml({ ...crg, agencyName });
