@@ -24,6 +24,8 @@ interface AdminListing {
   // Compte du gestionnaire suspendu : l'annonce n'est plus visible sur la vitrine.
   // Absent d'une réponse d'un serveur plus ancien (déploiement en cours).
   managerSuspendedAt?: string | null;
+  // Abonnement du gestionnaire terminé : même effet, son espace est fermé jusqu'au renouvellement.
+  managerSubscriptionExpired?: boolean;
   managerEmail: string;
   agencyName: string | null;
 }
@@ -266,6 +268,11 @@ export default function AdminListingsPage() {
                             {t("admin.listings.suspendedBadge")}
                           </span>
                         )}
+                        {!a.managerSuspendedAt && a.managerSubscriptionExpired && (
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                            {t("admin.listings.expiredBadge")}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -305,7 +312,7 @@ export default function AdminListingsPage() {
                     >
                       {a.featured ? t("admin.listings.unfeature") : t("admin.listings.feature")}
                     </button>
-                    {!masquee && !a.managerSuspendedAt && a.status === "PUBLISHED" && (
+                    {!masquee && !a.managerSuspendedAt && !a.managerSubscriptionExpired && a.status === "PUBLISHED" && (
                       <a
                         href={`/vitrine/annonces/${a.id}`}
                         target="_blank"

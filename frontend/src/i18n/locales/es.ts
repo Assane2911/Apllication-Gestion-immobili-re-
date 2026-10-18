@@ -2132,6 +2132,7 @@ const es: TranslationSchema = {
       emptyFilteredDescription: "Cambie el filtro o la búsqueda para ver otros anuncios.",
       hiddenBadge: "Oculto por la administración",
       suspendedBadge: "Cuenta suspendida: no visible",
+      expiredBadge: "Suscripción finalizada: no visible",
       featuredBadge: "Destacado",
       manager: "Gestor: {{who}}",
       hiddenSince: "Oculto el {{date}}",
