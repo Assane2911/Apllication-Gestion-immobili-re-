@@ -513,6 +513,7 @@ export default function ExpensesPage() {
                     id="expense-modal-title"
                     required
                     placeholder={t("manager.expenses.fields.titlePlaceholder")}
+                    maxLength={200}
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
@@ -525,6 +526,7 @@ export default function ExpensesPage() {
                     type="number"
                     step="0.01"
                     min="0.01"
+                    max="1000000000000"
                     required
                     placeholder="0.00"
                     value={form.amount}
@@ -540,6 +542,7 @@ export default function ExpensesPage() {
                   id="expense-modal-notes"
                   rows={2}
                   placeholder={t("manager.expenses.fields.notesPlaceholder")}
+                  maxLength={5000}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
