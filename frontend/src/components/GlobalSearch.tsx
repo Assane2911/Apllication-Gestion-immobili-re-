@@ -80,6 +80,7 @@ export default function GlobalSearch() {
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={query}
+          maxLength={100}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);

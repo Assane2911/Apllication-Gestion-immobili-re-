@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, inArray, ne, or } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { expenses, invoices, issueReports, properties, contracts as contractsTable, tenants } from "../db/schema";
@@ -17,7 +17,11 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
   const statusCounts = { AVAILABLE: 0, OCCUPIED: 0, MAINTENANCE: 0 } as Record<string, number>;
   for (const p of allProperties) statusCounts[p.status] = (statusCounts[p.status] ?? 0) + 1;
 
-  const totalTenants = (await db.select().from(tenants).where(eq(tenants.managerId, managerId))).length;
+  // Comptage porté par SQL : charger chaque fiche locataire (identité, coordonnées…) pour n'en lire que la longueur.
+  const [{ count: totalTenants }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(tenants)
+    .where(eq(tenants.managerId, managerId));
 
   const managerContractRows =
     propertyIds.length > 0
@@ -99,10 +103,10 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     managerContractIds.length > 0
       ? (
           await db
-            .select()
+            .select({ count: sql<number>`count(*)::int` })
             .from(issueReports)
             .where(and(inArray(issueReports.status, ["OPEN", "IN_PROGRESS"]), inArray(issueReports.contractId, managerContractIds)))
-        ).length
+        )[0].count
       : 0;
   const lateInvoices = lateInvoicesRows.length;
 

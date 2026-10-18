@@ -1,5 +1,6 @@
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
 import { Request, Response } from "express";
+import { z } from "zod";
 import { db } from "../db/client";
 import { contracts, invoices, properties, tenants } from "../db/schema";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -37,9 +38,13 @@ export function echapperLike(valeur: string): string {
   return valeur.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
+// `String(req.query.q)` recollait un paramètre répété (`?q=a&q=b` → « a,b ») et laissait passer un texte de
+// plusieurs milliers de caractères dans quatre requêtes en parallèle : un paramètre mal formé donne un 400.
+const searchQuerySchema = z.object({ q: z.string().trim().max(100).default("") });
+
 export const globalSearch = asyncHandler(async (req: Request, res: Response) => {
   const managerId = req.user!.userId;
-  const q = String(req.query.q ?? "").trim();
+  const { q } = searchQuerySchema.parse(req.query);
   if (q.length < 2) {
     return res.json({ query: q, results: [] });
   }
@@ -55,11 +60,15 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
           or(ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern), ilike(tenants.email, pattern), ilike(tenants.phone, pattern))
         )
       )
+      // Chaque catégorie est limitée à 5 : sans tri, la base en renvoyait n'importe lesquels, différents d'une
+      // recherche à l'autre. Locataires et biens par ordre alphabétique, baux et factures du plus récent au plus ancien.
+      .orderBy(asc(tenants.lastName), asc(tenants.firstName), asc(tenants.id))
       .limit(5),
     db
       .select()
       .from(properties)
       .where(and(eq(properties.managerId, managerId), or(ilike(properties.title, pattern), ilike(properties.address, pattern))))
+      .orderBy(asc(properties.title), asc(properties.id))
       .limit(5),
     db
       .select({ contract: contracts, property: properties, tenant: tenants })
@@ -72,6 +81,7 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
           or(ilike(properties.title, pattern), ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern))
         )
       )
+      .orderBy(desc(contracts.startDate), desc(contracts.id))
       .limit(5),
     db
       .select({ invoice: invoices, contract: contracts, property: properties, tenant: tenants })
@@ -85,6 +95,7 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
           or(ilike(properties.title, pattern), ilike(tenants.firstName, pattern), ilike(tenants.lastName, pattern))
         )
       )
+      .orderBy(desc(invoices.dueDate), desc(invoices.id))
       .limit(5),
   ]);
 

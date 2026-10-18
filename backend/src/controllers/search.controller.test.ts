@@ -83,3 +83,55 @@ describe("GET /api/search", () => {
     expect(res.body.results).toHaveLength(0);
   });
 });
+
+/**
+ * Régression : chaque catégorie est limitée à 5 résultats, mais SANS tri — le commentaire de la route promettait
+ * « le plus pertinent en tête » et la base renvoyait n'importe lesquelles. Chercher un locataire qui a une
+ * dizaine de factures n'en montrait pas les plus récentes, et deux recherches identiques pouvaient donner des
+ * résultats différents. Le paramètre `q` n'était pas borné non plus : un paramètre répété (`?q=a&q=b`) devenait
+ * « a,b » et un texte de plusieurs milliers de caractères partait tel quel dans quatre requêtes en parallèle.
+ */
+describe("GET /api/search — tri et bornes", () => {
+  it("renvoie les factures les PLUS RÉCENTES d'un locataire, dans l'ordre", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { title: "Résidence Tri" });
+    const tenant = await createTenant(manager.id, { firstName: "Mariama", lastName: "Sall" });
+    const contract = await createContract(property.id, tenant.id);
+    // Insérées dans le désordre : l'ordre d'insertion ne doit pas décider du résultat.
+    for (const mois of [3, 9, 1, 7, 5, 11, 2]) {
+      await createInvoice(contract.id, { periodMonth: mois, periodYear: 2026, dueDate: new Date(2026, mois - 1, 20) });
+    }
+
+    const res = await request(app).get("/api/search").query({ q: "mariama" }).set(authHeader(tokenFor(manager)));
+
+    const factures = res.body.results.filter((r: { type: string }) => r.type === "invoice");
+    expect(factures.map((f: { title: string }) => f.title.match(/(\d+)\/2026/)![1])).toEqual(["11", "9", "7", "5", "3"]);
+  });
+
+  it("renvoie les locataires et les biens dans l'ordre alphabétique", async () => {
+    const manager = await createManager();
+    for (const [prenom, nom] of [["Zoé", "Martin"], ["Zoé", "Albert"], ["Zoé", "Dupont"]]) {
+      await createTenant(manager.id, { firstName: prenom, lastName: nom, email: `${nom}@test.local` });
+    }
+    for (const titre of ["Zénith C", "Zénith A", "Zénith B"]) {
+      await createProperty(manager.id, { title: titre });
+    }
+
+    const res = await request(app).get("/api/search").query({ q: "zo" }).set(authHeader(tokenFor(manager)));
+    const biens = await request(app).get("/api/search").query({ q: "zénith" }).set(authHeader(tokenFor(manager)));
+
+    const locataires = res.body.results.filter((r: { type: string }) => r.type === "tenant");
+    expect(locataires.map((l: { title: string }) => l.title)).toEqual(["Zoé Albert", "Zoé Dupont", "Zoé Martin"]);
+    const titres = biens.body.results.filter((r: { type: string }) => r.type === "property").map((p: { title: string }) => p.title);
+    expect(titres).toEqual(["Zénith A", "Zénith B", "Zénith C"]);
+  });
+
+  it("refuse un paramètre répété ou démesuré au lieu de le recoller", async () => {
+    const manager = await createManager();
+    const h = authHeader(tokenFor(manager));
+
+    expect((await request(app).get("/api/search?q=ab&q=cd").set(h)).status).toBe(400);
+    expect((await request(app).get("/api/search").query({ q: "a".repeat(101) }).set(h)).status).toBe(400);
+    expect((await request(app).get("/api/search").query({ q: "a".repeat(100) }).set(h)).status).toBe(200);
+  });
+});
