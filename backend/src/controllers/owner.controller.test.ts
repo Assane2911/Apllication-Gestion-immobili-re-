@@ -223,6 +223,45 @@ describe("GET /api/owners & GET /api/owners/:id — portalStatus dérivé", () =
     expect(detail.body.portalStatus).toBe("ACTIVE");
   });
 
+  // Le lien de réinitialisation sert aussi à « mot de passe oublié » : sa seule présence ne prouve pas que
+  // l'invitation est restée sans réponse. Un propriétaire qui a posé son mot de passe est ACTIF, quoi qu'il demande ensuite.
+  it("un propriétaire qui a activé son accès reste ACTIF quand il demande « mot de passe oublié », et ne peut pas être réinvité", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { email: "oubli@test.local" });
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
+
+    await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
+    const jeton = String(envoi.mock.calls[0][2]).match(/token=([a-f0-9]+)/)![1];
+    const activation = await request(app).post("/api/auth/reset-password").send({ token: jeton, password: "MotDePasse123!" });
+    expect(activation.status).toBe(200);
+
+    // Il redemande ensuite un lien (mot de passe oublié) : un nouveau lien est en attente sur son compte.
+    await testDb
+      .update(users)
+      .set({ resetPasswordTokenHash: "lien-mot-de-passe-oublie", resetPasswordExpiresAt: new Date(Date.now() + 3_600_000) })
+      .where(eq(users.email, "oubli@test.local"));
+
+    const detail = await request(app).get(`/api/owners/${owner.id}`).set(authHeader(tokenFor(manager)));
+    const list = await request(app).get("/api/owners").set(authHeader(tokenFor(manager)));
+    expect(detail.body.portalStatus).toBe("ACTIVE");
+    expect(list.body.items[0].portalStatus).toBe("ACTIVE");
+    envoi.mockClear();
+    expect((await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)))).status).toBe(409);
+    expect(envoi).not.toHaveBeenCalled();
+    envoi.mockRestore();
+  });
+
+  it("une invitation restée sans réponse reste « en attente » et se renvoie, même après plusieurs renvois", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id);
+    const h = authHeader(tokenFor(manager));
+
+    await request(app).post(`/api/owners/${owner.id}/invite`).set(h);
+    expect((await request(app).post(`/api/owners/${owner.id}/invite`).set(h)).status).toBe(200);
+
+    expect((await request(app).get(`/api/owners/${owner.id}`).set(h)).body.portalStatus).toBe("PENDING");
+  });
+
   it("ne renvoie jamais le hash de token brut au frontend", async () => {
     const manager = await createManager();
     const owner = await createOwner(manager.id);
