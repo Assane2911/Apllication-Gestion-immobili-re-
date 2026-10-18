@@ -8,7 +8,8 @@ const router = Router();
 // Portail locataire & Ajout de photos
 router.get("/mine", authenticate, requireRole("TENANT"), myIssues);
 router.post("/", authenticate, requireRole("TENANT"), uploadIssuePhoto.single("photo"), createIssue);
-router.post("/:id/photo", authenticate, uploadIssuePhoto.single("photo"), addPhotoToIssue);
+// requireActiveSubscription laisse passer le locataire et ne bloque que le gestionnaire sans abonnement.
+router.post("/:id/photo", authenticate, requireActiveSubscription, uploadIssuePhoto.single("photo"), addPhotoToIssue);
 
 // Gestionnaire
 router.get("/", authenticate, requireRole("MANAGER"), requireActiveSubscription, listIssues);

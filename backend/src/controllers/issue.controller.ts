@@ -100,7 +100,7 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
 
 const updateIssueSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"]),
-  managerNote: z.string().optional(),
+  managerNote: z.string().max(2000, "La note ne peut pas dépasser 2 000 caractères").optional(),
   // Prestataire assigné pour traiter l'incident — absent du corps : pas de
   // changement ; `null` explicite : désassigne. Voir assertVendorOwnership
   // (vendor.controller.ts) pour la raison de la vérification ci-dessous.
@@ -222,8 +222,10 @@ export const myIssues = asyncHandler(async (req: Request, res: Response) => {
 
 const createIssueSchema = z.object({
   contractId: z.string().min(1),
-  title: z.string().min(2),
-  description: z.string().min(2),
+  // Bornés : le titre part dans l'email du locataire, le journal d'activité et la
+  // liste du gestionnaire. Sans plafond, un champ multipart pouvait peser 1 Mo.
+  title: z.string().trim().min(2).max(200, "Le titre ne peut pas dépasser 200 caractères"),
+  description: z.string().trim().min(2).max(5000, "La description ne peut pas dépasser 5 000 caractères"),
 });
 
 /** Le locataire connecté signale un problème avec une photo prise/uploadée. */
