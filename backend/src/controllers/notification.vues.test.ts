@@ -136,7 +136,7 @@ describe("état « vu » des notifications du gestionnaire", () => {
   it("rejette un corps invalide (400)", async () => {
     const { header } = await gestionnaireAvecFactureEnRetard();
     expect((await marquerVues(header, { keys: "pas-une-liste" })).status).toBe(400);
-    expect((await marquerVues(header, { keys: Array.from({ length: 201 }, (_, i) => `k${i}`) })).status).toBe(400);
+    expect((await marquerVues(header, { keys: Array.from({ length: 5001 }, (_, i) => `k${i}`) })).status).toBe(400);
   });
 
   it("purge les lignes devenues sans objet (facture payée) pour que la table ne grossisse pas", async () => {
