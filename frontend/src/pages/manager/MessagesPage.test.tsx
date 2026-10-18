@@ -198,6 +198,17 @@ describe("MessagesPage (gestionnaire)", () => {
     await waitFor(() => expect(screen.getByText("Bonjour, votre quittance est prête.")).toBeInTheDocument());
   });
 
+  it("limite le message à 5 000 caractères, comme le serveur (qui ne dit pas pourquoi il refuse au-delà)", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({
+      data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByPlaceholderText("Écrivez votre message...")).toHaveAttribute("maxlength", "5000"));
+  });
+
   it("affiche une erreur avec un bouton réessayer en cas d'échec du chargement", async () => {
     mockedApi.get.mockRejectedValueOnce({
       response: { data: { error: "Erreur serveur" } },
