@@ -907,3 +907,17 @@ describe("POST /api/subscription/cancel", () => {
     expect(acces.status).toBe(200);
   });
 });
+
+describe("référence de virement d'un abonnement", () => {
+  it("refuse une référence démesurée", async () => {
+    const manager = await createManager();
+
+    const res = await request(app)
+      .post("/api/subscription/subscribe")
+      .set(authHeader(tokenFor(manager)))
+      .send({ plan: "PRO", paymentMethod: "BANK_TRANSFER", bankReference: "R".repeat(201) });
+
+    expect(res.status).toBe(400);
+  });
+});
+

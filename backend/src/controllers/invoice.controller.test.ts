@@ -275,3 +275,29 @@ describe("POST /api/invoices/:id/pay (portail locataire)", () => {
     expect(res.status).toBe(409);
   });
 });
+
+describe("référence de virement déclarée par le locataire", () => {
+  it("refuse une référence démesurée, sans toucher à la facture", async () => {
+    const { tenant, invoice } = await setupManagerWithInvoice();
+
+    const res = await request(app)
+      .post(`/api/invoices/${invoice.id}/pay`)
+      .set(authHeader(await tokenLocataire(tenant.id)))
+      .send({ method: "BANK_TRANSFER", bankReference: "R".repeat(201) });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("garde la référence sans les espaces autour", async () => {
+    const { tenant, invoice } = await setupManagerWithInvoice();
+
+    const res = await request(app)
+      .post(`/api/invoices/${invoice.id}/pay`)
+      .set(authHeader(await tokenLocataire(tenant.id)))
+      .send({ method: "BANK_TRANSFER", bankReference: "  VIR-2026-10-0042  " });
+
+    expect(res.status).toBe(200);
+    expect(res.body.invoice.paymentRef).toBe("VIR-2026-10-0042");
+  });
+});
+
