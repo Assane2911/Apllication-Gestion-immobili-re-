@@ -254,6 +254,8 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(await withSignedPhotos(issue));
 });
 
+const MAX_PHOTOS_SUPPLEMENTAIRES = 10;
+
 /** Le locataire ou le gestionnaire ajoute une nouvelle photo à un incident déjà signalé. */
 export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise");
@@ -273,6 +275,15 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
     issue.tenantId === (await idLocataireDuCompte(req)),
     row.property.managerId === req.user.userId
   );
+
+  // Plafond vérifié AVANT l'upload : sinon un compte pourrait remplir le
+  // stockage privé de photos d'un même incident, à nos frais. (Deux requêtes
+  // simultanées peuvent dépasser le plafond d'une photo ; l'enjeu est de
+  // borner le volume, pas de le garantir à l'unité près.)
+  const dejaAjoutees = issue.additionalPhotos ? (JSON.parse(issue.additionalPhotos) as unknown[]).length : 0;
+  if (dejaAjoutees >= MAX_PHOTOS_SUPPLEMENTAIRES) {
+    throw new ApiError(409, `Ce signalement a déjà ${MAX_PHOTOS_SUPPLEMENTAIRES} photos supplémentaires`);
+  }
 
   assertFileContentMatchesDeclaredType(req.file);
   const newPhotoUrl = await uploadPrivateFile(req.file, "issues");

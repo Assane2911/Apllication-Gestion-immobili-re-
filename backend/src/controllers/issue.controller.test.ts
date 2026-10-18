@@ -1,6 +1,8 @@
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
 import { app } from "../app";
+import { issueReports } from "../db/schema";
 import * as storageService from "../services/storage.service";
 import {
   authHeader,
@@ -15,6 +17,7 @@ import {
   tokenFor,
   tokenLocataire,
 } from "../test/authHelpers";
+import { testDb } from "../test/setupTestDb";
 
 // Le compte est créé en base : depuis le contrôle de révocation, un jeton
 // forgé sur un identifiant inventé est refusé en 401 (voir authenticate).
@@ -756,5 +759,57 @@ describe("POST /api/issues/:id/photo", () => {
         ["http://test.local/deuxieme-photo.jpg", "http://test.local/premiere-photo.jpg"].sort()
       );
     });
+  });
+});
+
+/**
+ * Régression : rien ne bornait le nombre de photos ajoutées à un signalement.
+ * Un compte locataire (ou un script) pouvait en téléverser à l'infini dans le
+ * stockage privé, à nos frais, sur un même incident.
+ */
+describe("POST /api/issues/:id/photo — plafond de photos", () => {
+  async function signalementAvecPhotos(nombre: number) {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const createRes = await request(app)
+      .post("/api/issues")
+      .set(await tenantToken(tenant.id))
+      .field("contractId", contract.id)
+      .field("title", "Fuite d'eau")
+      .field("description", "Description")
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+    await testDb
+      .update(issueReports)
+      .set({ additionalPhotos: JSON.stringify(Array.from({ length: nombre }, (_, i) => `issues/p${i}.jpg`)) })
+      .where(eq(issueReports.id, createRes.body.id));
+    return { tenant, id: createRes.body.id as string };
+  }
+
+  it("refuse une photo de plus une fois le plafond atteint, sans rien téléverser", async () => {
+    const { tenant, id } = await signalementAvecPhotos(10);
+    const upload = vi.spyOn(storageService, "uploadPrivateFile");
+    upload.mockClear();
+
+    const res = await request(app)
+      .post(`/api/issues/${id}/photo`)
+      .set(await tenantToken(tenant.id))
+      .attach("photo", fakeJpegBuffer("de-trop"), { filename: "b.jpg", contentType: "image/jpeg" });
+
+    expect(res.status).toBe(409);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it("accepte la dernière photo permise", async () => {
+    const { tenant, id } = await signalementAvecPhotos(9);
+
+    const res = await request(app)
+      .post(`/api/issues/${id}/photo`)
+      .set(await tenantToken(tenant.id))
+      .attach("photo", fakeJpegBuffer("derniere"), { filename: "b.jpg", contentType: "image/jpeg" });
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body.additionalPhotos)).toHaveLength(10);
   });
 });

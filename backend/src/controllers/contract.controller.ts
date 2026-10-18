@@ -888,6 +888,13 @@ export const uploadScannedContract = asyncHandler(async (req: Request, res: Resp
     .where(eq(contracts.id, id))
     .returning();
 
+  // Rescanner un contrat remplace le scan précédent, qui n'est plus référencé
+  // nulle part : on le retire du stockage privé (best-effort, après l'écriture
+  // en base, pour qu'un stockage indisponible ne fasse pas échouer l'upload).
+  if (contract.scannedContractUrl) {
+    await deleteStorageObjectBestEffort(contract.scannedContractUrl).catch(() => undefined);
+  }
+
   await logActivity({
     req,
     managerId: req.user.userId,

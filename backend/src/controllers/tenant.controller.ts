@@ -164,6 +164,14 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
     .where(eq(tenants.id, req.params.id))
     .returning();
 
+  // L'ancienne pièce d'identité n'est plus référencée par aucune fiche : sans
+  // ce nettoyage, chaque remplacement laisserait un document d'identité
+  // orphelin dans le stockage privé. Best-effort, après l'écriture en base :
+  // un stockage indisponible ne doit pas faire échouer la modification.
+  if (idDocument && existing.idDocument) {
+    await deleteStorageObjectBestEffort(existing.idDocument).catch(() => undefined);
+  }
+
   await logActivity({
     req,
     managerId: tenant.managerId,
