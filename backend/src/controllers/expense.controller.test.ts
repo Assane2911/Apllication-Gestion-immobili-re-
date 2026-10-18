@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { expenses } from "../db/schema";
+import { activityLogs, expenses } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -450,5 +450,101 @@ describe("Cloisonnement par formule d'abonnement", () => {
     const res = await request(app).get("/api/expenses/export").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(200);
+  });
+});
+
+/**
+ * Régression : créer ou supprimer une dépense ne laissait aucune trace dans le
+ * journal d'activité, alors que cette écriture alimente le Grand Livre, le
+ * bilan fiscal et le CRG — supprimer une dépense change ces comptes sans que
+ * personne ne puisse dire qui l'a fait ni quand.
+ */
+describe("journal d'activité des dépenses", () => {
+  it("trace la création d'une dépense", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+
+    const res = await request(app)
+      .post("/api/expenses")
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: property.id, category: "TAX", title: "Taxe foncière", amount: 320 });
+    expect(res.status).toBe(201);
+
+    const logs = await testDb.select().from(activityLogs).where(eq(activityLogs.entityId, res.body.id));
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({ managerId: manager.id, action: "expense.create", entityType: "expense", entityLabel: "Taxe foncière" });
+    expect(logs[0].details).toContain("320");
+  });
+
+  it("trace la suppression d'une dépense", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const created = await request(app)
+      .post("/api/expenses")
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: property.id, title: "Réparation toiture", amount: 900 });
+
+    const res = await request(app).delete(`/api/expenses/${created.body.id}`).set(authHeader(tokenFor(manager)));
+    expect(res.status).toBe(200);
+
+    const logs = await testDb
+      .select()
+      .from(activityLogs)
+      .where(and(eq(activityLogs.entityId, created.body.id), eq(activityLogs.action, "expense.delete")));
+    expect(logs).toHaveLength(1);
+    expect(logs[0].details).toContain("900");
+  });
+
+  it("ne trace rien quand la suppression est refusée", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const created = await request(app)
+      .post("/api/expenses")
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: property.id, title: "Réparation toiture", amount: 900 });
+    const intrus = await createManager();
+
+    const res = await request(app).delete(`/api/expenses/${created.body.id}`).set(authHeader(tokenFor(intrus)));
+    expect(res.status).toBe(404);
+
+    const logs = await testDb.select().from(activityLogs).where(eq(activityLogs.action, "expense.delete"));
+    expect(logs).toHaveLength(0);
+  });
+});
+
+/**
+ * Régression : « 1e999 » est converti en Infinity par z.coerce.number() et
+ * passait la validation (positive) ; un titre d'espaces ou de plusieurs Mo
+ * aussi. Ces valeurs se retrouvent ensuite dans le Grand Livre et les exports.
+ */
+describe("POST /api/expenses — valeurs aberrantes", () => {
+  async function poster(corps: Record<string, unknown>) {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    return request(app)
+      .post("/api/expenses")
+      .set(authHeader(tokenFor(manager)))
+      .send({ propertyId: property.id, title: "Plomberie", amount: 100, ...corps });
+  }
+
+  it("refuse un montant infini", async () => {
+    expect((await poster({ amount: "1e999" })).status).toBe(400);
+  });
+
+  it("refuse un montant absurdement grand", async () => {
+    expect((await poster({ amount: 1e15 })).status).toBe(400);
+  });
+
+  it("refuse un intitulé composé d'espaces", async () => {
+    expect((await poster({ title: "    " })).status).toBe(400);
+  });
+
+  it("refuse un intitulé ou des notes démesurés", async () => {
+    expect((await poster({ title: "T".repeat(201) })).status).toBe(400);
+    expect((await poster({ notes: "n".repeat(5001) })).status).toBe(400);
+  });
+
+  it("accepte une dépense normale avec des notes longues", async () => {
+    expect((await poster({ title: "T".repeat(200), notes: "n".repeat(5000), amount: 2_500_000 })).status).toBe(201);
   });
 });

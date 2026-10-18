@@ -6,6 +6,7 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, expenses, invoices, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { developperEncaissements, factureEncaissee } from "../services/encaissements.service";
+import { logActivity } from "../services/activity.service";
 import { assertOwnership } from "../utils/authorization";
 import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
 import { deviseSchema } from "../utils/devises";
@@ -13,8 +14,12 @@ import { deviseSchema } from "../utils/devises";
 const createExpenseSchema = z.object({
   propertyId: z.string().min(1),
   category: z.enum(["MAINTENANCE", "TAX", "INSURANCE", "SYNDIC", "OTHER"]).default("MAINTENANCE"),
-  title: z.string().min(1),
-  amount: z.coerce.number().positive(),
+  title: z.string().trim().min(1).max(200),
+  // .finite() : « 1e999 » est converti en Infinity par la coercition et passait
+  // `positive()`, puis faussait tous les totaux (Grand Livre, bilan, CRG). Le
+  // plafond écarte une faute de frappe manifeste sans gêner les devises à
+  // grands montants (francs CFA).
+  amount: z.coerce.number().finite().positive().max(1_000_000_000_000),
   // Volontairement SANS .default("EUR") : un défaut ici remplirait toujours le
   // champ et rendrait inatteignable le repli sur la devise du bien plus bas
   // (l'interface n'envoie jamais de devise). Une dépense saisie sur un bien en
@@ -28,7 +33,7 @@ const createExpenseSchema = z.object({
   // ensuite plus jamais de vraie date (tri, filtre par période, Grand
   // Livre) plutôt qu'un 400 clair au moment de la saisie.
   expenseDate: z.coerce.date().optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(5000).optional(),
   // Dépense récurrente (voir recurringExpense.service.ts) : cette dépense
   // devient le MODÈLE à partir duquel les occurrences suivantes sont générées
   // automatiquement chaque jour (cron /daily). Pas d'endpoint de mise à jour
@@ -113,6 +118,16 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
     })
     .returning();
 
+  await logActivity({
+    req,
+    managerId: req.user!.userId,
+    action: "expense.create",
+    entityType: "expense",
+    entityId: expense.id,
+    entityLabel: expense.title,
+    details: `Dépense ajoutée : ${expense.title} — ${expense.amount} ${expense.currency} (${prop.title})`,
+  });
+
   res.status(201).json(expense);
 });
 
@@ -125,6 +140,19 @@ export const deleteExpense = asyncHandler(async (req: Request, res: Response) =>
   assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Dépense introuvable");
 
   await db.delete(expenses).where(eq(expenses.id, req.params.id));
+
+  // Une dépense supprimée change le Grand Livre, le bilan fiscal et le CRG :
+  // le journal garde le montant et le bien pour pouvoir expliquer l'écart.
+  await logActivity({
+    req,
+    managerId: req.user!.userId,
+    action: "expense.delete",
+    entityType: "expense",
+    entityId: row.expense.id,
+    entityLabel: row.expense.title,
+    details: `Dépense supprimée : ${row.expense.title} — ${row.expense.amount} ${row.expense.currency} (${row.property.title})`,
+  });
+
   res.json({ success: true, message: "Dépense supprimée" });
 });
 
