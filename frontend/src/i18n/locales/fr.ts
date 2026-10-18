@@ -1516,6 +1516,8 @@ const fr = {
         contract: "Contrats",
         invoice: "Factures",
         issue: "Incidents",
+        expense: "Dépenses",
+        agency: "Réglages de l'agence",
       },
       table: {
         when: "Quand",
