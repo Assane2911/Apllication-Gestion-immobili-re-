@@ -315,6 +315,7 @@ export default function InsurancePage() {
                   <input
                     id="insurance-modal-insurer"
                     required
+                    maxLength={200}
                     value={form.insurerName}
                     onChange={(e) => setForm({ ...form, insurerName: e.target.value })}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
@@ -327,6 +328,7 @@ export default function InsurancePage() {
                   <input
                     id="insurance-modal-policy-number"
                     required
+                    maxLength={100}
                     value={form.policyNumber}
                     onChange={(e) => setForm({ ...form, policyNumber: e.target.value })}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
@@ -344,6 +346,7 @@ export default function InsurancePage() {
                     type="number"
                     step="0.01"
                     min="0.01"
+                    max="1000000000000"
                     placeholder="0.00"
                     value={form.premiumAmount}
                     onChange={(e) => setForm({ ...form, premiumAmount: e.target.value })}
@@ -385,6 +388,7 @@ export default function InsurancePage() {
                 <textarea
                   id="insurance-modal-notes"
                   rows={2}
+                  maxLength={5000}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"

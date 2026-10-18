@@ -1518,6 +1518,7 @@ const fr = {
         issue: "Incidents",
         expense: "Dépenses",
         agency: "Réglages de l'agence",
+        insurance: "Assurances",
       },
       table: {
         when: "Quand",

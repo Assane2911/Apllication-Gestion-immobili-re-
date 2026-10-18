@@ -1517,6 +1517,7 @@ const pt: TranslationSchema = {
         issue: "Incidentes",
         expense: "Despesas",
         agency: "Definições da agência",
+        insurance: "Seguros",
       },
       table: {
         when: "Quando",

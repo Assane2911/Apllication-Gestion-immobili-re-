@@ -60,7 +60,8 @@ export const createRentRevision = asyncHandler(async (req: Request, res: Respons
     entree,
     effectiveDate: body.effectiveDate,
     note: body.note,
-    createdBy: req.user!.userId,
+    // Le collaborateur qui agit, pas le propriétaire dont le jeton porte l'id (voir identiteJetonPourManager).
+    createdBy: req.user!.collaboratorId ?? req.user!.userId,
     prevenirLocataire: body.notifyTenant ?? false,
   });
 
