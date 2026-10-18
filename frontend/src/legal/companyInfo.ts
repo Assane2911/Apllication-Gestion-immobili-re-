@@ -30,8 +30,13 @@ export const COMPANY = {
   address: "30 N Gould St, Ste R, Sheridan, WY 82801, États-Unis",
   /** Email de contact pour les questions légales, contractuelles et RGPD. */
   contactEmail: "assane@immoplatformpro.com",
-  /** Pays et droit applicable. */
-  country: "France",
+  /** Pays de l'éditeur : celui de son siège (la LLC est américaine ; elle n'a pas d'établissement en France). */
+  country: "États-Unis",
+  /**
+   * Droit applicable aux CGU/CGV : un CHOIX contractuel, distinct du pays de l'éditeur (les clients sont des
+   * professionnels, donc le choix est libre). Valeur à faire valider par un juriste avant toute modification.
+   */
+  governingLaw: "droit français",
   /** Date de dernière mise à jour des documents légaux (à mettre à jour à chaque révision). */
   lastUpdated: "17 octobre 2026",
 };

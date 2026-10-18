@@ -145,8 +145,7 @@ export default function CGUPage() {
 
       <LegalSection title="9. Droit applicable et litiges">
         <p>
-          Les présentes CGU/CGV sont soumises au droit {COMPANY.country === "France" ? "français" : COMPANY.country}
-          . À défaut de résolution amiable, tout litige relatif à leur interprétation ou leur exécution sera
+          Les présentes CGU/CGV sont soumises au {COMPANY.governingLaw}. À défaut de résolution amiable, tout litige relatif à leur interprétation ou leur exécution sera
           porté devant les juridictions compétentes.
         </p>
       </LegalSection>

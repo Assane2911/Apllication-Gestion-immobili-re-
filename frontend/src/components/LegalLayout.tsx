@@ -85,7 +85,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
 
       <footer className="border-t border-slate-800/80 py-8 px-6 text-center text-xs text-slate-400">
         <p>
-          © 2026 {COMPANY.tradeName}. {COMPANY.legalStatus} — {COMPANY.country}.
+          © 2026 {COMPANY.tradeName}. {COMPANY.legalStatus}.
         </p>
       </footer>
     </div>
