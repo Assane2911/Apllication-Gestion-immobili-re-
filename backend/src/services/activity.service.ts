@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/node";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Request } from "express";
 import { db } from "../db/client";
 import { activityLogs, users } from "../db/schema";
@@ -58,4 +58,26 @@ export async function logActivity(params: LogActivityParams) {
     console.error("[activity] Échec de l'enregistrement du journal d'activité:", err);
     Sentry.captureException(err, { tags: { source: "activity.service.logActivity" } });
   }
+}
+
+
+/** Une adresse email, où qu'elle apparaisse dans un texte libre. */
+const MOTIF_EMAIL = "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}";
+
+/**
+ * Valeurs à écrire dans `entityLabel` et `details` des lignes du journal qui concernent une personne anonymisée
+ * (droit à l'effacement) : son nom est remplacé ET toute adresse email est effacée.
+ *
+ * Remplacer le seul nom laissait l'email, que la création d'un locataire ou d'un propriétaire écrit dans le
+ * journal (« Locataire ajouté : Awa Sow (awa@exemple.com) »), lisible jusqu'à la purge du journal, un an plus tard.
+ * Le motif cherche toute adresse plutôt que l'adresse actuelle de la fiche : une personne change d'email au fil
+ * des ans, et les anciennes ne sont plus nulle part ailleurs que dans ces lignes.
+ *
+ * À n'appliquer qu'aux lignes de la personne (entités rattachées à elle) : l'adresse du gestionnaire qui a agi est
+ * dans `actorLabel`, une autre colonne, que ceci ne touche jamais.
+ */
+export function effacerIdentiteDuJournal(nom: string, nomAnonyme: string) {
+  const sansEmail = (colonne: typeof activityLogs.entityLabel | typeof activityLogs.details) =>
+    sql`replace(regexp_replace(${colonne}, ${MOTIF_EMAIL}, 'adresse effacée', 'g'), ${nom}, ${nomAnonyme})`;
+  return { entityLabel: sansEmail(activityLogs.entityLabel), details: sansEmail(activityLogs.details) };
 }

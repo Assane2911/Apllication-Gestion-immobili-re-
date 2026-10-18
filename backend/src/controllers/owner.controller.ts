@@ -7,7 +7,7 @@ import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
 import { activityLogs, agencySettings, contracts, invoices, owners, properties, users } from "../db/schema";
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
-import { logActivity } from "../services/activity.service";
+import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
 import { developperFactures } from "../services/encaissements.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { resteDu } from "../utils/montants";
@@ -281,10 +281,7 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
     // entrée "property"/"crg" n'embarque son nom).
     await tx
       .update(activityLogs)
-      .set({
-        entityLabel: sql`replace(${activityLogs.entityLabel}, ${nomAffiche}, ${nomAnonyme})`,
-        details: sql`replace(${activityLogs.details}, ${nomAffiche}, ${nomAnonyme})`,
-      })
+      .set(effacerIdentiteDuJournal(nomAffiche, nomAnonyme))
       .where(and(eq(activityLogs.entityType, "owner"), eq(activityLogs.entityId, existing.id)));
   });
 

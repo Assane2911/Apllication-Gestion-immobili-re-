@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users, contractGuarantors, contractCotenants } from "../db/schema";
-import { logActivity } from "../services/activity.service";
+import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
 import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
 import { fetchFiabiliteParLocataire } from "../services/reliability.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
@@ -350,10 +350,7 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
 
     await tx
       .update(activityLogs)
-      .set({
-        entityLabel: sql`replace(${activityLogs.entityLabel}, ${nomAffiche}, ${nomAnonyme})`,
-        details: sql`replace(${activityLogs.details}, ${nomAffiche}, ${nomAnonyme})`,
-      })
+      .set(effacerIdentiteDuJournal(nomAffiche, nomAnonyme))
       .where(or(...entitesConcernees));
   });
 
