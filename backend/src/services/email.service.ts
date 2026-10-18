@@ -144,7 +144,8 @@ export function passwordResetEmail(params: { resetUrl: string }) {
 export function teamInvitationEmail(params: { agencyName: string; ownerName: string; inviteUrl: string }) {
   const { agencyName, ownerName, inviteUrl } = params;
   return {
-    subject: `🔑 ${escapeHtml(ownerName)} vous invite à rejoindre ${escapeHtml(agencyName)}`,
+    // Sujet en texte brut : l'échapper HTML affichait « Martin &amp; Fils » dans la boîte de réception.
+    subject: `🔑 ${ownerName} vous invite à rejoindre ${agencyName}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
         <h2 style="color:#0f172a;">🔑 Invitation à rejoindre l'agence</h2>
@@ -175,7 +176,7 @@ export function teamInvitationEmail(params: { agencyName: string; ownerName: str
 export function ownerInvitationEmail(params: { ownerName: string; agencyName: string; inviteUrl: string }) {
   const { ownerName, agencyName, inviteUrl } = params;
   return {
-    subject: `🔑 ${escapeHtml(agencyName)} vous invite à votre espace propriétaire`,
+    subject: `🔑 ${agencyName} vous invite à votre espace propriétaire`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
         <h2 style="color:#0f172a;">🔑 Votre espace propriétaire</h2>

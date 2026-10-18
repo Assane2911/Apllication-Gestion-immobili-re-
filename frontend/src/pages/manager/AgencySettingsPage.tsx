@@ -14,6 +14,7 @@ import type { AgencySettings, RetentionEcheances, TeamMember, TeamRole } from ".
 
 const ROLES_EQUIPE: TeamRole[] = ["FULL", "AGENT", "ACCOUNTANT", "READ_ONLY"];
 import Bulle from "../../components/Bulle";
+import MembreEquipe from "../../components/MembreEquipe";
 
 
 /** Jours de retard auxquels partent les trois relances, pour l'aperçu des réglages (même règle que le serveur). */
@@ -188,6 +189,18 @@ export default function AgencySettingsPage() {
     } catch (err) {
       setTeamMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: ancien } : m)));
       setTeamError(apiErrorMessage(err) || t("manager.agencySettings.team.roleChangeError"));
+    }
+  }
+
+  async function handleResend(member: TeamMember) {
+    setInviteError("");
+    setInviteSuccess("");
+    try {
+      await api.post(`/team/${member.id}/resend`);
+      setInviteSuccess(t("manager.agencySettings.team.resendSuccess", { email: member.email }));
+      loadTeam();
+    } catch (err) {
+      setInviteError(apiErrorMessage(err) || t("manager.agencySettings.team.resendError"));
     }
   }
 
@@ -686,35 +699,13 @@ export default function AgencySettingsPage() {
               ) : (
                 <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
                   {teamMembers.map((member) => (
-                    <li key={member.id} className="py-2.5 flex items-center justify-between gap-3 flex-wrap">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{member.email}</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">
-                          {member.status === "PENDING"
-                            ? t("manager.agencySettings.team.statusPending")
-                            : t("manager.agencySettings.team.statusActive")}
-                        </p>
-                      </div>
-                      <select
-                        aria-label={t("manager.agencySettings.team.roleAria", { email: member.email })}
-                        value={member.role}
-                        onChange={(e) => handleChangeRole(member, e.target.value as TeamRole)}
-                        className="text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5"
-                      >
-                        {ROLES_EQUIPE.map((r) => (
-                          <option key={r} value={r}>
-                            {t(`manager.agencySettings.team.roles.${r}.label`)}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(member)}
-                        className="text-red-600 dark:text-red-400 hover:underline text-xs font-semibold"
-                      >
-                        {t("manager.agencySettings.team.removeButton")}
-                      </button>
-                    </li>
+                    <MembreEquipe
+                      key={member.id}
+                      member={member}
+                      onChangeRole={handleChangeRole}
+                      onRemove={handleRemove}
+                      onResend={handleResend}
+                    />
                   ))}
                 </ul>
               )}
