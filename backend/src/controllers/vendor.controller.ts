@@ -16,16 +16,16 @@ import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
  * professionnelles).
  */
 const vendorSchema = z.object({
-  name: z.string().min(1),
-  trade: z.string().optional(),
+  name: z.string().min(1).max(200),
+  trade: z.string().max(100).optional(),
   // Même exigence que pour les locataires/propriétaires : format
   // international à l'enregistrement, voir tenant.controller.ts.
   phone: z
     .string()
     .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
     .transform((v) => versE164(v)!),
-  email: z.string().email().optional().or(z.literal("")),
-  notes: z.string().optional(),
+  email: z.string().email().max(254).optional().or(z.literal("")),
+  notes: z.string().max(5000).optional(),
 });
 
 /**

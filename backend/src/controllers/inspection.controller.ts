@@ -9,24 +9,28 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { TAILLE_MAX_SIGNATURE } from "../utils/signature";
 
 // État des lieux volontairement simplifié à un triplet nom/état/notes par
 // pièce plutôt qu'une décomposition fine (murs/sol/plafond/fenêtres
 // séparément) : suffisant pour documenter l'état contradictoire de chaque
 // pièce sans complexifier démesurément le formulaire de saisie.
+//
+// Bornes larges mais réelles : le constat est stocké en base et réinjecté dans
+// chaque export imprimable, il ne doit pas pouvoir enfler sans limite.
 const roomSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(200),
   condition: z.enum(["BON", "MOYEN", "MAUVAIS"]).default("BON"),
-  notes: z.string().optional().default(""),
+  notes: z.string().max(2000).optional().default(""),
 });
 const metersSchema = z.object({
-  electricity: z.string().optional().default(""),
-  water: z.string().optional().default(""),
-  gas: z.string().optional().default(""),
+  electricity: z.string().max(100).optional().default(""),
+  water: z.string().max(100).optional().default(""),
+  gas: z.string().max(100).optional().default(""),
 });
 const keySchema = z.object({
-  label: z.string().min(1),
-  quantity: z.coerce.number().int().min(0).default(1),
+  label: z.string().min(1).max(200),
+  quantity: z.coerce.number().int().min(0).max(1000).default(1),
 });
 
 const createInspectionSchema = z.object({
@@ -35,16 +39,17 @@ const createInspectionSchema = z.object({
 });
 
 const updateInspectionSchema = z.object({
-  rooms: z.array(roomSchema).optional(),
+  rooms: z.array(roomSchema).max(100).optional(),
   meters: metersSchema.optional(),
-  keys: z.array(keySchema).optional(),
-  generalComments: z.string().optional(),
+  keys: z.array(keySchema).max(50).optional(),
+  generalComments: z.string().max(20_000).optional(),
   status: z.enum(["DRAFT", "COMPLETED"]).optional(),
 });
 
 const signInspectionSchema = z.object({
   signatureDataUrl: z
     .string()
+    .max(TAILLE_MAX_SIGNATURE, `Signature trop volumineuse (max ${TAILLE_MAX_SIGNATURE / 1000} Ko)`)
     .regex(/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+={0,2}$/, "Signature invalide"),
 });
 
@@ -56,6 +61,17 @@ function parseInspection(row: typeof inspections.$inferSelect) {
     meters: row.metersData ? JSON.parse(row.metersData) : { electricity: "", water: "", gas: "" },
     keys: row.keysData ? JSON.parse(row.keysData) : [],
   };
+}
+
+/**
+ * Tant que le constat est en brouillon, son contenu peut encore changer et le
+ * locataire n'a rien à y lire : l'application ne lui montre que « en attente de
+ * finalisation ». On ne lui renvoie donc que le cadre (type, statut, dates),
+ * pas les observations en cours de rédaction. Le gestionnaire, lui, voit tout.
+ */
+function sansContenuSiBrouillon(row: typeof inspections.$inferSelect): typeof inspections.$inferSelect {
+  if (row.status === "COMPLETED") return row;
+  return { ...row, roomsData: null, metersData: null, keysData: null, generalComments: null };
 }
 
 export const listInspections = asyncHandler(async (req: Request, res: Response) => {
@@ -114,7 +130,7 @@ export const myInspections = asyncHandler(async (req: Request, res: Response) =>
     .orderBy(desc(inspections.createdAt));
 
   res.json(rows.map((r: { inspection: typeof inspections.$inferSelect; property: typeof properties.$inferSelect }) => ({
-    ...parseInspection(r.inspection),
+    ...parseInspection(sansContenuSiBrouillon(r.inspection)),
     property: r.property,
   })));
 });
