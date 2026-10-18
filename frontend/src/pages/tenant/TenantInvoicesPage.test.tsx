@@ -181,6 +181,24 @@ describe("TenantInvoicesPage", () => {
     expect(screen.getByText("PayDunya")).toBeInTheDocument();
   });
 
+  // Stripe et PayDunya sont le compte de la plateforme (ses abonnements) : pour un loyer, le serveur
+  // ne les propose pas. L'écran doit donc lui demander les moyens « pour un loyer », pas ceux d'un abonnement.
+  it("demande au serveur les moyens de paiement d'un LOYER, pas ceux d'un abonnement", async () => {
+    const user = userEvent.setup();
+    installerGet(["BANK_TRANSFER"]);
+    queueGet({ data: [invoice({ status: "PENDING" })] });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Payer" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get.mock.calls.some((appel) => String(appel[0]).includes("/payments/methods?currency=EUR&usage=loyer"))).toBe(true)
+    );
+    expect(mockedApi.get.mock.calls.some((appel) => String(appel[0]).includes("usage=abonnement"))).toBe(false);
+    expect(screen.queryByText("PayDunya")).not.toBeInTheDocument();
+  });
+
   it("paiement en ligne : envoie la bonne requête, affiche la confirmation et recharge la liste", async () => {
     const user = userEvent.setup();
     queueGet({ data: [invoice({ status: "PENDING" })] });

@@ -42,6 +42,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
+      usage: "ABONNEMENT",
       payerEmail: "test@test.local",
     });
 
@@ -60,11 +61,11 @@ describe("initiatePayment", () => {
     env.payments.demoMode = false;
 
     await expect(
-      initiatePayment({ method: "DEMO", currency: "XOF", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" })
+      initiatePayment({ method: "DEMO", currency: "XOF", amount: 25000, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "a@test.local" })
     ).rejects.toThrow(ApiError);
 
     try {
-      await initiatePayment({ method: "DEMO", currency: "XOF", amount: 25000, invoiceId: "inv-1", payerEmail: "a@test.local" });
+      await initiatePayment({ method: "DEMO", currency: "XOF", amount: 25000, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "a@test.local" });
     } catch (err) {
       expect((err as ApiError).statusCode).toBe(400);
     }
@@ -87,6 +88,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 25000,
       invoiceId: "inv-2",
+      usage: "ABONNEMENT",
       payerEmail: "a@test.local",
     });
 
@@ -100,6 +102,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
+      usage: "ABONNEMENT",
       payerEmail: "test@test.local",
       bankReference: "VIR-2026-042",
     });
@@ -114,6 +117,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
+      usage: "ABONNEMENT",
       payerEmail: "test@test.local",
     });
 
@@ -128,6 +132,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
+      usage: "ABONNEMENT",
       payerEmail: "test@test.local",
     });
 
@@ -154,6 +159,7 @@ describe("initiatePayment", () => {
         currency: "EUR",
         amount: 29,
         invoiceId: "inv-1",
+        usage: "ABONNEMENT",
         payerEmail: "test@test.local",
       });
       expect.unreachable("un paiement Stripe sans secret de webhook ne doit pas aboutir");
@@ -179,6 +185,7 @@ describe("initiatePayment", () => {
         currency: "XOF",
         amount: 15000,
         invoiceId: "inv-1",
+        usage: "ABONNEMENT",
         payerEmail: "test@test.local",
       });
       expect.unreachable("une devise non déclarée ne doit pas partir chez Stripe");
@@ -207,6 +214,7 @@ describe("initiatePayment", () => {
       currency: "EUR",
       amount: 29,
       invoiceId: "sub_mgr_1",
+      usage: "ABONNEMENT",
       payerEmail: "test@test.local",
       returnPath: "/subscription",
     });
@@ -243,7 +251,7 @@ describe("initiatePayment", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     const cle = (i: number) => fetchMock.mock.calls[i][1].headers["Idempotency-Key"] as string;
-    const base = { method: "STRIPE" as const, currency: "EUR", invoiceId: "inv-1", payerEmail: "a@test.local" };
+    const base = { method: "STRIPE" as const, currency: "EUR", invoiceId: "inv-1", usage: "ABONNEMENT" as const, payerEmail: "a@test.local" };
 
     await initiatePayment({ ...base, amount: 500 });
     await initiatePayment({ ...base, amount: 500 });
@@ -278,6 +286,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 15000,
       invoiceId: "inv-1",
+      usage: "ABONNEMENT",
       payerEmail: "test@test.local",
     });
 
@@ -302,6 +311,7 @@ describe("initiatePayment", () => {
         currency: "EUR",
         amount: 29,
         invoiceId: "inv-1",
+        usage: "ABONNEMENT",
         payerEmail: "test@test.local",
       })
     ).rejects.toThrow(ApiError);
@@ -333,6 +343,7 @@ describe("initiatePayment", () => {
         currency: "EUR",
         amount: 29,
         invoiceId: "inv-1",
+        usage: "ABONNEMENT",
         payerEmail: "test@test.local",
       })
     ).rejects.toThrow(ApiError);
@@ -357,6 +368,7 @@ describe("initiatePayment", () => {
         currency: "XOF",
         amount: 25000,
         invoiceId: "inv-1",
+        usage: "ABONNEMENT",
         payerEmail: "a@test.local",
       });
       expect.unreachable("un paiement sans clé ne doit jamais aboutir hors mode démo");
@@ -384,6 +396,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 25000,
       invoiceId: "inv-1",
+      usage: "ABONNEMENT",
       payerEmail: "a@test.local",
     });
 
@@ -404,6 +417,7 @@ describe("initiatePayment", () => {
         currency: "XOF",
         amount: 29,
         invoiceId: "inv-1",
+        usage: "ABONNEMENT",
         payerEmail: "a@test.local",
       });
       expect.unreachable("un paiement sans clé ne doit jamais aboutir hors mode démo");
@@ -433,6 +447,7 @@ describe("initiatePayment", () => {
         currency: "EUR",
         amount: 29,
         invoiceId: "sub-1",
+        usage: "ABONNEMENT",
         payerEmail: "a@test.local",
       });
       expect.unreachable("un montant en EUR ne doit pas partir vers un compte en XOF");
@@ -474,6 +489,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 29000,
       invoiceId: "sub-1",
+      usage: "ABONNEMENT",
       payerEmail: "a@test.local",
     });
 
@@ -502,6 +518,7 @@ describe("initiatePayment", () => {
       currency: "XOF",
       amount: 29,
       invoiceId: "inv-1",
+      usage: "ABONNEMENT",
       payerEmail: "test@test.local",
       returnPath: "/subscription",
     });
@@ -527,7 +544,7 @@ describe("initiatePayment", () => {
     );
 
     await expect(
-      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
+      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "test@test.local" })
     ).rejects.toThrow(ApiError);
   });
 
@@ -550,7 +567,7 @@ describe("initiatePayment", () => {
     );
 
     await expect(
-      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
+      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "test@test.local" })
     ).rejects.toThrow(ApiError);
   });
 
@@ -566,7 +583,7 @@ describe("initiatePayment", () => {
     );
 
     await expect(
-      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", payerEmail: "test@test.local" })
+      initiatePayment({ method: "PAYDUNYA", currency: "XOF", amount: 29, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "test@test.local" })
     ).rejects.toThrow(ApiError);
   });
 });
@@ -609,6 +626,7 @@ describe("moyensDePaiementDisponibles", () => {
           currency: devisePayee,
           amount: 25000,
           invoiceId: "inv-coherence",
+          usage: "ABONNEMENT",
           payerEmail: "a@test.local",
         });
       } catch {

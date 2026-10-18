@@ -579,7 +579,7 @@ export function rentDueReminderEmail(params: {
 
           <div style="text-align: center; margin: 28px 0 20px 0;">
             <a href="${frontendUrl}/portail/paiements" style="background: #2563eb; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
-              Régler mon loyer en ligne →
+              Régler mon loyer →
             </a>
           </div>
           <p style="font-size: 12px; color: #94a3b8; text-align: center;">

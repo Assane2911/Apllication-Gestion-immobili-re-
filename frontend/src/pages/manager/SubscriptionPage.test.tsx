@@ -252,6 +252,24 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByRole("radio", { name: /PayDunya/ })).not.toBeInTheDocument();
   });
 
+  // L'abonnement est la seule chose que Stripe et PayDunya encaissent : l'écran le dit au serveur.
+  it("demande les moyens de paiement d'un ABONNEMENT", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+    installerGet();
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get.mock.calls.some((appel) => String(appel[0]).includes("/payments/methods") && String(appel[0]).includes("usage=abonnement"))).toBe(true)
+    );
+    expect(mockedApi.get.mock.calls.some((appel) => String(appel[0]).includes("usage=loyer"))).toBe(false);
+  });
+
   it("demande les tarifs dans la devise du gestionnaire et n'affiche jamais un symbole figé", async () => {
     // Les prix étaient rendus par `{price} €` et par des libellés i18n
     // contenant « € » : un gestionnaire réglant en FCFA voyait donc « 29 € »

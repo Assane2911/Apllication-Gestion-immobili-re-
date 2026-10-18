@@ -135,6 +135,11 @@ export const env = {
     demoMode:
       (process.env.PAYMENTS_DEMO_MODE ??
         (process.env.NODE_ENV === "production" || process.env.VERCEL ? "false" : "true")) === "true",
+    // Stripe et PayDunya sont le compte de la PLATEFORME : ils encaissent les abonnements des agences.
+    // Laisser un locataire y payer son loyer ferait passer l'argent des agences par ce compte (voir
+    // payment.service.ts::indisponibilitePourLoyer). Désactivé tant qu'un montage dédié (un compte par
+    // agence, ou virement direct) n'a pas été mis en place ; il faut le demander EXPLICITEMENT.
+    rentOnline: process.env.RENT_ONLINE_PAYMENTS === "true",
     stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
     // Devises que ton compte Stripe accepte réellement. Déclarées plutôt que

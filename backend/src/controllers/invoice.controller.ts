@@ -400,6 +400,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
       // EUR ne doit pas partir vers un prestataire qui encaisse en FCFA.
       currency: row.invoice.currency,
       invoiceId: row.invoice.id,
+      usage: "LOYER",
       payerEmail: payeur.email,
       bankReference: body.bankReference,
       returnPath: "/portail/paiements",

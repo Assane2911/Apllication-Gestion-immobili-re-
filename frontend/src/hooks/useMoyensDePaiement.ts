@@ -11,6 +11,9 @@ import type { PaymentMethod } from "../types";
  * — alors qu'il n'y en avait pas. La disponibilité dépend des clés
  * configurées et de la devise du compte encaisseur : seul le serveur le sait.
  *
+ * `usage` : « abonnement » (une agence paie la plateforme) ou « loyer » (un locataire paie son agence). Stripe et
+ * PayDunya sont le compte de la plateforme : le serveur ne les propose pas pour un loyer.
+ *
  * `null` signifie « pas encore chargé », à distinguer d'une liste vide.
  *
  * En cas d'échec réseau, on retombe sur le virement bancaire seul. Ce n'est
@@ -19,7 +22,10 @@ import type { PaymentMethod } from "../types";
  * indisponibilite dans payment.service.ts). Proposer davantage sans réponse du
  * serveur reviendrait à réintroduire le bouton qui échoue.
  */
-export function useMoyensDePaiement(currency: string | null | undefined): PaymentMethod[] | null {
+export function useMoyensDePaiement(
+  currency: string | null | undefined,
+  usage: "abonnement" | "loyer"
+): PaymentMethod[] | null {
   const [moyens, setMoyens] = useState<PaymentMethod[] | null>(null);
 
   useEffect(() => {
@@ -31,7 +37,7 @@ export function useMoyensDePaiement(currency: string | null | undefined): Paymen
     let annule = false;
     api
       .get<{ currency: string; methods: PaymentMethod[] }>(
-        `/payments/methods?currency=${encodeURIComponent(currency)}`
+        `/payments/methods?currency=${encodeURIComponent(currency)}&usage=${usage}`
       )
       .then((res) => {
         if (!annule) setMoyens(res.data.methods);
@@ -43,7 +49,7 @@ export function useMoyensDePaiement(currency: string | null | undefined): Paymen
     return () => {
       annule = true;
     };
-  }, [currency]);
+  }, [currency, usage]);
 
   return moyens;
 }
