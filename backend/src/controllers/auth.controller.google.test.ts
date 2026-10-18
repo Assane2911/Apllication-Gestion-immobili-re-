@@ -366,3 +366,85 @@ describe("DELETE /api/auth/account — comptes Google-only (sans mot de passe r�
     expect(mockVerifyIdToken).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Régression (pré-détournement de compte) : quelqu'un s'inscrit avec l'adresse d'une autre personne et un mot
+ * de passe qu'il connaît. Le compte reste non confirmé (le lien part dans la boîte de la victime). Quand la
+ * victime vient plus tard « Se connecter avec Google », le compte était lié et marqué confirmé — mais le mot
+ * de passe de l'inscripteur restait valable : il pouvait alors se connecter par /login à un compte devenu
+ * celui de la victime, et y retrouver tout ce qu'elle y saisissait. Google prouve la possession de l'ADRESSE,
+ * il ne valide pas un mot de passe choisi AVANT cette preuve.
+ */
+describe("POST /api/auth/google — compte jamais confirmé (pré-détournement)", () => {
+  beforeEach(() => {
+    env.googleClientId = "test-google-client-id";
+  });
+
+  afterEach(() => {
+    mockVerifyIdToken.mockReset();
+    env.googleClientId = "";
+  });
+
+  async function compteNonConfirme() {
+    const manager = await createManager({
+      email: "victime@test.local",
+      emailVerifiedAt: null,
+      emailVerificationTokenHash: hashToken("lien-envoye-a-la-victime"),
+      emailVerificationExpiresAt: new Date(Date.now() + 3600_000),
+    });
+    mockGooglePayload({ sub: "google-sub-victime", email: "victime@test.local", email_verified: true });
+    return manager;
+  }
+
+  it("rend caduc le mot de passe posé avant la preuve Google", async () => {
+    const manager = await compteNonConfirme();
+    const ancienJeton = tokenFor(manager);
+
+    const google = await request(app).post("/api/auth/google").send({ credential: "fake-id-token" });
+    expect(google.status).toBe(200);
+
+    // Le mot de passe de l'inscripteur ne fonctionne plus.
+    const login = await request(app).post("/api/auth/login").send({ email: "victime@test.local", password: "Password123!" });
+    expect(login.status).toBe(401);
+
+    // Le jeton émis avant la liaison est révoqué.
+    const apres = await request(app).get("/api/auth/me").set(authHeader(ancienJeton));
+    expect(apres.status).toBe(401);
+
+    // La victime, elle, est bien connectée ; le compte n'a plus de mot de passe (Google seul).
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row.hasPassword).toBe(false);
+    expect(row.googleId).toBe("google-sub-victime");
+    expect(row.emailVerifiedAt).not.toBeNull();
+    const me = await request(app).get("/api/auth/me").set(authHeader(google.body.token));
+    expect(me.status).toBe(200);
+  });
+
+  it("invalide aussi le lien de confirmation et les demandes de réinitialisation déjà émis", async () => {
+    const manager = await compteNonConfirme();
+    await testDb
+      .update(users)
+      .set({ resetPasswordTokenHash: hashToken("reset-demande-avant"), resetPasswordExpiresAt: new Date(Date.now() + 3600_000) })
+      .where(eq(users.id, manager.id));
+
+    await request(app).post("/api/auth/google").send({ credential: "fake-id-token" }).expect(200);
+
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row.emailVerificationTokenHash).toBeNull();
+    expect(row.resetPasswordTokenHash).toBeNull();
+    const reset = await request(app).post("/api/auth/reset-password").send({ token: "reset-demande-avant", password: "NouveauPass123!" });
+    expect(reset.status).toBe(400);
+  });
+
+  it("ne touche pas au mot de passe d'un compte DÉJÀ confirmé qui lie Google", async () => {
+    const manager = await createManager({ email: "legitime@test.local" });
+    mockGooglePayload({ sub: "google-sub-legitime", email: "legitime@test.local", email_verified: true });
+
+    await request(app).post("/api/auth/google").send({ credential: "fake-id-token" }).expect(200);
+
+    const login = await request(app).post("/api/auth/login").send({ email: "legitime@test.local", password: "Password123!" });
+    expect(login.status).toBe(200);
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row.hasPassword).toBe(true);
+  });
+});

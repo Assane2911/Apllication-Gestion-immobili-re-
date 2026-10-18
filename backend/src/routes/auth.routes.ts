@@ -57,8 +57,8 @@ router.post("/logout", logout);
 router.post("/logout-all", authenticate, logoutAllDevices);
 router.delete("/account", authenticate, requireRole("MANAGER"), deleteMyAccount);
 
-// Double authentification (TOTP) — réservée aux gestionnaires pour l'instant
-// (voir twoFactor.controller.ts). Ces routes exigent un jeton de session valide
+// Double authentification (TOTP) — réservée aux gestionnaires et à l'administrateur
+// (voir twoFactor.controller.ts) ; les comptes locataire et propriétaire ne l'ont pas. Ces routes exigent un jeton de session valide
 // (authenticate), mais celles qui demandent un code ou le mot de passe à
 // nouveau (confirmer, désactiver, régénérer les codes de secours) restent
 // brute-forçables avec un jeton volé : elles partagent la limite d'ÉCHECS par

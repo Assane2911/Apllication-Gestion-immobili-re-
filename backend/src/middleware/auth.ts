@@ -106,6 +106,15 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     return next(new ApiError(401, "Token invalide ou expiré"));
   }
 
+  // Une session porte TOUJOURS un rôle (voir signToken) et n'a jamais de « finalité ». Les jetons
+  // intermédiaires (ex. « mot de passe prouvé, second facteur à fournir », signerJeton2faEnAttente) sont signés
+  // avec le même secret mais ne portent ni rôle ni version : sans ce refus, l'absence de version était lue
+  // comme « version 0 » (voir plus bas) et ils passaient pour une session tant que le compte n'avait jamais
+  // été révoqué — la 2FA était alors contournable pour toute route qui n'exige qu'être authentifié.
+  if (!payload.role || (payload as { purpose?: unknown }).purpose !== undefined) {
+    return next(new ApiError(401, "Token invalide ou expiré"));
+  }
+
   try {
     const [user] = await db.select().from(users).where(eq(users.id, payload.userId));
     if (!user) {
