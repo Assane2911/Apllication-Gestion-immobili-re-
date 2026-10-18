@@ -21,8 +21,8 @@ const tenantSchema = z.object({
   // Facultative, et c'est le point : une personne peut ne pas vouloir en
   // donner, et le document reste correct sans (voir utils/nom.ts).
   civility: z.enum(CIVILITES).optional().nullable(),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
+  firstName: z.string().min(1).max(100, "Le prénom ne peut pas dépasser 100 caractères"),
+  lastName: z.string().min(1).max(100, "Le nom ne peut pas dépasser 100 caractères"),
   // Le numéro est enregistré au format international, et pas seulement
   // contrôlé : c'est le seul format que l'API WhatsApp accepte, et le laisser
   // en texte libre revenait à découvrir des mois plus tard qu'un rappel n'est
@@ -33,7 +33,7 @@ const tenantSchema = z.object({
     .string()
     .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
     .transform((v) => versE164(v)!),
-  email: z.string().email().transform((v) => v.trim().toLowerCase()),
+  email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
 });
 
 /**

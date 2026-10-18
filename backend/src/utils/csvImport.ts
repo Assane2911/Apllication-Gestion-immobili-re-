@@ -132,7 +132,11 @@ export function lireNombre(brut: string): number | null {
   if (!forme) return null;
 
   const separateurs = sansEspaces.match(/[.,]/g) ?? [];
-  if (separateurs.length === 0) return Number(sansEspaces);
+  if (separateurs.length === 0) {
+    // Un entier de plusieurs centaines de chiffres vaut Infinity.
+    const entier = Number(sansEspaces);
+    return Number.isFinite(entier) ? entier : null;
+  }
 
   const dernier = separateurs[separateurs.length - 1];
   const posDecimal = sansEspaces.lastIndexOf(dernier);

@@ -13,14 +13,16 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
 import { maxPropertiesForPlan } from "./subscription.controller";
 import { deviseSchema } from "../utils/devises";
+import { MONTANT_MAXIMUM, SURFACE_MAXIMUM } from "../utils/montant";
 
 const propertySchema = z.object({
-  title: z.string().min(2),
-  address: z.string().min(2),
-  surface: z.coerce.number().positive(),
-  rent: z.coerce.number().positive(),
+  title: z.string().min(2).max(200, "Le titre ne peut pas dépasser 200 caractères"),
+  address: z.string().min(2).max(300, "L'adresse ne peut pas dépasser 300 caractères"),
+  // .finite() : « 1e999 » est converti en Infinity par la coercition et passait `positive()`.
+  surface: z.coerce.number().finite().positive().max(SURFACE_MAXIMUM, "La surface est trop élevée"),
+  rent: z.coerce.number().finite().positive().max(MONTANT_MAXIMUM, "Le loyer est trop élevé"),
   status: z.enum(["AVAILABLE", "OCCUPIED", "MAINTENANCE"]).optional(),
-  description: z.string().optional(),
+  description: z.string().max(5000, "La description ne peut pas dépasser 5 000 caractères").optional(),
   currency: deviseSchema.optional(),
   // Propriétaire réel du bien (Espace propriétaire) — nullable pour pouvoir
   // retirer explicitement l'association (dissocier un bien de son propriétaire).
