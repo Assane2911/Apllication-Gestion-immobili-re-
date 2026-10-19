@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import { useCurrency } from "../../context/currency";
 import type { OwnerDashboard } from "../../types";
+import { libelleDuMois } from "../../utils/moisDuGraphique";
 
 /**
  * Résumé financier en lecture seule (Espace propriétaire) — même pattern de
@@ -11,7 +12,7 @@ import type { OwnerDashboard } from "../../types";
  * l'utilisateur est "résumé financier seulement", pas un portail complet.
  */
 export default function OwnerDashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [data, setData] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +147,7 @@ export default function OwnerDashboardPage() {
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {historyMonths.map((month) => (
               <div key={month} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{month}</span>
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400 capitalize">{libelleDuMois(month, i18n.language)}</span>
                 <div className="flex items-center gap-3 text-xs font-bold text-slate-900 dark:text-slate-100">
                   {Object.entries(data.revenueByMonth[month]).map(([currency, amount]) => (
                     <span key={currency}>{formatMoney(amount, currency)}</span>
