@@ -11,6 +11,7 @@ import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { deviseSchema } from "../utils/devises";
+import { MONTANT_MAXIMUM, SURFACE_MAXIMUM } from "../utils/montant";
 
 /**
  * Module "CRM Leads & Visites" + vitrine publique : annonces (listings)
@@ -44,17 +45,18 @@ const booleanField = z
 
 const listingSchema = z.object({
   type: z.enum(LISTING_TYPES).optional(),
-  title: z.string().min(2),
-  description: z.string().min(2),
-  price: z.coerce.number().positive(),
+  // Une annonce est lue par des visiteurs sans compte : tout est borné (et « 1e999 » devient Infinity après coercition).
+  title: z.string().min(2).max(200, "Le titre ne peut pas dépasser 200 caractères"),
+  description: z.string().min(2).max(5000, "La description ne peut pas dépasser 5 000 caractères"),
+  price: z.coerce.number().finite().positive().max(MONTANT_MAXIMUM, "Le prix est trop élevé"),
   currency: deviseSchema.optional(),
   pricePeriod: z.enum(PRICE_PERIODS).optional(),
-  surface: z.coerce.number().positive().optional(),
-  rooms: z.coerce.number().int().positive().optional(),
-  location: z.string().min(2),
-  contactPhone: z.string().optional(),
-  contactWhatsapp: z.string().optional(),
-  contactEmail: z.string().email().optional(),
+  surface: z.coerce.number().finite().positive().max(SURFACE_MAXIMUM, "La surface est trop élevée").optional(),
+  rooms: z.coerce.number().int().positive().max(1000, "Le nombre de pièces est trop élevé").optional(),
+  location: z.string().min(2).max(200, "La localisation ne peut pas dépasser 200 caractères"),
+  contactPhone: z.string().max(40, "Le numéro est trop long").optional(),
+  contactWhatsapp: z.string().max(40, "Le numéro est trop long").optional(),
+  contactEmail: z.string().max(254, "L'adresse email est trop longue").email().optional(),
   status: z.enum(LISTING_STATUSES).optional(),
   featured: booleanField,
   // Code pays ISO 3166-1 alpha-2 (ex: "SN", "FR") — c'est la clé du filtrage
@@ -82,7 +84,7 @@ const leadSchema = z.object({
   // FORME d'un numéro (chiffres, espaces et séparateurs usuels), pour que le
   // gestionnaire ne découvre pas un prospect injoignable au moment de
   // l'appeler.
-  prospectPhone: z.string().regex(/^[+\d][\d\s().-]{5,}$/, "Numéro de téléphone invalide"),
+  prospectPhone: z.string().max(40, "Numéro de téléphone invalide").regex(/^[+\d][\d\s().-]{5,}$/, "Numéro de téléphone invalide"),
   requestType: z.enum(LEAD_REQUEST_TYPES).optional(),
   preferredDate: z.coerce.date().optional(),
   message: z.string().max(2000).optional(),

@@ -148,7 +148,7 @@ export default function VitrineListingPage() {
                 </span>
               )}
               <span className="ml-auto font-bold text-lg text-slate-900 dark:text-slate-100">
-                {new Intl.NumberFormat("fr-FR").format(listing.price)} {listing.currency}
+                {new Intl.NumberFormat(i18n.language).format(listing.price)} {listing.currency}
                 {listing.pricePeriod === "MONTH" && (
                   <span className="text-xs font-normal text-slate-600 dark:text-slate-400"> {t("manager.listings.perMonth")}</span>
                 )}
@@ -164,15 +164,15 @@ export default function VitrineListingPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="lead-name" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{t("vitrine.leadForm.name")}</label>
-                      <input id="lead-name" required value={leadForm.prospectName} onChange={(e) => setLeadForm({ ...leadForm, prospectName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+                      <input id="lead-name" required maxLength={120} value={leadForm.prospectName} onChange={(e) => setLeadForm({ ...leadForm, prospectName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
                     </div>
                     <div>
                       <label htmlFor="lead-email" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{t("vitrine.leadForm.email")}</label>
-                      <input id="lead-email" required type="email" value={leadForm.prospectEmail} onChange={(e) => setLeadForm({ ...leadForm, prospectEmail: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+                      <input id="lead-email" required type="email" maxLength={254} value={leadForm.prospectEmail} onChange={(e) => setLeadForm({ ...leadForm, prospectEmail: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
                     </div>
                     <div>
                       <label htmlFor="lead-phone" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{t("vitrine.leadForm.phone")}</label>
-                      <input id="lead-phone" required value={leadForm.prospectPhone} onChange={(e) => setLeadForm({ ...leadForm, prospectPhone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+                      <input id="lead-phone" required maxLength={40} value={leadForm.prospectPhone} onChange={(e) => setLeadForm({ ...leadForm, prospectPhone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{t("vitrine.leadForm.requestType")}</label>
@@ -195,7 +195,7 @@ export default function VitrineListingPage() {
                     )}
                     <div className="sm:col-span-2">
                       <label htmlFor="lead-message" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{t("vitrine.leadForm.message")}</label>
-                      <textarea id="lead-message" value={leadForm.message} onChange={(e) => setLeadForm({ ...leadForm, message: e.target.value })} rows={2} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+                      <textarea id="lead-message" maxLength={2000} value={leadForm.message} onChange={(e) => setLeadForm({ ...leadForm, message: e.target.value })} rows={2} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
                     </div>
                   </div>
                   {leadError && <p className="text-xs text-red-600 dark:text-red-400">{leadError}</p>}

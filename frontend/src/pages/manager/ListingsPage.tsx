@@ -219,7 +219,7 @@ export default function ListingsPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="listing-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.title")}</label>
-              <input id="listing-title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="listing-title" required maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="listing-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.type")}</label>
@@ -263,11 +263,11 @@ export default function ListingsPage() {
             </div>
             <div>
               <label htmlFor="listing-rooms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.rooms")}</label>
-              <input id="listing-rooms" type="number" step="1" min="1" value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="listing-rooms" type="number" step="1" min="1" max="1000" value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="listing-location" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.location")}</label>
-              <input id="listing-location" required value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="listing-location" required maxLength={200} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="listing-country" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.country")}</label>
@@ -301,7 +301,7 @@ export default function ListingsPage() {
             </div>
             <div>
               <label htmlFor="listing-contactEmail" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.contactEmail")}</label>
-              <input id="listing-contactEmail" type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="listing-contactEmail" type="email" maxLength={254} value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="listing-image" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.image")}</label>
@@ -313,7 +313,7 @@ export default function ListingsPage() {
             </div>
             <div className="md:col-span-2">
               <label htmlFor="listing-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.description")}</label>
-              <textarea id="listing-description" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" rows={3} />
+              <textarea id="listing-description" required maxLength={5000} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" rows={3} />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
