@@ -6,6 +6,7 @@ import { platformSubscriptions, properties, users } from "../db/schema";
 import { cancelStripeSubscriptionAtPeriodEnd, initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
 import { calculerPeriodeActivation } from "../services/subscriptionPeriod.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { aAccesIllimite } from "../utils/accesIllimite";
 import { chargerCompteCourant } from "../utils/authorization";
 import { computeSubscriptionInfo } from "./auth.controller";
 import { NOM_FORMULE, type IdFormule } from "../utils/formules";
@@ -307,6 +308,12 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
 
   const user = await chargerCompteCourant(req);
 
+  // Un accès illimité offert par l'administration n'a pas d'abonnement à souscrire : un paiement, même confirmé,
+  // le remplacerait par une échéance datée.
+  if (aAccesIllimite(user)) {
+    throw new ApiError(409, "Votre compte a un accès illimité : il n'y a aucun abonnement à souscrire.");
+  }
+
   const planDef = SUBSCRIPTION_PLANS.find((p) => p.id === body.plan);
   if (!planDef) throw new ApiError(400, "Plan invalide");
 
@@ -505,6 +512,12 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
   // Même raison qu'updateCurrency : sans ce contrôle, un jeton dont le compte
   // n'existe plus produisait un 500 sur computeSubscriptionInfo(undefined).
   const compteAvant = await chargerCompteCourant(req);
+
+  // Résilier un accès illimité (ACTIVE sans échéance) le ferait passer en « résilié sans période payée », donc sans
+  // aucun accès : le compte se couperait lui-même. Seule l'administration le retire (revokeUnlimitedAccess).
+  if (aAccesIllimite(compteAvant)) {
+    throw new ApiError(409, "Votre compte a un accès illimité : il n'y a rien à résilier.");
+  }
 
   // Il n'y a un abonnement payant à résilier que s'il est actif — ou déjà
   // résilié, pour rejouer l'appel à Stripe d'une résiliation qui n'avait pas

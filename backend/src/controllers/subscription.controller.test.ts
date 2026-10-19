@@ -729,16 +729,14 @@ describe("POST /api/subscription/cancel", () => {
   });
 
   it("annule le renouvellement automatique d'un abonnement actif", async () => {
-    const manager = await createManager({ subscriptionStatus: "ACTIVE" });
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000) });
 
     const res = await request(app).post("/api/subscription/cancel").set(authHeader(tokenFor(manager)));
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    // Aucune date de fin sur ce compte : il n'y a donc aucun jour déjà payé à
-    // honorer après la résiliation, et le statut calculé retombe à EXPIRED.
-    // Le cas d'une période payée encore en cours est couvert juste en dessous.
-    expect(res.body.subscription.status).toBe("EXPIRED");
+    // La période déjà payée reste honorée jusqu'à son terme.
+    expect(res.body.subscription.status).toBe("CANCELLED");
 
     const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(updated.subscriptionStatus).toBe("CANCELLED");
@@ -765,6 +763,7 @@ describe("POST /api/subscription/cancel", () => {
     it("résilie l'abonnement Stripe (cancel_at_period_end) quand le compte en a un réel", async () => {
       const manager = await createManager({
         subscriptionStatus: "ACTIVE",
+        subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000),
         stripeSubscriptionId: "sub_test_reel",
       });
       const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
@@ -781,7 +780,7 @@ describe("POST /api/subscription/cancel", () => {
     });
 
     it("n'appelle jamais Stripe pour un abonnement sans renouvellement automatique réel", async () => {
-      const manager = await createManager({ subscriptionStatus: "ACTIVE" });
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000) });
       const fetchMock = vi.fn();
       vi.stubGlobal("fetch", fetchMock);
 
@@ -798,6 +797,7 @@ describe("POST /api/subscription/cancel", () => {
       // et sa carte était prélevée à l'échéance suivante.
       const manager = await createManager({
         subscriptionStatus: "ACTIVE",
+        subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000),
         stripeSubscriptionId: "sub_test_echec",
       });
       const fetchMock = vi.fn().mockRejectedValue(new Error("réseau indisponible"));
@@ -815,6 +815,7 @@ describe("POST /api/subscription/cancel", () => {
     it("502 aussi quand Stripe refuse la résiliation, sans toucher au compte", async () => {
       const manager = await createManager({
         subscriptionStatus: "ACTIVE",
+        subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000),
         stripeSubscriptionId: "sub_test_refus",
       });
       vi.stubGlobal(
@@ -832,7 +833,7 @@ describe("POST /api/subscription/cancel", () => {
 
     it("502 si Stripe n'est pas configuré alors que le compte a un abonnement par carte", async () => {
       env.payments.stripeSecretKey = "";
-      const manager = await createManager({ subscriptionStatus: "ACTIVE", stripeSubscriptionId: "sub_test_sans_cle" });
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000), stripeSubscriptionId: "sub_test_sans_cle" });
       const fetchMock = vi.fn();
       vi.stubGlobal("fetch", fetchMock);
 
@@ -845,7 +846,7 @@ describe("POST /api/subscription/cancel", () => {
     });
 
     it("tient pour résilié un abonnement que Stripe ne connaît plus (resource_missing)", async () => {
-      const manager = await createManager({ subscriptionStatus: "ACTIVE", stripeSubscriptionId: "sub_disparu" });
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000), stripeSubscriptionId: "sub_disparu" });
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: { code: "resource_missing" } }) })

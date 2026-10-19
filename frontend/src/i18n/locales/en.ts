@@ -1693,6 +1693,8 @@ const en: TranslationSchema = {
       trialEndsAt: "Your trial period ends on {{date}}.",
       nextDueDate: "Next due date: {{date}}.",
       choosePlanPrompt: "Choose a plan below to unlock or maintain your access.",
+      unlimited: "Unlimited access",
+      unlimitedHelp: "Your access is unlimited: it has no end date and needs no subscription.",
       evaluationTime: "Free evaluation time",
       days: "days",
       monthlyBilling: "Monthly billing",

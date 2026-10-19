@@ -5,6 +5,7 @@ import { db, Transaction } from "../db/client";
 import { users } from "../db/schema";
 import { logAdminAction } from "../services/adminAudit.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { aAccesIllimite } from "../utils/accesIllimite";
 import { NOM_FORMULE } from "../utils/formules";
 
 const JOUR_MS = 86_400_000;
@@ -144,9 +145,6 @@ export const changeManagerPlan = asyncHandler(async (req: Request, res: Response
   res.json({ success: true, plan });
 });
 
-/** Un abonnement ACTIVE sans échéance est l'accès illimité (voir requireActiveSubscription). */
-const estIllimite = (compte: typeof users.$inferSelect) => compte.subscriptionStatus === "ACTIVE" && compte.subscriptionEndsAt === null;
-
 /**
  * Accorde à un gestionnaire un accès SANS ÉCHÉANCE (compte interne, partenaire,
  * convention) : abonnement ACTIVE sans date de fin, formule Entreprise. Aucun
@@ -165,7 +163,7 @@ export const grantUnlimitedAccess = asyncHandler(async (req: Request, res: Respo
   const { avant, email } = await db.transaction(async (tx: Transaction) => {
     const compte = await verrouillerGestionnaire(tx, id);
     refuserSiStripe(compte);
-    if (estIllimite(compte)) throw new ApiError(409, "Ce gestionnaire a déjà un accès illimité.");
+    if (aAccesIllimite(compte)) throw new ApiError(409, "Ce gestionnaire a déjà un accès illimité.");
 
     await tx
       .update(users)
@@ -199,7 +197,7 @@ export const revokeUnlimitedAccess = asyncHandler(async (req: Request, res: Resp
 
   const { email } = await db.transaction(async (tx: Transaction) => {
     const compte = await verrouillerGestionnaire(tx, id);
-    if (!estIllimite(compte)) throw new ApiError(409, "Ce gestionnaire n'a pas d'accès illimité.");
+    if (!aAccesIllimite(compte)) throw new ApiError(409, "Ce gestionnaire n'a pas d'accès illimité.");
     await tx.update(users).set({ subscriptionStatus: "EXPIRED", subscriptionEndsAt: null }).where(eq(users.id, id));
     return { email: compte.email };
   });

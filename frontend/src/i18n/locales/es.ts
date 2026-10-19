@@ -1695,6 +1695,8 @@ const es: TranslationSchema = {
       trialEndsAt: "Tu período de prueba finaliza el {{date}}.",
       nextDueDate: "Próximo vencimiento el {{date}}.",
       choosePlanPrompt: "Elige un plan a continuación para desbloquear o mantener tus accesos.",
+      unlimited: "Acceso ilimitado",
+      unlimitedHelp: "Tu acceso es ilimitado: no tiene fecha de vencimiento y no necesita suscripción.",
       evaluationTime: "Tiempo de evaluación ofrecido",
       days: "días",
       monthlyBilling: "Facturación Mensual",
