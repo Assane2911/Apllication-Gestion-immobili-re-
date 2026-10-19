@@ -7,6 +7,7 @@ import {
   listExpenses,
 } from "../controllers/expense.controller";
 import { authenticate, requireActiveSubscription, requirePlan, requireRole } from "../middleware/auth";
+import { pasDeCache } from "../middleware/pasDeCache";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get("/", listExpenses);
 router.get("/summary", getFinancialSummary);
 // Export comptable : réservé à Entreprise (CGU §3), au-delà du suivi des
 // dépenses lui-même (Pro, voir le requirePlan("PRO") du router.use ci-dessus).
-router.get("/export", requirePlan("ENTERPRISE"), exportFinancialReport);
+router.get("/export", pasDeCache, requirePlan("ENTERPRISE"), exportFinancialReport);
 router.post("/", createExpense);
 router.delete("/:id", deleteExpense);
 

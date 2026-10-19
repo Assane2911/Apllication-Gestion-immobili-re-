@@ -28,4 +28,20 @@ describe("versLatin1Fec", () => {
     const buffer = versLatin1Fec("Loyer 3/2026 - Awa Sow");
     expect(buffer.toString("latin1")).toBe("Loyer 3/2026 - Awa Sow");
   });
+
+  // Un FEC en Latin-1 ne sait pas écrire ’ (l'apostrophe typographique que le clavier d'un iPhone
+  // met par défaut), œ, € ni les tirets longs : ils sortaient en « ? » (« d?urgence », « c?ur »).
+  it("remplace les signes typographiques courants par leur équivalent Latin-1 plutôt que par « ? »", () => {
+    expect(versLatin1Fec("Réparation d’urgence").toString("latin1")).toBe("Réparation d'urgence");
+    expect(versLatin1Fec("Travaux – cœur de l’immeuble").toString("latin1")).toBe("Travaux - coeur de l'immeuble");
+    expect(versLatin1Fec("Œuvre « club » “spécial”…").toString("latin1")).toBe('OEuvre « club » "spécial"...');
+    expect(versLatin1Fec("Franchise 150 €").toString("latin1")).toBe("Franchise 150 EUR");
+  });
+
+  // Un texte collé depuis un Mac ou un iPhone peut décomposer « é » en « e » + accent combinant (U+0301),
+  // que Latin-1 ne contient pas : « réparation » sortait en « re?paration ».
+  it("recompose les lettres accentuées décomposées avant d'encoder", () => {
+    const decompose = "re\u0301paration d'e\u0301te\u0301";
+    expect(versLatin1Fec(decompose).toString("latin1")).toBe("réparation d'été");
+  });
 });

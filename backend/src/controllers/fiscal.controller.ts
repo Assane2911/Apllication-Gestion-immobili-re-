@@ -6,6 +6,7 @@ import { agencySettings, contracts, expenses, invoices, properties, tenants } fr
 import { developperEncaissements, factureEncaissee } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
 import { csvEscape, csvMontant, CSV_BOM, fecEscapeText, fecMontant, versLatin1Fec } from "../utils/csv";
+import { arrondir } from "../utils/montants";
 
 /**
  * Module "Bilan Fiscal & Comptabilité" : synthèse annuelle (revenus/dépenses
@@ -593,9 +594,10 @@ export const exportSyscohada = asyncHandler(async (req: Request, res: Response) 
   const totalGeneralByCurrency = new Map<string, { debit: number; credit: number }>();
   for (const cle of clesTriees) {
     const arr = groupes.get(cle)!;
-    const totalDebit = arr.reduce((s, l) => s + l.debit, 0);
-    const totalCredit = arr.reduce((s, l) => s + l.credit, 0);
-    const solde = totalDebit - totalCredit;
+    // Au centime : 0,1 + 0,2 vaut 0,30000000000000004, et un compte soldé à zéro affichait « 0,00 » en solde débiteur.
+    const totalDebit = arrondir(arr.reduce((s, l) => s + l.debit, 0));
+    const totalCredit = arrondir(arr.reduce((s, l) => s + l.credit, 0));
+    const solde = arrondir(totalDebit - totalCredit);
     out.push(
       [
         arr[0].compte.num,
