@@ -194,6 +194,16 @@ export const exporterTenant = asyncHandler(async (req: Request, res: Response) =
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
 
+  // L'export est le dossier complet d'une personne : qui l'a sorti, et quand, doit rester visible.
+  await logActivity({
+    req,
+    managerId: existing.managerId,
+    action: "tenant.export",
+    entityType: "tenant",
+    entityId: existing.id,
+    entityLabel: `${existing.firstName} ${existing.lastName}`,
+    details: `Export des données personnelles de ${existing.firstName} ${existing.lastName}`,
+  });
   await envoyerExport(res, existing.id, existing);
 });
 
@@ -444,6 +454,15 @@ export const getTenantIdDocumentUrl = asyncHandler(async (req: Request, res: Res
   if (!tenant.idDocument) throw new ApiError(404, "Aucune pièce d'identité enregistrée pour ce locataire");
 
   const url = await getSignedUrl(tenant.idDocument);
+  await logActivity({
+    req,
+    managerId: tenant.managerId,
+    action: "tenant.id_document_view",
+    entityType: "tenant",
+    entityId: tenant.id,
+    entityLabel: `${tenant.firstName} ${tenant.lastName}`,
+    details: `Pièce d'identité de ${tenant.firstName} ${tenant.lastName} consultée`,
+  });
   res.json({ url });
 });
 
@@ -484,6 +503,7 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
       .where(eq(users.id, existingUser.id));
     await db.update(tenants).set({ userId: existingUser.id }).where(eq(tenants.id, tenant.id));
 
+    await tracerAccesPortail(req, tenant);
     res.status(201).json({ message: "Accès portail créé", userId: existingUser.id, email: existingUser.email });
     return;
   }
@@ -500,5 +520,19 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
     return created;
   });
 
+  await tracerAccesPortail(req, tenant);
   res.status(201).json({ message: "Accès portail créé", userId: user.id, email: user.email });
 });
+
+/** Créer un accès, c'est fixer le mot de passe d'une personne : le geste est tracé (jamais le mot de passe). */
+async function tracerAccesPortail(req: Request, tenant: { id: string; managerId: string; firstName: string; lastName: string }) {
+  await logActivity({
+    req,
+    managerId: tenant.managerId,
+    action: "tenant.portal_account",
+    entityType: "tenant",
+    entityId: tenant.id,
+    entityLabel: `${tenant.firstName} ${tenant.lastName}`,
+    details: `Accès au portail créé pour ${tenant.firstName} ${tenant.lastName}`,
+  });
+}
