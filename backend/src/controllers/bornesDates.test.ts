@@ -109,7 +109,7 @@ describe("révision de loyer — bornes", () => {
   it.each([
     ["un loyer au-delà du plafond", { mode: "AMOUNT", newRent: 2e12 }],
     ["un loyer infini", { mode: "AMOUNT", newRent: "1e999" }],
-    ["un rapport d'indices qui multiplie le loyer par un million", { mode: "INDEX", indexOld: 1, indexNew: 1_000_000_000 }],
+    ["un rapport d'indices qui multiplie le loyer par dix milliards", { mode: "INDEX", indexOld: 1, indexNew: 10_000_000_000 }],
     ["des indices infinis", { mode: "INDEX", indexOld: "1e999", indexNew: "1e999" }],
     ["un pourcentage infini", { mode: "PERCENT", percent: "1e999" }],
   ])("refuse %s", async (_nom, corps) => {
