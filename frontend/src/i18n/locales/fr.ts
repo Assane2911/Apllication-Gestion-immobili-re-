@@ -491,6 +491,18 @@ const fr = {
       stay: "Rester connecté",
       logout: "Me déconnecter",
     },
+    scannedContractModal: {
+      print: "Imprimer",
+      download: "Télécharger",
+      fullscreen: "Plein écran",
+      pdfSubtitle: "Document PDF numérisé",
+      imageSubtitle: "Scan image / photo haute résolution",
+    },
+    errorBoundary: {
+      title: "Une erreur est survenue",
+      body: "Quelque chose s'est mal passé de notre côté. Rechargez la page pour réessayer — si le problème persiste, contactez notre support.",
+      reload: "Recharger la page",
+    },
     documentModal: {
       subtitle: "Aperçu officiel certifié & Téléchargement / Impression",
       print: "Imprimer / Enregistrer PDF",

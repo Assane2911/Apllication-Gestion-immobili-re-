@@ -58,3 +58,22 @@ describe("ErrorBoundary", () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 });
+
+describe("ErrorBoundary — langue", () => {
+  it("affiche son message de secours dans la langue de l'interface", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { changerLangue } = await import("../i18n");
+    await changerLangue("en");
+    try {
+      render(
+        <ErrorBoundary>
+          <Bomb />
+        </ErrorBoundary>
+      );
+      expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reload the page" })).toBeInTheDocument();
+    } finally {
+      await changerLangue("fr");
+    }
+  });
+});

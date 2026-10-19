@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/react";
 import { AlertTriangle } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import i18n from "../i18n";
 
 interface Props {
   children: ReactNode;
@@ -50,16 +51,15 @@ export default class ErrorBoundary extends Component<Props, State> {
           <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={26} strokeWidth={1.75} />
           </div>
-          <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1.5">Une erreur est survenue</h1>
+          <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1.5">{i18n.t("components.errorBoundary.title")}</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
-            Quelque chose s'est mal passé de notre côté. Rechargez la page pour réessayer — si le
-            problème persiste, contactez notre support.
+            {i18n.t("components.errorBoundary.body")}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
           >
-            Recharger la page
+            {i18n.t("components.errorBoundary.reload")}
           </button>
         </div>
       </div>

@@ -493,6 +493,18 @@ const es: TranslationSchema = {
       stay: "Seguir conectado",
       logout: "Cerrar sesión",
     },
+    scannedContractModal: {
+      print: "Imprimir",
+      download: "Descargar",
+      fullscreen: "Pantalla completa",
+      pdfSubtitle: "Documento PDF escaneado",
+      imageSubtitle: "Escaneo de imagen / foto de alta resolución",
+    },
+    errorBoundary: {
+      title: "Se ha producido un error",
+      body: "Algo ha salido mal por nuestra parte. Recargue la página para volver a intentarlo; si el problema persiste, contacte con nuestro soporte.",
+      reload: "Recargar la página",
+    },
     documentModal: {
       subtitle: "Vista previa oficial certificada y Descarga / Impresión",
       print: "Imprimir / Guardar PDF",
