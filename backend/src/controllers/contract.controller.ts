@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -506,11 +506,18 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   const facturesReglees = await db
     .select({ id: invoices.id })
     .from(invoices)
-    .where(and(eq(invoices.contractId, req.params.id), inArray(invoices.status, ["PAID", "LATE"])));
+    .where(
+      and(
+        eq(invoices.contractId, req.params.id),
+        // Une facture en attente qui a déjà reçu un paiement partiel porte de l'argent encaissé : la supprimer
+        // l'effacerait des encaissements (même règle que l'annulation d'une facture).
+        or(inArray(invoices.status, ["PAID", "LATE"]), gt(invoices.amountPaid, 0))
+      )
+    );
   if (facturesReglees.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un contrat ayant des factures réglées ou en retard. Cet historique doit être conservé."
+      "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé."
     );
   }
 
@@ -665,6 +672,11 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
       throw new ApiError(409, "Ce bail vient d'être renouvelé ou clôturé. Rechargez la page avant de réessayer.");
     }
 
+    // Un bail déjà prévu à la suite (même bien, actif, commençant avant la fin du renouvellement) ferait
+    // deux baux actifs sur la même période : on refuse, la transaction annule la clôture ci-dessus.
+    await verrouillerBienPourContrat(tx, existing.propertyId);
+    await assertAucunChevauchementActif(tx, existing.propertyId, newStart, newEnd, existing.id);
+
     const [created] = await tx
       .insert(contracts)
       .values({
@@ -732,8 +744,21 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
+  /** Une signature engage les parties : qui a signé, et quand, doit rester visible dans le journal. */
+  const tracerSignature = async (managerId: string, titreBien: string, qui: "locataire" | "gestionnaire") =>
+    logActivity({
+      req,
+      managerId,
+      action: "contract.sign",
+      entityType: "contract",
+      entityId: contract.id,
+      entityLabel: titreBien,
+      details: `Bail signé électroniquement par le ${qui} (${titreBien})`,
+    });
+
   if (req.user.role === "TENANT") {
     if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
+    const [bienDuBail] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
     const [updated] = await db
       .update(contracts)
       .set({
@@ -742,6 +767,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       })
       .where(eq(contracts.id, id))
       .returning();
+    if (bienDuBail) await tracerSignature(bienDuBail.managerId, bienDuBail.title, "locataire");
     return res.json(await withRelations(updated.id));
   } else if (req.user.role === "MANAGER") {
     const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
@@ -758,6 +784,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       })
       .where(eq(contracts.id, id))
       .returning();
+    await tracerSignature(property.managerId, property.title, "gestionnaire");
     return res.json(await withRelations(updated.id));
   } else {
     // Un compte ADMIN n'est ni le locataire ni le gestionnaire du contrat.
