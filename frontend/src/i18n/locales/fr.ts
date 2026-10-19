@@ -6,6 +6,7 @@ const fr = {
       logout: "Ferme votre session sur cet appareil.",
     },
     errors: {
+      unexpected: "Une erreur inattendue est survenue. Réessayez dans un instant.",
       network: "Impossible de contacter le serveur. Vérifiez votre connexion internet et réessayez.",
       timeout: "Le serveur met trop de temps à répondre. Vérifiez votre connexion et réessayez.",
     },

@@ -99,9 +99,11 @@ export function apiErrorMessage(err: unknown): string {
     if (err.code === "ERR_NETWORK") {
       return i18n.t("common.errors.network");
     }
-    return err.message;
+    // Réponse sans message serveur (passerelle, taille de requête…) : `err.message` est le texte brut
+    // d'axios, en anglais (« Request failed with status code 502 »), quelle que soit la langue choisie.
+    return i18n.t("common.errors.unexpected");
   }
-  return "Une erreur inattendue est survenue";
+  return i18n.t("common.errors.unexpected");
 }
 
 export function apiErrorCode(err: unknown): string | undefined {
