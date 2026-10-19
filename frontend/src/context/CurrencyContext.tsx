@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
+import Bulle from "../components/Bulle";
 import { useAuth } from "./auth";
 import { CURRENCIES, CurrencyContext, configDevise, useCurrency } from "./currency";
 
@@ -90,12 +91,12 @@ export function CurrencySelector({ className = "" }: { className?: string }) {
 
   return (
     <div className={`relative inline-flex items-center ${className}`}>
+      <Bulle texte={t("nav.currencyLabel")}>
       <select
         value={currency}
         onChange={(e) => setCurrency(e.target.value)}
         className="bg-slate-800/80 hover:bg-slate-800 text-slate-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer shadow-sm transition-all"
         aria-label={t("nav.currencyLabel")}
-        title={t("nav.currencyLabel")}
       >
         {availableCurrencies.map((c) => (
           <option key={c.code} value={c.code} className="bg-slate-900 text-white">
@@ -103,6 +104,7 @@ export function CurrencySelector({ className = "" }: { className?: string }) {
           </option>
         ))}
       </select>
+      </Bulle>
     </div>
   );
 }

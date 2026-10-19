@@ -12,7 +12,8 @@ import { COULEUR_DEPENSES, COULEUR_REVENUS, COULEURS_STATUT } from "./couleurs";
  */
 const STYLE_INFOBULLE = {
   borderRadius: "14px",
-  fontSize: "12px",
+  fontSize: "14px",
+  lineHeight: 1.4,
   boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
   backgroundColor: "#0f172a",
   color: "#f8fafc",

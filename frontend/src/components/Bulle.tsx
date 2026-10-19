@@ -1,11 +1,15 @@
-import { cloneElement, useCallback, useEffect, useId, useRef, useState, type ReactElement } from "react";
+import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactElement } from "react";
+import { placerBulle, type Cote, type Placement } from "../utils/placementBulle";
 
 interface Props {
   /** Ce que la bulle explique. Une phrase courte : elle se lit en passant. */
   texte: string;
   /** L'élément survolé. Un seul, qui recevra `aria-describedby`. */
   children: ReactElement;
-  /** Côté d'apparition. « droite » pour un menu latéral, « haut » pour un bouton dans un tableau. */
+  /**
+   * Côté d'apparition souhaité. « droite » pour un menu latéral, « haut » pour un bouton dans un tableau.
+   * La bulle passe de l'autre côté si celui-ci manque de place : elle ne sort jamais de l'écran.
+   */
   position?: "haut" | "droite";
   /**
    * Classes de l'enveloppe. La bulle s'insère entre un parent et son enfant :
@@ -39,6 +43,12 @@ interface Props {
  * laisserait derrière lui : on la referme donc au défilement plutôt que de la
  * laisser flotter à côté de son sujet.
  *
+ * Elle se lit sans effort : texte de 14 px, contraste inversé (claire en thème
+ * sombre, où une bulle sombre se fondrait dans la page), et une pointe qui
+ * désigne l'élément décrit. Elle se replie contre les bords de la fenêtre —
+ * une bulle rognée par l'écran se lit à moitié — et Échap la ferme où que se
+ * trouve le focus, y compris quand elle est ouverte à la souris.
+ *
  * Elle ne capte jamais le pointeur (`pointer-events-none`). Une bulle qui
  * s'interpose entre le curseur et le bouton qu'elle décrit rend ce bouton
  * difficile à cliquer, et le défaut est d'autant plus déroutant qu'il vient de
@@ -47,7 +57,9 @@ interface Props {
 export default function Bulle({ texte, children, position = "haut", className = "inline-flex" }: Props) {
   const id = useId();
   const ancre = useRef<HTMLSpanElement>(null);
-  const [coordonnees, setCoordonnees] = useState<{ top: number; left: number } | null>(null);
+  const bulle = useRef<HTMLSpanElement>(null);
+  const [rectAncre, setRectAncre] = useState<DOMRect | null>(null);
+  const [placement, setPlacement] = useState<Placement | null>(null);
 
   const montrer = useCallback(() => {
     // On mesure l'ÉLÉMENT DÉCRIT, pas l'enveloppe. Deux raisons : l'enveloppe
@@ -57,50 +69,67 @@ export default function Bulle({ texte, children, position = "haut", className = 
     // le bouton que la bulle doit désigner.
     const cible = ancre.current?.firstElementChild ?? ancre.current;
     const rect = cible?.getBoundingClientRect();
-    if (!rect) return;
-    setCoordonnees(
-      position === "droite"
-        ? { top: rect.top + rect.height / 2, left: rect.right + 10 }
-        : { top: rect.top - 10, left: rect.left + rect.width / 2 }
-    );
-  }, [position]);
+    if (rect) setRectAncre(rect);
+  }, []);
 
-  const cacher = useCallback(() => setCoordonnees(null), []);
+  const cacher = useCallback(() => {
+    setRectAncre(null);
+    setPlacement(null);
+  }, []);
+
+  // La taille de la bulle ne se connaît qu'une fois affichée : on la mesure
+  // avant la peinture (donc sans clignotement) pour la placer dans la fenêtre.
+  useLayoutEffect(() => {
+    if (!rectAncre || !bulle.current) return;
+    const { width, height } = bulle.current.getBoundingClientRect();
+    setPlacement(placerBulle(rectAncre, { width, height }, position, { width: window.innerWidth, height: window.innerHeight }));
+  }, [rectAncre, position]);
 
   useEffect(() => {
-    if (!coordonnees) return;
+    if (!rectAncre) return;
     // `capture` : le défilement d'un conteneur interne ne remonte pas jusqu'à
     // la fenêtre, et c'est justement dans un conteneur qui défile — la barre
     // de navigation — que la bulle se décalerait sans qu'on le voie.
+    const surEchap = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cacher();
+    };
     window.addEventListener("scroll", cacher, true);
-    return () => window.removeEventListener("scroll", cacher, true);
-  }, [coordonnees, cacher]);
+    window.addEventListener("resize", cacher);
+    document.addEventListener("keydown", surEchap);
+    return () => {
+      window.removeEventListener("scroll", cacher, true);
+      window.removeEventListener("resize", cacher);
+      document.removeEventListener("keydown", surEchap);
+    };
+  }, [rectAncre, cacher]);
+
+  const cote: Cote = placement?.cote ?? position;
+  const verticale = cote === "haut" || cote === "bas";
 
   return (
-    <span
-      ref={ancre}
-      className={className}
-      onMouseEnter={montrer}
-      onMouseLeave={cacher}
-      onFocus={montrer}
-      onBlur={cacher}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") cacher();
-      }}
-    >
-      {cloneElement(children, { "aria-describedby": coordonnees ? id : undefined } as Partial<unknown>)}
-      {coordonnees && (
+    <span ref={ancre} className={className} onMouseEnter={montrer} onMouseLeave={cacher} onFocus={montrer} onBlur={cacher}>
+      {cloneElement(children, { "aria-describedby": rectAncre ? id : undefined } as Partial<unknown>)}
+      {rectAncre && (
         <span
+          ref={bulle}
           role="tooltip"
           id={id}
-          style={{
-            top: coordonnees.top,
-            left: coordonnees.left,
-            transform: position === "droite" ? "translateY(-50%)" : "translate(-50%, -100%)",
-          }}
-          className="fixed z-50 pointer-events-none max-w-xs rounded-lg bg-slate-900 dark:bg-slate-700 px-2.5 py-1.5 text-xs leading-snug text-white shadow-lg ring-1 ring-black/10"
+          // Invisible le temps d'une mesure : elle est placée avant la première peinture.
+          style={{ top: placement?.top ?? 0, left: placement?.left ?? 0, visibility: placement ? "visible" : "hidden" }}
+          className="fixed z-50 pointer-events-none w-max max-w-[min(20rem,calc(100vw-1rem))] rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-3 py-2 text-sm font-medium leading-snug shadow-xl ring-1 ring-black/10 dark:ring-white/20"
         >
           {texte}
+          {placement && (
+            <span
+              aria-hidden="true"
+              style={
+                verticale
+                  ? { left: placement.pointe - 5, [cote === "haut" ? "bottom" : "top"]: -4 }
+                  : { top: placement.pointe - 5, [cote === "droite" ? "left" : "right"]: -4 }
+              }
+              className="absolute h-2.5 w-2.5 rotate-45 rounded-[2px] bg-slate-900 dark:bg-slate-100"
+            />
+          )}
         </span>
       )}
     </span>

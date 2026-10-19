@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { changerLangue, SUPPORTED_LANGUAGES } from "../i18n";
+import Bulle from "./Bulle";
 
 interface LanguageSwitcherProps {
   className?: string;
@@ -20,11 +21,11 @@ export default function LanguageSwitcher({ className = "", variant = "dark" }: L
 
   return (
     <div className={`relative inline-flex items-center ${className}`}>
+      <Bulle texte={t("common.language.selectAria")}>
       <select
         value={i18n.resolvedLanguage || i18n.language}
         onChange={(e) => void changerLangue(e.target.value)}
         aria-label={t("common.language.selectAria")}
-        title={t("common.language.selectAria")}
         className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 cursor-pointer shadow-sm transition-all ${
           variant === "dark" ? darkClasses : lightClasses
         }`}
@@ -35,6 +36,7 @@ export default function LanguageSwitcher({ className = "", variant = "dark" }: L
           </option>
         ))}
       </select>
+      </Bulle>
     </div>
   );
 }
