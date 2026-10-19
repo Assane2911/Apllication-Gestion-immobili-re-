@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { tenants, users } from "../db/schema";
+import { activityLogs, tenants, users } from "../db/schema";
 import { uploadPrivateFile } from "../services/storage.service";
 import {
   authHeader,
@@ -388,3 +388,49 @@ describe("PUT /api/tenants/:id — ordre upload / vérification de propriété",
     expect(uploadPrivateFile).not.toHaveBeenCalled();
   });
 });
+
+describe("locataires : actions sensibles tracées", () => {
+  const journalDe = async (managerId: string, action: string) =>
+    (await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, managerId))).filter((l: typeof activityLogs.$inferSelect) => l.action === action);
+
+  it("la création d'un accès au portail est tracée, sans le mot de passe", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id, { email: "portail@test.local", firstName: "Awa", lastName: "Sow" });
+
+    const res = await request(app)
+      .post(`/api/tenants/${tenant.id}/portal-account`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ password: "MotDePasse123!" });
+    expect(res.status).toBe(201);
+
+    const [entree, ...autres] = await journalDe(manager.id, "tenant.portal_account");
+    expect(autres).toHaveLength(0);
+    expect(entree).toMatchObject({ entityType: "tenant", entityId: tenant.id, entityLabel: "Awa Sow" });
+    expect(JSON.stringify(entree)).not.toContain("MotDePasse123!");
+  });
+
+  it("l'export des données d'un locataire est tracé", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Sow" });
+
+    const res = await request(app).get(`/api/tenants/${tenant.id}/export`).set(authHeader(tokenFor(manager)));
+    expect(res.status).toBe(200);
+
+    const [entree, ...autres] = await journalDe(manager.id, "tenant.export");
+    expect(autres).toHaveLength(0);
+    expect(entree).toMatchObject({ entityType: "tenant", entityId: tenant.id, entityLabel: "Awa Sow" });
+  });
+
+  it("la consultation de la pièce d'identité est tracée", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Sow", idDocument: "tenants/piece.pdf" });
+
+    const res = await request(app).get(`/api/tenants/${tenant.id}/id-document-url`).set(authHeader(tokenFor(manager)));
+    expect(res.status).toBe(200);
+
+    const [entree, ...autres] = await journalDe(manager.id, "tenant.id_document_view");
+    expect(autres).toHaveLength(0);
+    expect(entree).toMatchObject({ entityType: "tenant", entityId: tenant.id, entityLabel: "Awa Sow" });
+  });
+});
+
