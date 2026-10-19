@@ -7,6 +7,7 @@ import { insurancePolicies, properties } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
+import { dateSaisieSchema } from "../utils/dates";
 import { deviseSchema } from "../utils/devises";
 
 const insurancePolicyBodySchema = z.object({
@@ -16,8 +17,8 @@ const insurancePolicyBodySchema = z.object({
   // .finite() : « 1e999 » est converti en Infinity par la coercition et passait `positive()`.
   premiumAmount: z.coerce.number().finite().positive().max(1_000_000_000_000).optional(),
   currency: deviseSchema.optional(),
-  startDate: z.coerce.date().optional(),
-  expiryDate: z.coerce.date(),
+  startDate: dateSaisieSchema.optional(),
+  expiryDate: dateSaisieSchema,
   notes: z.string().max(5000).optional(),
 });
 

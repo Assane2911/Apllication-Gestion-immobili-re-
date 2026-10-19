@@ -7,18 +7,19 @@ import { logActivity } from "../services/activity.service";
 import { annulerRevision, bauxAReviser, creerRevision, listerRevisions, motifRevision } from "../services/rentRevision.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
-import { formaterMontant } from "../utils/montant";
+import { dateSaisieSchema } from "../utils/dates";
+import { formaterMontant, MONTANT_MAXIMUM } from "../utils/montant";
 
 const revisionSchema = z
   .object({
     mode: z.enum(["AMOUNT", "PERCENT", "INDEX"]),
-    newRent: z.coerce.number().positive().optional(),
-    percent: z.coerce.number().optional(),
-    indexOld: z.coerce.number().optional(),
-    indexNew: z.coerce.number().optional(),
+    newRent: z.coerce.number().finite().positive().max(MONTANT_MAXIMUM).optional(),
+    percent: z.coerce.number().finite().optional(),
+    indexOld: z.coerce.number().finite().max(MONTANT_MAXIMUM).optional(),
+    indexNew: z.coerce.number().finite().max(MONTANT_MAXIMUM).optional(),
     indexName: z.string().trim().max(60).nullable().optional(),
     // Premier jour du mois d'effet, au format AAAA-MM-JJ.
-    effectiveDate: z.coerce.date(),
+    effectiveDate: dateSaisieSchema,
     note: z.string().trim().max(1000, "La note ne peut pas dépasser 1 000 caractères").nullable().optional(),
     notifyTenant: z.boolean().optional(),
   })

@@ -2,6 +2,7 @@ import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
 import { contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
+import { MONTANT_MAXIMUM } from "../utils/montant";
 import { arrondir } from "../utils/montants";
 import { envoyerCopieAuxColocataires } from "./colocation.service";
 import { rentRevisionEmail, sendEmail } from "./email.service";
@@ -50,6 +51,7 @@ export function calculerNouveauLoyer(loyerActuel: number, entree: EntreeRevision
   }
   nouveau = arrondir(nouveau);
   if (!Number.isFinite(nouveau) || nouveau <= 0) throw new ApiError(400, "Le nouveau loyer doit être supérieur à zéro.");
+  if (nouveau > MONTANT_MAXIMUM) throw new ApiError(400, "Le nouveau loyer dépasse le plafond accepté : vérifiez le montant, le pourcentage ou les valeurs de l'indice.");
   if (nouveau === arrondir(loyerActuel)) throw new ApiError(400, "Le nouveau loyer est identique au loyer actuel.");
   return nouveau;
 }
