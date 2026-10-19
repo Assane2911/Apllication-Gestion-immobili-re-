@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { contracts, invoices, properties, users } from "../db/schema";
+import { activityLogs, contracts, invoices, properties, users } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -939,6 +939,34 @@ describe("contrats : argent déjà encaissé et bail suivant", () => {
     const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, courant.id));
     expect(apres.status).toBe("ACTIVE");
     expect(await testDb.select().from(contracts).where(eq(contracts.propertyId, property.id))).toHaveLength(2);
+  });
+});
+
+describe("signature du bail : journal d'activité", () => {
+  async function signer(qui: "locataire" | "gestionnaire") {
+    const manager = await createManager({ subscriptionPlan: "PRO", subscriptionStatus: "ACTIVE" });
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const entete = qui === "locataire" ? authHeader(await tokenLocataire(tenant.id)) : authHeader(tokenFor(manager));
+    const res = await request(app).post(`/api/contracts/${contract.id}/sign`).set(entete).send({ signatureDataUrl: SIGNATURE_DATA_URL });
+    expect(res.status).toBe(200);
+    const journal = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
+    return journal.filter((l: typeof activityLogs.$inferSelect) => l.action === "contract.sign");
+  }
+
+  it("la signature du locataire est tracée, avec l'auteur", async () => {
+    const [entree, ...autres] = await signer("locataire");
+    expect(autres).toHaveLength(0);
+    expect(entree).toMatchObject({ entityType: "contract", entityLabel: "Villa Ngor", actorRole: "TENANT" });
+    expect(entree.details).toContain("locataire");
+  });
+
+  it("la signature du gestionnaire est tracée, avec l'auteur", async () => {
+    const [entree, ...autres] = await signer("gestionnaire");
+    expect(autres).toHaveLength(0);
+    expect(entree).toMatchObject({ entityType: "contract", entityLabel: "Villa Ngor", actorRole: "MANAGER" });
+    expect(entree.details).toContain("gestionnaire");
   });
 });
 

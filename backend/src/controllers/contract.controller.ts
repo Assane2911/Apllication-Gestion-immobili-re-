@@ -744,8 +744,21 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
 
+  /** Une signature engage les parties : qui a signé, et quand, doit rester visible dans le journal. */
+  const tracerSignature = async (managerId: string, titreBien: string, qui: "locataire" | "gestionnaire") =>
+    logActivity({
+      req,
+      managerId,
+      action: "contract.sign",
+      entityType: "contract",
+      entityId: contract.id,
+      entityLabel: titreBien,
+      details: `Bail signé électroniquement par le ${qui} (${titreBien})`,
+    });
+
   if (req.user.role === "TENANT") {
     if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
+    const [bienDuBail] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
     const [updated] = await db
       .update(contracts)
       .set({
@@ -754,6 +767,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       })
       .where(eq(contracts.id, id))
       .returning();
+    if (bienDuBail) await tracerSignature(bienDuBail.managerId, bienDuBail.title, "locataire");
     return res.json(await withRelations(updated.id));
   } else if (req.user.role === "MANAGER") {
     const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
@@ -770,6 +784,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       })
       .where(eq(contracts.id, id))
       .returning();
+    await tracerSignature(property.managerId, property.title, "gestionnaire");
     return res.json(await withRelations(updated.id));
   } else {
     // Un compte ADMIN n'est ni le locataire ni le gestionnaire du contrat.
