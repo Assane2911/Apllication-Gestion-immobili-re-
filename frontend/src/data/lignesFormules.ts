@@ -8,7 +8,7 @@
  */
 export const LIGNES_FORMULES = {
   STARTER: ["maxProperties5", "receipts", "portal", "issues", "emailReminders", "standardSupport"],
-  PRO: ["includesStarter", "maxProperties25", "expenses", "leaseAlerts", "multiChannelReminders", "prioritySupport"],
+  PRO: ["includesStarter", "maxProperties25", "expenses", "eSignature", "whiteLabel", "messaging", "leaseAlerts", "multiChannelReminders", "prioritySupport"],
   ENTERPRISE: ["includesPro", "unlimitedProperties", "team", "accountingExports", "onboardingGuide"],
 } as const;
 

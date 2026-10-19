@@ -128,6 +128,10 @@ describe("LandingPage", () => {
     expect(pro.getByText("Jusqu'à 25 biens immobiliers")).toBeInTheDocument();
     expect(pro.getByText("Rappels automatiques par email ; WhatsApp en cours de mise en service")).toBeInTheDocument();
     expect(pro.getByText("Support prioritaire : réponse sous un jour ouvré")).toBeInTheDocument();
+    expect(pro.getByText("Signature électronique des baux et des états des lieux")).toBeInTheDocument();
+    expect(pro.getByText("Marque blanche : logo, tampon et en-tête de l'agence")).toBeInTheDocument();
+    expect(pro.getByText("Messagerie directe avec les locataires")).toBeInTheDocument();
+    expect(starter.queryByText("Messagerie directe avec les locataires")).not.toBeInTheDocument();
 
     expect(agence.getByText("Tout ce qui est inclus dans Professionnel")).toBeInTheDocument();
     expect(agence.getByText("Biens immobiliers illimités")).toBeInTheDocument();

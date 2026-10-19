@@ -64,4 +64,22 @@ describe("CGUPage", () => {
     expect(screen.queryByText("Pro Agence")).not.toBeInTheDocument();
     expect(screen.queryByText("Entreprise")).not.toBeInTheDocument();
   });
+
+  it("décrit chaque formule comme les cartes de l'application : support prioritaire et fonctionnalités dans Professionnel, Agence reprenant Professionnel", () => {
+    render(
+      <MemoryRouter>
+        <CGUPage />
+      </MemoryRouter>
+    );
+
+    const pro = screen.getByText("Professionnel").closest("li")!;
+    const agence = screen.getByText("Agence & Multi-Comptes").closest("li")!;
+
+    for (const terme of [/jusqu'à 25 biens/, /signature électronique/, /suivi des dépenses/, /marque blanche/, /messagerie/, /support prioritaire \(réponse\s+sous un jour ouvré\)/]) {
+      expect(pro.textContent ?? "", String(terme)).toMatch(terme);
+    }
+    expect(agence.textContent ?? "").toMatch(/tout ce qui est inclus dans Professionnel/);
+    expect(agence.textContent ?? "").toMatch(/biens illimités/);
+    expect(agence.textContent ?? "").not.toMatch(/support prioritaire/);
+  });
 });
