@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { platformSubscriptions, users } from "../db/schema";
 import { createManager, createPlatformSubscription } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
-import { activateSubscriptionRecord } from "./subscriptionActivation.service";
+import { activateSubscriptionRecord, renewSubscriptionFromStripeInvoice } from "./subscriptionActivation.service";
 
 const JOUR = 24 * 60 * 60 * 1000;
 
@@ -314,5 +314,85 @@ describe("activateSubscriptionRecord", () => {
 
     const [updatedB] = await testDb.select().from(users).where(eq(users.id, managerB.id));
     expect(updatedB.subscriptionStatus).toBe("TRIAL");
+  });
+});
+
+/** Enregistre chaque `.for(...)` (verrou de ligne) demandé sur un builder Drizzle, sans rien changer à son résultat. */
+function espionnerVerrous<T>(valeur: T, verrous: string[]): T {
+  if (!valeur || (typeof valeur !== "object" && typeof valeur !== "function")) return valeur;
+  return new Proxy(valeur as object, {
+    get(cible, prop, recepteur) {
+      const original = Reflect.get(cible, prop, recepteur);
+      if (typeof original !== "function") return original;
+      return (...args: unknown[]) => {
+        if (prop === "for") verrous.push(String(args[0]));
+        return espionnerVerrous(original.apply(cible, args), verrous);
+      };
+    },
+  }) as T;
+}
+
+describe("renewSubscriptionFromStripeInvoice", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Stripe rejoue ses webhooks (réponse trop lente, redémarrage) et la plateforme tourne sur plusieurs instances :
+  // deux livraisons de la MÊME facture peuvent arriver ensemble. « Déjà traitée ? » se lit sans verrou, puis on insère :
+  // les deux passaient la lecture, et le client recevait deux lignes payées — voire deux périodes d'accès — pour un
+  // seul prélèvement. La ligne du compte est verrouillée AVANT de trancher : la seconde livraison attend la première,
+  // puis voit la facture déjà traitée. (PGlite n'a qu'une connexion : la course ne s'y reproduit pas, on vérifie donc
+  // que le verrou est bien demandé.)
+  it("verrouille la ligne du compte avant de décider que la facture n'a pas encore été traitée", async () => {
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "PRO",
+      subscriptionEndsAt: new Date(Date.now() + 10 * JOUR),
+      stripeSubscriptionId: "sub_verrou",
+    });
+    await createPlatformSubscription(manager.id, { status: "PAID", plan: "PRO", paymentMethod: "STRIPE", amount: 29 });
+    const verrous: string[] = [];
+    const reelle = testDb.transaction.bind(testDb);
+    vi.spyOn(testDb, "transaction").mockImplementation(((rappel: (tx: unknown) => unknown) =>
+      reelle((tx: unknown) => rappel(espionnerVerrous(tx, verrous)))) as never);
+
+    const resultat = await renewSubscriptionFromStripeInvoice({
+      stripeSubscriptionId: "sub_verrou",
+      stripeInvoiceId: "in_verrou",
+      montantPaye: 29,
+      devise: "EUR",
+    });
+
+    expect(resultat?.paymentRef).toBe("in_verrou");
+    expect(verrous).toEqual(["update"]);
+  });
+
+  it("ne crée pas de seconde ligne quand la même facture est livrée deux fois", async () => {
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "PRO",
+      subscriptionEndsAt: new Date(Date.now() + 10 * JOUR),
+      stripeSubscriptionId: "sub_double",
+    });
+    await createPlatformSubscription(manager.id, { status: "PAID", plan: "PRO", paymentMethod: "STRIPE", amount: 29 });
+    const params = { stripeSubscriptionId: "sub_double", stripeInvoiceId: "in_double", montantPaye: 29, devise: "EUR" };
+
+    const [a, b] = await Promise.all([renewSubscriptionFromStripeInvoice(params), renewSubscriptionFromStripeInvoice(params)]);
+
+    expect(a?.id).toBe(b?.id);
+    const lignes = await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.paymentRef, "in_double"));
+    expect(lignes).toHaveLength(1);
+  });
+
+  it("reconnaît une facture déjà traitée même quand le compte n'a plus d'abonnement Stripe (rejeu tardif)", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", stripeSubscriptionId: "sub_tardif" });
+    await createPlatformSubscription(manager.id, { status: "PAID", plan: "PRO", paymentMethod: "STRIPE", amount: 29 });
+    const params = { stripeSubscriptionId: "sub_tardif", stripeInvoiceId: "in_tardive", montantPaye: 29, devise: "EUR" };
+    await renewSubscriptionFromStripeInvoice(params);
+    await testDb.update(users).set({ stripeSubscriptionId: null }).where(eq(users.id, manager.id));
+
+    const rejeu = await renewSubscriptionFromStripeInvoice(params);
+
+    expect(rejeu?.paymentRef).toBe("in_tardive");
   });
 });

@@ -44,6 +44,11 @@ interface StripeInvoice {
   // chaque renouvellement automatique suivant — le seul cas qui nous
   // intéresse ici.
   billing_reason?: string;
+  /**
+   * Versions d'API récentes de Stripe (2025-03-31 et suivantes) : `subscription` n'existe plus sur la facture,
+   * l'abonnement se lit ici. Voir `abonnementDeLaFacture`.
+   */
+  parent?: { subscription_details?: { subscription?: string | null } | null } | null;
   /** Présents sur `invoice.payment_failed` : numéro de l'essai, prochain essai automatique (timestamp, ou null). */
   attempt_count?: number;
   next_payment_attempt?: number | null;
@@ -106,7 +111,10 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
     return res.json({ received: true });
   }
 
-  if (evenement.type !== "checkout.session.completed") {
+  // `async_payment_succeeded` : un moyen de paiement à confirmation différée (prélèvement SEPA, virement…) laisse
+  // la session « completed » mais « unpaid » ; l'argent n'arrive que plus tard, annoncé par cet événement — dont
+  // l'objet est la même session, désormais « paid ». Sans lui, le locataire avait payé et la facture restait due.
+  if (evenement.type !== "checkout.session.completed" && evenement.type !== "checkout.session.async_payment_succeeded") {
     return res.json({ received: true });
   }
 
@@ -244,7 +252,12 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
  * déjà traitée via `checkout.session.completed` ci-dessus.
  */
 async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<void> {
-  if (facture.billing_reason !== "subscription_cycle" || !facture.subscription || !facture.id) {
+  if (facture.billing_reason !== "subscription_cycle" || !facture.id) return;
+  const abonnement = abonnementDeLaFacture(facture);
+  if (!abonnement) {
+    // Pas d'abonnement lisible sur une facture de renouvellement : le dire, plutôt que d'ignorer en silence un
+    // prélèvement dont l'accès ne sera jamais prolongé.
+    console.warn(`[stripe] Facture de renouvellement ${facture.id} sans abonnement lisible, ignorée.`);
     return;
   }
 
@@ -256,7 +269,7 @@ async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<voi
   }
 
   const resultat = await renewSubscriptionFromStripeInvoice({
-    stripeSubscriptionId: facture.subscription,
+    stripeSubscriptionId: abonnement,
     stripeInvoiceId: facture.id,
     montantPaye,
     devise,
@@ -273,18 +286,29 @@ async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<voi
  * facture d'un abonnement se règle dans la page de paiement Stripe, où le client voit lui-même l'échec.
  */
 async function traiterEchecPrelevement(facture: StripeInvoice): Promise<void> {
-  if (facture.billing_reason !== "subscription_cycle" || !facture.subscription || !facture.id) return;
+  const abonnement = abonnementDeLaFacture(facture);
+  if (facture.billing_reason !== "subscription_cycle" || !abonnement || !facture.id) return;
 
   const devise = (facture.currency ?? "").toUpperCase();
   const montant = typeof facture.amount_due === "number" ? depuisPlusPetiteUnite(facture.amount_due, devise) : 0;
   await signalerEchecPrelevement({
-    stripeSubscriptionId: facture.subscription,
+    stripeSubscriptionId: abonnement,
     stripeInvoiceId: facture.id,
     tentative: facture.attempt_count ?? 1,
     prochainEssai: typeof facture.next_payment_attempt === "number" ? new Date(facture.next_payment_attempt * 1000) : null,
     montant: Number.isFinite(montant) ? montant : 0,
     devise,
   });
+}
+
+/**
+ * Identifiant de l'abonnement Stripe d'une facture, quelle que soit la version d'API de l'endpoint de webhook :
+ * `invoice.subscription` (anciennes versions) ou `invoice.parent.subscription_details.subscription` (récentes).
+ * Ne lire que la première forme revenait à ignorer TOUS les renouvellements dès que le compte Stripe passait à une
+ * version récente — le client était prélevé, son accès jamais prolongé.
+ */
+function abonnementDeLaFacture(facture: StripeInvoice): string | null {
+  return facture.subscription || facture.parent?.subscription_details?.subscription || null;
 }
 
 /** Tolère un léger écart d'arrondi (montants en `doublePrecision`). */

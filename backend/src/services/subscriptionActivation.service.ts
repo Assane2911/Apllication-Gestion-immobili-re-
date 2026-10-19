@@ -184,14 +184,26 @@ export async function renewSubscriptionFromStripeInvoice(params: {
   const { stripeSubscriptionId, stripeInvoiceId, montantPaye, devise } = params;
 
   return db.transaction(async (tx: Transaction) => {
-    const [dejaTraite] = await tx
-      .select()
-      .from(platformSubscriptions)
-      .where(eq(platformSubscriptions.paymentRef, stripeInvoiceId));
+    const dejaTraiteAvecId = () =>
+      tx.select().from(platformSubscriptions).where(eq(platformSubscriptions.paymentRef, stripeInvoiceId));
+
+    // Rejeu d'une facture déjà traitée : réponse immédiate, sans verrou (le cas courant d'un rejeu).
+    const [dejaTraite] = await dejaTraiteAvecId();
     if (dejaTraite) return dejaTraite;
 
-    const [compte] = await tx.select().from(users).where(eq(users.stripeSubscriptionId, stripeSubscriptionId));
+    // Deux livraisons de la MÊME facture peuvent arriver ensemble (Stripe rejoue, la plateforme tourne sur
+    // plusieurs instances) : sans verrou, les deux passaient la lecture ci-dessus puis insèraient — deux lignes
+    // payées, voire deux périodes d'accès, pour un seul prélèvement. On verrouille donc la ligne du compte avant
+    // de trancher : la seconde livraison attend la première, puis voit la facture déjà traitée.
+    const [compte] = await tx
+      .select()
+      .from(users)
+      .where(eq(users.stripeSubscriptionId, stripeSubscriptionId))
+      .for("update");
     if (!compte) return null;
+
+    const [traiteEntreTemps] = await dejaTraiteAvecId();
+    if (traiteEntreTemps) return traiteEntreTemps;
 
     const [dernierPaiement] = await tx
       .select()

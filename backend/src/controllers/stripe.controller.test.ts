@@ -748,4 +748,107 @@ describe("POST /api/payments/stripe/webhook", () => {
       expect(compte.subscriptionEndsAt?.getTime()).toBe(finPayee.getTime());
     });
   });
+
+  // Stripe a retiré `invoice.subscription` de ses versions d'API récentes (2025-03-31 et suivantes) : l'abonnement
+  // se lit alors dans `invoice.parent.subscription_details.subscription`. Un compte Stripe créé ou un endpoint de
+  // webhook configuré avec une version récente envoie cette forme : tous les renouvellements étaient alors
+  // ignorés SANS un mot — le client était prélevé, son accès jamais prolongé.
+  describe("factures à la forme récente de l'API Stripe (abonnement sous parent.subscription_details)", () => {
+    beforeEach(() => {
+      vi.setSystemTime(new Date(2026, 7, 15));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const factureRecente = (type: string, objet: Record<string, unknown>) =>
+      JSON.stringify({
+        type,
+        data: {
+          object: {
+            billing_reason: "subscription_cycle",
+            currency: "eur",
+            parent: { type: "subscription_details", subscription_details: { subscription: objet.abonnement } },
+            ...objet,
+            abonnement: undefined,
+          },
+        },
+      });
+
+    it("prolonge l'abonnement sur un invoice.paid à la forme récente", async () => {
+      const manager = await createManager({
+        subscriptionStatus: "ACTIVE",
+        subscriptionPlan: "PRO",
+        subscriptionEndsAt: new Date(2026, 8, 1),
+        stripeSubscriptionId: "sub_stripe_recent",
+      });
+      await testDb.insert(platformSubscriptions).values({
+        userId: manager.id,
+        plan: "PRO",
+        amount: 29,
+        currency: "EUR",
+        status: "PAID",
+        paymentMethod: "STRIPE",
+        paymentRef: "cs_test_premier_cycle_recent",
+        startDate: new Date(2026, 7, 1),
+        endDate: new Date(2026, 8, 1),
+      });
+
+      const corps = factureRecente("invoice.paid", { id: "in_test_recent", abonnement: "sub_stripe_recent", amount_paid: 2900 });
+      const res = await envoyer(corps, signer(corps));
+
+      expect(res.status).toBe(200);
+      const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+      expect(compte.subscriptionEndsAt?.getMonth()).toBe(9); // 1er septembre → 1er octobre 2026
+      const lignes = await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.paymentRef, "in_test_recent"));
+      expect(lignes).toHaveLength(1);
+    });
+
+    it("prévient le gestionnaire d'un prélèvement raté à la forme récente", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      await createManager({ stripeSubscriptionId: "sub_stripe_recent_echec" });
+
+      const corps = factureRecente("invoice.payment_failed", {
+        id: "in_recent_echec",
+        abonnement: "sub_stripe_recent_echec",
+        attempt_count: 1,
+        next_payment_attempt: Math.floor(Date.UTC(2026, 9, 23, 12) / 1000),
+        amount_due: 2900,
+      });
+      await envoyer(corps, signer(corps));
+
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it("dit dans les journaux qu'un renouvellement ne se rattache à aucun abonnement, au lieu de l'ignorer en silence", async () => {
+      const avertissement = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const corps = JSON.stringify({
+        type: "invoice.paid",
+        data: { object: { id: "in_sans_abonnement", billing_reason: "subscription_cycle", amount_paid: 2900, currency: "eur" } },
+      });
+
+      const res = await envoyer(corps, signer(corps));
+
+      expect(res.status).toBe(200);
+      expect(avertissement).toHaveBeenCalledWith(expect.stringContaining("in_sans_abonnement"));
+    });
+  });
+
+  // Un moyen de paiement à confirmation différée (prélèvement SEPA, virement…) laisse la session « completed » mais
+  // « unpaid » ; l'argent n'arrive que plus tard, annoncé par `checkout.session.async_payment_succeeded`. Sans lui,
+  // le locataire avait payé et la facture restait due, sans qu'on le sache.
+  it("confirme une facture réglée par un paiement à confirmation différée (async_payment_succeeded)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, { status: "PENDING", paymentMethod: "STRIPE", paymentRef: "cs_test_differe", amount: 500 });
+
+    const corps = evenementSession({ type: "checkout.session.async_payment_succeeded", id: "cs_test_differe", reference: invoice.id, amountTotal: 50000 });
+    const res = await envoyer(corps, signer(corps));
+
+    expect(res.status).toBe(200);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("PAID");
+  });
 });
