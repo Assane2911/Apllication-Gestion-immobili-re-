@@ -39,14 +39,14 @@ describe("apiErrorMessage", () => {
     expect(apiErrorMessage(err)).toBe("Email ou mot de passe incorrect");
   });
 
-  it("retombe sur le message générique axios si le backend n'a pas renvoyé de champ 'error'", () => {
+  it("retombe sur un message traduit si le backend n'a pas renvoyé de champ 'error' : jamais le texte brut d'axios", () => {
     const err = axiosErrorWithResponse({});
-    expect(apiErrorMessage(err)).toBe("Request failed");
+    expect(apiErrorMessage(err)).toBe("Une erreur inattendue est survenue. Réessayez dans un instant.");
   });
 
   it("renvoie un message générique pour une erreur qui n'est pas une erreur axios", () => {
-    expect(apiErrorMessage(new Error("boom"))).toBe("Une erreur inattendue est survenue");
-    expect(apiErrorMessage("chaine quelconque")).toBe("Une erreur inattendue est survenue");
+    expect(apiErrorMessage(new Error("boom"))).toBe("Une erreur inattendue est survenue. Réessayez dans un instant.");
+    expect(apiErrorMessage("chaine quelconque")).toBe("Une erreur inattendue est survenue. Réessayez dans un instant.");
   });
 
   /**
@@ -218,5 +218,18 @@ describe("intercepteur de réponse 401", () => {
       rejeteur()(axiosErrorWithResponse({ error: "Compte suspendu", code: "ACCOUNT_SUSPENDED" }, 401))
     ).rejects.toBeDefined();
     expect(location.href).toBe("");
+  });
+});
+
+describe("apiErrorMessage — langue", () => {
+  it("donne le message de repli dans la langue choisie", async () => {
+    const { changerLangue } = await import("../i18n");
+    await changerLangue("en");
+    try {
+      expect(apiErrorMessage(axiosErrorWithResponse({}))).toBe("An unexpected error occurred. Please try again in a moment.");
+      expect(apiErrorMessage("quelconque")).toBe("An unexpected error occurred. Please try again in a moment.");
+    } finally {
+      await changerLangue("fr");
+    }
   });
 });

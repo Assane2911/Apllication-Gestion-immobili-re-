@@ -8,6 +8,7 @@ const es: TranslationSchema = {
       logout: "Cierra su sesión en este dispositivo.",
     },
     errors: {
+      unexpected: "Se ha producido un error inesperado. Inténtelo de nuevo en un momento.",
       network: "No se ha podido contactar con el servidor. Comprueba tu conexión a internet e inténtalo de nuevo.",
       timeout: "El servidor tarda demasiado en responder. Comprueba tu conexión e inténtalo de nuevo.",
     },
