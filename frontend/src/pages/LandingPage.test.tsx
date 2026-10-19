@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
+import { changerLangue } from "../i18n";
 import LandingPage from "./LandingPage";
 
 vi.mock("../api/client", async () => {
@@ -164,5 +165,48 @@ describe("LandingPage", () => {
     expect(
       screen.getByRole("heading", { level: 3, name: "Avis d'échéance & Relances de loyer" })
     ).toBeInTheDocument();
+  });
+
+  // Le comparatif « Gestion traditionnelle vs ImmoPlatform Pro », les maquettes du produit et les liens légaux du pied
+  // de page étaient écrits en dur en français : un visiteur qui avait choisi une autre langue voyait le reste de la page
+  // traduit, mais ces blocs restaient en français.
+  describe("blocs autrefois écrits en dur", () => {
+    const FRANCAIS_RESIDUEL = [
+      "Gestion Traditionnelle",
+      "Comparatif & Valeur Ajoutée",
+      "Recommandé",
+      "Fonctionnalité & Processus",
+      "Temps administratif",
+      "Flux net",
+      "Loyer de septembre",
+      "Mentions légales",
+      "Confidentialité",
+      "Quittances de loyer certifiées",
+      "Démarrer 15 jours d'essai gratuit",
+    ];
+
+    it.each([
+      ["en", ["Comparison & Added Value", "Traditional management (Excel / paper)", "Certified rent receipts", "Net flow", "September rent", "Legal notice"]],
+      ["pt", ["Comparação e Valor Acrescentado", "Gestão tradicional (Excel / papel)", "Recibos de renda certificados", "Fluxo líquido", "Renda de setembro", "Aviso legal"]],
+      ["es", ["Comparativa y valor añadido", "Gestión tradicional (Excel / papel)", "Recibos de alquiler certificados", "Flujo neto", "Alquiler de septiembre", "Aviso legal"]],
+    ])("affiche le comparatif, les maquettes et le pied de page en « %s », sans reste de français", async (langue, attendus) => {
+      await changerLangue(langue);
+      try {
+        const { container } = renderPage();
+        const texte = container.textContent ?? "";
+        for (const phrase of attendus) expect(texte).toContain(phrase);
+        for (const reste of FRANCAIS_RESIDUEL) expect(texte).not.toContain(reste);
+      } finally {
+        await changerLangue("fr");
+      }
+    });
+
+    it("garde le comparatif en français pour un visiteur francophone", () => {
+      const { container } = renderPage();
+      const texte = container.textContent ?? "";
+      for (const phrase of ["Comparatif & Valeur Ajoutée", "Gestion Traditionnelle (Excel / Papier)", "Recommandé", "Flux net", "Mentions légales", "CGU & CGV"]) {
+        expect(texte).toContain(phrase);
+      }
+    });
   });
 });

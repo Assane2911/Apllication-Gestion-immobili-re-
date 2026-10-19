@@ -295,6 +295,7 @@ const fr = {
       features: "Fonctionnalités",
       vitrine: "Nos biens",
       receipts: "Quittances & Signature",
+      compare: "Comparatif",
       pricing: "Tarifs",
       currencies: "Multi-Devises",
       security: "Sécurité",
@@ -458,9 +459,78 @@ const fr = {
         cta: "Démarrer l'essai 15j",
       },
     },
+    compare: {
+      badge: "Comparatif & Valeur Ajoutée",
+      titlePrefix: "Gestion Traditionnelle vs",
+      subtitle:
+        "Découvrez pourquoi les agences et propriétaires modernes abandonnent les tableurs Excel, les échanges WhatsApp éparpillés et la paperasse pour une gestion locative 100% automatisée.",
+      roi: {
+        adminTime: "Temps administratif",
+        unpaidRent: "Loyer impayé oublié",
+        certified: "Baux & quittances certifiés",
+      },
+      headers: {
+        feature: "Fonctionnalité & Processus",
+        traditional: "Gestion Traditionnelle (Excel / Papier)",
+        recommended: "Recommandé",
+      },
+      rows: {
+        reminders: {
+          title: "Avis d'échéance & Relances de loyer",
+          description: "Anticipation des paiements et réduction des impayés",
+          traditional: "Oublis fréquents, appels gênants, messages WhatsApp éparpillés, retards de paiement réguliers.",
+          immoplatform: "Alerte automatique chaque 1er du mois avec échéance stricte au 5. Factures instantanées avec statut en direct.",
+        },
+        receipts: {
+          title: "Quittances de loyer certifiées",
+          description: "Génération et délivrance légale aux locataires",
+          traditional: "Création manuelle sur Word/Excel, conversion PDF fastidieuse, envois par email souvent oubliés.",
+          immoplatform: "Génération automatique en 1 clic au format officiel certifié avec cachet agence, numéro unique et mentions légales.",
+        },
+        signature: {
+          title: "Signature des contrats de bail",
+          description: "Validation juridique et conclusion des baux",
+          traditional: "Impression papier, paraphage page par page, déplacements physiques obligatoires, baux égarés.",
+          immoplatform: "Signature tactile électronique (ordinateur, tablette, mobile) avec horodatage certifié en 2 minutes.",
+        },
+        incidents: {
+          title: "Signalement des pannes & Incidents",
+          description: "Suivi des réparations et de la maintenance",
+          traditional: "Appels téléphoniques d'urgence, descriptions vagues, photos non datées, historique inexistant.",
+          immoplatform: "Prise de photo directe par le locataire, galerie haute résolution pour l'agence et suivi d'intervention en temps réel.",
+        },
+        expenses: {
+          title: "Suivi des dépenses & Cash-Flow Net",
+          description: "Calcul de rentabilité réelle et comptabilité",
+          traditional: "Factures d'artisans dispersées, calculs manuels de fin d'année, aucune visibilité sur le rendement net.",
+          immoplatform: "Enregistrement des dépenses par catégorie, calcul automatique du Cash-Flow net et export comptable CSV en 1 clic.",
+        },
+        branding: {
+          title: "Image de marque & Multi-devises",
+          description: "Professionnalisme et dimension internationale",
+          traditional: "Documents neutres ou non professionnels, conversion manuelle sujette aux erreurs de change.",
+          immoplatform: "Marque blanche agence (logo, SIRET, en-tête) et prise en charge multi-devises intégrale (EUR, USD, FCFA, STN, etc.).",
+        },
+      },
+      cta: {
+        text: "Prêt à moderniser la gestion de votre parc immobilier dès aujourd'hui ?",
+        button: "Démarrer 15 jours d'essai gratuit →",
+      },
+    },
+    mock: {
+      netFlow: "Flux net",
+      rentMonth: "Loyer de septembre",
+      pay: "Payer",
+      tenantMessage: "Bonjour, le chauffe-eau fait du bruit 🙈",
+      managerReply: "Merci, j'envoie un plombier demain !",
+      signed: "Signé",
+    },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. Tous droits réservés.",
       tagline: "Logiciel de gestion locative immobilière certifié et sécurisé.",
+      legal: "Mentions légales",
+      terms: "CGU & CGV",
+      privacy: "Confidentialité",
     },
   },
 
@@ -1659,6 +1729,7 @@ const fr = {
     },
     subscription: {
       title: "Abonnement & Formules SaaS",
+      nativeFallback: "Pour souscrire ou changer d'offre, connectez-vous depuis le site web sur ordinateur ou votre navigateur mobile — l'app se contente d'afficher votre abonnement en cours.",
       subtitle: "Gérez votre formule de gestion immobilière et vos options de facturation.",
       currentStatus: "Votre statut actuel",
       features: {

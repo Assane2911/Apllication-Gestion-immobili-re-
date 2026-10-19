@@ -297,6 +297,7 @@ const en: TranslationSchema = {
       features: "Features",
       vitrine: "Our properties",
       receipts: "Receipts & Signature",
+      compare: "Comparison",
       pricing: "Pricing",
       currencies: "Multi-Currency",
       security: "Security",
@@ -460,9 +461,78 @@ const en: TranslationSchema = {
         cta: "Start the 15-day trial",
       },
     },
+    compare: {
+      badge: "Comparison & Added Value",
+      titlePrefix: "Traditional management vs",
+      subtitle:
+        "Find out why modern agencies and landlords are leaving Excel spreadsheets, scattered WhatsApp conversations and paperwork behind for 100% automated rental management.",
+      roi: {
+        adminTime: "Admin time",
+        unpaidRent: "Forgotten unpaid rent",
+        certified: "Certified leases & receipts",
+      },
+      headers: {
+        feature: "Feature & process",
+        traditional: "Traditional management (Excel / paper)",
+        recommended: "Recommended",
+      },
+      rows: {
+        reminders: {
+          title: "Rent notices & reminders",
+          description: "Anticipate payments and reduce unpaid rent",
+          traditional: "Frequent oversights, awkward phone calls, scattered WhatsApp messages, regular late payments.",
+          immoplatform: "Automatic alert on the 1st of every month with a strict due date on the 5th. Instant invoices with live status.",
+        },
+        receipts: {
+          title: "Certified rent receipts",
+          description: "Legal generation and delivery to tenants",
+          traditional: "Manual creation in Word/Excel, tedious PDF conversion, emails often forgotten.",
+          immoplatform: "Automatic one-click generation in the official certified format with agency stamp, unique number and legal notices.",
+        },
+        signature: {
+          title: "Lease signing",
+          description: "Legal validation and conclusion of leases",
+          traditional: "Paper printing, initialling page by page, mandatory trips in person, lost leases.",
+          immoplatform: "Electronic touch signature (computer, tablet, mobile) with a certified timestamp in 2 minutes.",
+        },
+        incidents: {
+          title: "Breakdown & incident reports",
+          description: "Repair and maintenance follow-up",
+          traditional: "Emergency phone calls, vague descriptions, undated photos, no history.",
+          immoplatform: "Photo taken directly by the tenant, high-resolution gallery for the agency and real-time follow-up of the intervention.",
+        },
+        expenses: {
+          title: "Expense tracking & net cash flow",
+          description: "Real profitability calculation and accounting",
+          traditional: "Scattered contractor invoices, manual year-end calculations, no visibility on net yield.",
+          immoplatform: "Expenses recorded by category, automatic net cash-flow calculation and one-click CSV accounting export.",
+        },
+        branding: {
+          title: "Branding & multi-currency",
+          description: "Professionalism and international reach",
+          traditional: "Plain or unprofessional documents, manual conversion prone to exchange errors.",
+          immoplatform: "White-label agency (logo, company number, letterhead) and full multi-currency support (EUR, USD, FCFA, STN, etc.).",
+        },
+      },
+      cta: {
+        text: "Ready to modernise the management of your property portfolio today?",
+        button: "Start your 15-day free trial →",
+      },
+    },
+    mock: {
+      netFlow: "Net flow",
+      rentMonth: "September rent",
+      pay: "Pay",
+      tenantMessage: "Hello, the water heater is making noise 🙈",
+      managerReply: "Thanks, I'm sending a plumber tomorrow!",
+      signed: "Signed",
+    },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. All rights reserved.",
       tagline: "Certified and secure rental property management software.",
+      legal: "Legal notice",
+      terms: "Terms & conditions",
+      privacy: "Privacy",
     },
   },
 
@@ -1658,6 +1728,7 @@ const en: TranslationSchema = {
     },
     subscription: {
       title: "Subscription & SaaS Plans",
+      nativeFallback: "To subscribe or change plan, sign in from the website on a computer or your mobile browser — the app only shows your current subscription.",
       subtitle: "Manage your property management plan and billing options.",
       currentStatus: "Your current status",
       features: {
