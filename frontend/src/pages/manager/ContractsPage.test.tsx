@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
+import { changerLangue } from "../../i18n";
 import type { Contract, PaginatedResponse, Property, Tenant } from "../../types";
 import ContractsPage, { changementsDuContrat, formulaireDepuisContrat } from "./ContractsPage";
 
@@ -123,6 +124,27 @@ describe("ContractsPage (manager)", () => {
     // Aucune signature encore posée : bouton "Signer" pour l'agence, mention "En attente" pour le locataire.
     expect(screen.getAllByRole("button", { name: /Signer/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("En attente").length).toBeGreaterThan(0);
+  });
+
+  it("le bouton de remplacement du scan suit la langue choisie (il était écrit en dur en français)", async () => {
+    await changerLangue("en");
+    try {
+      queueLoad([contract({ id: "c1", scannedContractUrl: "https://stockage.test/scan.pdf" })]);
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByText(/Studio Centre-ville/).length).toBeGreaterThan(0));
+      expect(screen.getAllByText("Replace scan").length).toBeGreaterThan(0);
+      expect(screen.queryByText("Remplacer scan")).not.toBeInTheDocument();
+    } finally {
+      await changerLangue("fr");
+    }
+  });
+
+  it("propose « Remplacer scan » en français quand un scan existe déjà", async () => {
+    queueLoad([contract({ id: "c1", scannedContractUrl: "https://stockage.test/scan.pdf" })]);
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText("Remplacer scan").length).toBeGreaterThan(0));
   });
 
   it("les boutons d'action du tableau passent à la ligne au lieu d'élargir le tableau hors de l'écran", async () => {

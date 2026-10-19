@@ -1092,6 +1092,7 @@ const pt: TranslationSchema = {
       leasePdf: "Contrato PDF",
       scanPaperContract: "Digitalizar / Anexar contrato em papel",
       scanContractShort: "Scan papel",
+      replaceScanShort: "Substituir digitalização",
       viewScannedContract: "Ver digitalização em papel",
       scannedLeaseAttached: "Contrato em papel digitalizado disponível",
       uploadingScan: "Enviando digitalização...",

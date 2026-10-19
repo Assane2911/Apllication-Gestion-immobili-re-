@@ -1093,6 +1093,7 @@ const fr = {
       leasePdf: "Bail PDF",
       scanPaperContract: "Scanner / Joindre bail papier",
       scanContractShort: "Scan papier",
+      replaceScanShort: "Remplacer scan",
       viewScannedContract: "Voir scan papier",
       scannedLeaseAttached: "Contrat papier scanné disponible",
       uploadingScan: "Envoi du scan...",

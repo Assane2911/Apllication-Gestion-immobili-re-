@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fenetreDesMois, libelleDuMois } from "./moisDuGraphique";
+import { fenetreDesMois, libelleDuMois, moisCourt } from "./moisDuGraphique";
 
 describe("fenetreDesMois", () => {
   const maintenant = new Date(2026, 9, 18); // 18 octobre 2026
@@ -36,5 +36,14 @@ describe("libelleDuMois", () => {
 
   it("renvoie la clé telle quelle si elle n'est pas une date", () => {
     expect(libelleDuMois("ce mois-ci", "fr")).toBe("ce mois-ci");
+  });
+});
+
+describe("moisCourt", () => {
+  it("écrit le mois dans la langue de l'interface, pas celle du navigateur", () => {
+    expect(moisCourt(2026, 3, "fr")).toBe("mars");
+    expect(moisCourt(2026, 3, "en")).toBe("Mar");
+    expect(moisCourt(2026, 8, "fr")).toMatch(/^août/);
+    expect(moisCourt(2026, 8, "en")).toBe("Aug");
   });
 });

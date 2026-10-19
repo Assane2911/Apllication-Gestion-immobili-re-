@@ -8,6 +8,7 @@ import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { AnnualFiscalSynthesis, ExpenseCategory } from "../../types";
 import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
+import { moisCourt } from "../../utils/moisDuGraphique";
 import Bulle from "../../components/Bulle";
 
 const categoryDotColors: Record<ExpenseCategory, string> = {
@@ -25,7 +26,7 @@ function allPositive(byCurrency: Record<string, number>): boolean {
 }
 
 export default function FiscalPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [synthesis, setSynthesis] = useState<AnnualFiscalSynthesis | null>(null);
@@ -163,7 +164,7 @@ export default function FiscalPage() {
 
   const monthLabel = (m: string) => {
     const [, mm] = m.split("-");
-    return new Date(year, Number(mm) - 1, 1).toLocaleDateString(undefined, { month: "short" });
+    return moisCourt(year, Number(mm), i18n.language);
   };
 
   const comparisonChartData = allMonths.map((month) => {
