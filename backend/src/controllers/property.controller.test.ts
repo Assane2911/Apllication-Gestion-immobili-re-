@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { invoices, properties } from "../db/schema";
+import { expenses, invoices, properties } from "../db/schema";
 import { deleteStorageObjectBestEffort, uploadPublicFile } from "../services/storage.service";
 import {
   authHeader,
@@ -314,6 +314,29 @@ describe("DELETE /api/properties/:id", () => {
     expect(res.status).toBe(409);
     const stillThere = await testDb.select().from(properties).where(eq(properties.id, property.id));
     expect(stillThere).toHaveLength(1);
+  });
+
+  it("refuse de supprimer un bien dont des dépenses sont enregistrées : elles quitteraient les bilans", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    await testDb.insert(expenses).values({ propertyId: property.id, category: "TAX", title: "Taxe foncière", amount: 900, expenseDate: new Date(2026, 3, 15) });
+
+    const res = await request(app).delete(`/api/properties/${property.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+    expect(await testDb.select().from(properties).where(eq(properties.id, property.id))).toHaveLength(1);
+    expect(await testDb.select().from(expenses).where(eq(expenses.propertyId, property.id))).toHaveLength(1);
+  });
+
+  it("supprime un bien dont les dépenses ont d'abord été retirées", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const [depense] = await testDb.insert(expenses).values({ propertyId: property.id, category: "TAX", title: "Taxe foncière", amount: 900, expenseDate: new Date(2026, 3, 15) }).returning();
+    await request(app).delete(`/api/expenses/${depense.id}`).set(authHeader(tokenFor(manager)));
+
+    const res = await request(app).delete(`/api/properties/${property.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(204);
   });
 
   it("refuse de supprimer le bien d'un autre gestionnaire", async () => {

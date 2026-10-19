@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { contracts, owners, properties, tenants, users } from "../db/schema";
+import { contracts, expenses, owners, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -237,6 +237,17 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
     throw new ApiError(
       409,
       "Impossible de supprimer un bien ayant un historique de contrats. Veuillez d'abord supprimer les contrats associés."
+    );
+  }
+
+  // Les dépenses d'un bien disparaissent avec lui (suppression en cascade) : elles sortiraient des bilans
+  // fiscaux et des comptes rendus de gestion des années passées. Même principe que pour les factures
+  // d'un contrat : un historique comptable se retire volontairement, jamais en effet de bord.
+  const [depense] = await db.select({ id: expenses.id }).from(expenses).where(eq(expenses.propertyId, req.params.id)).limit(1);
+  if (depense) {
+    throw new ApiError(
+      409,
+      "Impossible de supprimer un bien ayant des dépenses enregistrées : elles disparaîtraient de vos bilans. Supprimez d'abord ces dépenses si c'est une erreur."
     );
   }
 
