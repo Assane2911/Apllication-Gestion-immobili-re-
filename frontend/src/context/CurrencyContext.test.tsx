@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "./AuthContext";
 import { CurrencyProvider } from "./CurrencyContext";
+import { changerLangue } from "../i18n";
 import { useCurrency } from "./currency";
 
 // AuthProvider ne fait un appel réseau (api.get("/auth/me")) que si une
@@ -176,5 +177,50 @@ describe("CurrencyProvider — setCurrency", () => {
     await user.selectOptions(screen.getByTestId("select"), "XOF");
 
     await waitFor(() => expect(mockedApi.patch).toHaveBeenCalledWith("/auth/currency", { currency: "XOF" }));
+  });
+});
+
+// Les montants s'écrivaient toujours « à la française » (« 12 345,67 € »), quelle que soit la langue choisie : un
+// lecteur anglophone voyait des espaces et une virgule décimale, là où les mois, les dates et les noms de pays
+// suivent déjà la langue de l'interface.
+describe("CurrencyProvider — séparateurs selon la langue de l'interface", () => {
+  function Montant() {
+    const { formatMoney } = useCurrency();
+    return <span data-testid="montant">{formatMoney(12345.67, "EUR")}</span>;
+  }
+  const afficher = () =>
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <Montant />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+
+  it.each([
+    ["fr", /^12\s345,67 €$/],
+    ["en", /^12,345\.67 €$/],
+    ["es", /^12\.345,67 €$/],
+    ["pt", /^12\s345,67 €$/],
+  ])("écrit 12 345,67 EUR selon les usages de la langue « %s »", async (langue, attendu) => {
+    await changerLangue(langue);
+    try {
+      afficher();
+      expect(screen.getByTestId("montant").textContent).toMatch(attendu);
+    } finally {
+      await changerLangue("fr");
+    }
+  });
+
+  it("suit un changement de langue en cours de session, sans recharger la page", async () => {
+    afficher();
+    expect(screen.getByTestId("montant").textContent).toMatch(/^12\s345,67 €$/);
+
+    await act(async () => {
+      await changerLangue("en");
+    });
+
+    expect(screen.getByTestId("montant").textContent).toMatch(/^12,345\.67 €$/);
+    await changerLangue("fr");
   });
 });
