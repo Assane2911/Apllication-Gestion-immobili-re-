@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Banknote, Camera, CheckCircle2, Clock, Download, FileCheck, Hourglass, PenLine, RefreshCw } from "lucide-react";
-import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
+import { preparerFichier } from "../../utils/fichiers";
 import Badge from "../../components/Badge";
 import DepositRefundModal from "../../components/DepositRefundModal";
 import DocumentModal from "../../components/DocumentModal";
@@ -330,8 +331,16 @@ export default function ContractsPage() {
   }
 
   async function handleScanFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !targetScanContract) return;
+    const brut = e.target.files?.[0];
+    if (!brut || !targetScanContract) return;
+
+    // Photo de téléphone réduite avant l'envoi, PDF trop lourd refusé tout de suite (voir utils/fichiers.ts).
+    const file = await preparerFichier(brut);
+    if (!file) {
+      alert(t("common.errors.fileTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
+      setTargetScanContract(null);
+      return;
+    }
 
     setUploadingScanContractId(targetScanContract.id);
     const formData = new FormData();

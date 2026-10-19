@@ -95,6 +95,13 @@ describe("filtre d'upload", () => {
     expect(res.body.error).toContain("Type de fichier non autorisé");
   });
 
+  // Le backend tourne comme fonction Vercel, dont le corps de requête est limité à 4,5 Mo : au-delà, Vercel répond
+  // « 413 » lui-même, avant que l'application ne voie la requête — pas de message clair, pas de traduction. La limite
+  // annoncée doit donc rester sous ce plafond (avec de la marge pour les autres champs du formulaire).
+  it("annonce une taille maximale inférieure au plafond de 4,5 Mo des fonctions Vercel", () => {
+    expect(MAX_UPLOAD_SIZE_MB).toBeLessThan(4.5);
+  });
+
   it("refuse un fichier dépassant la taille maximale, en indiquant la limite", async () => {
     const { contract, token } = await tenantWithContract();
     const tropGros = Buffer.alloc((MAX_UPLOAD_SIZE_MB + 1) * 1024 * 1024, 1);

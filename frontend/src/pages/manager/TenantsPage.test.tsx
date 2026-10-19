@@ -152,6 +152,23 @@ describe("TenantsPage (manager)", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Enregistrer" })).not.toBeInTheDocument());
   });
 
+  // Le serveur est une fonction Vercel (4,5 Mo de requête au plus) : un PDF trop lourd ne peut pas partir, et ne
+  // se réduit pas. Sans ce contrôle, l'utilisateur attendait puis voyait une erreur générique.
+  it("refuse tout de suite une pièce d'identité PDF trop lourde, avec un message lisible", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(paginated([]));
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "+ Ajouter un locataire" }).length).toBeGreaterThan(0));
+    await user.click(screen.getAllByRole("button", { name: "+ Ajouter un locataire" })[0]);
+
+    const lourd = new File(["pdf"], "carte.pdf", { type: "application/pdf" });
+    Object.defineProperty(lourd, "size", { value: 6 * 1024 * 1024 });
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, lourd);
+
+    expect(await screen.findByText("Ce fichier est trop volumineux (max 4 Mo). Réessayez avec un fichier plus léger.")).toBeInTheDocument();
+  });
+
   it("modifie un locataire existant : pré-remplit le formulaire et envoie une requête PUT", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce(paginated([tenant({ id: "ten-1", firstName: "Awa" })]));

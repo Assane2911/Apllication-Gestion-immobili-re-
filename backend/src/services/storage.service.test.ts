@@ -62,6 +62,30 @@ describe("uploadPublicFile", () => {
     expect(objectPath).toMatch(/^properties\/\d+-\d+\.jpg$/);
   });
 
+  // L'extension venait du NOM envoyé par le client : « evil.html » portant un vrai PNG était rangé en .html,
+  // et un nom à l'extension exotique (« photo.jpég ») donnait une clé de stockage invalide, donc une erreur 500.
+  // Le contenu a été vérifié (assertFileContentMatchesDeclaredType) : c'est lui qui dit l'extension.
+  it.each([
+    ["evil.html", "image/png", "png"],
+    ["photo.jpég", "image/jpeg", "jpg"],
+    ["photo", "image/jpeg", "jpg"],
+    ["scan.exe", "application/pdf", "pdf"],
+    ["animation.PNG.zip", "image/gif", "gif"],
+    ["visuel.bin", "image/webp", "webp"],
+  ])("tire l'extension du type vérifié, pas du nom envoyé (« %s » déclaré %s)", async (nom, mimetype, extension) => {
+    await uploadPublicFile(fakeFile(nom, mimetype), "properties");
+
+    const [objectPath] = mocks.upload.mock.calls[0];
+    expect(objectPath).toMatch(new RegExp(`^properties/\\d+-\\d+\\.${extension}$`));
+  });
+
+  it("ne met aucune extension quand le type n'est pas reconnu, plutôt que de reprendre celle du nom", async () => {
+    await uploadPrivateFile(fakeFile("rapport.sh", "text/plain"), "tenants");
+
+    const [objectPath] = mocks.upload.mock.calls[0];
+    expect(objectPath).toMatch(/^tenants\/\d+-\d+$/);
+  });
+
   it("génère un chemin différent à chaque envoi, sans jamais écraser un fichier existant", async () => {
     await uploadPublicFile(fakeFile("photo.png"), "properties");
     await uploadPublicFile(fakeFile("photo.png"), "properties");

@@ -261,9 +261,43 @@ describe("TenantIssuesPage", () => {
     const photoInput = container.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(photoInput, grosFichier);
 
-    expect(screen.getByText("Cette photo est trop volumineuse (max 8 Mo). Réessayez avec une photo plus légère.")).toBeInTheDocument();
+    expect(screen.getByText("Cette photo est trop volumineuse (max 4 Mo). Réessayez avec une photo plus légère.")).toBeInTheDocument();
     expect(screen.queryByAltText("Photo prête à l'envoi")).not.toBeInTheDocument();
     expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  // Une photo de téléphone en pleine résolution (9 Mo) dépasse la limite d'envoi du serveur : au lieu de la refuser,
+  // on la réduit, et c'est la version réduite qui part avec l'incident.
+  it("réduit une photo trop lourde au lieu de la refuser, et envoie la version réduite", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue({ width: 4000, height: 3000, close: vi.fn() }));
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      fillStyle: "",
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((rappel) =>
+      rappel(new Blob([new Uint8Array(1024 * 1024)], { type: "image/jpeg" }))
+    );
+    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract({ id: "c1" })] });
+    mockedApi.post.mockResolvedValueOnce({ data: {} });
+    mockedApi.get.mockResolvedValueOnce({ data: [] });
+
+    try {
+      const { container } = renderPage();
+      await waitFor(() => expect(screen.getByRole("button", { name: /Transmettre/ })).toBeInTheDocument());
+
+      const gros = new File(["fake-photo"], "IMG_0042.jpg", { type: "image/jpeg" });
+      Object.defineProperty(gros, "size", { value: 9 * 1024 * 1024 });
+      await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, gros);
+
+      await waitFor(() => expect(screen.getByAltText("Photo prête à l'envoi")).toBeInTheDocument());
+      expect(screen.queryByText(/trop volumineuse/)).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
   });
 
   it("ajoute une photo supplémentaire à un incident existant", async () => {

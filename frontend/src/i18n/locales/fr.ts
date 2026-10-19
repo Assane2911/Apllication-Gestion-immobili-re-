@@ -7,6 +7,7 @@ const fr = {
     },
     errors: {
       unexpected: "Une erreur inattendue est survenue. Réessayez dans un instant.",
+      fileTooLarge: "Ce fichier est trop volumineux (max {{maxMb}} Mo). Réessayez avec un fichier plus léger.",
       network: "Impossible de contacter le serveur. Vérifiez votre connexion internet et réessayez.",
       timeout: "Le serveur met trop de temps à répondre. Vérifiez votre connexion et réessayez.",
     },

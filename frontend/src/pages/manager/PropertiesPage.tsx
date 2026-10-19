@@ -1,7 +1,8 @@
 import { Building2, Home } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
+import { preparerFichier } from "../../utils/fichiers";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -83,6 +84,21 @@ export default function PropertiesPage() {
     });
     setImage(null);
     setShowForm(true);
+  }
+
+  // Une photo de téléphone en pleine résolution dépasse la limite d'envoi du serveur : elle est réduite ici
+  // (voir utils/fichiers.ts), ou refusée tout de suite avec un message clair si elle reste trop lourde.
+  async function choisirImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const brut = e.target.files?.[0] ?? null;
+    const prete = brut ? await preparerFichier(brut) : null;
+    if (brut && !prete) {
+      e.target.value = "";
+      setImage(null);
+      setError(t("common.errors.fileTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
+      return;
+    }
+    setError(null);
+    setImage(prete);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -192,7 +208,7 @@ export default function PropertiesPage() {
             </div>
             <div>
               <label htmlFor="property-image" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.image")}</label>
-              <input id="property-image" type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
+              <input id="property-image" type="file" accept="image/*" onChange={(e) => void choisirImage(e)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
             </div>
             <div className="md:col-span-2">
               <label htmlFor="property-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.properties.fields.description")}</label>
