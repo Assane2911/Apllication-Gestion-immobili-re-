@@ -155,7 +155,7 @@ export default function VitrinePage() {
                     {t(`manager.listings.types.${listing.type}`)}
                   </span>
                   <span className="font-bold text-slate-900 dark:text-slate-100">
-                    {new Intl.NumberFormat("fr-FR").format(listing.price)} {listing.currency}
+                    {new Intl.NumberFormat(i18n.language).format(listing.price)} {listing.currency}
                   </span>
                 </div>
               </div>
