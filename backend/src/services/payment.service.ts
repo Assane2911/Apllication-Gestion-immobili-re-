@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { env } from "../config/env";
 import { ApiError } from "../utils/asyncHandler";
+import { fetchAvecDelai } from "../utils/fetchAvecDelai";
 
 export type PaymentMethodKey = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO";
 
@@ -338,7 +339,7 @@ async function initiateStripePayment(
 
   let response: Response;
   try {
-    response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    response = await fetchAvecDelai("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.payments.stripeSecretKey}`,
@@ -416,7 +417,7 @@ export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: 
 
   let response: Response;
   try {
-    response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
+    response = await fetchAvecDelai(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.payments.stripeSecretKey}`,
@@ -471,7 +472,7 @@ export async function setStripeCollectionPaused(stripeSubscriptionId: string, pa
 
   let response: Response;
   try {
-    response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
+    response = await fetchAvecDelai(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.payments.stripeSecretKey}`,
@@ -518,7 +519,7 @@ export async function cancelStripeSubscriptionNow(stripeSubscriptionId: string):
 
   let response: Response;
   try {
-    response = await fetch(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
+    response = await fetchAvecDelai(`https://api.stripe.com/v1/subscriptions/${stripeSubscriptionId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${env.payments.stripeSecretKey}` },
     });
@@ -581,7 +582,7 @@ async function initiatePaydunyaPayment(
 
   let response: Response;
   try {
-    response = await fetch(`${baseUrl}/checkout-invoice/create`, {
+    response = await fetchAvecDelai(`${baseUrl}/checkout-invoice/create`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
