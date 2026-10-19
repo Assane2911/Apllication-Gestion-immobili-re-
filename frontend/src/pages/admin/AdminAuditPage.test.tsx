@@ -99,6 +99,20 @@ describe("AdminAuditPage", () => {
     expect(tableau.getByText("Formule modifiée")).toBeInTheDocument();
   });
 
+  it("traduit les actions d'accès illimité", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        entree({ id: "a1", action: "subscription.grant_unlimited", details: "Accès illimité accordé" }),
+        entree({ id: "a2", action: "subscription.revoke_unlimited", details: "Accès illimité retiré" }),
+      ])
+    );
+    renderPage();
+
+    const tableau = within(await screen.findByRole("table"));
+    expect(tableau.getByText("Accès illimité accordé", { selector: "td.font-semibold" })).toBeInTheDocument();
+    expect(tableau.getByText("Accès illimité retiré", { selector: "td.font-semibold" })).toBeInTheDocument();
+  });
+
   it("affiche un état vide", async () => {
     mockedApi.get.mockResolvedValueOnce(page([]));
     renderPage();
