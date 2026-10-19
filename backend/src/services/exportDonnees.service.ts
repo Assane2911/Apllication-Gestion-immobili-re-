@@ -13,6 +13,8 @@ import {
   users,
   contractCotenants,
   formalNotices,
+  invoicePayments,
+  rentRevisions,
 } from "../db/schema";
 import { lireFactures, referenceMiseEnDemeure } from "./miseEnDemeure.service";
 
@@ -115,6 +117,16 @@ export async function construireExportLocataire(tenantId: string) {
   }
   const journal = await db.select().from(activityLogs).where(or(...entitesConcernees));
 
+  // Le détail des encaissements de ses factures (date, montant, moyen, référence de virement saisie par le locataire)
+  // et les révisions de loyer de ses baux : des données qui le concernent, que les factures et les contrats ne
+  // montrent qu'en résumé (dernier moyen de paiement, loyer actuel).
+  const encaissements = idsFactures.length
+    ? await db.select().from(invoicePayments).where(inArray(invoicePayments.invoiceId, idsFactures))
+    : [];
+  const revisionsDeLoyer = idsContrats.length
+    ? await db.select().from(rentRevisions).where(inArray(rentRevisions.contractId, idsContrats))
+    : [];
+
   // Les mises en demeure sont adressées à tous les locataires du bail, colocataires compris.
   const misesEnDemeure = idsContrats.length
     ? await db.select().from(formalNotices).where(inArray(formalNotices.contractId, idsContrats))
@@ -161,6 +173,8 @@ export async function construireExportLocataire(tenantId: string) {
       })
     ),
     factures,
+    encaissements,
+    revisionsDeLoyer,
     misesEnDemeure: misesEnDemeure.map(({ invoicesSnapshot, ...n }: typeof formalNotices.$inferSelect) => ({
       ...n,
       reference: referenceMiseEnDemeure(n),

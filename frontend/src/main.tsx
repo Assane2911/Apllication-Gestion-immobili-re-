@@ -2,6 +2,15 @@ import './instrument'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// Polices servies par nous : les charger depuis les serveurs de Google enverrait l'adresse IP de chaque visiteur à
+// Google avant tout consentement (voir src/rgpd/polices.test.ts). Mêmes graisses qu'avant (index.css, tailwind).
+import '@fontsource/manrope/600.css'
+import '@fontsource/manrope/700.css'
+import '@fontsource/manrope/800.css'
+import '@fontsource/public-sans/400.css'
+import '@fontsource/public-sans/500.css'
+import '@fontsource/public-sans/600.css'
+import '@fontsource/public-sans/700.css'
 import './index.css'
 import { i18nPret } from './i18n'
 import App from './App.tsx'

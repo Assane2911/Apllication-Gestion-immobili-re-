@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { activityLogs, agencySettings, issueReports, messages } from "../db/schema";
+import { activityLogs, agencySettings, invoicePayments, issueReports, messages, rentRevisions } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -73,6 +73,63 @@ describe("Export des données d'un locataire", () => {
     expect(res.body.signalements).toHaveLength(1);
     expect(res.body.messages).toHaveLength(1);
     expect(res.body.messages[0].content).toBe("Bonjour, la fuite continue");
+  });
+
+  // Régression : l'export donnait chaque facture avec son DERNIER moyen et sa dernière référence de paiement, mais pas
+  // le détail des encaissements — un loyer réglé en trois fois n'y laissait qu'une trace. Or chaque encaissement
+  // (date, montant, moyen, référence de virement saisie par le locataire) est une donnée qui le concerne : le droit
+  // d'accès porte sur « l'ensemble des données », pas sur un résumé. Même chose pour les révisions de loyer de ses baux.
+  it("inclut le détail des encaissements de ses factures et les révisions de loyer de ses baux", async () => {
+    const { manager, tenant, contract, invoice } = await dossierComplet();
+    await testDb.insert(invoicePayments).values([
+      { invoiceId: invoice.id, amount: 200, paidAt: new Date("2026-03-02T10:00:00Z"), paymentMethod: "BANK_TRANSFER", paymentRef: "VIR-AWA-0302" },
+      { invoiceId: invoice.id, amount: 150, paidAt: new Date("2026-03-20T10:00:00Z"), paymentMethod: "CASH", paymentRef: null },
+    ]);
+    await testDb.insert(rentRevisions).values({
+      contractId: contract.id,
+      previousRent: 350,
+      newRent: 360,
+      effectiveDate: new Date("2026-09-01T00:00:00Z"),
+      method: "PERCENT",
+      percent: 2.86,
+    });
+
+    const res = await request(app)
+      .get(`/api/tenants/${tenant.id}/export`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.encaissements).toHaveLength(2);
+    const references = res.body.encaissements.map((e: { paymentRef: string | null }) => e.paymentRef);
+    expect(references).toContain("VIR-AWA-0302");
+    expect(references).toContain(null);
+    expect(res.body.encaissements[0].invoiceId).toBe(invoice.id);
+    expect(res.body.revisionsDeLoyer).toHaveLength(1);
+    expect(res.body.revisionsDeLoyer[0]).toMatchObject({ previousRent: 350, newRent: 360, contractId: contract.id });
+  });
+
+  it("ne livre jamais les encaissements ni les révisions d'un autre locataire", async () => {
+    const { manager, tenant } = await dossierComplet();
+    const autre = await createTenant(manager.id, { firstName: "Moussa", lastName: "Fall" });
+    const property = await createProperty(manager.id, { title: "Villa Almadies" });
+    const contratAutre = await createContract(property.id, autre.id);
+    const factureAutre = await createInvoice(contratAutre.id, { status: "PAID", amount: 900 });
+    await testDb.insert(invoicePayments).values({ invoiceId: factureAutre.id, amount: 900, paidAt: new Date(), paymentMethod: "CASH", paymentRef: "SECRET-MOUSSA" });
+    await testDb.insert(rentRevisions).values({
+      contractId: contratAutre.id,
+      previousRent: 900,
+      newRent: 950,
+      effectiveDate: new Date("2026-09-01T00:00:00Z"),
+      method: "AMOUNT",
+    });
+
+    const res = await request(app)
+      .get(`/api/tenants/${tenant.id}/export`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.body.encaissements).toEqual([]);
+    expect(res.body.revisionsDeLoyer).toEqual([]);
+    expect(JSON.stringify(res.body)).not.toContain("SECRET-MOUSSA");
   });
 
   // Régression : « on ne choisit pas ce qu'on montre » (voir le commentaire
