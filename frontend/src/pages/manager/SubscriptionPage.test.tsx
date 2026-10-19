@@ -728,6 +728,24 @@ describe("SubscriptionPage", () => {
     ).toBeInTheDocument();
   });
 
+  // Le message de repli de l'application native était écrit en dur en français, quelle que soit la langue choisie.
+  it("sur mobile natif, écrit le message de repli dans la langue choisie", async () => {
+    await changerLangue("en");
+    try {
+      mockedIsNativePlatform.mockReturnValue(true);
+      seedUser(authUser());
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getByText(/To subscribe or change plan, sign in from the website/)).toBeInTheDocument());
+      expect(screen.queryByText(/Pour souscrire ou changer d'offre/)).not.toBeInTheDocument();
+    } finally {
+      await changerLangue("fr");
+    }
+  });
+
   it("sur mobile natif (Capacitor) avec un abonnement déjà actif, n'affiche ni grille ni message de repli", async () => {
     mockedIsNativePlatform.mockReturnValue(true);
     seedUser(

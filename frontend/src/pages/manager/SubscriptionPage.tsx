@@ -458,7 +458,7 @@ export default function SubscriptionPage() {
 
       {isNativeApp && sub?.status !== "ACTIVE" && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
-          Pour souscrire ou changer d'offre, connectez-vous depuis le site web sur ordinateur ou votre navigateur mobile — l'app se contente d'afficher votre abonnement en cours.
+          {t("manager.subscription.nativeFallback")}
         </div>
       )}
 

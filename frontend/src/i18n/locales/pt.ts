@@ -297,6 +297,7 @@ const pt: TranslationSchema = {
       features: "Funcionalidades",
       vitrine: "Os nossos imóveis",
       receipts: "Recibos & Assinatura",
+      compare: "Comparação",
       pricing: "Preços",
       currencies: "Multi-Moedas",
       security: "Segurança",
@@ -460,9 +461,78 @@ const pt: TranslationSchema = {
         cta: "Iniciar o teste de 15 dias",
       },
     },
+    compare: {
+      badge: "Comparação e Valor Acrescentado",
+      titlePrefix: "Gestão tradicional vs",
+      subtitle:
+        "Descubra por que razão as agências e os proprietários modernos abandonam as folhas de Excel, as conversas de WhatsApp dispersas e a papelada por uma gestão de arrendamentos 100% automatizada.",
+      roi: {
+        adminTime: "Tempo administrativo",
+        unpaidRent: "Renda em atraso esquecida",
+        certified: "Contratos e recibos certificados",
+      },
+      headers: {
+        feature: "Funcionalidade e processo",
+        traditional: "Gestão tradicional (Excel / papel)",
+        recommended: "Recomendado",
+      },
+      rows: {
+        reminders: {
+          title: "Avisos de vencimento e lembretes de renda",
+          description: "Antecipação dos pagamentos e redução das rendas em atraso",
+          traditional: "Esquecimentos frequentes, chamadas incómodas, mensagens de WhatsApp dispersas, atrasos de pagamento regulares.",
+          immoplatform: "Alerta automático no dia 1 de cada mês com vencimento rigoroso no dia 5. Faturas instantâneas com estado em direto.",
+        },
+        receipts: {
+          title: "Recibos de renda certificados",
+          description: "Geração e entrega legal aos inquilinos",
+          traditional: "Criação manual em Word/Excel, conversão em PDF fastidiosa, envios por email muitas vezes esquecidos.",
+          immoplatform: "Geração automática com 1 clique no formato oficial certificado, com carimbo da agência, número único e menções legais.",
+        },
+        signature: {
+          title: "Assinatura dos contratos de arrendamento",
+          description: "Validação jurídica e celebração dos contratos",
+          traditional: "Impressão em papel, rubrica página a página, deslocações físicas obrigatórias, contratos extraviados.",
+          immoplatform: "Assinatura eletrónica tátil (computador, tablet, telemóvel) com carimbo de data/hora certificado em 2 minutos.",
+        },
+        incidents: {
+          title: "Comunicação de avarias e incidentes",
+          description: "Acompanhamento das reparações e da manutenção",
+          traditional: "Chamadas de urgência, descrições vagas, fotografias sem data, histórico inexistente.",
+          immoplatform: "Fotografia tirada diretamente pelo inquilino, galeria em alta resolução para a agência e acompanhamento da intervenção em tempo real.",
+        },
+        expenses: {
+          title: "Acompanhamento de despesas e fluxo de caixa líquido",
+          description: "Cálculo da rentabilidade real e contabilidade",
+          traditional: "Faturas de profissionais dispersas, cálculos manuais de fim de ano, nenhuma visibilidade sobre o rendimento líquido.",
+          immoplatform: "Registo das despesas por categoria, cálculo automático do fluxo de caixa líquido e exportação contabilística CSV com 1 clique.",
+        },
+        branding: {
+          title: "Imagem de marca e multimoeda",
+          description: "Profissionalismo e dimensão internacional",
+          traditional: "Documentos neutros ou pouco profissionais, conversão manual sujeita a erros de câmbio.",
+          immoplatform: "Marca branca da agência (logótipo, NIF, cabeçalho) e suporte multimoeda completo (EUR, USD, FCFA, STN, etc.).",
+        },
+      },
+      cta: {
+        text: "Pronto para modernizar hoje a gestão do seu parque imobiliário?",
+        button: "Começar 15 dias de teste gratuito →",
+      },
+    },
+    mock: {
+      netFlow: "Fluxo líquido",
+      rentMonth: "Renda de setembro",
+      pay: "Pagar",
+      tenantMessage: "Olá, o esquentador faz barulho 🙈",
+      managerReply: "Obrigado, envio um canalizador amanhã!",
+      signed: "Assinado",
+    },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. Todos os direitos reservados.",
       tagline: "Software de gestão de arrendamento imobiliário certificado e seguro.",
+      legal: "Aviso legal",
+      terms: "Termos e condições",
+      privacy: "Privacidade",
     },
   },
 
@@ -1658,6 +1728,7 @@ const pt: TranslationSchema = {
     },
     subscription: {
       title: "Assinatura & Planos SaaS",
+      nativeFallback: "Para subscrever ou mudar de plano, inicie sessão no site, num computador ou no navegador do telemóvel — a aplicação limita-se a mostrar a sua subscrição atual.",
       subtitle: "Gira o seu plano de gestão imobiliária e as suas opções de faturação.",
       currentStatus: "O seu estado atual",
       features: {

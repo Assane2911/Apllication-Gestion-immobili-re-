@@ -297,6 +297,7 @@ const es: TranslationSchema = {
       features: "Funcionalidades",
       vitrine: "Nuestros inmuebles",
       receipts: "Recibos y Firma",
+      compare: "Comparativa",
       pricing: "Precios",
       currencies: "Multi-Divisas",
       security: "Seguridad",
@@ -460,9 +461,78 @@ const es: TranslationSchema = {
         cta: "Comenzar la prueba de 15 días",
       },
     },
+    compare: {
+      badge: "Comparativa y valor añadido",
+      titlePrefix: "Gestión tradicional vs",
+      subtitle:
+        "Descubra por qué las agencias y los propietarios modernos abandonan las hojas de Excel, los mensajes de WhatsApp dispersos y el papeleo por una gestión de alquileres 100% automatizada.",
+      roi: {
+        adminTime: "Tiempo administrativo",
+        unpaidRent: "Alquiler impagado olvidado",
+        certified: "Contratos y recibos certificados",
+      },
+      headers: {
+        feature: "Funcionalidad y proceso",
+        traditional: "Gestión tradicional (Excel / papel)",
+        recommended: "Recomendado",
+      },
+      rows: {
+        reminders: {
+          title: "Avisos de vencimiento y recordatorios de alquiler",
+          description: "Anticipación de los pagos y reducción de los impagos",
+          traditional: "Olvidos frecuentes, llamadas incómodas, mensajes de WhatsApp dispersos, retrasos de pago habituales.",
+          immoplatform: "Alerta automática el día 1 de cada mes con vencimiento estricto el día 5. Facturas instantáneas con estado en directo.",
+        },
+        receipts: {
+          title: "Recibos de alquiler certificados",
+          description: "Generación y entrega legal a los inquilinos",
+          traditional: "Creación manual en Word/Excel, conversión a PDF tediosa, envíos por correo a menudo olvidados.",
+          immoplatform: "Generación automática con 1 clic en el formato oficial certificado, con sello de la agencia, número único y menciones legales.",
+        },
+        signature: {
+          title: "Firma de los contratos de alquiler",
+          description: "Validación jurídica y formalización de los contratos",
+          traditional: "Impresión en papel, rúbrica página por página, desplazamientos físicos obligatorios, contratos extraviados.",
+          immoplatform: "Firma electrónica táctil (ordenador, tableta, móvil) con sello de tiempo certificado en 2 minutos.",
+        },
+        incidents: {
+          title: "Aviso de averías e incidencias",
+          description: "Seguimiento de reparaciones y mantenimiento",
+          traditional: "Llamadas de urgencia, descripciones vagas, fotos sin fecha, historial inexistente.",
+          immoplatform: "Foto tomada directamente por el inquilino, galería en alta resolución para la agencia y seguimiento de la intervención en tiempo real.",
+        },
+        expenses: {
+          title: "Seguimiento de gastos y flujo de caja neto",
+          description: "Cálculo de la rentabilidad real y contabilidad",
+          traditional: "Facturas de profesionales dispersas, cálculos manuales de fin de año, ninguna visibilidad sobre el rendimiento neto.",
+          immoplatform: "Registro de gastos por categoría, cálculo automático del flujo de caja neto y exportación contable CSV con 1 clic.",
+        },
+        branding: {
+          title: "Imagen de marca y multidivisa",
+          description: "Profesionalidad y dimensión internacional",
+          traditional: "Documentos neutros o poco profesionales, conversión manual sujeta a errores de cambio.",
+          immoplatform: "Marca blanca de la agencia (logotipo, NIF, membrete) y compatibilidad multidivisa completa (EUR, USD, FCFA, STN, etc.).",
+        },
+      },
+      cta: {
+        text: "¿Listo para modernizar hoy la gestión de su cartera inmobiliaria?",
+        button: "Empezar 15 días de prueba gratuita →",
+      },
+    },
+    mock: {
+      netFlow: "Flujo neto",
+      rentMonth: "Alquiler de septiembre",
+      pay: "Pagar",
+      tenantMessage: "Hola, el calentador hace ruido 🙈",
+      managerReply: "¡Gracias, mañana envío a un fontanero!",
+      signed: "Firmado",
+    },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. Todos los derechos reservados.",
       tagline: "Software de gestión de alquileres inmobiliarios certificado y seguro.",
+      legal: "Aviso legal",
+      terms: "Términos y condiciones",
+      privacy: "Privacidad",
     },
   },
 
@@ -1660,6 +1730,7 @@ const es: TranslationSchema = {
     },
     subscription: {
       title: "Suscripción y Planes SaaS",
+      nativeFallback: "Para suscribirse o cambiar de plan, inicie sesión desde el sitio web, en un ordenador o en el navegador del móvil — la aplicación solo muestra su suscripción actual.",
       subtitle: "Gestiona tu plan de gestión inmobiliaria y tus opciones de facturación.",
       currentStatus: "Tu estado actual",
       features: {
