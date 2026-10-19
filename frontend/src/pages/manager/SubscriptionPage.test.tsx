@@ -897,6 +897,29 @@ describe("SubscriptionPage", () => {
       );
     });
 
+    it("pour un accès illimité : l'annonce, sans proposer de résilier ni de choisir une formule", async () => {
+      seedUser(
+        authUser({
+          subscription: subscription({
+            status: "ACTIVE",
+            plan: "ENTERPRISE",
+            isTrialActive: false,
+            isSubscriptionActive: true,
+            subscriptionEndsAt: null,
+          }),
+        })
+      );
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+
+      renderPage();
+
+      expect(await screen.findByText("Accès illimité")).toBeInTheDocument();
+      expect(screen.getByText(/aucune échéance/i)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Résilier mon abonnement" })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Choisissez une formule ci-dessous/)).not.toBeInTheDocument();
+    });
+
     it("affiche l'erreur du serveur et réactive le bouton si la résiliation échoue", async () => {
       const user = userEvent.setup();
       vi.spyOn(window, "confirm").mockReturnValue(true);
@@ -934,7 +957,7 @@ describe("SubscriptionPage", () => {
       vi.spyOn(window, "confirm").mockReturnValue(false);
       seedUser(
         authUser({
-          subscription: subscription({ status: "ACTIVE", plan: "PRO", isTrialActive: false, isSubscriptionActive: true }),
+          subscription: subscription({ status: "ACTIVE", plan: "PRO", isTrialActive: false, isSubscriptionActive: true, subscriptionEndsAt: "2026-10-01T00:00:00.000Z" }),
         })
       );
       queueGet({ data: [plan({ id: "STARTER" })] });

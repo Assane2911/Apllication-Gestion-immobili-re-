@@ -106,6 +106,21 @@ describe("POST /api/team — inviter un collaborateur", () => {
     sendEmailSpy.mockRestore();
   });
 
+  it("refuse un email de plus de 254 caractères, sans créer de compte ni envoyer d'email", async () => {
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+
+    const res = await request(app)
+      .post("/api/team")
+      .set(authHeader(tokenFor(manager)))
+      .send({ email: `${"a".repeat(250)}@exemple.com`, role: "AGENT" });
+
+    expect(res.status).toBe(400);
+    expect(envoi).not.toHaveBeenCalled();
+    expect(await testDb.select().from(users).where(eq(users.teamOwnerId, manager.id))).toHaveLength(0);
+    envoi.mockRestore();
+  });
+
   it("refuse un email déjà utilisé par un autre compte", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
     const autreManager = await createManager({ email: "deja-pris@test.local" });

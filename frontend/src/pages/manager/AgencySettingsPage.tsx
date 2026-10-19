@@ -650,6 +650,7 @@ export default function AgencySettingsPage() {
                     id="team-invite-email"
                     type="email"
                     required
+                    maxLength={254}
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder={t("manager.agencySettings.team.emailPlaceholder")}

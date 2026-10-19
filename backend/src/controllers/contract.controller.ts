@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -765,8 +765,9 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
         signedByTenantAt: new Date(),
         tenantSignatureUrl: signatureDataUrl,
       })
-      .where(eq(contracts.id, id))
+      .where(and(eq(contracts.id, id), isNull(contracts.signedByTenantAt)))
       .returning();
+    if (!updated) throw new ApiError(409, "Vous avez déjà signé ce bail : une signature ne se remplace pas.");
     if (bienDuBail) await tracerSignature(bienDuBail.managerId, bienDuBail.title, "locataire");
     return res.json(await withRelations(updated.id));
   } else if (req.user.role === "MANAGER") {
@@ -782,8 +783,9 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
         signedByManagerAt: new Date(),
         managerSignatureUrl: signatureDataUrl,
       })
-      .where(eq(contracts.id, id))
+      .where(and(eq(contracts.id, id), isNull(contracts.signedByManagerAt)))
       .returning();
+    if (!updated) throw new ApiError(409, "Ce bail est déjà signé par le gestionnaire : une signature ne se remplace pas.");
     await tracerSignature(property.managerId, property.title, "gestionnaire");
     return res.json(await withRelations(updated.id));
   } else {

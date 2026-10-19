@@ -1694,6 +1694,8 @@ const fr = {
       trialEndsAt: "Votre période d'essai se termine le {{date}}.",
       nextDueDate: "Prochaine échéance le {{date}}.",
       choosePlanPrompt: "Choisissez une formule ci-dessous pour débloquer ou maintenir vos accès.",
+      unlimited: "Accès illimité",
+      unlimitedHelp: "Votre accès est illimité : il n'a aucune échéance et n'a pas besoin d'abonnement.",
       evaluationTime: "Temps d'évaluation offert",
       days: "jours",
       monthlyBilling: "Facturation Mensuelle",

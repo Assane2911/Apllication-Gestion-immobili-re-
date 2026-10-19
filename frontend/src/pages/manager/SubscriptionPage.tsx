@@ -192,6 +192,8 @@ export default function SubscriptionPage() {
   }
 
   const sub = user?.subscription;
+  // ACTIVE sans échéance : accès illimité offert par l'administration (rien à payer, rien à résilier).
+  const illimite = sub?.status === "ACTIVE" && !sub.subscriptionEndsAt;
 
   // Remise annuelle réellement pratiquée, calculée à partir des tarifs reçus
   // du serveur plutôt qu'annoncée en dur : un badge figé aurait continué à
@@ -285,7 +287,9 @@ export default function SubscriptionPage() {
                   : "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300"
               }`}
             >
-              {sub?.status === "ACTIVE"
+              {illimite
+                ? t("manager.subscription.unlimited")
+                : sub?.status === "ACTIVE"
                 ? t("manager.subscription.paid")
                 : sub?.isTrialActive
                 ? t("manager.subscription.trialRemaining", { count: sub.trialDaysRemaining })
@@ -293,7 +297,9 @@ export default function SubscriptionPage() {
             </span>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            {sub?.isTrialActive && sub.trialEndsAt
+            {illimite
+              ? t("manager.subscription.unlimitedHelp")
+              : sub?.isTrialActive && sub.trialEndsAt
               ? t("manager.subscription.trialEndsAt", {
                   date: new Date(sub.trialEndsAt).toLocaleDateString(i18n.language, {
                     year: "numeric",
@@ -325,7 +331,7 @@ export default function SubscriptionPage() {
         {/* Résiliation (CGU §7 : "à tout moment depuis son espace de
             gestion") — uniquement pour un abonnement payant ACTIF ; déjà
             résilié (CANCELLED) ou pas encore souscrit, rien à résilier. */}
-        {sub?.status === "ACTIVE" && (
+        {sub?.status === "ACTIVE" && !illimite && (
           <button
             type="button"
             onClick={handleCancelSubscription}

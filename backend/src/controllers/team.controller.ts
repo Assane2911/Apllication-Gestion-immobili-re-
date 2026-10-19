@@ -98,7 +98,7 @@ async function envoyerInvitationEquipe(proprietaireId: string, email: string, ra
 }
 
 const inviteTeamMemberSchema = z.object({
-  email: z.string().email().transform((v) => v.trim().toLowerCase()),
+  email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
   role: z.enum(ROLES_EQUIPE).default(ROLE_EQUIPE_INVITATION_PAR_DEFAUT),
 });
 
