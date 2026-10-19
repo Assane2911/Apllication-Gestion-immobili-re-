@@ -1,9 +1,22 @@
-import path from "path";
 import { STORAGE_BUCKETS, SUPABASE_URL_EFFECTIVE, supabaseAdmin } from "../config/supabase";
 import { ApiError } from "../utils/asyncHandler";
 
-function uniqueObjectPath(folder: string, originalName: string) {
-  const ext = path.extname(originalName).toLowerCase();
+/**
+ * Extension du fichier rangé, tirée de son TYPE (déjà confronté au contenu réel par
+ * `assertFileContentMatchesDeclaredType`) et non du nom envoyé par le client : « evil.html » portant un vrai PNG
+ * était rangé en .html, et un nom à l'extension exotique (« photo.jpég ») donnait une clé de stockage invalide,
+ * donc une erreur 500. Un type inconnu n'a pas d'extension.
+ */
+const EXTENSION_PAR_TYPE: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "application/pdf": ".pdf",
+};
+
+function uniqueObjectPath(folder: string, mimetype: string) {
+  const ext = EXTENSION_PAR_TYPE[mimetype] ?? "";
   const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
   return `${folder}/${unique}`;
 }
@@ -19,7 +32,7 @@ function uniqueObjectPath(folder: string, originalName: string) {
  * devinables/accessibles sans autorisation (voir issue.controller.ts).
  */
 export async function uploadPublicFile(file: Express.Multer.File, folder: "properties" | "listings" | "agency") {
-  const objectPath = uniqueObjectPath(folder, file.originalname);
+  const objectPath = uniqueObjectPath(folder, file.mimetype);
 
   const { error } = await supabaseAdmin.storage
     .from(STORAGE_BUCKETS.public)
@@ -40,7 +53,7 @@ export async function uploadPublicFile(file: Express.Multer.File, folder: "prope
  * générer un lien d'accès temporaire à la demande.
  */
 export async function uploadPrivateFile(file: Express.Multer.File, folder: "tenants" | "issues" | "contracts") {
-  const objectPath = uniqueObjectPath(folder, file.originalname);
+  const objectPath = uniqueObjectPath(folder, file.mimetype);
 
   const { error } = await supabaseAdmin.storage
     .from(STORAGE_BUCKETS.private)

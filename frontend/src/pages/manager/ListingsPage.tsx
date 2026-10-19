@@ -2,7 +2,8 @@ import { Building2, Megaphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
+import { preparerFichier } from "../../utils/fichiers";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -122,6 +123,20 @@ export default function ListingsPage() {
     });
     setImage(null);
     setShowForm(true);
+  }
+
+  // Même règle que pour les biens : photo réduite avant l'envoi, ou refus immédiat et lisible.
+  async function choisirImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const brut = e.target.files?.[0] ?? null;
+    const prete = brut ? await preparerFichier(brut) : null;
+    if (brut && !prete) {
+      e.target.value = "";
+      setImage(null);
+      setError(t("common.errors.fileTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
+      return;
+    }
+    setError(null);
+    setImage(prete);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -305,7 +320,7 @@ export default function ListingsPage() {
             </div>
             <div>
               <label htmlFor="listing-image" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.image")}</label>
-              <input id="listing-image" type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
+              <input id="listing-image" type="file" accept="image/*" onChange={(e) => void choisirImage(e)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
             </div>
             <div className="flex items-center gap-2 pt-6">
               <input id="listing-featured" type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="rounded border-slate-300 dark:border-slate-700" />

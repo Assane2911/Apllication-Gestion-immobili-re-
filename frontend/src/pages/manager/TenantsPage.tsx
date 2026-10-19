@@ -1,7 +1,8 @@
 import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
+import { preparerFichier } from "../../utils/fichiers";
 import ChampTelephone from "../../components/ChampTelephone";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -99,6 +100,20 @@ export default function TenantsPage() {
     setForm({ civility: t.civility ?? "", firstName: t.firstName, lastName: t.lastName, phone: t.phone, email: t.email });
     setIdDocument(null);
     setShowForm(true);
+  }
+
+  // Pièce d'identité : photo réduite avant l'envoi, PDF trop lourd refusé tout de suite avec un message lisible.
+  async function choisirPiece(e: React.ChangeEvent<HTMLInputElement>) {
+    const brut = e.target.files?.[0] ?? null;
+    const prete = brut ? await preparerFichier(brut) : null;
+    if (brut && !prete) {
+      e.target.value = "";
+      setIdDocument(null);
+      setError(t("common.errors.fileTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
+      return;
+    }
+    setError(null);
+    setIdDocument(prete);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -256,7 +271,7 @@ export default function TenantsPage() {
             </div>
             <div className="md:col-span-2">
               <label htmlFor="tenant-idDocument" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.idDocument")}</label>
-              <input id="tenant-idDocument" type="file" accept="image/*,application/pdf" onChange={(e) => setIdDocument(e.target.files?.[0] ?? null)} className="w-full text-sm" />
+              <input id="tenant-idDocument" type="file" accept="image/*,application/pdf" onChange={(e) => void choisirPiece(e)} className="w-full text-sm" />
             </div>
             {error && <p className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">

@@ -5,6 +5,7 @@ import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste, MAX_UPLOAD_SIZE_
 import Badge from "../../components/Badge";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport } from "../../types";
+import { preparerFichier } from "../../utils/fichiers";
 import { getAllIssuePhotos } from "../../utils/issuePhotos";
 import Bulle from "../../components/Bulle";
 
@@ -61,17 +62,13 @@ export default function TenantIssuesPage() {
     };
   }, [extraPreview]);
 
-  // Sans ce contrôle, une photo trop volumineuse (fréquent depuis un
-  // téléphone récent, en pleine résolution) partait quand même vers le
-  // serveur, qui la refuse (MAX_UPLOAD_SIZE_MB, voir middleware/upload.ts
-  // côté backend) — jusqu'à DELAI_UPLOAD_MS (60s) d'attente sur une connexion
-  // mobile lente pour un échec qu'on pouvait détecter instantanément.
-  function fichierTropVolumineux(file: File): boolean {
-    return file.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024;
-  }
-
-  function handlePhoto(file: File | null) {
-    if (file && fichierTropVolumineux(file)) {
+  // Une photo de téléphone en pleine résolution (5 à 12 Mo) dépasse la limite d'envoi du serveur (une fonction
+  // Vercel, 4,5 Mo de requête au plus) : elle est d'abord réduite ici (voir utils/fichiers.ts). Si elle reste
+  // trop lourde, on le dit tout de suite plutôt qu'après jusqu'à DELAI_UPLOAD_MS (60 s) d'attente sur une
+  // connexion mobile lente pour un échec qu'on pouvait détecter instantanément.
+  async function handlePhoto(brut: File | null) {
+    const file = brut ? await preparerFichier(brut) : null;
+    if (brut && !file) {
       setError(t("tenant.issues.photoTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
       return;
     }
@@ -83,8 +80,9 @@ export default function TenantIssuesPage() {
     });
   }
 
-  function handleExtraPhoto(file: File | null) {
-    if (file && fichierTropVolumineux(file)) {
+  async function handleExtraPhoto(brut: File | null) {
+    const file = brut ? await preparerFichier(brut) : null;
+    if (brut && !file) {
       // alert() et non setError() : ce mini-formulaire (ajout d'une photo à
       // un incident déjà existant) n'a pas de zone d'erreur dédiée — c'est le
       // même choix que handleAddExtraPhoto ci-dessous pour ses propres échecs.

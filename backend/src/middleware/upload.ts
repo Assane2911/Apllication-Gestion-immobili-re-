@@ -3,10 +3,17 @@ import { ApiError } from "../utils/asyncHandler";
 
 const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"]);
 
-/** Taille maximale d'un fichier uploadé. Exportée pour que le message d'erreur
- * renvoyé au client (voir errorHandler.ts) reste toujours cohérent avec la
- * limite réellement appliquée ici. */
-export const MAX_UPLOAD_SIZE_MB = 8;
+/**
+ * Taille maximale d'un fichier uploadé. Exportée pour que le message d'erreur renvoyé au client (voir
+ * errorHandler.ts) reste toujours cohérent avec la limite réellement appliquée ici.
+ *
+ * 4 Mo, et non davantage : le backend tourne comme fonction Vercel, dont le corps de requête est limité à
+ * 4,5 Mo. Au-delà, Vercel répond « 413 » lui-même, avant que l'application ne voie la requête — sans message
+ * clair ni traduction. Les photos plus lourdes sont réduites par le navigateur avant l'envoi (frontend,
+ * utils/fichiers.ts) ; la marge couvre les autres champs du formulaire. Doit rester synchronisé avec
+ * MAX_UPLOAD_SIZE_MB (frontend/src/api/client.ts).
+ */
+export const MAX_UPLOAD_SIZE_MB = 4;
 
 function fileFilter(_req: unknown, file: Express.Multer.File, cb: multer.FileFilterCallback) {
   if (!ALLOWED_MIME.has(file.mimetype)) {

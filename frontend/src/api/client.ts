@@ -39,8 +39,12 @@ export const api = axios.create({
  */
 export const DELAI_UPLOAD_MS = 60_000;
 
-/** Doit rester synchronisé avec MAX_UPLOAD_SIZE_MB (backend/src/middleware/upload.ts). */
-export const MAX_UPLOAD_SIZE_MB = 8;
+/**
+ * Doit rester synchronisé avec MAX_UPLOAD_SIZE_MB (backend/src/middleware/upload.ts). 4 Mo : le serveur est une
+ * fonction Vercel dont le corps de requête est limité à 4,5 Mo ; les photos plus lourdes sont réduites avant
+ * l'envoi (utils/fichiers.ts).
+ */
+export const MAX_UPLOAD_SIZE_MB = 4;
 
 api.interceptors.request.use((config) => {
   // Web : le cookie httpOnly posé à la connexion suit déjà la requête grâce à

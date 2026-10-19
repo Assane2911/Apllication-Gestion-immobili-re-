@@ -9,6 +9,7 @@ const es: TranslationSchema = {
     },
     errors: {
       unexpected: "Se ha producido un error inesperado. Inténtelo de nuevo en un momento.",
+      fileTooLarge: "Este archivo es demasiado grande (máx. {{maxMb}} MB). Inténtelo de nuevo con un archivo más ligero.",
       network: "No se ha podido contactar con el servidor. Comprueba tu conexión a internet e inténtalo de nuevo.",
       timeout: "El servidor tarda demasiado en responder. Comprueba tu conexión e inténtalo de nuevo.",
     },
