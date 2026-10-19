@@ -10,6 +10,7 @@ import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { PaymentMethod, PlatformBankInfo, SubscriptionPlanDetail } from "../../types";
 import Bulle from "../../components/Bulle";
+import { FORMULE_REPRISE } from "../../data/lignesFormules";
 
 interface SubscriptionHistoryRecord {
   id: string;
@@ -36,8 +37,6 @@ interface PropertyUsage {
   exceeded: boolean;
 }
 
-/** Les lignes « Tout ce qui est inclus dans … » nomment la formule reprise, dans la langue de l'interface. */
-const FORMULE_REPRISE: Record<string, string> = { includesStarter: "STARTER", includesPro: "PRO" };
 
 export default function SubscriptionPage() {
   const { t, i18n } = useTranslation();

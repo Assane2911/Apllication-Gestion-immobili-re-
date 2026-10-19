@@ -447,37 +447,15 @@ const es: TranslationSchema = {
       perMonth: "/ mes",
       starter: {
         name: "Starter",
-        desc: "Ideal para propietarios independientes.",
-        features: [
-          "Hasta 5 propiedades gestionadas",
-          "Recibos PDF certificados",
-          "Recordatorios automáticos el día 1 de cada mes",
-          "Portal del inquilino incluido",
-        ],
         cta: "Comenzar la prueba de 15 días",
       },
       pro: {
         name: "Profesional",
         badge: "Recomendado",
-        desc: "Para agencias y gestores en crecimiento.",
-        features: [
-          "Hasta 25 propiedades gestionadas",
-          "Firma electrónica táctil",
-          "Seguimiento de gastos y rentabilidad",
-          "Marca blanca (Logo y Encabezado de agencia)",
-          "Mensajería directa integrada",
-        ],
         cta: "Comenzar la prueba gratuita de 15 días",
       },
       enterprise: {
         name: "Agencia y Multicuentas",
-        desc: "Para administradoras de fincas y grandes carteras.",
-        features: [
-          "Propiedades ilimitadas",
-          "Soporte prioritario, respuesta en un día hábil",
-          "Multiusuario y multigestor",
-          "Exportación contable automatizada",
-        ],
         cta: "Comenzar la prueba de 15 días",
       },
     },

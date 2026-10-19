@@ -447,37 +447,15 @@ const en: TranslationSchema = {
       perMonth: "/ month",
       starter: {
         name: "Starter",
-        desc: "Ideal for independent landlords.",
-        features: [
-          "Up to 5 properties managed",
-          "Certified PDF receipts",
-          "Automatic reminders on the 1st of the month",
-          "Tenant portal included",
-        ],
         cta: "Start the 15-day trial",
       },
       pro: {
         name: "Professional",
         badge: "Recommended",
-        desc: "For growing agencies and property managers.",
-        features: [
-          "Up to 25 properties managed",
-          "Touch electronic signature",
-          "Expense tracking & profitability",
-          "White label (agency logo & letterhead)",
-          "Built-in direct messaging",
-        ],
         cta: "Start the free 15-day trial",
       },
       enterprise: {
         name: "Agency & Multi-Accounts",
-        desc: "For management firms and large portfolios.",
-        features: [
-          "Unlimited properties",
-          "Priority support, reply within one business day",
-          "Multiple users & managers",
-          "Automated accounting export",
-        ],
         cta: "Start the 15-day trial",
       },
     },

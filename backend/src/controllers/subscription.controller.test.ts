@@ -132,6 +132,18 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     }
   });
 
+  it("la page d'accueil affiche, formule par formule, les mêmes lignes (mêmes clés, même ordre) que la page Abonnement", () => {
+    // frontend/src/data/lignesFormules.ts alimente les cartes de l'accueil ; l'accueil avait auparavant son propre
+    // texte, resté en arrière de ces cartes. Toute ligne ajoutée, retirée ou déplacée ici doit l'être là aussi.
+    const source = fs.readFileSync(path.resolve(__dirname, "../../../frontend/src/data/lignesFormules.ts"), "utf-8");
+    for (const plan of SUBSCRIPTION_PLANS) {
+      const bloc = source.match(new RegExp(`${plan.id}: \\[([^\\]]*)\\]`));
+      if (!bloc) throw new Error(`Formule ${plan.id} introuvable dans lignesFormules.ts`);
+      const clesAccueil = [...bloc[1].matchAll(/"([A-Za-z0-9]+)"/g)].map((m) => m[1]);
+      expect(clesAccueil, plan.id).toEqual(plan.featureKeys);
+    }
+  });
+
   it("chiffre le support prioritaire de la même façon partout : réponse sous un jour ouvré", () => {
     // Une seule fois : la formule Agence reprend « tout ce qui est inclus dans Professionnel », support compris.
     const lignes = SUBSCRIPTION_PLANS.flatMap((plan) => plan.features).filter((f) => /^Support prioritaire/i.test(f));

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -105,6 +105,34 @@ describe("LandingPage", () => {
 
     const bouton = screen.getByRole("link", { name: "Voir les tarifs" });
     expect(bouton).toHaveAttribute("href", "#pricing");
+  });
+
+  /**
+   * Les cartes de formules de l'accueil reprennent EXACTEMENT les lignes de la page Abonnement du gestionnaire
+   * (mêmes clés de traduction, voir data/lignesFormules.ts) : elles ne peuvent plus diverger. Auparavant, l'accueil
+   * gardait un texte à part, resté en arrière de celui de la page Abonnement.
+   */
+  it("affiche, pour chaque formule, les mêmes lignes que la page Abonnement du gestionnaire", () => {
+    renderPage();
+    const cartes = ["Starter", "Professionnel", "Agence & Multi-Comptes"].map((nom) => {
+      const entete = screen.getByText(nom, { selector: "span.uppercase" });
+      return within(entete.closest("div")!.parentElement!);
+    });
+    const [starter, pro, agence] = cartes;
+
+    expect(starter.getByText("Jusqu'à 5 biens immobiliers")).toBeInTheDocument();
+    expect(starter.getByText("Support standard par email")).toBeInTheDocument();
+    expect(starter.queryByText("Support prioritaire : réponse sous un jour ouvré")).not.toBeInTheDocument();
+
+    expect(pro.getByText("Tout ce qui est inclus dans Starter")).toBeInTheDocument();
+    expect(pro.getByText("Jusqu'à 25 biens immobiliers")).toBeInTheDocument();
+    expect(pro.getByText("Rappels automatiques par email ; WhatsApp en cours de mise en service")).toBeInTheDocument();
+    expect(pro.getByText("Support prioritaire : réponse sous un jour ouvré")).toBeInTheDocument();
+
+    expect(agence.getByText("Tout ce qui est inclus dans Professionnel")).toBeInTheDocument();
+    expect(agence.getByText("Biens immobiliers illimités")).toBeInTheDocument();
+    expect(agence.getByText("Export comptable avancé (grand livre, FEC, SYSCOHADA)")).toBeInTheDocument();
+    expect(agence.queryByText("Support prioritaire : réponse sous un jour ouvré")).not.toBeInTheDocument();
   });
 
   it("affiche les sections fonctionnalités et tarifs", () => {

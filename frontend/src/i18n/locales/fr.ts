@@ -445,37 +445,15 @@ const fr = {
       perMonth: "/ mois",
       starter: {
         name: "Starter",
-        desc: "Idéal pour les bailleurs indépendants.",
-        features: [
-          "Jusqu'à 5 biens gérés",
-          "Quittances PDF certifiées",
-          "Rappels automatiques du 1er du mois",
-          "Portail locataire inclus",
-        ],
         cta: "Démarrer l'essai 15j",
       },
       pro: {
         name: "Professionnel",
         badge: "Recommandé",
-        desc: "Pour agences et gestionnaires en croissance.",
-        features: [
-          "Jusqu'à 25 biens gérés",
-          "Signature électronique tactile",
-          "Suivi des dépenses & rentabilité",
-          "Marque blanche (Logo & En-tête agence)",
-          "Messagerie directe intégrée",
-        ],
         cta: "Démarrer l'essai 15j gratuit",
       },
       enterprise: {
         name: "Agence & Multi-Comptes",
-        desc: "Pour cabinets de gestion et grands parcs.",
-        features: [
-          "Biens illimités",
-          "Support prioritaire, réponse sous un jour ouvré",
-          "Multi-utilisateurs & gestionnaires",
-          "Export comptable automatisé",
-        ],
         cta: "Démarrer l'essai 15j",
       },
     },
