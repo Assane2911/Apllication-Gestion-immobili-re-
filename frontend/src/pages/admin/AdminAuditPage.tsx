@@ -16,6 +16,8 @@ const ACTIONS = [
   "manager.delete",
   "subscription.grant_days",
   "subscription.change_plan",
+  "subscription.grant_unlimited",
+  "subscription.revoke_unlimited",
   "listing.hide",
   "listing.restore",
   "listing.feature",

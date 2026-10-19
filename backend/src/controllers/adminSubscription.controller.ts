@@ -23,6 +23,8 @@ const changePlanSchema = z.object({
   reason: motifSchema,
 });
 
+const motifSeulSchema = z.object({ reason: motifSchema });
+
 const dateFr = (d: Date) => d.toISOString().slice(0, 10);
 
 /**
@@ -140,4 +142,75 @@ export const changeManagerPlan = asyncHandler(async (req: Request, res: Response
   });
 
   res.json({ success: true, plan });
+});
+
+/** Un abonnement ACTIVE sans échéance est l'accès illimité (voir requireActiveSubscription). */
+const estIllimite = (compte: typeof users.$inferSelect) => compte.subscriptionStatus === "ACTIVE" && compte.subscriptionEndsAt === null;
+
+/**
+ * Accorde à un gestionnaire un accès SANS ÉCHÉANCE (compte interne, partenaire,
+ * convention) : abonnement ACTIVE sans date de fin, formule Entreprise. Aucun
+ * paiement n'est créé : le MRR et l'historique de facturation ne bougent pas.
+ *
+ * Même garde-fou que les autres ajustements : un abonnement Stripe est refusé
+ * (le webhook réécrirait la fin de période). Un compte déjà illimité l'est
+ * aussi, pour ne pas laisser de trace d'audit d'un changement qui n'en est pas
+ * un. L'accès se retire avec revokeUnlimitedAccess ; un paiement ultérieur
+ * (virement confirmé) le remplace par une échéance datée.
+ */
+export const grantUnlimitedAccess = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason } = motifSeulSchema.parse(req.body ?? {});
+
+  const { avant, email } = await db.transaction(async (tx: Transaction) => {
+    const compte = await verrouillerGestionnaire(tx, id);
+    refuserSiStripe(compte);
+    if (estIllimite(compte)) throw new ApiError(409, "Ce gestionnaire a déjà un accès illimité.");
+
+    await tx
+      .update(users)
+      .set({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE", subscriptionEndsAt: null })
+      .where(eq(users.id, id));
+    return { avant: compte, email: compte.email };
+  });
+
+  await logAdminAction({
+    req,
+    action: "subscription.grant_unlimited",
+    targetUserId: id,
+    targetLabel: email,
+    details: `Accès illimité accordé (avant : ${avant.subscriptionStatus}, formule ${PLAN_LABEL[avant.subscriptionPlan]}, fin ${
+      avant.subscriptionEndsAt ? dateFr(avant.subscriptionEndsAt) : "—"
+    }). Motif : ${reason}`,
+  });
+
+  res.json({ success: true });
+});
+
+/**
+ * Retire l'accès illimité : le compte repasse en EXPIRED (aucun accès tant
+ * qu'il ne souscrit pas ou qu'on ne lui offre pas de jours — grantSubscriptionDays
+ * le traite comme un essai terminé). Refusé pour tout autre compte : ce chemin
+ * ne sert pas à couper un abonnement payé ou un essai en cours.
+ */
+export const revokeUnlimitedAccess = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason } = motifSeulSchema.parse(req.body ?? {});
+
+  const { email } = await db.transaction(async (tx: Transaction) => {
+    const compte = await verrouillerGestionnaire(tx, id);
+    if (!estIllimite(compte)) throw new ApiError(409, "Ce gestionnaire n'a pas d'accès illimité.");
+    await tx.update(users).set({ subscriptionStatus: "EXPIRED", subscriptionEndsAt: null }).where(eq(users.id, id));
+    return { email: compte.email };
+  });
+
+  await logAdminAction({
+    req,
+    action: "subscription.revoke_unlimited",
+    targetUserId: id,
+    targetLabel: email,
+    details: `Accès illimité retiré. Motif : ${reason}`,
+  });
+
+  res.json({ success: true });
 });

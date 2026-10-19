@@ -77,7 +77,8 @@ export default function AdminManagerDetailPage() {
   const [motifJours, setMotifJours] = useState("");
   const [nouvellePlan, setNouvellePlan] = useState<ManagerPlan | "">("");
   const [motifPlan, setMotifPlan] = useState("");
-  const [ajustementEnCours, setAjustementEnCours] = useState<"days" | "plan" | null>(null);
+  const [motifIllimite, setMotifIllimite] = useState("");
+  const [ajustementEnCours, setAjustementEnCours] = useState<"days" | "plan" | "unlimited" | null>(null);
   const [ajustementMessage, setAjustementMessage] = useState<{ type: "ok" | "erreur"; texte: string } | null>(null);
 
   useEffect(() => {
@@ -118,7 +119,11 @@ export default function AdminManagerDetailPage() {
     }
   }
 
-  async function ajuster(type: "days" | "plan") {
+  // ACTIVE sans échéance : accès illimité (voir requireActiveSubscription côté serveur).
+  const illimite = manager?.subscription.status === "ACTIVE" && manager.subscription.subscriptionEndsAt === null;
+
+  async function ajuster(type: "days" | "plan" | "unlimited") {
+    if (type === "unlimited" && illimite && !window.confirm(t("admin.managerDetail.adjust.unlimitedConfirmRevoke"))) return;
     setAjustementEnCours(type);
     setAjustementMessage(null);
     try {
@@ -126,6 +131,10 @@ export default function AdminManagerDetailPage() {
         await api.post(`/admin/managers/${id}/subscription/grant-days`, { days: Number(jours), reason: motifJours.trim() });
         setJours("");
         setMotifJours("");
+      } else if (type === "unlimited") {
+        const route = illimite ? "revoke-unlimited" : "grant-unlimited";
+        await api.post(`/admin/managers/${id}/subscription/${route}`, { reason: motifIllimite.trim() });
+        setMotifIllimite("");
       } else {
         await api.post(`/admin/managers/${id}/subscription/change-plan`, { plan: nouvellePlan, reason: motifPlan.trim() });
         setNouvellePlan("");
@@ -369,46 +378,48 @@ export default function AdminManagerDetailPage() {
               <>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">{t("admin.managerDetail.adjust.description")}</p>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      void ajuster("days");
-                    }}
-                    className="space-y-2"
-                  >
-                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.daysTitle")}</p>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {t("admin.managerDetail.adjust.daysField")}
-                      <input
-                        type="number"
-                        min={1}
-                        max={365}
-                        step={1}
-                        required
-                        value={jours}
-                        onChange={(e) => setJours(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
-                      />
-                    </label>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {t("admin.managerDetail.adjust.daysReason")}
-                      <input
-                        type="text"
-                        required
-                        maxLength={500}
-                        value={motifJours}
-                        onChange={(e) => setMotifJours(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
-                      />
-                    </label>
-                    <button
-                      type="submit"
-                      disabled={ajustementEnCours !== null || !(Number(jours) >= 1) || motifJours.trim().length < 3}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+                  {!illimite && (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void ajuster("days");
+                      }}
+                      className="space-y-2"
                     >
-                      {ajustementEnCours === "days" ? t("admin.managerDetail.adjust.saving") : t("admin.managerDetail.adjust.daysSubmit")}
-                    </button>
-                  </form>
+                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.daysTitle")}</p>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {t("admin.managerDetail.adjust.daysField")}
+                        <input
+                          type="number"
+                          min={1}
+                          max={365}
+                          step={1}
+                          required
+                          value={jours}
+                          onChange={(e) => setJours(e.target.value)}
+                          className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                        />
+                      </label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {t("admin.managerDetail.adjust.daysReason")}
+                        <input
+                          type="text"
+                          required
+                          maxLength={500}
+                          value={motifJours}
+                          onChange={(e) => setMotifJours(e.target.value)}
+                          className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={ajustementEnCours !== null || !(Number(jours) >= 1) || motifJours.trim().length < 3}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+                      >
+                        {ajustementEnCours === "days" ? t("admin.managerDetail.adjust.saving") : t("admin.managerDetail.adjust.daysSubmit")}
+                      </button>
+                    </form>
+                  )}
 
                   <form
                     onSubmit={(e) => {
@@ -456,6 +467,41 @@ export default function AdminManagerDetailPage() {
                     </button>
                   </form>
                 </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void ajuster("unlimited");
+                  }}
+                  className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2"
+                >
+                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.unlimitedTitle")}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    {illimite ? t("admin.managerDetail.adjust.unlimitedCurrent") : t("admin.managerDetail.adjust.unlimitedHelp")}
+                  </p>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t("admin.managerDetail.adjust.daysReason")}
+                    <input
+                      type="text"
+                      required
+                      maxLength={500}
+                      value={motifIllimite}
+                      onChange={(e) => setMotifIllimite(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={ajustementEnCours !== null || motifIllimite.trim().length < 3}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {ajustementEnCours === "unlimited"
+                      ? t("admin.managerDetail.adjust.saving")
+                      : illimite
+                        ? t("admin.managerDetail.adjust.unlimitedRevoke")
+                        : t("admin.managerDetail.adjust.unlimitedGrant")}
+                  </button>
+                </form>
               </>
             )}
             {ajustementMessage && (
@@ -494,7 +540,10 @@ export default function AdminManagerDetailPage() {
                     `${date(manager.subscription.trialEndsAt)} (${t("admin.managerDetail.subscription.daysLeft", { count: manager.subscription.trialDaysRemaining })})`
                   )}
                 {manager.subscription.status !== "TRIAL" &&
-                  ligne(t("admin.managerDetail.subscription.endsOn"), date(manager.subscription.subscriptionEndsAt ?? manager.subscription.trialEndsAt))}
+                  ligne(
+                    t("admin.managerDetail.subscription.endsOn"),
+                    illimite ? t("admin.managerDetail.subscription.unlimited") : date(manager.subscription.subscriptionEndsAt ?? manager.subscription.trialEndsAt)
+                  )}
                 {ligne(
                   t("admin.managerDetail.subscription.paymentMethod"),
                   manager.subscription.paymentMethod ?? "—"

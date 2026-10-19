@@ -270,6 +270,62 @@ describe("AdminManagerDetailPage", () => {
       expect(await screen.findByRole("alert")).toHaveTextContent("Cet abonnement n'a pas d'échéance");
     });
 
+    it("accorde l'accès illimité avec un motif, confirme et relit la fiche", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+      mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+      renderPage();
+
+      const bouton = await screen.findByRole("button", { name: "Accorder l'accès illimité" });
+      expect(bouton).toBeDisabled();
+      await user.type(screen.getAllByLabelText("Motif (journal d'audit)")[2], "Compte de la direction");
+      await user.click(bouton);
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith("/admin/managers/mgr-1/subscription/grant-unlimited", {
+          reason: "Compte de la direction",
+        })
+      );
+      expect(await screen.findByText("Ajustement enregistré.")).toBeInTheDocument();
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
+    });
+
+    it("pour un compte illimité : l'indique, propose de retirer l'accès et pas d'en accorder un autre", async () => {
+      const user = userEvent.setup();
+      const base = fiche();
+      const illimite = fiche({ subscription: { ...base.subscription, plan: "ENTERPRISE", subscriptionEndsAt: null } });
+      mockedApi.get.mockResolvedValue({ data: illimite });
+      mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+      renderPage();
+
+      expect(await screen.findByText("Illimité")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Accorder l'accès illimité" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Offrir ces jours" })).not.toBeInTheDocument();
+
+      await user.type(screen.getAllByLabelText("Motif (journal d'audit)").at(-1)!, "Fin de la convention");
+      await user.click(screen.getByRole("button", { name: "Retirer l'accès illimité" }));
+
+      await waitFor(() =>
+        expect(mockedApi.post).toHaveBeenCalledWith("/admin/managers/mgr-1/subscription/revoke-unlimited", {
+          reason: "Fin de la convention",
+        })
+      );
+    });
+
+    it("ne retire pas l'accès illimité si l'administrateur refuse la confirmation", async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      const base = fiche();
+      mockedApi.get.mockResolvedValue({ data: fiche({ subscription: { ...base.subscription, subscriptionEndsAt: null } }) });
+      renderPage();
+
+      await user.type((await screen.findAllByLabelText("Motif (journal d'audit)")).at(-1)!, "Test");
+      await user.click(screen.getByRole("button", { name: "Retirer l'accès illimité" }));
+
+      expect(mockedApi.post).not.toHaveBeenCalled();
+    });
+
     it("masque les formulaires pour un abonnement Stripe et explique pourquoi", async () => {
       const base = fiche();
       mockedApi.get.mockResolvedValueOnce({ data: fiche({ subscription: { ...base.subscription, autoRenew: true } }) });
@@ -277,6 +333,7 @@ describe("AdminManagerDetailPage", () => {
 
       expect(await screen.findByText(/renouvellement automatique \(Stripe\)/)).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Offrir ces jours" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Accorder l'accès illimité" })).not.toBeInTheDocument();
     });
   });
 
