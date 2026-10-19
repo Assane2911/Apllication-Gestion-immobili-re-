@@ -626,7 +626,6 @@ export default function ContractsPage() {
                     <button
                       onClick={() => handleViewScannedContract(c)}
                       className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
-                      title={t("manager.contracts.viewScannedContract")}
                     >
                       <FileCheck size={13} />
                       <span>{t("manager.contracts.scanContractShort")}</span>
@@ -639,7 +638,6 @@ export default function ContractsPage() {
                     onClick={() => triggerScanUpload(c)}
                     disabled={uploadingScanContractId === c.id}
                     className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20 disabled:opacity-50"
-                    title={t("manager.contracts.scanPaperContract")}
                   >
                     <Camera size={13} />
                     <span>
