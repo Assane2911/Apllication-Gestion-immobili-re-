@@ -11,6 +11,7 @@ import { signalerAbonnementNonRapproche, signalerPaiementNonRapproche } from "..
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { resteDu } from "../utils/montants";
 import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
+import { fetchAvecDelai } from "../utils/fetchAvecDelai";
 
 interface PaydunyaIpnPayload {
   status?: string;
@@ -49,7 +50,7 @@ async function confirmerAupresDePaydunya(
 
   let response: globalThis.Response;
   try {
-    response = await fetch(`${baseUrl}/checkout-invoice/confirm/${encodeURIComponent(token)}`, {
+    response = await fetchAvecDelai(`${baseUrl}/checkout-invoice/confirm/${encodeURIComponent(token)}`, {
       headers: {
         "PAYDUNYA-MASTER-KEY": masterKey,
         "PAYDUNYA-PRIVATE-KEY": privateKey,

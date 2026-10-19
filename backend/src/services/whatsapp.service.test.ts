@@ -101,6 +101,47 @@ describe("envoyerMessageWhatsapp", () => {
       });
     });
 
+    it("renvoie une erreur réseau, sans rester suspendu, quand Meta ne répond pas", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn((_url: string, init?: RequestInit) => {
+          return new Promise<Response>((_resolve, reject) => {
+            // Comme un vrai fetch : un signal déjà interrompu rejette aussitôt, sans attendre d'événement.
+            if (init?.signal?.aborted) return reject(init.signal.reason);
+            init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+          });
+        })
+      );
+      vi.spyOn(AbortSignal, "timeout").mockImplementation(() => AbortSignal.abort(new Error("délai dépassé")));
+
+      const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Amine" });
+
+      expect(resultat).toEqual({ simulated: false, error: true, raison: "erreur_reseau" });
+      vi.restoreAllMocks();
+    });
+
+    it("rend chaque variable acceptable pour Meta : une ligne, sans espaces en série, jamais vide, 1 024 caractères au plus", async () => {
+      // Meta refuse (erreur 132018) un paramètre qui contient un retour à la ligne, une tabulation, plus de
+      // quatre espaces d'affilée, qui est vide ou qui dépasse 1 024 caractères : le message n'était alors pas
+      // envoyé, sans que le locataire ni l'agence ne le sachent.
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", {
+        "1": "Awa\nDiallo",
+        "2": "Studio\t\tCentre      ville",
+        "3": "   ",
+        "4": "x".repeat(2000),
+      });
+
+      const corps = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+      const textes: string[] = corps.template.components[0].parameters.map((p: { text: string }) => p.text);
+      expect(textes[0]).toBe("Awa Diallo");
+      expect(textes[1]).toBe("Studio Centre ville");
+      expect(textes[2]).toBe("-");
+      expect(textes[3]).toHaveLength(1024);
+    });
+
     it("ordonne les paramètres positionnellement même si les clés des variables sont fournies dans le désordre", async () => {
       const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
       vi.stubGlobal("fetch", fetchMock);

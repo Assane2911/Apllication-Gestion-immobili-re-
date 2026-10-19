@@ -26,6 +26,7 @@
 import { env } from "../config/env";
 import { formaterMontant } from "../utils/montant";
 import { versE164 } from "../utils/phone";
+import { fetchAvecDelai } from "../utils/fetchAvecDelai";
 
 /**
  * Version de l'API Graph de Meta utilisée pour l'envoi (WhatsApp Cloud API).
@@ -53,6 +54,21 @@ export interface ResultatEnvoiWhatsapp {
   simulated: boolean;
   error?: boolean;
   raison?: "non_configure" | "modele_non_configure" | "numero_invalide" | "erreur_api" | "erreur_reseau";
+}
+
+/** Longueur maximale d'un paramètre de modèle accepté par Meta. */
+const LONGUEUR_MAX_VARIABLE_META = 1024;
+
+/**
+ * Meta refuse (erreur 132018) un paramètre de modèle qui contient un retour à la ligne, une tabulation, plus
+ * de quatre espaces d'affilée, qui est vide ou qui dépasse 1 024 caractères — et le message n'était alors pas
+ * envoyé, sans que le locataire ni l'agence ne le sachent. Un nom ou un titre de bien est une saisie libre :
+ * on le ramène à une seule ligne, sans espaces en série, jamais vide.
+ */
+function texteAcceptableParMeta(valeur: string): string {
+  const uneLigne = String(valeur ?? "").replace(/\s+/g, " ").trim();
+  if (uneLigne === "") return "-";
+  return Array.from(uneLigne).slice(0, LONGUEUR_MAX_VARIABLE_META).join("").trim();
 }
 
 /**
@@ -99,7 +115,7 @@ export async function envoyerMessageWhatsapp(
   // nommées de Twilio.
   const parametres = Object.keys(variables)
     .sort((a, b) => Number(a) - Number(b))
-    .map((cle) => ({ type: "text", text: variables[cle] }));
+    .map((cle) => ({ type: "text", text: texteAcceptableParMeta(variables[cle]) }));
 
   const corps = {
     messaging_product: "whatsapp",
@@ -114,7 +130,7 @@ export async function envoyerMessageWhatsapp(
 
   let response: Response;
   try {
-    response = await fetch(`https://graph.facebook.com/${META_GRAPH_API_VERSION}/${phoneNumberId}/messages`, {
+    response = await fetchAvecDelai(`https://graph.facebook.com/${META_GRAPH_API_VERSION}/${phoneNumberId}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
