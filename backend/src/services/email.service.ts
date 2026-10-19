@@ -240,6 +240,51 @@ export function emailVerificationEmail(params: { verifyUrl: string }) {
 }
 
 /**
+ * Email de bienvenue d'un compte créé par « Se connecter avec Google » (voir loginWithGoogle,
+ * auth.controller.ts). Google certifiant l'adresse, ce compte ne reçoit aucun mail de confirmation : ce
+ * message lui dit que son compte existe, ce que comprend l'essai et par où commencer. Il ne contient
+ * aucun lien à usage unique ni aucune donnée saisie par l'utilisateur.
+ */
+export function googleWelcomeEmail(params: { appUrl: string; trialDays: number }) {
+  const { appUrl, trialDays } = params;
+  return {
+    subject: "👋 Bienvenue sur ImmoPlatform Pro",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">👋 Bienvenue sur ImmoPlatform Pro !</h2>
+        <p>Bonjour,</p>
+        <p>
+          Votre compte vient d'être créé avec votre compte Google : votre adresse est déjà confirmée,
+          vous n'avez rien d'autre à valider. Votre <strong>essai gratuit de ${trialDays} jours</strong>
+          a commencé, avec les fonctionnalités de la formule Professionnel.
+        </p>
+        <p><strong>Pour bien démarrer :</strong></p>
+        <ol style="padding-left:20px; line-height:1.6;">
+          <li>Ajoutez votre premier bien immobilier.</li>
+          <li>Enregistrez votre locataire.</li>
+          <li>Créez le contrat de bail : les loyers et les quittances se génèrent ensuite automatiquement.</li>
+        </ol>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${appUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            Accéder à mon espace →
+          </a>
+        </div>
+        <p style="color:#6b7280; font-size:12px;">
+          Vous vous connectez avec Google. Si vous souhaitez aussi pouvoir vous connecter avec un mot de passe,
+          utilisez « Mot de passe oublié » sur la page de connexion.
+        </p>
+        <p style="color:#6b7280; font-size:12px;">
+          Si vous n'êtes pas à l'origine de cette inscription, répondez simplement à ce message ou ignorez-le.
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+        </p>
+      </div>
+    `,
+  };
+}
+
+/**
  * Envoyé quand quelqu'un tente de s'inscrire avec une adresse DÉJÀ prise.
  *
  * L'inscription répond désormais la même chose que l'adresse soit libre ou
