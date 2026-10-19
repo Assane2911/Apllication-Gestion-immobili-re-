@@ -50,6 +50,41 @@ export function fecMontant(value: number): string {
 }
 
 /**
+ * Signes typographiques courants que le Latin-1 ne contient pas, avec leur équivalent lisible. Sans cela, ils
+ * sortaient en « ? » : l'apostrophe typographique (celle que le clavier d'un iPhone ou Word insère par défaut)
+ * donnait « d?urgence », le « œ » donnait « c?ur », le signe € disparaissait d'une franchise de « 150 € ».
+ */
+const EQUIVALENTS_LATIN1: Record<string, string> = {
+  "\u2018": "'", // ‘
+  "\u2019": "'", // ’
+  "\u201A": "'", // ‚
+  "\u2032": "'", // ′
+  "\u201C": '"', // “
+  "\u201D": '"', // ”
+  "\u201E": '"', // „
+  "\u2013": "-", // –
+  "\u2014": "-", // —
+  "\u2015": "-", // ―
+  "\u2212": "-", // −
+  "\u2022": "-", // •
+  "\u2026": "...", // …
+  "\u0152": "OE", // Œ
+  "\u0153": "oe", // œ
+  "\u20AC": "EUR", // €
+  "\u202F": " ", // espace fine insécable (typographie française)
+  "\u2009": " ", // espace fine
+};
+
+function versCaractereLatin1(caractere: string): string {
+  if (caractere.codePointAt(0)! <= 0xff) return caractere;
+  const equivalent = EQUIVALENTS_LATIN1[caractere];
+  if (equivalent !== undefined) return equivalent;
+  // Lettre accentuée hors Latin-1 (ń, ş, Ž…) : à défaut de l'accent, la lettre de base vaut mieux qu'un « ? ».
+  const base = caractere.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return base !== caractere && base.length > 0 && base.codePointAt(0)! <= 0xff ? base : "?";
+}
+
+/**
  * Encode le contenu FEC en ISO-8859-1 (Latin-1), seul jeu de caractères
  * accepté par l'administration fiscale pour ce format (arrêté du 29 juillet
  * 2013, art. I) — express ne le fait jamais de lui-même : `res.send()`
@@ -60,15 +95,14 @@ export function fecMontant(value: number): string {
  * lieu d'un seul en Latin-1 — un fichier qu'un validateur FEC strict (dont
  * l'outil officiel « Test Compta Demat » de la DGFiP) rejette.
  *
- * Un caractère hors Latin-1 (emoji, idéogramme...) est peu probable dans ce
- * contexte mais remplacé par "?" plutôt que tronqué silencieusement sur un
- * octet imprévisible par `Buffer.from(str, "latin1")`, qui ne garde que
- * l'octet bas de chaque point de code.
+ * Le texte est d'abord recomposé (NFC) : un « é » collé depuis un Mac ou un iPhone peut arriver décomposé en
+ * « e » + accent combinant, que le Latin-1 ne contient pas. Les signes typographiques courants (voir
+ * EQUIVALENTS_LATIN1) prennent leur équivalent lisible. Tout autre caractère hors Latin-1 (emoji,
+ * idéogramme...) devient "?" plutôt que d'être tronqué silencieusement sur un octet imprévisible par
+ * `Buffer.from(str, "latin1")`, qui ne garde que l'octet bas de chaque point de code.
  */
 export function versLatin1Fec(texte: string): Buffer {
-  const asciiSurLatin1 = Array.from(texte)
-    .map((caractere) => (caractere.codePointAt(0)! <= 0xff ? caractere : "?"))
-    .join("");
+  const asciiSurLatin1 = Array.from(texte.normalize("NFC")).map(versCaractereLatin1).join("");
   return Buffer.from(asciiSurLatin1, "latin1");
 }
 

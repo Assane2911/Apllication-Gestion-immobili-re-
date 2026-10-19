@@ -579,3 +579,42 @@ describe("GET /api/fiscal/syscohada", () => {
     expect(res.body.error).toContain("Agence & Multi-Comptes");
   });
 });
+
+describe("exports comptables : jamais conservés en cache", () => {
+  it.each(["/api/fiscal/grand-livre?year=2026", "/api/fiscal/fec?year=2026", "/api/fiscal/syscohada?year=2026", "/api/expenses/export?year=2026"])(
+    "%s répond avec Cache-Control: no-store",
+    async (chemin) => {
+      // Ces fichiers contiennent noms de locataires et montants : même règle que les documents imprimés.
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+
+      const res = await request(app).get(chemin).set(authHeader(tokenFor(manager)));
+
+      expect(res.status).toBe(200);
+      expect(res.headers["cache-control"]).toBe("no-store");
+    }
+  );
+});
+
+describe("SYSCOHADA : la balance ne montre pas de résidu de flottant", () => {
+  it("un compte soldé à zéro n'a ni solde débiteur ni solde créditeur", async () => {
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
+    const property = await createProperty(manager.id, { title: "Villa Ngor" });
+    const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Sow" });
+    const contract = await createContract(property.id, tenant.id);
+    // 0,1 + 0,2 encaissés puis 0,3 dépensés : la banque est soldée, mais 0,1 + 0,2 vaut 0,30000000000000004 en flottant.
+    await createInvoice(contract.id, { amount: 0.1, periodMonth: 1, status: "PAID", paidAt: new Date(2026, 0, 5) });
+    await createInvoice(contract.id, { amount: 0.2, periodMonth: 2, status: "PAID", paidAt: new Date(2026, 1, 5) });
+    await testDb
+      .insert(expenses)
+      .values({ propertyId: property.id, category: "MAINTENANCE", title: "Clé", amount: 0.3, expenseDate: new Date(2026, 2, 1) });
+
+    const res = await request(app).get("/api/fiscal/syscohada?year=2026").set(authHeader(tokenFor(manager)));
+
+    const balance = res.text.split("BALANCE GÉNÉRALE")[1];
+    const ligneBanque = balance.split("\n").find((l) => l.startsWith("521000;"));
+    expect(ligneBanque).toBeDefined();
+    const colonnes = ligneBanque!.split(";");
+    expect(colonnes[5]).toBe(""); // Solde Débiteur
+    expect(colonnes[6]).toBe(""); // Solde Créditeur
+  });
+});

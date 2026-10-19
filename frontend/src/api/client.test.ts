@@ -221,6 +221,43 @@ describe("intercepteur de réponse 401", () => {
   });
 });
 
+describe("intercepteur de réponse : erreur d'un téléchargement (responseType blob)", () => {
+  type Rejeteur = (error: unknown) => Promise<never>;
+  const rejeteur = (): Rejeteur =>
+    (api.interceptors.response as unknown as { handlers: Array<{ rejected: Rejeteur }> }).handlers[0].rejected;
+  const blobJson = (corps: unknown) => new Blob([JSON.stringify(corps)], { type: "application/json" });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  // Une requête `responseType: "blob"` (export FEC, grand livre, RGPD...) reçoit AUSSI son erreur sous forme
+  // de Blob : `err.response.data.error` était alors indéfini, et le gestionnaire voyait « Une erreur inattendue »
+  // au lieu de « réservé à la formule Agence » ou du refus de son rôle.
+  it("restitue le message du serveur quand l'erreur d'un téléchargement arrive en Blob", async () => {
+    const message = "Cette fonctionnalité est réservée à la formule Agence & Multi-Comptes ou supérieure.";
+    const erreur = await rejeteur()(axiosErrorWithResponse(blobJson({ error: message }), 403)).catch((e) => e);
+
+    expect(apiErrorMessage(erreur)).toBe(message);
+  });
+
+  it("garde la réponse telle quelle quand le Blob n'est pas du JSON", async () => {
+    const html = new Blob(["<html>Bad Gateway</html>"], { type: "text/html" });
+    const erreur = await rejeteur()(axiosErrorWithResponse(html, 502)).catch((e) => e);
+
+    expect(apiErrorMessage(erreur)).toBe("Une erreur inattendue est survenue. Réessayez dans un instant.");
+  });
+
+  it("reconnaît un compte suspendu même quand la réponse 401 arrive en Blob", async () => {
+    const location = { pathname: "/fiscal", href: "" };
+    vi.stubGlobal("location", location);
+
+    await rejeteur()(axiosErrorWithResponse(blobJson({ error: "Compte suspendu", code: "ACCOUNT_SUSPENDED" }), 401)).catch(() => undefined);
+
+    expect(location.href).toBe("/login?suspended=1");
+  });
+});
+
 describe("apiErrorMessage — langue", () => {
   it("donne le message de repli dans la langue choisie", async () => {
     const { changerLangue } = await import("../i18n");

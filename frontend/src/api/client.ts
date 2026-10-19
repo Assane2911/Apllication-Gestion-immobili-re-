@@ -57,9 +57,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * Une requête `responseType: "blob"` (export FEC, grand livre, données RGPD, modèle d'import...) reçoit aussi
+ * son ERREUR sous forme de Blob : `error.response.data.error` était alors indéfini, et l'utilisateur voyait
+ * « Une erreur inattendue » au lieu de « réservé à la formule Agence » ou du refus de son rôle — pire, un
+ * 401 « compte suspendu » n'était plus reconnu. Quand ce Blob est du JSON, on le relit pour que la suite du
+ * traitement (et `apiErrorMessage`) voie la même chose que pour un appel ordinaire.
+ */
+async function lireCorpsBlobEnJson(error: { response?: { data?: unknown } }): Promise<void> {
+  const donnees = error.response?.data;
+  if (!(donnees instanceof Blob) || !donnees.type.includes("json")) return;
+  try {
+    error.response!.data = JSON.parse(await donnees.text());
+  } catch {
+    // JSON illisible : on laisse le Blob tel quel, le message générique prendra le relais.
+  }
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    await lireCorpsBlobEnJson(error);
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
