@@ -851,4 +851,143 @@ describe("POST /api/payments/stripe/webhook", () => {
     const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
     expect(apres.status).toBe("PAID");
   });
+
+  // Un loyer remboursé depuis le tableau de bord Stripe, ou contesté par le locataire auprès de sa banque, restait
+  // « payé » avec sa quittance, sans que personne ne soit prévenu : l'argent était parti, la facture disait le contraire.
+  // La plateforme ne change rien à la facture (c'est au gestionnaire de décider) mais le prévient.
+  describe("remboursements et litiges", () => {
+    const evenementCharge = (type: string, objet: Record<string, unknown>) => JSON.stringify({ type, data: { object: objet } });
+    const livrer = (corps: string) => envoyer(corps, signer(corps));
+
+    /** Simule la réponse de l'API Stripe qui retrouve la session de paiement d'un payment_intent. */
+    function stripeRetrouveLaSession(idSession: string | null) {
+      const appel = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: idSession ? [{ id: idSession }] : [] }),
+      });
+      vi.stubGlobal("fetch", appel);
+      return appel;
+    }
+
+    async function loyerPayeParStripe(idSession = "cs_test_rembourse") {
+      const manager = await createManager();
+      const property = await createProperty(manager.id, { title: "Villa Ngor" });
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const invoice = await createInvoice(contract.id, { status: "PAID", paymentMethod: "STRIPE", paymentRef: idSession, amount: 500, periodMonth: 3, periodYear: 2026 });
+      return { manager, invoice };
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("prévient le gestionnaire d'un remboursement, sans toucher à la facture", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      const { manager, invoice } = await loyerPayeParStripe();
+      const appel = stripeRetrouveLaSession("cs_test_rembourse");
+
+      const res = await livrer(evenementCharge("charge.refunded", { id: "ch_1", payment_intent: "pi_1", amount_refunded: 50000, currency: "eur" }));
+
+      expect(res.status).toBe(200);
+      expect(String(appel.mock.calls[0][0])).toContain("payment_intent=pi_1");
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+      const [destinataire, sujet, html] = envoiEmail.mock.calls[0];
+      expect(destinataire).toBe(manager.email);
+      expect(sujet).toContain("remboursé");
+      expect(sujet).toContain("Villa Ngor");
+      expect(html).toContain("500 €");
+      expect(html).toContain("03/2026");
+      const entrees = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
+      expect(entrees.map((e: { action: string }) => e.action)).toContain("paiement_en_ligne.rembourse");
+      const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+      expect(apres.status).toBe("PAID");
+    });
+
+    it("ne prévient qu'une fois par remboursement rejoué, mais à nouveau pour un remboursement supplémentaire", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      await loyerPayeParStripe();
+      stripeRetrouveLaSession("cs_test_rembourse");
+      const partiel = evenementCharge("charge.refunded", { id: "ch_2", payment_intent: "pi_2", amount_refunded: 20000, currency: "eur" });
+
+      await livrer(partiel);
+      await livrer(partiel);
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+
+      await livrer(evenementCharge("charge.refunded", { id: "ch_2", payment_intent: "pi_2", amount_refunded: 50000, currency: "eur" }));
+      expect(envoiEmail).toHaveBeenCalledTimes(2);
+    });
+
+    it("prévient le gestionnaire d'un litige ouvert par le locataire auprès de sa banque, avec la date limite de réponse", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      const { manager } = await loyerPayeParStripe("cs_test_litige");
+      stripeRetrouveLaSession("cs_test_litige");
+
+      const res = await livrer(
+        evenementCharge("charge.dispute.created", {
+          id: "dp_1",
+          charge: "ch_3",
+          payment_intent: "pi_3",
+          amount: 50000,
+          currency: "eur",
+          reason: "fraudulent",
+          evidence_details: { due_by: Math.floor(Date.UTC(2026, 10, 12, 12) / 1000) },
+        })
+      );
+
+      expect(res.status).toBe(200);
+      expect(envoiEmail).toHaveBeenCalledTimes(1);
+      const [destinataire, sujet, html] = envoiEmail.mock.calls[0];
+      expect(destinataire).toBe(manager.email);
+      expect(sujet.toLowerCase()).toContain("litige");
+      expect(html).toContain("12 novembre 2026");
+      expect(html).toContain("fraudulent");
+      const entrees = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
+      expect(entrees.map((e: { action: string }) => e.action)).toContain("paiement_en_ligne.litige");
+    });
+
+    it("ne prévient personne pour un paiement qui n'est pas un loyer de la plateforme, et répond 200", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      stripeRetrouveLaSession(null);
+
+      const res = await livrer(evenementCharge("charge.refunded", { id: "ch_4", payment_intent: "pi_4", amount_refunded: 1000, currency: "eur" }));
+
+      expect(res.status).toBe(200);
+      expect(envoiEmail).not.toHaveBeenCalled();
+    });
+
+    it("signale à Sentry le remboursement d'un abonnement à la plateforme, sans prévenir de gestionnaire", async () => {
+      const envoiEmail = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: false } as never);
+      const signalement = vi.spyOn(Sentry, "captureMessage");
+      const manager = await createManager();
+      await testDb.insert(platformSubscriptions).values({
+        userId: manager.id,
+        plan: "PRO",
+        amount: 29,
+        currency: "EUR",
+        status: "PAID",
+        paymentMethod: "STRIPE",
+        paymentRef: "cs_test_abonnement_rembourse",
+        startDate: new Date(2026, 7, 1),
+        endDate: new Date(2026, 8, 1),
+      });
+      stripeRetrouveLaSession("cs_test_abonnement_rembourse");
+
+      const res = await livrer(evenementCharge("charge.refunded", { id: "ch_5", payment_intent: "pi_5", amount_refunded: 2900, currency: "eur" }));
+
+      expect(res.status).toBe(200);
+      expect(signalement).toHaveBeenCalledWith(expect.stringMatching(/abonnement/i), expect.anything());
+      expect(envoiEmail).not.toHaveBeenCalled();
+    });
+
+    it("répond 5xx quand Stripe est injoignable, pour que Stripe rejoue l'événement", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("réseau coupé")));
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const res = await livrer(evenementCharge("charge.refunded", { id: "ch_6", payment_intent: "pi_6", amount_refunded: 1000, currency: "eur" }));
+
+      expect(res.status).toBeGreaterThanOrEqual(500);
+    });
+  });
 });

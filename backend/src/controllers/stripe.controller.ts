@@ -9,6 +9,7 @@ import { signalerEchecPrelevement } from "../services/echecPrelevement.service";
 import { solderEnLigne } from "../services/paiementEnLigne.service";
 import { signalerAbonnementNonRapproche, signalerPaiementNonRapproche } from "../services/paiementNonRapproche.service";
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
+import { signalerRemboursementOuLitige } from "../services/remboursementPaiement.service";
 import { resteDu } from "../utils/montants";
 import { depuisPlusPetiteUnite } from "../services/payment.service";
 import {
@@ -53,6 +54,25 @@ interface StripeInvoice {
   attempt_count?: number;
   next_payment_attempt?: number | null;
   amount_due?: number;
+}
+
+/** Débit Stripe (objet "charge") — reçu sur `charge.refunded`. */
+interface StripeCharge {
+  id?: string;
+  payment_intent?: string | null;
+  /** Total remboursé jusqu'ici, en plus petite unité de la devise (cumulatif en cas de remboursements partiels). */
+  amount_refunded?: number;
+  currency?: string;
+}
+
+/** Contestation d'un paiement auprès de la banque du client — reçu sur `charge.dispute.created`. */
+interface StripeDispute {
+  id?: string;
+  payment_intent?: string | null;
+  amount?: number;
+  currency?: string;
+  reason?: string;
+  evidence_details?: { due_by?: number | null };
 }
 
 /** Objet "subscription" Stripe — reçu quand un abonnement cesse d'exister côté Stripe. */
@@ -102,6 +122,36 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
 
   if (evenement.type === "invoice.payment_failed") {
     await traiterEchecPrelevement((evenement.data?.object ?? {}) as StripeInvoice);
+    return res.json({ received: true });
+  }
+
+  if (evenement.type === "charge.refunded") {
+    const debit = (evenement.data?.object ?? {}) as StripeCharge;
+    if (debit.id && debit.payment_intent && typeof debit.amount_refunded === "number") {
+      await signalerRemboursementOuLitige({
+        nature: "REMBOURSEMENT",
+        referenceStripe: debit.id,
+        paymentIntent: debit.payment_intent,
+        montantBrut: debit.amount_refunded,
+        devise: debit.currency ?? "",
+      });
+    }
+    return res.json({ received: true });
+  }
+
+  if (evenement.type === "charge.dispute.created") {
+    const litige = (evenement.data?.object ?? {}) as StripeDispute;
+    if (litige.id && litige.payment_intent && typeof litige.amount === "number") {
+      await signalerRemboursementOuLitige({
+        nature: "LITIGE",
+        referenceStripe: litige.id,
+        paymentIntent: litige.payment_intent,
+        montantBrut: litige.amount,
+        devise: litige.currency ?? "",
+        motif: litige.reason ?? null,
+        reponseAvant: typeof litige.evidence_details?.due_by === "number" ? new Date(litige.evidence_details.due_by * 1000) : null,
+      });
+    }
     return res.json({ received: true });
   }
 
