@@ -12,6 +12,7 @@ import { owners, tenants, users } from "../db/schema";
 import {
   accountAlreadyExistsEmail,
   emailVerificationEmail,
+  googleWelcomeEmail,
   passwordResetEmail,
   sendEmail,
 } from "../services/email.service";
@@ -553,6 +554,16 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
         await accorderRecompenseParrainage(user);
       } catch (err) {
         console.error("[referral] Échec de l'attribution de la récompense de parrainage:", err);
+      }
+
+      // Aucun mail de confirmation pour ce compte : un mail de bienvenue lui dit que son compte existe et par où
+      // commencer. Attendu avant la réponse (sur Vercel, l'exécution peut s'arrêter juste après), et son échec ne
+      // doit jamais empêcher la connexion.
+      try {
+        const { subject, html } = googleWelcomeEmail({ appUrl: env.frontendUrl, trialDays: 15 });
+        await sendEmail(user.email, subject, html);
+      } catch (err) {
+        console.error("[auth] Échec de l'envoi de l'email de bienvenue:", err);
       }
     }
   }

@@ -7,6 +7,7 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { env } from "../config/env";
+import * as emailService from "../services/email.service";
 import { users } from "../db/schema";
 import { genererCodeTotp } from "../services/totp.service";
 import { authHeader, createManager, tokenFor } from "../test/authHelpers";
@@ -446,5 +447,65 @@ describe("POST /api/auth/google — compte jamais confirmé (pré-détournement)
     expect(login.status).toBe(200);
     const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(row.hasPassword).toBe(true);
+  });
+});
+
+/**
+ * Un compte créé par Google n'a pas de mail de confirmation (Google certifie l'adresse) : un mail de
+ * BIENVENUE lui dit que son compte existe, ce que l'essai comprend et par où commencer. Il part à la
+ * création du compte seulement — jamais à une reconnexion ni à la liaison d'un compte déjà existant —
+ * et son échec ne doit jamais empêcher la connexion.
+ */
+describe("POST /api/auth/google — email de bienvenue", () => {
+  beforeEach(() => {
+    env.googleClientId = "test-google-client-id";
+  });
+
+  afterEach(() => {
+    mockVerifyIdToken.mockReset();
+    env.googleClientId = "";
+    vi.restoreAllMocks();
+  });
+
+  it("envoie un email de bienvenue au nouveau compte, une seule fois", async () => {
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
+    mockGooglePayload({ sub: "google-sub-bienvenue", email: "bienvenue@test.local", email_verified: true });
+
+    const premiere = await request(app).post("/api/auth/google").send({ credential: "tok-1" });
+    expect(premiere.status).toBe(200);
+
+    expect(envoi).toHaveBeenCalledTimes(1);
+    const [destinataire, sujet, html] = envoi.mock.calls[0];
+    expect(destinataire).toBe("bienvenue@test.local");
+    expect(sujet).toContain("Bienvenue");
+    expect(html).toContain("15 jours");
+    expect(html).toContain(env.frontendUrl);
+
+    // Reconnexion du même compte : aucun second email.
+    const seconde = await request(app).post("/api/auth/google").send({ credential: "tok-2" });
+    expect(seconde.status).toBe(200);
+    expect(envoi).toHaveBeenCalledTimes(1);
+  });
+
+  it("n'en envoie pas quand Google se lie à un compte déjà existant", async () => {
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
+    await createManager({ email: "deja-inscrit@test.local" });
+    mockGooglePayload({ sub: "google-sub-liaison-bienvenue", email: "deja-inscrit@test.local", email_verified: true });
+
+    const res = await request(app).post("/api/auth/google").send({ credential: "tok" });
+
+    expect(res.status).toBe(200);
+    expect(envoi).not.toHaveBeenCalled();
+  });
+
+  it("n'empêche pas la connexion si l'envoi échoue", async () => {
+    vi.spyOn(emailService, "sendEmail").mockRejectedValue(new Error("SMTP indisponible"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGooglePayload({ sub: "google-sub-smtp-down", email: "smtp-down@test.local", email_verified: true });
+
+    const res = await request(app).post("/api/auth/google").send({ credential: "tok" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.token).toBeTypeOf("string");
   });
 });
