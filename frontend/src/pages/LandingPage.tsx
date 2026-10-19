@@ -25,6 +25,7 @@ import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
+import { FORMULE_REPRISE, LIGNES_FORMULES, type IdFormule } from "../data/lignesFormules";
 import { useInView } from "../hooks/useInView";
 import { useAuth } from "../context/auth";
 import { buildOrganizationJsonLd, buildSoftwareApplicationJsonLd } from "../utils/structuredData";
@@ -231,9 +232,16 @@ export default function LandingPage() {
   const { user } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  const starterFeatures = t("landing.pricing.starter.features", { returnObjects: true }) as string[];
-  const proFeatures = t("landing.pricing.pro.features", { returnObjects: true }) as string[];
-  const enterpriseFeatures = t("landing.pricing.enterprise.features", { returnObjects: true }) as string[];
+  // Mêmes lignes et mêmes descriptions que les cartes de la page Abonnement du gestionnaire (voir data/lignesFormules.ts).
+  const lignesFormule = (id: IdFormule) =>
+    LIGNES_FORMULES[id].map((cle) =>
+      t(`manager.subscription.features.${cle}`, {
+        plan: FORMULE_REPRISE[cle] ? t(`common.plans.${FORMULE_REPRISE[cle]}`) : undefined,
+      })
+    );
+  const starterFeatures = lignesFormule("STARTER");
+  const proFeatures = lignesFormule("PRO");
+  const enterpriseFeatures = lignesFormule("ENTERPRISE");
   const extras = t("landing.extras", { returnObjects: true }) as string[];
   const trustItems = t("landing.trust.items", { returnObjects: true }) as string[];
   const faqItems = t("landing.faq.items", { returnObjects: true }) as { q: string; a: string }[];
@@ -674,7 +682,7 @@ export default function LandingPage() {
                   <span className="text-4xl font-extrabold text-white">9€</span>
                   <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.starter.desc")}</p>
+                <p className="text-xs text-slate-400 mt-2">{t("manager.subscription.planDescriptions.STARTER")}</p>
                 <ul className="mt-6 space-y-3 text-xs text-slate-300">
                   {starterFeatures.map((feat, i) => (
                     <li key={i} className="flex items-start gap-1.5">
@@ -705,7 +713,7 @@ export default function LandingPage() {
                   <span className="text-4xl font-extrabold text-white">29€</span>
                   <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.pro.desc")}</p>
+                <p className="text-xs text-slate-400 mt-2">{t("manager.subscription.planDescriptions.PRO")}</p>
                 <ul className="mt-6 space-y-3 text-xs text-slate-200">
                   {proFeatures.map((feat, i) => (
                     <li key={i} className="flex items-start gap-1.5">
@@ -733,7 +741,7 @@ export default function LandingPage() {
                   <span className="text-4xl font-extrabold text-white">49€</span>
                   <span className="text-slate-400 text-xs">{t("landing.pricing.perMonth")}</span>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">{t("landing.pricing.enterprise.desc")}</p>
+                <p className="text-xs text-slate-400 mt-2">{t("manager.subscription.planDescriptions.ENTERPRISE")}</p>
                 <ul className="mt-6 space-y-3 text-xs text-slate-300">
                   {enterpriseFeatures.map((feat, i) => (
                     <li key={i} className="flex items-start gap-1.5">
