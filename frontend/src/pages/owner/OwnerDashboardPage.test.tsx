@@ -91,4 +91,12 @@ describe("OwnerDashboardPage", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
   });
+
+  it("écrit les mois de l'historique en toutes lettres, jamais sous la forme brute 2026-08", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: dashboard({ revenueByMonth: { "2026-08": { EUR: 900 } } }) });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText(/août 26/i)).toBeInTheDocument());
+    expect(screen.queryByText("2026-08")).not.toBeInTheDocument();
+  });
 });
