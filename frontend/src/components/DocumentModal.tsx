@@ -2,6 +2,7 @@ import { Printer, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled } from "../api/client";
+import { useDialogue } from "../hooks/useDialogue";
 
 interface DocumentModalProps {
   title: string;
@@ -79,6 +80,8 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
     }
   }
 
+  const dialogue = useDialogue({ onClose, titreId: "document-title" });
+
   return (
     <div
       className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-200 ${
@@ -86,13 +89,14 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
       }`}
     >
       <div
+        {...dialogue}
         className={`bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
+            <h3 id="document-title" className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
               {erreurImpression
                 ? t("components.documentModal.printFailed")

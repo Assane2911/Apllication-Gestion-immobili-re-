@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
 import type { MoyenSaisiAlaMain } from "../types";
+import { useDialogue } from "../hooks/useDialogue";
 
 const MOYENS: MoyenSaisiAlaMain[] = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"];
 
@@ -74,12 +75,12 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
     "w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500";
   const etiquette = "block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1";
 
+  const dialogue = useDialogue({ onClose, titreId: "mark-paid-title", fermable: !saving });
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mark-paid-title"
+        {...dialogue}
         className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700"
       >
         <div className="flex items-start justify-between">

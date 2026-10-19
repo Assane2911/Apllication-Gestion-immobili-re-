@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/auth";
+import Dialogue from "./Dialogue";
 import { AVERTISSEMENT_MS, CLE_DERNIERE_ACTIVITE, dureeInactiviteMs, INTERVALLE_RENOUVELLEMENT_MS } from "../utils/inactivite";
 
 const GESTES = ["mousedown", "keydown", "touchstart", "wheel", "scroll"] as const;
@@ -99,10 +100,9 @@ export default function InactiviteSession() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="inactivite-titre"
+      <Dialogue
+        onClose={resterConnecte}
+        titreId="inactivite-titre"
         className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700"
       >
         <h2 id="inactivite-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
@@ -122,12 +122,13 @@ export default function InactiviteSession() {
           <button
             type="button"
             onClick={resterConnecte}
+            data-autofocus
             className="text-sm font-semibold px-3.5 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700"
           >
             {t("components.inactivite.stay")}
           </button>
         </div>
-      </div>
+      </Dialogue>
     </div>
   );
 }

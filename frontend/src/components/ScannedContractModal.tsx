@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, ExternalLink, FileText, Image as ImageIcon, Printer, X } from "lucide-react";
+import { useDialogue } from "../hooks/useDialogue";
 
 interface ScannedContractModalProps {
   title: string;
@@ -34,6 +35,8 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
     window.open(fileUrl, "_blank", "noopener,noreferrer");
   }
 
+  const dialogue = useDialogue({ onClose, titreId: "scanned-contract-title" });
+
   return (
     <div
       className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-200 ${
@@ -41,6 +44,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
       }`}
     >
       <div
+        {...dialogue}
         className={`bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
@@ -51,7 +55,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
               {isPdf ? <FileText size={18} /> : <ImageIcon size={18} />}
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
+              <h3 id="scanned-contract-title" className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400">
                 {isPdf ? t("components.scannedContractModal.pdfSubtitle") : t("components.scannedContractModal.imageSubtitle")}
               </p>

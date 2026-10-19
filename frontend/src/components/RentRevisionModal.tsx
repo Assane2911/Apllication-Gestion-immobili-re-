@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
+import { useDialogue } from "../hooks/useDialogue";
 
 type Mode = "PERCENT" | "INDEX" | "AMOUNT";
 
@@ -133,12 +134,12 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
   const champ = "w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm";
   const etiquette = "block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1";
 
+  const dialogue = useDialogue({ onClose, titreId: "rent-revision-title", fermable: !saving });
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="rent-revision-title"
+        {...dialogue}
         className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-700"
       >
         <div className="flex items-start justify-between">

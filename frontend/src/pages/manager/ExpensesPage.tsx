@@ -9,6 +9,7 @@ import { useCurrency } from "../../context/currency";
 import type { Expense, ExpenseCategory, ExpenseRecurrence, PaginatedResponse, Property } from "../../types";
 import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
+import Dialogue from "../../components/Dialogue";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
@@ -446,9 +447,9 @@ export default function ExpensesPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+          <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.expenses.modalTitle")}</h3>
+              <h3 id="expense-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.expenses.modalTitle")}</h3>
               <button
                 onClick={() => setShowModal(false)}
                 className="text-slate-600 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
@@ -602,7 +603,7 @@ export default function ExpensesPage() {
                 </button>
               </div>
             </form>
-          </div>
+          </Dialogue>
         </div>
       )}
     </div>

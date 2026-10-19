@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
+import { useDialogue } from "../hooks/useDialogue";
 
 interface SignatureModalProps {
   /** Chemin complet de l'endpoint de signature (ex: `/contracts/${id}/sign`, `/inspections/${id}/sign`). */
@@ -116,6 +117,8 @@ export default function SignatureModal({ signUrl, title, onSuccess, onClose }: S
     }
   }
 
+  const dialogue = useDialogue({ onClose, titreId: "signature-title", fermable: !saving });
+
   return (
     <div
       className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-200 ${
@@ -123,13 +126,14 @@ export default function SignatureModal({ signUrl, title, onSuccess, onClose }: S
       }`}
     >
       <div
+        {...dialogue}
         className={`bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 transition-all duration-200 ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.signatureModal.title")}</h3>
+            <h3 id="signature-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.signatureModal.title")}</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{title}</p>
           </div>
           <button

@@ -1,8 +1,9 @@
 import { Lightbulb } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { api, apiErrorMessage } from "../api/client";
+import Dialogue from "./Dialogue";
 
 /**
  * Bouton « Une suggestion ? », flottant et présent sur tous les espaces.
@@ -31,21 +32,6 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoye, setEnvoye] = useState(false);
-  const champ = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (ouvert) champ.current?.focus();
-  }, [ouvert]);
-
-  useEffect(() => {
-    if (!ouvert) return;
-    // Échap ferme, comme toute chose qui s'ouvre.
-    const surTouche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") fermer();
-    };
-    window.addEventListener("keydown", surTouche);
-    return () => window.removeEventListener("keydown", surTouche);
-  }, [ouvert]);
 
   function fermer() {
     setOuvert(false);
@@ -85,10 +71,9 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
 
       {ouvert && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="suggestion-titre"
+          <Dialogue
+            onClose={fermer}
+            titreId="suggestion-titre"
             className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl p-5"
           >
             <h3 id="suggestion-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
@@ -123,7 +108,6 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
                 </label>
                 <textarea
                   id="suggestion-message"
-                  ref={champ}
                   required
                   minLength={5}
                   maxLength={4000}
@@ -154,7 +138,7 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
                 </div>
               </form>
             )}
-          </div>
+          </Dialogue>
         </div>
       )}
     </>
