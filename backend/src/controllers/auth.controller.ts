@@ -388,7 +388,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const verifyTwoFactorLoginSchema = z.object({
-  pendingToken: z.string().min(1),
+  pendingToken: z.string().min(1).max(2048),
   // 6 chiffres pour un code TOTP, 10 caractères hexadécimaux pour un code de
   // secours (voir totp.service.ts) : la longueur seule ne les distingue pas
   // de façon fiable, donc verifyTwoFactorLogin essaie les deux.
