@@ -1,4 +1,4 @@
-import { desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -241,13 +241,29 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
     throw new ApiError(409, "L'état des lieux doit être finalisé avant signature");
   }
 
+  /** Une signature engage les parties : qui a signé, et quand, doit rester visible dans le journal. */
+  const tracerSignature = async (qui: "locataire" | "gestionnaire") => {
+    const [bien] = await db.select().from(properties).where(eq(properties.id, inspection.propertyId));
+    await logActivity({
+      req,
+      managerId: inspection.managerId,
+      action: "inspection.sign",
+      entityType: "inspection",
+      entityId: inspection.id,
+      entityLabel: bien?.title || "",
+      details: `État des lieux signé électroniquement par le ${qui} (${bien?.title || "un bien"})`,
+    });
+  };
+
   if (req.user.role === "TENANT") {
     if (inspection.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
     const [updated] = await db
       .update(inspections)
       .set({ signedByTenantAt: new Date(), tenantSignatureUrl: signatureDataUrl })
-      .where(eq(inspections.id, req.params.id))
+      .where(and(eq(inspections.id, req.params.id), isNull(inspections.signedByTenantAt)))
       .returning();
+    if (!updated) throw new ApiError(409, "Vous avez déjà signé cet état des lieux : une signature ne se remplace pas.");
+    await tracerSignature("locataire");
     return res.json(parseInspection(updated));
   }
 
@@ -260,8 +276,10 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
     const [updated] = await db
       .update(inspections)
       .set({ signedByManagerAt: new Date(), managerSignatureUrl: signatureDataUrl })
-      .where(eq(inspections.id, req.params.id))
+      .where(and(eq(inspections.id, req.params.id), isNull(inspections.signedByManagerAt)))
       .returning();
+    if (!updated) throw new ApiError(409, "Cet état des lieux est déjà signé par le gestionnaire : une signature ne se remplace pas.");
+    await tracerSignature("gestionnaire");
     return res.json(parseInspection(updated));
   }
 
