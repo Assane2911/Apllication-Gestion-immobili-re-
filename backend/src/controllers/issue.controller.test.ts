@@ -2,7 +2,7 @@ import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { app } from "../app";
-import { issueReports } from "../db/schema";
+import { issueReports, users } from "../db/schema";
 import * as storageService from "../services/storage.service";
 import {
   authHeader,
@@ -811,5 +811,97 @@ describe("POST /api/issues/:id/photo — plafond de photos", () => {
 
     expect(res.status).toBe(200);
     expect(JSON.parse(res.body.additionalPhotos)).toHaveLength(10);
+  });
+});
+
+describe("Incidents : textes bornés et abonnement du gestionnaire", () => {
+  async function contratActif() {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    return { manager, tenant, contract };
+  }
+
+  async function signaler(tenantId: string, contractId: string, title: string, description: string) {
+    return request(app)
+      .post("/api/issues")
+      .set(await tenantToken(tenantId))
+      .field("contractId", contractId)
+      .field("title", title)
+      .field("description", description)
+      .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+  }
+
+  it("refuse un titre démesuré", async () => {
+    const { tenant, contract } = await contratActif();
+    const res = await signaler(tenant.id, contract.id, "T".repeat(201), "Description");
+    expect(res.status).toBe(400);
+  });
+
+  it("refuse une description démesurée", async () => {
+    const { tenant, contract } = await contratActif();
+    const res = await signaler(tenant.id, contract.id, "Fuite d'eau", "D".repeat(5001));
+    expect(res.status).toBe(400);
+  });
+
+  it("refuse un titre fait d'espaces", async () => {
+    const { tenant, contract } = await contratActif();
+    const res = await signaler(tenant.id, contract.id, "      ", "Description");
+    expect(res.status).toBe(400);
+  });
+
+  it("garde le titre sans les espaces autour", async () => {
+    const { tenant, contract } = await contratActif();
+    const res = await signaler(tenant.id, contract.id, "  Fuite d'eau  ", "Description");
+    expect(res.status).toBe(201);
+    expect(res.body.title).toBe("Fuite d'eau");
+  });
+
+  it("refuse une note du gestionnaire démesurée", async () => {
+    const { manager, tenant, contract } = await contratActif();
+    const cree = await signaler(tenant.id, contract.id, "Fuite d'eau", "Description");
+
+    const res = await request(app)
+      .put(`/api/issues/${cree.body.id}/status`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ status: "IN_PROGRESS", managerNote: "N".repeat(2001) });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("refuse l'ajout d'une photo par un gestionnaire dont l'abonnement est terminé", async () => {
+    const { manager, tenant, contract } = await contratActif();
+    const cree = await signaler(tenant.id, contract.id, "Fuite d'eau", "Description");
+    await testDb
+      .update(users)
+      .set({ trialEndsAt: new Date(Date.now() - 24 * 60 * 60 * 1000) })
+      .where(eq(users.id, manager.id));
+    const upload = vi.spyOn(storageService, "uploadPrivateFile");
+    upload.mockClear();
+
+    const res = await request(app)
+      .post(`/api/issues/${cree.body.id}/photo`)
+      .set(authHeader(tokenFor(manager)))
+      .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+
+    expect(res.status).toBe(402);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it("laisse le locataire ajouter une photo même si l'abonnement du gestionnaire est terminé", async () => {
+    const { manager, tenant, contract } = await contratActif();
+    const cree = await signaler(tenant.id, contract.id, "Fuite d'eau", "Description");
+    await testDb
+      .update(users)
+      .set({ trialEndsAt: new Date(Date.now() - 24 * 60 * 60 * 1000) })
+      .where(eq(users.id, manager.id));
+
+    const res = await request(app)
+      .post(`/api/issues/${cree.body.id}/photo`)
+      .set(await tenantToken(tenant.id))
+      .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
+
+    expect(res.status).toBe(200);
   });
 });

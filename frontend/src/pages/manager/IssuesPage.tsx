@@ -254,6 +254,7 @@ export default function IssuesPage() {
                       id={`issue-response-${issue.id}`}
                       placeholder={t("manager.issues.responsePlaceholder")}
                       defaultValue={issue.managerNote ?? ""}
+                      maxLength={2000}
                       onChange={(e) => setNotes((n) => ({ ...n, [issue.id]: e.target.value }))}
                       className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500"
                       rows={2}

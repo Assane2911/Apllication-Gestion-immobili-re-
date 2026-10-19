@@ -188,6 +188,7 @@ export default function TenantIssuesPage() {
           <input
             id="issue-title"
             required
+            maxLength={200}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t("tenant.issues.issueTitlePlaceholder")}
@@ -200,6 +201,7 @@ export default function TenantIssuesPage() {
           <textarea
             id="issue-description"
             required
+            maxLength={5000}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
