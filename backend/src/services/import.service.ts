@@ -3,7 +3,8 @@ import { db } from "../db/client";
 import { contracts, properties, tenants } from "../db/schema";
 import { DEVISES } from "../utils/devises";
 import { type CsvLu, lireDate, lireNombre } from "../utils/csvImport";
-import { debutDeLaJournee } from "../utils/dates";
+import { dateDeBailPlausible, debutDeLaJournee } from "../utils/dates";
+import { MONTANT_MAXIMUM, SURFACE_MAXIMUM } from "../utils/montant";
 import { echeanceDuMois, jourEcheanceDuContrat } from "../utils/jourEcheance";
 import { estCiviliteConnue } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
@@ -152,12 +153,16 @@ export async function analyserBiens(
     const statutBrut = lire(valeurs, COLONNES_BIENS, "status");
 
     if (title.length < 2) messages.push("Titre manquant ou trop court (2 caractères minimum).");
+    else if (title.length > 200) messages.push("Titre trop long (200 caractères maximum).");
     if (address.length < 2) messages.push("Adresse manquante ou trop courte (2 caractères minimum).");
+    else if (address.length > 300) messages.push("Adresse trop longue (300 caractères maximum).");
+    const descriptionLue = lire(valeurs, COLONNES_BIENS, "description");
+    if (descriptionLue.length > 5000) messages.push("Description trop longue (5 000 caractères maximum).");
 
     const surface = surfaceBrute ? lireNombre(surfaceBrute) : null;
-    if (surface === null || surface <= 0) messages.push(surfaceBrute ? `Surface invalide : « ${surfaceBrute} ».` : "Surface manquante.");
+    if (surface === null || surface <= 0 || surface > SURFACE_MAXIMUM) messages.push(surfaceBrute ? `Surface invalide : « ${surfaceBrute} ».` : "Surface manquante.");
     const rent = loyerBrut ? lireNombre(loyerBrut) : null;
-    if (rent === null || rent <= 0) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.");
+    if (rent === null || rent <= 0 || rent > MONTANT_MAXIMUM) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.");
 
     let currency = options.deviseParDefaut;
     if (deviseBrute) {
@@ -172,7 +177,7 @@ export async function analyserBiens(
       else messages.push(`Statut inconnu : « ${statutBrut} » (disponible, occupé ou maintenance).`);
     }
 
-    const donnees: DonneesBien = { title, address, surface, rent, currency, status, description: lire(valeurs, COLONNES_BIENS, "description") };
+    const donnees: DonneesBien = { title, address, surface, rent, currency, status, description: descriptionLue };
     if (messages.length > 0) return { ligne, statut: "ERREUR", messages, donnees };
 
     const cle = cleDoublon(title, address);
@@ -234,9 +239,11 @@ export async function analyserLocataires(managerId: string, csv: CsvLu): Promise
     const civiliteBrute = lire(valeurs, COLONNES_LOCATAIRES, "civility");
 
     if (!firstName) messages.push("Prénom manquant.");
+    else if (firstName.length > 100) messages.push("Prénom trop long (100 caractères maximum).");
     if (!lastName) messages.push("Nom manquant.");
+    else if (lastName.length > 100) messages.push("Nom trop long (100 caractères maximum).");
     // Même règle qu'à la création : adresse valide ; les doubles points ou espaces la rendent illisible pour l'envoi.
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) messages.push(email ? `Adresse email invalide : « ${email} ».` : "Adresse email manquante.");
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) messages.push(email ? `Adresse email invalide : « ${email} ».` : "Adresse email manquante.");
 
     const phone = telephoneBrut ? versE164(telephoneBrut) : null;
     if (!phone) messages.push(telephoneBrut ? MESSAGE_TELEPHONE_INVALIDE : "Numéro de téléphone manquant.");
@@ -422,9 +429,9 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
     }
 
     const rent = loyerBrut ? lireNombre(loyerBrut) : null;
-    if (rent === null || rent <= 0) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.");
+    if (rent === null || rent <= 0 || rent > MONTANT_MAXIMUM) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.");
     const deposit = depotBrut ? lireNombre(depotBrut) : null;
-    if (deposit === null || deposit < 0) messages.push(depotBrut ? `Dépôt de garantie invalide : « ${depotBrut} ».` : "Dépôt de garantie manquant (indiquez 0 s'il n'y en a pas).");
+    if (deposit === null || deposit < 0 || deposit > MONTANT_MAXIMUM) messages.push(depotBrut ? `Dépôt de garantie invalide : « ${depotBrut} ».` : "Dépôt de garantie manquant (indiquez 0 s'il n'y en a pas).");
 
     let currency = bien?.currency || "EUR";
     if (deviseBrute) {
@@ -432,9 +439,14 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
       else messages.push(`Devise inconnue : « ${deviseBrute} ».`);
     }
 
-    const debut = debutBrut ? lireDate(debutBrut) : null;
+    // Une date hors des années plausibles est traitée comme illisible (voir dateDeBailPlausible).
+    const datePlausible = (brut: string) => {
+      const d = lireDate(brut);
+      return d && dateDeBailPlausible(d) ? d : null;
+    };
+    const debut = debutBrut ? datePlausible(debutBrut) : null;
     if (!debut) messages.push(debutBrut ? `Date de début invalide : « ${debutBrut} » (jj/mm/aaaa).` : "Date de début manquante.");
-    const fin = finBrute ? lireDate(finBrute) : null;
+    const fin = finBrute ? datePlausible(finBrute) : null;
     if (!fin) messages.push(finBrute ? `Date de fin invalide : « ${finBrute} » (jj/mm/aaaa).` : "Date de fin manquante.");
     if (debut && fin && fin <= debut) messages.push("La date de fin doit être postérieure à la date de début.");
 
@@ -468,7 +480,7 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
     );
     let facturation = echeanceCourante < debutDeLaJournee(maintenant) ? premierDuMois(1) : premierDuMois(0);
     if (facturationBrute) {
-      const d = lireDate(facturationBrute);
+      const d = datePlausible(facturationBrute);
       if (d) facturation = d;
       else messages.push(`Date « facturation depuis » invalide : « ${facturationBrute} » (jj/mm/aaaa).`);
     }

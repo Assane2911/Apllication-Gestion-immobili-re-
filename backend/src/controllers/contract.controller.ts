@@ -17,17 +17,21 @@ import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { TAILLE_MAX_SIGNATURE } from "../utils/signature";
 import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
+import { ANNEE_BAIL_MAX, ANNEE_BAIL_MIN, dateDeBailPlausible } from "../utils/dates";
 import { deviseSchema } from "../utils/devises";
+import { MONTANT_MAXIMUM } from "../utils/montant";
 import { TYPES_BAIL } from "../utils/typeBail";
+
+const dateDeBailSchema = z.coerce.date().refine(dateDeBailPlausible, `La date doit être comprise entre ${ANNEE_BAIL_MIN} et ${ANNEE_BAIL_MAX}`);
 
 const contractSchema = z.object({
   propertyId: z.string().min(1),
   tenantId: z.string().min(1),
-  rent: z.coerce.number().positive(),
-  deposit: z.coerce.number().nonnegative(),
+  rent: z.coerce.number().finite().positive().max(MONTANT_MAXIMUM, "Le loyer est trop élevé"),
+  deposit: z.coerce.number().finite().nonnegative().max(MONTANT_MAXIMUM, "Le dépôt de garantie est trop élevé"),
   currency: deviseSchema.optional(),
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
+  startDate: dateDeBailSchema,
+  endDate: dateDeBailSchema,
   status: z.enum(["ACTIVE", "ENDED", "TERMINATED"]).optional(),
   // Clauses particulières imprimées sur le bail : plafonnées, un texte sans
   // limite gonflerait le document remis au locataire.

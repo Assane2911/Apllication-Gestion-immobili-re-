@@ -1,5 +1,10 @@
 import { DEVISES } from "./devises";
 
+/** Plafond d'un montant saisi (loyer, dépôt…) : au-delà, c'est une faute de frappe ou un nombre infini. */
+export const MONTANT_MAXIMUM = 1_000_000_000_000;
+/** Plafond d'une surface saisie, en m². */
+export const SURFACE_MAXIMUM = 1_000_000;
+
 /**
  * Écrit un montant comme le portail l'écrit.
  *

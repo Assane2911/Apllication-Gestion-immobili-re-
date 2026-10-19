@@ -34,3 +34,15 @@ export function joursEntre(depuis: Date, jusqu_a: Date): number {
   const aMinuitUTC = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
   return Math.round((aMinuitUTC(jusqu_a) - aMinuitUTC(depuis)) / 86_400_000);
 }
+
+/**
+ * Années acceptées pour les dates d'un bail. Hors de cet intervalle, c'est une faute de saisie
+ * (« 0001 », « 2300 ») : un début en l'an 1 fait générer des milliers de factures d'un coup.
+ */
+export const ANNEE_BAIL_MIN = 1980;
+export const ANNEE_BAIL_MAX = 2200;
+
+export function dateDeBailPlausible(date: Date): boolean {
+  const annee = date.getUTCFullYear();
+  return annee >= ANNEE_BAIL_MIN && annee <= ANNEE_BAIL_MAX;
+}

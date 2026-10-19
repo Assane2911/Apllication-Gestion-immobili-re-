@@ -240,11 +240,11 @@ export default function TenantsPage() {
             </div>
             <div>
               <label htmlFor="tenant-firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.firstName")}</label>
-              <input id="tenant-firstName" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="tenant-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="tenant-lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.lastName")}</label>
-              <input id="tenant-lastName" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="tenant-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="tenant-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.phone")}</label>
@@ -252,7 +252,7 @@ export default function TenantsPage() {
             </div>
             <div>
               <label htmlFor="tenant-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.email")}</label>
-              <input id="tenant-email" required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="tenant-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
               <label htmlFor="tenant-idDocument" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.idDocument")}</label>
