@@ -1,5 +1,8 @@
+import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildPaginatedResult, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, parsePagination } from "./pagination";
+import { app } from "../app";
+import { authHeader, createManager, tokenFor } from "../test/authHelpers";
+import { buildPaginatedResult, DEFAULT_PAGE_SIZE, MAX_PAGE, MAX_PAGE_SIZE, parsePagination } from "./pagination";
 
 function reqWithQuery(query: Record<string, string>) {
   return { query } as any;
@@ -26,6 +29,13 @@ describe("parsePagination", () => {
     expect(parsePagination(reqWithQuery({ page: "-5" })).page).toBe(1);
   });
 
+  it("plafonne une page démesurée : le décalage reste un entier que la base accepte", () => {
+    const { page, offset } = parsePagination(reqWithQuery({ page: "99999999999999999999", pageSize: "100" }));
+    expect(page).toBe(MAX_PAGE);
+    expect(Number.isSafeInteger(offset)).toBe(true);
+    expect(offset).toBeLessThan(2 ** 31);
+  });
+
   it("ignore les valeurs non numériques et retombe sur les défauts", () => {
     const result = parsePagination(reqWithQuery({ page: "abc", pageSize: "xyz" }));
     expect(result).toEqual({ page: 1, pageSize: DEFAULT_PAGE_SIZE, offset: 0 });
@@ -42,5 +52,17 @@ describe("buildPaginatedResult", () => {
     const result = buildPaginatedResult([], 0, { page: 1, pageSize: 10, offset: 0 });
     expect(result.totalPages).toBe(1);
     expect(result.items).toEqual([]);
+  });
+});
+
+describe("GET /api/properties?page=…", () => {
+  it("répond une page vide, et non une erreur serveur, pour une page démesurée", async () => {
+    const manager = await createManager();
+    const res = await request(app)
+      .get("/api/properties?page=99999999999999999999&pageSize=100")
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual([]);
   });
 });
