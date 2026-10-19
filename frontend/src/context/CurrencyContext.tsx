@@ -6,8 +6,19 @@ import Bulle from "../components/Bulle";
 import { useAuth } from "./auth";
 import { CURRENCIES, CurrencyContext, configDevise, useCurrency } from "./currency";
 
+/**
+ * Usages de chaque langue de l'interface pour écrire un nombre : « 12 345,67 » en français et en portugais,
+ * « 12,345.67 » en anglais, « 12.345,67 » en espagnol. Le portugais est celui du Portugal et de l'Afrique lusophone
+ * (la plateforme gère le dobra de São Tomé), et non celui du Brésil.
+ */
+const LOCALE_DES_NOMBRES: Record<string, string> = { fr: "fr-FR", en: "en", pt: "pt-PT", es: "es" };
+
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  // Relit la langue à chaque changement : sans cet abonnement, les montants gardaient l'ancienne langue jusqu'à
+  // un rechargement de la page.
+  const { i18n } = useTranslation();
+  const localeDesNombres = LOCALE_DES_NOMBRES[(i18n.resolvedLanguage || i18n.language || "fr").slice(0, 2)] ?? "fr-FR";
   const [currency, setCurrencyState] = useState<string>(() => {
     return localStorage.getItem("app_currency") || user?.currency || "EUR";
   });
@@ -55,7 +66,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const currCode = overrideCurrency || currency;
     const config = configDevise(currCode);
 
-    const formattedNumber = new Intl.NumberFormat("fr-FR", {
+    const formattedNumber = new Intl.NumberFormat(localeDesNombres, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount);
