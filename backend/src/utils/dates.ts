@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /**
  * Arithmétique de CALENDRIER — par opposition à l'arithmétique d'instants.
  *
@@ -46,3 +48,12 @@ export function dateDeBailPlausible(date: Date): boolean {
   const annee = date.getUTCFullYear();
   return annee >= ANNEE_BAIL_MIN && annee <= ANNEE_BAIL_MAX;
 }
+
+/**
+ * Date saisie à la main (dépense, assurance, révision, rendez-vous…) : lue comme date, puis refusée
+ * hors des années plausibles. Sans cette borne, « 0001-01-01 » sur une dépense mensuelle faisait
+ * générer 1 000 lignes d'un coup, et une année d'avant notre ère faisait échouer la base (erreur 500).
+ */
+export const dateSaisieSchema = z.coerce
+  .date()
+  .refine(dateDeBailPlausible, `La date doit être comprise entre ${ANNEE_BAIL_MIN} et ${ANNEE_BAIL_MAX}`);

@@ -9,6 +9,7 @@ import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { dateSaisieSchema } from "../utils/dates";
 import { assertAccesLocataireOuGestionnaire, assertOwnership, chargerLocataireDuCompte, estLocataireDuBail, idLocataireDuCompte } from "../utils/authorization";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
@@ -111,7 +112,7 @@ const updateIssueSchema = z.object({
   // en 400 explicite plutôt qu'en Invalid Date silencieuse écrite en base.
   // .nullable() AVANT .optional() : c'est l'ordre qui fait que `null` reste
   // `null` (déprogrammer un rendez-vous) au lieu d'être coercé en epoch Unix.
-  scheduledAt: z.coerce.date().nullable().optional(),
+  scheduledAt: dateSaisieSchema.nullable().optional(),
 });
 
 export const updateIssueStatus = asyncHandler(async (req: Request, res: Response) => {

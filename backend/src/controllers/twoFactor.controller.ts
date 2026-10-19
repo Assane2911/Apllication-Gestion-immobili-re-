@@ -111,8 +111,8 @@ const disableTwoFactorSchema = z.object({
   // Même alternative que deleteMyAccount (auth.controller.ts), et pour la
   // même raison : un compte créé uniquement via "Se connecter avec Google"
   // n'a jamais eu de vrai mot de passe à ressaisir (voir hasPassword).
-  password: z.string().min(1).optional(),
-  googleCredential: z.string().min(1).optional(),
+  password: z.string().min(1).max(1024).optional(),
+  googleCredential: z.string().min(1).max(8192).optional(),
 });
 
 /**

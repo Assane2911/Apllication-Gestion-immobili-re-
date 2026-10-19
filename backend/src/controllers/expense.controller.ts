@@ -9,6 +9,7 @@ import { developperEncaissements, factureEncaissee } from "../services/encaissem
 import { logActivity } from "../services/activity.service";
 import { assertOwnership } from "../utils/authorization";
 import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
+import { dateSaisieSchema } from "../utils/dates";
 import { deviseSchema } from "../utils/devises";
 
 const createExpenseSchema = z.object({
@@ -32,7 +33,7 @@ const createExpenseSchema = z.object({
   // base par `new Date(...)` plus bas — un timestamp NaN qui ne redonnait
   // ensuite plus jamais de vraie date (tri, filtre par période, Grand
   // Livre) plutôt qu'un 400 clair au moment de la saisie.
-  expenseDate: z.coerce.date().optional(),
+  expenseDate: dateSaisieSchema.optional(),
   notes: z.string().max(5000).optional(),
   // Dépense récurrente (voir recurringExpense.service.ts) : cette dépense
   // devient le MODÈLE à partir duquel les occurrences suivantes sont générées
@@ -40,7 +41,7 @@ const createExpenseSchema = z.object({
   // des dépenses dans ce contrôleur — la récurrence ne se fixe qu'à la
   // création, jamais après coup.
   recurrence: z.enum(["MONTHLY", "ANNUAL"]).optional(),
-  recurrenceEndDate: z.coerce.date().optional(),
+  recurrenceEndDate: dateSaisieSchema.optional(),
 });
 
 /**

@@ -432,6 +432,32 @@ describe("PUT /api/issues/:id/status", () => {
       expect(new Date(res.body.scheduledAt).toISOString()).toBe(rendezVous);
     });
 
+    it.each([
+      ["l'an 1", "0001-01-01T00:00:00.000Z"],
+      ["avant notre ère", "-100000-01-01T00:00:00.000Z"],
+      ["l'an 3000", "3000-01-01T00:00:00.000Z"],
+    ])("refuse un rendez-vous d'intervention en %s", async (_nom, rendezVous) => {
+      const manager = await createManager();
+      const property = await createProperty(manager.id);
+      const tenant = await createTenant(manager.id);
+      const contract = await createContract(property.id, tenant.id);
+      const vendor = await createVendor(manager.id);
+      const createRes = await request(app)
+        .post("/api/issues")
+        .set(await tenantToken(tenant.id))
+        .field("contractId", contract.id)
+        .field("title", "Fuite d'eau")
+        .field("description", "Description")
+        .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "a.jpg", contentType: "image/jpeg" });
+
+      const res = await request(app)
+        .put(`/api/issues/${createRes.body.id}/status`)
+        .set(authHeader(tokenFor(manager)))
+        .send({ status: "IN_PROGRESS", vendorId: vendor.id, scheduledAt: rendezVous });
+
+      expect(res.status).toBe(400);
+    });
+
     it("refuse de planifier une intervention sans aucun prestataire assigné", async () => {
       const manager = await createManager();
       const property = await createProperty(manager.id);

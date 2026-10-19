@@ -134,6 +134,22 @@ describe("Connexion avec la 2FA activée", () => {
 });
 
 describe("POST /api/auth/2fa/disable", () => {
+  it("refuse un mot de passe démesuré avant toute vérification", async () => {
+    const manager = await createManager();
+    await activerDeuxFa(tokenFor(manager));
+
+    const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "p".repeat(1025) });
+
+    expect(res.status).toBe(400);
+    const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(row.totpEnabledAt).not.toBeNull();
+  });
+
+  it("refuse un jeton intermédiaire de connexion démesuré", async () => {
+    const res = await request(app).post("/api/auth/2fa/verify-login").send({ pendingToken: "t".repeat(5000), code: "123456" });
+    expect(res.status).toBe(400);
+  });
+
   it("désactive la 2FA après vérification du mot de passe, et la connexion redevient directe", async () => {
     const manager = await createManager({ email: "2fa-disable@test.local" });
     await activerDeuxFa(tokenFor(manager));

@@ -11,6 +11,7 @@ import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { deviseSchema } from "../utils/devises";
+import { dateSaisieSchema } from "../utils/dates";
 import { MONTANT_MAXIMUM, SURFACE_MAXIMUM } from "../utils/montant";
 
 /**
@@ -86,7 +87,7 @@ const leadSchema = z.object({
   // l'appeler.
   prospectPhone: z.string().max(40, "Numéro de téléphone invalide").regex(/^[+\d][\d\s().-]{5,}$/, "Numéro de téléphone invalide"),
   requestType: z.enum(LEAD_REQUEST_TYPES).optional(),
-  preferredDate: z.coerce.date().optional(),
+  preferredDate: dateSaisieSchema.optional(),
   message: z.string().max(2000).optional(),
 });
 
