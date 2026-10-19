@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Download, ExternalLink, FileText, Image as ImageIcon, Printer, X } from "lucide-react";
 
 interface ScannedContractModalProps {
@@ -8,6 +9,7 @@ interface ScannedContractModalProps {
 }
 
 export default function ScannedContractModal({ title, fileUrl, onClose }: ScannedContractModalProps) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
             <div>
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                {isPdf ? "Document PDF numérisé" : "Scan image / photo haute résolution"}
+                {isPdf ? t("components.scannedContractModal.pdfSubtitle") : t("components.scannedContractModal.imageSubtitle")}
               </p>
             </div>
           </div>
@@ -59,10 +61,10 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
             <button
               onClick={handlePrint}
               className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Imprimer"
+              title={t("components.scannedContractModal.print")}
             >
               <Printer size={14} />
-              <span>Imprimer</span>
+              <span>{t("components.scannedContractModal.print")}</span>
             </button>
             <a
               href={fileUrl}
@@ -72,7 +74,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
               className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
             >
               <Download size={14} />
-              <span>Télécharger</span>
+              <span>{t("components.scannedContractModal.download")}</span>
             </a>
             <a
               href={fileUrl}
@@ -81,12 +83,12 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
               className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors"
             >
               <ExternalLink size={14} />
-              <span>Plein écran</span>
+              <span>{t("components.scannedContractModal.fullscreen")}</span>
             </a>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 text-lg font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Fermer"
+              aria-label={t("common.actions.close")}
             >
               <X size={20} />
             </button>

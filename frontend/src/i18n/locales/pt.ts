@@ -493,6 +493,18 @@ const pt: TranslationSchema = {
       stay: "Manter sessão iniciada",
       logout: "Terminar sessão",
     },
+    scannedContractModal: {
+      print: "Imprimir",
+      download: "Transferir",
+      fullscreen: "Ecrã inteiro",
+      pdfSubtitle: "Documento PDF digitalizado",
+      imageSubtitle: "Digitalização de imagem / foto de alta resolução",
+    },
+    errorBoundary: {
+      title: "Ocorreu um erro",
+      body: "Algo correu mal do nosso lado. Recarregue a página para tentar novamente — se o problema persistir, contacte o nosso suporte.",
+      reload: "Recarregar a página",
+    },
     documentModal: {
       subtitle: "Pré-visualização oficial certificada & Descarregamento / Impressão",
       print: "Imprimir / Guardar como PDF",

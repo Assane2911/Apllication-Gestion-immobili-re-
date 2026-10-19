@@ -493,6 +493,18 @@ const en: TranslationSchema = {
       stay: "Stay signed in",
       logout: "Sign me out",
     },
+    scannedContractModal: {
+      print: "Print",
+      download: "Download",
+      fullscreen: "Full screen",
+      pdfSubtitle: "Scanned PDF document",
+      imageSubtitle: "High-resolution image / photo scan",
+    },
+    errorBoundary: {
+      title: "Something went wrong",
+      body: "Something went wrong on our side. Reload the page to try again — if the problem persists, contact our support.",
+      reload: "Reload the page",
+    },
     documentModal: {
       subtitle: "Official certified preview & Download / Print",
       print: "Print / Save as PDF",
