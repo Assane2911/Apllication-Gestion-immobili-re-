@@ -172,6 +172,7 @@ const en: TranslationSchema = {
   auth: {
     login: {
       suspended: "Your account is suspended. Contact platform support to find out more.",
+      inactive: "You were signed out after a period of inactivity. Sign in again to continue.",
       title: "Property Management",
       subtitle: "Sign in to your account",
       email: "Email",
@@ -486,6 +487,12 @@ const en: TranslationSchema = {
   },
 
   components: {
+    inactivite: {
+      title: "Your session is about to expire",
+      message: "With no activity from you, you will be signed out in {{count}} s.",
+      stay: "Stay signed in",
+      logout: "Sign me out",
+    },
     documentModal: {
       subtitle: "Official certified preview & Download / Print",
       print: "Print / Save as PDF",

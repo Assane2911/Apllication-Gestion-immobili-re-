@@ -3,6 +3,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import AdminLayout from "./components/AdminLayout";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
+import InactiviteSession from "./components/InactiviteSession";
 import ManagerLayout from "./components/ManagerLayout";
 import OwnerLayout from "./components/OwnerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -183,6 +184,7 @@ export default function App() {
           <AuthProvider>
             <CurrencyProvider>
               <AppRoutes />
+              <InactiviteSession />
               <CookieConsentBanner />
             </CurrencyProvider>
           </AuthProvider>

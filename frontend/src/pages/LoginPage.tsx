@@ -62,7 +62,11 @@ export default function LoginPage() {
   // Arrivée depuis l'intercepteur d'api/client.ts après une suspension de compte.
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(() =>
-    searchParams.get("suspended") ? t("auth.login.suspended") : null
+    searchParams.get("suspended")
+      ? t("auth.login.suspended")
+      : searchParams.get("inactif")
+        ? t("auth.login.inactive")
+        : null
   );
   const [loading, setLoading] = useState<"form" | "google" | "2fa" | null>(null);
   const [googleError, setGoogleError] = useState<string | null>(null);

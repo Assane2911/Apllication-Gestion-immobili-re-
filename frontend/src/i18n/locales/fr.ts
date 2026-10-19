@@ -170,6 +170,7 @@ const fr = {
   auth: {
     login: {
       suspended: "Votre compte est suspendu. Contactez le support de la plateforme pour en savoir plus.",
+      inactive: "Vous avez été déconnecté après une période d'inactivité. Reconnectez-vous pour continuer.",
       title: "Gestion Immobilière",
       subtitle: "Connectez-vous à votre espace",
       email: "Email",
@@ -484,6 +485,12 @@ const fr = {
   },
 
   components: {
+    inactivite: {
+      title: "Session sur le point d'expirer",
+      message: "Sans activité de votre part, vous serez déconnecté dans {{count}} s.",
+      stay: "Rester connecté",
+      logout: "Me déconnecter",
+    },
     documentModal: {
       subtitle: "Aperçu officiel certifié & Téléchargement / Impression",
       print: "Imprimer / Enregistrer PDF",

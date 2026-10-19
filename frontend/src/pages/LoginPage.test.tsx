@@ -70,6 +70,13 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("explique la déconnexion à l'inactivité quand on arrive avec ?inactif=1", () => {
+    renderPage("/login?inactif=1");
+    expect(
+      screen.getByText("Vous avez été déconnecté après une période d'inactivité. Reconnectez-vous pour continuer.")
+    ).toBeInTheDocument();
+  });
+
   it("n'affiche aucun message d'erreur à l'arrivée normale sur la page", () => {
     renderPage();
     expect(screen.queryByText(/suspendu/)).not.toBeInTheDocument();
