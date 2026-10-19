@@ -31,6 +31,10 @@ export interface AuthPayload {
   // (journal d'activité, affichage) et aux actions réservées au propriétaire
   // (team.controller.ts, deleteMyAccount, changement de formule).
   collaboratorId?: string | null;
+  // Début de la session web (secondes) : conservé d'un renouvellement à l'autre pour plafonner sa durée totale
+  // (voir utils/session.ts). Absent des jetons de l'app mobile et de ceux émis avant son introduction.
+  sst?: number;
+  iat?: number;
 }
 
 declare global {
@@ -57,6 +61,8 @@ declare global {
        * le gestionnaire propriétaire, qui a tous les droits.
        */
       roleEquipe?: RoleEquipe;
+      /** Vrai quand la session vient du cookie web (courte, prolongée sur geste), faux pour l'en-tête Authorization. */
+      sessionParCookie?: boolean;
     }
   }
 }
@@ -170,6 +176,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
 
     req.user = payload;
     req.compteCourant = user;
+    req.sessionParCookie = !bearerToken;
     next();
   } catch (err) {
     next(err);
