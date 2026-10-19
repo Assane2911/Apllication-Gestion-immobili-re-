@@ -30,26 +30,27 @@ import { roleEquipeEffectif } from "../utils/rolesEquipe";
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
 
 const registerManagerSchema = z.object({
-  email: z.string().email().transform((v) => v.trim().toLowerCase()),
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+  email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").max(128, "Le mot de passe ne peut pas dépasser 128 caractères"),
   // Code de parrainage (voir referral.service.ts), saisi manuellement ou
   // pré-rempli depuis le lien partagé (?ref=CODE). Facultatif, et un code
   // introuvable n'empêche jamais l'inscription — voir plus bas : ce n'est
   // qu'une attribution de récompense, jamais une condition d'accès.
-  referralCode: z.string().trim().min(1).optional(),
+  referralCode: z.string().trim().min(1).max(64).optional(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email().transform((v) => v.trim().toLowerCase()),
-  password: z.string().min(1),
+  email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
+  // Large : un mot de passe créé avant la limite d'inscription peut dépasser 128 caractères ; bcrypt n'en lit que 72 octets.
+  password: z.string().min(1).max(1024),
 });
 
 const googleLoginSchema = z.object({
   // Jeton d'identité (JWT) renvoyé par Google Identity Services côté
   // navigateur — jamais un code d'autorisation ni, a fortiori, un secret.
-  credential: z.string().min(1),
+  credential: z.string().min(1).max(8192),
   // Code de parrainage saisi ou repris du lien de parrainage : n'a d'effet qu'à la CRÉATION du compte.
-  referralCode: z.string().trim().min(1).optional(),
+  referralCode: z.string().trim().min(1).max(64).optional(),
 });
 
 // Un seul client, sans Client ID passé au constructeur : l'audience attendue
@@ -572,7 +573,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
 });
 
 const verifyEmailSchema = z.object({
-  token: z.string().min(1),
+  token: z.string().min(1).max(512),
 });
 
 /**
@@ -634,7 +635,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const resendVerificationSchema = z.object({
-  email: z.string().email().transform((v) => v.trim().toLowerCase()),
+  email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
 });
 
 /**
@@ -734,7 +735,7 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email().transform((v) => v.trim().toLowerCase()),
+  email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
 });
 
 /**
@@ -778,8 +779,8 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
 });
 
 const resetPasswordSchema = z.object({
-  token: z.string().min(1),
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+  token: z.string().min(1).max(512),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").max(128, "Le mot de passe ne peut pas dépasser 128 caractères"),
 });
 
 /** Applique le nouveau mot de passe si le token reçu est valide et non expiré. */
@@ -910,8 +911,8 @@ const deleteAccountSchema = z.object({
   // Google fraîchement obtenu. On ne peut pas savoir laquelle des deux
   // s'applique avant d'avoir chargé l'utilisateur, donc les deux champs
   // restent optionnels ici et la présence requise est vérifiée plus bas.
-  password: z.string().min(1).optional(),
-  googleCredential: z.string().min(1).optional(),
+  password: z.string().min(1).max(1024).optional(),
+  googleCredential: z.string().min(1).max(8192).optional(),
 });
 
 /**
