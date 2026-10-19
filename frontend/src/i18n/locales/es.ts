@@ -1786,6 +1786,9 @@ const es: TranslationSchema = {
       hideRead: "Ocultar los elementos leídos",
     },
     dashboard: {
+      noLeaseHint: "Su gestor aún no ha vinculado un contrato a su cuenta.",
+      verified: "Portal de inquilino verificado",
+      intro: "Encuentre toda la información sobre su contrato, sus recibos oficiales y el pago simplificado de su alquiler.",
       privacy: {
         title: "Mis datos personales",
         description:
@@ -1825,6 +1828,15 @@ const es: TranslationSchema = {
       inspectionDocTitle: "Estado de Bien - {{property}}",
     },
     invoices: {
+      subtitle: "Consulte su historial y pague su alquiler de forma segura.",
+      allUpToDate: "Todos sus alquileres están al día",
+      pendingTitle: "Pendiente de pago",
+      pendingOne: "{{count}} vencimiento",
+      pendingMany: "{{count}} vencimientos",
+      receiptsTitle: "Recibos disponibles",
+      receiptOne: "{{count}} recibo",
+      receiptMany: "{{count}} recibos",
+      choosePaymentTitle: "Seleccione un método de pago seguro",
       title: "Mis alquileres y Recibos",
       dueDate: "Vencimiento: {{date}}",
       receiptPdf: "Mi Recibo PDF",

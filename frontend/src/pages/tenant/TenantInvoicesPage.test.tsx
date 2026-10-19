@@ -347,3 +347,32 @@ describe("TenantInvoicesPage", () => {
     await waitFor(() => expect(assignSpy).toHaveBeenCalledWith("https://paydunya.example/checkout"));
   });
 });
+
+describe("TenantInvoicesPage — langue de l'interface", () => {
+  it("affiche les titres et les compteurs en français puis en anglais, sans reste de français", async () => {
+    fileGet.length = 0;
+    mockedApi.get.mockReset();
+    installerGet();
+    queueGet({ data: [invoice(), invoice({ id: "inv-2", status: "PAID", periodMonth: 5 })] });
+
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+    expect(screen.getByText("En attente de règlement")).toBeInTheDocument();
+    expect(screen.getByText("1 échéance")).toBeInTheDocument();
+    expect(screen.getByText("Quittances disponibles")).toBeInTheDocument();
+    expect(screen.getByText("1 quittance")).toBeInTheDocument();
+
+    const { changerLangue } = await import("../../i18n");
+    await changerLangue("en");
+    try {
+      await waitFor(() => expect(screen.getByText("Awaiting payment")).toBeInTheDocument());
+      expect(screen.getByText("1 payment due")).toBeInTheDocument();
+      expect(screen.getByText("Receipts available")).toBeInTheDocument();
+      expect(screen.getByText("1 receipt")).toBeInTheDocument();
+      expect(screen.getByText("Review your history and pay your rent securely.")).toBeInTheDocument();
+      expect(screen.queryByText("En attente de règlement")).not.toBeInTheDocument();
+    } finally {
+      await changerLangue("fr");
+    }
+  });
+});

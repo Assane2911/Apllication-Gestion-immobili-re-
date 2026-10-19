@@ -106,13 +106,13 @@ export default function TenantInvoicesPage() {
             {t("tenant.invoices.title")}
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-            Consultez votre historique et réglez vos loyers en toute sécurité.
+            {t("tenant.invoices.subtitle")}
           </p>
         </div>
         {unpaidInvoices.length === 0 && invoices.length > 0 && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 size={14} />
-            Tous vos loyers sont à jour
+            {t("tenant.invoices.allUpToDate")}
           </div>
         )}
       </div>
@@ -147,27 +147,27 @@ export default function TenantInvoicesPage() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-              En attente de règlement
+              {t("tenant.invoices.pendingTitle")}
             </p>
             <span className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
               <Clock size={15} aria-hidden="true" />
             </span>
           </div>
           <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
-            {unpaidInvoices.length} {unpaidInvoices.length > 1 ? "échéances" : "échéance"}
+            {t(unpaidInvoices.length > 1 ? "tenant.invoices.pendingMany" : "tenant.invoices.pendingOne", { count: unpaidInvoices.length })}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-              Quittances disponibles
+              {t("tenant.invoices.receiptsTitle")}
             </p>
             <span className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
               <Download size={15} aria-hidden="true" />
             </span>
           </div>
           <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
-            {paidInvoices.length} {paidInvoices.length > 1 ? "quittances" : "quittance"}
+            {t(paidInvoices.length > 1 ? "tenant.invoices.receiptMany" : "tenant.invoices.receiptOne", { count: paidInvoices.length })}
           </p>
         </div>
       </div>
@@ -245,7 +245,7 @@ export default function TenantInvoicesPage() {
               {payingId === inv.id && (
                 <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-200">
                   <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
-                    Sélectionnez un mode de règlement sécurisé
+                    {t("tenant.invoices.choosePaymentTitle")}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {methods.map((m) => (
@@ -270,6 +270,7 @@ export default function TenantInvoicesPage() {
                               aria-label={t("tenant.invoices.bankRefPlaceholder")}
                               placeholder={t("tenant.invoices.bankRefPlaceholder")}
                               value={bankRef}
+                              maxLength={200}
                               onChange={(e) => setBankRef(e.target.value)}
                               className="w-full mt-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-none"
                             />

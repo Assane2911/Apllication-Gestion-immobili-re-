@@ -1784,6 +1784,9 @@ const pt: TranslationSchema = {
       hideRead: "Ocultar os elementos lidos",
     },
     dashboard: {
+      noLeaseHint: "O seu gestor ainda não associou um contrato à sua conta.",
+      verified: "Portal do inquilino verificado",
+      intro: "Encontre todas as informações sobre o seu contrato, os seus recibos oficiais e o pagamento simplificado das suas rendas.",
       privacy: {
         title: "Os meus dados pessoais",
         description:
@@ -1823,6 +1826,15 @@ const pt: TranslationSchema = {
       inspectionDocTitle: "Vistoria - {{property}}",
     },
     invoices: {
+      subtitle: "Consulte o seu histórico e pague as suas rendas em segurança.",
+      allUpToDate: "Todas as suas rendas estão em dia",
+      pendingTitle: "A aguardar pagamento",
+      pendingOne: "{{count}} vencimento",
+      pendingMany: "{{count}} vencimentos",
+      receiptsTitle: "Recibos disponíveis",
+      receiptOne: "{{count}} recibo",
+      receiptMany: "{{count}} recibos",
+      choosePaymentTitle: "Selecione um método de pagamento seguro",
       title: "As Minhas Rendas & Recibos",
       dueDate: "Vencimento: {{date}}",
       receiptPdf: "O Meu Recibo PDF",

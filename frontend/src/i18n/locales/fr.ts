@@ -1785,6 +1785,9 @@ const fr = {
       hideRead: "Masquer les éléments lus",
     },
     dashboard: {
+      noLeaseHint: "Votre gestionnaire n'a pas encore rattaché de bail à votre compte.",
+      verified: "Portail locataire vérifié",
+      intro: "Retrouvez toutes les informations sur votre bail, vos quittances officielles et le règlement simplifié de vos loyers.",
       privacy: {
         title: "Mes données personnelles",
         description:
@@ -1824,6 +1827,15 @@ const fr = {
       inspectionDocTitle: "État des Lieux - {{property}}",
     },
     invoices: {
+      subtitle: "Consultez votre historique et réglez vos loyers en toute sécurité.",
+      allUpToDate: "Tous vos loyers sont à jour",
+      pendingTitle: "En attente de règlement",
+      pendingOne: "{{count}} échéance",
+      pendingMany: "{{count}} échéances",
+      receiptsTitle: "Quittances disponibles",
+      receiptOne: "{{count}} quittance",
+      receiptMany: "{{count}} quittances",
+      choosePaymentTitle: "Sélectionnez un mode de règlement sécurisé",
       title: "Mes loyers & Quittances",
       dueDate: "Échéance : {{date}}",
       receiptPdf: "Ma Quittance PDF",

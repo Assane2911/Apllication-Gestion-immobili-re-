@@ -124,7 +124,7 @@ export default function TenantDashboardPage() {
         </div>
         <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t("tenant.dashboard.noContract")}</h3>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            Votre gestionnaire n'a pas encore rattaché de bail à votre compte.
+            {t("tenant.dashboard.noLeaseHint")}
           </p>
         </div>
         {sectionDonneesPersonnelles}
@@ -140,11 +140,11 @@ export default function TenantDashboardPage() {
         <div className="relative z-10">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-500/20 border border-brand-400/30 text-[11px] font-semibold text-brand-300 mb-2.5">
             <ShieldCheck size={13} className="text-emerald-400" />
-            Portail locataire vérifié
+            {t("tenant.dashboard.verified")}
           </div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("tenant.dashboard.title")}</h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-            Retrouvez toutes les informations sur votre bail, vos quittances officielles et le règlement simplifié de vos loyers.
+            {t("tenant.dashboard.intro")}
           </p>
         </div>
       </div>
