@@ -10,6 +10,7 @@ import {
   resendVerification,
   resetPassword,
   logoutAllDevices,
+  rafraichirSession,
   updateCurrency,
   verifyEmail,
   verifyTwoFactorLogin,
@@ -55,6 +56,7 @@ router.patch("/currency", authenticate, updateCurrency);
 // un cookie déjà expiré ou absent doit pouvoir être "nettoyé" sans 401.
 router.post("/logout", logout);
 router.post("/logout-all", authenticate, logoutAllDevices);
+router.post("/session/refresh", authenticate, rafraichirSession);
 router.delete("/account", authenticate, requireRole("MANAGER"), deleteMyAccount);
 
 // Double authentification (TOTP) — réservée aux gestionnaires et à l'administrateur

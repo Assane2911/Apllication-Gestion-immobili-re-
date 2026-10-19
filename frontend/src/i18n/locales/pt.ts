@@ -172,6 +172,7 @@ const pt: TranslationSchema = {
   auth: {
     login: {
       suspended: "A sua conta está suspensa. Contacte o suporte da plataforma para saber mais.",
+      inactive: "A sua sessão foi terminada por inatividade. Inicie sessão novamente para continuar.",
       title: "Gestão Imobiliária",
       subtitle: "Inicie sessão na sua conta",
       email: "Email",
@@ -486,6 +487,12 @@ const pt: TranslationSchema = {
   },
 
   components: {
+    inactivite: {
+      title: "A sua sessão está prestes a expirar",
+      message: "Sem atividade sua, a sessão será terminada dentro de {{count}} s.",
+      stay: "Manter sessão iniciada",
+      logout: "Terminar sessão",
+    },
     documentModal: {
       subtitle: "Pré-visualização oficial certificada & Descarregamento / Impressão",
       print: "Imprimir / Guardar como PDF",

@@ -23,6 +23,7 @@ import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSu
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { clearAuthCookie, setAuthCookie } from "../utils/authCookie";
+import { signerJetonWeb } from "../utils/session";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 import { deviseSchema } from "../utils/devises";
 import { roleEquipeEffectif } from "../utils/rolesEquipe";
@@ -319,15 +320,18 @@ async function finalizeLogin(user: typeof users.$inferSelect, res: Response) {
     throw new ApiError(403, MESSAGE_COMPTE_SUSPENDU, CODE_COMPTE_SUSPENDU);
   }
 
-  const token = signToken({
+  const claims = {
     userId: identite.userId,
     role: user.role as "MANAGER" | "TENANT" | "ADMIN" | "OWNER",
     tenantId: tenant?.id ?? null,
     ownerId: owner?.id ?? null,
     tokenVersion: user.tokenVersion,
     collaboratorId: identite.collaboratorId,
-  });
-  setAuthCookie(res, token);
+  };
+  // Le jeton du corps (app mobile) garde la durée longue ; celui du cookie web est court et ne se prolonge que
+  // sur un geste de l'utilisateur (voir utils/session.ts et rafraichirSession).
+  const token = signToken(claims);
+  setAuthCookie(res, signerJetonWeb(claims)!.token);
 
   const subscription = compteFacturation ? computeSubscriptionInfo(compteFacturation) : null;
 
@@ -626,8 +630,9 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     console.error("[referral] Échec de l'attribution de la récompense de parrainage:", err);
   }
 
-  const token = signToken({ userId: updated.id, role: "MANAGER", tokenVersion: updated.tokenVersion });
-  setAuthCookie(res, token);
+  const claims = { userId: updated.id, role: "MANAGER" as const, tokenVersion: updated.tokenVersion };
+  const token = signToken(claims);
+  setAuthCookie(res, signerJetonWeb(claims)!.token);
   const subscription = computeSubscriptionInfo(updated);
 
   res.json({
@@ -912,6 +917,39 @@ export const logoutAllDevices = asyncHandler(async (req: Request, res: Response)
 export const logout = asyncHandler(async (_req: Request, res: Response) => {
   clearAuthCookie(res);
   res.status(204).send();
+});
+
+/**
+ * Prolonge la session web sur un geste de l'utilisateur (l'interface l'appelle quand il agit, pas à chaque
+ * requête automatique) : nouveau cookie de la durée d'inactivité du rôle, sans jamais dépasser 12 h depuis la
+ * connexion. Passé ce plafond, ou si le cookie a expiré, la réponse est un 401 : l'interface déconnecte.
+ * L'app mobile (jeton dans l'en-tête Authorization) garde son jeton long : rien à renouveler.
+ */
+export const rafraichirSession = asyncHandler(async (req: Request, res: Response) => {
+  const payload = req.user!;
+  if (!req.sessionParCookie) {
+    return res.json({ renewed: false });
+  }
+
+  const debut = new Date((payload.sst ?? payload.iat ?? Math.floor(Date.now() / 1000)) * 1000);
+  const renouvele = signerJetonWeb(
+    {
+      userId: payload.userId,
+      role: payload.role,
+      tenantId: payload.tenantId ?? null,
+      ownerId: payload.ownerId ?? null,
+      tokenVersion: payload.tokenVersion ?? 0,
+      collaboratorId: payload.collaboratorId ?? null,
+    },
+    debut
+  );
+  if (!renouvele) {
+    clearAuthCookie(res);
+    throw new ApiError(401, "La durée maximale de la session est atteinte. Veuillez vous reconnecter.");
+  }
+
+  setAuthCookie(res, renouvele.token);
+  res.json({ renewed: true, expiresAt: renouvele.expireLe });
 });
 
 const deleteAccountSchema = z.object({

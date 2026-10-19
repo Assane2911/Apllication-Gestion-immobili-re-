@@ -172,6 +172,7 @@ const es: TranslationSchema = {
   auth: {
     login: {
       suspended: "Su cuenta está suspendida. Contacte con el soporte de la plataforma para más información.",
+      inactive: "Se cerró su sesión por inactividad. Vuelva a iniciar sesión para continuar.",
       title: "Gestión Inmobiliaria",
       subtitle: "Inicia sesión en tu espacio",
       email: "Correo electrónico",
@@ -486,6 +487,12 @@ const es: TranslationSchema = {
   },
 
   components: {
+    inactivite: {
+      title: "Su sesión está a punto de caducar",
+      message: "Si no hay actividad, se cerrará su sesión en {{count}} s.",
+      stay: "Seguir conectado",
+      logout: "Cerrar sesión",
+    },
     documentModal: {
       subtitle: "Vista previa oficial certificada y Descarga / Impresión",
       print: "Imprimir / Guardar PDF",
