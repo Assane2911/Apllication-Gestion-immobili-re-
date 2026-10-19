@@ -13,7 +13,7 @@ import {
 import { exportAuditCsv, exportManagersCsv } from "../controllers/adminExport.controller";
 import { deleteManager } from "../controllers/adminSuppression.controller";
 import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
-import { changeManagerPlan, grantSubscriptionDays } from "../controllers/adminSubscription.controller";
+import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeUnlimitedAccess } from "../controllers/adminSubscription.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -35,6 +35,8 @@ router.delete("/managers/:id", deleteManager);
 router.post("/managers/:id/reactivate", reactivateManager);
 router.post("/managers/:id/subscription/grant-days", grantSubscriptionDays);
 router.post("/managers/:id/subscription/change-plan", changeManagerPlan);
+router.post("/managers/:id/subscription/grant-unlimited", grantUnlimitedAccess);
+router.post("/managers/:id/subscription/revoke-unlimited", revokeUnlimitedAccess);
 router.get("/audit-logs", listAdminAuditLogs);
 router.get("/exports/managers.csv", exportManagersCsv);
 router.get("/exports/audit-logs.csv", exportAuditCsv);
