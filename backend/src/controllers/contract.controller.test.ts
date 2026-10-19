@@ -907,3 +907,38 @@ describe("PUT /api/contracts/:id/deposit-refund", () => {
     expect(res.body[0].depositRefundedAt).not.toBeNull();
   });
 });
+
+describe("contrats : argent déjà encaissé et bail suivant", () => {
+  it("refuse de supprimer un contrat clos dont une facture en attente a déjà reçu un paiement partiel", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+    await createInvoice(contract.id, { status: "PENDING", amount: 500, amountPaid: 200 });
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(409);
+    expect(await testDb.select().from(contracts).where(eq(contracts.id, contract.id))).toHaveLength(1);
+  });
+
+  it("refuse de renouveler un bail quand un autre bail actif du même bien commence juste après", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const autre = await createTenant(manager.id);
+    const courant = await createContract(property.id, tenant.id, { startDate: new Date(2026, 0, 1), endDate: new Date(2026, 11, 31) });
+    await createContract(property.id, autre.id, { startDate: new Date(2027, 0, 5), endDate: new Date(2028, 0, 4) });
+
+    const res = await request(app)
+      .post(`/api/contracts/${courant.id}/renew`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ months: 12 });
+
+    expect(res.status).toBe(409);
+    const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, courant.id));
+    expect(apres.status).toBe("ACTIVE");
+    expect(await testDb.select().from(contracts).where(eq(contracts.propertyId, property.id))).toHaveLength(2);
+  });
+});
+

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -506,11 +506,18 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   const facturesReglees = await db
     .select({ id: invoices.id })
     .from(invoices)
-    .where(and(eq(invoices.contractId, req.params.id), inArray(invoices.status, ["PAID", "LATE"])));
+    .where(
+      and(
+        eq(invoices.contractId, req.params.id),
+        // Une facture en attente qui a déjà reçu un paiement partiel porte de l'argent encaissé : la supprimer
+        // l'effacerait des encaissements (même règle que l'annulation d'une facture).
+        or(inArray(invoices.status, ["PAID", "LATE"]), gt(invoices.amountPaid, 0))
+      )
+    );
   if (facturesReglees.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un contrat ayant des factures réglées ou en retard. Cet historique doit être conservé."
+      "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé."
     );
   }
 
@@ -664,6 +671,11 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
     if (!ferme) {
       throw new ApiError(409, "Ce bail vient d'être renouvelé ou clôturé. Rechargez la page avant de réessayer.");
     }
+
+    // Un bail déjà prévu à la suite (même bien, actif, commençant avant la fin du renouvellement) ferait
+    // deux baux actifs sur la même période : on refuse, la transaction annule la clôture ci-dessus.
+    await verrouillerBienPourContrat(tx, existing.propertyId);
+    await assertAucunChevauchementActif(tx, existing.propertyId, newStart, newEnd, existing.id);
 
     const [created] = await tx
       .insert(contracts)
