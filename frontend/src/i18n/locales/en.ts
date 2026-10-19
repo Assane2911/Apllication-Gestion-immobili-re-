@@ -1784,6 +1784,9 @@ const en: TranslationSchema = {
       hideRead: "Hide read items",
     },
     dashboard: {
+      noLeaseHint: "Your manager has not linked a lease to your account yet.",
+      verified: "Verified tenant portal",
+      intro: "Find all the information about your lease, your official receipts and the simplified payment of your rent.",
       privacy: {
         title: "My personal data",
         description:
@@ -1823,6 +1826,15 @@ const en: TranslationSchema = {
       inspectionDocTitle: "Move-in/Move-out Report - {{property}}",
     },
     invoices: {
+      subtitle: "Review your history and pay your rent securely.",
+      allUpToDate: "All your rent is up to date",
+      pendingTitle: "Awaiting payment",
+      pendingOne: "{{count}} payment due",
+      pendingMany: "{{count}} payments due",
+      receiptsTitle: "Receipts available",
+      receiptOne: "{{count}} receipt",
+      receiptMany: "{{count}} receipts",
+      choosePaymentTitle: "Select a secure payment method",
       title: "My Rent & Receipts",
       dueDate: "Due date: {{date}}",
       receiptPdf: "My Receipt PDF",
