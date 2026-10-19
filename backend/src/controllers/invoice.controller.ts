@@ -344,7 +344,7 @@ export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
 
 const paySchema = z.object({
   method: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]),
-  bankReference: z.string().optional(),
+  bankReference: z.string().trim().max(200, "La référence ne peut pas dépasser 200 caractères").optional(),
 });
 
 /** Le locataire connecté initie le paiement d'une de ses factures. */

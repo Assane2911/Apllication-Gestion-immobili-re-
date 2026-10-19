@@ -273,7 +273,7 @@ const subscribeSchema = z.object({
   plan: z.enum(["STARTER", "PRO", "ENTERPRISE"]),
   billingCycle: z.enum(["MONTHLY", "ANNUAL"]).default("MONTHLY"),
   paymentMethod: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]),
-  bankReference: z.string().optional(),
+  bankReference: z.string().trim().max(200, "La référence ne peut pas dépasser 200 caractères").optional(),
   // Renouvellement automatique réel (Stripe Subscriptions) — voir CGU §4 :
   // seul le paiement par carte via Stripe le propose "explicitement dans
   // l'interface" ; PayDunya et le virement restent des paiements ponctuels.
