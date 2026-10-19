@@ -644,7 +644,7 @@ export default function ContractsPage() {
                       {uploadingScanContractId === c.id
                         ? t("manager.contracts.uploadingScan")
                         : c.scannedContractUrl
-                        ? "Remplacer scan"
+                        ? t("manager.contracts.replaceScanShort")
                         : t("manager.contracts.scanContractShort")}
                     </span>
                   </button>
@@ -807,7 +807,7 @@ export default function ContractsPage() {
                     {uploadingScanContractId === c.id
                       ? t("manager.contracts.uploadingScan")
                       : c.scannedContractUrl
-                      ? "Remplacer scan"
+                      ? t("manager.contracts.replaceScanShort")
                       : t("manager.contracts.scanContractShort")}
                   </span>
                 </button>

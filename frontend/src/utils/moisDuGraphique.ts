@@ -30,3 +30,8 @@ export function libelleDuMois(cleMois: string, langue: string): string {
   const date = new Date(Number(m[1]), Number(m[2]) - 1, 1);
   return new Intl.DateTimeFormat(langue, { month: "short", year: "2-digit" }).format(date);
 }
+
+/** Nom court d'un mois (`mois` de 1 à 12), dans la langue de l'interface — et non celle du navigateur. */
+export function moisCourt(annee: number, mois: number, langue: string): string {
+  return new Intl.DateTimeFormat(langue, { month: "short" }).format(new Date(annee, mois - 1, 1));
+}
