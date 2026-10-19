@@ -103,7 +103,8 @@ export const createOwnerPayout = asyncHandler(async (req: Request, res: Response
         method: body.method,
         reference: body.reference?.trim() || null,
         note: body.note?.trim() || null,
-        createdBy: req.user!.userId,
+        // Celui qui saisit : le collaborateur, pas le propriétaire dont le jeton porte l'id (voir identiteJetonPourManager).
+        createdBy: req.user!.collaboratorId ?? req.user!.userId,
       })
       .returning();
     return cree;

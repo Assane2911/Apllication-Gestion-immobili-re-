@@ -262,4 +262,39 @@ describe("synthèse et accès", () => {
     expect((await request(app).delete(`/api/crg/${owner.id}/payouts/${r.body.id}`).set(hCompta)).status).toBe(204);
     expect((await crg(h, owner.id)).status).toBe(200);
   });
+
+  it("le reversement est attribué à celui qui l'a saisi : le collaborateur, pas le gestionnaire propriétaire", async () => {
+    const { manager, owner, h } = await agence();
+    const comptable = await createTeamMember(manager.id, { teamRole: "ACCOUNTANT" });
+    const hCompta = authHeader(tokenFor({ id: manager.id, role: "MANAGER" }, null, null, comptable.id));
+
+    const parLeComptable = await reverser(hCompta, owner.id, { amount: 10 });
+    const parLeGestionnaire = await reverser(h, owner.id, { amount: 20 });
+
+    expect(parLeComptable.body.createdBy).toBe(comptable.id);
+    expect(parLeGestionnaire.body.createdBy).toBe(manager.id);
+  });
+});
+
+describe("propriétaires : textes bornés", () => {
+  const base = { firstName: "Awa", lastName: "Ndiaye", phone: "+221771234567", email: "awa@example.com" };
+
+  it.each([
+    ["prénom démesuré", { firstName: "P".repeat(101) }],
+    ["nom démesuré", { lastName: "N".repeat(101) }],
+    ["société démesurée", { companyName: "S".repeat(201) }],
+    ["adresse démesurée", { address: "A".repeat(301) }],
+    ["notes démesurées", { notes: "N".repeat(5001) }],
+    ["email démesuré", { email: `${"a".repeat(250)}@example.com` }],
+  ])("refuse %s", async (_nom, surcharge) => {
+    const { h } = await agence();
+    const res = await request(app).post("/api/owners").set(h).send({ ...base, ...surcharge });
+    expect(res.status).toBe(400);
+  });
+
+  it("accepte un propriétaire ordinaire", async () => {
+    const { h } = await agence();
+    const res = await request(app).post("/api/owners").set(h).send(base);
+    expect(res.status).toBe(201);
+  });
 });

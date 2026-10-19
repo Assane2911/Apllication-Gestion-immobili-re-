@@ -28,17 +28,17 @@ const ownerSchema = z.object({
   // Facultative : un propriétaire peut être une société (voir companyName),
   // auquel cas « Monsieur » n'a aucun sens.
   civility: z.enum(CIVILITES).optional().nullable(),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  companyName: z.string().optional(),
+  firstName: z.string().min(1).max(100, "Le prénom ne peut pas dépasser 100 caractères"),
+  lastName: z.string().min(1).max(100, "Le nom ne peut pas dépasser 100 caractères"),
+  companyName: z.string().max(200, "Le nom de la société ne peut pas dépasser 200 caractères").optional(),
   // Même exigence que pour les locataires : format international à
   // l'enregistrement, voir tenant.controller.ts.
   phone: z
     .string()
     .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
     .transform((v) => versE164(v)!),
-  email: z.string().email().transform((v) => v.trim().toLowerCase()),
-  address: z.string().optional(),
+  email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
+  address: z.string().max(300, "L'adresse ne peut pas dépasser 300 caractères").optional(),
   // Même validation (structure + clé MOD 97-10) que agency.controller.ts :
   // sans elle, une faute de frappe sur ces coordonnées — un VRAI virement de
   // reversement au propriétaire, pas juste un affichage — n'était détectée
@@ -46,7 +46,7 @@ const ownerSchema = z.object({
   iban: ibanSchema,
   bic: bicSchema,
   managementFeeRate: z.coerce.number().min(0).max(100).optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(5000, "Les notes ne peuvent pas dépasser 5 000 caractères").optional(),
 });
 
 /**
