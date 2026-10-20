@@ -46,7 +46,7 @@ const tenantSchema = z.object({
  */
 function assertNonAnonymise(tenant: { anonymizedAt: Date | null }) {
   if (tenant.anonymizedAt) {
-    throw new ApiError(409, "Ce locataire a été anonymisé : sa fiche ne peut plus être modifiée ni rattachée à un accès au portail.");
+    throw new ApiError(409, "Ce locataire a été anonymisé : sa fiche ne peut plus être modifiée ni rattachée à un accès au portail.", "TENANT_ANONYMIZED_LOCKED");
   }
 }
 
@@ -113,7 +113,7 @@ export const createTenant = asyncHandler(async (req: Request, res: Response) => 
     .select()
     .from(tenants)
     .where(and(eq(tenants.managerId, req.user!.userId), eq(tenants.email, body.email)));
-  if (existing) throw new ApiError(409, "Un locataire avec cet email existe déjà");
+  if (existing) throw new ApiError(409, "Un locataire avec cet email existe déjà", "TENANT_EMAIL_EXISTS");
 
   assertFileContentMatchesDeclaredType(req.file);
   const idDocument = req.file ? await uploadPrivateFile(req.file, "tenants") : undefined;
@@ -150,7 +150,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
       .select({ id: tenants.id })
       .from(tenants)
       .where(and(eq(tenants.managerId, req.user!.userId), eq(tenants.email, body.email)));
-    if (pris) throw new ApiError(409, "Un locataire avec cet email existe déjà");
+    if (pris) throw new ApiError(409, "Un locataire avec cet email existe déjà", "TENANT_EMAIL_EXISTS");
   }
 
   // La vérification de propriété doit précéder l'upload : sinon, un
@@ -223,7 +223,7 @@ export const exporterTenant = asyncHandler(async (req: Request, res: Response) =
 export const exporterMesDonnees = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.userId, req.user!.userId));
   if (!tenant) {
-    throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
+    throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.", "TENANT_NOT_LINKED");
   }
 
   await envoyerExport(res, tenant.id, tenant);
@@ -406,7 +406,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   ]);
 
   if (tenantContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
-    throw new ApiError(409, "Impossible de supprimer un locataire ayant un contrat actif");
+    throw new ApiError(409, "Impossible de supprimer un locataire ayant un contrat actif", "TENANT_HAS_ACTIVE_CONTRACT");
   }
   if (tenantContracts.length > 0) {
     throw new ApiError(
@@ -416,7 +416,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   }
   const [colocation] = await db.select({ id: contractCotenants.id }).from(contractCotenants).where(eq(contractCotenants.tenantId, req.params.id)).limit(1);
   if (colocation) {
-    throw new ApiError(409, "Impossible de supprimer un locataire colocataire d'un bail. Retirez-le d'abord du bail.");
+    throw new ApiError(409, "Impossible de supprimer un locataire colocataire d'un bail. Retirez-le d'abord du bail.", "TENANT_IS_COTENANT");
   }
   if (tenantIssues.length > 0) {
     throw new ApiError(
@@ -454,7 +454,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
 export const getTenantIdDocumentUrl = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
-  if (!tenant.idDocument) throw new ApiError(404, "Aucune pièce d'identité enregistrée pour ce locataire");
+  if (!tenant.idDocument) throw new ApiError(404, "Aucune pièce d'identité enregistrée pour ce locataire", "TENANT_NO_ID_DOCUMENT");
 
   // Lien très court : le gestionnaire l'ouvre aussitôt. Une heure (la durée par défaut) laisserait la pièce d'identité
   // accessible à quiconque récupérerait l'adresse dans l'historique du navigateur ou un écran partagé.
@@ -499,7 +499,7 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
       ? await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.userId, existingUser.id))
       : [{ id: "conflit" }];
     if (existingUser.role !== "TENANT" || dejaRattachee.length > 0) {
-      throw new ApiError(409, "Un compte existe déjà pour cet email");
+      throw new ApiError(409, "Un compte existe déjà pour cet email", "ACCOUNT_EMAIL_EXISTS");
     }
 
     await db

@@ -94,7 +94,7 @@ export const updateGuarantor = asyncHandler(async (req: Request, res: Response) 
   // Un champ absent reste absent (partial() s'arrête avant la transformation « vide » → null) :
   // modifier le téléphone ne touche ni l'email, ni l'adresse, ni la note.
   const body = garantSchema.partial().parse(req.body);
-  if (Object.keys(body).length === 0) throw new ApiError(400, "Aucune modification fournie.");
+  if (Object.keys(body).length === 0) throw new ApiError(400, "Aucune modification fournie.", "NOTHING_TO_UPDATE");
   const { contrat, bien } = await contratDuGestionnaire(req);
   assertBailNonSigne(contrat);
 

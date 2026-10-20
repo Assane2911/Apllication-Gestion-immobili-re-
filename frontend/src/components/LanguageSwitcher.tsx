@@ -20,13 +20,13 @@ export default function LanguageSwitcher({ className = "", variant = "dark" }: L
     "bg-white hover:bg-slate-50 text-slate-700 border-slate-300 focus:ring-brand-500";
 
   return (
-    <div className={`relative inline-flex items-center ${className}`}>
-      <Bulle texte={t("common.language.selectAria")}>
+    <div className={`relative inline-flex max-w-full items-center ${className}`}>
+      <Bulle texte={t("common.language.selectAria")} className="inline-flex w-full min-w-0 max-w-full">
       <select
         value={i18n.resolvedLanguage || i18n.language}
         onChange={(e) => void changerLangue(e.target.value)}
         aria-label={t("common.language.selectAria")}
-        className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 cursor-pointer shadow-sm transition-all ${
+        className={`w-full min-w-0 max-w-full truncate text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 cursor-pointer shadow-sm transition-all ${
           variant === "dark" ? darkClasses : lightClasses
         }`}
       >

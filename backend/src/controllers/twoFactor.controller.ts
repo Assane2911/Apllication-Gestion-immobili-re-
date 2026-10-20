@@ -78,10 +78,10 @@ export const confirmTwoFactor = asyncHandler(async (req: Request, res: Response)
   const user = await chargerCompteLoginCourant(req);
 
   if (user.totpEnabledAt) {
-    throw new ApiError(409, "La double authentification est déjà activée sur ce compte.");
+    throw new ApiError(409, "La double authentification est déjà activée sur ce compte.", "TWO_FACTOR_ALREADY_ENABLED");
   }
   if (!user.totpSecret) {
-    throw new ApiError(400, "Aucun enrôlement en cours : lancez d'abord la configuration.");
+    throw new ApiError(400, "Aucun enrôlement en cours : lancez d'abord la configuration.", "TWO_FACTOR_NO_ENROLLMENT");
   }
 
   const valide = await verifierCodeTotp(user.totpSecret, body.code);
@@ -125,7 +125,7 @@ export const disableTwoFactor = asyncHandler(async (req: Request, res: Response)
   const user = await chargerCompteLoginCourant(req);
 
   if (!user.totpEnabledAt) {
-    throw new ApiError(409, "La double authentification n'est pas activée sur ce compte.");
+    throw new ApiError(409, "La double authentification n'est pas activée sur ce compte.", "TWO_FACTOR_NOT_ENABLED");
   }
 
   if (user.hasPassword) {
@@ -184,7 +184,7 @@ export const regenerateBackupCodes = asyncHandler(async (req: Request, res: Resp
   const user = await chargerCompteLoginCourant(req);
 
   if (!user.totpEnabledAt || !user.totpSecret) {
-    throw new ApiError(409, "La double authentification n'est pas activée sur ce compte.");
+    throw new ApiError(409, "La double authentification n'est pas activée sur ce compte.", "TWO_FACTOR_NOT_ENABLED");
   }
 
   const valide = await verifierCodeTotp(user.totpSecret, body.code);

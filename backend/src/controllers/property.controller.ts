@@ -231,7 +231,7 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
     .from(contracts)
     .where(eq(contracts.propertyId, req.params.id));
   if (propertyContracts.some((c: typeof contracts.$inferSelect) => c.status === "ACTIVE")) {
-    throw new ApiError(409, "Impossible de supprimer un bien ayant un contrat actif");
+    throw new ApiError(409, "Impossible de supprimer un bien ayant un contrat actif", "PROPERTY_HAS_ACTIVE_CONTRACT");
   }
   if (propertyContracts.length > 0) {
     throw new ApiError(

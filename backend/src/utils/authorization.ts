@@ -134,7 +134,7 @@ export function assertOwnership<T>(
 export async function chargerProprietaireDuCompte(req: Request) {
   const [owner] = await db.select().from(owners).where(eq(owners.userId, req.user!.userId));
   if (!owner) {
-    throw new ApiError(403, "Aucune fiche propriétaire n'est rattachée à ce compte.");
+    throw new ApiError(403, "Aucune fiche propriétaire n'est rattachée à ce compte.", "OWNER_NOT_LINKED");
   }
   return owner;
 }
@@ -170,7 +170,7 @@ export async function ficheLocataireDuCompte(req: Request) {
 export async function chargerLocataireDuCompte(req: Request) {
   const fiche = await ficheLocataireDuCompte(req);
   if (!fiche) {
-    throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
+    throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.", "TENANT_NOT_LINKED");
   }
   return fiche;
 }

@@ -436,7 +436,7 @@ export const markNotificationsRead = asyncHandler(async (req: Request, res: Resp
 
 async function idLocataireOu403(req: Request): Promise<string> {
   const tenantId = await idLocataireDuCompte(req);
-  if (!tenantId) throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.");
+  if (!tenantId) throw new ApiError(403, "Aucune fiche locataire n'est rattachée à ce compte.", "TENANT_NOT_LINKED");
   return tenantId;
 }
 

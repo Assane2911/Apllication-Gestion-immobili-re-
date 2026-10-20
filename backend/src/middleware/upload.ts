@@ -22,7 +22,7 @@ function fileFilter(_req: unknown, file: Express.Multer.File, cb: multer.FileFil
     // branche générique 500 d'errorHandler, qui masquait la vraie raison du
     // refus au client et remontait chaque tentative à Sentry comme un défaut
     // applicatif.
-    return cb(new ApiError(400, "Type de fichier non autorisé (image ou PDF uniquement)"));
+    return cb(new ApiError(400, "Type de fichier non autorisé (image ou PDF uniquement)", "FILE_TYPE_NOT_ALLOWED"));
   }
   cb(null, true);
 }
@@ -120,6 +120,6 @@ export function assertFileContentMatchesDeclaredType(file: Express.Multer.File |
   if (!file) return;
   const detected = detectFileSignature(file.buffer);
   if (!detected || detected !== file.mimetype) {
-    throw new ApiError(400, "Le contenu du fichier ne correspond pas au type de fichier déclaré");
+    throw new ApiError(400, "Le contenu du fichier ne correspond pas au type de fichier déclaré", "FILE_CONTENT_MISMATCH");
   }
 }

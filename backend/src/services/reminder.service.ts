@@ -885,7 +885,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     .returning();
 
   if (!reclamee) {
-    throw new ApiError(409, "Un rappel vient déjà d'être envoyé pour cette facture. Patientez un instant puis réessayez.");
+    throw new ApiError(409, "Un rappel vient déjà d'être envoyé pour cette facture. Patientez un instant puis réessayez.", "REMINDER_IN_PROGRESS");
   }
 
   const { subject, html } = rentDueReminderEmail({

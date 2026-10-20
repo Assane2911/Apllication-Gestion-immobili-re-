@@ -30,7 +30,7 @@ import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
 function assertEstProprietaire(req: Request): void {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   if (req.user.collaboratorId) {
-    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut gérer l'équipe.");
+    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut gérer l'équipe.", "OWNER_ONLY_TEAM");
   }
 }
 
@@ -111,7 +111,7 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
   // compte auquel il appartient — ne peut pas devenir un second compte.
   const [existing] = await db.select().from(users).where(eq(users.email, body.email));
   if (existing) {
-    throw new ApiError(409, "Un compte existe déjà avec cet email");
+    throw new ApiError(409, "Un compte existe déjà avec cet email", "ACCOUNT_EMAIL_EXISTS");
   }
 
   const rawToken = crypto.randomBytes(32).toString("hex");

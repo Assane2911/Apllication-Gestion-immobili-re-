@@ -101,12 +101,12 @@ export function CurrencySelector({ className = "" }: { className?: string }) {
   const { currency, setCurrency, availableCurrencies } = useCurrency();
 
   return (
-    <div className={`relative inline-flex items-center ${className}`}>
-      <Bulle texte={t("nav.currencyLabel")}>
+    <div className={`relative inline-flex max-w-full items-center ${className}`}>
+      <Bulle texte={t("nav.currencyLabel")} className="inline-flex w-full min-w-0 max-w-full">
       <select
         value={currency}
         onChange={(e) => setCurrency(e.target.value)}
-        className="bg-slate-800/80 hover:bg-slate-800 text-slate-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer shadow-sm transition-all"
+        className="w-full min-w-0 max-w-full truncate bg-slate-800/80 hover:bg-slate-800 text-slate-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer shadow-sm transition-all"
         aria-label={t("nav.currencyLabel")}
       >
         {availableCurrencies.map((c) => (

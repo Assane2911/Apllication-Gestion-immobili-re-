@@ -92,7 +92,7 @@ export default function ManagerLayout() {
         />
       )}
       <aside
-        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-screen bg-gradient-to-b from-ink-950 via-ink-900 to-ink-950 text-slate-100 border-r border-ink-700/80 flex flex-col shrink-0 shadow-xl transform transition-transform duration-200 ease-in-out ${
+        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-dvh sm:h-screen bg-gradient-to-b from-ink-950 via-ink-900 to-ink-950 text-slate-100 border-r border-ink-700/80 flex flex-col shrink-0 shadow-xl transform transition-transform duration-200 ease-in-out ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         } sm:translate-x-0`}
       >
@@ -177,7 +177,7 @@ export default function ManagerLayout() {
             </Bulle>
           ))}
         </nav>
-        <div className="shrink-0 px-4 py-4 border-t border-ink-700/80 bg-ink-950/40">
+        <div className="shrink-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-ink-700/80 bg-ink-950/40">
           <div className="flex items-center gap-2.5 min-w-0 p-1.5 rounded-xl bg-ink-900/50 border border-ink-700/60">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
               {(user?.email?.[0] || "?").toUpperCase()}
