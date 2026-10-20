@@ -412,6 +412,7 @@ const pt: TranslationSchema = {
       goToSpace: "Aceder à minha área →",
       login: "Iniciar sessão",
       trial: "Teste grátis de 15 dias →",
+      trialShort: "Teste grátis →",
     },
     badge: "Nova Versão 2.0 • 15 dias de teste grátis, sem compromisso",
     hero: {

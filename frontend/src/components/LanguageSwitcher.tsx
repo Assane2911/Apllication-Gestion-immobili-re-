@@ -6,12 +6,14 @@ interface LanguageSwitcherProps {
   className?: string;
   /** "dark" pour une intégration sur fond sombre (barres de navigation), "light" pour un fond clair (connexion, etc.). */
   variant?: "dark" | "light";
+  /** Code court (« 🇫🇷 FR ») au lieu du nom de la langue : pour les barres où la place manque, sur téléphone. */
+  compact?: boolean;
 }
 
 /** Sélecteur de langue (Français / English / Português / Español), persisté en
  * localStorage par i18next-browser-languagedetector. Applique aussi le sens
  * de lecture du document (LTR pour toutes ces langues) via i18n/index.ts. */
-export default function LanguageSwitcher({ className = "", variant = "dark" }: LanguageSwitcherProps) {
+export default function LanguageSwitcher({ className = "", variant = "dark", compact = false }: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation();
 
   const darkClasses =
@@ -26,13 +28,13 @@ export default function LanguageSwitcher({ className = "", variant = "dark" }: L
         value={i18n.resolvedLanguage || i18n.language}
         onChange={(e) => void changerLangue(e.target.value)}
         aria-label={t("common.language.selectAria")}
-        className={`w-full min-w-0 max-w-full truncate text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 cursor-pointer shadow-sm transition-all ${
+        className={`w-full min-w-0 max-w-full truncate text-xs font-semibold ${compact ? "px-1.5" : "px-2.5"} py-1.5 rounded-lg border focus:outline-none focus:ring-2 cursor-pointer shadow-sm transition-all ${
           variant === "dark" ? darkClasses : lightClasses
         }`}
       >
         {SUPPORTED_LANGUAGES.map((lang) => (
           <option key={lang.code} value={lang.code} className="bg-slate-900 text-white">
-            {lang.flag} {lang.label}
+            {lang.flag} {compact ? lang.code.toUpperCase() : lang.label}
           </option>
         ))}
       </select>
