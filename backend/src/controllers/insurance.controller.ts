@@ -91,7 +91,7 @@ export const createInsurancePolicy = asyncHandler(async (req: Request, res: Resp
   assertDatesCoherentes(body.startDate, body.expiryDate);
 
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
-  assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable");
+  assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
 
   const [policy] = await db
     .insert(insurancePolicies)
@@ -120,10 +120,10 @@ export const updateInsurancePolicy = asyncHandler(async (req: Request, res: Resp
     .from(insurancePolicies)
     .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
     .where(eq(insurancePolicies.id, req.params.id));
-  assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Police d'assurance introuvable");
+  assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Police d'assurance introuvable", 404, "INSURANCE_POLICY_NOT_FOUND");
 
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
-  assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable");
+  assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
 
   // Un renouvellement (nouvelle échéance, strictement postérieure à
   // l'ancienne) doit pouvoir déclencher un nouveau rappel le moment venu —
@@ -158,7 +158,7 @@ export const deleteInsurancePolicy = asyncHandler(async (req: Request, res: Resp
     .from(insurancePolicies)
     .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
     .where(eq(insurancePolicies.id, req.params.id));
-  assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Police d'assurance introuvable");
+  assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Police d'assurance introuvable", 404, "INSURANCE_POLICY_NOT_FOUND");
 
   await db.delete(insurancePolicies).where(eq(insurancePolicies.id, req.params.id));
   await tracer(req, "insurance.delete", row.policy, row.property.title, "supprimée");

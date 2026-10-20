@@ -164,7 +164,7 @@ export const updateTeamMemberRole = asyncHandler(async (req: Request, res: Respo
   const body = changerRoleSchema.parse(req.body);
 
   const [collaborateur] = await db.select().from(users).where(eq(users.id, req.params.id));
-  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable");
+  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable", 404, "COLLABORATOR_NOT_FOUND");
 
   await db.update(users).set({ teamRole: body.role }).where(eq(users.id, collaborateur.id));
 
@@ -188,7 +188,7 @@ export const removeTeamMember = asyncHandler(async (req: Request, res: Response)
   // teamOwnerId est nullable (tout compte n'a pas de propriétaire d'équipe) :
   // le replier sur une chaîne vide, qui ne peut jamais égaler un vrai id,
   // préserve le refus déjà obtenu par le `!==` d'origine.
-  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable");
+  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable", 404, "COLLABORATOR_NOT_FOUND");
 
   // Révoque immédiatement toute session déjà ouverte (même si le compte est
   // supprimé juste après) : le futur `authenticate` d'un jeton déjà émis
@@ -218,7 +218,7 @@ export const resendTeamInvitation = asyncHandler(async (req: Request, res: Respo
   assertEstProprietaire(req);
 
   const [collaborateur] = await db.select().from(users).where(eq(users.id, req.params.id));
-  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable");
+  assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable", 404, "COLLABORATOR_NOT_FOUND");
 
   if (collaborateur.hasPassword || !collaborateur.resetPasswordTokenHash) {
     throw new ApiError(409, "Cette invitation a déjà été acceptée.");

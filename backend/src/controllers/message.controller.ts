@@ -183,7 +183,7 @@ async function resoudreFil(req: Request, contractId: string, ecriture: boolean) 
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .where(eq(contracts.id, contractId));
-  if (!row) throw new ApiError(404, "Contrat introuvable");
+  if (!row) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
 
   if (req.user!.role === "TENANT") {
     const moi = await idLocataireDuCompte(req);
@@ -206,7 +206,7 @@ async function resoudreFil(req: Request, contractId: string, ecriture: boolean) 
       return { ...row, tenant: fiche, qualite: "COLOCATAIRE" as Qualite };
     }
   }
-  throw new ApiError(404, "Conversation introuvable");
+  throw new ApiError(404, "Conversation introuvable", "CONVERSATION_NOT_FOUND");
 }
 
 export const getMessagesByContract = asyncHandler(async (req: Request, res: Response) => {

@@ -129,7 +129,7 @@ export const updateSuggestion = asyncHandler(async (req: Request, res: Response)
   if (body.data.adminNote !== undefined) changements.adminNote = body.data.adminNote === "" ? null : body.data.adminNote;
 
   const [maj] = await db.update(suggestions).set(changements).where(eq(suggestions.id, req.params.id)).returning();
-  if (!maj) throw new ApiError(404, "Suggestion introuvable");
+  if (!maj) throw new ApiError(404, "Suggestion introuvable", "SUGGESTION_NOT_FOUND");
 
   res.json(maj);
 });

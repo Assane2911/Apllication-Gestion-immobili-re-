@@ -118,7 +118,7 @@ export const getOwner = asyncHandler(async (req: Request, res: Response) => {
     .from(owners)
     .leftJoin(users, eq(users.id, owners.userId))
     .where(eq(owners.id, req.params.id));
-  assertOwnership(row, (r) => r.owner.managerId, req.user!.userId, "Propriétaire introuvable");
+  assertOwnership(row, (r) => r.owner.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
 
   const ownerProperties = await db.select().from(properties).where(eq(properties.ownerId, row.owner.id));
 
@@ -164,7 +164,7 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
   const body = ownerSchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
   assertNonAnonymise(existing);
 
   const [owner] = await db.update(owners).set(body).where(eq(owners.id, req.params.id)).returning();
@@ -184,7 +184,7 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
 
 export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
 
   const linkedProperties = await db.select().from(properties).where(eq(properties.ownerId, req.params.id));
   if (linkedProperties.length > 0) {
@@ -237,7 +237,7 @@ export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
  */
 export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
 
   if (existing.anonymizedAt) {
     throw new ApiError(409, "Ce propriétaire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.");
@@ -321,7 +321,7 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
  */
 export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const [owner] = await db.select().from(owners).where(eq(owners.id, req.params.id));
-  assertOwnership(owner, (o) => o.managerId, req.user!.userId, "Propriétaire introuvable");
+  assertOwnership(owner, (o) => o.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
   assertNonAnonymise(owner);
 
   const rawToken = crypto.randomBytes(32).toString("hex");

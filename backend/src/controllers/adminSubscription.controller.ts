@@ -51,7 +51,7 @@ async function verrouillerGestionnaire(tx: Transaction, id: string) {
     .from(users)
     .where(and(eq(users.id, id), eq(users.role, "MANAGER"), isNull(users.teamOwnerId)))
     .for("update");
-  if (!compte) throw new ApiError(404, "Gestionnaire introuvable");
+  if (!compte) throw new ApiError(404, "Gestionnaire introuvable", "MANAGER_NOT_FOUND");
   return compte;
 }
 

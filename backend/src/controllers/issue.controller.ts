@@ -123,7 +123,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(issueReports.id, req.params.id));
-  assertOwnership(owned, (o) => o.property.managerId, req.user!.userId, "Signalement introuvable");
+  assertOwnership(owned, (o) => o.property.managerId, req.user!.userId, "Signalement introuvable", 404, "ISSUE_NOT_FOUND");
 
   if (body.vendorId) {
     await assertVendorOwnership(body.vendorId, req.user!.userId);
@@ -235,7 +235,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
   if (!req.file) throw new ApiError(400, "Une photo du problème est requise");
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   if (!(await estLocataireDuBail(req, contract))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
   if (contract.status !== "ACTIVE") {
     throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif");
@@ -270,7 +270,7 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(issueReports.id, req.params.id));
-  if (!row) throw new ApiError(404, "Signalement introuvable");
+  if (!row) throw new ApiError(404, "Signalement introuvable", "ISSUE_NOT_FOUND");
   const { issue } = row;
 
   assertAccesLocataireOuGestionnaire(

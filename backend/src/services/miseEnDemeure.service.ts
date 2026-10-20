@@ -184,7 +184,7 @@ export function referenceMiseEnDemeure(notice: { id: string; createdAt: Date }):
 /** Tout ce qu'il faut pour rendre le courrier (HTML à l'écran, PDF joint à l'email). */
 export async function donneesDuCourrier(notice: typeof formalNotices.$inferSelect) {
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, notice.contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
   const [agency] = await db.select().from(agencySettings).where(eq(agencySettings.userId, notice.managerId));
@@ -229,7 +229,7 @@ export async function emettreMiseEnDemeure(params: {
 }) {
   const maintenant = params.maintenant ?? new Date();
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, params.contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
   if (!tenant || tenant.anonymizedAt) throw new ApiError(409, "Le locataire de ce bail a été anonymisé : aucun courrier ne peut lui être adressé.");
 

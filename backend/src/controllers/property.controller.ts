@@ -63,7 +63,7 @@ export const listProperties = asyncHandler(async (req: Request, res: Response) =
 
 export const getProperty = asyncHandler(async (req: Request, res: Response) => {
   const [property] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
 
   const propertyContracts = await db
     .select({ contract: contracts, tenant: tenants })
@@ -144,7 +144,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
   const body = propertySchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Bien introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
 
   if (body.ownerId) await assertOwnerBelongsToManager(body.ownerId, req.user!.userId);
 
@@ -224,7 +224,7 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
 
 export const deleteProperty = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(properties).where(eq(properties.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Bien introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
 
   const propertyContracts = await db
     .select()

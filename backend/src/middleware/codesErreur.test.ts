@@ -50,4 +50,20 @@ describe("codes d'erreur des parcours critiques", () => {
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("ACCESS_DENIED");
   });
+  describe("fiches introuvables : un code par type de fiche, le texte français restant en secours", () => {
+    const INCONNU = "00000000-0000-4000-8000-000000000000";
+    const cas: Array<[string, string, string, string]> = [
+      ["/api/contracts/" + INCONNU, "CONTRACT_NOT_FOUND", "Contrat introuvable", "contrat"],
+      ["/api/tenants/" + INCONNU, "TENANT_NOT_FOUND", "Locataire introuvable", "locataire"],
+      ["/api/properties/" + INCONNU, "PROPERTY_NOT_FOUND", "Bien introuvable", "bien"],
+      ["/api/owners/" + INCONNU, "OWNER_NOT_FOUND", "Propriétaire introuvable", "propriétaire"],
+    ];
+    it.each(cas)("GET %s : %s", async (chemin, code, message) => {
+      const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE", subscriptionEndsAt: new Date(Date.now() + 86_400_000 * 30) });
+      const res = await request(app).get(chemin).set(authHeader(tokenFor({ id: manager.id, role: "MANAGER" })));
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe(code);
+      expect(res.body.error).toBe(message);
+    });
+  });
 });

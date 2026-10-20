@@ -162,7 +162,7 @@ async function assertInvoiceOwnership(invoiceId: string, managerId: string) {
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(invoices.id, invoiceId));
-  assertOwnership(row, (r) => r.property.managerId, managerId, "Facture introuvable");
+  assertOwnership(row, (r) => r.property.managerId, managerId, "Facture introuvable", 404, "INVOICE_NOT_FOUND");
   return row.invoice;
 }
 

@@ -124,9 +124,9 @@ export async function creerRevision(p: CreationRevision): Promise<{ revision: Re
     // Verrou de ligne : deux révisions simultanées sur le même bail se succèdent au lieu de se croiser.
     await tx.execute(sql`SELECT id FROM contracts WHERE id = ${p.contractId} FOR UPDATE`);
     const [contrat] = await tx.select().from(contracts).where(eq(contracts.id, p.contractId));
-    if (!contrat) throw new ApiError(404, "Contrat introuvable");
+    if (!contrat) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
     const [bien] = await tx.select().from(properties).where(eq(properties.id, contrat.propertyId));
-    if (!bien || bien.managerId !== p.managerId) throw new ApiError(404, "Contrat introuvable");
+    if (!bien || bien.managerId !== p.managerId) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
     if (contrat.status !== "ACTIVE") throw new ApiError(409, "Seul un contrat actif peut voir son loyer révisé.");
     if (effet <= new Date(contrat.startDate)) throw new ApiError(400, "La date d'effet doit suivre le début du bail.");
     if (effet > new Date(contrat.endDate)) throw new ApiError(400, "La date d'effet dépasse la fin du bail : renouvelez le bail d'abord.");
@@ -247,7 +247,7 @@ export async function annulerRevision(contractId: string, revisionId: string): P
     .returning({ id: rentRevisions.id });
   if (!annulee) {
     const [existante] = await db.select({ status: rentRevisions.status }).from(rentRevisions).where(and(eq(rentRevisions.id, revisionId), eq(rentRevisions.contractId, contractId)));
-    if (!existante) throw new ApiError(404, "Révision introuvable");
+    if (!existante) throw new ApiError(404, "Révision introuvable", "REVISION_NOT_FOUND");
     throw new ApiError(409, existante.status === "APPLIED" ? "Cette révision est déjà appliquée : créez une nouvelle révision pour la corriger." : "Cette révision est déjà annulée.");
   }
 }

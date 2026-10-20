@@ -73,7 +73,7 @@ export const listTenants = asyncHandler(async (req: Request, res: Response) => {
 
 export const getTenant = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
 
   const tenantContracts = await db
     .select({ contract: contracts, property: properties })
@@ -140,7 +140,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
   const body = tenantSchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
   assertNonAnonymise(existing);
 
   // Changer l'email pour celui d'un AUTRE locataire de l'agence : la base le refuse (unicité par agence),
@@ -195,7 +195,7 @@ export const updateTenant = asyncHandler(async (req: Request, res: Response) => 
  */
 export const exporterTenant = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
 
   // L'export est le dossier complet d'une personne : qui l'a sorti, et quand, doit rester visible.
   await logActivity({
@@ -235,7 +235,7 @@ async function envoyerExport(
   tenant: { firstName: string; lastName: string }
 ) {
   const donnees = await construireExportLocataire(tenantId);
-  if (!donnees) throw new ApiError(404, "Locataire introuvable");
+  if (!donnees) throw new ApiError(404, "Locataire introuvable", "TENANT_NOT_FOUND");
 
   // En pièce jointe, et non affiché dans le navigateur : c'est un document
   // qu'on remet à quelqu'un, qu'il doit pouvoir conserver et rouvrir
@@ -273,7 +273,7 @@ async function envoyerExport(
  */
 export const anonymiserTenant = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
 
   if (existing.anonymizedAt) {
     throw new ApiError(409, "Ce locataire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.");
@@ -398,7 +398,7 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
 
 export const deleteTenant = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
 
   const [tenantContracts, tenantIssues] = await Promise.all([
     db.select().from(contracts).where(eq(contracts.tenantId, req.params.id)),
@@ -453,7 +453,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
 /** Génère une URL signée temporaire pour consulter la pièce d'identité d'un locataire (bucket privé). */
 export const getTenantIdDocumentUrl = asyncHandler(async (req: Request, res: Response) => {
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
   if (!tenant.idDocument) throw new ApiError(404, "Aucune pièce d'identité enregistrée pour ce locataire");
 
   // Lien très court : le gestionnaire l'ouvre aussitôt. Une heure (la durée par défaut) laisserait la pièce d'identité
@@ -479,7 +479,7 @@ const createPortalAccountSchema = z.object({
 export const createTenantPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const body = createPortalAccountSchema.parse(req.body);
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
-  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
   assertNonAnonymise(tenant);
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, tenant.email));

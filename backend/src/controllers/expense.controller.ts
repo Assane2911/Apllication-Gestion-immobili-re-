@@ -102,7 +102,7 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
-  assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable");
+  assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
 
   const [expense] = await db
     .insert(expenses)
@@ -138,7 +138,7 @@ export const deleteExpense = asyncHandler(async (req: Request, res: Response) =>
     .from(expenses)
     .innerJoin(properties, eq(expenses.propertyId, properties.id))
     .where(eq(expenses.id, req.params.id));
-  assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Dépense introuvable");
+  assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Dépense introuvable", 404, "EXPENSE_NOT_FOUND");
 
   await db.delete(expenses).where(eq(expenses.id, req.params.id));
 
