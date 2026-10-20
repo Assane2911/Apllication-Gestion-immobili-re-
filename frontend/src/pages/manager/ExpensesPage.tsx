@@ -10,6 +10,7 @@ import type { Expense, ExpenseCategory, ExpenseRecurrence, PaginatedResponse, Pr
 import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
+import { formaterJour } from "../../utils/jourCivil";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
@@ -210,7 +211,7 @@ export default function ExpensesPage() {
       t("manager.expenses.csvHeaders.notes"),
     ];
     const rows = toutes.map((e) => [
-      new Date(e.expenseDate).toLocaleDateString(i18n.language),
+      formaterJour(e.expenseDate, i18n.language),
       csvEscape(e.property?.title || ""),
       csvEscape(categoryLabels[e.category] || e.category),
       csvEscape(e.title),
@@ -396,7 +397,7 @@ export default function ExpensesPage() {
             {expenses.map((exp) => (
               <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
-                  {new Date(exp.expenseDate).toLocaleDateString(i18n.language)}
+                  {formaterJour(exp.expenseDate, i18n.language)}
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{exp.property?.title}</td>
                 <td className="px-4 py-3">

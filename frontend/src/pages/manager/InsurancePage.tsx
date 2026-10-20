@@ -7,6 +7,7 @@ import { useCurrency } from "../../context/currency";
 import type { InsurancePolicy, PaginatedResponse, Property } from "../../types";
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
+import { formaterJour } from "../../utils/jourCivil";
 
 const PAGE_SIZE = 20;
 // Pour le filtre "par bien" : on ne le pagine pas comme la liste principale,
@@ -235,7 +236,7 @@ export default function InsurancePage() {
                 </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                   <span className="inline-flex items-center gap-1.5">
-                    {new Date(policy.expiryDate).toLocaleDateString(i18n.language)}
+                    {formaterJour(policy.expiryDate, i18n.language)}
                     {echeanceBadge(policy)}
                   </span>
                 </td>

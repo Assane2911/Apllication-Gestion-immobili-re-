@@ -10,6 +10,7 @@ import Pagination from "../../components/Pagination";
 import { useCurrency } from "../../context/currency";
 import type { FormalNoticeDue, Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
+import { formaterJour } from "../../utils/jourCivil";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "short" }).format(new Date(2000, monthIndex1to12 - 1, 1));
@@ -263,7 +264,7 @@ export default function InvoicesPage() {
                   )}
                 </td>
                 <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
-                  <span className="text-xs">{new Date(inv.dueDate).toLocaleDateString(i18n.language)}</span>
+                  <span className="text-xs">{formaterJour(inv.dueDate, i18n.language)}</span>
                 </td>
                 <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400 text-xs">
                   {inv.paymentMethod ? methodLabels[inv.paymentMethod] : "—"}
@@ -361,7 +362,7 @@ export default function InvoicesPage() {
                   )}
                 </span>
                 <span className="text-slate-600 dark:text-slate-400">
-                  {t("manager.invoices.dueDatePrefix", { date: new Date(inv.dueDate).toLocaleDateString(i18n.language) })}
+                  {t("manager.invoices.dueDatePrefix", { date: formaterJour(inv.dueDate, i18n.language) })}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">

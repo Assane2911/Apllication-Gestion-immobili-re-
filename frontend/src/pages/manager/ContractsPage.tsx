@@ -17,6 +17,7 @@ import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
+import { ecartEnJours, formaterJour } from "../../utils/jourCivil";
 
 /** Bail actif dont la date anniversaire approche sans révision prévue (GET /contracts/revisions-due). */
 interface BailAReviser {
@@ -84,13 +85,12 @@ const PAGE_SIZE = 20;
 // ne les paginé pas comme la liste principale, on demande juste large.
 const DROPDOWN_PAGE_SIZE = 100;
 
-function formatDate(d: string, locale: string) {
-  return new Date(d).toLocaleDateString(locale);
+function formatDate(d: string | number, locale: string) {
+  return formaterJour(d, locale);
 }
 
 function daysUntil(d: string) {
-  const diffMs = new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+  return ecartEnJours(d);
 }
 
 function depositRefundedAmount(c: Contract): number {
@@ -308,7 +308,7 @@ export default function ContractsPage() {
     if (
       !confirm(
         t("manager.contracts.confirmRenew", {
-          date: formatDate(String(new Date(new Date(c.endDate).getTime() + 86400000)), i18n.language),
+          date: formatDate(new Date(c.endDate).getTime() + 86_400_000, i18n.language),
         })
       )
     ) {
@@ -419,7 +419,7 @@ export default function ContractsPage() {
                   <span className="font-medium">{b.propertyTitle}</span> — {b.tenantName}
                   <span className="block text-xs text-slate-600 dark:text-slate-400">
                     {t("manager.contracts.revisionsDue.anniversary", {
-                      date: new Date(b.anniversaire).toLocaleDateString(i18n.language, { timeZone: "UTC" }),
+                      date: formaterJour(b.anniversaire, i18n.language),
                       rent: formatMoney(b.rent, b.currency),
                     })}
                   </span>

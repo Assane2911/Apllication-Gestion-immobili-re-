@@ -10,6 +10,7 @@ import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { AgencyBankInfo, Invoice, PaymentMethod } from "../../types";
 import Bulle from "../../components/Bulle";
+import { formaterJour } from "../../utils/jourCivil";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, monthIndex1to12 - 1, 1));
@@ -200,7 +201,7 @@ export default function TenantInvoicesPage() {
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                     {t("tenant.invoices.dueDate", {
-                      date: new Date(inv.dueDate).toLocaleDateString(i18n.language),
+                      date: formaterJour(inv.dueDate, i18n.language),
                     })}
                   </p>
                 </div>

@@ -17,6 +17,7 @@ import type {
   PaginatedResponse,
   RoomCondition,
 } from "../../types";
+import { formaterJour } from "../../utils/jourCivil";
 
 const PAGE_SIZE = 20;
 // Pour le sélecteur de contrat du formulaire de création : liste large, non paginée.
@@ -407,7 +408,7 @@ export default function InspectionsPage() {
                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{insp.property?.title}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{insp.tenant?.firstName} {insp.tenant?.lastName}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{new Date(insp.inspectionDate).toLocaleDateString(i18n.language)}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{formaterJour(insp.inspectionDate, i18n.language)}</td>
                 <td className="px-4 py-3"><Badge status={insp.status} /></td>
                 <td className="px-4 py-3 text-xs space-y-1">
                   <div className="flex items-center gap-1">
@@ -481,7 +482,7 @@ export default function InspectionsPage() {
             </div>
             <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
               <span>{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</span>
-              <span>{new Date(insp.inspectionDate).toLocaleDateString(i18n.language)}</span>
+              <span>{formaterJour(insp.inspectionDate, i18n.language)}</span>
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               {insp.status === "DRAFT" && (
