@@ -121,3 +121,48 @@ describe("ManagerLayout — titre de l'onglet", () => {
     expect(screen.getByRole("textbox", { name: "Recherche globale" })).toBeInTheDocument();
   });
 });
+
+/**
+ * Sur un téléphone, `100vh` est la hauteur de l'écran SANS la barre d'adresse du navigateur : une barre latérale
+ * en `h-screen` dépasse alors le bas de l'écran visible, et le pied du menu (compte, déconnexion) reste hors de
+ * vue. La hauteur dynamique (`dvh`) suit l'écran réellement visible. jsdom ne calcule aucune mise en page : ces
+ * contrôles lisent donc les classes qui portent le correctif.
+ */
+describe("ManagerLayout — menu sur téléphone", () => {
+  it("la barre latérale suit la hauteur visible de l'écran, pour que « Se déconnecter » reste atteignable", () => {
+    const { container } = renderManagerLayout("/dashboard");
+    const barre = container.querySelector("aside")!;
+    expect(barre.className).toMatch(/(^|\s)h-dvh(\s|$)/);
+    expect(barre.className).toMatch(/sm:h-screen/);
+    expect(barre.className).not.toMatch(/(^|\s)h-screen(\s|$)/);
+  });
+
+  it("le bouton de déconnexion est dans le pied du menu, qui ne rétrécit pas et respecte la zone de sécurité du bas", () => {
+    const { container } = renderManagerLayout("/dashboard");
+    const barre = container.querySelector("aside")!;
+    const bouton = within(barre).getByRole("button", { name: "Se déconnecter" });
+    const pied = bouton.parentElement!;
+    expect(pied.className).toMatch(/shrink-0/);
+    expect(pied.className).toMatch(/safe-area-inset-bottom/);
+  });
+
+  it("le sélecteur de monnaie reste dans la largeur du menu, même avec son libellé le plus long", () => {
+    const { container } = renderManagerLayout("/dashboard");
+    const barre = container.querySelector("aside")!;
+    const select = within(barre).getByLabelText("Monnaie de règlement");
+    expect(select.className).toMatch(/(^|\s)w-full(\s|$)/);
+    expect(select.className).toMatch(/min-w-0/);
+    // Tous les conteneurs jusqu'au menu laissent le sélecteur se réduire à leur largeur.
+    for (let noeud = select.parentElement; noeud && noeud !== barre; noeud = noeud.parentElement) {
+      if (noeud.tagName === "DIV" && noeud.className.includes("border-t")) break;
+      expect(noeud.className).toMatch(/(^|\s)(w-full|contents)(\s|$)/);
+    }
+  });
+
+  it("le sélecteur de langue suit la même règle", () => {
+    const { container } = renderManagerLayout("/dashboard");
+    const select = within(container.querySelector("aside")!).getByLabelText("Changer de langue");
+    expect(select.className).toMatch(/(^|\s)w-full(\s|$)/);
+    expect(select.className).toMatch(/min-w-0/);
+  });
+});
