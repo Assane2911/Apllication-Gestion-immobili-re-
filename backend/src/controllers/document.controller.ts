@@ -13,11 +13,11 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire, estLocataireDuBail } from "../utils/authorization";
 
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { invoiceId } = req.params;
 
   const [invoice] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
-  if (!invoice) throw new ApiError(404, "Facture introuvable");
+  if (!invoice) throw new ApiError(404, "Facture introuvable", "INVOICE_NOT_FOUND");
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, invoice.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
@@ -93,7 +93,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
 });
 
 export const getContractLease = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { contractId } = req.params;
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
@@ -137,7 +137,7 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
 });
 
 export const getInspectionReport = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { inspectionId } = req.params;
 
   const inspection = await loadInspectionForExport(inspectionId);
@@ -194,7 +194,7 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
  * Accessible uniquement au gestionnaire propriétaire du bien ou au locataire rattaché au contrat.
  */
 export const getScannedLease = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { contractId } = req.params;
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
@@ -222,7 +222,7 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
 
 /** Avenant de révision de loyer : même accès que le bail (locataire du contrat ou gestionnaire du bien). */
 export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const [revision] = await db.select().from(rentRevisions).where(eq(rentRevisions.id, req.params.revisionId));
   if (!revision) throw new ApiError(404, "Révision introuvable");
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, revision.contractId));

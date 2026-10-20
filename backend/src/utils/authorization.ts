@@ -27,7 +27,7 @@ import { ApiError } from "./asyncHandler";
  */
 export async function chargerCompteCourant(req: Request) {
   if (!req.user) {
-    throw new ApiError(401, "Authentification requise");
+    throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   }
   // `authenticate` a déjà chargé la ligne et refusé la requête si le compte
   // n'existe plus : on la reprend telle quelle plutôt que de relire la même
@@ -38,7 +38,7 @@ export async function chargerCompteCourant(req: Request) {
   }
   const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));
   if (!user) {
-    throw new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.");
+    throw new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.", "ACCOUNT_GONE");
   }
   return user;
 }
@@ -66,16 +66,16 @@ export function assertAccesLocataireOuGestionnaire(
   estGestionnaireProprietaire: boolean
 ): void {
   if (role === "TENANT") {
-    if (!estLocataireProprietaire) throw new ApiError(403, "Accès refusé");
+    if (!estLocataireProprietaire) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
     return;
   }
   if (role === "MANAGER") {
-    if (!estGestionnaireProprietaire) throw new ApiError(403, "Accès refusé");
+    if (!estGestionnaireProprietaire) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
     return;
   }
   // Tout autre rôle (ADMIN compris) n'est ni le locataire ni le
   // gestionnaire propriétaires de cette ressource : refus par défaut.
-  throw new ApiError(403, "Accès refusé");
+  throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
 }
 
 /**

@@ -151,7 +151,7 @@ function assertFactureModifiable(
     );
   }
   if (facture.status === "CANCELLED") {
-    throw new ApiError(409, "Cette facture a été annulée : elle ne peut plus être modifiée.");
+    throw new ApiError(409, "Cette facture a été annulée : elle ne peut plus être modifiée.", "INVOICE_CANCELLED_LOCKED");
   }
 }
 
@@ -182,14 +182,14 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
   const resultat = await db.transaction(async (tx) => {
     const [courante] = await tx.select().from(invoices).where(eq(invoices.id, req.params.id)).for("update");
     if (!courante || !(ETATS_MODIFIABLES as readonly string[]).includes(courante.status)) {
-      throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.");
+      throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.", "INVOICE_STATE_CHANGED");
     }
 
     const reste = resteDu(courante);
     // Sans montant : le reste dû, c'est-à-dire le comportement d'avant pour une
     // facture sans paiement antérieur.
     const montant = body.amount === undefined ? reste : arrondir(body.amount);
-    if (montant <= 0) throw new ApiError(400, "Le montant du paiement doit être supérieur à zéro.");
+    if (montant <= 0) throw new ApiError(400, "Le montant du paiement doit être supérieur à zéro.", "PAYMENT_AMOUNT_POSITIVE");
     if (montant > reste) {
       throw new ApiError(400, `Le montant dépasse le reste dû (${reste} ${courante.currency ?? "EUR"}).`);
     }
@@ -287,7 +287,7 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
   if (invoice.amountPaid > 0) {
     throw new ApiError(
       409,
-      "Des paiements ont déjà été enregistrés sur cette facture : elle ne peut plus être annulée. Passez par un avoir ou un remboursement."
+      "Des paiements ont déjà été enregistrés sur cette facture : elle ne peut plus être annulée. Passez par un avoir ou un remboursement.", "INVOICE_HAS_PAYMENTS"
     );
   }
 
@@ -298,7 +298,7 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
     .returning();
 
   if (!updated) {
-    throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.");
+    throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.", "INVOICE_STATE_CHANGED");
   }
 
   await logActivity({
@@ -358,12 +358,12 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .where(eq(invoices.id, req.params.id));
 
-  if (!row) throw new ApiError(404, "Facture introuvable");
-  if (!(await estLocataireDuBail(req, row.contract))) throw new ApiError(403, "Accès refusé");
-  if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée");
+  if (!row) throw new ApiError(404, "Facture introuvable", "INVOICE_NOT_FOUND");
+  if (!(await estLocataireDuBail(req, row.contract))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée", "INVOICE_ALREADY_PAID");
   // Le payeur est le locataire connecté (titulaire ou colocataire) : c'est son email qui part au prestataire.
   const payeur = await chargerLocataireDuCompte(req);
-  if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée");
+  if (row.invoice.status === "CANCELLED") throw new ApiError(400, "Cette facture a été annulée", "INVOICE_CANCELLED");
   // Réclamation atomique, AVANT tout appel au prestataire. Stripe se protège
   // lui-même via un Idempotency-Key (voir initiateStripePayment) ; l'API
   // PayDunya n'a rien d'équivalent, donc deux clics simultanés sur "Payer"
@@ -386,7 +386,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     .returning();
 
   if (!reclamee) {
-    throw new ApiError(409, "Un paiement est déjà en cours pour cette facture. Patientez un instant puis réessayez.");
+    throw new ApiError(409, "Un paiement est déjà en cours pour cette facture. Patientez un instant puis réessayez.", "PAYMENT_IN_PROGRESS");
   }
 
   let result: PaymentIntentResult;
@@ -433,7 +433,7 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
       : enAttente;
 
   if (!updated) {
-    throw new ApiError(409, "Cette facture vient d'être réglée. Rechargez la page.");
+    throw new ApiError(409, "Cette facture vient d'être réglée. Rechargez la page.", "INVOICE_JUST_PAID");
   }
 
   if (updated.status === "PAID") {

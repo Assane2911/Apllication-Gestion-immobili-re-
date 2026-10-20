@@ -97,19 +97,19 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
   // un Authorization: Bearer n'est jamais posé automatiquement par un
   // navigateur, donc pas exposé au même risque.
   if (!bearerToken && cookieToken && req.headers[CSRF_HEADER_NAME] === undefined) {
-    return next(new ApiError(403, "Requête refusée (protection CSRF)"));
+    return next(new ApiError(403, "Requête refusée (protection CSRF)", "CSRF_REFUSED"));
   }
 
   const token = bearerToken ?? cookieToken;
   if (!token) {
-    return next(new ApiError(401, "Authentification requise"));
+    return next(new ApiError(401, "Authentification requise", "AUTH_REQUIRED"));
   }
 
   let payload: AuthPayload;
   try {
     payload = jwt.verify(token, env.jwtSecret) as AuthPayload;
   } catch {
-    return next(new ApiError(401, "Token invalide ou expiré"));
+    return next(new ApiError(401, "Token invalide ou expiré", "TOKEN_INVALID_OR_EXPIRED"));
   }
 
   // Une session porte TOUJOURS un rôle (voir signToken) et n'a jamais de « finalité ». Les jetons
@@ -118,13 +118,13 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
   // comme « version 0 » (voir plus bas) et ils passaient pour une session tant que le compte n'avait jamais
   // été révoqué — la 2FA était alors contournable pour toute route qui n'exige qu'être authentifié.
   if (!payload.role || (payload as { purpose?: unknown }).purpose !== undefined) {
-    return next(new ApiError(401, "Token invalide ou expiré"));
+    return next(new ApiError(401, "Token invalide ou expiré", "TOKEN_INVALID_OR_EXPIRED"));
   }
 
   try {
     const [user] = await db.select().from(users).where(eq(users.id, payload.userId));
     if (!user) {
-      return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
+      return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.", "ACCOUNT_GONE"));
     }
 
     // Compte suspendu par l'administration : refus immédiat à chaque requête
@@ -149,7 +149,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     if (payload.collaboratorId) {
       const [collaborateur] = await db.select().from(users).where(eq(users.id, payload.collaboratorId));
       if (!collaborateur) {
-        return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
+        return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.", "ACCOUNT_GONE"));
       }
       tokenVersionAttendue = collaborateur.tokenVersion;
       roleEquipe = roleEquipeEffectif(collaborateur.teamRole);
@@ -160,7 +160,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     // n'a eu lieu. Déployer ce contrôle ne déconnecte ainsi personne, alors
     // que la première révocation, elle, portera bien sur ces jetons-là aussi.
     if ((payload.tokenVersion ?? 0) !== tokenVersionAttendue) {
-      return next(new ApiError(401, "Votre session a été fermée. Veuillez vous reconnecter."));
+      return next(new ApiError(401, "Votre session a été fermée. Veuillez vous reconnecter.", "SESSION_CLOSED"));
     }
 
     // Rôle du collaborateur (lu en base à chaque requête : un changement de
@@ -186,7 +186,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
 export function requireRole(...roles: Array<AuthPayload["role"]>) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      throw new ApiError(403, "Accès refusé");
+      throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
     }
     next();
   };
@@ -198,7 +198,7 @@ export function requireRole(...roles: Array<AuthPayload["role"]>) {
  */
 export async function requireActiveSubscription(req: Request, _res: Response, next: NextFunction) {
   if (!req.user) {
-    return next(new ApiError(401, "Authentification requise"));
+    return next(new ApiError(401, "Authentification requise", "AUTH_REQUIRED"));
   }
 
   // Les locataires accèdent toujours à leur portail pour payer et déclarer
@@ -210,7 +210,7 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
   // n'existe plus : la relire ici serait une seconde lecture pour rien.
   const user = req.compteCourant;
   if (!user) {
-    return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
+    return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.", "ACCOUNT_GONE"));
   }
 
   const now = new Date();
@@ -234,7 +234,7 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
     return next(
       new ApiError(
         402,
-        "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à un abonnement pour continuer."
+        "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à un abonnement pour continuer.", "TRIAL_ENDED"
       )
     );
   }
@@ -280,7 +280,9 @@ export function assertPlanAtLeast(user: typeof users.$inferSelect, minPlan: "PRO
   if (!planAuMoins(user, minPlan)) {
     throw new ApiError(
       403,
-      `Cette fonctionnalité est réservée à la formule ${PLAN_LABEL[minPlan]} ou supérieure. Passez à une formule supérieure pour y accéder.`
+      `Cette fonctionnalité est réservée à la formule ${PLAN_LABEL[minPlan]} ou supérieure. Passez à une formule supérieure pour y accéder.`,
+      "PLAN_REQUIRED",
+      { plan: PLAN_LABEL[minPlan] }
     );
   }
 }
@@ -288,11 +290,11 @@ export function assertPlanAtLeast(user: typeof users.$inferSelect, minPlan: "PRO
 /** Middleware équivalent à assertPlanAtLeast, pour une route exclusivement gestionnaire. */
 export function requirePlan(minPlan: "PRO" | "ENTERPRISE") {
   return (req: Request, _res: Response, next: NextFunction) => {
-    if (!req.user) return next(new ApiError(401, "Authentification requise"));
+    if (!req.user) return next(new ApiError(401, "Authentification requise", "AUTH_REQUIRED"));
     if (req.user.role !== "MANAGER") return next();
 
     const user = req.compteCourant;
-    if (!user) return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter."));
+    if (!user) return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.", "ACCOUNT_GONE"));
 
     try {
       assertPlanAtLeast(user, minPlan);

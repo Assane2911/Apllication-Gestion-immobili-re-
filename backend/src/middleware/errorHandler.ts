@@ -36,6 +36,11 @@ function erreurDeRequete(err: unknown): { status: number; message: string; code:
   return { status: code, message: "Requête invalide.", code: "REQUETE_INVALIDE" };
 }
 
+/** Corps JSON d'une erreur métier : le message français, plus le code et les valeurs que le frontend traduit. */
+function corpsErreurApi(err: ApiError) {
+  return { error: err.message, ...(err.code ? { code: err.code } : {}), ...(err.params ? { params: err.params } : {}) };
+}
+
 export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ error: `Route introuvable: ${req.method} ${req.path}` });
 }
@@ -88,7 +93,7 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   // chaque requête non authentifiée ou introuvable, et ajouter une attente
   // inutile sur le chemin de réponse.
   if (err instanceof ApiError && err.statusCode < 500) {
-    return res.status(err.statusCode).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
+    return res.status(err.statusCode).json(corpsErreurApi(err));
   }
 
   // Erreurs que produisent les couches d'Express AVANT nos routes — lecteur de corps de requête (JSON
@@ -110,7 +115,7 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   await Sentry.flush(2000).catch(() => {});
 
   if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
+    return res.status(err.statusCode).json(corpsErreurApi(err));
   }
 
   if (err instanceof Error) {

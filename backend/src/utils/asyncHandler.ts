@@ -15,9 +15,12 @@ export function asyncHandler(fn: Handler) {
 export class ApiError extends Error {
   statusCode: number;
   code?: string;
-  constructor(statusCode: number, message: string, code?: string) {
+  /** Valeurs à insérer dans la traduction du code (ex. le nom de la formule requise). */
+  params?: Record<string, string | number>;
+  constructor(statusCode: number, message: string, code?: string, params?: Record<string, string | number>) {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
+    this.params = params;
   }
 }

@@ -31,10 +31,10 @@ const googleClient = new OAuth2Client();
  * propriétaire de l'agence à sa place.
  */
 async function chargerCompteLoginCourant(req: Request) {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const id = req.user.collaboratorId ?? req.user.userId;
   const [user] = await db.select().from(users).where(eq(users.id, id));
-  if (!user) throw new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.");
+  if (!user) throw new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.", "ACCOUNT_GONE");
   return user;
 }
 
@@ -129,24 +129,24 @@ export const disableTwoFactor = asyncHandler(async (req: Request, res: Response)
   }
 
   if (user.hasPassword) {
-    if (!body.password) throw new ApiError(400, "Mot de passe requis");
+    if (!body.password) throw new ApiError(400, "Mot de passe requis", "PASSWORD_REQUIRED");
     const valide = await bcrypt.compare(body.password, user.passwordHash);
-    if (!valide) throw new ApiError(401, "Mot de passe incorrect");
+    if (!valide) throw new ApiError(401, "Mot de passe incorrect", "PASSWORD_INCORRECT");
   } else {
     if (!env.googleClientId) {
-      throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur");
+      throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur", "GOOGLE_NOT_CONFIGURED");
     }
-    if (!body.googleCredential) throw new ApiError(400, "Confirmation Google requise");
+    if (!body.googleCredential) throw new ApiError(400, "Confirmation Google requise", "GOOGLE_CONFIRMATION_REQUIRED");
 
     let payload;
     try {
       const ticket = await googleClient.verifyIdToken({ idToken: body.googleCredential, audience: env.googleClientId });
       payload = ticket.getPayload();
     } catch {
-      throw new ApiError(401, "Jeton Google invalide ou expiré");
+      throw new ApiError(401, "Jeton Google invalide ou expiré", "GOOGLE_TOKEN_INVALID_OR_EXPIRED");
     }
     if (!payload || !payload.email_verified || payload.sub !== user.googleId) {
-      throw new ApiError(401, "Jeton Google invalide");
+      throw new ApiError(401, "Jeton Google invalide", "GOOGLE_TOKEN_INVALID");
     }
   }
 

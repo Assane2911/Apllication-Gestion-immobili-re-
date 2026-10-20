@@ -119,6 +119,13 @@ export function fileUrl(path?: string | null) {
 
 export function apiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
+    // Le serveur écrit ses messages en français : quand il envoie un CODE que l'interface sait traduire, on affiche
+    // la traduction dans la langue choisie ; sinon (code absent ou inconnu) le texte du serveur sert de secours.
+    const code = err.response?.data?.code;
+    if (typeof code === "string") {
+      const cle = `common.serverErrors.${code}`;
+      if (i18n.exists(cle)) return String(i18n.t(cle, err.response?.data?.params ?? {}));
+    }
     if (err.response?.data?.error) return err.response.data.error;
     // Sans ce contrôle, `err.message` retombait sur le texte brut d'axios
     // ("Network Error", "timeout of 20000ms exceeded") — en anglais, quelle

@@ -737,7 +737,7 @@ const signContractSchema = z.object({
 
 /** Signature électronique du contrat (par le gestionnaire ou le locataire). */
 export const signContract = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { id } = req.params;
   const { signatureDataUrl } = signContractSchema.parse(req.body);
 
@@ -757,7 +757,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     });
 
   if (req.user.role === "TENANT") {
-    if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
+    if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
     const [bienDuBail] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
     const [updated] = await db
       .update(contracts)
@@ -796,7 +796,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     // `property.managerId === req.user.userId` était vérifié — jamais le
     // rôle réel. Refus explicite par défaut pour tout rôle qui n'est ni
     // TENANT ni MANAGER.
-    throw new ApiError(403, "Accès refusé");
+    throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
   }
 });
 
@@ -900,7 +900,7 @@ export const recordDepositRefund = asyncHandler(async (req: Request, res: Respon
  * Seul le gestionnaire propriétaire du bien rattaché au contrat peut uploader le scan.
  */
 export const uploadScannedContract = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires");
+  if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires", "MANAGERS_ONLY");
   if (!req.file) throw new ApiError(400, "Aucun fichier fourni pour le scan du contrat");
 
   const { id } = req.params;
