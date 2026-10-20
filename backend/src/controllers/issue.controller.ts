@@ -232,13 +232,13 @@ const createIssueSchema = z.object({
 /** Le locataire connecté signale un problème avec une photo prise/uploadée. */
 export const createIssue = asyncHandler(async (req: Request, res: Response) => {
   const body = createIssueSchema.parse(req.body);
-  if (!req.file) throw new ApiError(400, "Une photo du problème est requise");
+  if (!req.file) throw new ApiError(400, "Une photo du problème est requise", "ISSUE_PHOTO_REQUIRED");
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   if (!(await estLocataireDuBail(req, contract))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
   if (contract.status !== "ACTIVE") {
-    throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif");
+    throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif", "ISSUE_CONTRACT_NOT_ACTIVE");
   }
 
   assertFileContentMatchesDeclaredType(req.file);
@@ -262,7 +262,7 @@ const MAX_PHOTOS_SUPPLEMENTAIRES = 10;
 /** Le locataire ou le gestionnaire ajoute une nouvelle photo à un incident déjà signalé. */
 export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
-  if (!req.file) throw new ApiError(400, "Une photo est requise");
+  if (!req.file) throw new ApiError(400, "Une photo est requise", "ISSUE_PHOTO_REQUIRED");
 
   const [row] = await db
     .select({ issue: issueReports, property: properties })

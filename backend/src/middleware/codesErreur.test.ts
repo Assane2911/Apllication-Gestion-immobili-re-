@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { authHeader, createManager, tokenFor } from "../test/authHelpers";
+import { authHeader, createContract, createManager, createOwner, createProperty, createTenant, tokenFor } from "../test/authHelpers";
 
 /**
  * Les messages d'erreur du serveur sont écrits en français. Pour qu'un utilisateur en anglais, portugais ou
@@ -64,6 +64,63 @@ describe("codes d'erreur des parcours critiques", () => {
       expect(res.status).toBe(404);
       expect(res.body.code).toBe(code);
       expect(res.body.error).toBe(message);
+    });
+  });
+  describe("conflits du quotidien : un code par règle, le texte français restant en secours", () => {
+    const gestionnaire = () => createManager();
+
+    it("deux locataires avec le même email : TENANT_EMAIL_EXISTS", async () => {
+      const manager = await gestionnaire();
+      await createTenant(manager.id, { email: "doublon@test.local" });
+      const res = await request(app)
+        .post("/api/tenants")
+        .set(authHeader(tokenFor(manager)))
+        .send({ firstName: "A", lastName: "B", phone: "+221778422993", email: "doublon@test.local" });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("TENANT_EMAIL_EXISTS");
+      expect(res.body.error).toBe("Un locataire avec cet email existe déjà");
+    });
+
+    it("deux propriétaires avec le même email : OWNER_EMAIL_EXISTS", async () => {
+      const manager = await gestionnaire();
+      await createOwner(manager.id, { email: "doublon@test.local" });
+      const res = await request(app)
+        .post("/api/owners")
+        .set(authHeader(tokenFor(manager)))
+        .send({ firstName: "A", lastName: "B", phone: "+221778422993", email: "doublon@test.local" });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("OWNER_EMAIL_EXISTS");
+    });
+
+    it("supprimer un locataire qui a un bail actif : TENANT_HAS_ACTIVE_CONTRACT", async () => {
+      const manager = await gestionnaire();
+      const bien = await createProperty(manager.id);
+      const locataire = await createTenant(manager.id);
+      await createContract(bien.id, locataire.id);
+      const res = await request(app).delete(`/api/tenants/${locataire.id}`).set(authHeader(tokenFor(manager)));
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("TENANT_HAS_ACTIVE_CONTRACT");
+      expect(res.body.error).toBe("Impossible de supprimer un locataire ayant un contrat actif");
+    });
+
+    it("supprimer un bien qui a un bail actif : PROPERTY_HAS_ACTIVE_CONTRACT", async () => {
+      const manager = await gestionnaire();
+      const bien = await createProperty(manager.id);
+      const locataire = await createTenant(manager.id);
+      await createContract(bien.id, locataire.id);
+      const res = await request(app).delete(`/api/properties/${bien.id}`).set(authHeader(tokenFor(manager)));
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("PROPERTY_HAS_ACTIVE_CONTRACT");
+    });
+
+    it("supprimer un bail actif : CONTRACT_ACTIVE_NO_DELETE", async () => {
+      const manager = await gestionnaire();
+      const bien = await createProperty(manager.id);
+      const locataire = await createTenant(manager.id);
+      const bail = await createContract(bien.id, locataire.id);
+      const res = await request(app).delete(`/api/contracts/${bail.id}`).set(authHeader(tokenFor(manager)));
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("CONTRACT_ACTIVE_NO_DELETE");
     });
   });
 });

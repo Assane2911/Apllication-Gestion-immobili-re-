@@ -180,13 +180,13 @@ export const updateInspection = asyncHandler(async (req: Request, res: Response)
   // signature de tout son sens probatoire.
   const editsContent = body.rooms !== undefined || body.meters !== undefined || body.keys !== undefined || body.generalComments !== undefined;
   if (existing.status === "COMPLETED" && editsContent) {
-    throw new ApiError(409, "Impossible de modifier le contenu d'un état des lieux déjà finalisé");
+    throw new ApiError(409, "Impossible de modifier le contenu d'un état des lieux déjà finalisé", "INSPECTION_FINALIZED_LOCKED");
   }
 
   // Repasser de COMPLETED à DRAFT n'a plus de sens dès qu'une signature existe
   // (elle porterait alors sur un contenu qui a pu changer depuis).
   if (body.status === "DRAFT" && existing.status === "COMPLETED" && (existing.signedByManagerAt || existing.signedByTenantAt)) {
-    throw new ApiError(409, "Impossible de repasser en brouillon un état des lieux déjà signé");
+    throw new ApiError(409, "Impossible de repasser en brouillon un état des lieux déjà signé", "INSPECTION_NO_REVERT");
   }
 
   const values: Partial<typeof inspections.$inferInsert> = {};
@@ -219,7 +219,7 @@ export const deleteInspection = asyncHandler(async (req: Request, res: Response)
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "État des lieux introuvable", 404, "INSPECTION_NOT_FOUND");
 
   if (existing.status === "COMPLETED" || existing.signedByManagerAt || existing.signedByTenantAt) {
-    throw new ApiError(409, "Impossible de supprimer un état des lieux finalisé ou déjà signé");
+    throw new ApiError(409, "Impossible de supprimer un état des lieux finalisé ou déjà signé", "INSPECTION_NO_DELETE");
   }
 
   await db.delete(inspections).where(eq(inspections.id, req.params.id));
@@ -238,7 +238,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
   // encore changer, la signature contradictoire doit porter sur un état
   // des lieux finalisé (voir updateInspection, même verrou dans l'autre sens).
   if (inspection.status !== "COMPLETED") {
-    throw new ApiError(409, "L'état des lieux doit être finalisé avant signature");
+    throw new ApiError(409, "L'état des lieux doit être finalisé avant signature", "INSPECTION_NOT_FINALIZED");
   }
 
   /** Une signature engage les parties : qui a signé, et quand, doit rester visible dans le journal. */
@@ -262,7 +262,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
       .set({ signedByTenantAt: new Date(), tenantSignatureUrl: signatureDataUrl })
       .where(and(eq(inspections.id, req.params.id), isNull(inspections.signedByTenantAt)))
       .returning();
-    if (!updated) throw new ApiError(409, "Vous avez déjà signé cet état des lieux : une signature ne se remplace pas.");
+    if (!updated) throw new ApiError(409, "Vous avez déjà signé cet état des lieux : une signature ne se remplace pas.", "INSPECTION_ALREADY_SIGNED_BY_YOU");
     await tracerSignature("locataire");
     return res.json(parseInspection(updated));
   }
@@ -278,7 +278,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
       .set({ signedByManagerAt: new Date(), managerSignatureUrl: signatureDataUrl })
       .where(and(eq(inspections.id, req.params.id), isNull(inspections.signedByManagerAt)))
       .returning();
-    if (!updated) throw new ApiError(409, "Cet état des lieux est déjà signé par le gestionnaire : une signature ne se remplace pas.");
+    if (!updated) throw new ApiError(409, "Cet état des lieux est déjà signé par le gestionnaire : une signature ne se remplace pas.", "INSPECTION_ALREADY_SIGNED_BY_MANAGER");
     await tracerSignature("gestionnaire");
     return res.json(parseInspection(updated));
   }

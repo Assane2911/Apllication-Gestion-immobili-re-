@@ -84,7 +84,7 @@ function computePortalStatus(
  */
 function assertNonAnonymise(owner: { anonymizedAt: Date | null }) {
   if (owner.anonymizedAt) {
-    throw new ApiError(409, "Ce propriétaire a été anonymisé : sa fiche ne peut plus être modifiée ni rattachée à un accès au portail.");
+    throw new ApiError(409, "Ce propriétaire a été anonymisé : sa fiche ne peut plus être modifiée ni rattachée à un accès au portail.", "OWNER_ANONYMIZED_LOCKED");
   }
 }
 
@@ -140,7 +140,7 @@ export const createOwner = asyncHandler(async (req: Request, res: Response) => {
     .select()
     .from(owners)
     .where(sql`${owners.managerId} = ${req.user!.userId} and ${owners.email} = ${body.email}`);
-  if (existing) throw new ApiError(409, "Un propriétaire avec cet email existe déjà");
+  if (existing) throw new ApiError(409, "Un propriétaire avec cet email existe déjà", "OWNER_EMAIL_EXISTS");
 
   const [owner] = await db
     .insert(owners)

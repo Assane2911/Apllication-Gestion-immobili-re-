@@ -207,14 +207,14 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
   const body = contractSchema.parse(req.body);
 
   if (body.endDate <= body.startDate) {
-    throw new ApiError(400, "La date de fin doit être postérieure à la date de début");
+    throw new ApiError(400, "La date de fin doit être postérieure à la date de début", "CONTRACT_END_BEFORE_START");
   }
 
   const [property] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
   assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
-  if (tenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.");
+  if (tenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.", "TENANT_ANONYMIZED_NO_LEASE");
 
   const contractStatus = body.status ?? "ACTIVE";
 
@@ -266,7 +266,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   // Un UPDATE sans aucune colonne à écrire est une erreur de Drizzle (« No values to set ») : un corps vide, ou
   // qui ne porte que des champs inconnus, est une requête invalide, pas une panne.
   if (Object.values(body).every((valeur) => valeur === undefined)) {
-    throw new ApiError(400, "Aucune modification à enregistrer.");
+    throw new ApiError(400, "Aucune modification à enregistrer.", "NOTHING_TO_UPDATE");
   }
 
   // Si la requête change le bien ou le locataire du contrat, revalider que
@@ -281,7 +281,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   if (body.tenantId && body.tenantId !== existing.tenantId) {
     const [newTenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
     assertOwnership(newTenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
-    if (newTenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.");
+    if (newTenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.", "TENANT_ANONYMIZED_NO_LEASE");
   }
 
   // Une signature électronique n'a de valeur probatoire que si elle porte sur
@@ -315,7 +315,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   // createContract validait déjà ceci ; updateContract, lui, ne le faisait
   // jamais — un simple changement de date pouvait donc inverser début/fin.
   if (newEndDate <= newStartDate) {
-    throw new ApiError(400, "La date de fin doit être postérieure à la date de début");
+    throw new ApiError(400, "La date de fin doit être postérieure à la date de début", "CONTRACT_END_BEFORE_START");
   }
 
   // Régression : updateContract ne revalidait ni les chevauchements ni le
@@ -507,7 +507,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   // contrat existe) : il suffisait de supprimer d'abord le contrat ici, sans
   // aucun frein, puis le bien ou le locataire devenu "libre".
   if (existing.status === "ACTIVE") {
-    throw new ApiError(409, "Impossible de supprimer un contrat actif. Veuillez d'abord le résilier.");
+    throw new ApiError(409, "Impossible de supprimer un contrat actif. Veuillez d'abord le résilier.", "CONTRACT_ACTIVE_NO_DELETE");
   }
   const facturesReglees = await db
     .select({ id: invoices.id })
@@ -645,7 +645,7 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   const [ownerProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
   assertOwnership(ownerProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
   if (existing.status !== "ACTIVE") {
-    throw new ApiError(409, "Seul un contrat actif peut être renouvelé");
+    throw new ApiError(409, "Seul un contrat actif peut être renouvelé", "CONTRACT_RENEW_ACTIVE_ONLY");
   }
 
   const newStart = new Date(existing.endDate);
@@ -773,7 +773,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       })
       .where(and(eq(contracts.id, id), isNull(contracts.signedByTenantAt)))
       .returning();
-    if (!updated) throw new ApiError(409, "Vous avez déjà signé ce bail : une signature ne se remplace pas.");
+    if (!updated) throw new ApiError(409, "Vous avez déjà signé ce bail : une signature ne se remplace pas.", "LEASE_ALREADY_SIGNED_BY_YOU");
     if (bienDuBail) await tracerSignature(bienDuBail.managerId, bienDuBail.title, "locataire");
     return res.json(await withRelations(updated.id));
   } else if (req.user.role === "MANAGER") {
@@ -791,7 +791,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
       })
       .where(and(eq(contracts.id, id), isNull(contracts.signedByManagerAt)))
       .returning();
-    if (!updated) throw new ApiError(409, "Ce bail est déjà signé par le gestionnaire : une signature ne se remplace pas.");
+    if (!updated) throw new ApiError(409, "Ce bail est déjà signé par le gestionnaire : une signature ne se remplace pas.", "LEASE_ALREADY_SIGNED_BY_MANAGER");
     await tracerSignature(property.managerId, property.title, "gestionnaire");
     return res.json(await withRelations(updated.id));
   } else {

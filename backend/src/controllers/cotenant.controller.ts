@@ -57,8 +57,8 @@ export const addCotenant = asyncHandler(async (req: Request, res: Response) => {
 
   const [locataire] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
   assertOwnership(locataire, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
-  if (locataire.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : il ne peut pas rejoindre un bail.");
-  if (locataire.id === contrat.tenantId) throw new ApiError(409, "Ce locataire est déjà le titulaire du bail.");
+  if (locataire.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : il ne peut pas rejoindre un bail.", "TENANT_ANONYMIZED_NO_COTENANT");
+  if (locataire.id === contrat.tenantId) throw new ApiError(409, "Ce locataire est déjà le titulaire du bail.", "TENANT_IS_HOLDER");
 
   const [{ nombre }] = await db
     .select({ nombre: sql<number>`count(*)::int` })
@@ -68,7 +68,7 @@ export const addCotenant = asyncHandler(async (req: Request, res: Response) => {
 
   // L'index unique (bail, locataire) tranche une double saisie simultanée.
   const [lien] = await db.insert(contractCotenants).values({ contractId: contrat.id, tenantId: locataire.id }).onConflictDoNothing().returning();
-  if (!lien) throw new ApiError(409, "Ce locataire est déjà colocataire de ce bail.");
+  if (!lien) throw new ApiError(409, "Ce locataire est déjà colocataire de ce bail.", "TENANT_ALREADY_COTENANT");
 
   await logActivity({
     req,
