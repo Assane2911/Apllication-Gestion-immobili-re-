@@ -263,6 +263,12 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   const [existingProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
   assertOwnership(existingProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
 
+  // Un UPDATE sans aucune colonne à écrire est une erreur de Drizzle (« No values to set ») : un corps vide, ou
+  // qui ne porte que des champs inconnus, est une requête invalide, pas une panne.
+  if (Object.values(body).every((valeur) => valeur === undefined)) {
+    throw new ApiError(400, "Aucune modification à enregistrer.");
+  }
+
   // Si la requête change le bien ou le locataire du contrat, revalider que
   // ces NOUVEAUX identifiants appartiennent bien au gestionnaire connecté —
   // sans ce contrôle, un gestionnaire pouvait rattacher le contrat d'un
