@@ -95,7 +95,7 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
 
         {step === "error" && (
           <div className="mt-4 space-y-4">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>
             <div className="flex justify-end">
               <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
                 {t("common.actions.close")}
@@ -144,7 +144,7 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
               />
             </div>
 
-            {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={onClose} disabled={confirming} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">

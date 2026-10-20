@@ -111,9 +111,9 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
 
           {isGoogleOnly ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("components.deleteAccountModal.googleLabel")}
-              </label>
+              </span>
               <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                 {t("components.deleteAccountModal.googleHint")}
               </p>
@@ -148,7 +148,7 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
             </div>
           )}
 
-          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button

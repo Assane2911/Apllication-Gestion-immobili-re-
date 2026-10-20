@@ -351,7 +351,7 @@ export default function ExpensesPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.fullReportLabel")}</label>
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.fullReportLabel")}</span>
           <input
             type="date"
             aria-label={t("manager.expenses.fields.reportDateFrom")}
@@ -584,7 +584,7 @@ export default function ExpensesPage() {
                 )}
               </div>
 
-              {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+              {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button

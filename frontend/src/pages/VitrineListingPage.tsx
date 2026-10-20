@@ -175,8 +175,8 @@ export default function VitrineListingPage() {
                       <input id="lead-phone" required maxLength={40} value={leadForm.prospectPhone} onChange={(e) => setLeadForm({ ...leadForm, prospectPhone: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{t("vitrine.leadForm.requestType")}</label>
-                      <div className="flex items-center gap-4 h-[38px]">
+                      <span id="lead-request-type" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{t("vitrine.leadForm.requestType")}</span>
+                      <div role="radiogroup" aria-labelledby="lead-request-type" className="flex items-center gap-4 h-[38px]">
                         <label className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
                           <input type="radio" name="requestType" checked={leadForm.requestType === "VISIT"} onChange={() => setLeadForm({ ...leadForm, requestType: "VISIT" })} />
                           {t("manager.listingLeads.requestTypes.VISIT")}
@@ -198,7 +198,7 @@ export default function VitrineListingPage() {
                       <textarea id="lead-message" maxLength={2000} value={leadForm.message} onChange={(e) => setLeadForm({ ...leadForm, message: e.target.value })} rows={2} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
                     </div>
                   </div>
-                  {leadError && <p className="text-xs text-red-600 dark:text-red-400">{leadError}</p>}
+                  {leadError && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{leadError}</p>}
                   <button type="submit" disabled={leadSubmitting} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                     {leadSubmitting ? t("common.actions.saving") : t("vitrine.leadForm.submit")}
                   </button>

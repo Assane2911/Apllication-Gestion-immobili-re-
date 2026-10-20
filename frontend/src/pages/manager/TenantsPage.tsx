@@ -273,7 +273,7 @@ export default function TenantsPage() {
               <label htmlFor="tenant-idDocument" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.idDocument")}</label>
               <input id="tenant-idDocument" type="file" accept="image/*,application/pdf" onChange={(e) => void choisirPiece(e)} className="w-full text-sm" />
             </div>
-            {error && <p className="md:col-span-2 text-sm text-red-600">{error}</p>}
+            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}

@@ -128,7 +128,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
             </div>
           )}
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center text-red-600 text-sm p-4 text-center">
+            <div role="alert" className="absolute inset-0 flex items-center justify-center text-red-600 text-sm p-4 text-center">
               {error}
             </div>
           )}

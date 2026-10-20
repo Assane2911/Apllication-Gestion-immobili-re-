@@ -224,7 +224,7 @@ export default function InspectionsPage() {
                 <option value="EXIT">{t("manager.inspections.typeExit")}</option>
               </select>
             </div>
-            {createError && <p className="md:col-span-2 text-sm text-red-600">{createError}</p>}
+            {createError && <p role="alert" className="md:col-span-2 text-sm text-red-600">{createError}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={creating} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {creating ? t("common.actions.saving") : t("manager.inspections.create")}
@@ -257,6 +257,7 @@ export default function InspectionsPage() {
               {editForm.rooms.map((room, i) => (
                 <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_1fr_auto] gap-2 items-start bg-slate-50 dark:bg-slate-800/60 rounded-lg p-2.5">
                   <input
+                    aria-label={t("manager.inspections.roomName")}
                     placeholder={t("manager.inspections.roomName")}
                     value={room.name}
                     maxLength={200}
@@ -264,6 +265,7 @@ export default function InspectionsPage() {
                     className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
                   />
                   <select
+                    aria-label={t("manager.inspections.roomCondition")}
                     value={room.condition}
                     onChange={(e) => updateRoom(i, { condition: e.target.value as RoomCondition })}
                     className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
@@ -273,6 +275,7 @@ export default function InspectionsPage() {
                     <option value="MAUVAIS">{t("manager.inspections.conditionPoor")}</option>
                   </select>
                   <input
+                    aria-label={t("manager.inspections.roomNotes")}
                     placeholder={t("manager.inspections.roomNotes")}
                     value={room.notes}
                     maxLength={2000}
@@ -315,6 +318,7 @@ export default function InspectionsPage() {
               {editForm.keys.map((key, i) => (
                 <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_auto] gap-2 items-start bg-slate-50 dark:bg-slate-800/60 rounded-lg p-2.5">
                   <input
+                    aria-label={t("manager.inspections.keyLabel")}
                     placeholder={t("manager.inspections.keyLabel")}
                     value={key.label}
                     maxLength={200}
@@ -322,6 +326,7 @@ export default function InspectionsPage() {
                     className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
                   />
                   <input
+                    aria-label={t("manager.inspections.keyQuantity")}
                     type="number"
                     min={0}
                     max={1000}
@@ -353,7 +358,7 @@ export default function InspectionsPage() {
             />
           </div>
 
-          {editError && <p className="text-sm text-red-600">{editError}</p>}
+          {editError && <p role="alert" className="text-sm text-red-600">{editError}</p>}
 
           <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <Bulle texte={t("manager.tips.inspectionSave")}>

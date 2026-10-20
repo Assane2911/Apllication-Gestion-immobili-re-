@@ -199,7 +199,7 @@ export default function AdminManagerDetailPage() {
       {erreur && (
         <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3">
           <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("admin.managerDetail.errorTitle")}</p>
-          <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">{erreur}</p>
+          <p role="alert" className="text-xs text-red-700 dark:text-red-400 mt-0.5">{erreur}</p>
         </div>
       )}
 

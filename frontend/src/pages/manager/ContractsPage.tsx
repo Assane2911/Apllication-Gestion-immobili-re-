@@ -529,7 +529,7 @@ export default function ContractsPage() {
               </button>
               <p id="contract-terms-caution-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.insertGuaranteeHint")}</p>
             </div>
-            {error && <p className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : editingContract ? t("manager.contracts.saveChanges") : t("manager.contracts.create")}

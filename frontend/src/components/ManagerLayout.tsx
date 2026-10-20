@@ -142,15 +142,15 @@ export default function ManagerLayout() {
             </div>
           )}
           <div className="mt-3 pt-3 border-t border-ink-700/80">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
+            <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
               {t("nav.currencyLabel")}
-            </label>
+            </span>
             <CurrencySelector className="w-full [&>select]:w-full" />
           </div>
           <div className="mt-2">
-            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
+            <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">
               {t("common.language.label")}
-            </label>
+            </span>
             <LanguageSwitcher className="w-full [&>select]:w-full" />
           </div>
         </div>

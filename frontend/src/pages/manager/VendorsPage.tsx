@@ -139,7 +139,7 @@ export default function VendorsPage() {
               <label htmlFor="vendor-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.vendors.fields.notes")}</label>
               <textarea id="vendor-notes" maxLength={5000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
-            {error && <p className="md:col-span-2 text-sm text-red-600">{error}</p>}
+            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}

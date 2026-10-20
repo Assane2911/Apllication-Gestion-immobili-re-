@@ -118,7 +118,7 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
                   className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
 
-                {erreur && <p className="text-xs text-red-600 dark:text-red-400">{erreur}</p>}
+                {erreur && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{erreur}</p>}
 
                 <div className="flex justify-end gap-2">
                   <button

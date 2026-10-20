@@ -243,7 +243,7 @@ export default function TenantIssuesPage() {
           )}
         </div>
 
-        {error && <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>}
+        {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>}
 
         <button
           type="submit"
