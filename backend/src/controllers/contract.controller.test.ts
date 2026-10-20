@@ -343,6 +343,27 @@ describe("POST /api/contracts/:id/scan", () => {
  * changement de bien ou une réactivation.
  */
 describe("PUT /api/contracts/:id — revalidation", () => {
+  it("refuse une modification qui ne contient aucun champ connu (400) au lieu d'échouer en 500", async () => {
+    // Drizzle lève « No values to set » sur un UPDATE vide : un corps `{}`, ou ne portant que des champs
+    // inconnus, finissait en erreur interne avec trace Sentry.
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ACTIVE" });
+
+    for (const corps of [{}, { inconnu: "x" }]) {
+      const res = await request(app).put(`/api/contracts/${contract.id}`).set(authHeader(tokenFor(manager))).send(corps);
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/aucune modification/i);
+    }
+  });
+
+  it("répond toujours 404 pour un contrat inconnu, même avec un corps vide", async () => {
+    const manager = await createManager();
+    const res = await request(app).put("/api/contracts/inexistant").set(authHeader(tokenFor(manager))).send({});
+    expect(res.status).toBe(404);
+  });
+
   it("rejette une date de fin antérieure ou égale à la date de début", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);
