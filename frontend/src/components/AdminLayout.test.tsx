@@ -64,7 +64,10 @@ describe("AdminLayout", () => {
 
     expect(screen.getByText("Paramètres admin")).toBeInTheDocument();
     const lienParametres = screen.getByRole("link", { name: /Paramètres/ });
-    expect(lienParametres.className).toMatch(/bg-brand-600/);
+    // Même onglet actif que dans les espaces locataire et propriétaire (voir EnteteEspace).
+    expect(lienParametres.className).toMatch(/from-brand-600/);
+    expect(lienParametres.className).toMatch(/text-white/);
+    expect(lienParametres).toHaveAttribute("aria-current", "page");
   });
 
   it("appelle logout au clic sur le bouton de déconnexion", async () => {

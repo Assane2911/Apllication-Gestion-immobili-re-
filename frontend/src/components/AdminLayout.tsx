@@ -1,10 +1,8 @@
-import { Building2, Landmark, LayoutDashboard, Lightbulb, Megaphone, Moon, ScrollText, Settings, Sun } from "lucide-react";
+import { Building2, Landmark, LayoutDashboard, Lightbulb, Megaphone, ScrollText, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
-import { useTheme } from "../context/theme";
-import Bulle from "./Bulle";
-import LanguageSwitcher from "./LanguageSwitcher";
+import EnteteEspace from "./EnteteEspace";
 
 const navItems = [
   { to: "/admin", key: "dashboard", icon: LayoutDashboard },
@@ -19,8 +17,7 @@ const navItems = [
 /** Layout de l'espace administration de la plateforme (distinct du gestionnaire/locataire). */
 export default function AdminLayout() {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>), comme dans l'espace gestionnaire :
   // sans lui, les sept pages d'administration s'appelaient pareil. L'entrée la plus précise gagne (la fiche d'un
   // gestionnaire, /admin/gestionnaires/:id, garde le libellé « Gestionnaires »).
@@ -32,54 +29,12 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-canvas dark:bg-slate-950">
       {libellePage && <title>{`${libellePage} | ${t("common.appName")}`}</title>}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="font-semibold text-slate-900 dark:text-slate-100">{t("components.adminLayout.title")}</h1>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{user?.email}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
-            <Bulle texte={t("common.theme.tip")} className="contents">
-            <button
-              onClick={toggleTheme}
-              className="shrink-0 w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors"
-              aria-label={t("common.theme.toggleAria")}
-            >
-              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-            </Bulle>
-            <button onClick={logout} className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 underline">
-              {t("nav.logout")}
-            </button>
-          </div>
-        </div>
-        <div className="max-w-5xl mx-auto px-4 flex flex-wrap gap-1 pb-2">
-          {navItems.map((item) => (
-            // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par
-            // défaut). C'est la barre latérale du gestionnaire qui fait
-            // exception avec « droite ».
-            <Bulle key={item.to} texte={t(`admin.nav.tips.${item.key}`)}>
-            <NavLink
-              to={item.to}
-              end={item.to === "/admin"}
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-sm ${
-                  isActive
-                    ? "bg-brand-600 text-white"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`
-              }
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <item.icon size={14} strokeWidth={1.9} aria-hidden="true" />
-                {t(`admin.nav.${item.key}`)}
-              </span>
-            </NavLink>
-            </Bulle>
-          ))}
-        </div>
-      </header>
+      <EnteteEspace
+        largeur="5xl"
+        titre={t("components.adminLayout.title")}
+        sousTitre={user?.email}
+        onglets={navItems.map((item) => ({ to: item.to, label: t(`admin.nav.${item.key}`), tip: t(`admin.nav.tips.${item.key}`), icon: item.icon, end: item.to === "/admin" }))}
+      />
       <main data-surface="app" className="max-w-5xl mx-auto px-4 py-6">
         <Outlet />
       </main>
