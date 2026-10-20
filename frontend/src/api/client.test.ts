@@ -291,3 +291,35 @@ describe("apiErrorMessage — langue", () => {
     }
   });
 });
+
+describe("apiErrorMessage — code d'erreur du serveur", () => {
+  // Le serveur écrit ses messages en français : pour les parcours critiques il envoie aussi un CODE,
+  // que le frontend traduit dans la langue choisie. Le texte du serveur ne sert plus qu'en secours.
+  async function dans(langue: string, corps: unknown) {
+    const { changerLangue } = await import("../i18n");
+    await changerLangue(langue);
+    try {
+      return apiErrorMessage(axiosErrorWithResponse(corps, 401));
+    } finally {
+      await changerLangue("fr");
+    }
+  }
+
+  it("traduit un code connu dans la langue de l'interface", async () => {
+    const corps = { error: "Email ou mot de passe incorrect", code: "INVALID_CREDENTIALS" };
+    expect(await dans("en", corps)).toBe("Incorrect email or password");
+    expect(await dans("pt", corps)).toBe("E-mail ou palavra-passe incorretos");
+    expect(await dans("es", corps)).toBe("Correo electrónico o contraseña incorrectos");
+    expect(await dans("fr", corps)).toBe("Email ou mot de passe incorrect");
+  });
+
+  it("insère les valeurs envoyées par le serveur (nom de la formule requise)", async () => {
+    const corps = { error: "…formule Pro…", code: "PLAN_REQUIRED", params: { plan: "Pro" } };
+    expect(await dans("en", corps)).toBe("This feature is reserved for the Pro plan or higher. Upgrade your plan to access it.");
+  });
+
+  it("retombe sur le message du serveur quand le code est inconnu ou absent", async () => {
+    expect(await dans("en", { error: "Message du serveur", code: "CODE_QUI_NEXISTE_PAS" })).toBe("Message du serveur");
+    expect(await dans("en", { error: "Message du serveur" })).toBe("Message du serveur");
+  });
+});

@@ -108,7 +108,7 @@ function verifierJeton2faEnAttente(token: string): string {
   try {
     payload = jwt.verify(token, env.jwtSecret);
   } catch {
-    throw new ApiError(401, "Session de connexion expirée. Veuillez vous reconnecter.");
+    throw new ApiError(401, "Session de connexion expirée. Veuillez vous reconnecter.", "LOGIN_SESSION_EXPIRED");
   }
   if (
     typeof payload !== "object" ||
@@ -116,7 +116,7 @@ function verifierJeton2faEnAttente(token: string): string {
     (payload as Record<string, unknown>).purpose !== "2fa_pending" ||
     typeof (payload as Record<string, unknown>).userId !== "string"
   ) {
-    throw new ApiError(401, "Jeton invalide.");
+    throw new ApiError(401, "Jeton invalide.", "TOKEN_INVALID");
   }
   return (payload as { userId: string }).userId;
 }
@@ -369,7 +369,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   // compte n'existe pas, pour que les deux chemins coutent le meme temps.
   const empreinte = user?.passwordHash ?? EMPREINTE_FACTICE;
   const valid = await bcrypt.compare(body.password, empreinte);
-  if (!user || !valid) throw new ApiError(401, "Email ou mot de passe incorrect");
+  if (!user || !valid) throw new ApiError(401, "Email ou mot de passe incorrect", "INVALID_CREDENTIALS");
 
   if (user.role === "MANAGER" && !user.emailVerifiedAt) {
     throw new ApiError(
@@ -414,7 +414,7 @@ export const verifyTwoFactorLogin = asyncHandler(async (req: Request, res: Respo
   // du jeton intermédiaire et cette vérification (ex. deux onglets) : le
   // jeton seul ne suffit alors plus, il faut se reconnecter proprement.
   if (!user || !user.totpEnabledAt || !user.totpSecret) {
-    throw new ApiError(401, "Session de connexion expirée. Veuillez vous reconnecter.");
+    throw new ApiError(401, "Session de connexion expirée. Veuillez vous reconnecter.", "LOGIN_SESSION_EXPIRED");
   }
 
   const code = body.code.trim();
@@ -431,7 +431,7 @@ export const verifyTwoFactorLogin = asyncHandler(async (req: Request, res: Respo
   // remplace l'ancienne.
   const hachesRestants = await consommerCodeSecours(code, user.totpBackupCodesHash);
   if (hachesRestants === null) {
-    throw new ApiError(401, "Code invalide ou expiré.");
+    throw new ApiError(401, "Code invalide ou expiré.", "TWO_FACTOR_CODE_INVALID");
   }
 
   await db.update(users).set({ totpBackupCodesHash: JSON.stringify(hachesRestants) }).where(eq(users.id, user.id));
@@ -451,7 +451,7 @@ export const verifyTwoFactorLogin = asyncHandler(async (req: Request, res: Respo
  */
 export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) => {
   if (!env.googleClientId) {
-    throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur");
+    throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur", "GOOGLE_NOT_CONFIGURED");
   }
 
   const body = googleLoginSchema.parse(req.body);
@@ -464,11 +464,11 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
     });
     payload = ticket.getPayload();
   } catch {
-    throw new ApiError(401, "Jeton Google invalide ou expiré");
+    throw new ApiError(401, "Jeton Google invalide ou expiré", "GOOGLE_TOKEN_INVALID_OR_EXPIRED");
   }
 
   if (!payload || !payload.sub || !payload.email) {
-    throw new ApiError(401, "Jeton Google invalide");
+    throw new ApiError(401, "Jeton Google invalide", "GOOGLE_TOKEN_INVALID");
   }
 
   // Google atteste lui-même la possession de l'adresse (écran de consentement
@@ -476,7 +476,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
   // adresse non confirmée (cas rare, ex. certains comptes Workspace) suffirait
   // à prouver une identité que ni nous ni Google n'avons vérifiée.
   if (!payload.email_verified) {
-    throw new ApiError(403, "Votre adresse email Google n'est pas vérifiée");
+    throw new ApiError(403, "Votre adresse email Google n'est pas vérifiée", "GOOGLE_EMAIL_UNVERIFIED");
   }
 
   const email = payload.email.trim().toLowerCase();
@@ -606,7 +606,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(users.emailVerificationTokenHash, emailVerificationTokenHash));
 
   if (!user || !user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < new Date()) {
-    throw new ApiError(400, "Ce lien de confirmation est invalide ou a expiré");
+    throw new ApiError(400, "Ce lien de confirmation est invalide ou a expiré", "EMAIL_LINK_INVALID");
   }
 
   const [updated] = await db
@@ -706,7 +706,7 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
 });
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   // Pour un collaborateur, req.user.userId porte l'id du PROPRIÉTAIRE de
   // l'agence (voir identiteJetonPourManager) : `user` ci-dessous est donc la
   // bonne ligne pour la formule/abonnement (partagés par toute l'agence),
@@ -807,7 +807,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   const [user] = await db.select().from(users).where(eq(users.resetPasswordTokenHash, resetPasswordTokenHash));
 
   if (!user || !user.resetPasswordExpiresAt || user.resetPasswordExpiresAt < new Date()) {
-    throw new ApiError(400, "Ce lien de réinitialisation est invalide ou a expiré");
+    throw new ApiError(400, "Ce lien de réinitialisation est invalide ou a expiré", "RESET_LINK_INVALID");
   }
 
   const passwordHash = await bcrypt.hash(body.password, 10);
@@ -843,7 +843,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 
 /** Mise à jour de la devise préférée de l'utilisateur. */
 export const updateCurrency = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const currencySchema = z.object({
     currency: deviseSchema,
   });
@@ -853,7 +853,7 @@ export const updateCurrency = asyncHandler(async (req: Request, res: Response) =
   // la changer la change pour toute l'équipe. Un lecteur ou un agent n'a pas à le faire ; la matrice de rôles
   // ouvre pourtant tout /auth/ à tous (session, double authentification), d'où cette garde ici.
   if (req.user.collaboratorId && req.roleEquipe !== "FULL") {
-    throw new ApiError(403, "Seul le propriétaire de l'agence, ou un collaborateur « tous droits », peut changer la devise de l'agence.");
+    throw new ApiError(403, "Seul le propriétaire de l'agence, ou un collaborateur « tous droits », peut changer la devise de l'agence.", "OWNER_ONLY_CURRENCY");
   }
 
   // Le compte est chargé AVANT l'écriture : sans cela, l'UPDATE ne touchait
@@ -945,7 +945,7 @@ export const rafraichirSession = asyncHandler(async (req: Request, res: Response
   );
   if (!renouvele) {
     clearAuthCookie(res);
-    throw new ApiError(401, "La durée maximale de la session est atteinte. Veuillez vous reconnecter.");
+    throw new ApiError(401, "La durée maximale de la session est atteinte. Veuillez vous reconnecter.", "SESSION_MAX_DURATION");
   }
 
   setAuthCookie(res, renouvele.token);
@@ -1001,29 +1001,29 @@ const deleteAccountSchema = z.object({
  * d'identité équivalente au mot de passe pour les autres comptes.
  */
 export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires");
+  if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires", "MANAGERS_ONLY");
   // Multi-utilisateurs : seul le PROPRIÉTAIRE de l'agence peut la supprimer,
   // jamais un collaborateur invité (voir users.teamOwnerId) — sans quoi la
   // confirmation ci-dessous porterait de toute façon sur le mot de passe/
   // compte Google du propriétaire (req.user.userId le désigne, pas le
   // collaborateur), que celui-ci ne connaît pas.
   if (req.user.collaboratorId) {
-    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut supprimer ce compte.");
+    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut supprimer ce compte.", "OWNER_ONLY_DELETE_ACCOUNT");
   }
   const body = deleteAccountSchema.parse(req.body);
 
   const [user] = await db.select().from(users).where(eq(users.id, req.user.userId));
-  if (!user) throw new ApiError(404, "Utilisateur introuvable");
+  if (!user) throw new ApiError(404, "Utilisateur introuvable", "USER_NOT_FOUND");
 
   if (user.hasPassword) {
-    if (!body.password) throw new ApiError(400, "Mot de passe requis");
+    if (!body.password) throw new ApiError(400, "Mot de passe requis", "PASSWORD_REQUIRED");
     const valid = await bcrypt.compare(body.password, user.passwordHash);
-    if (!valid) throw new ApiError(401, "Mot de passe incorrect");
+    if (!valid) throw new ApiError(401, "Mot de passe incorrect", "PASSWORD_INCORRECT");
   } else {
     if (!env.googleClientId) {
-      throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur");
+      throw new ApiError(503, "La connexion avec Google n'est pas configurée sur ce serveur", "GOOGLE_NOT_CONFIGURED");
     }
-    if (!body.googleCredential) throw new ApiError(400, "Confirmation Google requise");
+    if (!body.googleCredential) throw new ApiError(400, "Confirmation Google requise", "GOOGLE_CONFIRMATION_REQUIRED");
 
     let payload;
     try {
@@ -1033,7 +1033,7 @@ export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) 
       });
       payload = ticket.getPayload();
     } catch {
-      throw new ApiError(401, "Jeton Google invalide ou expiré");
+      throw new ApiError(401, "Jeton Google invalide ou expiré", "GOOGLE_TOKEN_INVALID_OR_EXPIRED");
     }
 
     // payload.sub doit correspondre au googleId DÉJÀ lié à ce compte (et pas
@@ -1041,7 +1041,7 @@ export const deleteMyAccount = asyncHandler(async (req: Request, res: Response) 
     // sinon quiconque possédant un compte Google pourrait confirmer la
     // suppression du compte d'un autre gestionnaire Google-only.
     if (!payload || !payload.email_verified || payload.sub !== user.googleId) {
-      throw new ApiError(401, "Jeton Google invalide");
+      throw new ApiError(401, "Jeton Google invalide", "GOOGLE_TOKEN_INVALID");
     }
   }
 

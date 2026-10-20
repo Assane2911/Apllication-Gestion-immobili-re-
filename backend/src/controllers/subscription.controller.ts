@@ -228,7 +228,7 @@ export const getPlans = asyncHandler(async (req: Request, res: Response) => {
 /** Retourne l'état complet de l'abonnement et de la période d'essai de l'utilisateur connecté. */
 export const getStatus = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") {
-    throw new ApiError(403, "Espace réservé aux gestionnaires");
+    throw new ApiError(403, "Espace réservé aux gestionnaires", "MANAGERS_ONLY");
   }
 
   const user = await chargerCompteCourant(req);
@@ -296,17 +296,17 @@ const DUREE_RECLAMATION_ABONNEMENT_MS = 60_000;
 /** Souscrit ou renouvelle un plan d'abonnement SaaS. */
 export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") {
-    throw new ApiError(403, "Espace réservé aux gestionnaires");
+    throw new ApiError(403, "Espace réservé aux gestionnaires", "MANAGERS_ONLY");
   }
   // Multi-utilisateurs : la formule est partagée par toute l'agence — seul
   // son propriétaire en décide, jamais un collaborateur invité.
   if (req.user.collaboratorId) {
-    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut modifier l'abonnement.");
+    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut modifier l'abonnement.", "OWNER_ONLY_SUBSCRIPTION");
   }
 
   const body = subscribeSchema.parse(req.body);
   if (body.autoRenew && body.paymentMethod !== "STRIPE") {
-    throw new ApiError(400, "Le renouvellement automatique n'est disponible que pour le paiement par carte (Stripe).");
+    throw new ApiError(400, "Le renouvellement automatique n'est disponible que pour le paiement par carte (Stripe).", "AUTORENEW_CARD_ONLY");
   }
 
   const user = await chargerCompteCourant(req);
@@ -314,18 +314,18 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   // Un accès illimité offert par l'administration n'a pas d'abonnement à souscrire : un paiement, même confirmé,
   // le remplacerait par une échéance datée.
   if (aAccesIllimite(user)) {
-    throw new ApiError(409, "Votre compte a un accès illimité : il n'y a aucun abonnement à souscrire.");
+    throw new ApiError(409, "Votre compte a un accès illimité : il n'y a aucun abonnement à souscrire.", "UNLIMITED_NO_SUBSCRIBE");
   }
 
   const planDef = SUBSCRIPTION_PLANS.find((p) => p.id === body.plan);
-  if (!planDef) throw new ApiError(400, "Plan invalide");
+  if (!planDef) throw new ApiError(400, "Plan invalide", "PLAN_INVALID");
 
   // Le prix suit la devise du gestionnaire, et c'est cette même devise qui est
   // transmise au prestataire : le montant débité ne peut donc plus différer du
   // montant affiché d'un facteur 655.
   const currency = deviseFacturee(user.currency);
   const tarif = tarifPourDevise(body.plan, currency);
-  if (!tarif) throw new ApiError(400, "Plan invalide");
+  if (!tarif) throw new ApiError(400, "Plan invalide", "PLAN_INVALID");
 
   const amount = body.billingCycle === "ANNUAL" ? tarif.annual : tarif.monthly;
   const paymentReferenceId = `sub_${user.id}_${Date.now()}`;
@@ -358,7 +358,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
     .returning();
 
   if (!reclame) {
-    throw new ApiError(409, "Une demande d'abonnement est déjà en cours pour ce compte. Patientez un instant puis réessayez.");
+    throw new ApiError(409, "Une demande d'abonnement est déjà en cours pour ce compte. Patientez un instant puis réessayez.", "SUBSCRIPTION_IN_PROGRESS");
   }
 
   let paymentResult: PaymentIntentResult;
@@ -504,12 +504,12 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
 /** Résiliation du renouvellement d'abonnement. */
 export const cancelSubscription = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") {
-    throw new ApiError(403, "Espace réservé aux gestionnaires");
+    throw new ApiError(403, "Espace réservé aux gestionnaires", "MANAGERS_ONLY");
   }
   // Multi-utilisateurs : même règle que subscribe() — seul le propriétaire
   // de l'agence décide de résilier.
   if (req.user.collaboratorId) {
-    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut modifier l'abonnement.");
+    throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut modifier l'abonnement.", "OWNER_ONLY_SUBSCRIPTION");
   }
 
   // Même raison qu'updateCurrency : sans ce contrôle, un jeton dont le compte
@@ -519,7 +519,7 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
   // Résilier un accès illimité (ACTIVE sans échéance) le ferait passer en « résilié sans période payée », donc sans
   // aucun accès : le compte se couperait lui-même. Seule l'administration le retire (revokeUnlimitedAccess).
   if (aAccesIllimite(compteAvant)) {
-    throw new ApiError(409, "Votre compte a un accès illimité : il n'y a rien à résilier.");
+    throw new ApiError(409, "Votre compte a un accès illimité : il n'y a rien à résilier.", "UNLIMITED_NO_CANCEL");
   }
 
   // Il n'y a un abonnement payant à résilier que s'il est actif — ou déjà
@@ -528,7 +528,7 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
   // l'interface n'offre pas le bouton) faisait passer le compte en CANCELLED
   // sans aucune date de fin payée, et coupait l'accès sur-le-champ.
   if (compteAvant.subscriptionStatus !== "ACTIVE" && compteAvant.subscriptionStatus !== "CANCELLED") {
-    throw new ApiError(409, "Aucun abonnement payant à résilier sur ce compte.");
+    throw new ApiError(409, "Aucun abonnement payant à résilier sur ce compte.", "NO_PAID_SUBSCRIPTION");
   }
 
   // Seul un compte ayant réellement activé le renouvellement automatique

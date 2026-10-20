@@ -864,7 +864,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     .where(eq(invoices.id, invoiceId));
 
   if (!row || row.property.managerId !== managerId) {
-    throw new ApiError(404, "Facture introuvable");
+    throw new ApiError(404, "Facture introuvable", "INVOICE_NOT_FOUND");
   }
 
   // Réclamation atomique AVANT l'envoi (même principe que

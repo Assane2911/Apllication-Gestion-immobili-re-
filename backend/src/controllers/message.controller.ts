@@ -64,7 +64,7 @@ function filsDuGestionnaire(managerId: string) {
 }
 
 export const listConversations = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const pagination = parsePagination(req);
 
   if (req.user.role === "MANAGER") return listerFilsDuGestionnaire(req, res, pagination);
@@ -74,7 +74,7 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
     // auparavant cette branche `else` s'exécuter comme s'il était toujours
     // gestionnaire, exposant les conversations de ses anciens biens. Aucun
     // rôle autre que TENANT ou MANAGER n'a d'accès à cette liste.
-    throw new ApiError(403, "Accès refusé");
+    throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
   }
 
   // Titulaire OU colocataire : chaque bail où il est partie lui ouvre SON fil avec l'agence — un seul
@@ -210,7 +210,7 @@ async function resoudreFil(req: Request, contractId: string, ecriture: boolean) 
 }
 
 export const getMessagesByContract = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { contractId } = req.params;
   const fil = await resoudreFil(req, contractId, false);
   const condition = conditionDuFil(contractId, fil.tenant.id, fil.contract.tenantId);
@@ -264,7 +264,7 @@ const sendMessageSchema = z.object({
 });
 
 export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { contractId } = req.params;
   const { content } = sendMessageSchema.parse(req.body);
 

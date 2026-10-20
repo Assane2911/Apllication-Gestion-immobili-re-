@@ -84,7 +84,7 @@ export const createFormalNotice = asyncHandler(async (req: Request, res: Respons
 
 /** Le courrier, à l'écran ou à imprimer : le gestionnaire du bien, ou un locataire du bail. */
 export const getFormalNoticeDocument = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const [notice] = await db.select().from(formalNotices).where(eq(formalNotices.id, req.params.noticeId));
   if (!notice) throw new ApiError(404, "Mise en demeure introuvable");
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, notice.contractId));

@@ -28,7 +28,7 @@ import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
  * révoquer un collaborateur — req.user.collaboratorId distingue les deux.
  */
 function assertEstProprietaire(req: Request): void {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   if (req.user.collaboratorId) {
     throw new ApiError(403, "Seul le gestionnaire propriétaire de l'agence peut gérer l'équipe.");
   }
@@ -36,7 +36,7 @@ function assertEstProprietaire(req: Request): void {
 
 /** Liste les collaborateurs de l'agence (propriétaire ou collaborateur : lecture ouverte à toute l'équipe). */
 export const listTeamMembers = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
 
   const collaborateurs = await db
     .select({

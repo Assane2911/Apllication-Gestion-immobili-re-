@@ -12,7 +12,7 @@ import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort, uploadPublicFile } from "../services/storage.service";
 
 export const getAgencySettings = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
 
   let [settings] = await db
     .select()
@@ -88,7 +88,7 @@ function reglagesModifies(existant: Record<string, unknown> | undefined, body: R
 }
 
 export const updateAgencySettings = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const body = updateAgencySettingsSchema.parse(req.body);
 
   const [existing] = await db
@@ -185,7 +185,7 @@ type ImageAgence = "logoUrl" | "stampOrSignatureUrl";
  * blanche : formule Professionnel et au-delà (CGU §3).
  */
 async function envoyerImageAgence(req: Request, res: Response, champ: ImageAgence) {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
   if (!req.file) throw new ApiError(400, "Aucun fichier reçu.");
   assertFileContentMatchesDeclaredType(req.file);
@@ -223,7 +223,7 @@ async function tracerImage(req: Request, reglages: { id: string; agencyName: str
 
 /** Retire une image d'agence : les quittances reviennent sans elle. Toujours permis, quelle que soit la formule. */
 async function retirerImageAgence(req: Request, res: Response, champ: ImageAgence) {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const [existing] = await db.select().from(agencySettings).where(eq(agencySettings.userId, req.user.userId));
   if (!existing?.[champ]) return res.status(204).send();
 

@@ -236,7 +236,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable");
-  if (!(await estLocataireDuBail(req, contract))) throw new ApiError(403, "Accès refusé");
+  if (!(await estLocataireDuBail(req, contract))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
   if (contract.status !== "ACTIVE") {
     throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif");
   }
@@ -261,7 +261,7 @@ const MAX_PHOTOS_SUPPLEMENTAIRES = 10;
 
 /** Le locataire ou le gestionnaire ajoute une nouvelle photo à un incident déjà signalé. */
 export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   if (!req.file) throw new ApiError(400, "Une photo est requise");
 
   const [row] = await db

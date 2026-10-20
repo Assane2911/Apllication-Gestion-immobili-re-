@@ -89,7 +89,7 @@ export const updatePlatformSettings = asyncHandler(async (req: Request, res: Res
  */
 export const getPlatformBankInfoForManager = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") {
-    throw new ApiError(403, "Espace réservé aux gestionnaires");
+    throw new ApiError(403, "Espace réservé aux gestionnaires", "MANAGERS_ONLY");
   }
 
   const [settings] = await db

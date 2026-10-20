@@ -360,7 +360,7 @@ async function initiateStripePayment(
     });
   } catch (err) {
     console.error("[stripe] Échec réseau lors de la création de la session:", err);
-    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Réessayez plus tard.");
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Réessayez plus tard.", "PAYMENT_PROVIDER_UNREACHABLE");
   }
 
   let data: { id?: string; url?: string; error?: { message?: string } };
@@ -368,7 +368,7 @@ async function initiateStripePayment(
     data = (await response.json()) as typeof data;
   } catch (err) {
     console.error("[stripe] Réponse illisible lors de la création de la session:", err);
-    throw new ApiError(502, "Réponse inattendue de Stripe. Réessayez plus tard.");
+    throw new ApiError(502, "Réponse inattendue de Stripe. Réessayez plus tard.", "PAYMENT_PROVIDER_BAD_RESPONSE");
   }
 
   if (!response.ok || !data.id || !data.url) {

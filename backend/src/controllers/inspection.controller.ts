@@ -228,7 +228,7 @@ export const deleteInspection = asyncHandler(async (req: Request, res: Response)
 
 /** Signature électronique (gestionnaire ou locataire) — même mécanisme que signContract. */
 export const signInspection = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) throw new ApiError(401, "Authentification requise");
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { signatureDataUrl } = signInspectionSchema.parse(req.body);
 
   const [inspection] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
@@ -256,7 +256,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
   };
 
   if (req.user.role === "TENANT") {
-    if (inspection.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé");
+    if (inspection.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
     const [updated] = await db
       .update(inspections)
       .set({ signedByTenantAt: new Date(), tenantSignatureUrl: signatureDataUrl })
@@ -283,7 +283,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
     return res.json(parseInspection(updated));
   }
 
-  throw new ApiError(403, "Accès refusé");
+  throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
 });
 
 /** Utilisé par document.controller.ts (export HTML certifié) : mêmes règles d'accès que le contenu lui-même. */
