@@ -40,6 +40,7 @@ import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
 import vendorRoutes from "./routes/vendor.routes";
 import { pasDeCache } from "./middleware/pasDeCache";
+import { sansCaractereNul } from "./middleware/sansCaractereNul";
 
 export const app = express();
 
@@ -143,6 +144,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // aucun en-tête Authorization n'est présent — le cas du frontend web depuis
 // cette migration.
 app.use(cookieParser());
+
+// Refuse (400) toute requête contenant un caractère nul, que PostgreSQL ne sait pas stocker : voir sansCaractereNul.ts.
+app.use("/api", sansCaractereNul);
 
 // Les fichiers (images des biens, pièces d'identité, photos d'incidents) sont
 // stockés sur Supabase Storage, pas sur disque local (nécessaire sur Vercel,
