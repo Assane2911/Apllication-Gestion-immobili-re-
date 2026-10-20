@@ -34,7 +34,7 @@ describe("generate-sitemap — fonctions pures", () => {
     expect(STATIC_ROUTES.map((r) => r.path)).toContain("/vitrine");
   });
 
-  it("utilise le domaine réel du frontend déployé", () => {
-    expect(SITE_URL).toBe("https://apllication-gestion-immobili-re.vercel.app");
+  it("utilise le domaine public du site (celui des visiteurs), pas l'adresse de l'API", () => {
+    expect(SITE_URL).toBe("https://www.immoplatformpro.com");
   });
 });

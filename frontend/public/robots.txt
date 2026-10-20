@@ -25,4 +25,4 @@ Disallow: /portail
 Disallow: /proprietaire
 Disallow: /admin
 
-Sitemap: https://apllication-gestion-immobili-re.vercel.app/sitemap.xml
+Sitemap: https://www.immoplatformpro.com/sitemap.xml
