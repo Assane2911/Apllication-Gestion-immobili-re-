@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useAuth } from "../context/auth";
 import GoogleSignInButton from "./GoogleSignInButton";
+import { useDialogue } from "../hooks/useDialogue";
 
 interface TwoFactorDisableModalProps {
   onSuccess: () => void;
@@ -42,12 +43,14 @@ export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorD
     }
   }
 
+  const dialogue = useDialogue({ onClose, titreId: "two-factor-disable-title", fermable: !disabling });
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            <h3 id="two-factor-disable-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
               {t("components.twoFactorDisable.title")}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">

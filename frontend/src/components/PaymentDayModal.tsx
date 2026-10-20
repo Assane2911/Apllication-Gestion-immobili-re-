@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
+import { useDialogue } from "../hooks/useDialogue";
 
 /** Options du jour d'échéance : 1 à 28 (valables tous les mois) et « dernier jour du mois » (31). */
 export const JOURS_ECHEANCE = [...Array.from({ length: 28 }, (_, i) => i + 1), 31];
@@ -36,12 +37,12 @@ export default function PaymentDayModal({ contractId, paymentDay, startDay, onSu
     }
   }
 
+  const dialogue = useDialogue({ onClose, titreId: "payment-day-title", fermable: !saving });
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="payment-day-title"
+        {...dialogue}
         className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700"
       >
         <div className="flex items-start justify-between">

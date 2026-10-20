@@ -10,6 +10,7 @@ import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { PaymentMethod, PlatformBankInfo, SubscriptionPlanDetail } from "../../types";
 import Bulle from "../../components/Bulle";
+import Dialogue from "../../components/Dialogue";
 import { FORMULE_REPRISE } from "../../data/lignesFormules";
 
 interface SubscriptionHistoryRecord {
@@ -465,10 +466,10 @@ export default function SubscriptionPage() {
       {/* Modal de Souscription / Paiement */}
       {!isNativeApp && selectedPlan && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100 dark:border-slate-800">
+          <Dialogue onClose={() => setSelectedPlan(null)} titreId="subscription-modal-title" fermable={!subscribing} className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: t(`common.plans.${selectedPlan.id}`, { defaultValue: selectedPlan.name }) })}</h3>
+                <h3 id="subscription-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: t(`common.plans.${selectedPlan.id}`, { defaultValue: selectedPlan.name }) })}</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                   {t("manager.subscription.amountToPay")}{" "}
                   <strong>
@@ -584,7 +585,7 @@ export default function SubscriptionPage() {
               </button>
               </Bulle>
             </div>
-          </div>
+          </Dialogue>
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import type { Cotenant, Tenant } from "../types";
+import { useDialogue } from "../hooks/useDialogue";
 
 interface CotenantsModalProps {
   contractId: string;
@@ -69,9 +70,11 @@ export default function CotenantsModal({ contractId, titulaireId, locataires, ve
     }
   }
 
+  const dialogue = useDialogue({ onClose, titreId: "cotenants-title", fermable: !saving });
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div role="dialog" aria-modal="true" aria-labelledby="cotenants-title" className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
         <div className="flex items-start justify-between">
           <h3 id="cotenants-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.cotenants.title")}</h3>
           <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">

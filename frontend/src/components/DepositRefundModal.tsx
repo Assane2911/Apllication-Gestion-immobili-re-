@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
 import type { Contract } from "../types";
+import { useDialogue } from "../hooks/useDialogue";
 
 interface DepositRefundModalProps {
   contract: Contract;
@@ -68,6 +69,8 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
     }
   }
 
+  const dialogue = useDialogue({ onClose, titreId: "deposit-refund-title", fermable: !saving });
+
   return (
     <div
       className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-200 ${
@@ -75,13 +78,14 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
       }`}
     >
       <div
+        {...dialogue}
         className={`bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 transition-all duration-200 max-h-[90vh] overflow-y-auto ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.depositRefundModal.title")}</h3>
+            <h3 id="deposit-refund-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.depositRefundModal.title")}</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{contract.property?.title}</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" aria-label={t("common.actions.close")}>
