@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import axios from "axios";
 import i18n from "../i18n";
+import { SESSION_HINT_KEY } from "../utils/sessionLocale";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
@@ -85,7 +86,15 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      if (!window.location.pathname.startsWith("/login")) {
+      // L'indice de session doit disparaître avec la session : resté posé, il faisait rappeler /auth/me à chaque
+      // page publique (accueil, mot de passe oublié, lien de vérification d'email), et chaque 401 renvoyait
+      // le visiteur vers /login.
+      localStorage.removeItem(SESSION_HINT_KEY);
+      // La vérification de session du chargement (/auth/me) échoue normalement pour un visiteur dont la session
+      // a expiré : ce n'est pas un motif pour l'arracher à une page publique. Les pages privées, elles, se
+      // protègent seules (ProtectedRoute, quand AuthContext a fermé la session).
+      const verificationDeSession = error.config?.url === "/auth/me";
+      if (!verificationDeSession && !window.location.pathname.startsWith("/login")) {
         // Compte suspendu par l'administration : la session est coupée comme
         // pour un jeton expiré, mais on dit POURQUOI sur la page de connexion
         // plutôt que de laisser croire à un bug.

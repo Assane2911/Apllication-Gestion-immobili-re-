@@ -204,6 +204,27 @@ describe("intercepteur de réponse 401", () => {
     expect(location.href).toBe("/login");
   });
 
+  it("oublie aussi l'indice de session : sans cela, chaque page publique rappelait /auth/me et finissait sur /login", async () => {
+    stubLocation("/dashboard");
+    localStorage.setItem("hasSession", "1");
+    localStorage.setItem("user", "{}");
+    await expect(rejeteur()(axiosErrorWithResponse({ error: "Token invalide" }, 401))).rejects.toBeDefined();
+    expect(localStorage.getItem("hasSession")).toBeNull();
+    expect(localStorage.getItem("user")).toBeNull();
+  });
+
+  it("un 401 de la vérification de session (/auth/me) ne chasse pas un visiteur d'une page publique vers /login", async () => {
+    // Lien « mot de passe oublié » ou de vérification d'email ouvert après l'expiration d'une ancienne session.
+    for (const page of ["/mot-de-passe-oublie", "/reinitialiser-mot-de-passe", "/verifier-email", "/vitrine", "/cgu", "/landing"]) {
+      const location = stubLocation(page);
+      localStorage.setItem("hasSession", "1");
+      const erreur = Object.assign(axiosErrorWithResponse({ error: "Token invalide" }, 401), { config: { url: "/auth/me" } });
+      await expect(rejeteur()(erreur)).rejects.toBeDefined();
+      expect(location.href, page).toBe("");
+      expect(localStorage.getItem("hasSession"), page).toBeNull();
+    }
+  });
+
   it("renvoie vers /login?suspended=1 quand le compte est suspendu", async () => {
     const location = stubLocation("/dashboard");
     await expect(
