@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { agencySettings } from "../db/schema";
+import { agencySettings, invoicePayments } from "../db/schema";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import { sendEmail } from "./email.service";
 import { generateReceiptPdfBuffer } from "./pdf.service";
-import { sendPaymentReceiptEmail } from "./receipt.service";
+import { sendPartialPaymentReceiptEmail, sendPaymentReceiptEmail } from "./receipt.service";
 
 vi.mock("./pdf.service", () => ({
   generateReceiptPdfBuffer: vi.fn(),
@@ -163,5 +163,46 @@ describe("sendPaymentReceiptEmail", () => {
     const receiptData = vi.mocked(generateReceiptPdfBuffer).mock.calls[0][0];
     expect(receiptData.agency.name).toBe("Agence B - Rivage");
     expect(receiptData.agency.email).toBe("contact@agence-b.com");
+  });
+  // Le titre du bien et le nom de l'agence sont saisis par le gestionnaire et reçus par le locataire dans un
+  // email HTML : un gestionnaire (l'inscription est libre) pouvait y glisser un lien ou une image de son choix,
+  // envoyés depuis l'adresse de la plateforme.
+  const INJECTION = '<a href="https://hameconnage.example/pay">Payer ici</a><img src=x>';
+
+  it("quittance : le titre du bien est échappé dans l'email (pas de HTML saisi par le gestionnaire)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { title: INJECTION });
+    const tenant = await createTenant(manager.id, { email: "locataire@test.local" });
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, { status: "PAID", periodMonth: 6, periodYear: 2026, amount: 250000, paidAt: new Date() });
+    vi.mocked(generateReceiptPdfBuffer).mockResolvedValue(Buffer.from("PDF"));
+    vi.mocked(sendEmail).mockResolvedValue({ simulated: false });
+
+    await sendPaymentReceiptEmail(invoice.id);
+
+    const html = vi.mocked(sendEmail).mock.calls[0][2] as string;
+    expect(html).not.toContain("<a href");
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;a href=");
+  });
+
+  it("reçu de paiement partiel : titre du bien et nom de l'agence échappés dans l'email", async () => {
+    const manager = await createManager();
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: INJECTION });
+    const property = await createProperty(manager.id, { title: INJECTION });
+    const tenant = await createTenant(manager.id, { email: "locataire2@test.local" });
+    const contract = await createContract(property.id, tenant.id);
+    const invoice = await createInvoice(contract.id, { status: "PENDING", periodMonth: 6, periodYear: 2026, amount: 250000 });
+    const [paiement] = await testDb
+      .insert(invoicePayments)
+      .values({ invoiceId: invoice.id, amount: 100000, paidAt: new Date(), paymentMethod: "CASH" })
+      .returning();
+    vi.mocked(sendEmail).mockResolvedValue({ simulated: false });
+
+    await sendPartialPaymentReceiptEmail(invoice.id, paiement.id);
+
+    const html = vi.mocked(sendEmail).mock.calls[0][2] as string;
+    expect(html).not.toContain("<a href");
+    expect(html).not.toContain("<img");
   });
 });

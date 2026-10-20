@@ -97,7 +97,7 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
         <p>
           Nous confirmons la bonne réception de votre paiement de loyer pour
           <strong>${monthLabel} ${invoice.periodYear}</strong> concernant le logement
-          <strong>${receiptData.property.title}</strong>, d'un montant de
+          <strong>${escapeHtml(receiptData.property.title)}</strong>, d'un montant de
           <strong>${formaterMontant(invoice.amount, receiptData.invoice.currency)}</strong>.
         </p>
         <p>Votre quittance de loyer est jointe à cet email au format PDF.</p>
@@ -169,7 +169,7 @@ export async function sendPartialPaymentReceiptEmail(invoiceId: string, paymentI
           <strong>${formaterMontant(paiement.amount, devise)}</strong> le ${dateReception}
           (${libelleMoyenPaiement(paiement.paymentMethod)}) au titre du loyer de
           <strong>${monthLabel} ${invoice.periodYear}</strong>, logement
-          <strong>${property?.title || "Logement"}</strong>.
+          <strong>${escapeHtml(property?.title || "Logement")}</strong>.
         </p>
         <table style="border-collapse:collapse; margin:16px 0; font-size:14px;">
           <tr><td style="padding:4px 16px 4px 0; color:#334155;">Loyer</td><td style="text-align:right;">${formaterMontant(invoice.amount, devise)}</td></tr>
@@ -181,7 +181,7 @@ export async function sendPartialPaymentReceiptEmail(invoiceId: string, paymentI
           la quittance vous sera délivrée lorsque le loyer sera intégralement réglé.
         </p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          ${agency?.agencyName ? `${agency.agencyName} — ` : ""}Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+          ${agency?.agencyName ? `${escapeHtml(agency.agencyName)} — ` : ""}Cet email a été envoyé automatiquement par votre application de gestion immobilière.
         </p>
       </div>
     `;
