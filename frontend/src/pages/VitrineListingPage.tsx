@@ -1,3 +1,4 @@
+import EcranChargement from "../components/EcranChargement";
 import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -82,8 +83,8 @@ export default function VitrineListingPage() {
     return (
       <div className="min-h-screen bg-canvas dark:bg-slate-950">
         <VitrineHeader />
-        <main className="max-w-2xl mx-auto px-4 sm:px-6 py-16 flex justify-center">
-          <span className="w-8 h-8 border-[3px] border-slate-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
+        <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+          <EcranChargement className="min-h-[40vh]" />
         </main>
       </div>
     );

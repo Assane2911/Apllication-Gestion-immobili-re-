@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import AdminLayout from "./components/AdminLayout";
 import CookieConsentBanner from "./components/CookieConsentBanner";
+import EcranChargement from "./components/EcranChargement";
 import ErrorBoundary from "./components/ErrorBoundary";
 import InactiviteSession from "./components/InactiviteSession";
 import ManagerLayout from "./components/ManagerLayout";
@@ -9,6 +10,7 @@ import OwnerLayout from "./components/OwnerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
 import { AuthProvider } from "./context/AuthContext";
+import HistoriqueProvider from "./context/HistoriqueContext";
 import { useAuth } from "./context/auth";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -63,13 +65,9 @@ const AdminManagerDetailPage = lazyWithReload(() => import("./pages/admin/AdminM
 const VitrinePage = lazyWithReload(() => import("./pages/VitrinePage"));
 const VitrineListingPage = lazyWithReload(() => import("./pages/VitrineListingPage"));
 
-/** Indicateur de chargement affiché pendant le téléchargement du chunk d'une page (React.lazy). */
+/** Écran affiché pendant le téléchargement du chunk d'une page (React.lazy) : logo animé, boutons Retour / Suivant. */
 function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <span className="w-8 h-8 border-[3px] border-slate-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
-    </div>
-  );
+  return <EcranChargement />;
 }
 
 function HomeRedirect() {
@@ -180,15 +178,17 @@ export default function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <ThemeProvider>
-          <AuthProvider>
-            <CurrencyProvider>
-              <AppRoutes />
-              <InactiviteSession />
-              <CookieConsentBanner />
-            </CurrencyProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <HistoriqueProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <CurrencyProvider>
+                <AppRoutes />
+                <InactiviteSession />
+                <CookieConsentBanner />
+              </CurrencyProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </HistoriqueProvider>
       </Router>
     </ErrorBoundary>
   );
