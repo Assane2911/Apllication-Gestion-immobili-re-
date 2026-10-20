@@ -3,7 +3,7 @@ import { env } from "../config/env";
 import { escapeHtml } from "../utils/html";
 import { formaterMontant } from "../utils/montant";
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
 function getTransporter() {
   if (!env.smtp.user || !env.smtp.appPassword) {
