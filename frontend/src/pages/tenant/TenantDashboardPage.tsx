@@ -23,6 +23,7 @@ import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, Inspection } from "../../types";
 import Bulle from "../../components/Bulle";
+import { formaterJour } from "../../utils/jourCivil";
 
 export default function TenantDashboardPage() {
   const { t, i18n } = useTranslation();
@@ -211,7 +212,7 @@ export default function TenantDashboardPage() {
                     <span>{t("tenant.dashboard.startDate")}</span>
                   </div>
                   <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {new Date(c.startDate).toLocaleDateString(i18n.language)}
+                    {formaterJour(c.startDate, i18n.language)}
                   </p>
                 </div>
                 <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
@@ -220,7 +221,7 @@ export default function TenantDashboardPage() {
                     <span>{t("tenant.dashboard.endDate")}</span>
                   </div>
                   <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {new Date(c.endDate).toLocaleDateString(i18n.language)}
+                    {formaterJour(c.endDate, i18n.language)}
                   </p>
                 </div>
               </div>

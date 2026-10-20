@@ -8,6 +8,7 @@ import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import type { Listing, LeadStatus, ListingLead, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
+import { formaterJour } from "../../utils/jourCivil";
 
 const STATUS_OPTIONS: LeadStatus[] = ["NEW", "CONTACTED", "VISITED", "CONVERTED", "ARCHIVED"];
 const PAGE_SIZE = 20;
@@ -174,7 +175,7 @@ export default function ListingLeadsPage() {
                 </span>
                 {lead.preferredDate && (
                   <span className="text-slate-600 dark:text-slate-400">
-                    {t("manager.listingLeads.preferredDate")} {new Date(lead.preferredDate).toLocaleDateString(i18n.language)}
+                    {t("manager.listingLeads.preferredDate")} {formaterJour(lead.preferredDate, i18n.language)}
                   </span>
                 )}
               </div>
