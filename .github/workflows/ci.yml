@@ -10,6 +10,12 @@ on:
   pull_request:
     branches: [main]
 
+# Lire le code suffit pour construire et tester : le jeton du workflow n'a aucun droit d'écriture. Sans ce bloc,
+# il recevait les droits par défaut du dépôt (parfois en écriture) pour chaque étape, y compris celles qui
+# exécutent le code d'une pull request.
+permissions:
+  contents: read
+
 # Un push qui en suit un autre de près annule le run précédent, devenu inutile.
 concurrency:
   group: ci-${{ github.ref }}
