@@ -39,6 +39,7 @@ import conservationRoutes from "./routes/conservation.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
 import tenantRoutes from "./routes/tenant.routes";
 import vendorRoutes from "./routes/vendor.routes";
+import { pasDeCache } from "./middleware/pasDeCache";
 
 export const app = express();
 
@@ -147,6 +148,12 @@ app.use(cookieParser());
 // stockés sur Supabase Storage, pas sur disque local (nécessaire sur Vercel,
 // dont les fonctions serverless n'ont pas de disque persistant) — voir
 // src/services/storage.service.ts.
+
+// Aucune réponse de l'API n'est conservée par le navigateur ni par un cache intermédiaire : profil, locataires,
+// factures, pièces d'identité, jetons de connexion. Sur un poste partagé (cybercafé, ordinateur familial), un
+// navigateur qui garde ces réponses les laisse lisibles après la déconnexion. Posé AVANT les routes : une
+// consigne plus précise posée par un contrôleur (documents, exports) la remplace.
+app.use("/api", pasDeCache);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
