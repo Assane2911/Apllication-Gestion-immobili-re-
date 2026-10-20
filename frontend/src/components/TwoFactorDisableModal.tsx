@@ -71,9 +71,9 @@ export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorD
         <form onSubmit={handleDisable} className="mt-4 space-y-4">
           {isGoogleOnly ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t("components.deleteAccountModal.googleLabel")}
-              </label>
+              </span>
               <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                 {t("components.deleteAccountModal.googleHint")}
               </p>
@@ -108,7 +108,7 @@ export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorD
             </div>
           )}
 
-          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} disabled={disabling} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">

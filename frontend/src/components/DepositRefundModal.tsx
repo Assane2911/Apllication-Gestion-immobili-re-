@@ -105,6 +105,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
           {rows.map((row, index) => (
             <div key={index} className="flex items-center gap-2">
               <input
+                aria-label={t("components.depositRefundModal.deductionLabel")}
                 type="text"
                 value={row.label}
                 onChange={(e) => updateRow(index, "label", e.target.value)}
@@ -112,6 +113,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
                 className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs"
               />
               <input
+                aria-label={t("components.depositRefundModal.deductionAmount")}
                 type="number"
                 min="0"
                 step="0.01"
@@ -148,7 +150,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
           </div>
         </div>
 
-        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        {error && <p role="alert" className="text-xs text-red-600 mt-2">{error}</p>}
 
         <div className="flex justify-end gap-2 mt-5">
           <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">

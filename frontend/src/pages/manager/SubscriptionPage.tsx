@@ -490,8 +490,8 @@ export default function SubscriptionPage() {
 
             {/* Choix du moyen de paiement */}
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.subscription.paymentMethodLabel")}</label>
-              <div className="grid grid-cols-1 gap-2.5">
+              <span id="subscription-payment-method" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.subscription.paymentMethodLabel")}</span>
+              <div role="radiogroup" aria-labelledby="subscription-payment-method" className="grid grid-cols-1 gap-2.5">
                 {paymentMethods.map((m) => (
                   <label
                     key={m.key}

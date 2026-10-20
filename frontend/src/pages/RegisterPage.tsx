@@ -296,7 +296,7 @@ export default function RegisterPage() {
                 </div>
 
                 {error && (
-                  <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                  <p role="alert" className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                     {error}
                   </p>
                 )}
@@ -327,7 +327,7 @@ export default function RegisterPage() {
                   </div>
                   {googleLoading && <p className="mt-3 text-center text-xs text-slate-400">{t("auth.register.submitting")}</p>}
                   {googleError && (
-                    <p className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                    <p role="alert" className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                       {googleError}
                     </p>
                   )}
