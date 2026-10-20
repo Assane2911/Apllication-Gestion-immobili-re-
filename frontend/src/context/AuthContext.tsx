@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AuthUser, TwoFactorRequired } from "../types";
+import { SESSION_HINT_KEY } from "../utils/sessionLocale";
 import { AuthContext } from "./auth";
 
 // Indice non sensible (jamais le jeton lui-même) qu'une connexion web a déjà
@@ -11,7 +12,6 @@ import { AuthContext } from "./auth";
 // distinct de la clé "user" : de nombreux tests posent directement "user" en
 // localStorage pour simuler un profil déjà chargé sans passer par login(),
 // et ne doivent pas de ce seul fait déclencher un appel réseau.
-const SESSION_HINT_KEY = "hasSession";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
@@ -54,7 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
       return updatedUser;
-    } catch {
+    } catch (err) {
+      // Session expirée côté serveur : on la ferme ici aussi (le rechargement de la page publique n'est plus
+      // forcé vers /login, voir api/client.ts), sinon le profil périmé resterait affiché et l'indice posé.
+      if ((err as { response?: { status?: number } })?.response?.status === 401) {
+        localStorage.removeItem("user");
+        localStorage.removeItem(SESSION_HINT_KEY);
+        setUser(null);
+      }
       return null;
     }
   }

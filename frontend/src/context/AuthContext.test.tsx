@@ -185,6 +185,20 @@ describe("AuthProvider", () => {
     expect(JSON.parse(localStorage.getItem("user")!).tenantId).toBe("tenant-1");
   });
 
+  it("refreshUser : un 401 de /auth/me (session expirée) ferme la session locale et oublie l'indice", async () => {
+    // Sans cela, l'indice « hasSession » restait posé après l'expiration du cookie : chaque visite d'une page
+    // publique rappelait /auth/me, et le profil périmé restait affiché jusqu'à la prochaine requête.
+    localStorage.setItem("user", JSON.stringify({ id: "u1", email: "ancien@test.local", role: "MANAGER" }));
+    localStorage.setItem("hasSession", "1");
+    mockedApi.get.mockRejectedValueOnce({ isAxiosError: true, response: { status: 401 } });
+
+    renderAuth();
+
+    await waitFor(() => expect(screen.getByTestId("user-email").textContent).toBe("aucun"));
+    expect(localStorage.getItem("hasSession")).toBeNull();
+    expect(localStorage.getItem("user")).toBeNull();
+  });
+
   it("refreshUser : ne casse rien si la session a expiré côté serveur (échec de /auth/me)", async () => {
     // Le nettoyage d'une session expirée (401) est le rôle de l'intercepteur
     // de réponse (api/client.ts), pas de refreshUser lui-même : un échec ici
