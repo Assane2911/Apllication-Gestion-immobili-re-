@@ -17,6 +17,9 @@ import { CIVILITES } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { resolveScannedUrl } from "./contract.controller";
 
+/** Durée de validité du lien vers la pièce d'identité d'un locataire (la donnée la plus sensible de la plateforme). */
+const DUREE_LIEN_PIECE_IDENTITE_SECONDES = 300;
+
 const tenantSchema = z.object({
   // Facultative, et c'est le point : une personne peut ne pas vouloir en
   // donner, et le document reste correct sans (voir utils/nom.ts).
@@ -453,7 +456,9 @@ export const getTenantIdDocumentUrl = asyncHandler(async (req: Request, res: Res
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
   if (!tenant.idDocument) throw new ApiError(404, "Aucune pièce d'identité enregistrée pour ce locataire");
 
-  const url = await getSignedUrl(tenant.idDocument);
+  // Lien très court : le gestionnaire l'ouvre aussitôt. Une heure (la durée par défaut) laisserait la pièce d'identité
+  // accessible à quiconque récupérerait l'adresse dans l'historique du navigateur ou un écran partagé.
+  const url = await getSignedUrl(tenant.idDocument, DUREE_LIEN_PIECE_IDENTITE_SECONDES);
   await logActivity({
     req,
     managerId: tenant.managerId,

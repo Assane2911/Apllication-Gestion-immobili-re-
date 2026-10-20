@@ -3,7 +3,7 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { activityLogs, tenants, users } from "../db/schema";
-import { uploadPrivateFile } from "../services/storage.service";
+import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import {
   authHeader,
   createContract,
@@ -419,6 +419,20 @@ describe("locataires : actions sensibles tracées", () => {
     const [entree, ...autres] = await journalDe(manager.id, "tenant.export");
     expect(autres).toHaveLength(0);
     expect(entree).toMatchObject({ entityType: "tenant", entityId: tenant.id, entityLabel: "Awa Sow" });
+  });
+
+  it("le lien de la pièce d'identité ne vit que 5 minutes (il est ouvert aussitôt, jamais conservé)", async () => {
+    // Une pièce d'identité est la donnée la plus sensible de la plateforme : un lien valable une heure, resté dans
+    // l'historique du navigateur, un écran partagé ou un en-tête Referer, donnerait accès au document pendant tout ce temps.
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id, { idDocument: "tenants/piece.pdf" });
+    vi.mocked(getSignedUrl).mockClear();
+
+    const res = await request(app).get(`/api/tenants/${tenant.id}/id-document-url`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBe("http://test.local/signed/mock-document.pdf");
+    expect(getSignedUrl).toHaveBeenCalledWith("tenants/piece.pdf", 300);
   });
 
   it("la consultation de la pièce d'identité est tracée", async () => {
