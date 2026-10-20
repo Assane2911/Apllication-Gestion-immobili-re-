@@ -132,9 +132,14 @@ const LECTURES_SENSIBLES: ReadonlyArray<{ chemin: RegExp; roles: readonly RoleEq
 
 export type VerdictEquipe = { autorise: true } | { autorise: false; message: string };
 
-/** Chemin relatif à /api, sans paramètre de requête ni barre finale. */
+/**
+ * Chemin relatif à /api, sans paramètre de requête ni barre finale, EN MINUSCULES : Express route sans tenir compte
+ * de la casse (`/api/Activity-Log` atteint la même route que `/api/activity-log`), donc la matrice ci-dessous doit
+ * lire le chemin comme Express — sinon une majuscule dans l'URL contournait les lectures sensibles. Les
+ * identifiants (`[^/]+`) n'en souffrent pas : les règles ne les comparent à aucune valeur précise.
+ */
 export function normaliserChemin(urlOriginale: string): string {
-  let chemin = urlOriginale.split("?")[0].split("#")[0];
+  let chemin = urlOriginale.split("?")[0].split("#")[0].toLowerCase().replace(/\/{2,}/g, "/");
   if (chemin.startsWith("/api/")) chemin = chemin.slice("/api".length);
   chemin = chemin.replace(/\/+$/, "");
   return chemin === "" ? "/" : chemin;
