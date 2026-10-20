@@ -13,6 +13,10 @@ export class OrigineNonAutorisee extends Error {
   }
 }
 
+/** Messages du lecteur multipart (busboy) pour un corps de formulaire mal formé, tronqué ou vide. */
+const MESSAGES_MULTIPART_ILLISIBLE =
+  /^(Multipart: Boundary not found|Malformed part header|Malformed urlencoded form|Unexpected end of (form|file)|Part terminated early due to unexpected end of multipart data|Unexpected end of multipart data)$/;
+
 /**
  * Traduit une erreur d'Express/body-parser/CORS (requête du client) en réponse 4xx lisible, ou `null` si
  * l'erreur est une vraie panne. Seuls les statuts 400-499 posés par ces couches sont repris : le message brut
@@ -21,6 +25,11 @@ export class OrigineNonAutorisee extends Error {
 function erreurDeRequete(err: unknown): { status: number; message: string; code: string } | null {
   if (err instanceof OrigineNonAutorisee) {
     return { status: 403, message: "Origine non autorisée.", code: "ORIGINE_NON_AUTORISEE" };
+  }
+  // Le lecteur multipart (busboy, sous multer) lève des `Error` ordinaires, sans statut, quand le formulaire est
+  // mal formé. Liste fermée de ses messages : toute autre erreur reste une panne.
+  if (err instanceof Error && MESSAGES_MULTIPART_ILLISIBLE.test(err.message)) {
+    return { status: 400, message: "Envoi invalide : le formulaire de fichier est illisible.", code: "FORMULAIRE_ILLISIBLE" };
   }
   if (typeof err !== "object" || err === null) return null;
   const { status, statusCode, type } = err as { status?: unknown; statusCode?: unknown; type?: unknown };

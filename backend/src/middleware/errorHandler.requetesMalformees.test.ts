@@ -54,3 +54,43 @@ describe("requêtes malformées — erreurs du client, pas du serveur", () => {
     expect(sansOrigine.status).toBe(200);
   });
 });
+
+/**
+ * Même principe pour les formulaires de fichiers : le lecteur multipart (busboy, sous multer) lève des `Error`
+ * ordinaires — pas des `MulterError` — quand le corps est mal formé (pas de séparateur, en-tête de partie
+ * corrompu, corps tronqué ou vide). Elles finissaient en « 500 Erreur interne » sur toutes les routes de
+ * téléversement (biens, locataires, logo, tampon, scan de contrat, photos d'incident, annonces).
+ */
+describe("formulaires de fichiers mal formés — erreurs du client, pas du serveur", () => {
+  async function gestionnaire() {
+    const { authHeader, createManager, tokenFor } = await import("../test/authHelpers");
+    const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionEndsAt: new Date(Date.now() + 86_400_000 * 30) });
+    return authHeader(tokenFor({ id: manager.id, role: "MANAGER" }));
+  }
+
+  it.each([
+    ["sans séparateur", "multipart/form-data", "x"],
+    ["en-tête de partie corrompu", "multipart/form-data; boundary=zz", '--zz\r\nContent-Disp\x00osition: form-data; name="a"\r\n\r\nb\r\n--zz--\r\n'],
+    ["corps vide", "multipart/form-data; boundary=zz", ""],
+    ["corps tronqué", "multipart/form-data; boundary=zz", '--zz\r\nContent-Disposition: form-data; name="a"\r\n\r\nb'],
+  ])("répond 400 (et non 500) à un formulaire %s", async (_nom, contentType, corps) => {
+    const h = await gestionnaire();
+    const erreur = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await request(app).post("/api/properties").set(h).set("Content-Type", contentType).send(corps);
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("FORMULAIRE_ILLISIBLE");
+    expect(res.body.error).not.toMatch(/interne/i);
+    expect(erreur).not.toHaveBeenCalled();
+    erreur.mockRestore();
+  });
+
+  it("ne masque pas une vraie panne survenue après la lecture du formulaire", async () => {
+    // Une erreur qui n'est pas celle du lecteur multipart reste une erreur serveur : seule la liste fermée des
+    // messages du lecteur est traitée en 400.
+    const h = await gestionnaire();
+    const res = await request(app).post("/api/properties").set(h).field("title", "T").field("address", "A").field("surface", "10").field("rent", "100").field("currency", "EUR");
+    expect(res.status).toBeLessThan(500);
+  });
+});
