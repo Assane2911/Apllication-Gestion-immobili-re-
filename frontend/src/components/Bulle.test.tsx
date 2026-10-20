@@ -202,3 +202,55 @@ describe("Bulle d'information", () => {
     });
   });
 });
+
+/**
+ * Sur un écran tactile, il n'y a pas de survol : le navigateur imite pourtant `mouseenter` et le focus à chaque
+ * appui, et aucun `mouseleave` ne vient fermer la bulle. Elle restait donc affichée par-dessus l'écran, jusqu'au
+ * prochain appui ailleurs, en recouvrant les boutons voisins. Les libellés sont déjà visibles sur téléphone : la
+ * bulle ne s'y ouvre pas. Un écran qui sait survoler (souris) garde le comportement habituel.
+ */
+describe("Bulle d'information — écran tactile", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function simulerPointeur(peutSurvoler: boolean) {
+    vi.stubGlobal("matchMedia", (requete: string) => ({
+      matches: requete === "(hover: none)" ? !peutSurvoler : false,
+      media: requete,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+      onchange: null,
+    }));
+  }
+
+  it("ne s'ouvre pas quand le navigateur imite un survol après un appui", () => {
+    simulerPointeur(false);
+    render(
+      <Bulle texte="Bascule entre l'affichage clair et l'affichage sombre.">
+        <button type="button">Thème</button>
+      </Bulle>
+    );
+    const bouton = screen.getByRole("button");
+
+    fireEvent.mouseEnter(bouton.parentElement!);
+    fireEvent.focus(bouton);
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    expect(bouton).not.toHaveAttribute("aria-describedby");
+  });
+
+  it("garde son comportement avec une souris", () => {
+    simulerPointeur(true);
+    render(
+      <Bulle texte="Ouvre la liste de vos locataires">
+        <button type="button">Locataires</button>
+      </Bulle>
+    );
+
+    fireEvent.mouseEnter(screen.getByRole("button").parentElement!);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Ouvre la liste de vos locataires");
+  });
+});

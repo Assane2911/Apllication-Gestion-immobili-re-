@@ -1,4 +1,5 @@
 import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactElement } from "react";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { placerBulle, type Cote, type Placement } from "../utils/placementBulle";
 
 interface Props {
@@ -49,6 +50,11 @@ interface Props {
  * une bulle rognée par l'écran se lit à moitié — et Échap la ferme où que se
  * trouve le focus, y compris quand elle est ouverte à la souris.
  *
+ * Elle ne s'ouvre pas sur un écran tactile (`hover: none` : téléphone, tablette, application mobile). Il n'y a
+ * pas de survol : le navigateur imite `mouseenter` et le focus à chaque appui, aucun `mouseleave` ne vient la
+ * fermer, et elle restait affichée par-dessus l'écran, sur les boutons voisins, jusqu'à l'appui suivant ailleurs.
+ * Les libellés sont déjà visibles sur téléphone ; ce qui n'y est pas dit l'est dans la page.
+ *
  * Elle ne capte jamais le pointeur (`pointer-events-none`). Une bulle qui
  * s'interpose entre le curseur et le bouton qu'elle décrit rend ce bouton
  * difficile à cliquer, et le défaut est d'autant plus déroutant qu'il vient de
@@ -60,8 +66,10 @@ export default function Bulle({ texte, children, position = "haut", className = 
   const bulle = useRef<HTMLSpanElement>(null);
   const [rectAncre, setRectAncre] = useState<DOMRect | null>(null);
   const [placement, setPlacement] = useState<Placement | null>(null);
+  const toucheSeulement = useMediaQuery("(hover: none)");
 
   const montrer = useCallback(() => {
+    if (toucheSeulement) return;
     // On mesure l'ÉLÉMENT DÉCRIT, pas l'enveloppe. Deux raisons : l'enveloppe
     // peut être `display: contents` — nécessaire pour s'insérer dans une
     // grille ou un flex sans en perturber la mise en page — et elle n'a alors
@@ -70,7 +78,7 @@ export default function Bulle({ texte, children, position = "haut", className = 
     const cible = ancre.current?.firstElementChild ?? ancre.current;
     const rect = cible?.getBoundingClientRect();
     if (rect) setRectAncre(rect);
-  }, []);
+  }, [toucheSeulement]);
 
   const cacher = useCallback(() => {
     setRectAncre(null);
