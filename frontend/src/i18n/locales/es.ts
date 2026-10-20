@@ -412,6 +412,7 @@ const es: TranslationSchema = {
       goToSpace: "Ir a mi espacio →",
       login: "Iniciar sesión",
       trial: "Prueba gratis 15 días →",
+      trialShort: "Prueba gratis →",
     },
     badge: "Nueva Versión 2.0 • 15 días de prueba gratuita sin compromiso",
     hero: {

@@ -410,6 +410,7 @@ const fr = {
       goToSpace: "Accéder à mon espace →",
       login: "Se connecter",
       trial: "Essai 15j gratuit →",
+      trialShort: "Essai gratuit →",
     },
     badge: "Nouvelle Version 2.0 • 15 jours d'essai gratuit offert sans engagement",
     hero: {

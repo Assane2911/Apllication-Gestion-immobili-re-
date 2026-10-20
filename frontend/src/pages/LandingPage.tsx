@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
 import { FORMULE_REPRISE, LIGNES_FORMULES, type IdFormule } from "../data/lignesFormules";
@@ -197,6 +198,8 @@ function TenantMockup() {
 export default function LandingPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  // Sous 640 px, l'en-tête ne tient qu'en version resserrée (voir LandingPage.mobile.test.tsx).
+  const telephone = useMediaQuery("(max-width: 639px)");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   // Mêmes lignes et mêmes descriptions que les cartes de la page Abonnement du gestionnaire (voir data/lignesFormules.ts).
@@ -220,10 +223,10 @@ export default function LandingPage() {
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 shrink-0">
             <img src="/app-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow transition-transform duration-300 hover:rotate-6 hover:scale-105" />
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <span className="sr-only sm:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
               {t("common.appName")}
             </span>
           </div>
@@ -260,12 +263,12 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <LanguageSwitcher compact={telephone} />
             {user ? (
               <Link
                 to={homePathForRole(user.role)}
-                className="bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
+                className="whitespace-nowrap bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
               >
                 {t("landing.nav.goToSpace")}
               </Link>
@@ -273,15 +276,15 @@ export default function LandingPage() {
               <>
                 <Link
                   to="/login"
-                  className="text-xs font-medium text-slate-300 hover:text-white px-3 py-2"
+                  className="whitespace-nowrap text-xs font-medium text-slate-300 hover:text-white px-1.5 sm:px-3 py-2"
                 >
                   {t("landing.nav.login")}
                 </Link>
                 <Link
                   to="/inscription"
-                  className="bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
+                  className="whitespace-nowrap bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-2.5 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
                 >
-                  {t("landing.nav.trial")}
+                  {telephone ? t("landing.nav.trialShort") : t("landing.nav.trial")}
                 </Link>
               </>
             )}
