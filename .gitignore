@@ -9,9 +9,21 @@ build/
 # Rapports de couverture de tests (générés localement/en CI, non versionnés)
 coverage/
 
-# Variables d'environnement (secrets)
+# Variables d'environnement (secrets) : toutes les variantes (.env.production, .env.vercel de `vercel env pull`,
+# .env.*.local…), sauf les modèles `.env.example` qui, eux, sont versionnés.
 .env
-.env.local
+.env.*
+!.env.example
+
+# Clés et certificats : signature Android (keystore), clés privées, certificats avec clé.
+*.keystore
+*.jks
+keystore.properties
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519
 
 # Logs
 npm-debug.log*
