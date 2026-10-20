@@ -107,7 +107,7 @@ export const getInspection = asyncHandler(async (req: Request, res: Response) =>
     .innerJoin(properties, eq(inspections.propertyId, properties.id))
     .innerJoin(tenants, eq(inspections.tenantId, tenants.id))
     .where(eq(inspections.id, req.params.id));
-  assertOwnership(row, (r) => r.inspection.managerId, req.user!.userId, "État des lieux introuvable");
+  assertOwnership(row, (r) => r.inspection.managerId, req.user!.userId, "État des lieux introuvable", 404, "INSPECTION_NOT_FOUND");
 
   res.json({ ...parseInspection(row.inspection), property: row.property, tenant: row.tenant });
 });
@@ -139,9 +139,9 @@ export const createInspection = asyncHandler(async (req: Request, res: Response)
   const body = createInspectionSchema.parse(req.body);
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
 
   const [inspection] = await db
     .insert(inspections)
@@ -171,7 +171,7 @@ export const updateInspection = asyncHandler(async (req: Request, res: Response)
   const body = updateInspectionSchema.parse(req.body);
 
   const [existing] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "État des lieux introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "État des lieux introuvable", 404, "INSPECTION_NOT_FOUND");
 
   // Une fois finalisé (COMPLETED), le contenu constaté contradictoirement ne
   // doit plus bouger — seule la signature est encore possible. Sans ce garde-
@@ -216,7 +216,7 @@ export const updateInspection = asyncHandler(async (req: Request, res: Response)
 
 export const deleteInspection = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "État des lieux introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "État des lieux introuvable", 404, "INSPECTION_NOT_FOUND");
 
   if (existing.status === "COMPLETED" || existing.signedByManagerAt || existing.signedByTenantAt) {
     throw new ApiError(409, "Impossible de supprimer un état des lieux finalisé ou déjà signé");
@@ -232,7 +232,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
   const { signatureDataUrl } = signInspectionSchema.parse(req.body);
 
   const [inspection] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
-  if (!inspection) throw new ApiError(404, "État des lieux introuvable");
+  if (!inspection) throw new ApiError(404, "État des lieux introuvable", "INSPECTION_NOT_FOUND");
 
   // Signer un constat encore en brouillon n'a pas de sens : le contenu peut
   // encore changer, la signature contradictoire doit porter sur un état
@@ -268,7 +268,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
   }
 
   if (req.user.role === "MANAGER") {
-    assertOwnership(inspection, (i) => i.managerId, req.user.userId, "Accès refusé", 403);
+    assertOwnership(inspection, (i) => i.managerId, req.user.userId, "Accès refusé", 403, "ACCESS_DENIED");
     // Signature électronique : fonctionnalité Pro (CGU §3) — même règle que
     // signContract (contract.controller.ts). Le locataire (branche
     // ci-dessus) n'est jamais restreint par la formule de son gestionnaire.

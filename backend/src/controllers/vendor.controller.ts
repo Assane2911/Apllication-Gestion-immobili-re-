@@ -68,7 +68,7 @@ export const updateVendor = asyncHandler(async (req: Request, res: Response) => 
   const body = vendorSchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(vendors).where(eq(vendors.id, req.params.id));
-  assertOwnership(existing, (v) => v.managerId, req.user!.userId, "Prestataire introuvable");
+  assertOwnership(existing, (v) => v.managerId, req.user!.userId, "Prestataire introuvable", 404, "VENDOR_NOT_FOUND");
 
   const [vendor] = await db
     .update(vendors)
@@ -91,7 +91,7 @@ export const updateVendor = asyncHandler(async (req: Request, res: Response) => 
 
 export const deleteVendor = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(vendors).where(eq(vendors.id, req.params.id));
-  assertOwnership(existing, (v) => v.managerId, req.user!.userId, "Prestataire introuvable");
+  assertOwnership(existing, (v) => v.managerId, req.user!.userId, "Prestataire introuvable", 404, "VENDOR_NOT_FOUND");
 
   // Pas de blocage si un incident lui est assigné, contrairement à
   // deleteOwner/un bien associé : issueReports.vendorId est ON DELETE SET
@@ -121,5 +121,5 @@ export const deleteVendor = asyncHandler(async (req: Request, res: Response) => 
  */
 export async function assertVendorOwnership(vendorId: string, managerId: string): Promise<void> {
   const [vendor] = await db.select().from(vendors).where(and(eq(vendors.id, vendorId), eq(vendors.managerId, managerId)));
-  if (!vendor) throw new ApiError(404, "Prestataire introuvable");
+  if (!vendor) throw new ApiError(404, "Prestataire introuvable", "VENDOR_NOT_FOUND");
 }

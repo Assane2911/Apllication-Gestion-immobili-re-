@@ -68,7 +68,7 @@ export const confirmBankTransfer = asyncHandler(async (req: Request, res: Respon
   const { id } = req.params;
 
   const [record] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, id));
-  if (!record) throw new ApiError(404, "Abonnement introuvable");
+  if (!record) throw new ApiError(404, "Abonnement introuvable", "SUBSCRIPTION_NOT_FOUND");
   if (record.paymentMethod !== "BANK_TRANSFER") {
     throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire");
   }
@@ -106,7 +106,7 @@ export const rejectBankTransfer = asyncHandler(async (req: Request, res: Respons
   const { id } = req.params;
 
   const [record] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, id));
-  if (!record) throw new ApiError(404, "Abonnement introuvable");
+  if (!record) throw new ApiError(404, "Abonnement introuvable", "SUBSCRIPTION_NOT_FOUND");
   if (record.paymentMethod !== "BANK_TRANSFER") {
     throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire");
   }
@@ -419,10 +419,10 @@ export const getManagerDetail = asyncHandler(async (req: Request, res: Response)
     .select()
     .from(users)
     .where(and(eq(users.id, id), eq(users.role, "MANAGER"), isNull(users.teamOwnerId)));
-  if (!user) throw new ApiError(404, "Gestionnaire introuvable");
+  if (!user) throw new ApiError(404, "Gestionnaire introuvable", "MANAGER_NOT_FOUND");
 
   const info = computeSubscriptionInfo(user);
-  if (!info) throw new ApiError(404, "Gestionnaire introuvable");
+  if (!info) throw new ApiError(404, "Gestionnaire introuvable", "MANAGER_NOT_FOUND");
 
   const countOf = async (table: AnyPgTable, column: AnyPgColumn) => {
     const [row] = await db
@@ -577,7 +577,7 @@ export async function trouverGestionnaire(id: string) {
     .select()
     .from(users)
     .where(and(eq(users.id, id), eq(users.role, "MANAGER"), isNull(users.teamOwnerId)));
-  if (!user) throw new ApiError(404, "Gestionnaire introuvable");
+  if (!user) throw new ApiError(404, "Gestionnaire introuvable", "MANAGER_NOT_FOUND");
   return user;
 }
 

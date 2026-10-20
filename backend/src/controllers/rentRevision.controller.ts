@@ -33,9 +33,9 @@ const revisionSchema = z
 
 async function contratDuGestionnaire(req: Request) {
   const [contrat] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
-  if (!contrat) throw new ApiError(404, "Contrat introuvable");
+  if (!contrat) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [bien] = await db.select().from(properties).where(eq(properties.id, contrat.propertyId));
-  assertOwnership(bien, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(bien, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
   return { contrat, bien };
 }
 

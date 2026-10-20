@@ -154,7 +154,7 @@ export const deleteOwnerPayout = asyncHandler(async (req: Request, res: Response
     .delete(ownerPayouts)
     .where(and(eq(ownerPayouts.id, req.params.payoutId), eq(ownerPayouts.ownerId, owner.id)))
     .returning();
-  if (!supprime) throw new ApiError(404, "Reversement introuvable");
+  if (!supprime) throw new ApiError(404, "Reversement introuvable", "PAYOUT_NOT_FOUND");
 
   await logActivity({
     req,

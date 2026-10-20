@@ -20,9 +20,9 @@ const ajoutSchema = z.object({ tenantId: z.string().min(1, "Choisissez un locata
 
 async function contratDuGestionnaire(req: Request) {
   const [contrat] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
-  if (!contrat) throw new ApiError(404, "Contrat introuvable");
+  if (!contrat) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [bien] = await db.select().from(properties).where(eq(properties.id, contrat.propertyId));
-  assertOwnership(bien, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(bien, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
   return { contrat, bien };
 }
 
@@ -56,7 +56,7 @@ export const addCotenant = asyncHandler(async (req: Request, res: Response) => {
   assertBailNonSigne(contrat);
 
   const [locataire] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
-  assertOwnership(locataire, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(locataire, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
   if (locataire.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : il ne peut pas rejoindre un bail.");
   if (locataire.id === contrat.tenantId) throw new ApiError(409, "Ce locataire est déjà le titulaire du bail.");
 
@@ -90,7 +90,7 @@ export const removeCotenant = asyncHandler(async (req: Request, res: Response) =
     .delete(contractCotenants)
     .where(and(eq(contractCotenants.id, req.params.cotenantId), eq(contractCotenants.contractId, contrat.id)))
     .returning();
-  if (!lien) throw new ApiError(404, "Colocataire introuvable");
+  if (!lien) throw new ApiError(404, "Colocataire introuvable", "COTENANT_NOT_FOUND");
   const [locataire] = await db.select().from(tenants).where(eq(tenants.id, lien.tenantId));
 
   await logActivity({

@@ -57,7 +57,7 @@ function monthBounds(month: number, year: number) {
 
 export async function loadOwnerForManager(ownerId: string, managerId: string) {
   const [owner] = await db.select().from(owners).where(eq(owners.id, ownerId));
-  assertOwnership(owner, (o) => o.managerId, managerId, "Propriétaire introuvable");
+  assertOwnership(owner, (o) => o.managerId, managerId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
   return owner;
 }
 

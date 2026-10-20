@@ -163,7 +163,7 @@ export const getAgencyBankInfoForTenant = asyncHandler(async (req: Request, res:
     .select({ managerId: tenants.managerId })
     .from(tenants)
     .where(eq(tenants.id, (await chargerLocataireDuCompte(req)).id));
-  if (!tenant) throw new ApiError(404, "Locataire introuvable");
+  if (!tenant) throw new ApiError(404, "Locataire introuvable", "TENANT_NOT_FOUND");
 
   const [settings] = await db
     .select({ agencyName: agencySettings.agencyName, iban: agencySettings.iban, bic: agencySettings.bic })

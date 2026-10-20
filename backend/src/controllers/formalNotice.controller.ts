@@ -26,9 +26,9 @@ const emissionSchema = z.object({
 
 async function contratDuGestionnaire(req: Request) {
   const [contrat] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
-  if (!contrat) throw new ApiError(404, "Contrat introuvable");
+  if (!contrat) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [bien] = await db.select().from(properties).where(eq(properties.id, contrat.propertyId));
-  assertOwnership(bien, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(bien, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
   return { contrat, bien };
 }
 
@@ -86,9 +86,9 @@ export const createFormalNotice = asyncHandler(async (req: Request, res: Respons
 export const getFormalNoticeDocument = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const [notice] = await db.select().from(formalNotices).where(eq(formalNotices.id, req.params.noticeId));
-  if (!notice) throw new ApiError(404, "Mise en demeure introuvable");
+  if (!notice) throw new ApiError(404, "Mise en demeure introuvable", "FORMAL_NOTICE_NOT_FOUND");
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, notice.contractId));
-  if (!contract) throw new ApiError(404, "Mise en demeure introuvable");
+  if (!contract) throw new ApiError(404, "Mise en demeure introuvable", "FORMAL_NOTICE_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
   assertAccesLocataireOuGestionnaire(req.user.role, await estLocataireDuBail(req, contract), property?.managerId === req.user.userId);
 

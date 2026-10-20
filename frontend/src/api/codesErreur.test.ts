@@ -33,6 +33,10 @@ function codesDuBackend(): string[] {
         const arg = n.arguments[2];
         if (ts.isStringLiteral(arg)) codes.add(arg.text);
       }
+      // assertOwnership(entité, accesseur, gestionnaire, message, statut, code) : le code est le sixième argument.
+      if (ts.isCallExpression(n) && n.expression.getText() === "assertOwnership" && n.arguments[5] && ts.isStringLiteral(n.arguments[5])) {
+        codes.add(n.arguments[5].text);
+      }
       ts.forEachChild(n, visiter);
     };
     visiter(source);

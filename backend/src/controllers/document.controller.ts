@@ -20,7 +20,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
   if (!invoice) throw new ApiError(404, "Facture introuvable", "INVOICE_NOT_FOUND");
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, invoice.contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
 
@@ -97,7 +97,7 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   const { contractId } = req.params;
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
 
@@ -141,7 +141,7 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
   const { inspectionId } = req.params;
 
   const inspection = await loadInspectionForExport(inspectionId);
-  if (!inspection) throw new ApiError(404, "État des lieux introuvable");
+  if (!inspection) throw new ApiError(404, "État des lieux introuvable", "INSPECTION_NOT_FOUND");
 
   // Même contrôle d'accès que le bail et la quittance (voir
   // getContractLease/getInvoiceReceipt ci-dessus) : seuls le locataire
@@ -198,7 +198,7 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
   const { contractId } = req.params;
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
 
@@ -224,9 +224,9 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
 export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const [revision] = await db.select().from(rentRevisions).where(eq(rentRevisions.id, req.params.revisionId));
-  if (!revision) throw new ApiError(404, "Révision introuvable");
+  if (!revision) throw new ApiError(404, "Révision introuvable", "REVISION_NOT_FOUND");
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, revision.contractId));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
 
   assertAccesLocataireOuGestionnaire(

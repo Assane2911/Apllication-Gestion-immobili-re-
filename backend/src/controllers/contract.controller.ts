@@ -199,7 +199,7 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
 
 export const getContract = asyncHandler(async (req: Request, res: Response) => {
   const full = await withRelations(req.params.id);
-  assertOwnership(full, (f) => f.property.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(full, (f) => f.property.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
   res.json(full);
 });
 
@@ -212,8 +212,8 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
 
   const [property] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
-  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable");
-  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
+  assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
   if (tenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.");
 
   const contractStatus = body.status ?? "ACTIVE";
@@ -259,9 +259,9 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   const body = contractSchema.partial().parse(req.body);
 
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Contrat introuvable");
+  if (!existing) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [existingProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
-  assertOwnership(existingProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(existingProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
 
   // Un UPDATE sans aucune colonne à écrire est une erreur de Drizzle (« No values to set ») : un corps vide, ou
   // qui ne porte que des champs inconnus, est une requête invalide, pas une panne.
@@ -276,11 +276,11 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   // son propre compte (le contrat, sa facturation et sa signature compris).
   if (body.propertyId && body.propertyId !== existing.propertyId) {
     const [newProperty] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
-    assertOwnership(newProperty, (p) => p.managerId, req.user!.userId, "Bien introuvable");
+    assertOwnership(newProperty, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");
   }
   if (body.tenantId && body.tenantId !== existing.tenantId) {
     const [newTenant] = await db.select().from(tenants).where(eq(tenants.id, body.tenantId));
-    assertOwnership(newTenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable");
+    assertOwnership(newTenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
     if (newTenant.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : aucun bail ne peut être établi à son nom.");
   }
 
@@ -492,9 +492,9 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
 
 export const deleteContract = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Contrat introuvable");
+  if (!existing) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
-  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
 
   // RÉGRESSION : contrairement à deleteProperty/deleteTenant, cette route ne
   // vérifiait jusqu'ici RIEN avant de supprimer — ni que le contrat n'est pas
@@ -641,9 +641,9 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
   const { months } = renewContractSchema.parse(req.body ?? {});
 
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Contrat introuvable");
+  if (!existing) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [ownerProperty] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
-  assertOwnership(ownerProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(ownerProperty, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
   if (existing.status !== "ACTIVE") {
     throw new ApiError(409, "Seul un contrat actif peut être renouvelé");
   }
@@ -748,7 +748,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
   const { signatureDataUrl } = signContractSchema.parse(req.body);
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
 
   /** Une signature engage les parties : qui a signé, et quand, doit rester visible dans le journal. */
   const tracerSignature = async (managerId: string, titreBien: string, qui: "locataire" | "gestionnaire") =>
@@ -778,7 +778,7 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     return res.json(await withRelations(updated.id));
   } else if (req.user.role === "MANAGER") {
     const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-    assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403);
+    assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403, "ACCESS_DENIED");
     // Signature électronique : fonctionnalité Pro (CGU §3) — le locataire,
     // lui (branche ci-dessus), n'est jamais restreint par la formule de son
     // gestionnaire.
@@ -829,9 +829,9 @@ export const recordDepositRefund = asyncHandler(async (req: Request, res: Respon
   const { deductions } = depositRefundSchema.parse(req.body);
 
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
-  if (!existing) throw new ApiError(404, "Contrat introuvable");
+  if (!existing) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
-  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable");
+  assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
 
   let totalDeductions = 0;
   if (deductions !== null) {
@@ -911,10 +911,10 @@ export const uploadScannedContract = asyncHandler(async (req: Request, res: Resp
 
   const { id } = req.params;
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
-  if (!contract) throw new ApiError(404, "Contrat introuvable");
+  if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-  assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403);
+  assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403, "ACCESS_DENIED");
 
   assertFileContentMatchesDeclaredType(req.file);
   const storagePath = await uploadPrivateFile(req.file, "contracts");

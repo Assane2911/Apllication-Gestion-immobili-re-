@@ -96,16 +96,21 @@ export function assertAccesLocataireOuGestionnaire(
  * d'assertion TypeScript (`asserts entity is NonNullable<T>`), donc tout le
  * code qui suit son appel voit `entity` comme non-nul, exactement comme
  * après le `if` qu'elle remplace.
+ *
+ * `code` est le code d'erreur stable que le frontend traduit (voir
+ * frontend/src/api/client.ts) : sans lui, un utilisateur anglophone lirait le
+ * texte français du serveur.
  */
 export function assertOwnership<T>(
   entity: T | null | undefined,
   getManagerId: (entity: NonNullable<T>) => string,
   managerId: string,
   message: string,
-  statusCode = 404
+  statusCode = 404,
+  code?: string
 ): asserts entity is NonNullable<T> {
   if (!entity || getManagerId(entity as NonNullable<T>) !== managerId) {
-    throw new ApiError(statusCode, message);
+    throw new ApiError(statusCode, message, code);
   }
 }
 

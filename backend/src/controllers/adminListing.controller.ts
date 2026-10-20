@@ -128,7 +128,7 @@ async function trouverAnnonce(id: string) {
     .from(listings)
     .innerJoin(users, eq(users.id, listings.managerId))
     .where(eq(listings.id, id));
-  if (!row) throw new ApiError(404, "Annonce introuvable");
+  if (!row) throw new ApiError(404, "Annonce introuvable", "LISTING_NOT_FOUND");
   return row;
 }
 

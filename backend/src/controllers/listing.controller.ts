@@ -206,7 +206,7 @@ export const getPublicListing = asyncHandler(async (req: Request, res: Response)
   // jamais un 403 qui confirmerait au visiteur qu'une annonce existe mais lui
   // est cachée (même principe de non-divulgation que le 404 d'ownership côté
   // gestionnaire ailleurs dans l'app).
-  if (!listing) throw new ApiError(404, "Annonce introuvable");
+  if (!listing) throw new ApiError(404, "Annonce introuvable", "LISTING_NOT_FOUND");
 
   res.json(toPublicListing(listing));
 });
@@ -226,7 +226,7 @@ export const createPublicLead = asyncHandler(async (req: Request, res: Response)
     .select()
     .from(listings)
     .where(and(eq(listings.id, req.params.id), visibleSurLaVitrine));
-  if (!listing) throw new ApiError(404, "Annonce introuvable");
+  if (!listing) throw new ApiError(404, "Annonce introuvable", "LISTING_NOT_FOUND");
 
   const [lead] = await db
     .insert(listingLeads)
@@ -258,7 +258,7 @@ export const createPublicLead = asyncHandler(async (req: Request, res: Response)
 
 async function loadListingForManager(listingId: string, managerId: string) {
   const [listing] = await db.select().from(listings).where(eq(listings.id, listingId));
-  assertOwnership(listing, (l) => l.managerId, managerId, "Annonce introuvable");
+  assertOwnership(listing, (l) => l.managerId, managerId, "Annonce introuvable", 404, "LISTING_NOT_FOUND");
   return listing;
 }
 
@@ -419,7 +419,7 @@ export const updateListingLead = asyncHandler(async (req: Request, res: Response
   const body = leadUpdateSchema.parse(req.body);
 
   const [existing] = await db.select().from(listingLeads).where(eq(listingLeads.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Demande introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Demande introuvable", 404, "REQUEST_NOT_FOUND");
 
   const [lead] = await db.update(listingLeads).set(body).where(eq(listingLeads.id, existing.id)).returning();
 
@@ -445,7 +445,7 @@ export const updateListingLead = asyncHandler(async (req: Request, res: Response
  */
 export const deleteListingLead = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(listingLeads).where(eq(listingLeads.id, req.params.id));
-  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Demande introuvable");
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Demande introuvable", 404, "REQUEST_NOT_FOUND");
 
   await db.delete(listingLeads).where(eq(listingLeads.id, existing.id));
 
