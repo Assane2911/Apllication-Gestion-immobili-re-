@@ -166,3 +166,14 @@ describe("ManagerLayout — menu sur téléphone", () => {
     expect(select.className).toMatch(/min-w-0/);
   });
 });
+
+describe("ManagerLayout — navigation Retour / Suivant", () => {
+  it("la barre du haut propose Retour et Suivant (le menu latéral n'en contient pas)", () => {
+    const { container } = renderManagerLayout("/dashboard");
+    const barre = container.querySelector("aside")!;
+    expect(within(barre).queryByRole("button", { name: "Retour" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retour" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suivant" })).toBeInTheDocument();
+  });
+});
+

@@ -4,6 +4,8 @@ const fr = {
     plans: { STARTER: "Starter", PRO: "Professionnel", ENTERPRISE: "Agence & Multi-Comptes" },
     loader: { loading: "Chargement…", back: "Retour", next: "Suivant" },
     tips: {
+      back: "Revient à la page précédente.",
+      next: "Avance à la page suivante.",
       logout: "Ferme votre session sur cet appareil.",
     },
     errors: {

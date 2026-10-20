@@ -35,6 +35,7 @@ import { peutVoirLeGuide } from "../utils/accesGuide";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import GlobalSearch from "./GlobalSearch";
+import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
 import TrialBanner from "./TrialBanner";
@@ -208,6 +209,7 @@ export default function ManagerLayout() {
           >
             <Menu size={18} />
           </button>
+          <BoutonsHistorique variante="icone" />
           <GlobalSearch />
           <NotificationBell />
         </div>

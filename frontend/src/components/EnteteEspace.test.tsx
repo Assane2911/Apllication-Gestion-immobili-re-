@@ -103,4 +103,17 @@ describe("EnteteEspace — téléphone", () => {
     rendre();
     expect(screen.getByRole("banner").className).toMatch(/sticky top-0/);
   });
+
+  it("Retour et Suivant précèdent les onglets, hors de la rangée qui défile", () => {
+    rendre();
+    const retour = screen.getByRole("button", { name: "Retour" });
+    const suivant = screen.getByRole("button", { name: "Suivant" });
+    const barre = screen.getByRole("navigation", { name: "Mon espace" });
+    expect(barre).not.toContainElement(retour);
+    expect(barre).not.toContainElement(suivant);
+    // Même rangée que les onglets, placés avant eux.
+    expect(retour.closest("div")!.parentElement).toBe(barre.parentElement);
+    expect(retour.compareDocumentPosition(barre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(barre.className).toMatch(/min-w-0/);
+  });
 });

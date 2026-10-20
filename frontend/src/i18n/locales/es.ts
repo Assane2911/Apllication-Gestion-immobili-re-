@@ -6,6 +6,8 @@ const es: TranslationSchema = {
     plans: { STARTER: "Starter", PRO: "Profesional", ENTERPRISE: "Agencia y Multicuentas" },
     loader: { loading: "Cargando…", back: "Atrás", next: "Siguiente" },
     tips: {
+      back: "Vuelve a la página anterior.",
+      next: "Avanza a la página siguiente.",
       logout: "Cierra su sesión en este dispositivo.",
     },
     errors: {
