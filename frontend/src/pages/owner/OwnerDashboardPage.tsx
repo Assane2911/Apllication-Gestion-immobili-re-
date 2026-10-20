@@ -1,3 +1,4 @@
+import EcranChargement from "../../components/EcranChargement";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
@@ -47,9 +48,7 @@ export default function OwnerDashboardPage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <span className="w-8 h-8 border-[3px] border-slate-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
-      </div>
+      <EcranChargement className="min-h-[40vh]" />
     );
   }
 

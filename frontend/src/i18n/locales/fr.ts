@@ -2,6 +2,7 @@ const fr = {
   common: {
     // Noms des formules : un seul nom par formule, partout dans l'interface.
     plans: { STARTER: "Starter", PRO: "Professionnel", ENTERPRISE: "Agence & Multi-Comptes" },
+    loader: { loading: "Chargement…", back: "Retour", next: "Suivant" },
     tips: {
       logout: "Ferme votre session sur cet appareil.",
     },
