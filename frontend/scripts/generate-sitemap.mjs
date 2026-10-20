@@ -14,9 +14,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Domaine réel du frontend déployé (constaté, pas un placeholder) — à mettre
-// à jour si un nom de domaine personnalisé est un jour rattaché au projet.
-export const SITE_URL = "https://apllication-gestion-immobili-re.vercel.app";
+// Domaine public du site : celui que les visiteurs tapent (l'apex immoplatformpro.com y redirige en 308). Surtout
+// pas l'adresse .vercel.app de l'API, qui n'est pas celle du site : le plan du site, les aperçus de liens et les
+// données structurées y répondaient 404. Même valeur dans src/utils/structuredData.ts, index.html
+// et public/robots.txt (verrouillé par src/depot-domaine.test.ts).
+export const SITE_URL = "https://www.immoplatformpro.com";
 const API_URL = process.env.VITE_API_URL ?? "http://localhost:4000";
 const MAX_PAGE_SIZE = 100;
 

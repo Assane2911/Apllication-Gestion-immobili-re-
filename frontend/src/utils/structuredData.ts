@@ -5,10 +5,10 @@ import type { Listing } from "../types";
 /**
  * Doit rester identique à SITE_URL dans scripts/generate-sitemap.mjs — deux
  * fichiers séparés (script Node de build vs bundle navigateur), même valeur :
- * le domaine réel du frontend déployé, à mettre à jour si un nom de domaine
- * personnalisé est un jour rattaché au projet.
+ * le domaine public du site (www.immoplatformpro.com), et non l'adresse de
+ * l'API. Verrouillé par src/depot-domaine.test.ts avec index.html et robots.txt.
  */
-export const SITE_URL = "https://apllication-gestion-immobili-re.vercel.app";
+export const SITE_URL = "https://www.immoplatformpro.com";
 
 /**
  * schema.org n'étant pas sérialisable tel quel en JSON strict (pas
