@@ -190,8 +190,11 @@ describe("ManagerLayout — bouton retour d'Android", () => {
     expect(barre.className).toMatch(/translate-x-0/);
 
     expect(traiterRetourSurCouche()).toBe(true);
-    await waitFor(() => expect(barre.className).toMatch(/-translate-x-full/));
-    expect(traiterRetourSurCouche()).toBe(false);
+    // Le menu se referme, puis React retire la couche dans un second temps (nettoyage d'effet différé) : on attend
+    // l'un et l'autre plutôt que de supposer que le retrait a déjà eu lieu quand la classe change. Les délais sont
+    // larges : la suite complète tourne en parallèle sur une machine chargée.
+    await waitFor(() => expect(barre.className).toMatch(/-translate-x-full/), { timeout: 4000 });
+    await waitFor(() => expect(traiterRetourSurCouche()).toBe(false), { timeout: 4000 });
   });
 });
 
