@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "../api/client";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -63,7 +63,7 @@ function CheckIcon() {
 
 export default function RegisterPage() {
   const { t, i18n } = useTranslation();
-  const { register, loginWithGoogle } = useAuth();
+  const { user: utilisateur, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -121,13 +121,17 @@ export default function RegisterPage() {
         navigate("/login");
         return;
       }
-      navigate(homePathForRole(result.role));
+      navigate(homePathForRole(result.role), { replace: true });
     } catch (err) {
       setGoogleError(apiErrorMessage(err));
     } finally {
       setGoogleLoading(false);
     }
   }
+
+  // Déjà connecté : revenir ici (bouton Retour, adresse saisie) réaffichait le formulaire alors que la session restait
+  // ouverte, ce qui ressemblait à une déconnexion sans confirmation. On renvoie vers l'espace de l'utilisateur.
+  if (utilisateur) return <Navigate to={homePathForRole(utilisateur.role)} replace />;
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-950">

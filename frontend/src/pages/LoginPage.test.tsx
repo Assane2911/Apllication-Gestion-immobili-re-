@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
@@ -44,6 +44,34 @@ function renderPage(entree = "/login") {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard" element={<p>Espace gestionnaire</p>} />
           <Route path="/portail" element={<p>Espace locataire</p>} />
+        </Routes>
+      </AuthProvider>
+    </MemoryRouter>
+  );
+}
+
+// Le bouton « Retour » de l'application (et celui d'Android) fait un navigate(-1) : ce petit composant tient la place
+// de la page d'arrivée pour savoir où l'on retombe en reculant.
+function PageAvecRetour({ titre }: { titre: string }) {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <p>{titre}</p>
+      <button type="button" onClick={() => navigate(-1)}>
+        Reculer
+      </button>
+    </div>
+  );
+}
+
+function renderDepuisLaLanding() {
+  return render(
+    <MemoryRouter initialEntries={["/landing", "/login"]} initialIndex={1}>
+      <AuthProvider>
+        <Routes>
+          <Route path="/landing" element={<p>Page d'accueil</p>} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/dashboard" element={<PageAvecRetour titre="Espace gestionnaire" />} />
         </Routes>
       </AuthProvider>
     </MemoryRouter>
@@ -328,5 +356,51 @@ describe("LoginPage — connexion avec Google (VITE_GOOGLE_CLIENT_ID configuré)
   it("place le formulaire de connexion dans un repère <main>", () => {
     renderPage();
     expect(screen.getByRole("main")).toBeInTheDocument();
+  });
+  it("après la connexion, reculer ne ramène pas au formulaire : la page de connexion ne reste pas dans l'historique", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({
+      data: { token: "tok_123", user: { id: "mgr-1", email: "agence@test.local", role: "MANAGER" } },
+    });
+    renderDepuisLaLanding();
+
+    await user.type(screen.getByLabelText("Email"), "agence@test.local");
+    await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+    await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Reculer" }));
+
+    expect(screen.getByText("Page d'accueil")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Mot de passe")).not.toBeInTheDocument();
+  });
+
+  it("après la validation du second facteur, la page de connexion ne reste pas non plus dans l'historique", async () => {
+    const user = userEvent.setup();
+    mockedApi.post
+      .mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "pending-1" } })
+      .mockResolvedValueOnce({
+        data: { token: "tok_2fa", user: { id: "mgr-1", email: "agence@test.local", role: "MANAGER" } },
+      });
+    renderDepuisLaLanding();
+
+    await user.type(screen.getByLabelText("Email"), "agence@test.local");
+    await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+    await user.type(await screen.findByLabelText(/code/i), "123456");
+    await user.click(screen.getByRole("button", { name: /vérifier|valider|confirmer/i }));
+    await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Reculer" }));
+
+    expect(screen.getByText("Page d'accueil")).toBeInTheDocument();
+  });
+
+  it("un utilisateur déjà connecté qui revient sur /login est renvoyé vers son espace, sans formulaire de connexion", () => {
+    localStorage.setItem("user", JSON.stringify({ id: "mgr-1", email: "agence@test.local", role: "MANAGER" }));
+    renderPage();
+
+    expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Mot de passe")).not.toBeInTheDocument();
   });
 });

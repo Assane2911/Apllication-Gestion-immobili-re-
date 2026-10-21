@@ -217,4 +217,11 @@ describe("RegisterPage — inscription avec Google (VITE_GOOGLE_CLIENT_ID config
     renderPage();
     expect(screen.getByRole("main")).toBeInTheDocument();
   });
+  it("un utilisateur déjà connecté qui revient sur /inscription est renvoyé vers son espace, sans formulaire", () => {
+    localStorage.setItem("user", JSON.stringify({ id: "mgr-1", email: "agence@test.local", role: "MANAGER" }));
+    renderPage();
+
+    expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
+  });
 });
