@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { traiterRetourSurCouche } from "../utils/couchesRetour";
 import { useDialogue } from "./useDialogue";
 
 /**
@@ -139,4 +140,32 @@ describe("useDialogue", () => {
     expect(dessus).toHaveBeenCalledTimes(1);
     expect(dessous).not.toHaveBeenCalled();
   });
+
+  it("le bouton retour d'Android ferme la fenêtre ouverte, comme Échap", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<Page onClose={onClose} />);
+    await user.click(screen.getByRole("button", { name: "Ouvrir" }));
+
+    expect(traiterRetourSurCouche()).toBe(true);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("pendant un enregistrement (fenêtre non fermable), le bouton retour est absorbé sans fermer la fenêtre", () => {
+    const onClose = vi.fn();
+    render(<Modale onClose={onClose} fermable={false} />);
+
+    expect(traiterRetourSurCouche()).toBe(true);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("une fois la fenêtre fermée, le bouton retour n'a plus de couche à refermer", async () => {
+    const user = userEvent.setup();
+    render(<Page />);
+    await user.click(screen.getByRole("button", { name: "Ouvrir" }));
+    await user.keyboard("{Escape}");
+
+    expect(traiterRetourSurCouche()).toBe(false);
+  });
 });
+

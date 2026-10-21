@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { enregistrerCoucheRetour } from "../utils/couchesRetour";
 
 const FOCALISABLES =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -67,8 +68,13 @@ export function useDialogue({ onClose, titreId, libelle, fermable = true }: { on
       }
     };
     document.addEventListener("keydown", surTouche);
+    // Le bouton retour d'Android ferme la fenêtre comme Échap (et reste sans effet quand elle n'est pas fermable).
+    const retirerCoucheRetour = enregistrerCoucheRetour(() => {
+      if (fermableRef.current) onCloseRef.current();
+    });
 
     return () => {
+      retirerCoucheRetour();
       document.removeEventListener("keydown", surTouche);
       const rang = pile.indexOf(identifiant);
       if (rang !== -1) pile.splice(rang, 1);
