@@ -215,7 +215,7 @@ export default function ManagerLayout() {
           >
             <Menu size={18} />
           </button>
-          <BoutonsHistorique variante="icone" />
+          <BoutonsHistorique />
           <GlobalSearch />
           <NotificationBell />
         </div>

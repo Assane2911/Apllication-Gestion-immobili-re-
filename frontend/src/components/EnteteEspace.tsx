@@ -107,7 +107,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
       </div>
 
       <div className={`${colonne} mx-auto px-4 sm:px-6 pb-2.5 flex items-center gap-2`}>
-        <BoutonsHistorique variante="icone" />
+        <BoutonsHistorique />
         <nav
           ref={barre}
           aria-label={titre}
