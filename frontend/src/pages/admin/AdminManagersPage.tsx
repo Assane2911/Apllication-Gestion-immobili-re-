@@ -6,6 +6,7 @@ import { api, apiErrorMessage } from "../../api/client";
 import BoutonExportCsv from "../../components/BoutonExportCsv";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
+import { formaterDateHeure } from "../../utils/dateHeure";
 import { STATUS_CLASSES, SUSPENDED_CLASS, type ManagerPlan, type ManagerStatus } from "./managerStatus";
 
 interface ManagerRow {
@@ -82,7 +83,7 @@ export default function AdminManagersPage() {
 
   function echeance(m: ManagerRow) {
     const date = m.status === "TRIAL" ? m.trialEndsAt : m.subscriptionEndsAt ?? m.trialEndsAt;
-    return date ? new Date(date).toLocaleDateString(i18n.language) : "—";
+    return date ? formaterDateHeure(date, i18n.language) : "—";
   }
 
   return (
@@ -191,11 +192,11 @@ export default function AdminManagersPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">{echeance(m)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{echeance(m)}</td>
                     <td className="px-4 py-3">
                       {t("admin.managers.usage", { properties: m.propertiesCount, tenants: m.tenantsCount })}
                     </td>
-                    <td className="px-4 py-3">{new Date(m.createdAt).toLocaleDateString(i18n.language)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{formaterDateHeure(m.createdAt, i18n.language)}</td>
                   </tr>
                 ))}
               </tbody>

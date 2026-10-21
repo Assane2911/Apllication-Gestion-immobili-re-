@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
+import { formaterDateHeure } from "../../utils/dateHeure";
 import { STATUS_CLASSES, type ManagerPlan, type ManagerStatus } from "./managerStatus";
 
 interface ManagerDetail {
@@ -180,6 +181,8 @@ export default function AdminManagerDetailPage() {
   }
 
   const date = (valeur: string | null) => (valeur ? new Date(valeur).toLocaleDateString(i18n.language) : "—");
+  // Début et fin de période : un instant précis (l'accès s'arrête à cette heure-là), pas seulement un jour.
+  const dateHeure = (valeur: string | null) => (valeur ? formaterDateHeure(valeur, i18n.language) : "—");
   const carte = "rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
   const ligne = (libelle: string, valeur: string) => (
     <div className="flex justify-between gap-4 py-1.5 text-xs">
@@ -537,12 +540,12 @@ export default function AdminManagerDetailPage() {
                 {manager.subscription.status === "TRIAL" &&
                   ligne(
                     t("admin.managerDetail.subscription.trialEnds"),
-                    `${date(manager.subscription.trialEndsAt)} (${t("admin.managerDetail.subscription.daysLeft", { count: manager.subscription.trialDaysRemaining })})`
+                    `${dateHeure(manager.subscription.trialEndsAt)} (${t("admin.managerDetail.subscription.daysLeft", { count: manager.subscription.trialDaysRemaining })})`
                   )}
                 {manager.subscription.status !== "TRIAL" &&
                   ligne(
                     t("admin.managerDetail.subscription.endsOn"),
-                    illimite ? t("admin.managerDetail.subscription.unlimited") : date(manager.subscription.subscriptionEndsAt ?? manager.subscription.trialEndsAt)
+                    illimite ? t("admin.managerDetail.subscription.unlimited") : dateHeure(manager.subscription.subscriptionEndsAt ?? manager.subscription.trialEndsAt)
                   )}
                 {ligne(
                   t("admin.managerDetail.subscription.paymentMethod"),
@@ -558,7 +561,7 @@ export default function AdminManagerDetailPage() {
             <section className={carte}>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">{t("admin.managerDetail.account.title")}</h3>
               <dl>
-                {ligne(t("admin.managerDetail.account.signup"), date(manager.createdAt))}
+                {ligne(t("admin.managerDetail.account.signup"), formaterDateHeure(manager.createdAt, i18n.language))}
                 {ligne(t("admin.managerDetail.account.emailVerified"), manager.emailVerifiedAt ? t("admin.managerDetail.yes") : t("admin.managerDetail.no"))}
                 {ligne(t("admin.managerDetail.account.twoFactor"), manager.twoFactorEnabled ? t("admin.managerDetail.yes") : t("admin.managerDetail.no"))}
                 {ligne(t("admin.managerDetail.account.currency"), manager.currency)}

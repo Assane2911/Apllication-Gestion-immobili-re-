@@ -78,6 +78,31 @@ describe("AdminManagerDetailPage", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
+  it("indique la date ET l'heure de fin d'essai et d'échéance de l'abonnement", async () => {
+    const base = fiche();
+    mockedApi.get.mockResolvedValueOnce({
+      data: fiche({ subscription: { ...base.subscription, status: "TRIAL", trialEndsAt: "2030-01-10T15:07:00.000Z", subscriptionEndsAt: null, trialDaysRemaining: 6 } }),
+    });
+    const { unmount } = renderPage();
+    await screen.findByRole("heading", { name: "Agence Alpha" });
+    expect(screen.getByText("Fin de l'essai").closest("div")).toHaveTextContent(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2} \(/);
+    unmount();
+
+    mockedApi.get.mockResolvedValueOnce({ data: fiche({ subscription: { ...base.subscription, status: "ACTIVE", subscriptionEndsAt: "2030-01-10T15:07:00.000Z" } }) });
+    renderPage();
+    await screen.findByRole("heading", { name: "Agence Alpha" });
+    expect(screen.getByText("Valable jusqu'au").closest("div")).toHaveTextContent(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
+  });
+
+  it("indique la date ET l'heure d'inscription du compte", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: fiche({ createdAt: "2026-10-21T15:07:48.385Z" }) });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Agence Alpha" });
+    const ligne = screen.getByText("Inscription").closest("div");
+    expect(ligne).toHaveTextContent(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
+  });
+
   it("affiche l'abonnement, l'agence, l'usage et l'historique de facturation", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: fiche() });
     renderPage();

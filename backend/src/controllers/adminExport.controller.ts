@@ -36,6 +36,7 @@ const PLAN_LABEL: Record<string, string> = NOM_FORMULE;
 
 const jour = (d: Date | string | null) => (d ? new Date(d).toISOString().slice(0, 10) : "");
 const dateHeure = (d: Date | string) => new Date(d).toISOString().slice(0, 19).replace("T", " ");
+const dateHeureOuVide = (d: Date | string | null) => (d ? dateHeure(d) : "");
 
 function envoyerCsv(res: Response, nomFichier: string, lignes: string[]) {
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -60,11 +61,11 @@ export const exportManagersCsv = asyncHandler(async (req: Request, res: Response
         PLAN_LABEL[m.plan] ?? csvEscape(m.plan),
         STATUT_LABEL[m.status] ?? csvEscape(m.status),
         m.suspendedAt ? "Oui" : "Non",
-        jour(m.trialEndsAt),
-        jour(m.subscriptionEndsAt),
+        dateHeureOuVide(m.trialEndsAt),
+        dateHeureOuVide(m.subscriptionEndsAt),
         m.propertiesCount,
         m.tenantsCount,
-        jour(m.createdAt),
+        dateHeure(m.createdAt),
       ].join(";")
     ),
   ];

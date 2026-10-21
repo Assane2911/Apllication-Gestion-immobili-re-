@@ -12,6 +12,7 @@ import type { PaymentMethod, PlatformBankInfo, SubscriptionPlanDetail } from "..
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { FORMULE_REPRISE } from "../../data/lignesFormules";
+import { formaterDateHeureLongue } from "../../utils/dateHeure";
 
 interface SubscriptionHistoryRecord {
   id: string;
@@ -301,19 +302,11 @@ export default function SubscriptionPage() {
               ? t("manager.subscription.unlimitedHelp")
               : sub?.isTrialActive && sub.trialEndsAt
               ? t("manager.subscription.trialEndsAt", {
-                  date: new Date(sub.trialEndsAt).toLocaleDateString(i18n.language, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  }),
+                  date: formaterDateHeureLongue(sub.trialEndsAt, i18n.language),
                 })
               : sub?.subscriptionEndsAt
               ? t("manager.subscription.nextDueDate", {
-                  date: new Date(sub.subscriptionEndsAt).toLocaleDateString(i18n.language, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  }),
+                  date: formaterDateHeureLongue(sub.subscriptionEndsAt, i18n.language),
                 })
               : t("manager.subscription.choosePlanPrompt")}
           </p>
