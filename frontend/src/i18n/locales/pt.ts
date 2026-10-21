@@ -648,6 +648,11 @@ const pt: TranslationSchema = {
   },
 
   components: {
+    deconnexion: {
+      title: "Sair?",
+      message: "Sua sessão será encerrada neste dispositivo. Você precisará entrar novamente para voltar.",
+      cancel: "Cancelar",
+    },
     inactivite: {
       title: "A sua sessão está prestes a expirar",
       message: "Sem atividade sua, a sessão será terminada dentro de {{count}} s.",

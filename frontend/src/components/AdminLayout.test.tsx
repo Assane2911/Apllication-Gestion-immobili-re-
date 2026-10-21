@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -70,13 +70,24 @@ describe("AdminLayout", () => {
     expect(lienParametres).toHaveAttribute("aria-current", "page");
   });
 
-  it("appelle logout au clic sur le bouton de déconnexion", async () => {
+  it("demande confirmation, puis appelle logout", async () => {
     const user = userEvent.setup();
     const logout = vi.fn(async () => {});
     renderAdminLayout("/admin", logout);
 
-    await user.click(screen.getByRole("button", { name: /Se déconnecter/i }));
-    expect(logout).toHaveBeenCalled();
+    // Confirmation avant de fermer la session : un appui involontaire ne déconnecte plus.
+    const ouvrir = screen.getByRole("button", { name: /Se déconnecter/i });
+    await user.click(ouvrir);
+    const fenetre = screen.getByRole("dialog", { name: "Se déconnecter ?" });
+    expect(logout).not.toHaveBeenCalled();
+
+    await user.click(within(fenetre).getByRole("button", { name: "Annuler" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(logout).not.toHaveBeenCalled();
+
+    await user.click(ouvrir);
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Se déconnecter" }));
+    expect(logout).toHaveBeenCalledTimes(1);
   });
 
   it("bascule le thème au clic sur le bouton clair/sombre", async () => {

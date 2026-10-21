@@ -648,6 +648,11 @@ const en: TranslationSchema = {
   },
 
   components: {
+    deconnexion: {
+      title: "Log out?",
+      message: "Your session will be closed on this device. You will need to sign in again to come back.",
+      cancel: "Cancel",
+    },
     inactivite: {
       title: "Your session is about to expire",
       message: "With no activity from you, you will be signed out in {{count}} s.",

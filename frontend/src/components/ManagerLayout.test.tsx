@@ -33,7 +33,7 @@ const abonnement = (plan: "STARTER" | "PRO" | "ENTERPRISE", essai = false): NonN
 });
 const agence: AuthUser = { ...gestionnaire, id: "m2", subscription: abonnement("ENTERPRISE") };
 
-function authValue(user: AuthUser | null): AuthContextValue {
+function authValue(user: AuthUser | null, logout: () => Promise<void> = async () => {}): AuthContextValue {
   return {
     user,
     loading: false,
@@ -42,14 +42,14 @@ function authValue(user: AuthUser | null): AuthContextValue {
     loginWithGoogle: noop,
     verifyTwoFactor: noop,
     verifyEmail: noop,
-    logout: async () => {},
+    logout,
     refreshUser: async () => user,
   };
 }
 
-function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnaire) {
+function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnaire, logout?: () => Promise<void>) {
   return render(
-    <AuthContext.Provider value={authValue(utilisateur)}>
+    <AuthContext.Provider value={authValue(utilisateur, logout)}>
       <CurrencyProvider>
         <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
           <MemoryRouter initialEntries={[entree]}>
@@ -195,6 +195,28 @@ describe("ManagerLayout — bouton retour d'Android", () => {
     // larges : la suite complète tourne en parallèle sur une machine chargée.
     await waitFor(() => expect(barre.className).toMatch(/-translate-x-full/), { timeout: 4000 });
     await waitFor(() => expect(traiterRetourSurCouche()).toBe(false), { timeout: 4000 });
+  });
+});
+
+describe("ManagerLayout — confirmation de déconnexion", () => {
+  it("le bouton du menu demande confirmation ; la fenêtre est hors de la barre latérale (qui est transformée)", async () => {
+    const user = userEvent.setup();
+    const logout = vi.fn(async () => {});
+    const { container } = renderManagerLayout("/dashboard", gestionnaire, logout);
+    const barre = container.querySelector("aside")!;
+
+    await user.click(within(barre).getByRole("button", { name: "Se déconnecter" }));
+    const fenetre = screen.getByRole("dialog", { name: "Se déconnecter ?" });
+    expect(logout).not.toHaveBeenCalled();
+    expect(barre).not.toContainElement(fenetre);
+
+    await user.click(within(fenetre).getByRole("button", { name: "Annuler" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(logout).not.toHaveBeenCalled();
+
+    await user.click(within(barre).getByRole("button", { name: "Se déconnecter" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Se déconnecter" }));
+    expect(logout).toHaveBeenCalledTimes(1);
   });
 });
 

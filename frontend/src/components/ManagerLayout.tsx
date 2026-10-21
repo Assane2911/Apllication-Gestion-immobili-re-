@@ -35,6 +35,7 @@ import { peutVoirLeGuide } from "../utils/accesGuide";
 import { enregistrerCoucheRetour } from "../utils/couchesRetour";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
+import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
 import GlobalSearch from "./GlobalSearch";
 import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -71,7 +72,8 @@ const navItems = [
 
 export default function ManagerLayout() {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { demanderDeconnexion, dialogue: dialogueDeconnexion } = useConfirmationDeconnexion();
   const { theme, toggleTheme } = useTheme();
   const sub = user?.subscription;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -198,7 +200,7 @@ export default function ManagerLayout() {
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={demanderDeconnexion}
             className="mt-2.5 w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 bg-ink-900/40 border border-ink-700 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
           >
             <LogOut size={13} />
@@ -206,6 +208,8 @@ export default function ManagerLayout() {
           </button>
         </div>
       </aside>
+      {/* Hors de la barre latérale : sa transformation ferait d'elle le repère d'un élément en `fixed`. */}
+      {dialogueDeconnexion}
       <main data-surface="app" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between gap-3 mb-6">
           <button

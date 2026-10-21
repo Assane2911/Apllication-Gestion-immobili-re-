@@ -646,6 +646,11 @@ const fr = {
   },
 
   components: {
+    deconnexion: {
+      title: "Se déconnecter ?",
+      message: "Votre session sera fermée sur cet appareil. Vous devrez vous reconnecter pour revenir.",
+      cancel: "Annuler",
+    },
     inactivite: {
       title: "Session sur le point d'expirer",
       message: "Sans activité de votre part, vous serez déconnecté dans {{count}} s.",
