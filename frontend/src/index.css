@@ -7,6 +7,19 @@
   --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
 
+  /* Interlignes des tailles de texte en longueurs fixes, comme dans Tailwind 3.
+     Tailwind 4 les exprime en rapports (1,43 pour text-sm…), que les enfants
+     héritent : un `text-[10px]` dans un bloc `text-sm` passerait de 20 px à
+     14 px d'interligne. */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
   --color-canvas: #edf1f6;
 
   --color-brand-50: #eff6ff;
@@ -113,6 +126,12 @@
   input::placeholder,
   textarea::placeholder {
     color: var(--color-gray-400);
+  }
+
+  /* Le remplissage par défaut des options de liste, que Tailwind 4 remet à 0. */
+  option {
+    padding-block: 0 1px;
+    padding-inline: 2px;
   }
 }
 

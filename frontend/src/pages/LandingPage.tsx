@@ -319,7 +319,7 @@ export default function LandingPage() {
         </Reveal>
 
         <Reveal delay={160}>
-          <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed sm:leading-7">
             {t("landing.hero.subtitle")}
           </p>
         </Reveal>

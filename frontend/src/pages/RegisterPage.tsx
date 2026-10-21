@@ -148,7 +148,7 @@ export default function RegisterPage() {
         </Reveal>
 
         <Reveal delay={100} className="relative max-w-md">
-          <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight">
+          <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight xl:leading-10">
             {t("auth.register.panel.title")}
           </h1>
           <p className="mt-4 text-sm text-slate-400 leading-relaxed">{t("auth.register.panel.subtitle")}</p>
