@@ -285,6 +285,7 @@ const pt: TranslationSchema = {
     login: {
       suspended: "A sua conta está suspensa. Contacte o suporte da plataforma para saber mais.",
       inactive: "A sua sessão foi terminada por inatividade. Inicie sessão novamente para continuar.",
+      loggedOut: "Você saiu da sua conta. Até logo!",
       title: "Gestão Imobiliária",
       subtitle: "Inicie sessão na sua conta",
       email: "Email",
@@ -648,6 +649,11 @@ const pt: TranslationSchema = {
   },
 
   components: {
+    deconnexion: {
+      title: "Sair?",
+      message: "Sua sessão será encerrada neste dispositivo. Você precisará entrar novamente para voltar.",
+      cancel: "Cancelar",
+    },
     inactivite: {
       title: "A sua sessão está prestes a expirar",
       message: "Sem atividade sua, a sessão será terminada dentro de {{count}} s.",

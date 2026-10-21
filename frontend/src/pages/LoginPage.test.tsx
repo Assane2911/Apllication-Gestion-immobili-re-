@@ -77,6 +77,32 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("confirme la déconnexion volontaire quand on arrive avec ?deconnecte=1, sans la présenter comme une erreur", () => {
+    renderPage("/login?deconnecte=1");
+    const message = screen.getByRole("status");
+    expect(message).toHaveTextContent("Vous avez été déconnecté. À bientôt !");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("n'affiche pas ce message à l'arrivée normale, ni après une déconnexion pour inactivité", () => {
+    const { unmount } = renderPage();
+    expect(screen.queryByText(/À bientôt/)).not.toBeInTheDocument();
+    unmount();
+    renderPage("/login?inactif=1");
+    expect(screen.queryByText(/À bientôt/)).not.toBeInTheDocument();
+  });
+
+  it("le message s'efface quand on commence une nouvelle connexion", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockRejectedValueOnce(new Error("réseau"));
+    renderPage("/login?deconnecte=1");
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Email"), "agence@test.local");
+    await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+    await user.click(screen.getByRole("button", { name: /Se connecter/ }));
+    expect(screen.queryByText("Vous avez été déconnecté. À bientôt !")).not.toBeInTheDocument();
+  });
+
   it("n'affiche aucun message d'erreur à l'arrivée normale sur la page", () => {
     renderPage();
     expect(screen.queryByText(/suspendu/)).not.toBeInTheDocument();
