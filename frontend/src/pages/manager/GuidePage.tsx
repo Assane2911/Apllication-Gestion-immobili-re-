@@ -39,7 +39,7 @@ export default function GuidePage() {
         {ETAPES.map((etape, i) => (
           <li
             key={etape.cle}
-            className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 flex gap-4"
+            className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 flex gap-4"
           >
             <span
               aria-hidden="true"

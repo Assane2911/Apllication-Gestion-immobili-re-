@@ -126,10 +126,10 @@ export default function AdminAuditPage() {
 
       {donnees && donnees.items.length > 0 && (
         <>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto">
+          <div className="rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-contour-200 dark:border-slate-800">
                   <th className="px-4 py-3 font-semibold">{t("admin.audit.table.date")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.audit.table.admin")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.audit.table.action")}</th>
@@ -139,7 +139,7 @@ export default function AdminAuditPage() {
               </thead>
               <tbody className="text-slate-800 dark:text-slate-200">
                 {donnees.items.map((e) => (
-                  <tr key={e.id} className="border-b last:border-b-0 border-slate-100 dark:border-slate-800/60 align-top">
+                  <tr key={e.id} className="border-b last:border-b-0 border-contour-100 dark:border-slate-800/60 align-top">
                     <td className="px-4 py-3 whitespace-nowrap">{new Date(e.createdAt).toLocaleString(i18n.language)}</td>
                     <td className="px-4 py-3">{e.adminEmail}</td>
                     <td className="px-4 py-3 font-semibold">{libelleAction(e.action)}</td>
@@ -155,7 +155,7 @@ export default function AdminAuditPage() {
                         "—"
                       )}
                     </td>
-                    <td className="px-4 py-3 break-words min-w-[12rem]">{e.details ?? "—"}</td>
+                    <td className="px-4 py-3 wrap-break-word min-w-48">{e.details ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>

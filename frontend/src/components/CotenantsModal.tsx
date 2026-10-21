@@ -73,8 +73,8 @@ export default function CotenantsModal({ contractId, titulaireId, locataires, ve
   const dialogue = useDialogue({ onClose, titreId: "cotenants-title", fermable: !saving });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200 dark:border-slate-700">
         <div className="flex items-start justify-between">
           <h3 id="cotenants-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.cotenants.title")}</h3>
           <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
@@ -87,7 +87,7 @@ export default function CotenantsModal({ contractId, titulaireId, locataires, ve
         {colocs.length === 0 ? (
           <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{t("components.cotenants.none")}</p>
         ) : (
-          <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="mt-4 divide-y divide-contour-100 dark:divide-slate-800">
             {colocs.map((c) => (
               <li key={c.id} className="py-2 flex items-center justify-between gap-3 text-sm">
                 <span className="text-slate-800 dark:text-slate-200">
@@ -105,8 +105,8 @@ export default function CotenantsModal({ contractId, titulaireId, locataires, ve
         )}
 
         {!verrouille && colocs.length < 5 && (
-          <form onSubmit={ajouter} className="mt-4 flex flex-wrap items-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
-            <div className="flex-1 min-w-[12rem]">
+          <form onSubmit={ajouter} className="mt-4 flex flex-wrap items-end gap-2 border-t border-contour-100 dark:border-slate-800 pt-4">
+            <div className="flex-1 min-w-48">
               <label htmlFor="cotenant-select" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("components.cotenants.choose")}</label>
               <select id="cotenant-select" value={choix} onChange={(e) => setChoix(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
                 <option value="">{proposables.length ? t("components.cotenants.placeholder") : t("components.cotenants.noneAvailable")}</option>

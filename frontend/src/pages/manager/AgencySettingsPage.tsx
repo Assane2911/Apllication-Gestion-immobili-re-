@@ -274,7 +274,7 @@ export default function AgencySettingsPage() {
       <SectionImageAgence ressource="logo" url={logoUrl} onChange={setLogoUrl} />
       <SectionImageAgence ressource="stamp" url={stampUrl} onChange={setStampUrl} />
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -342,7 +342,7 @@ export default function AgencySettingsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-contour-100 dark:border-slate-800">
             <div className="md:col-span-2">
               <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 {t("manager.agencySettings.fields.bankSectionTitle")}
@@ -391,7 +391,7 @@ export default function AgencySettingsPage() {
             />
           </div>
 
-          <fieldset className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+          <fieldset className="pt-4 border-t border-contour-200 dark:border-slate-800 space-y-3">
             <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t("manager.agencySettings.overdue.title")}</legend>
             <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.agencySettings.overdue.hint")}</p>
             <label className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-200">
@@ -449,7 +449,7 @@ export default function AgencySettingsPage() {
             )}
           </fieldset>
 
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+          <div className="pt-4 border-t border-contour-200 dark:border-slate-800 flex justify-end">
             <button
               type="submit"
               disabled={saving}
@@ -461,7 +461,7 @@ export default function AgencySettingsPage() {
         </form>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
           {t("manager.agencySettings.retention.title")}
         </h3>
@@ -540,7 +540,7 @@ export default function AgencySettingsPage() {
         invalide aussi la session courante (voir logoutAllDevices côté
         backend), d'où la déconnexion locale immédiate qui suit.
       */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
           {t("manager.agencySettings.security.title")}
         </h3>
@@ -572,7 +572,7 @@ export default function AgencySettingsPage() {
         celle du propriétaire — c'est pourquoi cette carte n'est pas réservée
         à `estProprietaire`, contrairement à la gestion de l'équipe ci-dessous.
       */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
           {t("manager.agencySettings.twoFactor.title")}
         </h3>
@@ -617,7 +617,7 @@ export default function AgencySettingsPage() {
       )}
 
       {estProprietaire && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
             {t("manager.agencySettings.team.title")}
           </h3>
@@ -698,7 +698,7 @@ export default function AgencySettingsPage() {
               {teamMembers.length === 0 ? (
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-4">{t("manager.agencySettings.team.empty")}</p>
               ) : (
-                <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+                <ul className="mt-4 divide-y divide-contour-100 dark:divide-slate-800">
                   {teamMembers.map((member) => (
                     <MembreEquipe
                       key={member.id}

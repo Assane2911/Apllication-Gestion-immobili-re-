@@ -69,7 +69,7 @@ const VitrineListingPage = lazyWithReload(() => import("./pages/VitrineListingPa
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <span className="w-8 h-8 border-[3px] border-slate-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
+      <span className="w-8 h-8 border-[3px] border-contour-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
     </div>
   );
 }

@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 // sont éclaircis par défaut sous le seuil de lisibilité. index.css les foncé dans
 // la zone applicative ; ce test empêche de redescendre sous le seuil WCAG.
 const css = readFileSync(resolve(__dirname, "index.css"), "utf8");
-const tailwind = readFileSync(resolve(__dirname, "../tailwind.config.js"), "utf8");
 
 function luminance(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -27,7 +26,7 @@ function variable(nom: string): string {
   return m[1];
 }
 
-const canvas = tailwind.match(/canvas:\s*"(#[0-9a-fA-F]{6})"/)![1];
+const canvas = css.match(/--color-canvas:\s*(#[0-9a-fA-F]{6})/)![1];
 const fonds = { "blanc des cartes": "#ffffff", "fond des pages": canvas };
 
 describe("thème clair — contraste du texte", () => {

@@ -61,10 +61,10 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-2xs">
+      <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-contour-200/80 dark:border-slate-800/80 shadow-2xs">
         <div className={`${colonne} mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className="hidden min-[380px]:flex w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold shadow-xs shadow-brand-500/20">
+            <div className="hidden min-[380px]:flex w-9 h-9 shrink-0 rounded-xl bg-linear-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold shadow-xs shadow-brand-500/20">
               <img src="/app-icon.png" alt="Logo" className="w-full h-full object-cover rounded-xl" />
             </div>
             <div className="min-w-0">
@@ -86,7 +86,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
             <Bulle texte={t("common.theme.tip")} className="contents">
               <button
                 onClick={toggleTheme}
-                className="shrink-0 w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                className="shrink-0 w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-contour-200/80 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
                 aria-label={t("common.theme.toggleAria")}
               >
                 {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
@@ -112,7 +112,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
           <nav
             ref={barre}
             aria-label={titre}
-            className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
+            className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar max-sm:pr-8 max-sm:mask-[linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
           >
             {onglets.map((onglet) => (
               // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par défaut). C'est la barre latérale du
@@ -124,7 +124,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
                   className={({ isActive }) =>
                     `px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
                       isActive
-                        ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-xs shadow-brand-500/25 font-semibold"
+                        ? "bg-linear-to-r from-brand-600 to-brand-700 text-white shadow-xs shadow-brand-500/25 font-semibold"
                         : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80"
                     }`
                   }

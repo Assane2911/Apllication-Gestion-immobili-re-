@@ -254,7 +254,7 @@ export default function OwnersPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.owners.formTitleEdit") : t("manager.owners.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
@@ -328,7 +328,7 @@ export default function OwnersPage() {
       ) : (
       <>
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
             <tr>
@@ -340,7 +340,7 @@ export default function OwnersPage() {
               <th className="relative px-4 py-3 font-semibold"><span className="sr-only">{t("common.actions.column")}</span></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={6} />)
             ) : (
@@ -403,13 +403,13 @@ export default function OwnersPage() {
       <div className="sm:hidden space-y-3">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
+              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 space-y-2">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-40" />
               </div>
             ))
           : owners.map((owner) => (
-              <div key={owner.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+              <div key={owner.id} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-slate-900 dark:text-slate-100">{owner.firstName} {owner.lastName}</p>
                   <span className="text-xs font-medium text-slate-600 dark:text-slate-400 shrink-0">{owner.managementFeeRate}%</span>
@@ -418,7 +418,7 @@ export default function OwnersPage() {
                   <p>{owner.phone}</p>
                   <p>{owner.email}</p>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                <div className="flex items-center justify-between pt-2 border-t border-contour-100 dark:border-slate-800 text-xs">
                   <div className="flex flex-col gap-0.5">
                     <span
                       className={

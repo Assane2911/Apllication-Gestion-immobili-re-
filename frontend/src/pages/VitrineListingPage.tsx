@@ -83,7 +83,7 @@ export default function VitrineListingPage() {
       <div className="min-h-screen bg-canvas dark:bg-slate-950">
         <VitrineHeader />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-16 flex justify-center">
-          <span className="w-8 h-8 border-[3px] border-slate-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
+          <span className="w-8 h-8 border-[3px] border-contour-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
         </main>
       </div>
     );
@@ -114,7 +114,7 @@ export default function VitrineListingPage() {
           {t("vitrine.backToListings")}
         </Link>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="relative h-56 bg-slate-100 dark:bg-slate-800">
             {listing.imageUrl ? (
               <img src={fileUrl(listing.imageUrl) ?? undefined} alt={listing.title} className="w-full h-full object-cover" />
@@ -155,7 +155,7 @@ export default function VitrineListingPage() {
               </span>
             </div>
 
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <div className="border-t border-contour-100 dark:border-slate-800 pt-4">
               {leadSuccess ? (
                 <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium text-center py-4">{t("vitrine.leadForm.success")}</p>
               ) : (

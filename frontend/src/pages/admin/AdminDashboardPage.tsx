@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("admin.dashboard.mrrByPlan.title")}</h3>
           {mrr.contributors === 0 ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 py-10 text-center">{t("admin.dashboard.mrrByPlan.empty")}</p>
@@ -185,7 +185,7 @@ export default function AdminDashboardPage() {
           )}
         </div>
 
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("admin.dashboard.trialsEndingSoon.title")}</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.dashboard.trialsEndingSoon.subtitle")}</p>
@@ -196,12 +196,12 @@ export default function AdminDashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
+                  <tr className="border-b border-contour-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
                     <th className="py-2.5">{t("admin.dashboard.trialsEndingSoon.manager")}</th>
                     <th className="py-2.5 text-right" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
                   {trialsEndingSoon.map((trial) => (
                     <tr key={trial.userId} className="text-slate-700 dark:text-slate-300">
                       <td className="py-3">

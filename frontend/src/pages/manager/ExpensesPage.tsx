@@ -330,14 +330,14 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <label htmlFor="expense-property-filter" className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.filterByProperty")}</label>
           <select
             id="expense-property-filter"
             value={selectedPropertyId}
             onChange={(e) => handlePropertyFilterChange(e.target.value)}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           >
             <option value="">{t("manager.expenses.allProperties")}</option>
             {properties.map((p) => (
@@ -350,7 +350,7 @@ export default function ExpensesPage() {
         <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.expenses.expenseLines", { count: total })}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.fullReportLabel")}</span>
           <input
@@ -358,7 +358,7 @@ export default function ExpensesPage() {
             aria-label={t("manager.expenses.fields.reportDateFrom")}
             value={reportRange.from}
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           />
           <span className="text-xs text-slate-600 dark:text-slate-400">{t("manager.expenses.to")}</span>
           <input
@@ -366,7 +366,7 @@ export default function ExpensesPage() {
             aria-label={t("manager.expenses.fields.reportDateTo")}
             value={reportRange.to}
             onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           />
         </div>
         <Bulle texte={t("manager.tips.expenseReport")}>
@@ -380,7 +380,7 @@ export default function ExpensesPage() {
         </Bulle>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
             <tr>
@@ -393,7 +393,7 @@ export default function ExpensesPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.expenses.table.action")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {expenses.map((exp) => (
               <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
@@ -447,8 +447,8 @@ export default function ExpensesPage() {
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
               <h3 id="expense-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.expenses.modalTitle")}</h3>
               <button

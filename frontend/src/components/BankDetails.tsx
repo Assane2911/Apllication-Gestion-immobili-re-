@@ -64,7 +64,7 @@ export default function BankDetails({ info, title, ibanLabel, bicLabel, missingM
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5">
+    <div className="mt-3 rounded-lg border border-contour-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5">
       <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">{title}</p>
       {info.iban && ligne("iban", ibanLabel, info.iban)}
       {info.bic && ligne("bic", bicLabel, info.bic)}

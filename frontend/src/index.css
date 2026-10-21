@@ -1,6 +1,143 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import './couleurs-tailwind3.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: #edf1f6;
+
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  --color-ink-700: #232b3f;
+  --color-ink-800: #151b2c;
+  --color-ink-900: #0f1524;
+  --color-ink-950: #0a0e1a;
+
+  --shadow-2xs:
+    0 1px 2px 0 rgb(15 23 42 / 0.09), 0 1px 4px -1px rgb(15 23 42 / 0.07);
+  --shadow-xs:
+    0 1px 2px 0 rgb(15 23 42 / 0.12), 0 3px 8px -2px rgb(15 23 42 / 0.1);
+  --shadow-sm:
+    0 1px 3px 0 rgb(15 23 42 / 0.12), 0 4px 10px -4px rgb(15 23 42 / 0.12);
+  --shadow:
+    0 2px 4px -1px rgb(15 23 42 / 0.12), 0 6px 14px -4px rgb(15 23 42 / 0.14);
+  --shadow-md:
+    0 4px 8px -2px rgb(15 23 42 / 0.12), 0 12px 24px -6px rgb(15 23 42 / 0.16);
+  --shadow-lg:
+    0 8px 16px -4px rgb(15 23 42 / 0.14), 0 20px 40px -10px rgb(15 23 42 / 0.18);
+  --shadow-xl:
+    0 12px 24px -6px rgb(15 23 42 / 0.16),
+    0 32px 56px -14px rgb(15 23 42 / 0.22);
+
+  /* Contours et séparateurs : slate-100 (#f1f5f9) et slate-200 (#e2e8f0)
+     disparaissaient sur fond clair (les `divide-slate-100` des listes étaient
+     invisibles). Teintes dédiées, utilisées uniquement par `border-*`/`divide-*`
+     (`border-contour-100`, `divide-contour-200`…) : le texte et les fonds en
+     slate-100/200 gardent leur teinte. */
+  --color-contour-100: #e3e9f1;
+  --color-contour-200: #d4dce8;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 9s ease-in-out infinite;
+  --animate-float-delay: float 7s ease-in-out 1.5s infinite;
+  --animate-gradient-x: gradientX 6s ease infinite;
+  --animate-shine: shine 3.5s ease-in-out infinite;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-18px);
+    }
+  }
+  @keyframes gradientX {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  @keyframes shine {
+    0% {
+      transform: translateX(-150%) skewX(-20deg);
+    }
+    100% {
+      transform: translateX(250%) skewX(-20deg);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+/* Tailwind 4 a changé deux défauts : le curseur des boutons (flèche au lieu de
+   la main) et la couleur du texte indicatif des champs (couleur du texte à 50 %
+   au lieu de gray-400). On garde ceux de Tailwind 3. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
+
+@utility glass-card {
+  /* Subtle glassmorphism */
+  @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-contour-200/80 dark:border-slate-800/80 shadow-xs;
+}
+
+@utility glass-panel {
+  @apply bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border border-contour-200 dark:border-slate-800;
+}
+
+@utility card-hover {
+  /* Interactive smooth card lift */
+  @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-950/50 hover:border-slate-300 dark:hover:border-slate-700;
+}
+
+@utility brand-glow {
+  /* Glow effects aligned with brand blue */
+  box-shadow: 0 0 25px -5px rgba(37, 99, 235, 0.25);
+}
+
+@utility brand-glow-sm {
+  box-shadow: 0 0 15px -3px rgba(37, 99, 235, 0.2);
+}
 
 @layer base {
   html {
@@ -31,31 +168,6 @@
 
   ::-webkit-scrollbar-thumb {
     @apply bg-slate-300 dark:bg-slate-700/60 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600;
-  }
-}
-
-@layer utilities {
-  /* Subtle glassmorphism */
-  .glass-card {
-    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-xs;
-  }
-
-  .glass-panel {
-    @apply bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border border-slate-200 dark:border-slate-800;
-  }
-
-  /* Interactive smooth card lift */
-  .card-hover {
-    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-950/50 hover:border-slate-300 dark:hover:border-slate-700;
-  }
-
-  /* Glow effects aligned with brand blue */
-  .brand-glow {
-    box-shadow: 0 0 25px -5px rgba(37, 99, 235, 0.25);
-  }
-
-  .brand-glow-sm {
-    box-shadow: 0 0 15px -3px rgba(37, 99, 235, 0.2);
   }
 }
 

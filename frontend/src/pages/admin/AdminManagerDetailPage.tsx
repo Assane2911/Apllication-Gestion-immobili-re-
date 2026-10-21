@@ -180,11 +180,11 @@ export default function AdminManagerDetailPage() {
   }
 
   const date = (valeur: string | null) => (valeur ? new Date(valeur).toLocaleDateString(i18n.language) : "—");
-  const carte = "rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
+  const carte = "rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
   const ligne = (libelle: string, valeur: string) => (
     <div className="flex justify-between gap-4 py-1.5 text-xs">
       <dt className="text-slate-600 dark:text-slate-400">{libelle}</dt>
-      <dd className="text-slate-900 dark:text-slate-100 text-right break-words min-w-0">{valeur}</dd>
+      <dd className="text-slate-900 dark:text-slate-100 text-right wrap-break-word min-w-0">{valeur}</dd>
     </div>
   );
 
@@ -228,7 +228,7 @@ export default function AdminManagerDetailPage() {
                 <p className="text-xs text-slate-700 dark:text-slate-300">
                   {t("admin.managerDetail.suspension.since", { date: date(manager.suspendedAt) })}
                 </p>
-                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 break-words">
+                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 wrap-break-word">
                   <span className="font-semibold">{t("admin.managerDetail.suspension.reasonLabel")}</span>{" "}
                   {manager.suspensionReason ?? "—"}
                 </p>
@@ -473,7 +473,7 @@ export default function AdminManagerDetailPage() {
                     e.preventDefault();
                     void ajuster("unlimited");
                   }}
-                  className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2"
+                  className="mt-4 pt-4 border-t border-contour-200 dark:border-slate-800 space-y-2"
                 >
                   <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.unlimitedTitle")}</p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -590,7 +590,7 @@ export default function AdminManagerDetailPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                    <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-contour-200 dark:border-slate-800">
                       <th className="py-2 pr-4 font-semibold">{t("admin.managerDetail.billing.date")}</th>
                       <th className="py-2 pr-4 font-semibold">{t("admin.managers.table.plan")}</th>
                       <th className="py-2 pr-4 font-semibold">{t("admin.subscriptions.table.amount")}</th>
@@ -601,7 +601,7 @@ export default function AdminManagerDetailPage() {
                   </thead>
                   <tbody className="text-slate-800 dark:text-slate-200">
                     {manager.billingHistory.map((b) => (
-                      <tr key={b.id} className="border-b last:border-b-0 border-slate-100 dark:border-slate-800/60">
+                      <tr key={b.id} className="border-b last:border-b-0 border-contour-100 dark:border-slate-800/60">
                         <td className="py-2 pr-4">{date(b.createdAt)}</td>
                         <td className="py-2 pr-4">{t(`admin.managers.plans.${b.plan}`)}</td>
                         <td className="py-2 pr-4 font-semibold">{formatMoney(b.amount, b.currency)}</td>

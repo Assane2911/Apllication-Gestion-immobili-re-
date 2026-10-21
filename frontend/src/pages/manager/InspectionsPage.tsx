@@ -204,7 +204,7 @@ export default function InspectionsPage() {
       )}
 
       {showCreateForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{t("manager.inspections.formTitle")}</h3>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -239,7 +239,7 @@ export default function InspectionsPage() {
       )}
 
       {editingInspection && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-slate-900 dark:text-slate-100">{t("manager.inspections.editTitle")}</h3>
             <button
@@ -361,7 +361,7 @@ export default function InspectionsPage() {
 
           {editError && <p role="alert" className="text-sm text-red-600">{editError}</p>}
 
-          <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex gap-2 pt-2 border-t border-contour-100 dark:border-slate-800">
             <Bulle texte={t("manager.tips.inspectionSave")}>
             <button type="button" onClick={handleSave} disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
               {saving ? t("common.actions.saving") : t("common.actions.save")}
@@ -386,7 +386,7 @@ export default function InspectionsPage() {
         />
       ) : (
       <>
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
             <tr>
@@ -399,7 +399,7 @@ export default function InspectionsPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.inspections.table.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={7} />)
             ) : (
@@ -472,7 +472,7 @@ export default function InspectionsPage() {
 
       <div className="sm:hidden space-y-3">
         {inspections.map((insp) => (
-          <div key={insp.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+          <div key={insp.id} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="font-medium text-slate-900 dark:text-slate-100">{insp.property?.title}</p>
@@ -484,7 +484,7 @@ export default function InspectionsPage() {
               <span>{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</span>
               <span>{formaterJour(insp.inspectionDate, i18n.language)}</span>
             </div>
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100 dark:border-slate-800">
               {insp.status === "DRAFT" && (
                 <Bulle texte={t("manager.tips.inspectionEdit")}>
                 <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg">

@@ -169,7 +169,7 @@ export default function AdminListingsPage() {
           placeholder={t("admin.listings.searchPlaceholder")}
           aria-label={t("admin.listings.searchLabel")}
           maxLength={100}
-          className={`${champ} flex-1 min-w-[14rem]`}
+          className={`${champ} flex-1 min-w-56`}
         />
         <select
           value={statut}
@@ -226,7 +226,7 @@ export default function AdminListingsPage() {
                 <li
                   key={a.id}
                   className={`rounded-2xl border bg-white dark:bg-slate-900 p-4 ${
-                    masquee ? "border-red-300 dark:border-red-900" : "border-slate-200 dark:border-slate-800"
+                    masquee ? "border-red-300 dark:border-red-900" : "border-contour-200 dark:border-slate-800"
                   }`}
                 >
                   <div className="flex gap-4">
@@ -240,7 +240,7 @@ export default function AdminListingsPage() {
                       <div className="w-20 h-20 rounded-lg shrink-0 bg-slate-100 dark:bg-slate-800" aria-hidden="true" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 break-words">{a.title}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 wrap-break-word">{a.title}</p>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                         {a.location} · {formatMoney(a.price, a.currency)}
                       </p>
@@ -280,7 +280,7 @@ export default function AdminListingsPage() {
                   {masquee && a.hiddenByAdminAt && (
                     <div className="mt-3 text-xs text-slate-700 dark:text-slate-300">
                       <p>{t("admin.listings.hiddenSince", { date: date(a.hiddenByAdminAt) })}</p>
-                      {a.moderationReason && <p className="mt-0.5 break-words">{t("admin.listings.reason", { reason: a.moderationReason })}</p>}
+                      {a.moderationReason && <p className="mt-0.5 wrap-break-word">{t("admin.listings.reason", { reason: a.moderationReason })}</p>}
                     </div>
                   )}
 
@@ -326,7 +326,7 @@ export default function AdminListingsPage() {
 
                   {masquageId === a.id && !masquee && (
                     <form
-                      className="mt-3 space-y-2 rounded-xl border border-slate-200 dark:border-slate-800 p-3"
+                      className="mt-3 space-y-2 rounded-xl border border-contour-200 dark:border-slate-800 p-3"
                       onSubmit={(e) => {
                         e.preventDefault();
                         void agir(a.id, "hide", { reason: motif.trim() });

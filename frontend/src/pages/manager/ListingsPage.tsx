@@ -227,7 +227,7 @@ export default function ListingsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">
             {editing ? t("manager.listings.formTitleEdit") : t("manager.listings.formTitleNew")}
           </h3>
@@ -323,7 +323,7 @@ export default function ListingsPage() {
               <input id="listing-image" type="file" accept="image/*" onChange={(e) => void choisirImage(e)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
             </div>
             <div className="flex items-center gap-2 pt-6">
-              <input id="listing-featured" type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="rounded border-slate-300 dark:border-slate-700" />
+              <input id="listing-featured" type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="rounded-sm border-slate-300 dark:border-slate-700" />
               <label htmlFor="listing-featured" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("manager.listings.fields.featured")}</label>
             </div>
             <div className="md:col-span-2">
@@ -361,7 +361,7 @@ export default function ListingsPage() {
         {listings.map((listing) => (
           <div
             key={listing.id}
-            className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md dark:hover:shadow-slate-950/50 hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden flex flex-col justify-between"
+            className="group bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md dark:hover:shadow-slate-950/50 hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden flex flex-col justify-between"
           >
             <div>
               <div className="relative h-40 bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -389,7 +389,7 @@ export default function ListingsPage() {
                 <div role="note" className="bg-red-50 dark:bg-red-950/40 border-y border-red-200 dark:border-red-900 px-4 py-3">
                   <p className="text-xs font-semibold text-red-800 dark:text-red-300">{t("manager.listings.moderation.title")}</p>
                   {listing.moderationReason && (
-                    <p className="text-xs text-red-700 dark:text-red-400 mt-0.5 break-words">
+                    <p className="text-xs text-red-700 dark:text-red-400 mt-0.5 wrap-break-word">
                       {t("manager.listings.moderation.reason", { reason: listing.moderationReason })}
                     </p>
                   )}
@@ -404,7 +404,7 @@ export default function ListingsPage() {
                   {listing.location}
                   {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
                 </p>
-                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-contour-100 dark:border-slate-800">
                   <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
                     {t(`manager.listings.types.${listing.type}`)}
                   </span>

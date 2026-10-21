@@ -86,7 +86,7 @@ export default function GoogleSignInButton({ onCredential, onError, locale }: Go
         containerRef.current.innerHTML = "";
         window.google.accounts.id.renderButton(containerRef.current, {
           type: "standard",
-          theme: "outline",
+          theme: "outline-solid",
           size: "large",
           width: 320,
           locale,

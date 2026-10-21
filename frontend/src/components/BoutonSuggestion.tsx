@@ -63,18 +63,18 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
         <button
           type="button"
           onClick={() => setOuvert(true)}
-          className="flex items-center gap-2 rounded-full bg-slate-900/90 dark:bg-slate-700/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur transition-colors"
+          className="flex items-center gap-2 rounded-full bg-slate-900/90 dark:bg-slate-700/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur-sm transition-colors"
         >
           <Lightbulb size={14} aria-hidden="true" /> {t("suggestions.button")}
         </button>
       </div>
 
       {ouvert && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
           <Dialogue
             onClose={fermer}
             titreId="suggestion-titre"
-            className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl p-5"
+            className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-contour-200 dark:border-slate-700 shadow-xl p-5"
           >
             <h3 id="suggestion-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
               {t("suggestions.title")}

@@ -145,7 +145,7 @@ export default function ImportPage() {
         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.import.subtitle")}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div role="radiogroup" aria-label={t("manager.import.typeLabel")} className="flex flex-wrap gap-2">
           {(["properties", "tenants", "contracts"] as const).map((valeur) => (
             <button
@@ -227,7 +227,7 @@ export default function ImportPage() {
               { cle: "duplicates", valeur: analyse.resume.doublons },
               { cle: "errors", valeur: analyse.resume.erreurs },
             ].map((carte) => (
-              <div key={carte.cle} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
+              <div key={carte.cle} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 px-4 py-3 shadow-sm">
                 <p className="text-xs text-slate-600 dark:text-slate-400">{t(`manager.import.summary.${carte.cle}`)}</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{carte.valeur}</p>
               </div>
@@ -240,7 +240,7 @@ export default function ImportPage() {
             </p>
           )}
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto max-h-[28rem] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto max-h-112 overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left sticky top-0">
                 <tr>
@@ -249,7 +249,7 @@ export default function ImportPage() {
                   <th className="px-4 py-2 font-semibold">{t("manager.import.table.status")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
                 {analyse.lignes.map((l) => (
                   <tr key={l.ligne}>
                     <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{l.ligne}</td>

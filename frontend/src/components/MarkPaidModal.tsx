@@ -78,10 +78,10 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
   const dialogue = useDialogue({ onClose, titreId: "mark-paid-title", fermable: !saving });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div
         {...dialogue}
-        className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700"
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700"
       >
         <div className="flex items-start justify-between">
           <div>

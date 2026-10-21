@@ -126,7 +126,7 @@ export default function CrgPage() {
             id="crg-month-select"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 capitalize"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500 capitalize"
           >
             {monthOptions.map((m) => (
               <option key={m.value} value={m.value} className="capitalize">
@@ -141,7 +141,7 @@ export default function CrgPage() {
             id="crg-year-select"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           >
             {yearOptions.map((y) => (
               <option key={y} value={y}>
@@ -188,8 +188,8 @@ export default function CrgPage() {
         />
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-contour-100 dark:border-slate-800">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("manager.crg.table.title")}</h3>
         </div>
         <div className="overflow-x-auto">
@@ -204,7 +204,7 @@ export default function CrgPage() {
                 <th className="px-4 py-3 font-semibold">{t("manager.crg.table.net")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
               {crg.properties.map((row) => (
                 <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{row.propertyTitle}</td>

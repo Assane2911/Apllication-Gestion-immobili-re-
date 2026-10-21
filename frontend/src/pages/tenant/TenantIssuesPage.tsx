@@ -160,7 +160,7 @@ export default function TenantIssuesPage() {
       )}
 
       {/* Formulaire de signalement */}
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
         <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("tenant.issues.newReport")}</h3>
 
         {contracts.length > 1 && (
@@ -209,7 +209,7 @@ export default function TenantIssuesPage() {
         </div>
 
         {/* Zone de prise de photo */}
-        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+        <div className="bg-slate-50 dark:bg-slate-800/60 border border-contour-200 dark:border-slate-700 rounded-xl p-4">
           <label htmlFor="issue-photo" className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-2">
             {t("tenant.issues.photoLabel")}
           </label>
@@ -236,7 +236,7 @@ export default function TenantIssuesPage() {
                 className="h-44 rounded-xl object-cover border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer"
                 onClick={() => setLightbox(preview)}
               />
-              <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm">
+              <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-sm backdrop-blur-xs">
                 {t("tenant.issues.photoReady")}
               </span>
             </div>
@@ -261,7 +261,7 @@ export default function TenantIssuesPage() {
           {issues.map((issue) => {
             const allPhotos = getAllIssuePhotos(issue);
             return (
-              <div key={issue.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
+              <div key={issue.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
                 <div>
                   {/* Galerie photos */}
                   <div className="relative">
@@ -277,7 +277,7 @@ export default function TenantIssuesPage() {
                             alt={t("tenant.issues.photoAlt", { index: idx + 1 })}
                             className="w-full h-full object-cover hover:scale-105 transition-transform"
                           />
-                          <span className="absolute top-2 left-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
+                          <span className="absolute top-2 left-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-sm">
                             {idx + 1}/{allPhotos.length}
                           </span>
                         </div>
@@ -293,7 +293,7 @@ export default function TenantIssuesPage() {
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{issue.description}</p>
 
                     {issue.vendor && (
-                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-700 dark:text-slate-300 mt-2">
+                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-contour-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-700 dark:text-slate-300 mt-2">
                         <strong className="block mb-0.5 font-semibold text-slate-800 dark:text-slate-200">{t("tenant.issues.vendorAssigned")}</strong>
                         {issue.vendor.trade ? `${issue.vendor.name} — ${issue.vendor.trade}` : issue.vendor.name}
                       </div>
@@ -323,9 +323,9 @@ export default function TenantIssuesPage() {
                 </div>
 
                 {/* Ajout d'une photo supplémentaire */}
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                <div className="p-4 border-t border-contour-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
                   {addingPhotoToId === issue.id ? (
-                    <div className="space-y-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="space-y-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-contour-200 dark:border-slate-700">
                       <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{t("tenant.issues.addPhotoTitle")}</p>
                       <input
                         aria-label={t("tenant.issues.addPhotoTitle")}
@@ -376,7 +376,7 @@ export default function TenantIssuesPage() {
             );
           })}
           {issues.length === 0 && (
-            <p className="text-slate-600 dark:text-slate-400 text-sm col-span-2 text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p className="text-slate-600 dark:text-slate-400 text-sm col-span-2 text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800">
               {t("tenant.issues.noIssues")}
             </p>
           )}

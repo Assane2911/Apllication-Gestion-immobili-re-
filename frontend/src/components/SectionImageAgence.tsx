@@ -65,7 +65,7 @@ export default function SectionImageAgence({
   return (
     <section
       aria-labelledby={`agency-${ressource}-title`}
-      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6"
+      className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6"
     >
       <h3 id={`agency-${ressource}-title`} className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
         {t(`${cle}.title`)}
@@ -76,7 +76,7 @@ export default function SectionImageAgence({
           <img
             src={url}
             alt={t(`${cle}.previewAlt`)}
-            className="h-14 max-w-[200px] object-contain rounded-lg border border-slate-200 dark:border-slate-700 bg-white p-1"
+            className="h-14 max-w-[200px] object-contain rounded-lg border border-contour-200 dark:border-slate-700 bg-white p-1"
           />
         )}
         <label

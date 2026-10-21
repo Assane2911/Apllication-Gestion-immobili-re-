@@ -28,7 +28,7 @@ export default function LanguageSwitcher({ className = "", variant = "dark", com
         value={i18n.resolvedLanguage || i18n.language}
         onChange={(e) => void changerLangue(e.target.value)}
         aria-label={t("common.language.selectAria")}
-        className={`w-full min-w-0 max-w-full truncate text-xs font-semibold ${compact ? "px-1.5" : "px-2.5"} py-1.5 rounded-lg border focus:outline-none focus:ring-2 cursor-pointer shadow-sm transition-all ${
+        className={`w-full min-w-0 max-w-full truncate text-xs font-semibold ${compact ? "px-1.5" : "px-2.5"} py-1.5 rounded-lg border focus:outline-hidden focus:ring-2 cursor-pointer shadow-sm transition-all ${
           variant === "dark" ? darkClasses : lightClasses
         }`}
       >

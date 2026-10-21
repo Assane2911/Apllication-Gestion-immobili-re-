@@ -101,7 +101,7 @@ export default function ManagerLayout() {
         />
       )}
       <aside
-        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-dvh sm:h-screen bg-gradient-to-b from-ink-950 via-ink-900 to-ink-950 text-slate-100 border-r border-ink-700/80 flex flex-col shrink-0 shadow-xl transform transition-transform duration-200 ease-in-out ${
+        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-dvh sm:h-screen bg-linear-to-b from-ink-950 via-ink-900 to-ink-950 text-slate-100 border-r border-ink-700/80 flex flex-col shrink-0 shadow-xl transform transition-transform duration-200 ease-in-out ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         } sm:translate-x-0`}
       >
@@ -139,7 +139,7 @@ export default function ManagerLayout() {
             </div>
           </div>
           {sub?.isTrialActive && (
-            <div className="mt-3 bg-gradient-to-r from-brand-950/80 to-ink-900 border border-brand-500/30 rounded-lg px-3 py-1.5 text-[11px] text-brand-200 flex items-center justify-between shadow-2xs">
+            <div className="mt-3 bg-linear-to-r from-brand-950/80 to-ink-900 border border-brand-500/30 rounded-lg px-3 py-1.5 text-[11px] text-brand-200 flex items-center justify-between shadow-2xs">
               <div className="flex items-center gap-1.5">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
@@ -147,7 +147,7 @@ export default function ManagerLayout() {
                 </span>
                 <span>{t("components.managerLayout.trialFree")}</span>
               </div>
-              <span className="font-bold text-white bg-brand-600/40 px-1.5 py-0.5 rounded text-[10px]">{sub.trialDaysRemaining} j</span>
+              <span className="font-bold text-white bg-brand-600/40 px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
             </div>
           )}
           <div className="mt-3 pt-3 border-t border-ink-700/80">
@@ -175,7 +175,7 @@ export default function ManagerLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 ${
                   isActive
-                    ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white font-medium shadow-xs shadow-brand-500/25"
+                    ? "bg-linear-to-r from-brand-600 to-brand-700 text-white font-medium shadow-xs shadow-brand-500/25"
                     : "text-slate-300 hover:bg-ink-800/60 hover:text-white"
                 }`
               }
@@ -188,7 +188,7 @@ export default function ManagerLayout() {
         </nav>
         <div className="shrink-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-ink-700/80 bg-ink-950/40">
           <div className="flex items-center gap-2.5 min-w-0 p-1.5 rounded-xl bg-ink-900/50 border border-ink-700/60">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-brand-400 to-brand-700 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
               {(user?.email?.[0] || "?").toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -214,7 +214,7 @@ export default function ManagerLayout() {
         <div className="flex items-center justify-between gap-3 mb-6">
           <button
             onClick={() => setMobileNavOpen(true)}
-            className="sm:hidden shrink-0 w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="sm:hidden shrink-0 w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-contour-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             aria-label={t("components.managerLayout.openMenuAria")}
           >
             <Menu size={18} />
@@ -235,7 +235,7 @@ export default function ManagerLayout() {
           peutVoirLeGuide(user) && (
             <Link
               to="/guide-demarrage"
-              className="flex items-center gap-2 rounded-full bg-white/95 dark:bg-slate-800/95 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-600 text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur transition-colors"
+              className="flex items-center gap-2 rounded-full bg-white/95 dark:bg-slate-800/95 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 border border-contour-200 dark:border-slate-600 text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur-sm transition-colors"
             >
               <BookOpen size={14} aria-hidden="true" /> {t("nav.manager.guide")}
             </Link>
