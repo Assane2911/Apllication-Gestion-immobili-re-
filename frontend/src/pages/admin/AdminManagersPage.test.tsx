@@ -51,8 +51,17 @@ describe("AdminManagersPage", () => {
     renderPage();
 
     await screen.findByRole("link", { name: "Agence Alpha" });
-    const cellule = within(screen.getByRole("table")).getByText(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
-    expect(cellule).toBeInTheDocument();
+    // Deux cellules datées : l'échéance de l'abonnement et la création du compte, toutes deux avec l'heure.
+    const cellules = within(screen.getByRole("table")).getAllByText(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
+    expect(cellules).toHaveLength(2);
+  });
+
+  it("indique la date ET l'heure de fin d'essai d'un compte en essai", async () => {
+    mockedApi.get.mockResolvedValueOnce(page([ligne({ status: "TRIAL", trialEndsAt: "2026-11-05T15:07:48.385Z", subscriptionEndsAt: null })]));
+    renderPage();
+
+    await screen.findByRole("link", { name: "Agence Alpha" });
+    expect(within(screen.getByRole("table")).getAllByText(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/)).toHaveLength(2);
   });
 
   it("affiche chaque gestionnaire avec formule, statut, usage et lien vers sa fiche", async () => {

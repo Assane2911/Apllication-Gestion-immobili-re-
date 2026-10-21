@@ -412,6 +412,17 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByText(/Vous gérez/)).not.toBeInTheDocument();
   });
 
+  it("annonce la fin de l'essai avec la date ET l'heure", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+
+    renderPage();
+
+    // « Votre période d'essai se termine le 20 septembre 2026 à 02:00. » (l'heure suit le fuseau de l'appareil)
+    expect(await screen.findByText(/Votre période d'essai se termine le .*\d{4} à \d{2}:\d{2}\./)).toBeInTheDocument();
+  });
+
   it("affiche le statut d'essai et les formules disponibles", async () => {
     seedUser(authUser());
     queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro", monthlyPrice: 39 })] });

@@ -83,7 +83,7 @@ export default function AdminManagersPage() {
 
   function echeance(m: ManagerRow) {
     const date = m.status === "TRIAL" ? m.trialEndsAt : m.subscriptionEndsAt ?? m.trialEndsAt;
-    return date ? new Date(date).toLocaleDateString(i18n.language) : "—";
+    return date ? formaterDateHeure(date, i18n.language) : "—";
   }
 
   return (
@@ -192,7 +192,7 @@ export default function AdminManagersPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">{echeance(m)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{echeance(m)}</td>
                     <td className="px-4 py-3">
                       {t("admin.managers.usage", { properties: m.propertiesCount, tenants: m.tenantsCount })}
                     </td>

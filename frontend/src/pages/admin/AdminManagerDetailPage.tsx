@@ -181,6 +181,8 @@ export default function AdminManagerDetailPage() {
   }
 
   const date = (valeur: string | null) => (valeur ? new Date(valeur).toLocaleDateString(i18n.language) : "—");
+  // Début et fin de période : un instant précis (l'accès s'arrête à cette heure-là), pas seulement un jour.
+  const dateHeure = (valeur: string | null) => (valeur ? formaterDateHeure(valeur, i18n.language) : "—");
   const carte = "rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
   const ligne = (libelle: string, valeur: string) => (
     <div className="flex justify-between gap-4 py-1.5 text-xs">
@@ -538,12 +540,12 @@ export default function AdminManagerDetailPage() {
                 {manager.subscription.status === "TRIAL" &&
                   ligne(
                     t("admin.managerDetail.subscription.trialEnds"),
-                    `${date(manager.subscription.trialEndsAt)} (${t("admin.managerDetail.subscription.daysLeft", { count: manager.subscription.trialDaysRemaining })})`
+                    `${dateHeure(manager.subscription.trialEndsAt)} (${t("admin.managerDetail.subscription.daysLeft", { count: manager.subscription.trialDaysRemaining })})`
                   )}
                 {manager.subscription.status !== "TRIAL" &&
                   ligne(
                     t("admin.managerDetail.subscription.endsOn"),
-                    illimite ? t("admin.managerDetail.subscription.unlimited") : date(manager.subscription.subscriptionEndsAt ?? manager.subscription.trialEndsAt)
+                    illimite ? t("admin.managerDetail.subscription.unlimited") : dateHeure(manager.subscription.subscriptionEndsAt ?? manager.subscription.trialEndsAt)
                   )}
                 {ligne(
                   t("admin.managerDetail.subscription.paymentMethod"),

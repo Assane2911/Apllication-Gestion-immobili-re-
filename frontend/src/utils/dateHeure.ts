@@ -8,3 +8,10 @@
 export function formaterDateHeure(valeur: string | Date, langue: string, fuseau?: string): string {
   return new Date(valeur).toLocaleString(langue, { dateStyle: "short", timeStyle: "short", ...(fuseau ? { timeZone: fuseau } : {}) });
 }
+
+/**
+ * Même chose en toutes lettres, pour une phrase : « 5 novembre 2026 à 15:07 », « November 5, 2026 at 3:07 PM ».
+ */
+export function formaterDateHeureLongue(valeur: string | Date, langue: string, fuseau?: string): string {
+  return new Date(valeur).toLocaleString(langue, { dateStyle: "long", timeStyle: "short", ...(fuseau ? { timeZone: fuseau } : {}) });
+}
