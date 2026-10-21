@@ -6,6 +6,7 @@ import { suggestions } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { avecCode } from "../utils/validationExplicite";
 
 /**
  * Une suggestion est une phrase, pas un formulaire.
@@ -68,7 +69,7 @@ const listQuerySchema = z.object({
  */
 export const listSuggestions = asyncHandler(async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query);
-  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides", "SEARCH_PARAMS_INVALID");
   const { status } = parsed.data;
   const pagination = parsePagination(req);
   const where = status ? eq(suggestions.status, status) : undefined;
@@ -111,9 +112,7 @@ const updateSuggestionSchema = z
     // Chaîne vide = effacer la note.
     adminNote: z.string().trim().max(2000).optional(),
   })
-  .refine((b) => b.status !== undefined || b.adminNote !== undefined, {
-    message: "Rien à modifier",
-  });
+  .refine((b) => b.status !== undefined || b.adminNote !== undefined, avecCode("Rien à modifier", "SUGGESTION_NOTHING_TO_CHANGE"));
 
 /**
  * Met à jour le suivi d'une suggestion (statut et/ou note interne).
@@ -122,7 +121,9 @@ const updateSuggestionSchema = z
  */
 export const updateSuggestion = asyncHandler(async (req: Request, res: Response) => {
   const body = updateSuggestionSchema.safeParse(req.body ?? {});
-  if (!body.success) throw new ApiError(400, body.error.issues[0]?.message ?? "Paramètres invalides");
+  // La ZodError est traduite en 400 par le gestionnaire d'erreurs (message explicite du schéma, ou formule générique
+  // pour les messages par défaut de Zod, rédigés en anglais).
+  if (!body.success) throw body.error;
 
   const changements: Partial<typeof suggestions.$inferInsert> = {};
   if (body.data.status !== undefined) changements.status = body.data.status;

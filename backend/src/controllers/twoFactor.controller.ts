@@ -47,7 +47,7 @@ async function chargerCompteLoginCourant(req: Request) {
 export const setupTwoFactor = asyncHandler(async (req: Request, res: Response) => {
   const user = await chargerCompteLoginCourant(req);
   if (user.totpEnabledAt) {
-    throw new ApiError(409, "La double authentification est déjà activée sur ce compte. Désactivez-la avant d'en reconfigurer une.");
+    throw new ApiError(409, "La double authentification est déjà activée sur ce compte. Désactivez-la avant d'en reconfigurer une.", "TWO_FACTOR_RECONFIGURE_FIRST_DISABLE");
   }
 
   const secret = genererSecretTotp();
@@ -85,7 +85,7 @@ export const confirmTwoFactor = asyncHandler(async (req: Request, res: Response)
   }
 
   const valide = await verifierCodeTotp(user.totpSecret, body.code);
-  if (!valide) throw new ApiError(401, "Code invalide. Vérifiez l'heure de votre téléphone et réessayez.");
+  if (!valide) throw new ApiError(401, "Code invalide. Vérifiez l'heure de votre téléphone et réessayez.", "TWO_FACTOR_SETUP_CODE_INVALID");
 
   const { codes, hashes } = await genererCodesSecours();
 
@@ -188,7 +188,7 @@ export const regenerateBackupCodes = asyncHandler(async (req: Request, res: Resp
   }
 
   const valide = await verifierCodeTotp(user.totpSecret, body.code);
-  if (!valide) throw new ApiError(401, "Code invalide.");
+  if (!valide) throw new ApiError(401, "Code invalide.", "TWO_FACTOR_CODE_WRONG");
 
   const { codes, hashes } = await genererCodesSecours();
   await db.update(users).set({ totpBackupCodesHash: JSON.stringify(hashes) }).where(eq(users.id, user.id));

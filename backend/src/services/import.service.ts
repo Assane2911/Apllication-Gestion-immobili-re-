@@ -41,7 +41,16 @@ export interface Analyse<D> {
   capacite?: { maximum: number | null; existants: number; restant: number | null };
 }
 
-export class ImportInvalide extends Error {}
+export class ImportInvalide extends Error {
+  /** Code que l'interface traduit (voir apiErrorMessage), avec les valeurs à insérer dans la traduction. */
+  constructor(
+    message: string,
+    readonly code?: string,
+    readonly params?: Record<string, string | number>
+  ) {
+    super(message);
+  }
+}
 
 /** Colonnes acceptées par champ : en-têtes normalisés (voir normaliserEntete). */
 const COLONNES_BIENS = {
@@ -104,10 +113,11 @@ function lire<C extends Record<string, readonly string[]>>(valeurs: Record<strin
 function verifierEntetes<C extends Record<string, readonly string[]>>(csv: CsvLu, colonnes: C, obligatoires: readonly (keyof C)[]) {
   const manquantes = obligatoires.filter((champ) => !colonnes[champ].some((nom) => csv.entetes.includes(nom)));
   if (manquantes.length > 0) {
+    const colonnesTexte = manquantes.map((champ) => `« ${String(colonnes[champ][0])} » (ou ${colonnes[champ].slice(1, 3).join(", ")})`).join(" ; ");
     throw new ImportInvalide(
-      "Colonnes manquantes : " +
-        manquantes.map((champ) => `« ${String(colonnes[champ][0])} » (ou ${colonnes[champ].slice(1, 3).join(", ")})`).join(" ; ") +
-        ". Téléchargez le modèle pour voir l'en-tête attendu."
+      `Colonnes manquantes : ${colonnesTexte}. Téléchargez le modèle pour voir l'en-tête attendu.`,
+      "IMPORT_MISSING_COLUMNS",
+      { columns: colonnesTexte }
     );
   }
 }

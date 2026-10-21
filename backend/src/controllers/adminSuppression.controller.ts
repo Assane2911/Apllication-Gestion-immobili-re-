@@ -39,10 +39,10 @@ export const deleteManager = asyncHandler(async (req: Request, res: Response) =>
 
   const manager = await trouverGestionnaire(req.params.id);
   if (!manager.suspendedAt) {
-    throw new ApiError(409, "Suspendez d'abord ce compte : seul un compte suspendu peut être supprimé définitivement.");
+    throw new ApiError(409, "Suspendez d'abord ce compte : seul un compte suspendu peut être supprimé définitivement.", "ACCOUNT_SUSPEND_FIRST");
   }
   if (email.toLowerCase() !== manager.email.trim().toLowerCase()) {
-    throw new ApiError(400, "L'email saisi ne correspond pas à celui du compte.");
+    throw new ApiError(400, "L'email saisi ne correspond pas à celui du compte.", "ACCOUNT_EMAIL_MISMATCH");
   }
 
   const facturationResiliee = Boolean(manager.stripeSubscriptionId);

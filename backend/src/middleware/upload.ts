@@ -42,20 +42,20 @@ export const uploadListingImage = multer({ storage, fileFilter, limits });
 
 /** Images d'agence (logo, tampon) : PNG ou JPEG seulement (les formats que savent dessiner les PDF), 2 Mo au plus. */
 export const MAX_LOGO_SIZE_MB = 2;
-function imageAgence(libelle: string) {
+function imageAgence({ libelle, code }: { libelle: string; code: string }) {
   return multer({
     storage,
     limits: { fileSize: MAX_LOGO_SIZE_MB * 1024 * 1024 },
     fileFilter(_req, file, cb) {
       if (file.mimetype !== "image/png" && file.mimetype !== "image/jpeg") {
-        return cb(new ApiError(400, `${libelle} : image PNG ou JPEG uniquement`));
+        return cb(new ApiError(400, `${libelle} : image PNG ou JPEG uniquement`, code));
       }
       cb(null, true);
     },
   });
 }
-export const uploadAgencyLogo = imageAgence("Logo");
-export const uploadAgencyStamp = imageAgence("Tampon");
+export const uploadAgencyLogo = imageAgence({ libelle: "Logo", code: "UPLOAD_LOGO_IMAGE_ONLY" });
+export const uploadAgencyStamp = imageAgence({ libelle: "Tampon", code: "UPLOAD_STAMP_IMAGE_ONLY" });
 
 /**
  * `fileFilter` ci-dessus ne contrôle que le champ `Content-Type` envoyé par

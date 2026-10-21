@@ -38,7 +38,7 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
   // Une quittance de loyer atteste juridiquement du paiement effectif du loyer :
   // elle ne peut être délivrée que si la facture est acquittée (PAID).
   if (invoice.status !== "PAID") {
-    throw new ApiError(400, "Une quittance de loyer ne peut être générée que pour une facture réglée (statut PAID)");
+    throw new ApiError(400, "Une quittance de loyer ne peut être générée que pour une facture réglée (statut PAID)", "RECEIPT_REQUIRES_PAID");
   }
 
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
@@ -156,7 +156,7 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
   // qu'il est en brouillon, son contenu peut encore changer (même garde-fou
   // que pour la quittance, délivrée uniquement sur facture PAID).
   if (inspection.status !== "COMPLETED") {
-    throw new ApiError(400, "L'export n'est disponible qu'une fois l'état des lieux finalisé");
+    throw new ApiError(400, "L'export n'est disponible qu'une fois l'état des lieux finalisé", "INSPECTION_EXPORT_NEEDS_FINAL");
   }
 
   const [agency] = inspection.property?.managerId
@@ -209,7 +209,7 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
   );
 
   if (!contract.scannedContractUrl) {
-    throw new ApiError(404, "Aucun contrat papier scanné n'est rattaché à ce bail");
+    throw new ApiError(404, "Aucun contrat papier scanné n'est rattaché à ce bail", "SCANNED_CONTRACT_NOT_FOUND");
   }
 
   const fileUrl = /^https?:\/\//i.test(contract.scannedContractUrl)
@@ -234,7 +234,7 @@ export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: R
     await estLocataireDuBail(req, contract),
     property?.managerId === req.user.userId
   );
-  if (revision.status === "CANCELLED") throw new ApiError(409, "Cette révision a été annulée : aucun avenant ne s'y rattache.");
+  if (revision.status === "CANCELLED") throw new ApiError(409, "Cette révision a été annulée : aucun avenant ne s'y rattache.", "REVISION_CANCELLED_NO_AMENDMENT");
 
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
   const [agency] = property?.managerId ? await db.select().from(agencySettings).where(eq(agencySettings.userId, property.managerId)) : [];

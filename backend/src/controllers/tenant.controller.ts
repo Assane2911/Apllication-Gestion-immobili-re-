@@ -15,6 +15,7 @@ import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 import { CIVILITES } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
+import { avecCode } from "../utils/validationExplicite";
 import { resolveScannedUrl } from "./contract.controller";
 
 /** Durée de validité du lien vers la pièce d'identité d'un locataire (la donnée la plus sensible de la plateforme). */
@@ -34,7 +35,7 @@ const tenantSchema = z.object({
   // lui demande désormais explicitement.
   phone: z
     .string()
-    .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
+    .refine((v) => versE164(v) !== null, avecCode(MESSAGE_TELEPHONE_INVALIDE, "PHONE_INVALID"))
     .transform((v) => versE164(v)!),
   email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
 });
@@ -276,7 +277,7 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
 
   if (existing.anonymizedAt) {
-    throw new ApiError(409, "Ce locataire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.");
+    throw new ApiError(409, "Ce locataire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.", "TENANT_ALREADY_ANONYMIZED");
   }
 
   const nomAffiche = `${existing.firstName} ${existing.lastName}`;
@@ -411,7 +412,8 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   if (tenantContracts.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un locataire associé à un historique de contrats. Veuillez d'abord supprimer les contrats associés."
+      "Impossible de supprimer un locataire associé à un historique de contrats. Veuillez d'abord supprimer les contrats associés.",
+      "TENANT_HAS_CONTRACT_HISTORY"
     );
   }
   const [colocation] = await db.select({ id: contractCotenants.id }).from(contractCotenants).where(eq(contractCotenants.tenantId, req.params.id)).limit(1);
@@ -421,7 +423,8 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   if (tenantIssues.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un locataire ayant des signalements d'incidents enregistrés."
+      "Impossible de supprimer un locataire ayant des signalements d'incidents enregistrés.",
+      "TENANT_HAS_ISSUES"
     );
   }
 

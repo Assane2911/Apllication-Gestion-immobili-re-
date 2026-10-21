@@ -101,14 +101,14 @@ export const updateAgencySettings = asyncHandler(async (req: Request, res: Respo
   // renvoie le logo actuel tel quel à chaque enregistrement : seule une VALEUR DIFFÉRENTE est refusée
   // (le retirer, en envoyant null, reste permis).
   if (body.logoUrl && body.logoUrl !== (existing?.logoUrl ?? null)) {
-    throw new ApiError(400, "Logo : envoyez le fichier image depuis les paramètres de l'agence.");
+    throw new ApiError(400, "Logo : envoyez le fichier image depuis les paramètres de l'agence.", "AGENCY_LOGO_FILE_REQUIRED");
   }
 
   // Même règle pour le tampon (POST /stamp, formule Pro — CGU §3) : le reste des réglages d'agence
   // (coordonnées bancaires, mentions légales...) reste accessible à toutes les formules, un gestionnaire
   // Starter doit pouvoir renseigner son IBAN. Seule une VALEUR DIFFÉRENTE du tampon actuel est refusée.
   if (body.stampOrSignatureUrl && body.stampOrSignatureUrl !== (existing?.stampOrSignatureUrl ?? null)) {
-    throw new ApiError(400, "Tampon : envoyez le fichier image depuis les paramètres de l'agence.");
+    throw new ApiError(400, "Tampon : envoyez le fichier image depuis les paramètres de l'agence.", "AGENCY_STAMP_FILE_REQUIRED");
   }
 
   if (!existing) {
@@ -187,7 +187,7 @@ type ImageAgence = "logoUrl" | "stampOrSignatureUrl";
 async function envoyerImageAgence(req: Request, res: Response, champ: ImageAgence) {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
-  if (!req.file) throw new ApiError(400, "Aucun fichier reçu.");
+  if (!req.file) throw new ApiError(400, "Aucun fichier reçu.", "NO_FILE_RECEIVED");
   assertFileContentMatchesDeclaredType(req.file);
 
   const url = await uploadPublicFile(req.file, "agency");

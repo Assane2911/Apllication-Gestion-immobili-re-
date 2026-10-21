@@ -24,7 +24,7 @@ const insurancePolicyBodySchema = z.object({
 
 function assertDatesCoherentes(startDate: Date | undefined, expiryDate: Date) {
   if (startDate && expiryDate <= startDate) {
-    throw new ApiError(400, "La date d'échéance doit être postérieure à la date de prise d'effet.");
+    throw new ApiError(400, "La date d'échéance doit être postérieure à la date de prise d'effet.", "INSURANCE_END_BEFORE_START");
   }
 }
 

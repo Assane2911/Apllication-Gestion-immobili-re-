@@ -30,7 +30,8 @@ function assertBailNonSigne(contrat: typeof contracts.$inferSelect) {
   if (contrat.signedByTenantAt) {
     throw new ApiError(
       409,
-      "Ce bail a été signé par le locataire : ses colocataires font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail."
+      "Ce bail a été signé par le locataire : ses colocataires font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail.",
+      "LEASE_SIGNED_COTENANTS_LOCKED"
     );
   }
 }
@@ -64,7 +65,7 @@ export const addCotenant = asyncHandler(async (req: Request, res: Response) => {
     .select({ nombre: sql<number>`count(*)::int` })
     .from(contractCotenants)
     .where(eq(contractCotenants.contractId, contrat.id));
-  if (nombre >= MAX_COLOCATAIRES_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_COLOCATAIRES_PAR_BAIL} colocataires en plus du titulaire.`);
+  if (nombre >= MAX_COLOCATAIRES_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_COLOCATAIRES_PAR_BAIL} colocataires en plus du titulaire.`, "COTENANT_LIMIT", { max: MAX_COLOCATAIRES_PAR_BAIL });
 
   // L'index unique (bail, locataire) tranche une double saisie simultanée.
   const [lien] = await db.insert(contractCotenants).values({ contractId: contrat.id, tenantId: locataire.id }).onConflictDoNothing().returning();

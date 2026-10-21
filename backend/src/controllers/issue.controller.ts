@@ -135,7 +135,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
   // ici (vendorId: null) tout en fixant une date dans la même requête.
   const effectiveVendorId = body.vendorId !== undefined ? body.vendorId : owned.issue.vendorId;
   if (body.scheduledAt && !effectiveVendorId) {
-    throw new ApiError(400, "Impossible de planifier une intervention sans prestataire assigné.");
+    throw new ApiError(400, "Impossible de planifier une intervention sans prestataire assigné.", "ISSUE_SCHEDULE_NEEDS_VENDOR");
   }
 
   const [updated] = await db
@@ -285,7 +285,7 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
   // borner le volume, pas de le garantir à l'unité près.)
   const dejaAjoutees = issue.additionalPhotos ? (JSON.parse(issue.additionalPhotos) as unknown[]).length : 0;
   if (dejaAjoutees >= MAX_PHOTOS_SUPPLEMENTAIRES) {
-    throw new ApiError(409, `Ce signalement a déjà ${MAX_PHOTOS_SUPPLEMENTAIRES} photos supplémentaires`);
+    throw new ApiError(409, `Ce signalement a déjà ${MAX_PHOTOS_SUPPLEMENTAIRES} photos supplémentaires`, "ISSUE_PHOTO_LIMIT", { max: MAX_PHOTOS_SUPPLEMENTAIRES });
   }
 
   assertFileContentMatchesDeclaredType(req.file);

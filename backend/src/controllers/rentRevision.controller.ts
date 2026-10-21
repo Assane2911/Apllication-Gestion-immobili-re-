@@ -9,6 +9,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { dateSaisieSchema } from "../utils/dates";
 import { formaterMontant, MONTANT_MAXIMUM } from "../utils/montant";
+import { avecCode } from "../utils/validationExplicite";
 
 const revisionSchema = z
   .object({
@@ -24,10 +25,10 @@ const revisionSchema = z
     notifyTenant: z.boolean().optional(),
   })
   .superRefine((v, ctx) => {
-    if (v.mode === "AMOUNT" && v.newRent === undefined) ctx.addIssue({ code: "custom", path: ["newRent"], message: "Indiquez le nouveau loyer." });
-    if (v.mode === "PERCENT" && v.percent === undefined) ctx.addIssue({ code: "custom", path: ["percent"], message: "Indiquez le pourcentage." });
+    if (v.mode === "AMOUNT" && v.newRent === undefined) ctx.addIssue({ code: "custom", path: ["newRent"], ...avecCode("Indiquez le nouveau loyer.", "REVISION_NEW_RENT_REQUIRED") });
+    if (v.mode === "PERCENT" && v.percent === undefined) ctx.addIssue({ code: "custom", path: ["percent"], ...avecCode("Indiquez le pourcentage.", "REVISION_PERCENT_REQUIRED") });
     if (v.mode === "INDEX" && (v.indexOld === undefined || v.indexNew === undefined)) {
-      ctx.addIssue({ code: "custom", path: ["indexOld"], message: "Indiquez l'ancienne et la nouvelle valeur de l'indice." });
+      ctx.addIssue({ code: "custom", path: ["indexOld"], ...avecCode("Indiquez l'ancienne et la nouvelle valeur de l'indice.", "REVISION_INDEX_REQUIRED") });
     }
   });
 

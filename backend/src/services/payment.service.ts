@@ -64,7 +64,7 @@ export async function initiatePayment(params: {
   const refus = indisponibiliteSelonUsage(method, currency, usage);
   if (refus) {
     console.error(`[paiement] ${method} refusé : ${refus.cause}.`);
-    throw new ApiError(refus.status, refus.message);
+    throw new ApiError(refus.status, refus.message, refus.code, refus.params);
   }
 
   switch (method) {
@@ -143,6 +143,9 @@ export interface Indisponibilite {
   message: string;
   /** Cause exacte, pour les journaux serveur et Sentry. */
   cause: string;
+  /** Code que l'interface traduit (voir apiErrorMessage), avec les valeurs à insérer dans la traduction. */
+  code: string;
+  params?: Record<string, string | number>;
 }
 
 /**
@@ -179,6 +182,7 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
       status: 400,
       message: "Le mode démo n'est pas disponible sur cette plateforme.",
       cause: "mode démo désactivé",
+      code: "PAYMENT_DEMO_UNAVAILABLE",
     };
   }
 
@@ -189,7 +193,7 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
 
   if (method === "STRIPE") {
     if (!env.payments.stripeSecretKey) {
-      return { status: 503, message: MESSAGE_NEUTRE, cause: "STRIPE_SECRET_KEY absente" };
+      return { status: 503, message: MESSAGE_NEUTRE, cause: "STRIPE_SECRET_KEY absente", code: "PAYMENT_METHOD_UNAVAILABLE" };
     }
 
     // Sans secret de webhook, une session de paiement peut être créée et
@@ -197,7 +201,7 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
     // client paierait sans que sa facture ou son abonnement ne soit jamais
     // validé. Refuser vaut mieux qu'encaisser sans rien débloquer.
     if (!env.payments.stripeWebhookSecret) {
-      return { status: 503, message: MESSAGE_NEUTRE, cause: "STRIPE_WEBHOOK_SECRET absente" };
+      return { status: 503, message: MESSAGE_NEUTRE, cause: "STRIPE_WEBHOOK_SECRET absente", code: "PAYMENT_METHOD_UNAVAILABLE" };
     }
 
     if (!env.payments.stripeCurrencies.includes(currency.toUpperCase())) {
@@ -205,6 +209,8 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
         status: 503,
         message: `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`,
         cause: `devise ${currency} absente de STRIPE_CURRENCIES (${env.payments.stripeCurrencies.join(", ")})`,
+        code: "PAYMENT_CURRENCY_UNSUPPORTED",
+        params: { currency },
       };
     }
 
@@ -214,7 +220,7 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
   const { masterKey, privateKey, token, currency: deviseDuCompte } = env.payments.paydunya;
 
   if (!masterKey || !privateKey || !token) {
-    return { status: 503, message: MESSAGE_NEUTRE, cause: "clés API incomplètes (master, privée ou token)" };
+    return { status: 503, message: MESSAGE_NEUTRE, cause: "clés API incomplètes (master, privée ou token)", code: "PAYMENT_METHOD_UNAVAILABLE" };
   }
 
   // L'API PayDunya ne transporte pas de devise (voir config/env.ts) : le
@@ -235,6 +241,8 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
       status: 503,
       message: `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`,
       cause: `montant libellé en ${currency} alors que le compte encaisse en ${deviseDuCompte}`,
+      code: "PAYMENT_CURRENCY_UNSUPPORTED",
+      params: { currency },
     };
   }
 
@@ -257,6 +265,7 @@ export function indisponibiliteSelonUsage(method: PaymentMethodKey, currency: st
       status: 400,
       message: "Le paiement du loyer par carte ou Mobile Money n'est pas disponible. Réglez par virement sur le compte de votre agence, puis déclarez-le ici.",
       cause: "paiement du loyer en ligne désactivé (RENT_ONLINE_PAYMENTS)",
+      code: "RENT_ONLINE_PAYMENT_DISABLED",
     };
   }
   return indisponibilite(method, currency);
@@ -373,7 +382,10 @@ async function initiateStripePayment(
 
   if (!response.ok || !data.id || !data.url) {
     console.error("[stripe] Réponse inattendue lors de la création de la session:", data);
-    throw new ApiError(502, data.error?.message || "Échec de l'initialisation du paiement par carte.");
+    // Le message de Stripe, quand il existe, dit pourquoi (carte refusée…) : on le garde tel quel. Le code ne sert
+    // que de repli, pour traduire la formule générique.
+    const detail = data.error?.message;
+    throw detail ? new ApiError(502, detail) : new ApiError(502, "Échec de l'initialisation du paiement par carte.", "CARD_PAYMENT_INIT_FAILED");
   }
 
   return {
@@ -411,7 +423,8 @@ export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: 
   if (!env.payments.stripeSecretKey) {
     throw new ApiError(
       502,
-      "Stripe n'est pas configuré sur ce serveur : impossible de résilier le renouvellement automatique par carte. Rien n'a été modifié."
+      "Stripe n'est pas configuré sur ce serveur : impossible de résilier le renouvellement automatique par carte. Rien n'a été modifié.",
+      "STRIPE_NOT_CONFIGURED_CANCEL_RENEWAL"
     );
   }
 
@@ -427,7 +440,7 @@ export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: 
     });
   } catch (err) {
     console.error(`[stripe] Échec réseau lors de la résiliation de l'abonnement ${stripeSubscriptionId} :`, err);
-    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été modifié : réessayez plus tard.");
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été modifié : réessayez plus tard.", "STRIPE_UNREACHABLE_NOTHING_CHANGED");
   }
 
   if (response.ok) return;
@@ -439,7 +452,7 @@ export async function cancelStripeSubscriptionAtPeriodEnd(stripeSubscriptionId: 
     `[stripe] Échec de la résiliation (cancel_at_period_end) de l'abonnement ${stripeSubscriptionId} :`,
     data.error?.message ?? response.status
   );
-  throw new ApiError(502, "Stripe a refusé la résiliation du renouvellement automatique. Rien n'a été modifié : réessayez plus tard.");
+  throw new ApiError(502, "Stripe a refusé la résiliation du renouvellement automatique. Rien n'a été modifié : réessayez plus tard.", "STRIPE_REFUSED_CANCEL_RENEWAL");
 }
 
 /**
@@ -464,7 +477,8 @@ export async function setStripeCollectionPaused(stripeSubscriptionId: string, pa
   if (!env.payments.stripeSecretKey) {
     throw new ApiError(
       502,
-      "Stripe n'est pas configuré sur ce serveur : impossible de mettre en pause la facturation de ce compte."
+      "Stripe n'est pas configuré sur ce serveur : impossible de mettre en pause la facturation de ce compte.",
+      "STRIPE_NOT_CONFIGURED_PAUSE_BILLING"
     );
   }
 
@@ -482,7 +496,7 @@ export async function setStripeCollectionPaused(stripeSubscriptionId: string, pa
     });
   } catch (err) {
     console.error(`[stripe] Échec réseau (pause_collection=${paused}) de l'abonnement ${stripeSubscriptionId} :`, err);
-    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été modifié : réessayez plus tard.");
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été modifié : réessayez plus tard.", "STRIPE_UNREACHABLE_NOTHING_CHANGED");
   }
 
   if (response.ok) return;
@@ -494,7 +508,7 @@ export async function setStripeCollectionPaused(stripeSubscriptionId: string, pa
     `[stripe] Échec (pause_collection=${paused}) de l'abonnement ${stripeSubscriptionId} :`,
     data.error?.message ?? response.status
   );
-  throw new ApiError(502, "Stripe a refusé la mise à jour de la facturation. Rien n'a été modifié : réessayez plus tard.");
+  throw new ApiError(502, "Stripe a refusé la mise à jour de la facturation. Rien n'a été modifié : réessayez plus tard.", "STRIPE_REFUSED_BILLING_UPDATE");
 }
 
 /**
@@ -513,7 +527,8 @@ export async function cancelStripeSubscriptionNow(stripeSubscriptionId: string):
   if (!env.payments.stripeSecretKey) {
     throw new ApiError(
       502,
-      "Stripe n'est pas configuré sur ce serveur : impossible de résilier l'abonnement par carte de ce compte."
+      "Stripe n'est pas configuré sur ce serveur : impossible de résilier l'abonnement par carte de ce compte.",
+      "STRIPE_NOT_CONFIGURED_CANCEL_SUBSCRIPTION"
     );
   }
 
@@ -525,7 +540,7 @@ export async function cancelStripeSubscriptionNow(stripeSubscriptionId: string):
     });
   } catch (err) {
     console.error(`[stripe] Échec réseau (résiliation immédiate) de l'abonnement ${stripeSubscriptionId} :`, err);
-    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été supprimé : réessayez plus tard.");
+    throw new ApiError(502, "Impossible de contacter Stripe pour le moment. Rien n'a été supprimé : réessayez plus tard.", "STRIPE_UNREACHABLE_NOTHING_DELETED");
   }
 
   if (response.ok) return;
@@ -537,7 +552,7 @@ export async function cancelStripeSubscriptionNow(stripeSubscriptionId: string):
     `[stripe] Échec (résiliation immédiate) de l'abonnement ${stripeSubscriptionId} :`,
     data.error?.message ?? response.status
   );
-  throw new ApiError(502, "Stripe a refusé la résiliation de l'abonnement. Rien n'a été supprimé : réessayez plus tard.");
+  throw new ApiError(502, "Stripe a refusé la résiliation de l'abonnement. Rien n'a été supprimé : réessayez plus tard.", "STRIPE_REFUSED_CANCEL_SUBSCRIPTION");
 }
 
 /**
@@ -607,7 +622,7 @@ async function initiatePaydunyaPayment(
     });
   } catch (err) {
     console.error("[paydunya] Échec réseau lors de la création de la facture:", err);
-    throw new ApiError(502, "Impossible de contacter PayDunya pour le moment. Réessayez plus tard.");
+    throw new ApiError(502, "Impossible de contacter PayDunya pour le moment. Réessayez plus tard.", "PAYDUNYA_UNREACHABLE");
   }
 
   let data: { response_code?: string; response_text?: string; token?: string };
@@ -615,12 +630,15 @@ async function initiatePaydunyaPayment(
     data = (await response.json()) as typeof data;
   } catch (err) {
     console.error("[paydunya] Réponse illisible lors de la création de la facture:", err);
-    throw new ApiError(502, "Réponse inattendue de PayDunya. Réessayez plus tard.");
+    throw new ApiError(502, "Réponse inattendue de PayDunya. Réessayez plus tard.", "PAYDUNYA_BAD_RESPONSE");
   }
 
   if (!response.ok || data.response_code !== "00" || !data.token || !data.response_text) {
     console.error("[paydunya] Réponse inattendue lors de la création de la facture:", data);
-    throw new ApiError(502, data.response_text || "Échec de l'initialisation du paiement PayDunya.");
+    // Même logique que pour Stripe : le message de PayDunya prime, le code ne traduit que le repli.
+    throw data.response_text
+      ? new ApiError(502, data.response_text)
+      : new ApiError(502, "Échec de l'initialisation du paiement PayDunya.", "PAYDUNYA_INIT_FAILED");
   }
 
   return {

@@ -33,6 +33,24 @@ function codesDuBackend(): string[] {
         const arg = n.arguments[2];
         if (ts.isStringLiteral(arg)) codes.add(arg.text);
       }
+      // avecCode(message, code, valeurs) : le message explicite d'un `.refine()` zod (utils/validationExplicite.ts).
+      if (ts.isCallExpression(n) && n.expression.getText() === "avecCode" && n.arguments[1] && ts.isStringLiteral(n.arguments[1])) {
+        codes.add(n.arguments[1].text);
+      }
+      // Erreurs de lecture d'un fichier d'import : new CsvInvalide(message, code, valeurs).
+      if (
+        ts.isNewExpression(n) &&
+        ["CsvInvalide", "ImportInvalide"].includes(n.expression.getText()) &&
+        n.arguments?.[1] &&
+        ts.isStringLiteral(n.arguments[1])
+      ) {
+        codes.add(n.arguments[1].text);
+      }
+      // Propriété `code: "CODE_EN_MAJUSCULES"` : refus de paiement (Indisponibilite), réponses du gestionnaire
+      // d'erreurs et des middlewares.
+      if (ts.isPropertyAssignment(n) && n.name.getText() === "code" && ts.isStringLiteral(n.initializer) && /^[A-Z][A-Z0-9_]{2,}$/.test(n.initializer.text)) {
+        codes.add(n.initializer.text);
+      }
       // assertOwnership(entité, accesseur, gestionnaire, message, statut, code) : le code est le sixième argument.
       if (ts.isCallExpression(n) && n.expression.getText() === "assertOwnership" && n.arguments[5] && ts.isStringLiteral(n.arguments[5])) {
         codes.add(n.arguments[5].text);
@@ -55,6 +73,18 @@ describe.skipIf(!existsSync(RACINE_BACKEND))("codes d'erreur du backend", () => 
     const traduits = Object.keys((fr as unknown as { common: { serverErrors: Record<string, string> } }).common.serverErrors);
     const manquants = codesDuBackend().filter((c) => !traduits.includes(c) && !(c in SANS_TRADUCTION));
     expect(manquants).toEqual([]);
+  });
+
+  it("les langues portent les mêmes codes et les mêmes valeurs à insérer que le français", async () => {
+    const [en, pt, es] = (await Promise.all([import("../i18n/locales/en"), import("../i18n/locales/pt"), import("../i18n/locales/es")])).map(
+      (m) => (m.default as unknown as { common: { serverErrors: Record<string, string> } }).common.serverErrors
+    );
+    const frErr = (fr as unknown as { common: { serverErrors: Record<string, string> } }).common.serverErrors;
+    const valeurs = (texte: string) => [...texte.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).sort();
+    for (const [nom, langue] of [["en", en], ["pt", pt], ["es", es]] as const) {
+      expect(Object.keys(langue).sort(), `codes de ${nom}`).toEqual(Object.keys(frErr).sort());
+      for (const code of Object.keys(frErr)) expect(valeurs(langue[code]), `${nom}.${code}`).toEqual(valeurs(frErr[code]));
+    }
   });
 
   it("aucune traduction ne vise un code qui n'existe plus dans le backend", () => {

@@ -318,6 +318,25 @@ describe("apiErrorMessage — code d'erreur du serveur", () => {
     expect(await dans("en", corps)).toBe("This feature is reserved for the Pro plan or higher. Upgrade your plan to access it.");
   });
 
+  it("traduit les erreurs de validation avec les champs en cause, accordés au nombre", async () => {
+    const un = { error: "Requête invalide : données manquantes ou incorrectes (champ concerné : email).", code: "VALIDATION_ERROR_FIELD", params: { fields: "email" } };
+    const deux = { error: "…", code: "VALIDATION_ERROR_FIELDS", params: { fields: "email, rent" } };
+    expect(await dans("fr", un)).toBe("Requête invalide : données manquantes ou incorrectes (champ concerné : email).");
+    expect(await dans("en", un)).toBe("Invalid request: missing or incorrect data (field concerned: email).");
+    expect(await dans("pt", deux)).toBe("Pedido inválido: dados em falta ou incorretos (campos em causa: email, rent).");
+    expect(await dans("es", deux)).toBe("Solicitud no válida: datos que faltan o son incorrectos (campos afectados: email, rent).");
+  });
+
+  it("traduit les refus métier courants, valeurs comprises (bornes, périodes, plafonds)", async () => {
+    const revision = { error: "…", code: "REVISION_PERCENT_RANGE", params: { min: -50, max: 100 } };
+    expect(await dans("en", revision)).toBe("The percentage must be between -50% and 100%.");
+    const periode = { error: "…", code: "REVISION_MONTH_ALREADY_PAID", params: { period: "10/2026" } };
+    expect(await dans("es", periode)).toBe("El alquiler de 10/2026 ya está cobrado: elija un mes posterior.");
+    const plafond = { error: "…", code: "PROPERTY_LIMIT_REACHED", params: { max: 5 } };
+    expect(await dans("pt", plafond)).toBe("Atingiu o limite de 5 imóveis do seu plano atual. Mude para um plano superior para adicionar mais.");
+    expect(await dans("fr", { error: "…", code: "ACCOUNT_ALREADY_SUSPENDED" })).toBe("Ce compte est déjà suspendu");
+  });
+
   it("retombe sur le message du serveur quand le code est inconnu ou absent", async () => {
     expect(await dans("en", { error: "Message du serveur", code: "CODE_QUI_NEXISTE_PAS" })).toBe("Message du serveur");
     expect(await dans("en", { error: "Message du serveur" })).toBe("Message du serveur");

@@ -39,7 +39,8 @@ function refuserSiStripe(compte: typeof users.$inferSelect) {
   if (compte.stripeSubscriptionId) {
     throw new ApiError(
       409,
-      "Cet abonnement est à renouvellement automatique (Stripe) : l'ajuster ici serait écrasé au prochain renouvellement. Passez par Stripe."
+      "Cet abonnement est à renouvellement automatique (Stripe) : l'ajuster ici serait écrasé au prochain renouvellement. Passez par Stripe.",
+      "SUBSCRIPTION_STRIPE_MANAGED"
     );
   }
 }
@@ -85,7 +86,7 @@ export const grantSubscriptionDays = asyncHandler(async (req: Request, res: Resp
 
     if (compte.subscriptionStatus === "ACTIVE" || compte.subscriptionStatus === "CANCELLED") {
       if (compte.subscriptionStatus === "ACTIVE" && !compte.subscriptionEndsAt) {
-        throw new ApiError(409, "Cet abonnement n'a pas d'échéance : il n'y a rien à prolonger.");
+        throw new ApiError(409, "Cet abonnement n'a pas d'échéance : il n'y a rien à prolonger.", "SUBSCRIPTION_NO_EXPIRY");
       }
       const nouvelleFin = new Date(base(compte.subscriptionEndsAt) + ajout);
       await tx.update(users).set({ subscriptionEndsAt: nouvelleFin }).where(eq(users.id, id));
@@ -128,7 +129,7 @@ export const changeManagerPlan = asyncHandler(async (req: Request, res: Response
     const compte = await verrouillerGestionnaire(tx, id);
     refuserSiStripe(compte);
     if (compte.subscriptionPlan === plan) {
-      throw new ApiError(409, `Ce gestionnaire est déjà sur la formule ${PLAN_LABEL[plan]}.`);
+      throw new ApiError(409, `Ce gestionnaire est déjà sur la formule ${PLAN_LABEL[plan]}.`, "MANAGER_ALREADY_ON_PLAN", { plan: PLAN_LABEL[plan] });
     }
     await tx.update(users).set({ subscriptionPlan: plan }).where(eq(users.id, id));
     return { ancien: compte.subscriptionPlan, email: compte.email };
@@ -163,7 +164,7 @@ export const grantUnlimitedAccess = asyncHandler(async (req: Request, res: Respo
   const { avant, email } = await db.transaction(async (tx: Transaction) => {
     const compte = await verrouillerGestionnaire(tx, id);
     refuserSiStripe(compte);
-    if (aAccesIllimite(compte)) throw new ApiError(409, "Ce gestionnaire a déjà un accès illimité.");
+    if (aAccesIllimite(compte)) throw new ApiError(409, "Ce gestionnaire a déjà un accès illimité.", "MANAGER_ALREADY_UNLIMITED");
 
     await tx
       .update(users)
@@ -197,7 +198,7 @@ export const revokeUnlimitedAccess = asyncHandler(async (req: Request, res: Resp
 
   const { email } = await db.transaction(async (tx: Transaction) => {
     const compte = await verrouillerGestionnaire(tx, id);
-    if (!aAccesIllimite(compte)) throw new ApiError(409, "Ce gestionnaire n'a pas d'accès illimité.");
+    if (!aAccesIllimite(compte)) throw new ApiError(409, "Ce gestionnaire n'a pas d'accès illimité.", "MANAGER_NOT_UNLIMITED");
     await tx.update(users).set({ subscriptionStatus: "EXPIRED", subscriptionEndsAt: null }).where(eq(users.id, id));
     return { email: compte.email };
   });

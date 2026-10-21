@@ -44,7 +44,7 @@ const listListingsQuerySchema = z.object({
  */
 export const listAdminListings = asyncHandler(async (req: Request, res: Response) => {
   const parsed = listListingsQuerySchema.safeParse(req.query);
-  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides", "SEARCH_PARAMS_INVALID");
   const { search, visibility, status } = parsed.data;
   const pagination = parsePagination(req);
 
@@ -140,14 +140,14 @@ async function trouverAnnonce(id: string) {
 export const hideListing = asyncHandler(async (req: Request, res: Response) => {
   const { reason } = hideListingSchema.parse(req.body);
   const { listing, managerEmail } = await trouverAnnonce(req.params.id);
-  if (listing.hiddenByAdminAt) throw new ApiError(409, "Cette annonce est déjà masquée");
+  if (listing.hiddenByAdminAt) throw new ApiError(409, "Cette annonce est déjà masquée", "LISTING_ALREADY_HIDDEN");
 
   const [updated] = await db
     .update(listings)
     .set({ hiddenByAdminAt: new Date(), moderationReason: reason })
     .where(and(eq(listings.id, listing.id), isNull(listings.hiddenByAdminAt)))
     .returning({ hiddenByAdminAt: listings.hiddenByAdminAt });
-  if (!updated) throw new ApiError(409, "Cette annonce est déjà masquée");
+  if (!updated) throw new ApiError(409, "Cette annonce est déjà masquée", "LISTING_ALREADY_HIDDEN");
 
   await logAdminAction({
     req,
@@ -173,14 +173,14 @@ export const hideListing = asyncHandler(async (req: Request, res: Response) => {
 /** Rétablit une annonce masquée : elle redevient visible si le gestionnaire l'a publiée. */
 export const restoreListing = asyncHandler(async (req: Request, res: Response) => {
   const { listing, managerEmail } = await trouverAnnonce(req.params.id);
-  if (!listing.hiddenByAdminAt) throw new ApiError(409, "Cette annonce n'est pas masquée");
+  if (!listing.hiddenByAdminAt) throw new ApiError(409, "Cette annonce n'est pas masquée", "LISTING_NOT_HIDDEN");
 
   const [updated] = await db
     .update(listings)
     .set({ hiddenByAdminAt: null, moderationReason: null })
     .where(and(eq(listings.id, listing.id), isNotNull(listings.hiddenByAdminAt)))
     .returning({ id: listings.id });
-  if (!updated) throw new ApiError(409, "Cette annonce n'est pas masquée");
+  if (!updated) throw new ApiError(409, "Cette annonce n'est pas masquée", "LISTING_NOT_HIDDEN");
 
   await logAdminAction({
     req,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { avecCode } from "./validationExplicite";
 
 /**
  * Arithmétique de CALENDRIER — par opposition à l'arithmétique d'instants.
@@ -56,4 +57,7 @@ export function dateDeBailPlausible(date: Date): boolean {
  */
 export const dateSaisieSchema = z.coerce
   .date()
-  .refine(dateDeBailPlausible, `La date doit être comprise entre ${ANNEE_BAIL_MIN} et ${ANNEE_BAIL_MAX}`);
+  .refine(
+    dateDeBailPlausible,
+    avecCode(`La date doit être comprise entre ${ANNEE_BAIL_MIN} et ${ANNEE_BAIL_MAX}`, "LEASE_DATE_OUT_OF_RANGE", { min: ANNEE_BAIL_MIN, max: ANNEE_BAIL_MAX })
+  );

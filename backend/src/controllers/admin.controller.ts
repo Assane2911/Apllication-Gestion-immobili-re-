@@ -70,7 +70,7 @@ export const confirmBankTransfer = asyncHandler(async (req: Request, res: Respon
   const [record] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, id));
   if (!record) throw new ApiError(404, "Abonnement introuvable", "SUBSCRIPTION_NOT_FOUND");
   if (record.paymentMethod !== "BANK_TRANSFER") {
-    throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire");
+    throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire", "TRANSFER_ONLY");
   }
 
   // Déjà confirmé (double clic, deux administrateurs) : l'activation est idempotente et ne rouvre rien,
@@ -108,10 +108,10 @@ export const rejectBankTransfer = asyncHandler(async (req: Request, res: Respons
   const [record] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, id));
   if (!record) throw new ApiError(404, "Abonnement introuvable", "SUBSCRIPTION_NOT_FOUND");
   if (record.paymentMethod !== "BANK_TRANSFER") {
-    throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire");
+    throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire", "TRANSFER_ONLY");
   }
   if (record.status === "PAID") {
-    throw new ApiError(400, "Ce virement a déjà été confirmé : impossible de le rejeter");
+    throw new ApiError(400, "Ce virement a déjà été confirmé : impossible de le rejeter", "TRANSFER_ALREADY_CONFIRMED");
   }
 
   // Réclamation atomique : la lecture ci-dessus et cette écriture ne sont pas
@@ -131,7 +131,7 @@ export const rejectBankTransfer = asyncHandler(async (req: Request, res: Respons
     .returning();
 
   if (!updated) {
-    throw new ApiError(409, "Ce virement vient d'être traité par une autre requête. Veuillez rafraîchir la page.");
+    throw new ApiError(409, "Ce virement vient d'être traité par une autre requête. Veuillez rafraîchir la page.", "TRANSFER_PROCESSED_CONCURRENTLY");
   }
 
   await logAdminAction({
@@ -396,7 +396,7 @@ export async function resumerGestionnaires(rows: Awaited<ReturnType<typeof charg
  */
 export const listManagers = asyncHandler(async (req: Request, res: Response) => {
   const parsed = listManagersQuerySchema.safeParse(req.query);
-  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides", "SEARCH_PARAMS_INVALID");
   const pagination = parsePagination(req);
 
   const enriched = await chargerGestionnaires(parsed.data);
@@ -532,7 +532,7 @@ export const listAuditLogsQuerySchema = z.object({
  */
 export const listAdminAuditLogs = asyncHandler(async (req: Request, res: Response) => {
   const parsed = listAuditLogsQuerySchema.safeParse(req.query);
-  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides", "SEARCH_PARAMS_INVALID");
   const { action, targetUserId } = parsed.data;
   const pagination = parsePagination(req);
 
@@ -604,7 +604,7 @@ export const suspendManager = asyncHandler(async (req: Request, res: Response) =
   const { reason } = suspendManagerSchema.parse(req.body);
 
   const manager = await trouverGestionnaire(id);
-  if (manager.suspendedAt) throw new ApiError(409, "Ce compte est déjà suspendu");
+  if (manager.suspendedAt) throw new ApiError(409, "Ce compte est déjà suspendu", "ACCOUNT_ALREADY_SUSPENDED");
 
   const facturationPausee = Boolean(manager.stripeSubscriptionId);
   if (manager.stripeSubscriptionId) await setStripeCollectionPaused(manager.stripeSubscriptionId, true);
@@ -614,7 +614,7 @@ export const suspendManager = asyncHandler(async (req: Request, res: Response) =
     .set({ suspendedAt: new Date(), suspensionReason: reason })
     .where(and(eq(users.id, id), isNull(users.suspendedAt)))
     .returning({ suspendedAt: users.suspendedAt });
-  if (!updated) throw new ApiError(409, "Ce compte est déjà suspendu");
+  if (!updated) throw new ApiError(409, "Ce compte est déjà suspendu", "ACCOUNT_ALREADY_SUSPENDED");
 
   await logAdminAction({
     req,
@@ -637,7 +637,7 @@ export const reactivateManager = asyncHandler(async (req: Request, res: Response
   const { id } = req.params;
 
   const manager = await trouverGestionnaire(id);
-  if (!manager.suspendedAt) throw new ApiError(409, "Ce compte n'est pas suspendu");
+  if (!manager.suspendedAt) throw new ApiError(409, "Ce compte n'est pas suspendu", "ACCOUNT_NOT_SUSPENDED");
 
   const facturationReprise = Boolean(manager.stripeSubscriptionId);
   if (manager.stripeSubscriptionId) await setStripeCollectionPaused(manager.stripeSubscriptionId, false);
@@ -647,7 +647,7 @@ export const reactivateManager = asyncHandler(async (req: Request, res: Response
     .set({ suspendedAt: null, suspensionReason: null })
     .where(and(eq(users.id, id), isNotNull(users.suspendedAt)))
     .returning({ id: users.id });
-  if (!updated) throw new ApiError(409, "Ce compte n'est pas suspendu");
+  if (!updated) throw new ApiError(409, "Ce compte n'est pas suspendu", "ACCOUNT_NOT_SUSPENDED");
 
   await logAdminAction({
     req,

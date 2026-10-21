@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { avecCode } from "./validationExplicite";
 
 /**
  * Devises acceptées par le Service.
@@ -57,4 +58,6 @@ export function estDeviseAcceptee(code: string): boolean {
  * acceptaient une devise, chacun avec sa propre règle, et resserrer l'un sans
  * les autres aurait juste déplacé le trou.
  */
-export const deviseSchema = z.string().refine(estDeviseAcceptee, MESSAGE_DEVISE_INVALIDE);
+export const deviseSchema = z
+  .string()
+  .refine(estDeviseAcceptee, avecCode(MESSAGE_DEVISE_INVALIDE, "CURRENCY_UNSUPPORTED", { currencies: DEVISES_ACCEPTEES.join(", ") }));

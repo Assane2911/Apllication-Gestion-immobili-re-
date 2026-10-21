@@ -221,7 +221,7 @@ export const resendTeamInvitation = asyncHandler(async (req: Request, res: Respo
   assertOwnership(collaborateur, (c) => c.teamOwnerId ?? "", req.user!.userId, "Collaborateur introuvable", 404, "COLLABORATOR_NOT_FOUND");
 
   if (collaborateur.hasPassword || !collaborateur.resetPasswordTokenHash) {
-    throw new ApiError(409, "Cette invitation a déjà été acceptée.");
+    throw new ApiError(409, "Cette invitation a déjà été acceptée.", "INVITATION_ALREADY_ACCEPTED");
   }
 
   const rawToken = crypto.randomBytes(32).toString("hex");

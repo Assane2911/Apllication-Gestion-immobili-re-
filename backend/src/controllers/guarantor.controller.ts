@@ -8,6 +8,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { CIVILITES } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
+import { avecCode } from "../utils/validationExplicite";
 
 /**
  * Garants d'un bail. Ils figurent sur le bail remis au locataire : une fois ce
@@ -23,7 +24,7 @@ const garantSchema = z.object({
   lastName: z.string().trim().min(1, "Nom du garant requis").max(100),
   phone: z
     .string()
-    .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
+    .refine((v) => versE164(v) !== null, avecCode(MESSAGE_TELEPHONE_INVALIDE, "PHONE_INVALID"))
     .transform((v) => versE164(v)!),
   email: z
     .union([z.literal(""), z.null(), z.string().trim().email("Adresse email du garant invalide")])
@@ -50,7 +51,8 @@ function assertBailNonSigne(contrat: typeof contracts.$inferSelect) {
   if (contrat.signedByTenantAt) {
     throw new ApiError(
       409,
-      "Ce bail a été signé par le locataire : ses garants font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail ou un avenant."
+      "Ce bail a été signé par le locataire : ses garants font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail ou un avenant.",
+      "LEASE_SIGNED_GUARANTORS_LOCKED"
     );
   }
 }
@@ -71,7 +73,7 @@ export const createGuarantor = asyncHandler(async (req: Request, res: Response) 
     .select({ nombre: sql<number>`count(*)::int` })
     .from(contractGuarantors)
     .where(eq(contractGuarantors.contractId, contrat.id));
-  if (nombre >= MAX_GARANTS_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_GARANTS_PAR_BAIL} garants.`);
+  if (nombre >= MAX_GARANTS_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_GARANTS_PAR_BAIL} garants.`, "GUARANTOR_LIMIT", { max: MAX_GARANTS_PAR_BAIL });
 
   const [garant] = await db
     .insert(contractGuarantors)

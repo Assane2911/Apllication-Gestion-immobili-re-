@@ -68,6 +68,22 @@ describe("calculerNouveauLoyer", () => {
     expect(() => calculerNouveauLoyer(500, { mode: "INDEX", indexOld: 0, indexNew: 145 })).toThrow("positives");
     expect(() => calculerNouveauLoyer(500, { mode: "INDEX", indexOld: 142, indexNew: -1 })).toThrow("positives");
   });
+
+  it("chaque refus porte son code, et celui du pourcentage les bornes à insérer dans la traduction", () => {
+    const erreur = (entree: Parameters<typeof calculerNouveauLoyer>[1]) => {
+      try {
+        calculerNouveauLoyer(500, entree);
+      } catch (err) {
+        return err as { code?: string; params?: Record<string, number> };
+      }
+      throw new Error("aucune erreur levée");
+    };
+    expect(erreur({ mode: "AMOUNT", newRent: 500 }).code).toBe("REVISION_RENT_UNCHANGED");
+    expect(erreur({ mode: "INDEX", indexOld: 0, indexNew: 145 }).code).toBe("REVISION_INDEX_POSITIVE");
+    const pourcentage = erreur({ mode: "PERCENT", percent: 150 });
+    expect(pourcentage.code).toBe("REVISION_PERCENT_RANGE");
+    expect(Object.keys(pourcentage.params ?? {}).sort()).toEqual(["max", "min"]);
+  });
 });
 
 describe("révision à effet immédiat (mois en cours)", () => {
@@ -169,16 +185,17 @@ describe("révision programmée", () => {
 describe("refus", () => {
   it("date d'effet : premier de mois, jamais dans le passé, après le début et avant la fin du bail", async () => {
     const { h, contract } = await agence();
-    const cas: Array<[string, string]> = [
-      ["2026-11-15", "premier jour"],
-      ["2026-09-01", "passé"],
-      ["2026-01-01", "passé"],
-      ["2028-02-01", "fin du bail"],
+    const cas: Array<[string, string, string]> = [
+      ["2026-11-15", "premier jour", "REVISION_DATE_FIRST_OF_MONTH"],
+      ["2026-09-01", "passé", "REVISION_DATE_PAST"],
+      ["2026-01-01", "passé", "REVISION_DATE_PAST"],
+      ["2028-02-01", "fin du bail", "REVISION_DATE_AFTER_END"],
     ];
-    for (const [date, attendu] of cas) {
+    for (const [date, attendu, code] of cas) {
       const res = await reviser(h, contract.id, { mode: "AMOUNT", newRent: 540, effectiveDate: date });
       expect(res.status, date).toBe(400);
       expect(res.body.error, date).toContain(attendu);
+      expect(res.body.code, date).toBe(code);
     }
     expect(await revisionsDe(contract.id)).toHaveLength(0);
   });
@@ -189,6 +206,8 @@ describe("refus", () => {
     const res = await reviser(h, contract.id, { mode: "AMOUNT", newRent: 540, effectiveDate: "2026-10-01" });
     expect(res.status).toBe(409);
     expect(res.body.error).toContain("10/2026");
+    expect(res.body.code).toBe("REVISION_MONTH_ALREADY_PAID");
+    expect(res.body.params).toEqual({ period: "10/2026" });
     expect(await loyerDe(contract.id)).toBe(500);
     // Le mois suivant, en revanche, est possible.
     expect((await reviser(h, contract.id, { mode: "AMOUNT", newRent: 540, effectiveDate: "2026-11-01" })).status).toBe(201);
@@ -200,9 +219,12 @@ describe("refus", () => {
     const deuxieme = await reviser(h, contract.id, { mode: "AMOUNT", newRent: 560, effectiveDate: "2026-12-01" });
     expect(deuxieme.status).toBe(409);
     expect(deuxieme.body.error).toContain("déjà programmée");
+    expect(deuxieme.body.code).toBe("REVISION_ALREADY_SCHEDULED");
 
     await testDb.update(contracts).set({ status: "ENDED" }).where(eq(contracts.id, contract.id));
-    expect((await reviser(h, contract.id, { mode: "AMOUNT", newRent: 560, effectiveDate: "2026-12-01" })).status).toBe(409);
+    const terminee = await reviser(h, contract.id, { mode: "AMOUNT", newRent: 560, effectiveDate: "2026-12-01" });
+    expect(terminee.status).toBe(409);
+    expect(terminee.body.code).toBe("REVISION_CONTRACT_NOT_ACTIVE");
   });
 
   it("deux demandes simultanées : une seule passe", async () => {
@@ -217,9 +239,16 @@ describe("refus", () => {
 
   it("valide la saisie : champ du mode manquant, note trop longue", async () => {
     const { h, contract } = await agence();
-    expect((await reviser(h, contract.id, { mode: "PERCENT", effectiveDate: "2026-11-01" })).status).toBe(400);
-    expect((await reviser(h, contract.id, { mode: "INDEX", indexOld: 140, effectiveDate: "2026-11-01" })).status).toBe(400);
-    expect((await reviser(h, contract.id, { mode: "AMOUNT", effectiveDate: "2026-11-01" })).status).toBe(400);
+    // Chaque message explicite porte son code : l'interface le traduit (voir errorHandler.ts).
+    const pourcentage = await reviser(h, contract.id, { mode: "PERCENT", effectiveDate: "2026-11-01" });
+    expect(pourcentage.status).toBe(400);
+    expect(pourcentage.body.code).toBe("REVISION_PERCENT_REQUIRED");
+    const indice = await reviser(h, contract.id, { mode: "INDEX", indexOld: 140, effectiveDate: "2026-11-01" });
+    expect(indice.status).toBe(400);
+    expect(indice.body.code).toBe("REVISION_INDEX_REQUIRED");
+    const montant = await reviser(h, contract.id, { mode: "AMOUNT", effectiveDate: "2026-11-01" });
+    expect(montant.status).toBe(400);
+    expect(montant.body.code).toBe("REVISION_NEW_RENT_REQUIRED");
     expect((await reviser(h, contract.id, { mode: "AMOUNT", newRent: 540, effectiveDate: "2026-11-01", note: "x".repeat(1001) })).status).toBe(400);
   });
 
