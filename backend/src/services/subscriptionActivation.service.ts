@@ -61,7 +61,7 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
   // l'appelant croit confirmer un paiement qui n'a en réalité jamais été
   // validé.
   if (record.status === "REJECTED") {
-    throw new ApiError(400, "Ce virement a été rejeté : impossible de le confirmer");
+    throw new ApiError(400, "Ce virement a été rejeté : impossible de le confirmer", "TRANSFER_REJECTED_CANNOT_CONFIRM");
   }
 
   const [compte] = await dbClient.select().from(users).where(eq(users.id, record.userId));
@@ -141,7 +141,7 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
     // Un autre appel a gagné la course entre notre lecture et cette écriture.
     const [actuel] = await dbClient.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, subscriptionId));
     if (actuel?.status === "PAID") return actuel;
-    throw new ApiError(409, "Ce paiement vient d'être traité par une autre requête. Veuillez réessayer.");
+    throw new ApiError(409, "Ce paiement vient d'être traité par une autre requête. Veuillez réessayer.", "PAYMENT_PROCESSED_CONCURRENTLY");
   }
 
   // L'historique de facturation porte les dates corrigées : sans cela il

@@ -10,6 +10,7 @@
  * bout.
  */
 import { z } from "zod";
+import { avecCode } from "./validationExplicite";
 
 /** Retire espaces/tirets et met en majuscules, pour un stockage et une comparaison uniformes. */
 export function normaliserIban(brut: string): string {
@@ -65,15 +66,11 @@ export const ibanSchema = z
   // Un champ ABSENT reste absent (undefined) : l'écriture en base l'ignore. Le transformer en null
   // effaçait l'IBAN de toute requête qui ne le mentionnait pas ; seul « null » ou « "" » l'efface.
   .transform((valeur) => (valeur === undefined ? undefined : valeur ? normaliserIban(valeur) : null))
-  .refine((valeur) => !valeur || ibanValide(valeur), {
-    message: "IBAN invalide — vérifiez qu'il est complet et sans erreur de saisie.",
-  });
+  .refine((valeur) => !valeur || ibanValide(valeur), avecCode("IBAN invalide — vérifiez qu'il est complet et sans erreur de saisie.", "IBAN_INVALID"));
 
 export const bicSchema = z
   .string()
   .optional()
   .nullable()
   .transform((valeur) => (valeur === undefined ? undefined : valeur ? normaliserBic(valeur) : null))
-  .refine((valeur) => !valeur || bicValide(valeur), {
-    message: "BIC/SWIFT invalide — 8 ou 11 caractères attendus (ex: BNPAFRPPXXX).",
-  });
+  .refine((valeur) => !valeur || bicValide(valeur), avecCode("BIC/SWIFT invalide — 8 ou 11 caractères attendus (ex: BNPAFRPPXXX).", "BIC_INVALID"));

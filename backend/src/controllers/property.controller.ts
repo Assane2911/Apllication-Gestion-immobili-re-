@@ -39,7 +39,7 @@ const propertySchema = z.object({
 async function assertOwnerBelongsToManager(ownerId: string, managerId: string) {
   const [owner] = await db.select({ managerId: owners.managerId }).from(owners).where(eq(owners.id, ownerId));
   if (!owner || owner.managerId !== managerId) {
-    throw new ApiError(400, "Propriétaire invalide");
+    throw new ApiError(400, "Propriétaire invalide", "PROPERTY_OWNER_INVALID");
   }
 }
 
@@ -109,7 +109,9 @@ export const createProperty = asyncHandler(async (req: Request, res: Response) =
     if (count >= maxProperties) {
       throw new ApiError(
         403,
-        `Limite de ${maxProperties} biens atteinte pour votre formule actuelle. Passez à une formule supérieure pour en ajouter davantage.`
+        `Limite de ${maxProperties} biens atteinte pour votre formule actuelle. Passez à une formule supérieure pour en ajouter davantage.`,
+        "PROPERTY_LIMIT_REACHED",
+        { max: maxProperties }
       );
     }
   }
@@ -189,12 +191,14 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
       if (changeStatus) {
         throw new ApiError(
           409,
-          "Impossible de changer le statut d'un bien ayant un contrat de location actif. Clôturez d'abord le contrat."
+          "Impossible de changer le statut d'un bien ayant un contrat de location actif. Clôturez d'abord le contrat.",
+          "PROPERTY_ACTIVE_CONTRACT_STATUS"
         );
       }
       throw new ApiError(
         409,
-        "Impossible de changer la devise d'un bien ayant un contrat de location actif : le contrat et ses factures resteraient dans l'ancienne devise. Clôturez d'abord le contrat."
+        "Impossible de changer la devise d'un bien ayant un contrat de location actif : le contrat et ses factures resteraient dans l'ancienne devise. Clôturez d'abord le contrat.",
+        "PROPERTY_ACTIVE_CONTRACT_CURRENCY"
       );
     }
   }
@@ -236,7 +240,8 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
   if (propertyContracts.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un bien ayant un historique de contrats. Veuillez d'abord supprimer les contrats associés."
+      "Impossible de supprimer un bien ayant un historique de contrats. Veuillez d'abord supprimer les contrats associés.",
+      "PROPERTY_HAS_CONTRACT_HISTORY"
     );
   }
 
@@ -247,7 +252,8 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
   if (depense) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un bien ayant des dépenses enregistrées : elles disparaîtraient de vos bilans. Supprimez d'abord ces dépenses si c'est une erreur."
+      "Impossible de supprimer un bien ayant des dépenses enregistrées : elles disparaîtraient de vos bilans. Supprimez d'abord ces dépenses si c'est une erreur.",
+      "PROPERTY_HAS_EXPENSES"
     );
   }
 

@@ -48,7 +48,7 @@ async function analyser(req: Request) {
       }),
     };
   } catch (err) {
-    if (err instanceof CsvInvalide || err instanceof ImportInvalide) throw new ApiError(400, err.message);
+    if (err instanceof CsvInvalide || err instanceof ImportInvalide) throw new ApiError(400, err.message, err.code, err.params);
     throw err;
   }
 }

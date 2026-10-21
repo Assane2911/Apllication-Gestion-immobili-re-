@@ -5,6 +5,7 @@ import { z, ZodError } from "zod";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { ApiError } from "../utils/asyncHandler";
+import { avecCode } from "../utils/validationExplicite";
 import { errorHandler, notFoundHandler } from "./errorHandler";
 
 // errorHandler est le point de passage unique de TOUTES les erreurs de l'API
@@ -63,7 +64,8 @@ describe("errorHandler", () => {
 
     expect(res.status).toHaveBeenCalledWith(400);
     const body = res.json.mock.calls[0][0];
-    expect(body.code).toBe("VALIDATION_ERROR");
+    expect(body.code).toBe("VALIDATION_ERROR_FIELD");
+    expect(body.params).toEqual({ fields: "email" });
     expect(body.error).toContain("champ concerné : email");
   });
 
@@ -75,6 +77,8 @@ describe("errorHandler", () => {
 
     const body = res.json.mock.calls[0][0];
     expect(body.error).toContain("champs concernés : email, rent");
+    expect(body.code).toBe("VALIDATION_ERROR_FIELDS");
+    expect(body.params).toEqual({ fields: "email, rent" });
   });
 
   it("renvoie le message du schéma quand il en porte un, plutôt que la formule générique", async () => {
@@ -91,7 +95,61 @@ describe("errorHandler", () => {
     expect(res.status).toHaveBeenCalledWith(400);
     const body = res.json.mock.calls[0][0];
     expect(body.error).toBe("Indiquez l'indicatif du pays.");
+    // Sans code explicite sur le message : le français reste affiché, un code générique le remplacerait par une
+    // formule vague.
+    expect(body.code).toBeUndefined();
+  });
+
+  it("un message explicite écrit avec avecCode porte son code et ses valeurs : l'interface le traduit", async () => {
+    const schema = z.object({
+      annee: z.number().refine((v) => v > 1900, avecCode("L'année doit être postérieure à 1900.", "ANNEE_TROP_ANCIENNE", { min: 1900 })),
+    });
+    const res = fakeRes();
+
+    await errorHandler(zodErrorFor(schema, { annee: 1800 }), fakeReq, res, noop);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.error).toBe("L'année doit être postérieure à 1900.");
+    expect(body.code).toBe("ANNEE_TROP_ANCIENNE");
+    expect(body.params).toEqual({ min: 1900 });
+  });
+
+  it("deux messages explicites de même code (deux numéros invalides) ne sont dits qu'une fois, avec leur code", async () => {
+    const schema = z.object({
+      a: z.string().refine(() => false, avecCode("Numéro invalide.", "PHONE_X")),
+      b: z.string().refine(() => false, avecCode("Numéro invalide.", "PHONE_X")),
+    });
+    const res = fakeRes();
+
+    await errorHandler(zodErrorFor(schema, { a: "1", b: "2" }), fakeReq, res, noop);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.error).toBe("Numéro invalide.");
+    expect(body.code).toBe("PHONE_X");
+  });
+
+  it("des messages explicites de codes différents restent en français, sans code", async () => {
+    const schema = z.object({
+      a: z.string().refine(() => false, avecCode("Premier message.", "CODE_A")),
+      b: z.string().refine(() => false, avecCode("Second message.", "CODE_B")),
+    });
+    const res = fakeRes();
+
+    await errorHandler(zodErrorFor(schema, { a: "1", b: "2" }), fakeReq, res, noop);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.error).toBe("Premier message. Second message.");
+    expect(body.code).toBeUndefined();
+  });
+
+  it("sans champ nommé, la formule générique porte le code VALIDATION_ERROR (sans paramètre)", async () => {
+    const res = fakeRes();
+
+    await errorHandler(zodErrorFor(z.string(), 12), fakeReq, res, noop);
+
+    const body = res.json.mock.calls[0][0];
     expect(body.code).toBe("VALIDATION_ERROR");
+    expect(body.params).toBeUndefined();
   });
 
   it("garde la formule générique pour les messages par défaut de Zod, rédigés en anglais", async () => {
@@ -144,7 +202,7 @@ describe("errorHandler", () => {
     await errorHandler(fuite, fakeReq, res, noop);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: "Erreur interne du serveur" });
+    expect(res.json).toHaveBeenCalledWith({ error: "Erreur interne du serveur", code: "INTERNAL_ERROR" });
     const body = JSON.stringify(res.json.mock.calls[0][0]);
     expect(body).not.toContain("users_email_unique");
     expect(body).not.toContain("client.ts");
@@ -158,7 +216,7 @@ describe("errorHandler", () => {
     await errorHandler({ secretInterne: "mot-de-passe-admin" }, fakeReq, res, noop);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: "Erreur interne du serveur" });
+    expect(res.json).toHaveBeenCalledWith({ error: "Erreur interne du serveur", code: "INTERNAL_ERROR" });
     expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("mot-de-passe-admin");
   });
 
@@ -230,7 +288,11 @@ describe("notFoundHandler", () => {
     notFoundHandler({ method: "POST", path: "/api/inconnu" } as Request, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ error: "Route introuvable: POST /api/inconnu" });
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Route introuvable: POST /api/inconnu",
+      code: "ROUTE_NOT_FOUND",
+      params: { method: "POST", path: "/api/inconnu" },
+    });
   });
 
   it("est bien branché sur l'application pour toute route inconnue", async () => {

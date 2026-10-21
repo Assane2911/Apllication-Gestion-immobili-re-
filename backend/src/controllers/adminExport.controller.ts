@@ -46,7 +46,7 @@ function envoyerCsv(res: Response, nomFichier: string, lignes: string[]) {
 
 export const exportManagersCsv = asyncHandler(async (req: Request, res: Response) => {
   const parsed = listManagersQuerySchema.safeParse(req.query);
-  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides", "SEARCH_PARAMS_INVALID");
 
   const tous = await chargerGestionnaires(parsed.data);
   const items = await resumerGestionnaires(tous.slice(0, MAX_LIGNES_EXPORT));
@@ -81,7 +81,7 @@ export const exportManagersCsv = asyncHandler(async (req: Request, res: Response
 
 export const exportAuditCsv = asyncHandler(async (req: Request, res: Response) => {
   const parsed = listAuditLogsQuerySchema.safeParse(req.query);
-  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides");
+  if (!parsed.success) throw new ApiError(400, "Paramètres de recherche invalides", "SEARCH_PARAMS_INVALID");
   const { action, targetUserId } = parsed.data;
 
   const conditions = [];

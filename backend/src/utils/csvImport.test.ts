@@ -46,6 +46,25 @@ describe("lireCsv", () => {
     expect(lireCsv("a;b;c\n1").lignes[0].valeurs).toEqual({ a: "1", b: "", c: "" });
   });
 
+  it("chaque refus porte le code que l'interface traduit, avec ses valeurs", () => {
+    const erreur = (f: () => unknown) => {
+      try {
+        f();
+      } catch (err) {
+        return err as CsvInvalide;
+      }
+      throw new Error("aucune erreur levée");
+    };
+    expect(erreur(() => lireCsv("   \n  ")).code).toBe("CSV_EMPTY");
+    expect(erreur(() => lireCsv("a;b\n")).code).toBe("CSV_NO_DATA_ROWS");
+    expect(erreur(() => lireCsv('a;b\n"ouvert;1')).code).toBe("CSV_UNCLOSED_QUOTE");
+    expect(erreur(() => lireCsv("a\n" + "x".repeat(1_000_001))).code).toBe("CSV_TOO_LARGE");
+    const lignes = Array.from({ length: MAX_LIGNES_IMPORT + 1 }, (_, i) => `v${i}`).join("\n");
+    const trop = erreur(() => lireCsv("a\n" + lignes));
+    expect(trop.code).toBe("CSV_TOO_MANY_ROWS");
+    expect(trop.params).toEqual({ count: MAX_LIGNES_IMPORT + 1, max: MAX_LIGNES_IMPORT });
+  });
+
   it("refuse un fichier vide, sans données, trop gros, trop long ou aux guillemets ouverts", () => {
     expect(() => lireCsv("")).toThrow(CsvInvalide);
     expect(() => lireCsv("   \n  ")).toThrow(/vide/);

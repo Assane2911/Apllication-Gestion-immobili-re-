@@ -231,10 +231,10 @@ export async function emettreMiseEnDemeure(params: {
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, params.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
-  if (!tenant || tenant.anonymizedAt) throw new ApiError(409, "Le locataire de ce bail a été anonymisé : aucun courrier ne peut lui être adressé.");
+  if (!tenant || tenant.anonymizedAt) throw new ApiError(409, "Le locataire de ce bail a été anonymisé : aucun courrier ne peut lui être adressé.", "FORMAL_NOTICE_TENANT_ANONYMIZED");
 
   const impayes = await impayesDuBail(contract.id, maintenant);
-  if (impayes.length === 0) throw new ApiError(409, "Ce bail n'a aucun loyer échu impayé : il n'y a rien à réclamer.");
+  if (impayes.length === 0) throw new ApiError(409, "Ce bail n'a aucun loyer échu impayé : il n'y a rien à réclamer.", "FORMAL_NOTICE_NOTHING_OVERDUE");
 
   const factures: FactureReclamee[] = impayes.map((f) => ({
     invoiceId: f.id,
@@ -266,10 +266,13 @@ export async function emettreMiseEnDemeure(params: {
       .orderBy(desc(formalNotices.createdAt))
       .limit(1);
     if (derniere && signature(lireFactures(derniere.invoicesSnapshot)) === signature(factures)) {
+      const reference = referenceMiseEnDemeure(derniere);
+      const date = new Date(derniere.createdAt).toLocaleDateString("fr-FR");
       throw new ApiError(
         409,
-        `Une mise en demeure identique (réf. ${referenceMiseEnDemeure(derniere)}) a déjà été émise le ` +
-          `${new Date(derniere.createdAt).toLocaleDateString("fr-FR")} : rien de nouveau à réclamer depuis.`
+        `Une mise en demeure identique (réf. ${reference}) a déjà été émise le ${date} : rien de nouveau à réclamer depuis.`,
+        "FORMAL_NOTICE_DUPLICATE",
+        { reference, date }
       );
     }
     const [creee] = await tx

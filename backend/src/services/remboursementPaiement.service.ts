@@ -32,7 +32,7 @@ export async function retrouverSessionDuPaiement(paymentIntent: string): Promise
     `https://api.stripe.com/v1/checkout/sessions?payment_intent=${encodeURIComponent(paymentIntent)}&limit=1`,
     { headers: { Authorization: `Bearer ${env.payments.stripeSecretKey}` } }
   );
-  if (!reponse.ok) throw new ApiError(502, `Stripe a refusé de retrouver la session du paiement ${paymentIntent} (HTTP ${reponse.status}).`);
+  if (!reponse.ok) throw new ApiError(502, `Stripe a refusé de retrouver la session du paiement ${paymentIntent} (HTTP ${reponse.status}).`, "STRIPE_PAYMENT_LOOKUP_FAILED", { paymentIntent, status: reponse.status });
   const corps = (await reponse.json()) as { data?: Array<{ id?: string }> };
   return corps.data?.[0]?.id ?? null;
 }

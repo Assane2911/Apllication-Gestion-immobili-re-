@@ -9,7 +9,7 @@ const refus = (saisie: string) => {
   try {
     resoudre(saisie);
   } catch (err) {
-    return err instanceof ApiError ? { statut: err.statusCode, message: err.message } : err;
+    return err instanceof ApiError ? { statut: err.statusCode, message: err.message, code: err.code } : err;
   }
   return null;
 };
@@ -39,7 +39,7 @@ describe("date d'encaissement", () => {
   });
 
   it("refuse une date dans le futur", () => {
-    expect(refus("2026-10-14")).toEqual({ statut: 400, message: "La date d'encaissement ne peut pas être dans le futur." });
+    expect(refus("2026-10-14")).toEqual({ statut: 400, message: "La date d'encaissement ne peut pas être dans le futur.", code: "COLLECTION_DATE_FUTURE" });
     expect(refus("2027-01-01")).toMatchObject({ statut: 400 });
   });
 
@@ -53,13 +53,18 @@ describe("date d'encaissement", () => {
     expect(refus("2024-10-05")).toEqual({
       statut: 400,
       message: "La date d'encaissement est trop ancienne par rapport à l'échéance de cette facture.",
+      code: "COLLECTION_DATE_TOO_OLD",
     });
     expect(resoudre("2025-10-06")).toBeInstanceOf(Date);
   });
 
   it("refuse ce qui n'est pas une date, y compris un jour qui n'existe pas", () => {
     for (const saisie of ["hier", "2026-13-01", "2026-02-31", "12/10/2026", "2026-10-5x"]) {
-      expect(refus(saisie), saisie).toMatchObject({ statut: 400, message: "La date d'encaissement n'est pas une date valide." });
+      expect(refus(saisie), saisie).toMatchObject({
+        statut: 400,
+        message: "La date d'encaissement n'est pas une date valide.",
+        code: "COLLECTION_DATE_INVALID",
+      });
     }
   });
 });

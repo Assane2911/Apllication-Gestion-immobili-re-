@@ -42,17 +42,17 @@ export function calculerNouveauLoyer(loyerActuel: number, entree: EntreeRevision
   if (entree.mode === "AMOUNT") nouveau = entree.newRent;
   else if (entree.mode === "PERCENT") {
     if (entree.percent < POURCENTAGE_MIN || entree.percent > POURCENTAGE_MAX) {
-      throw new ApiError(400, `Le pourcentage doit être compris entre ${POURCENTAGE_MIN} % et ${POURCENTAGE_MAX} %.`);
+      throw new ApiError(400, `Le pourcentage doit être compris entre ${POURCENTAGE_MIN} % et ${POURCENTAGE_MAX} %.`, "REVISION_PERCENT_RANGE", { min: POURCENTAGE_MIN, max: POURCENTAGE_MAX });
     }
     nouveau = loyerActuel * (1 + entree.percent / 100);
   } else {
-    if (!(entree.indexOld > 0) || !(entree.indexNew > 0)) throw new ApiError(400, "Les deux valeurs de l'indice doivent être positives.");
+    if (!(entree.indexOld > 0) || !(entree.indexNew > 0)) throw new ApiError(400, "Les deux valeurs de l'indice doivent être positives.", "REVISION_INDEX_POSITIVE");
     nouveau = (loyerActuel * entree.indexNew) / entree.indexOld;
   }
   nouveau = arrondir(nouveau);
-  if (!Number.isFinite(nouveau) || nouveau <= 0) throw new ApiError(400, "Le nouveau loyer doit être supérieur à zéro.");
-  if (nouveau > MONTANT_MAXIMUM) throw new ApiError(400, "Le nouveau loyer dépasse le plafond accepté : vérifiez le montant, le pourcentage ou les valeurs de l'indice.");
-  if (nouveau === arrondir(loyerActuel)) throw new ApiError(400, "Le nouveau loyer est identique au loyer actuel.");
+  if (!Number.isFinite(nouveau) || nouveau <= 0) throw new ApiError(400, "Le nouveau loyer doit être supérieur à zéro.", "REVISION_RENT_POSITIVE");
+  if (nouveau > MONTANT_MAXIMUM) throw new ApiError(400, "Le nouveau loyer dépasse le plafond accepté : vérifiez le montant, le pourcentage ou les valeurs de l'indice.", "REVISION_RENT_CAP");
+  if (nouveau === arrondir(loyerActuel)) throw new ApiError(400, "Le nouveau loyer est identique au loyer actuel.", "REVISION_RENT_UNCHANGED");
   return nouveau;
 }
 
@@ -113,10 +113,10 @@ export async function creerRevision(p: CreationRevision): Promise<{ revision: Re
   const maintenant = p.maintenant ?? new Date();
   const effet = debutDeMois(p.effectiveDate);
   if (effet.getTime() !== p.effectiveDate.getTime()) {
-    throw new ApiError(400, "La date d'effet doit être le premier jour d'un mois.");
+    throw new ApiError(400, "La date d'effet doit être le premier jour d'un mois.", "REVISION_DATE_FIRST_OF_MONTH");
   }
   if (moisAbsolu(effet) < moisAbsolu(maintenant)) {
-    throw new ApiError(400, "La date d'effet ne peut pas être dans le passé : un loyer déjà facturé ne se réécrit pas.");
+    throw new ApiError(400, "La date d'effet ne peut pas être dans le passé : un loyer déjà facturé ne se réécrit pas.", "REVISION_DATE_PAST");
   }
   const immediate = moisAbsolu(effet) === moisAbsolu(maintenant);
 
@@ -127,15 +127,15 @@ export async function creerRevision(p: CreationRevision): Promise<{ revision: Re
     if (!contrat) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
     const [bien] = await tx.select().from(properties).where(eq(properties.id, contrat.propertyId));
     if (!bien || bien.managerId !== p.managerId) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
-    if (contrat.status !== "ACTIVE") throw new ApiError(409, "Seul un contrat actif peut voir son loyer révisé.");
-    if (effet <= new Date(contrat.startDate)) throw new ApiError(400, "La date d'effet doit suivre le début du bail.");
-    if (effet > new Date(contrat.endDate)) throw new ApiError(400, "La date d'effet dépasse la fin du bail : renouvelez le bail d'abord.");
+    if (contrat.status !== "ACTIVE") throw new ApiError(409, "Seul un contrat actif peut voir son loyer révisé.", "REVISION_CONTRACT_NOT_ACTIVE");
+    if (effet <= new Date(contrat.startDate)) throw new ApiError(400, "La date d'effet doit suivre le début du bail.", "REVISION_DATE_BEFORE_START");
+    if (effet > new Date(contrat.endDate)) throw new ApiError(400, "La date d'effet dépasse la fin du bail : renouvelez le bail d'abord.", "REVISION_DATE_AFTER_END");
 
     const [enAttente] = await tx
       .select({ id: rentRevisions.id })
       .from(rentRevisions)
       .where(and(eq(rentRevisions.contractId, contrat.id), eq(rentRevisions.status, "PENDING")));
-    if (enAttente) throw new ApiError(409, "Une révision est déjà programmée pour ce bail : annulez-la avant d'en créer une autre.");
+    if (enAttente) throw new ApiError(409, "Une révision est déjà programmée pour ce bail : annulez-la avant d'en créer une autre.", "REVISION_ALREADY_SCHEDULED");
 
     const nouveauLoyer = calculerNouveauLoyer(contrat.rent, p.entree);
 
@@ -147,7 +147,9 @@ export async function creerRevision(p: CreationRevision): Promise<{ revision: Re
     if (encaissee) {
       throw new ApiError(
         409,
-        `Le loyer de ${String(encaissee.periodMonth).padStart(2, "0")}/${encaissee.periodYear} est déjà encaissé : choisissez un mois suivant.`
+        `Le loyer de ${String(encaissee.periodMonth).padStart(2, "0")}/${encaissee.periodYear} est déjà encaissé : choisissez un mois suivant.`,
+        "REVISION_MONTH_ALREADY_PAID",
+        { period: `${String(encaissee.periodMonth).padStart(2, "0")}/${encaissee.periodYear}` }
       );
     }
 
@@ -248,7 +250,9 @@ export async function annulerRevision(contractId: string, revisionId: string): P
   if (!annulee) {
     const [existante] = await db.select({ status: rentRevisions.status }).from(rentRevisions).where(and(eq(rentRevisions.id, revisionId), eq(rentRevisions.contractId, contractId)));
     if (!existante) throw new ApiError(404, "Révision introuvable", "REVISION_NOT_FOUND");
-    throw new ApiError(409, existante.status === "APPLIED" ? "Cette révision est déjà appliquée : créez une nouvelle révision pour la corriger." : "Cette révision est déjà annulée.");
+    throw existante.status === "APPLIED"
+      ? new ApiError(409, "Cette révision est déjà appliquée : créez une nouvelle révision pour la corriger.", "REVISION_ALREADY_APPLIED")
+      : new ApiError(409, "Cette révision est déjà annulée.", "REVISION_ALREADY_CANCELLED");
   }
 }
 

@@ -39,7 +39,7 @@ export async function uploadPublicFile(file: Express.Multer.File, folder: "prope
     .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: false });
 
   if (error) {
-    throw new ApiError(500, `Échec de l'upload vers Supabase Storage : ${error.message}`);
+    throw new ApiError(500, `Échec de l'upload vers Supabase Storage : ${error.message}`, "STORAGE_UPLOAD_FAILED");
   }
 
   const { data } = supabaseAdmin.storage.from(STORAGE_BUCKETS.public).getPublicUrl(objectPath);
@@ -60,7 +60,7 @@ export async function uploadPrivateFile(file: Express.Multer.File, folder: "tena
     .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: false });
 
   if (error) {
-    throw new ApiError(500, `Échec de l'upload vers Supabase Storage : ${error.message}`);
+    throw new ApiError(500, `Échec de l'upload vers Supabase Storage : ${error.message}`, "STORAGE_UPLOAD_FAILED");
   }
 
   return objectPath;
@@ -73,7 +73,7 @@ export async function getSignedUrl(objectPath: string, expiresInSeconds = 3600) 
     .createSignedUrl(objectPath, expiresInSeconds);
 
   if (error || !data) {
-    throw new ApiError(500, `Impossible de générer l'URL signée : ${error?.message ?? "erreur inconnue"}`);
+    throw new ApiError(500, `Impossible de générer l'URL signée : ${error?.message ?? "erreur inconnue"}`, "STORAGE_SIGNED_URL_FAILED");
   }
 
   return data.signedUrl;

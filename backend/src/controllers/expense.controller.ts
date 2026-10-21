@@ -11,6 +11,7 @@ import { assertOwnership } from "../utils/authorization";
 import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
 import { dateSaisieSchema } from "../utils/dates";
 import { deviseSchema } from "../utils/devises";
+import { avecCode } from "../utils/validationExplicite";
 
 const createExpenseSchema = z.object({
   propertyId: z.string().min(1),
@@ -94,11 +95,11 @@ export const createExpense = asyncHandler(async (req: Request, res: Response) =>
   const body = createExpenseSchema.parse(req.body);
 
   if (body.recurrenceEndDate && !body.recurrence) {
-    throw new ApiError(400, "Une date de fin de récurrence suppose une dépense récurrente.");
+    throw new ApiError(400, "Une date de fin de récurrence suppose une dépense récurrente.", "EXPENSE_RECURRENCE_END_NEEDS_RECURRING");
   }
   const expenseDate = body.expenseDate ?? new Date();
   if (body.recurrenceEndDate && body.recurrenceEndDate <= expenseDate) {
-    throw new ApiError(400, "La date de fin de récurrence doit être postérieure à la date de la dépense.");
+    throw new ApiError(400, "La date de fin de récurrence doit être postérieure à la date de la dépense.", "EXPENSE_RECURRENCE_END_BEFORE_DATE");
   }
 
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
@@ -239,7 +240,7 @@ const jourIso = z
     // « 2026-13-45 » ne donnerait pas un 400 mais une erreur 500.
     const d = new Date(`${v}T00:00:00Z`);
     return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(v);
-  }, "Cette date n'existe pas");
+  }, avecCode("Cette date n'existe pas", "DATE_DOES_NOT_EXIST"));
 
 const periodeExportSchema = z.object({
   from: jourIso.optional(),

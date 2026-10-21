@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { authHeader, createContract, createManager, createOwner, createProperty, createTenant, tokenFor } from "../test/authHelpers";
+import { authHeader, createAdmin, createContract, createManager, createOwner, createProperty, createTenant, tokenFor } from "../test/authHelpers";
 
 /**
  * Les messages d'erreur du serveur sont écrits en français. Pour qu'un utilisateur en anglais, portugais ou
@@ -121,6 +121,89 @@ describe("codes d'erreur des parcours critiques", () => {
       const res = await request(app).delete(`/api/contracts/${bail.id}`).set(authHeader(tokenFor(manager)));
       expect(res.status).toBe(409);
       expect(res.body.code).toBe("CONTRACT_ACTIVE_NO_DELETE");
+    });
+  });
+  describe("refus du quotidien, validation et requêtes : un code par règle, le français restant en secours", () => {
+    const gestionnaire = () => createManager();
+
+    it("route inconnue : ROUTE_NOT_FOUND, avec la méthode et le chemin à insérer", async () => {
+      const res = await request(app).get("/api/introuvable");
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe("ROUTE_NOT_FOUND");
+      expect(res.body.params).toEqual({ method: "GET", path: "/api/introuvable" });
+    });
+
+    it("formulaire vide : VALIDATION_ERROR_FIELDS, avec les champs en cause", async () => {
+      const manager = await gestionnaire();
+      const res = await request(app).post("/api/tenants").set(authHeader(tokenFor(manager))).send({});
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_ERROR_FIELDS");
+      expect(res.body.params.fields).toContain("firstName");
+    });
+
+    it("numéro de téléphone sans indicatif : PHONE_INVALID, le message français conservé", async () => {
+      const manager = await gestionnaire();
+      const res = await request(app)
+        .post("/api/tenants")
+        .set(authHeader(tokenFor(manager)))
+        .send({ firstName: "A", lastName: "B", phone: "0612345678", email: "tel@test.local" });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("PHONE_INVALID");
+      expect(res.body.error).toContain("indicatif du pays");
+    });
+
+    it("supprimer un propriétaire qui a des biens : OWNER_HAS_PROPERTIES", async () => {
+      const manager = await gestionnaire();
+      const proprietaire = await createOwner(manager.id);
+      await createProperty(manager.id, { ownerId: proprietaire.id });
+      const res = await request(app).delete(`/api/owners/${proprietaire.id}`).set(authHeader(tokenFor(manager)));
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("OWNER_HAS_PROPERTIES");
+    });
+
+    it("supprimer un locataire ou un bien qui a un historique de baux : un code pour chacun", async () => {
+      const manager = await gestionnaire();
+      const bien = await createProperty(manager.id);
+      const locataire = await createTenant(manager.id);
+      await createContract(bien.id, locataire.id, { status: "ENDED" });
+      const h = authHeader(tokenFor(manager));
+      const locataireRes = await request(app).delete(`/api/tenants/${locataire.id}`).set(h);
+      expect(locataireRes.status).toBe(409);
+      expect(locataireRes.body.code).toBe("TENANT_HAS_CONTRACT_HISTORY");
+      const bienRes = await request(app).delete(`/api/properties/${bien.id}`).set(h);
+      expect(bienRes.status).toBe(409);
+      expect(bienRes.body.code).toBe("PROPERTY_HAS_CONTRACT_HISTORY");
+    });
+
+    it("un second bail sur la même période : CONTRACT_OVERLAP_ACTIVE", async () => {
+      const manager = await gestionnaire();
+      const bien = await createProperty(manager.id);
+      const locataire = await createTenant(manager.id);
+      const autre = await createTenant(manager.id);
+      await createContract(bien.id, locataire.id);
+      const res = await request(app)
+        .post("/api/contracts")
+        .set(authHeader(tokenFor(manager)))
+        .send({ propertyId: bien.id, tenantId: autre.id, startDate: "2026-06-01", endDate: "2027-06-01", rent: 500, deposit: 500 });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("CONTRACT_OVERLAP_ACTIVE");
+    });
+
+    it("suspendre deux fois le même compte : ACCOUNT_ALREADY_SUSPENDED", async () => {
+      const admin = await createAdmin();
+      const manager = await gestionnaire();
+      const h = authHeader(tokenFor({ id: admin.id, role: "ADMIN" }));
+      expect((await request(app).post(`/api/admin/managers/${manager.id}/suspend`).set(h).send({ reason: "Impayés répétés" })).status).toBe(200);
+      const res = await request(app).post(`/api/admin/managers/${manager.id}/suspend`).set(h).send({ reason: "Impayés répétés" });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("ACCOUNT_ALREADY_SUSPENDED");
+    });
+
+    it("recherche administrateur mal formée : SEARCH_PARAMS_INVALID", async () => {
+      const admin = await createAdmin();
+      const res = await request(app).get("/api/admin/managers?plan=PLATINE").set(authHeader(tokenFor({ id: admin.id, role: "ADMIN" })));
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("SEARCH_PARAMS_INVALID");
     });
   });
 });

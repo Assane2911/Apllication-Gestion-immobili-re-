@@ -7,6 +7,7 @@ import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
+import { avecCode } from "../utils/validationExplicite";
 
 /**
  * Carnet de prestataires/artisans du gestionnaire — voir vendors (schema.ts).
@@ -22,7 +23,7 @@ const vendorSchema = z.object({
   // international à l'enregistrement, voir tenant.controller.ts.
   phone: z
     .string()
-    .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
+    .refine((v) => versE164(v) !== null, avecCode(MESSAGE_TELEPHONE_INVALIDE, "PHONE_INVALID"))
     .transform((v) => versE164(v)!),
   email: z.string().email().max(254).optional().or(z.literal("")),
   notes: z.string().max(5000).optional(),

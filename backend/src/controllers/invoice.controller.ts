@@ -143,12 +143,9 @@ function assertFactureModifiable(
   operation: "regler" | "annuler"
 ): void {
   if (facture.status === "PAID") {
-    throw new ApiError(
-      409,
-      operation === "regler"
-        ? "Cette facture est déjà réglée."
-        : "Une facture réglée ne peut pas être annulée. Passez par un avoir ou un remboursement."
-    );
+    throw operation === "regler"
+      ? new ApiError(409, "Cette facture est déjà réglée.", "INVOICE_ALREADY_PAID")
+      : new ApiError(409, "Une facture réglée ne peut pas être annulée. Passez par un avoir ou un remboursement.", "INVOICE_PAID_NO_CANCEL");
   }
   if (facture.status === "CANCELLED") {
     throw new ApiError(409, "Cette facture a été annulée : elle ne peut plus être modifiée.", "INVOICE_CANCELLED_LOCKED");
@@ -191,7 +188,7 @@ export const markInvoicePaid = asyncHandler(async (req: Request, res: Response) 
     const montant = body.amount === undefined ? reste : arrondir(body.amount);
     if (montant <= 0) throw new ApiError(400, "Le montant du paiement doit être supérieur à zéro.", "PAYMENT_AMOUNT_POSITIVE");
     if (montant > reste) {
-      throw new ApiError(400, `Le montant dépasse le reste dû (${reste} ${courante.currency ?? "EUR"}).`);
+      throw new ApiError(400, `Le montant dépasse le reste dû (${reste} ${courante.currency ?? "EUR"}).`, "PAYMENT_EXCEEDS_BALANCE", { amount: reste, currency: courante.currency ?? "EUR" });
     }
 
     const dejaRegle = arrondir(courante.amountPaid + montant);

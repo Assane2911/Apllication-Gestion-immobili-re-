@@ -56,19 +56,19 @@ export const createOwnerPayout = asyncHandler(async (req: Request, res: Response
   const maintenant = new Date();
 
   if (moisAbsolu(body.year, body.month) > moisAbsolu(maintenant.getFullYear(), maintenant.getMonth() + 1)) {
-    throw new ApiError(400, "On ne reverse pas un mois qui n'a pas encore commencé.");
+    throw new ApiError(400, "On ne reverse pas un mois qui n'a pas encore commencé.", "PAYOUT_MONTH_NOT_STARTED");
   }
   const debutDuMois = new Date(body.year, body.month - 1, 1);
   const finDuJour = finDeLaJournee(maintenant);
-  if (body.paidAt < debutDuMois) throw new ApiError(400, "La date du versement ne peut pas précéder le mois qu'il solde.");
-  if (body.paidAt > finDuJour) throw new ApiError(400, "La date du versement ne peut pas être dans le futur.");
+  if (body.paidAt < debutDuMois) throw new ApiError(400, "La date du versement ne peut pas précéder le mois qu'il solde.", "PAYOUT_DATE_BEFORE_MONTH");
+  if (body.paidAt > finDuJour) throw new ApiError(400, "La date du versement ne peut pas être dans le futur.", "PAYOUT_DATE_FUTURE");
 
   const montant = arrondir(body.amount);
 
   // Le net du mois ne dépend pas des reversements : calculé avant la transaction.
   const crg = await computeCrg(owner, body.month, body.year);
   if (!(body.currency in crg.totalNetByCurrency)) {
-    throw new ApiError(400, `Aucun bien de ce propriétaire n'a d'activité en ${body.currency} pour ce mois.`);
+    throw new ApiError(400, `Aucun bien de ce propriétaire n'a d'activité en ${body.currency} pour ce mois.`, "PAYOUT_NO_ACTIVITY_IN_CURRENCY", { currency: body.currency });
   }
 
   const reversement = await db.transaction(async (tx: Transaction) => {
@@ -86,9 +86,9 @@ export const createOwnerPayout = asyncHandler(async (req: Request, res: Response
         )
       );
     const reste = arrondir((crg.totalNetByCurrency[body.currency] ?? 0) - Number(dejaReverse[0]?.total ?? 0));
-    if (reste <= 0) throw new ApiError(409, "Il ne reste rien à reverser pour ce mois dans cette devise.");
+    if (reste <= 0) throw new ApiError(409, "Il ne reste rien à reverser pour ce mois dans cette devise.", "PAYOUT_NOTHING_LEFT");
     if (montant > reste) {
-      throw new ApiError(409, `Le montant dépasse ce qui reste à reverser pour ce mois (${formaterMontant(reste, body.currency)}).`);
+      throw new ApiError(409, `Le montant dépasse ce qui reste à reverser pour ce mois (${formaterMontant(reste, body.currency)}).`, "PAYOUT_EXCEEDS_REMAINING", { amount: formaterMontant(reste, body.currency) });
     }
 
     const [cree] = await tx

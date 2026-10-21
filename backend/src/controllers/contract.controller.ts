@@ -21,8 +21,14 @@ import { ANNEE_BAIL_MAX, ANNEE_BAIL_MIN, dateDeBailPlausible } from "../utils/da
 import { deviseSchema } from "../utils/devises";
 import { MONTANT_MAXIMUM } from "../utils/montant";
 import { TYPES_BAIL } from "../utils/typeBail";
+import { avecCode } from "../utils/validationExplicite";
 
-const dateDeBailSchema = z.coerce.date().refine(dateDeBailPlausible, `La date doit être comprise entre ${ANNEE_BAIL_MIN} et ${ANNEE_BAIL_MAX}`);
+const dateDeBailSchema = z.coerce
+  .date()
+  .refine(
+    dateDeBailPlausible,
+    avecCode(`La date doit être comprise entre ${ANNEE_BAIL_MIN} et ${ANNEE_BAIL_MAX}`, "LEASE_DATE_OUT_OF_RANGE", { min: ANNEE_BAIL_MIN, max: ANNEE_BAIL_MAX })
+  );
 
 const contractSchema = z.object({
   propertyId: z.string().min(1),
@@ -109,7 +115,8 @@ async function assertAucunChevauchementActif(
   if (hasOverlap) {
     throw new ApiError(
       409,
-      "Ce bien fait déjà l'objet d'un contrat actif sur cette période. Clôturez le contrat en cours avant d'en créer un nouveau."
+      "Ce bien fait déjà l'objet d'un contrat actif sur cette période. Clôturez le contrat en cours avant d'en créer un nouveau.",
+      "CONTRACT_OVERLAP_ACTIVE"
     );
   }
 }
@@ -300,7 +307,8 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   if (existing.signedByTenantAt && toucheAuContenu) {
     throw new ApiError(
       409,
-      "Ce bail a été signé par le locataire : son contenu ne peut plus être modifié. Résiliez-le et créez un avenant si nécessaire."
+      "Ce bail a été signé par le locataire : son contenu ne peut plus être modifié. Résiliez-le et créez un avenant si nécessaire.",
+      "LEASE_SIGNED_LOCKED"
     );
   }
 
@@ -346,7 +354,8 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     if (factureExistante) {
       throw new ApiError(
         409,
-        "Impossible de changer la devise d'un contrat ayant déjà des factures : elles resteraient dans l'ancienne devise."
+        "Impossible de changer la devise d'un contrat ayant déjà des factures : elles resteraient dans l'ancienne devise.",
+        "CONTRACT_HAS_INVOICES_CURRENCY"
       );
     }
   }
@@ -371,7 +380,8 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     if (factureExistante) {
       throw new ApiError(
         409,
-        "Impossible de modifier le loyer d'un contrat ayant déjà des factures : elles resteraient calculées sur l'ancien montant. Annulez-les d'abord si elles ne sont pas encore payées, puis modifiez le loyer."
+        "Impossible de modifier le loyer d'un contrat ayant déjà des factures : elles resteraient calculées sur l'ancien montant. Annulez-les d'abord si elles ne sont pas encore payées, puis modifiez le loyer.",
+        "CONTRACT_HAS_INVOICES_RENT"
       );
     }
   }
@@ -402,7 +412,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
       .where(and(eq(contractCotenants.contractId, existing.id), eq(contractCotenants.tenantId, body.tenantId)))
       .limit(1);
     if (colocataire) {
-      throw new ApiError(409, "Ce locataire est déjà colocataire de ce bail : retirez-le des colocataires avant d'en faire le titulaire.");
+      throw new ApiError(409, "Ce locataire est déjà colocataire de ce bail : retirez-le des colocataires avant d'en faire le titulaire.", "TENANT_COTENANT_REMOVE_FIRST");
     }
   }
   if (changeParties || changeDebut || raccourcitFin) {
@@ -414,13 +424,15 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
       // Les factures suivraient le contrat : celles du locataire A passeraient au nom de B, ou sur un autre bien.
       throw new ApiError(
         409,
-        "Impossible de changer le bien ou le locataire d'un contrat ayant déjà des factures : elles changeraient de destinataire. Créez un nouveau contrat."
+        "Impossible de changer le bien ou le locataire d'un contrat ayant déjà des factures : elles changeraient de destinataire. Créez un nouveau contrat.",
+        "CONTRACT_HAS_INVOICES_PARTIES"
       );
     }
     if (facturesVivantes.length > 0 && changeDebut) {
       throw new ApiError(
         409,
-        "Impossible de modifier la date de début d'un contrat ayant déjà des factures : leurs montants au prorata seraient faux. Annulez-les d'abord si elles ne sont pas payées."
+        "Impossible de modifier la date de début d'un contrat ayant déjà des factures : leurs montants au prorata seraient faux. Annulez-les d'abord si elles ne sont pas payées.",
+        "CONTRACT_HAS_INVOICES_START"
       );
     }
     if (raccourcitFin) {
@@ -431,13 +443,15 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
       if (facturee) {
         throw new ApiError(
           409,
-          `La nouvelle date de fin précède un mois déjà facturé (${String(facturee.periodMonth).padStart(2, "0")}/${facturee.periodYear}). Annulez d'abord les factures concernées.`
+          `La nouvelle date de fin précède un mois déjà facturé (${String(facturee.periodMonth).padStart(2, "0")}/${facturee.periodYear}). Annulez d'abord les factures concernées.`,
+          "CONTRACT_END_BEFORE_BILLED",
+          { period: `${String(facturee.periodMonth).padStart(2, "0")}/${facturee.periodYear}` }
         );
       }
     }
   }
   if (body.deposit !== undefined && body.deposit !== existing.deposit && existing.depositRefundedAt) {
-    throw new ApiError(409, "La restitution du dépôt de garantie est déjà enregistrée : son montant ne peut plus changer.");
+    throw new ApiError(409, "La restitution du dépôt de garantie est déjà enregistrée : son montant ne peut plus changer.", "DEPOSIT_REFUND_LOCKED");
   }
 
   const contract = await db.transaction(async (tx: Transaction) => {
@@ -523,7 +537,8 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   if (facturesReglees.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé."
+      "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé.",
+      "CONTRACT_HAS_SETTLED_INVOICES"
     );
   }
 
@@ -675,7 +690,7 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
       .where(and(eq(contracts.id, existing.id), eq(contracts.status, "ACTIVE")))
       .returning();
     if (!ferme) {
-      throw new ApiError(409, "Ce bail vient d'être renouvelé ou clôturé. Rechargez la page avant de réessayer.");
+      throw new ApiError(409, "Ce bail vient d'être renouvelé ou clôturé. Rechargez la page avant de réessayer.", "LEASE_RENEWED_OR_CLOSED");
     }
 
     // Un bail déjà prévu à la suite (même bien, actif, commençant avant la fin du renouvellement) ferait
@@ -843,7 +858,8 @@ export const recordDepositRefund = asyncHandler(async (req: Request, res: Respon
     if (!exitInspection) {
       throw new ApiError(
         400,
-        "Impossible d'enregistrer la restitution du dépôt sans état des lieux de sortie finalisé pour ce contrat."
+        "Impossible d'enregistrer la restitution du dépôt sans état des lieux de sortie finalisé pour ce contrat.",
+        "DEPOSIT_NEEDS_EXIT_INSPECTION"
       );
     }
 
@@ -851,7 +867,9 @@ export const recordDepositRefund = asyncHandler(async (req: Request, res: Respon
     if (totalDeductions > existing.deposit) {
       throw new ApiError(
         400,
-        `Le total des retenues (${totalDeductions}) dépasse le montant du dépôt de garantie (${existing.deposit}).`
+        `Le total des retenues (${totalDeductions}) dépasse le montant du dépôt de garantie (${existing.deposit}).`,
+        "DEPOSIT_DEDUCTIONS_EXCEED",
+        { total: totalDeductions, deposit: existing.deposit }
       );
     }
   }
@@ -907,7 +925,7 @@ export const recordDepositRefund = asyncHandler(async (req: Request, res: Respon
  */
 export const uploadScannedContract = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || req.user.role !== "MANAGER") throw new ApiError(403, "Réservé aux gestionnaires", "MANAGERS_ONLY");
-  if (!req.file) throw new ApiError(400, "Aucun fichier fourni pour le scan du contrat");
+  if (!req.file) throw new ApiError(400, "Aucun fichier fourni pour le scan du contrat", "CONTRACT_SCAN_FILE_REQUIRED");
 
   const { id } = req.params;
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));

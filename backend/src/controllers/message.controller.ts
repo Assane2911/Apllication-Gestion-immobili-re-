@@ -202,7 +202,7 @@ async function resoudreFil(req: Request, contractId: string, ecriture: boolean) 
   if (fiche) {
     const [ancien] = await db.select({ id: messages.id }).from(messages).where(conditionDuFil(row.contract.id, demande, row.contract.tenantId)).limit(1);
     if (ancien) {
-      if (ecriture) throw new ApiError(409, "Ce locataire n'est plus colocataire du bail : son fil reste consultable, mais on ne lui écrit plus ici.");
+      if (ecriture) throw new ApiError(409, "Ce locataire n'est plus colocataire du bail : son fil reste consultable, mais on ne lui écrit plus ici.", "COTENANT_THREAD_READ_ONLY");
       return { ...row, tenant: fiche, qualite: "COLOCATAIRE" as Qualite };
     }
   }

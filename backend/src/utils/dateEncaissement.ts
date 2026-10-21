@@ -31,7 +31,7 @@ export function resoudreDateEncaissement(saisie: string | null | undefined, main
     date = new Date(Date.UTC(annee, mois - 1, quantieme, 12));
     // Refuse le 31 février, que Date.UTC « corrigerait » en mars.
     if (date.getUTCFullYear() !== annee || date.getUTCMonth() !== mois - 1 || date.getUTCDate() !== quantieme) {
-      throw new ApiError(400, "La date d'encaissement n'est pas une date valide.");
+      throw new ApiError(400, "La date d'encaissement n'est pas une date valide.", "COLLECTION_DATE_INVALID");
     }
     if (saisie === maintenant.toISOString().slice(0, 10)) date = maintenant;
   } else {
@@ -39,15 +39,15 @@ export function resoudreDateEncaissement(saisie: string | null | undefined, main
     // comme le 10 décembre ou le 12 octobre selon l'environnement.
     date = /^\d{4}-\d{2}-\d{2}T/.test(saisie) ? new Date(saisie) : new Date(Number.NaN);
     if (Number.isNaN(date.getTime())) {
-      throw new ApiError(400, "La date d'encaissement n'est pas une date valide.");
+      throw new ApiError(400, "La date d'encaissement n'est pas une date valide.", "COLLECTION_DATE_INVALID");
     }
   }
 
   if (date.getTime() > maintenant.getTime() + TOLERANCE_FUTUR_MS) {
-    throw new ApiError(400, "La date d'encaissement ne peut pas être dans le futur.");
+    throw new ApiError(400, "La date d'encaissement ne peut pas être dans le futur.", "COLLECTION_DATE_FUTURE");
   }
   if (date.getTime() < echeance.getTime() - BORNE_ANTERIEURE_MS) {
-    throw new ApiError(400, "La date d'encaissement est trop ancienne par rapport à l'échéance de cette facture.");
+    throw new ApiError(400, "La date d'encaissement est trop ancienne par rapport à l'échéance de cette facture.", "COLLECTION_DATE_TOO_OLD");
   }
   return date;
 }

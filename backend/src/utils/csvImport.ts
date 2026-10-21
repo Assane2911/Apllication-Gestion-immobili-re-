@@ -19,7 +19,16 @@ export interface CsvLu {
   lignes: Array<{ ligne: number; valeurs: Record<string, string> }>;
 }
 
-export class CsvInvalide extends Error {}
+export class CsvInvalide extends Error {
+  /** Code que l'interface traduit (voir apiErrorMessage), avec les valeurs à insérer dans la traduction. */
+  constructor(
+    message: string,
+    readonly code?: string,
+    readonly params?: Record<string, string | number>
+  ) {
+    super(message);
+  }
+}
 
 /** « Prénom » → « prenom », « Loyer mensuel » → « loyermensuel ». */
 export function normaliserEntete(brut: string): string {
@@ -78,7 +87,7 @@ function decouper(texte: string, delimiteur: string): string[][] {
       champ += c;
     }
   }
-  if (enGuillemets) throw new CsvInvalide("Le fichier contient un guillemet non refermé : vérifiez les champs entre guillemets.");
+  if (enGuillemets) throw new CsvInvalide("Le fichier contient un guillemet non refermé : vérifiez les champs entre guillemets.", "CSV_UNCLOSED_QUOTE");
   if (champ !== "" || ligne.length > 0) {
     ligne.push(champ);
     lignes.push(ligne);
@@ -88,10 +97,10 @@ function decouper(texte: string, delimiteur: string): string[][] {
 
 export function lireCsv(contenu: string): CsvLu {
   if (contenu.length > MAX_CARACTERES_IMPORT) {
-    throw new CsvInvalide("Le fichier est trop volumineux (1 Mo maximum).");
+    throw new CsvInvalide("Le fichier est trop volumineux (1 Mo maximum).", "CSV_TOO_LARGE");
   }
   const texte = contenu.replace(/^﻿/, "");
-  if (!texte.trim()) throw new CsvInvalide("Le fichier est vide.");
+  if (!texte.trim()) throw new CsvInvalide("Le fichier est vide.", "CSV_EMPTY");
 
   const delimiteur = detecterDelimiteur(texte);
   const brutes = decouper(texte, delimiteur);
@@ -111,9 +120,12 @@ export function lireCsv(contenu: string): CsvLu {
     lignes.push({ ligne: index + 2, valeurs });
   });
 
-  if (lignes.length === 0) throw new CsvInvalide("Le fichier ne contient aucune ligne de données sous l'en-tête.");
+  if (lignes.length === 0) throw new CsvInvalide("Le fichier ne contient aucune ligne de données sous l'en-tête.", "CSV_NO_DATA_ROWS");
   if (lignes.length > MAX_LIGNES_IMPORT) {
-    throw new CsvInvalide(`Le fichier contient ${lignes.length} lignes : l'import est limité à ${MAX_LIGNES_IMPORT} lignes à la fois. Découpez-le en plusieurs fichiers.`);
+    throw new CsvInvalide(`Le fichier contient ${lignes.length} lignes : l'import est limité à ${MAX_LIGNES_IMPORT} lignes à la fois. Découpez-le en plusieurs fichiers.`, "CSV_TOO_MANY_ROWS", {
+      count: lignes.length,
+      max: MAX_LIGNES_IMPORT,
+    });
   }
 
   return { delimiteur, entetes, lignes };

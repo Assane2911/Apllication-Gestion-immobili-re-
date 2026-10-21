@@ -51,7 +51,17 @@ function corpsErreurApi(err: ApiError) {
 }
 
 export function notFoundHandler(req: Request, res: Response) {
-  res.status(404).json({ error: `Route introuvable: ${req.method} ${req.path}` });
+  res.status(404).json({
+    error: `Route introuvable: ${req.method} ${req.path}`,
+    code: "ROUTE_NOT_FOUND",
+    params: { method: req.method, path: req.path },
+  });
+}
+
+/** Ce que porte un message de `.refine()` écrit avec `avecCode` (voir utils/validationExplicite.ts). */
+function codeDeValidation(issue: { params?: unknown }): { code: string; values?: Record<string, string | number> } | null {
+  const { code, values } = (issue.params ?? {}) as { code?: unknown; values?: Record<string, string | number> };
+  return typeof code === "string" ? { code, values } : null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -68,17 +78,29 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
     // correction (« indiquez l'indicatif du pays »), là où la formule générique
     // se contente de désigner le champ et laisse chercher. Les messages par
     // défaut de zod restent masqués : ils sont en anglais et parlent de types.
-    const explicites = err.errors.filter((issue) => issue.code === "custom").map((issue) => issue.message);
+    const explicites = err.errors.filter((issue) => issue.code === "custom");
     if (explicites.length > 0) {
-      return res.status(400).json({ error: explicites.join(" "), code: "VALIDATION_ERROR" });
+      // Un code que l'interface traduit : quand tous les messages explicites portent le même (deux numéros de
+      // téléphone invalides dans la même requête, par exemple). Sinon le français reste, sans code : un code
+      // générique remplacerait la cause précise par une formule vague.
+      const codes = explicites.map(codeDeValidation);
+      const commun = codes[0] && codes.every((c) => c?.code === codes[0]!.code) ? codes[0] : null;
+      return res.status(400).json({
+        error: [...new Set(explicites.map((issue) => issue.message))].join(" "),
+        ...(commun ? { code: commun.code, ...(commun.values ? { params: commun.values } : {}) } : {}),
+      });
     }
 
     const fields = err.errors.map((issue) => issue.path.join(".")).filter(Boolean);
     const suffix = fields.length > 0 ? ` (champ${fields.length > 1 ? "s" : ""} concerné${fields.length > 1 ? "s" : ""} : ${fields.join(", ")})` : "";
-    return res.status(400).json({
-      error: `Requête invalide : données manquantes ou incorrectes${suffix}.`,
-      code: "VALIDATION_ERROR",
-    });
+    // Trois codes plutôt qu'un pluriel géré à l'affichage : la phrase s'accorde différemment selon la langue.
+    const traduction =
+      fields.length === 0
+        ? { code: "VALIDATION_ERROR" }
+        : fields.length === 1
+          ? { code: "VALIDATION_ERROR_FIELD", params: { fields: fields[0] } }
+          : { code: "VALIDATION_ERROR_FIELDS", params: { fields: fields.join(", ") } };
+    return res.status(400).json({ error: `Requête invalide : données manquantes ou incorrectes${suffix}.`, ...traduction });
   }
 
   // Même raisonnement que pour ZodError : un fichier trop volumineux ou en
@@ -87,11 +109,11 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
   // ("Erreur interne du serveur") — le client ne pouvait pas savoir quoi
   // corriger — et remontait à Sentry comme un défaut applicatif.
   if (err instanceof multer.MulterError) {
-    const message =
-      err.code === "LIMIT_FILE_SIZE"
-        ? `Fichier trop volumineux (${/\/agency\/(logo|stamp)$/.test(req.originalUrl.split("?")[0]) ? MAX_LOGO_SIZE_MB : MAX_UPLOAD_SIZE_MB} Mo maximum).`
-        : "Envoi de fichier invalide.";
-    return res.status(400).json({ error: message, code: err.code });
+    if (err.code === "LIMIT_FILE_SIZE") {
+      const max = /\/agency\/(logo|stamp)$/.test(req.originalUrl.split("?")[0]) ? MAX_LOGO_SIZE_MB : MAX_UPLOAD_SIZE_MB;
+      return res.status(400).json({ error: `Fichier trop volumineux (${max} Mo maximum).`, code: "LIMIT_FILE_SIZE", params: { max } });
+    }
+    return res.status(400).json({ error: "Envoi de fichier invalide.", code: "FILE_UPLOAD_INVALID" });
   }
 
   // Erreur métier attendue (401 non authentifié, 402 abonnement expiré, 404
@@ -132,8 +154,8 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
     // (il peut contenir des details internes : nom de colonne, contrainte
     // SQL, chemin de fichier...). Le message complet est deja logge
     // ci-dessus via console.error(err) pour le debogage.
-    return res.status(500).json({ error: "Erreur interne du serveur" });
+    return res.status(500).json({ error: "Erreur interne du serveur", code: "INTERNAL_ERROR" });
   }
 
-  return res.status(500).json({ error: "Erreur interne du serveur" });
+  return res.status(500).json({ error: "Erreur interne du serveur", code: "INTERNAL_ERROR" });
 }

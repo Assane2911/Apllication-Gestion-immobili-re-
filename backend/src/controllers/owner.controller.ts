@@ -16,6 +16,7 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { bicSchema, ibanSchema } from "../utils/iban";
 import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
+import { avecCode } from "../utils/validationExplicite";
 import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
 
 // Champs déjà présents en base (voir schema.ts) — créés directement en SQL en
@@ -35,7 +36,7 @@ const ownerSchema = z.object({
   // l'enregistrement, voir tenant.controller.ts.
   phone: z
     .string()
-    .refine((v) => versE164(v) !== null, MESSAGE_TELEPHONE_INVALIDE)
+    .refine((v) => versE164(v) !== null, avecCode(MESSAGE_TELEPHONE_INVALIDE, "PHONE_INVALID"))
     .transform((v) => versE164(v)!),
   email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
   address: z.string().max(300, "L'adresse ne peut pas dépasser 300 caractères").optional(),
@@ -190,7 +191,8 @@ export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
   if (linkedProperties.length > 0) {
     throw new ApiError(
       409,
-      "Impossible de supprimer un propriétaire associé à un ou plusieurs biens. Retirez d'abord l'association sur ces biens, ou anonymisez sa fiche si c'est l'effacement de ses données qui est recherché."
+      "Impossible de supprimer un propriétaire associé à un ou plusieurs biens. Retirez d'abord l'association sur ces biens, ou anonymisez sa fiche si c'est l'effacement de ses données qui est recherché.",
+      "OWNER_HAS_PROPERTIES"
     );
   }
 
@@ -240,7 +242,7 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
 
   if (existing.anonymizedAt) {
-    throw new ApiError(409, "Ce propriétaire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.");
+    throw new ApiError(409, "Ce propriétaire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.", "OWNER_ALREADY_ANONYMIZED");
   }
 
   const nomAffiche = `${existing.firstName} ${existing.lastName}`;
@@ -332,9 +334,9 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
 
   if (owner.userId) {
     const [existingUser] = await db.select().from(users).where(eq(users.id, owner.userId));
-    if (!existingUser) throw new ApiError(404, "Compte du portail propriétaire introuvable");
+    if (!existingUser) throw new ApiError(404, "Compte du portail propriétaire introuvable", "OWNER_PORTAL_ACCOUNT_NOT_FOUND");
     if (!invitationEnAttente(existingUser)) {
-      throw new ApiError(409, "Un accès au portail existe déjà pour ce propriétaire");
+      throw new ApiError(409, "Un accès au portail existe déjà pour ce propriétaire", "OWNER_PORTAL_EXISTS");
     }
     await db
       .update(users)
@@ -359,7 +361,7 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
           ? await db.select({ id: owners.id }).from(owners).where(eq(owners.userId, existingUserWithEmail.id))
           : [{ id: "conflit" }];
       if (existingUserWithEmail.role !== "OWNER" || dejaRattachee.length > 0) {
-        throw new ApiError(409, "Un compte existe déjà avec cet email — impossible de créer l'accès portail");
+        throw new ApiError(409, "Un compte existe déjà avec cet email — impossible de créer l'accès portail", "PORTAL_EMAIL_EXISTS");
       }
 
       await db
