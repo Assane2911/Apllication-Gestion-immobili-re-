@@ -5,7 +5,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 /** Squelette d'une StatCard pendant le chargement du tableau de bord. */
 export function StatCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-9 w-9 rounded-lg" />
@@ -19,7 +19,7 @@ export function StatCardSkeleton() {
 /** Squelette d'une carte de bien immobilier pendant le chargement de la liste. */
 export function PropertyCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <Skeleton className="h-36 w-full rounded-none" />
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
@@ -42,7 +42,7 @@ export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
     <tr>
       {Array.from({ length: columns }).map((_, i) => (
         <td key={i} className="px-4 py-3">
-          <Skeleton className="h-4 w-full max-w-[10rem]" />
+          <Skeleton className="h-4 w-full max-w-40" />
         </td>
       ))}
     </tr>

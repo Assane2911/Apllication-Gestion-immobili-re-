@@ -101,11 +101,11 @@ export default function AdminSubscriptionsPage() {
       )}
 
       {rows.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
+                <tr className="border-b border-contour-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
                   <th className="py-2.5">{t("admin.subscriptions.table.manager")}</th>
                   <th className="py-2.5">{t("admin.subscriptions.table.plan")}</th>
                   <th className="py-2.5">{t("admin.subscriptions.table.cycle")}</th>
@@ -115,7 +115,7 @@ export default function AdminSubscriptionsPage() {
                   <th className="py-2.5" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
                 {rows.map((row) => (
                   <tr key={row.id} className="text-slate-700 dark:text-slate-300">
                     <td className="py-3 font-semibold">{row.managerEmail}</td>

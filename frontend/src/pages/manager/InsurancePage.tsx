@@ -150,14 +150,14 @@ export default function InsurancePage() {
     const jours = joursAvantEcheance(policy.expiryDate);
     if (jours < 0) {
       return (
-        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300">
+        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300">
           {t("manager.insurance.expired")}
         </span>
       );
     }
     if (jours <= JOURS_ALERTE_ECHEANCE) {
       return (
-        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300">
+        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300">
           {t("manager.insurance.expiringSoon", { count: jours })}
         </span>
       );
@@ -191,7 +191,7 @@ export default function InsurancePage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <label htmlFor="insurance-property-filter" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
             {t("manager.insurance.filterByProperty")}
@@ -200,7 +200,7 @@ export default function InsurancePage() {
             id="insurance-property-filter"
             value={selectedPropertyId}
             onChange={(e) => handlePropertyFilterChange(e.target.value)}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           >
             <option value="">{t("manager.insurance.allProperties")}</option>
             {properties.map((p) => (
@@ -213,7 +213,7 @@ export default function InsurancePage() {
         <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.insurance.policyLines", { count: total })}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
             <tr>
@@ -225,7 +225,7 @@ export default function InsurancePage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.insurance.table.action")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {policies.map((policy) => (
               <tr key={policy.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{policy.property?.title}</td>
@@ -273,8 +273,8 @@ export default function InsurancePage() {
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <Dialogue onClose={() => setShowModal(false)} titreId="insurance-modal-title" fermable={!saving} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <Dialogue onClose={() => setShowModal(false)} titreId="insurance-modal-title" fermable={!saving} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
               <h3 id="insurance-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">
                 {editingId ? t("manager.insurance.editModalTitle") : t("manager.insurance.createModalTitle")}

@@ -24,7 +24,7 @@ const valueTextClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
 
 export default function StatCard({ label, value, hint, accent = "blue", icon: Icon }: StatCardProps) {
   return (
-    <div className="group relative bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-5 shadow-xs hover:shadow-md dark:hover:shadow-slate-950/60 hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden">
+    <div className="group relative bg-white dark:bg-slate-900/90 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-5 shadow-xs hover:shadow-md dark:hover:shadow-slate-950/60 hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden">
       {/* Subtle ambient light on top corner */}
       <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full bg-slate-100/40 dark:bg-slate-800/20 blur-xl pointer-events-none" />
 

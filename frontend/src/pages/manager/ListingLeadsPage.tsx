@@ -154,7 +154,7 @@ export default function ListingLeadsPage() {
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {leads.map((lead) => (
-          <div key={lead.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
+          <div key={lead.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
             <div className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -205,7 +205,7 @@ export default function ListingLeadsPage() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
+            <div className="p-4 border-t border-contour-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t("manager.listingLeads.changeStatus")}</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {STATUS_OPTIONS.map((s) => (

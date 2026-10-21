@@ -137,10 +137,10 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
   const dialogue = useDialogue({ onClose, titreId: "rent-revision-title", fermable: !saving });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div
         {...dialogue}
-        className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-700"
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200 dark:border-slate-700"
       >
         <div className="flex items-start justify-between">
           <div>
@@ -262,7 +262,7 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
         )}
 
         {historique.length > 0 && (
-          <div className="mt-5 border-t border-slate-200 dark:border-slate-800 pt-4">
+          <div className="mt-5 border-t border-contour-200 dark:border-slate-800 pt-4">
             <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t("components.rentRevisionModal.history")}</h4>
             <ul className="space-y-1.5">
               {historique.map((r) => (

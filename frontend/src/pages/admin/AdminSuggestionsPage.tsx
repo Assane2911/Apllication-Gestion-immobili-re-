@@ -171,7 +171,7 @@ export default function AdminSuggestionsPage() {
             {donnees.items.map((s) => (
               <li
                 key={s.id}
-                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4"
+                className="rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4"
               >
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -187,7 +187,7 @@ export default function AdminSuggestionsPage() {
                     {new Date(s.createdAt).toLocaleString(i18n.language)}
                   </p>
                 </div>
-                <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words">{s.message}</p>
+                <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap wrap-break-word">{s.message}</p>
                 <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
                   {s.page ? t("admin.suggestions.fromPage", { page: s.page }) : t("admin.suggestions.noPage")}
                 </p>

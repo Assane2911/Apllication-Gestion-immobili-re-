@@ -80,7 +80,7 @@ function DashboardMockup() {
         {bars.map((h, i) => (
           <div
             key={i}
-            className="flex-1 rounded-t-md bg-gradient-to-t from-brand-600 to-indigo-400 transition-all duration-700 ease-out motion-reduce:transition-none"
+            className="flex-1 rounded-t-md bg-linear-to-t from-brand-600 to-indigo-400 transition-all duration-700 ease-out motion-reduce:transition-none"
             style={{ height: inView ? `${h}%` : "4%", transitionDelay: `${i * 80}ms` }}
           />
         ))}
@@ -226,7 +226,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 shrink-0">
             <img src="/app-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow transition-transform duration-300 hover:rotate-6 hover:scale-105" />
-            <span className="sr-only sm:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <span className="sr-only sm:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-linear-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
               {t("common.appName")}
             </span>
           </div>
@@ -310,16 +310,16 @@ export default function LandingPage() {
         </Reveal>
 
         <Reveal delay={80}>
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1] sm:leading-none">
             {t("landing.hero.titleLine1")} <br />
-            <span className="bg-[length:200%_auto] bg-gradient-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent italic animate-gradient-x">
+            <span className="bg-size-[200%_auto] bg-linear-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent italic animate-gradient-x">
               {t("landing.hero.titleLine2")}
             </span>
           </h1>
         </Reveal>
 
         <Reveal delay={160}>
-          <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed sm:leading-7">
             {t("landing.hero.subtitle")}
           </p>
         </Reveal>
@@ -367,7 +367,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
           {FEATURE_CARDS.map((card, i) => (
             <Reveal key={card.key} delay={(i % 3) * 100} className="group">
-              <div className="h-full bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-sm hover:border-slate-700 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
+              <div className="h-full bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-xs hover:border-slate-700 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
                 <div
                   className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
                 >
@@ -470,7 +470,7 @@ export default function LandingPage() {
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
             {t("landing.compare.titlePrefix")}{" "}
-            <span className="bg-gradient-to-r from-brand-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-brand-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
               ImmoPlatform Pro
             </span>
           </h2>
@@ -673,7 +673,7 @@ export default function LandingPage() {
 
           {/* Pro */}
           <Reveal delay={100}>
-            <div className="h-full bg-gradient-to-b from-brand-950/80 to-slate-900 border-2 border-brand-500 rounded-3xl p-8 flex flex-col justify-between relative shadow-2xl shadow-brand-900/40 hover:-translate-y-2 transition-all duration-300">
+            <div className="h-full bg-linear-to-b from-brand-950/80 to-slate-900 border-2 border-brand-500 rounded-3xl p-8 flex flex-col justify-between relative shadow-2xl shadow-brand-900/40 hover:-translate-y-2 transition-all duration-300">
               <span className="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] uppercase font-extrabold px-3 py-0.5 rounded-full tracking-wider animate-pulse">
                 {t("landing.pricing.pro.badge")}
               </span>
@@ -735,7 +735,7 @@ export default function LandingPage() {
       {/* Final CTA Banner */}
       <section className="px-6 max-w-7xl mx-auto pb-24">
         <Reveal>
-          <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 to-indigo-700 rounded-3xl px-8 py-16 text-center shadow-2xl shadow-brand-900/40">
+          <div className="relative overflow-hidden bg-linear-to-br from-brand-600 to-indigo-700 rounded-3xl px-8 py-16 text-center shadow-2xl shadow-brand-900/40">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               <div className="absolute inset-y-0 -left-1/2 w-1/3 bg-white/10 animate-shine" />
             </div>

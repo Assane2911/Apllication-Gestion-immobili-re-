@@ -39,7 +39,7 @@ export default function TenantMessagesPage() {
 
   if (conversations.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-8 text-center">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-8 text-center">
         <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.messages.noActiveContract")}</p>
       </div>
     );
@@ -52,9 +52,9 @@ export default function TenantMessagesPage() {
         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("tenant.messages.subtitle")}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-[600px] flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden h-[600px] flex flex-col">
         {/* En-tête du chat */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-contour-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("tenant.messages.headerTitle")}</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -100,7 +100,7 @@ export default function TenantMessagesPage() {
                   className={`max-w-md px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
                     isMe
                       ? "bg-brand-600 text-white rounded-br-none"
-                      : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-bl-none"
+                      : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-contour-200 dark:border-slate-700 rounded-bl-none"
                   }`}
                 >
                   {m.content}
@@ -116,7 +116,7 @@ export default function TenantMessagesPage() {
         </div>
 
         {/* Formulaire d'envoi */}
-        <form onSubmit={handleSend} className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
+        <form onSubmit={handleSend} className="p-4 border-t border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
           <input
             type="text"
             aria-label={t("tenant.messages.writeMessage")}
@@ -124,7 +124,7 @@ export default function TenantMessagesPage() {
             value={newText}
             maxLength={5000}
             onChange={(e) => setNewText(e.target.value)}
-            className="flex-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="flex-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           />
           <button
             type="submit"

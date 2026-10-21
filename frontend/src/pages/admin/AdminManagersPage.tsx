@@ -100,7 +100,7 @@ export default function AdminManagersPage() {
           placeholder={t("admin.managers.searchPlaceholder")}
           aria-label={t("admin.managers.searchLabel")}
           maxLength={100}
-          className={`${champ} flex-1 min-w-[14rem]`}
+          className={`${champ} flex-1 min-w-56`}
         />
         <select
           value={plan}
@@ -156,10 +156,10 @@ export default function AdminManagersPage() {
 
       {donnees && donnees.items.length > 0 && (
         <>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto">
+          <div className="rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-contour-200 dark:border-slate-800">
                   <th className="px-4 py-3 font-semibold">{t("admin.managers.table.manager")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.managers.table.plan")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.managers.table.status")}</th>
@@ -170,7 +170,7 @@ export default function AdminManagersPage() {
               </thead>
               <tbody className="text-slate-800 dark:text-slate-200">
                 {donnees.items.map((m) => (
-                  <tr key={m.id} className="border-b last:border-b-0 border-slate-100 dark:border-slate-800/60">
+                  <tr key={m.id} className="border-b last:border-b-0 border-contour-100 dark:border-slate-800/60">
                     <td className="px-4 py-3">
                       <Link
                         to={`/admin/gestionnaires/${m.id}`}

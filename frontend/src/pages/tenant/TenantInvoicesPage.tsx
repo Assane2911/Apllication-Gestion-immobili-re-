@@ -145,7 +145,7 @@ export default function TenantInvoicesPage() {
 
       {/* Quick Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
               {t("tenant.invoices.pendingTitle")}
@@ -158,7 +158,7 @@ export default function TenantInvoicesPage() {
             {t(unpaidInvoices.length > 1 ? "tenant.invoices.pendingMany" : "tenant.invoices.pendingOne", { count: unpaidInvoices.length })}
           </p>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
               {t("tenant.invoices.receiptsTitle")}
@@ -184,7 +184,7 @@ export default function TenantInvoicesPage() {
                 isLate
                   ? "border-rose-300 dark:border-rose-500/40 bg-rose-50/10"
                   : isPaid
-                  ? "border-slate-200/90 dark:border-slate-800/90"
+                  ? "border-contour-200/90 dark:border-slate-800/90"
                   : "border-amber-200 dark:border-amber-500/30"
               }`}
             >
@@ -244,7 +244,7 @@ export default function TenantInvoicesPage() {
               </div>
 
               {payingId === inv.id && (
-                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-200">
+                <div className="mt-5 pt-4 border-t border-contour-100 dark:border-slate-800 animate-in fade-in duration-200">
                   <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
                     {t("tenant.invoices.choosePaymentTitle")}
                   </p>
@@ -252,7 +252,7 @@ export default function TenantInvoicesPage() {
                     {methods.map((m) => (
                       <div
                         key={m.key}
-                        className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/40 hover:border-brand-400 dark:hover:border-brand-500 transition-colors"
+                        className="border border-contour-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/40 hover:border-brand-400 dark:hover:border-brand-500 transition-colors"
                       >
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{m.label}</p>
                         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{m.hint}</p>
@@ -273,7 +273,7 @@ export default function TenantInvoicesPage() {
                               value={bankRef}
                               maxLength={200}
                               onChange={(e) => setBankRef(e.target.value)}
-                              className="w-full mt-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-none"
+                              className="w-full mt-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-hidden"
                             />
                           </>
                         )}
@@ -295,7 +295,7 @@ export default function TenantInvoicesPage() {
           );
         })}
         {invoices.length === 0 && (
-          <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+          <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6">
             <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.invoices.noInvoices")}</p>
           </div>
         )}

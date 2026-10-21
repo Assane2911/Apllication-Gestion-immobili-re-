@@ -15,7 +15,7 @@ export default function TrialBanner() {
 
   if (isExpired) {
     return (
-      <div className="surface-sombre bg-gradient-to-r from-red-600 to-rose-700 text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 animate-pulse">
+      <div className="surface-sombre bg-linear-to-r from-red-600 to-rose-700 text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 animate-pulse">
         <div className="flex items-center gap-2">
           <AlertTriangle size={20} className="shrink-0" aria-hidden="true" />
           <div>
@@ -46,7 +46,7 @@ export default function TrialBanner() {
       : "from-slate-900 to-brand-900";
 
     return (
-      <div className={`surface-sombre bg-gradient-to-r ${bgGradient} text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 border border-white/10`}>
+      <div className={`surface-sombre bg-linear-to-r ${bgGradient} text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 border border-white/10`}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
             <Hourglass size={15} aria-hidden="true" />

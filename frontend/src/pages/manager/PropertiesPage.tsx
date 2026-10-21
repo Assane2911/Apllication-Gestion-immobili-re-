@@ -167,7 +167,7 @@ export default function PropertiesPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.properties.formTitleEdit") : t("manager.properties.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -245,7 +245,7 @@ export default function PropertiesPage() {
         {properties.map((p) => (
           <div
             key={p.id}
-            className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md dark:hover:shadow-slate-950/50 hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden flex flex-col justify-between"
+            className="group bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md dark:hover:shadow-slate-950/50 hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden flex flex-col justify-between"
           >
             <div>
               <div className="relative h-40 bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -269,7 +269,7 @@ export default function PropertiesPage() {
                   {p.title}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1">{p.address}</p>
-                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-contour-100 dark:border-slate-800">
                   <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
                     {p.surface} m²
                   </span>

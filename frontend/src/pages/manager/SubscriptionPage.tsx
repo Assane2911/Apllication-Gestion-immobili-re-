@@ -265,7 +265,7 @@ export default function SubscriptionPage() {
       )}
 
       {/* État actuel de l'abonnement */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <span className="text-xs uppercase font-semibold text-slate-600 dark:text-slate-400 tracking-wider">
             {t("manager.subscription.currentStatus")}
@@ -320,7 +320,7 @@ export default function SubscriptionPage() {
         </div>
 
         {sub?.status === "TRIAL" && (
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center md:text-right">
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-contour-200 dark:border-slate-700 rounded-xl p-4 text-center md:text-right">
             <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.subscription.evaluationTime")}</p>
             <p className="text-2xl font-black text-brand-600 dark:text-brand-400">
               {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{t("manager.subscription.days")}</span>
@@ -345,7 +345,7 @@ export default function SubscriptionPage() {
 
       {/* Switch Mensuel / Annuel */}
       <div className="flex flex-col items-center gap-3">
-        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center border border-slate-200 dark:border-slate-700">
+        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center border border-contour-200 dark:border-slate-700">
           <button
             onClick={() => setBillingCycle("MONTHLY")}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -401,7 +401,7 @@ export default function SubscriptionPage() {
               className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all relative flex flex-col p-6 shadow-sm ${
                 plan.popular
                   ? "border-brand-500 dark:border-brand-400 ring-2 ring-brand-500/20"
-                  : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                  : "border-contour-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
               }`}
             >
               {plan.popular && (
@@ -425,7 +425,7 @@ export default function SubscriptionPage() {
                 )}
               </div>
 
-              <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 dark:text-slate-300 border-t border-contour-100 dark:border-slate-800 pt-4">
                 <p className="font-semibold text-slate-900 dark:text-slate-100">{t("manager.subscription.includedInPlan")}</p>
                 {plan.features.map((_feat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
@@ -458,16 +458,16 @@ export default function SubscriptionPage() {
       )}
 
       {isNativeApp && sub?.status !== "ACTIVE" && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
           {t("manager.subscription.nativeFallback")}
         </div>
       )}
 
       {/* Modal de Souscription / Paiement */}
       {!isNativeApp && selectedPlan && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <Dialogue onClose={() => setSelectedPlan(null)} titreId="subscription-modal-title" fermable={!subscribing} className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <Dialogue onClose={() => setSelectedPlan(null)} titreId="subscription-modal-title" fermable={!subscribing} className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-contour-100 dark:border-slate-800">
+            <div className="flex items-center justify-between border-b border-contour-100 dark:border-slate-800 pb-4">
               <div>
                 <h3 id="subscription-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: t(`common.plans.${selectedPlan.id}`, { defaultValue: selectedPlan.name }) })}</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
@@ -498,7 +498,7 @@ export default function SubscriptionPage() {
                     className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedMethod === m.key
                         ? "border-brand-500 dark:border-brand-400 bg-brand-50/50 dark:bg-brand-500/10"
-                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                        : "border-contour-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                     }`}
                   >
                     <input
@@ -523,7 +523,7 @@ export default function SubscriptionPage() {
                   virement restent des paiements ponctuels, à renouveler soi-même
                   à chaque échéance. */}
               {selectedMethod === "STRIPE" && (
-                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-contour-200 dark:border-slate-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={autoRenew}
@@ -591,12 +591,12 @@ export default function SubscriptionPage() {
 
       {/* Historique des paiements de la plateforme */}
       {history.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("manager.subscription.historyTitle")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
+                <tr className="border-b border-contour-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
                   <th className="py-2.5">{t("manager.subscription.historyTable.date")}</th>
                   <th className="py-2.5">{t("manager.subscription.historyTable.plan")}</th>
                   <th className="py-2.5">{t("manager.subscription.historyTable.cycle")}</th>
@@ -605,7 +605,7 @@ export default function SubscriptionPage() {
                   <th className="py-2.5">{t("manager.subscription.historyTable.status")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
                 {history.map((h) => (
                   <tr key={h.id} className="text-slate-700 dark:text-slate-300">
                     <td className="py-3">{new Date(h.createdAt).toLocaleDateString(i18n.language)}</td>

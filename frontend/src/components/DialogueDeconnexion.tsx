@@ -12,11 +12,11 @@ export default function DialogueDeconnexion({ onAnnuler, onConfirmer }: { onAnnu
   const { t } = useTranslation();
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 p-4">
       <Dialogue
         onClose={onAnnuler}
         titreId="deconnexion-titre"
-        className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700"
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700"
       >
         <h2 id="deconnexion-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
           {t("components.deconnexion.title")}

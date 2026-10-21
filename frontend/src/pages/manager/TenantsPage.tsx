@@ -242,7 +242,7 @@ export default function TenantsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.tenants.formTitleEdit") : t("manager.tenants.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
@@ -287,7 +287,7 @@ export default function TenantsPage() {
       )}
 
       {portalTenant && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
             {t("manager.tenants.createPortalTitle", { name: `${portalTenant.firstName} ${portalTenant.lastName}` })}
           </h3>
@@ -322,7 +322,7 @@ export default function TenantsPage() {
       ) : (
       <>
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
             <tr>
@@ -337,7 +337,7 @@ export default function TenantsPage() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={7} />)
             ) : (
@@ -390,13 +390,13 @@ export default function TenantsPage() {
       <div className="sm:hidden space-y-3">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
+              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 space-y-2">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-40" />
               </div>
             ))
           : tenants.map((tenant) => (
-              <div key={tenant.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+              <div key={tenant.id} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-slate-900 dark:text-slate-100">{tenant.firstName} {tenant.lastName}</p>
                   {tenant.userId ? (
@@ -416,7 +416,7 @@ export default function TenantsPage() {
                 <div>
                   <BadgeFiabilite tenant={tenant} />
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                <div className="flex items-center justify-between pt-2 border-t border-contour-100 dark:border-slate-800 text-xs">
                   {tenant.idDocument ? (
                     <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">
                       {t("manager.tenants.viewIdDocumentMobile")}

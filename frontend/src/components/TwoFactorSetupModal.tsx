@@ -66,8 +66,8 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
   const dialogue = useDialogue({ onClose, titreId: "two-factor-setup-title", fermable: !confirming });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700">
         <div className="flex items-start justify-between">
           <div>
             <h3 id="two-factor-setup-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -111,7 +111,7 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
                 <img
                   src={qrCodeDataUrl}
                   alt={t("components.twoFactorSetup.qrAlt")}
-                  className="w-44 h-44 rounded-lg border border-slate-200 dark:border-slate-700 bg-white p-2"
+                  className="w-44 h-44 rounded-lg border border-contour-200 dark:border-slate-700 bg-white p-2"
                 />
               </div>
             )}

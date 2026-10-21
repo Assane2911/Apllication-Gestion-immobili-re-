@@ -9,9 +9,9 @@ export default function PhotoLightbox({ src, alt, onClose }: { src: string | nul
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 cursor-zoom-out backdrop-blur-sm"
+      className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 cursor-zoom-out backdrop-blur-xs"
     >
-      <Dialogue onClose={onClose} libelle={alt} className="outline-none">
+      <Dialogue onClose={onClose} libelle={alt} className="outline-hidden">
         <img src={src} alt={alt} className="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl border border-slate-700" />
       </Dialogue>
     </div>

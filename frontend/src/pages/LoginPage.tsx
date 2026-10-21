@@ -161,7 +161,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-950">
       {/* Panneau de gauche : image de marque (masqué sur mobile) */}
-      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-brand-950 p-12 xl:p-16">
+      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-brand-950 p-12 xl:p-16">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -left-16 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl animate-float-slow" />
           <div className="absolute bottom-0 right-0 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl animate-float-delay" />
@@ -173,7 +173,7 @@ export default function LoginPage() {
         </Reveal>
 
         <Reveal delay={100} className="relative max-w-md">
-          <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight">
+          <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight xl:leading-10">
             {t("auth.login.panel.title")}
           </h1>
           <p className="mt-4 text-sm text-slate-400 leading-relaxed">{t("auth.login.panel.subtitle")}</p>
@@ -233,7 +233,7 @@ export default function LoginPage() {
                     required
                     value={twoFactorCode}
                     onChange={(e) => setTwoFactorCode(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 px-3.5 py-2.5 text-sm text-center tracking-[0.3em] placeholder:text-slate-600 placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 px-3.5 py-2.5 text-sm text-center tracking-[0.3em] placeholder:text-slate-600 placeholder:tracking-normal focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                     placeholder={t("auth.twoFactor.codePlaceholder")}
                   />
                   <p className="mt-1.5 text-xs text-slate-500">{t("auth.twoFactor.backupCodeHint")}</p>
@@ -293,7 +293,7 @@ export default function LoginPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                       placeholder={t("auth.login.emailPlaceholder")}
                     />
                   </div>
@@ -311,7 +311,7 @@ export default function LoginPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                       placeholder={t("auth.login.passwordPlaceholder")}
                     />
                     <button

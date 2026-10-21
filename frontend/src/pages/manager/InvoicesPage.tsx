@@ -227,9 +227,9 @@ export default function InvoicesPage() {
       )}
 
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left border-b border-slate-200 dark:border-slate-800">
+          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left border-b border-contour-200 dark:border-slate-800">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.period")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.tenant")}</th>
@@ -241,7 +241,7 @@ export default function InvoicesPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.invoices.table.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {invoices.map((inv) => (
               <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                 <td className="px-4 py-3.5 text-slate-900 dark:text-slate-100 font-medium">
@@ -274,7 +274,7 @@ export default function InvoicesPage() {
                   {niveauRelance(inv)}
                 </td>
                 {/* Actions à la ligne : sur une seule, elles élargissaient le tableau au-delà de l'écran. */}
-                <td className="px-4 py-3.5 text-right max-w-[19rem]">
+                <td className="px-4 py-3.5 text-right max-w-76">
                   <div className="flex flex-wrap justify-end gap-2">
                   {inv.status === "PAID" && (
                     <Bulle texte={t("manager.tips.invoiceReceipt")}><button
@@ -325,12 +325,12 @@ export default function InvoicesPage() {
       {/* Vue cartes empilées (mobile, < sm) */}
       <div className="sm:hidden space-y-3">
         {invoices.length === 0 ? (
-          <p className="text-center text-slate-600 dark:text-slate-400 text-sm py-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <p className="text-center text-slate-600 dark:text-slate-400 text-sm py-8 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800">
             {t("manager.invoices.noInvoicesForFilter")}
           </p>
         ) : (
           invoices.map((inv) => (
-            <div key={inv.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+            <div key={inv.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium text-slate-900 dark:text-slate-100">
@@ -365,7 +365,7 @@ export default function InvoicesPage() {
                   {t("manager.invoices.dueDatePrefix", { date: formaterJour(inv.dueDate, i18n.language) })}
                 </span>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+              <div className="flex items-center justify-between pt-2 border-t border-contour-100 dark:border-slate-800 gap-2">
                 {inv.status === "PAID" && (
                   <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                     onClick={() => setActiveReceiptInvoice(inv)}

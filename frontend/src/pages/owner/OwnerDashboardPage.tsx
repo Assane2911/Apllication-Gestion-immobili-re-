@@ -48,7 +48,7 @@ export default function OwnerDashboardPage() {
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <span className="w-8 h-8 border-[3px] border-slate-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
+        <span className="w-8 h-8 border-[3px] border-contour-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -60,7 +60,7 @@ export default function OwnerDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Bandeau d'accueil */}
-      <div className="surface-sombre relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 text-white p-6 sm:p-7 shadow-md border border-slate-800">
+      <div className="surface-sombre relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 via-brand-950 to-slate-900 text-white p-6 sm:p-7 shadow-md border border-slate-800">
         <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-brand-500/15 blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("owner.dashboard.title")}</h2>
@@ -70,7 +70,7 @@ export default function OwnerDashboardPage() {
 
       {/* Totaux du mois */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-5 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-5 shadow-xs">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1.5">{t("owner.dashboard.collectedThisMonth")}</p>
           {collectedCurrencies.length === 0 ? (
             <p className="text-lg font-bold text-slate-500 dark:text-slate-400">{formatMoney(0)}</p>
@@ -84,7 +84,7 @@ export default function OwnerDashboardPage() {
             </div>
           )}
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-5 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-5 shadow-xs">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1.5">{t("owner.dashboard.pendingThisMonth")}</p>
           {pendingCurrencies.length === 0 ? (
             <p className="text-lg font-bold text-slate-500 dark:text-slate-400">{formatMoney(0)}</p>
@@ -100,20 +100,20 @@ export default function OwnerDashboardPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 sm:p-5 shadow-xs flex items-center justify-between gap-3 flex-wrap">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-4 sm:p-5 shadow-xs flex items-center justify-between gap-3 flex-wrap">
         <span className="text-xs text-slate-600 dark:text-slate-400">{t("owner.dashboard.managementFeeRate")}</span>
         <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{data.managementFeeRate}%</span>
       </div>
 
       {/* Détail par bien */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-contour-100 dark:border-slate-800">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t("owner.dashboard.propertiesTitle")}</h3>
         </div>
         {data.properties.length === 0 ? (
           <p className="p-4 sm:p-5 text-xs text-slate-600 dark:text-slate-400">{t("owner.dashboard.noProperties")}</p>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-contour-100 dark:divide-slate-800">
             {data.properties.map((p) => (
               <div key={`${p.propertyId}-${p.currency}`} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
                 <div>
@@ -137,14 +137,14 @@ export default function OwnerDashboardPage() {
       </div>
 
       {/* Historique 6 mois */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-contour-100 dark:border-slate-800">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t("owner.dashboard.historyTitle")}</h3>
         </div>
         {historyMonths.length === 0 ? (
           <p className="p-4 sm:p-5 text-xs text-slate-600 dark:text-slate-400">{t("owner.dashboard.noHistory")}</p>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-contour-100 dark:divide-slate-800">
             {historyMonths.map((month) => (
               <div key={month} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
                 <span className="text-xs font-medium text-slate-600 dark:text-slate-400 capitalize">{libelleDuMois(month, i18n.language)}</span>

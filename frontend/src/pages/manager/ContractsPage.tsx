@@ -438,7 +438,7 @@ export default function ContractsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">{editingContract ? t("manager.contracts.editTitle") : t("manager.contracts.formTitle")}</h3>
           {editingContract && <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">{t("manager.contracts.editHint")}</p>}
           {!editingContract && <div className="mb-3" />}
@@ -543,7 +543,7 @@ export default function ContractsPage() {
       )}
 
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
             <tr>
@@ -556,7 +556,7 @@ export default function ContractsPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.contracts.table.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {contracts.map((c) => {
               const daysLeft = daysUntil(c.endDate);
               const showRenewal = c.status === "ACTIVE" && daysLeft <= RENEWAL_WINDOW_DAYS;
@@ -618,7 +618,7 @@ export default function ContractsPage() {
                 <td className="px-4 py-3"><Badge status={c.status} /></td>
                 {/* Les actions passent à la ligne : sur une seule ligne, six boutons élargissaient le tableau au-delà de
                     l'écran et « Résilier » / « Supprimer » restaient hors de vue, sans indice de défilement. */}
-                <td className="px-4 py-3 text-right max-w-[19rem]">
+                <td className="px-4 py-3 text-right max-w-76">
                   <div className="flex flex-wrap justify-end gap-2">
                   <Bulle texte={t("manager.tips.contractViewLease")}>
                   <button
@@ -729,7 +729,7 @@ export default function ContractsPage() {
             <div
               key={c.id}
               className={`bg-white dark:bg-slate-900 rounded-xl border shadow-sm p-4 space-y-2.5 ${
-                showRenewal ? "border-amber-300 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-500/10" : "border-slate-200 dark:border-slate-800"
+                showRenewal ? "border-amber-300 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-500/10" : "border-contour-200 dark:border-slate-800"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -783,7 +783,7 @@ export default function ContractsPage() {
                   )}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100 dark:border-slate-800">
                 <Bulle texte={t("manager.tips.contractViewLease")}>
                 <button
                   onClick={() => setViewingLeaseContract(c)}

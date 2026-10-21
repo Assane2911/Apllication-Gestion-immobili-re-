@@ -39,17 +39,17 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-200 ${
+      className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
       <div
         {...dialogue}
-        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ${
+        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-contour-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
+        <div className="px-6 py-4 border-b border-contour-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 flex items-center justify-center">
               {isPdf ? <FileText size={18} /> : <ImageIcon size={18} />}
@@ -103,14 +103,14 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
             <iframe
               src={fileUrl}
               title={title}
-              className="w-full h-full bg-white rounded-xl shadow border border-slate-200 dark:border-slate-700"
+              className="w-full h-full bg-white rounded-xl shadow border border-contour-200 dark:border-slate-700"
             />
           ) : (
             <div className="w-full h-full overflow-auto flex items-center justify-center p-2">
               <img
                 src={fileUrl}
                 alt={title}
-                className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 bg-white"
+                className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-contour-200 dark:border-slate-800 bg-white"
               />
             </div>
           )}

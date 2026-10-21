@@ -86,7 +86,7 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -116,7 +116,7 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+          <div className="pt-4 border-t border-contour-200 dark:border-slate-800 flex justify-end">
             <button
               type="submit"
               disabled={saving}
@@ -136,7 +136,7 @@ export default function AdminSettingsPage() {
         gestionnaire. Hors du bloc ci-dessus : l'échec du chargement des coordonnées bancaires ne doit pas
         priver l'administrateur de cette protection.
       */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
           {t("admin.settings.twoFactor.title")}
         </h3>

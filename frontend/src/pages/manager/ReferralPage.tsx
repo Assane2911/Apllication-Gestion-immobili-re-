@@ -54,7 +54,7 @@ export default function ReferralPage() {
       )}
 
       {!info && !loadError && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 space-y-3">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-6 space-y-3">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-72" />
         </div>
@@ -62,12 +62,12 @@ export default function ReferralPage() {
 
       {info && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-sm">
+          <div className="md:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-6 space-y-5 shadow-sm">
             <div>
               <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                 {t("manager.referral.codeLabel")}
               </p>
-              <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800 border border-contour-200 dark:border-slate-700 rounded-xl px-4 py-3">
                 <span className="font-mono text-xl font-bold tracking-widest text-slate-900 dark:text-slate-100">
                   {info.referralCode}
                 </span>
@@ -85,7 +85,7 @@ export default function ReferralPage() {
               <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                 {t("manager.referral.linkLabel")}
               </p>
-              <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800 border border-contour-200 dark:border-slate-700 rounded-xl px-4 py-3">
                 <span className="text-xs text-slate-700 dark:text-slate-300 truncate">{info.referralUrl}</span>
                 <button
                   onClick={() => copier("link", info.referralUrl)}
@@ -111,7 +111,7 @@ export default function ReferralPage() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm">
             <div className="w-11 h-11 rounded-full bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-3">
               <Users size={20} aria-hidden="true" />
             </div>

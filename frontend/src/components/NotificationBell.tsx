@@ -159,7 +159,7 @@ export default function NotificationBell({
       <Bulle texte={t(`${i18nPrefix}.tip`)}>
       <button
         onClick={basculer}
-        className="relative w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+        className="relative w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-contour-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
         aria-label={t(`${i18nPrefix}.ariaLabel`)}
       >
         <Bell size={18} />
@@ -172,8 +172,8 @@ export default function NotificationBell({
       </Bulle>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-700 shadow-lg z-50">
+          <div className="px-4 py-3 border-b border-contour-100 dark:border-slate-800 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t(`${i18nPrefix}.title`)}</h4>
               <p className="text-xs text-slate-600 dark:text-slate-400">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length })}</p>
@@ -191,7 +191,7 @@ export default function NotificationBell({
           {affichees.length === 0 ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">{t(`${i18nPrefix}.allCaughtUp`)}</p>
           ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            <ul className="divide-y divide-contour-100 dark:divide-slate-800">
               {affichees.map((n) => {
                 const Icon = iconByType[n.type];
                 const classes = [nouvelles.has(cleDe(n)) ? "bg-brand-50/70 dark:bg-brand-500/10" : "", n.read ? "opacity-60" : ""]
@@ -220,7 +220,7 @@ export default function NotificationBell({
             <button
               type="button"
               onClick={() => setAfficherLues((a) => !a)}
-              className="w-full px-4 py-2.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800 transition-colors"
+              className="w-full px-4 py-2.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-contour-100 dark:border-slate-800 transition-colors"
             >
               {afficherLues ? t(`${i18nPrefix}.hideRead`) : t(`${i18nPrefix}.showRead`, { count: lues.length })}
             </button>

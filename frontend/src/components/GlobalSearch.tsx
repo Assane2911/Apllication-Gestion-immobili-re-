@@ -88,7 +88,7 @@ export default function GlobalSearch() {
           onFocus={() => setOpen(true)}
           aria-label={t("components.globalSearch.label")}
           placeholder={t("components.globalSearch.placeholder")}
-          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-8 py-2 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 shadow-sm"
+          className="w-full rounded-lg border border-contour-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-8 py-2 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-brand-500/40 shadow-sm"
         />
         {query && (
           <button
@@ -105,13 +105,13 @@ export default function GlobalSearch() {
       </div>
 
       {open && query.trim().length >= 2 && (
-        <div className="absolute left-0 right-0 mt-2 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50">
+        <div className="absolute left-0 right-0 mt-2 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-700 shadow-lg z-50">
           {loading ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-6">{t("components.globalSearch.searching")}</p>
           ) : results.length === 0 ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-6">{t("components.globalSearch.noResults", { query })}</p>
           ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            <ul className="divide-y divide-contour-100 dark:divide-slate-800">
               {results.map((r) => {
                 const Icon = iconByType[r.type];
                 return (

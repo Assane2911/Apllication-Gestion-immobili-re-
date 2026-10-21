@@ -116,7 +116,7 @@ export default function VendorsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
           <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.vendors.formTitleEdit") : t("manager.vendors.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -155,7 +155,7 @@ export default function VendorsPage() {
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
+            <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 space-y-2">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-40" />
             </div>
@@ -169,7 +169,7 @@ export default function VendorsPage() {
           action={{ label: t("manager.vendors.addBtn"), onClick: openCreate }}
         />
       ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
               <tr>
@@ -180,7 +180,7 @@ export default function VendorsPage() {
                 <th className="relative px-4 py-3 font-semibold"><span className="sr-only">{t("common.actions.column")}</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
               {vendors.map((vendor) => (
                 <tr key={vendor.id}>
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{vendor.name}</td>

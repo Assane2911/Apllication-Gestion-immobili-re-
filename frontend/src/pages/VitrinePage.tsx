@@ -126,7 +126,7 @@ export default function VitrinePage() {
             <Link
               key={listing.id}
               to={`/vitrine/annonces/${listing.id}`}
-              className="group text-left bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden cursor-pointer block"
+              className="group text-left bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden cursor-pointer block"
             >
               <div className="relative h-40 bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 {listing.imageUrl ? (
@@ -150,7 +150,7 @@ export default function VitrinePage() {
                   {listing.location}
                   {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
                 </p>
-                <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-contour-100 dark:border-slate-800">
                   <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
                     {t(`manager.listings.types.${listing.type}`)}
                   </span>

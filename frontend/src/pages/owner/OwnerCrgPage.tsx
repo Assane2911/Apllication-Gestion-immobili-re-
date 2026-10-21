@@ -97,7 +97,7 @@ export default function OwnerCrgPage() {
   return (
     <div className="space-y-6">
       {/* Bandeau d'accueil — même style que OwnerDashboardPage.tsx */}
-      <div className="surface-sombre relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 text-white p-6 sm:p-7 shadow-md border border-slate-800">
+      <div className="surface-sombre relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 via-brand-950 to-slate-900 text-white p-6 sm:p-7 shadow-md border border-slate-800">
         <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-brand-500/15 blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("owner.crg.title")}</h2>
@@ -113,7 +113,7 @@ export default function OwnerCrgPage() {
           id="owner-crg-month-select"
           value={month}
           onChange={(e) => setMonth(Number(e.target.value))}
-          className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 capitalize"
+          className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500 capitalize"
         >
           {monthOptions.map((m) => (
             <option key={m.value} value={m.value} className="capitalize">
@@ -128,7 +128,7 @@ export default function OwnerCrgPage() {
           id="owner-crg-year-select"
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
-          className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
         >
           {yearOptions.map((y) => (
             <option key={y} value={y}>
@@ -164,14 +164,14 @@ export default function OwnerCrgPage() {
         />
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-contour-100 dark:border-slate-800">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t("owner.crg.table.title")}</h3>
         </div>
         {crg.properties.length === 0 ? (
           <p className="p-4 sm:p-5 text-xs text-slate-600 dark:text-slate-400">{t("owner.crg.empty")}</p>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-contour-100 dark:divide-slate-800">
             {crg.properties.map((row) => (
               <div key={`${row.propertyId}-${row.currency}`} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{row.propertyTitle}</p>
@@ -201,7 +201,7 @@ export default function OwnerCrgPage() {
         )}
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 sm:p-5 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-4 sm:p-5 shadow-xs">
         <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">{t("owner.crg.bankDetailsTitle")}</h3>
         {crg.iban ? (
           <p className="text-xs text-slate-600 dark:text-slate-400">

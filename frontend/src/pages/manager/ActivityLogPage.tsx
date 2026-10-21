@@ -111,7 +111,7 @@ export default function ActivityLogPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
             <tr>
@@ -121,7 +121,7 @@ export default function ActivityLogPage() {
               <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.detail")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => <TableRowSkeleton key={i} columns={4} />)
             ) : (

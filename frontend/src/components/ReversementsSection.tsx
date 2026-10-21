@@ -89,8 +89,8 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
   const resteDevise = reste[currency] ?? 0;
 
   return (
-    <section aria-labelledby="reversements-titre" className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+    <section aria-labelledby="reversements-titre" className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm">
+      <div className="p-4 border-b border-contour-100 dark:border-slate-800">
         <h3 id="reversements-titre" className="font-bold text-slate-900 dark:text-slate-100 text-sm">
           {t("components.payouts.title")}
         </h3>
@@ -128,7 +128,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
         {reversements.length === 0 ? (
           <p className="text-sm text-slate-600 dark:text-slate-400">{t("components.payouts.none")}</p>
         ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-contour-100 dark:divide-slate-800">
             {reversements.map((r) => (
               <li key={r.id} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span className="text-slate-800 dark:text-slate-200">
@@ -149,7 +149,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
         )}
 
         {edition && devises.length > 0 && (
-          <form onSubmit={enregistrer} className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+          <form onSubmit={enregistrer} className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 dark:border-slate-800 pt-4">
             <h4 className="sm:col-span-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{t("components.payouts.formTitle")}</h4>
             {devises.length > 1 && (
               <div>

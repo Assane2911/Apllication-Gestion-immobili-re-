@@ -96,7 +96,7 @@ export default function TenantDashboardPage() {
     c'est justement l'état où il n'a personne à qui parler dans le Service.
   */
   const sectionDonneesPersonnelles = (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-6 shadow-xs">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-6 shadow-xs">
       <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
         {t("tenant.dashboard.privacy.title")}
       </h3>
@@ -119,7 +119,7 @@ export default function TenantDashboardPage() {
   if (contracts.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-8 text-center shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-8 text-center shadow-xs">
         <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3">
           <Home size={22} strokeWidth={1.75} aria-hidden="true" />
         </div>
@@ -136,7 +136,7 @@ export default function TenantDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="surface-sombre relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 text-white p-6 sm:p-7 shadow-md border border-slate-800">
+      <div className="surface-sombre relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 via-brand-950 to-slate-900 text-white p-6 sm:p-7 shadow-md border border-slate-800">
         <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-brand-500/15 blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-500/20 border border-brand-400/30 text-[11px] font-semibold text-brand-300 mb-2.5">
@@ -155,7 +155,7 @@ export default function TenantDashboardPage() {
         return (
           <div
             key={c.id}
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden"
           >
             {/* Property Photo Header */}
             <div className={`relative h-48 sm:h-56 overflow-hidden ${c.property?.imageUrl ? "bg-slate-100 dark:bg-slate-800" : "bg-slate-700 dark:bg-slate-800"}`}>
@@ -171,7 +171,7 @@ export default function TenantDashboardPage() {
                 </div>
               )}
               {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
               <div className="absolute top-4 right-4 z-10">
                 <Badge status={c.status} />
               </div>
@@ -188,7 +188,7 @@ export default function TenantDashboardPage() {
             <div className="p-5 sm:p-6 space-y-5">
               {/* Key Figures Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-contour-100 dark:border-slate-800">
                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <CreditCard size={13} />
                     <span>{t("tenant.dashboard.monthlyRent")}</span>
@@ -197,7 +197,7 @@ export default function TenantDashboardPage() {
                     {formatMoney(c.rent, c.currency)}
                   </p>
                 </div>
-                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-contour-100 dark:border-slate-800">
                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <ShieldCheck size={13} />
                     <span>{t("tenant.dashboard.deposit")}</span>
@@ -206,7 +206,7 @@ export default function TenantDashboardPage() {
                     {formatMoney(c.deposit, c.currency)}
                   </p>
                 </div>
-                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-contour-100 dark:border-slate-800">
                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <Calendar size={13} />
                     <span>{t("tenant.dashboard.startDate")}</span>
@@ -215,7 +215,7 @@ export default function TenantDashboardPage() {
                     {formaterJour(c.startDate, i18n.language)}
                   </p>
                 </div>
-                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 border border-contour-100 dark:border-slate-800">
                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs mb-1">
                     <Clock size={13} />
                     <span>{t("tenant.dashboard.endDate")}</span>
@@ -227,7 +227,7 @@ export default function TenantDashboardPage() {
               </div>
 
               {/* État de la signature du bail */}
-              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3.5 shadow-2xs">
+              <div className="bg-slate-50 dark:bg-slate-800/60 border border-contour-200/90 dark:border-slate-700/80 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3.5 shadow-2xs">
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base ${c.signedByTenantAt ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400" : "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"}`}>
                     {c.signedByTenantAt ? <CheckCircle2 size={18} /> : <PenLine size={16} aria-hidden="true" />}
@@ -335,7 +335,7 @@ export default function TenantDashboardPage() {
                     .map((insp) => (
                       <div
                         key={insp.id}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-xl p-3.5 flex items-center justify-between flex-wrap gap-3 shadow-2xs"
+                        className="bg-slate-50 dark:bg-slate-800/60 border border-contour-200/90 dark:border-slate-700/80 rounded-xl p-3.5 flex items-center justify-between flex-wrap gap-3 shadow-2xs"
                       >
                         <div>
                           <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
@@ -382,7 +382,7 @@ export default function TenantDashboardPage() {
 
               {/* Unpaid Alerts */}
               {unpaid.length > 0 && (
-                <div className="bg-gradient-to-r from-amber-50 to-amber-100/60 dark:from-amber-500/10 dark:to-amber-500/5 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs rounded-xl p-4 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="bg-linear-to-r from-amber-50 to-amber-100/60 dark:from-amber-500/10 dark:to-amber-500/5 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs rounded-xl p-4 flex items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-2 font-medium">
                     <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
                     <span>{t("tenant.dashboard.unpaidWarning", { count: unpaid.length })}</span>

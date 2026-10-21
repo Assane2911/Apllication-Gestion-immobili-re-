@@ -77,7 +77,7 @@ export default function DashboardPage() {
             <StatCardSkeleton key={i} />
           ))}
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
           <Skeleton className="h-5 w-56 mb-4" />
           <Skeleton className="h-[260px] w-full rounded-xl" />
         </div>
@@ -204,7 +204,7 @@ export default function DashboardPage() {
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Graphique Barres Comparatif Revenus vs Dépenses */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("manager.dashboard.charts.revenueVsExpenses")}</h3>
           </div>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Camembert Statut du parc immobilier */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("manager.dashboard.charts.statusChart")}</h3>
           {donutData.length === 0 ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.dashboard.charts.noProperties")}</p>
@@ -246,7 +246,7 @@ export default function DashboardPage() {
                   <GraphiqueParc data={donutData} libelles={statusLabels} />
                 </Suspense>
               </div>
-              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-contour-100 dark:border-slate-800">
                 {donutData.map((entry) => (
                   <div key={entry.status} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
                     <span

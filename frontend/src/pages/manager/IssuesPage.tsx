@@ -162,7 +162,7 @@ export default function IssuesPage() {
         {issues.map((issue) => {
           const allPhotos = getAllIssuePhotos(issue);
           return (
-            <div key={issue.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
+            <div key={issue.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
               <div>
                 {/* Galerie photos */}
                 <div className="bg-slate-900 dark:bg-black/40 p-3 flex gap-2 overflow-x-auto">
@@ -177,7 +177,7 @@ export default function IssuesPage() {
                         alt={t("manager.issues.photoAlt", { index: idx + 1 })}
                         className="w-full h-full object-cover hover:scale-105 transition-transform"
                       />
-                      <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm">
+                      <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-sm backdrop-blur-xs">
                         {t("manager.issues.photoCount", { current: idx + 1, total: allPhotos.length })}
                       </span>
                     </div>
@@ -192,7 +192,7 @@ export default function IssuesPage() {
 
                   <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{issue.description}</p>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                  <div className="pt-2 border-t border-contour-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                     <div>
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {issue.tenant?.firstName} {issue.tenant?.lastName}
@@ -264,7 +264,7 @@ export default function IssuesPage() {
               </div>
 
               {/* Boutons de changement de statut */}
-              <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
+              <div className="p-4 border-t border-contour-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t("manager.issues.changeStatus")}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {statusOptions.map((s) => (
@@ -289,7 +289,7 @@ export default function IssuesPage() {
         })}
 
         {issues.length === 0 && (
-          <p className="text-slate-600 dark:text-slate-400 text-sm col-span-2 text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <p className="text-slate-600 dark:text-slate-400 text-sm col-span-2 text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800">
             {t("manager.issues.noIssuesForFilter")}
           </p>
         )}

@@ -109,8 +109,8 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
   const dialogue = useDialogue({ onClose, titreId: "guarantors-title", fermable: !saving });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200 dark:border-slate-700">
         <div className="flex items-start justify-between">
           <h3 id="guarantors-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.guarantors.title")}</h3>
           <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
@@ -123,7 +123,7 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
         {garants.length === 0 ? (
           <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{t("components.guarantors.none")}</p>
         ) : (
-          <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="mt-4 divide-y divide-contour-100 dark:divide-slate-800">
             {garants.map((g) => (
               <li key={g.id} className="py-2 flex items-start justify-between gap-3 text-sm">
                 <span className="text-slate-800 dark:text-slate-200">
@@ -158,7 +158,7 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
         )}
 
         {!verrouille && formOuvert && (
-          <form onSubmit={enregistrer} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+          <form onSubmit={enregistrer} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 dark:border-slate-800 pt-4">
             <div className="sm:col-span-2">
               <label htmlFor="g-civility" className={etiquette}>{t("common.civility.label")}</label>
               <select id="g-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className={champ}>
