@@ -24,10 +24,48 @@ import { generateInvoicesForContract } from "./invoice.service";
 export type TypeImport = "properties" | "tenants" | "contracts";
 export type StatutLigne = "OK" | "DOUBLON" | "ERREUR";
 
+/** Ce que l'interface traduit à la place d'un message : un code (`common.serverErrors.<CODE>`) et ses valeurs. */
+export interface DetailMessage {
+  code: string;
+  params?: Record<string, string | number>;
+}
+
+/**
+ * Messages d'une ligne : le texte français (conservé pour tout lecteur qui ne traduit pas) ET, au même rang, le
+ * code que l'interface traduit dans la langue choisie.
+ */
+class MessagesLigne {
+  private textes: string[] = [];
+  private details: DetailMessage[] = [];
+
+  push(texte: string, code: string, params?: Record<string, string | number>) {
+    this.textes.push(texte);
+    this.details.push(params ? { code, params } : { code });
+  }
+
+  get length() {
+    return this.textes.length;
+  }
+
+  /** `{ messages, details }`, à étaler dans la ligne analysée. */
+  enBloc() {
+    return { messages: this.textes, details: this.details };
+  }
+}
+
+/** Ligne qui ne porte qu'un seul message (doublon, plafond atteint, chevauchement). */
+function unMessage(texte: string, code: string, params?: Record<string, string | number>) {
+  const m = new MessagesLigne();
+  m.push(texte, code, params);
+  return m.enBloc();
+}
+
 export interface LigneAnalysee<D> {
   ligne: number;
   statut: StatutLigne;
   messages: string[];
+  /** Même rang que `messages` : le code (et ses valeurs) que l'interface traduit. */
+  details: DetailMessage[];
   /** Valeurs lues (affichées à l'aperçu) ; absentes pour une ligne illisible. */
   donnees: D;
 }
@@ -154,7 +192,7 @@ export async function analyserBiens(
   let places = options.maximumBiens === null ? Infinity : Math.max(0, options.maximumBiens - existants.length);
 
   const lignes: Array<LigneAnalysee<DonneesBien>> = csv.lignes.map(({ ligne, valeurs }) => {
-    const messages: string[] = [];
+    const messages = new MessagesLigne();
     const title = lire(valeurs, COLONNES_BIENS, "title");
     const address = lire(valeurs, COLONNES_BIENS, "address");
     const surfaceBrute = lire(valeurs, COLONNES_BIENS, "surface");
@@ -162,49 +200,58 @@ export async function analyserBiens(
     const deviseBrute = lire(valeurs, COLONNES_BIENS, "currency").toUpperCase();
     const statutBrut = lire(valeurs, COLONNES_BIENS, "status");
 
-    if (title.length < 2) messages.push("Titre manquant ou trop court (2 caractères minimum).");
-    else if (title.length > 200) messages.push("Titre trop long (200 caractères maximum).");
-    if (address.length < 2) messages.push("Adresse manquante ou trop courte (2 caractères minimum).");
-    else if (address.length > 300) messages.push("Adresse trop longue (300 caractères maximum).");
+    if (title.length < 2) messages.push("Titre manquant ou trop court (2 caractères minimum).", "IMPORT_ROW_TITLE_SHORT");
+    else if (title.length > 200) messages.push("Titre trop long (200 caractères maximum).", "IMPORT_ROW_TITLE_LONG");
+    if (address.length < 2) messages.push("Adresse manquante ou trop courte (2 caractères minimum).", "IMPORT_ROW_ADDRESS_SHORT");
+    else if (address.length > 300) messages.push("Adresse trop longue (300 caractères maximum).", "IMPORT_ROW_ADDRESS_LONG");
     const descriptionLue = lire(valeurs, COLONNES_BIENS, "description");
-    if (descriptionLue.length > 5000) messages.push("Description trop longue (5 000 caractères maximum).");
+    if (descriptionLue.length > 5000) messages.push("Description trop longue (5 000 caractères maximum).", "IMPORT_ROW_DESCRIPTION_LONG");
 
     const surface = surfaceBrute ? lireNombre(surfaceBrute) : null;
-    if (surface === null || surface <= 0 || surface > SURFACE_MAXIMUM) messages.push(surfaceBrute ? `Surface invalide : « ${surfaceBrute} ».` : "Surface manquante.");
+    if (surface === null || surface <= 0 || surface > SURFACE_MAXIMUM) messages.push(surfaceBrute ? `Surface invalide : « ${surfaceBrute} ».` : "Surface manquante.", surfaceBrute ? "IMPORT_ROW_AREA_INVALID" : "IMPORT_ROW_AREA_MISSING", surfaceBrute ? { value: surfaceBrute } : undefined);
     const rent = loyerBrut ? lireNombre(loyerBrut) : null;
-    if (rent === null || rent <= 0 || rent > MONTANT_MAXIMUM) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.");
+    if (rent === null || rent <= 0 || rent > MONTANT_MAXIMUM) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.", loyerBrut ? "IMPORT_ROW_RENT_INVALID" : "IMPORT_ROW_RENT_MISSING", loyerBrut ? { value: loyerBrut } : undefined);
 
     let currency = options.deviseParDefaut;
     if (deviseBrute) {
       if (DEVISES[deviseBrute]) currency = deviseBrute;
-      else messages.push(`Devise inconnue : « ${deviseBrute} ».`);
+      else messages.push(`Devise inconnue : « ${deviseBrute} ».`, "IMPORT_ROW_CURRENCY_UNKNOWN", { value: deviseBrute });
     }
 
     let status: DonneesBien["status"] = "AVAILABLE";
     if (statutBrut) {
       const connu = STATUTS_BIEN[statutBrut.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase()];
       if (connu) status = connu;
-      else messages.push(`Statut inconnu : « ${statutBrut} » (disponible, occupé ou maintenance).`);
+      else messages.push(`Statut inconnu : « ${statutBrut} » (disponible, occupé ou maintenance).`, "IMPORT_ROW_PROPERTY_STATUS_UNKNOWN", { value: statutBrut });
     }
 
     const donnees: DonneesBien = { title, address, surface, rent, currency, status, description: descriptionLue };
-    if (messages.length > 0) return { ligne, statut: "ERREUR", messages, donnees };
+    if (messages.length > 0) return { ligne, statut: "ERREUR", ...messages.enBloc(), donnees };
 
     const cle = cleDoublon(title, address);
     if (dejaVus.has(cle)) {
-      return { ligne, statut: "DOUBLON", messages: ["Un bien avec ce titre et cette adresse existe déjà (ou figure plus haut dans le fichier)."], donnees };
+      return {
+        ligne,
+        statut: "DOUBLON",
+        ...unMessage("Un bien avec ce titre et cette adresse existe déjà (ou figure plus haut dans le fichier).", "IMPORT_ROW_PROPERTY_DUPLICATE"),
+        donnees,
+      };
     }
     if (places <= 0) {
       return {
         ligne,
         statut: "ERREUR",
-        messages: [`Limite de ${options.maximumBiens} biens atteinte pour votre formule : passez à une formule supérieure pour importer ce bien.`],
+        ...unMessage(
+          `Limite de ${options.maximumBiens} biens atteinte pour votre formule : passez à une formule supérieure pour importer ce bien.`,
+          "IMPORT_ROW_PLAN_LIMIT",
+          { max: options.maximumBiens ?? 0 }
+        ),
         donnees,
       };
     }
     dejaVus.add(cle);
     places--;
-    return { ligne, statut: "OK", messages: [], donnees };
+    return { ligne, statut: "OK", messages: [], details: [], donnees };
   });
 
   return {
@@ -241,38 +288,38 @@ export async function analyserLocataires(managerId: string, csv: CsvLu): Promise
   const dejaVus = new Set(existants.map((t: { email: string }) => t.email.toLowerCase()));
 
   const lignes: Array<LigneAnalysee<DonneesLocataire>> = csv.lignes.map(({ ligne, valeurs }) => {
-    const messages: string[] = [];
+    const messages = new MessagesLigne();
     const firstName = lire(valeurs, COLONNES_LOCATAIRES, "firstName");
     const lastName = lire(valeurs, COLONNES_LOCATAIRES, "lastName");
     const telephoneBrut = lire(valeurs, COLONNES_LOCATAIRES, "phone");
     const email = lire(valeurs, COLONNES_LOCATAIRES, "email").toLowerCase();
     const civiliteBrute = lire(valeurs, COLONNES_LOCATAIRES, "civility");
 
-    if (!firstName) messages.push("Prénom manquant.");
-    else if (firstName.length > 100) messages.push("Prénom trop long (100 caractères maximum).");
-    if (!lastName) messages.push("Nom manquant.");
-    else if (lastName.length > 100) messages.push("Nom trop long (100 caractères maximum).");
+    if (!firstName) messages.push("Prénom manquant.", "IMPORT_ROW_FIRSTNAME_MISSING");
+    else if (firstName.length > 100) messages.push("Prénom trop long (100 caractères maximum).", "IMPORT_ROW_FIRSTNAME_LONG");
+    if (!lastName) messages.push("Nom manquant.", "IMPORT_ROW_LASTNAME_MISSING");
+    else if (lastName.length > 100) messages.push("Nom trop long (100 caractères maximum).", "IMPORT_ROW_LASTNAME_LONG");
     // Même règle qu'à la création : adresse valide ; les doubles points ou espaces la rendent illisible pour l'envoi.
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) messages.push(email ? `Adresse email invalide : « ${email} ».` : "Adresse email manquante.");
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) messages.push(email ? `Adresse email invalide : « ${email} ».` : "Adresse email manquante.", email ? "IMPORT_ROW_EMAIL_INVALID" : "IMPORT_ROW_EMAIL_MISSING", email ? { value: email } : undefined);
 
     const phone = telephoneBrut ? versE164(telephoneBrut) : null;
-    if (!phone) messages.push(telephoneBrut ? MESSAGE_TELEPHONE_INVALIDE : "Numéro de téléphone manquant.");
+    if (!phone) messages.push(telephoneBrut ? MESSAGE_TELEPHONE_INVALIDE : "Numéro de téléphone manquant.", telephoneBrut ? "PHONE_INVALID" : "IMPORT_ROW_PHONE_MISSING");
 
     let civility: DonneesLocataire["civility"] = null;
     if (civiliteBrute) {
       const cle = civiliteBrute.replace(/\./g, "").toUpperCase();
       civility = CIVILITES_ACCEPTEES[cle] ?? null;
-      if (!civility && !estCiviliteConnue(cle)) messages.push(`Civilité inconnue : « ${civiliteBrute} » (M ou Mme).`);
+      if (!civility && !estCiviliteConnue(cle)) messages.push(`Civilité inconnue : « ${civiliteBrute} » (M ou Mme).`, "IMPORT_ROW_CIVILITY_UNKNOWN", { value: civiliteBrute });
     }
 
     const donnees: DonneesLocataire = { civility, firstName, lastName, phone: phone ?? telephoneBrut, email };
-    if (messages.length > 0) return { ligne, statut: "ERREUR", messages, donnees };
+    if (messages.length > 0) return { ligne, statut: "ERREUR", ...messages.enBloc(), donnees };
 
     if (dejaVus.has(email)) {
-      return { ligne, statut: "DOUBLON", messages: ["Un locataire avec cet email existe déjà (ou figure plus haut dans le fichier)."], donnees };
+      return { ligne, statut: "DOUBLON", ...unMessage("Un locataire avec cet email existe déjà (ou figure plus haut dans le fichier).", "IMPORT_ROW_TENANT_DUPLICATE"), donnees };
     }
     dejaVus.add(email);
-    return { ligne, statut: "OK", messages: [], donnees };
+    return { ligne, statut: "OK", messages: [], details: [], donnees };
   });
 
   return { type: "tenants", delimiteur: csv.delimiteur, lignes, resume: resumer(lignes) };
@@ -404,7 +451,7 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
   );
 
   const lignes: Array<LigneAnalysee<DonneesContrat>> = csv.lignes.map(({ ligne, valeurs }) => {
-    const messages: string[] = [];
+    const messages = new MessagesLigne();
     const titre = lire(valeurs, COLONNES_CONTRATS, "property");
     const adresse = lire(valeurs, COLONNES_CONTRATS, "propertyAddress");
     const email = lire(valeurs, COLONNES_CONTRATS, "tenantEmail").toLowerCase();
@@ -421,32 +468,32 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
 
     // Bien : par son titre ; l'adresse (si la colonne existe) départage deux biens de même titre.
     let bien: (typeof biens)[number] | undefined;
-    if (!titre) messages.push("Bien manquant (titre du bien).");
+    if (!titre) messages.push("Bien manquant (titre du bien).", "IMPORT_ROW_PROPERTY_MISSING");
     else {
       let candidats = biens.filter((b: { title: string }) => cleDoublon(b.title) === cleDoublon(titre));
       if (candidats.length > 1 && adresse) candidats = candidats.filter((b: { address: string }) => cleDoublon(b.address) === cleDoublon(adresse));
-      if (candidats.length === 0) messages.push(`Bien introuvable : « ${titre} ». Importez d'abord vos biens, avec ce titre exact.`);
-      else if (candidats.length > 1) messages.push(`Plusieurs biens portent le titre « ${titre} » : ajoutez une colonne « adresse_bien » pour les distinguer.`);
+      if (candidats.length === 0) messages.push(`Bien introuvable : « ${titre} ». Importez d'abord vos biens, avec ce titre exact.`, "IMPORT_ROW_PROPERTY_NOT_FOUND", { title: titre });
+      else if (candidats.length > 1) messages.push(`Plusieurs biens portent le titre « ${titre} » : ajoutez une colonne « adresse_bien » pour les distinguer.`, "IMPORT_ROW_PROPERTY_AMBIGUOUS", { title: titre });
       else bien = candidats[0];
     }
 
     // Locataire : par son email, clé unique dans l'agence.
     let tenantId: string | undefined;
-    if (!email) messages.push("Email du locataire manquant.");
+    if (!email) messages.push("Email du locataire manquant.", "IMPORT_ROW_TENANT_EMAIL_MISSING");
     else {
       tenantId = locataireParEmail.get(email);
-      if (!tenantId) messages.push(`Locataire introuvable : « ${email} ». Importez d'abord vos locataires, avec cet email.`);
+      if (!tenantId) messages.push(`Locataire introuvable : « ${email} ». Importez d'abord vos locataires, avec cet email.`, "IMPORT_ROW_TENANT_NOT_FOUND", { email });
     }
 
     const rent = loyerBrut ? lireNombre(loyerBrut) : null;
-    if (rent === null || rent <= 0 || rent > MONTANT_MAXIMUM) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.");
+    if (rent === null || rent <= 0 || rent > MONTANT_MAXIMUM) messages.push(loyerBrut ? `Loyer invalide : « ${loyerBrut} ».` : "Loyer manquant.", loyerBrut ? "IMPORT_ROW_RENT_INVALID" : "IMPORT_ROW_RENT_MISSING", loyerBrut ? { value: loyerBrut } : undefined);
     const deposit = depotBrut ? lireNombre(depotBrut) : null;
-    if (deposit === null || deposit < 0 || deposit > MONTANT_MAXIMUM) messages.push(depotBrut ? `Dépôt de garantie invalide : « ${depotBrut} ».` : "Dépôt de garantie manquant (indiquez 0 s'il n'y en a pas).");
+    if (deposit === null || deposit < 0 || deposit > MONTANT_MAXIMUM) messages.push(depotBrut ? `Dépôt de garantie invalide : « ${depotBrut} ».` : "Dépôt de garantie manquant (indiquez 0 s'il n'y en a pas).", depotBrut ? "IMPORT_ROW_DEPOSIT_INVALID" : "IMPORT_ROW_DEPOSIT_MISSING", depotBrut ? { value: depotBrut } : undefined);
 
     let currency = bien?.currency || "EUR";
     if (deviseBrute) {
       if (DEVISES[deviseBrute]) currency = deviseBrute;
-      else messages.push(`Devise inconnue : « ${deviseBrute} ».`);
+      else messages.push(`Devise inconnue : « ${deviseBrute} ».`, "IMPORT_ROW_CURRENCY_UNKNOWN", { value: deviseBrute });
     }
 
     // Une date hors des années plausibles est traitée comme illisible (voir dateDeBailPlausible).
@@ -455,32 +502,32 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
       return d && dateDeBailPlausible(d) ? d : null;
     };
     const debut = debutBrut ? datePlausible(debutBrut) : null;
-    if (!debut) messages.push(debutBrut ? `Date de début invalide : « ${debutBrut} » (jj/mm/aaaa).` : "Date de début manquante.");
+    if (!debut) messages.push(debutBrut ? `Date de début invalide : « ${debutBrut} » (jj/mm/aaaa).` : "Date de début manquante.", debutBrut ? "IMPORT_ROW_START_INVALID" : "IMPORT_ROW_START_MISSING", debutBrut ? { value: debutBrut } : undefined);
     const fin = finBrute ? datePlausible(finBrute) : null;
-    if (!fin) messages.push(finBrute ? `Date de fin invalide : « ${finBrute} » (jj/mm/aaaa).` : "Date de fin manquante.");
-    if (debut && fin && fin <= debut) messages.push("La date de fin doit être postérieure à la date de début.");
+    if (!fin) messages.push(finBrute ? `Date de fin invalide : « ${finBrute} » (jj/mm/aaaa).` : "Date de fin manquante.", finBrute ? "IMPORT_ROW_END_INVALID" : "IMPORT_ROW_END_MISSING", finBrute ? { value: finBrute } : undefined);
+    if (debut && fin && fin <= debut) messages.push("La date de fin doit être postérieure à la date de début.", "IMPORT_ROW_END_BEFORE_START");
 
     let paymentDay: number | null = null;
     if (jourBrut) {
       const n = lireNombre(jourBrut);
       if (n !== null && Number.isInteger(n) && n >= 1 && n <= 31) paymentDay = n;
-      else messages.push(`Jour d'échéance invalide : « ${jourBrut} » (1 à 31).`);
+      else messages.push(`Jour d'échéance invalide : « ${jourBrut} » (1 à 31).`, "IMPORT_ROW_DUE_DAY_INVALID", { value: jourBrut });
     }
 
     let leaseType: DonneesContrat["leaseType"] = "HABITATION";
     if (typeBrut) {
       const connu = TYPES_BAIL_ACCEPTES[sansAccents(typeBrut)];
       if (connu) leaseType = connu;
-      else messages.push(`Type de bail inconnu : « ${typeBrut} » (habitation, meublé, commercial ou professionnel).`);
+      else messages.push(`Type de bail inconnu : « ${typeBrut} » (habitation, meublé, commercial ou professionnel).`, "IMPORT_ROW_LEASE_TYPE_UNKNOWN", { value: typeBrut });
     }
 
-    if (droit.length > 300) messages.push("Le droit applicable ne peut pas dépasser 300 caractères.");
+    if (droit.length > 300) messages.push("Le droit applicable ne peut pas dépasser 300 caractères.", "IMPORT_ROW_LAW_LONG");
 
     let status: DonneesContrat["status"] = "ACTIVE";
     if (statutBrut) {
       const connu = STATUTS_CONTRAT[sansAccents(statutBrut)];
       if (connu) status = connu;
-      else messages.push(`Statut inconnu : « ${statutBrut} » (actif, terminé ou résilié).`);
+      else messages.push(`Statut inconnu : « ${statutBrut} » (actif, terminé ou résilié).`, "IMPORT_ROW_CONTRACT_STATUS_UNKNOWN", { value: statutBrut });
     }
 
     const echeanceCourante = echeanceDuMois(
@@ -492,7 +539,7 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
     if (facturationBrute) {
       const d = datePlausible(facturationBrute);
       if (d) facturation = d;
-      else messages.push(`Date « facturation depuis » invalide : « ${facturationBrute} » (jj/mm/aaaa).`);
+      else messages.push(`Date « facturation depuis » invalide : « ${facturationBrute} » (jj/mm/aaaa).`, "IMPORT_ROW_BILLING_FROM_INVALID", { value: facturationBrute });
     }
 
     let premiereFacture: string | null = null;
@@ -508,18 +555,28 @@ export async function analyserContrats(managerId: string, csv: CsvLu, maintenant
       paymentDay, leaseType, applicableLaw: droit || null, status,
       billingFrom: jour(facturation), premiereFacture,
     };
-    if (messages.length > 0 || !bien || !tenantId || !debut || !fin) return { ligne, statut: "ERREUR", messages, donnees };
+    if (messages.length > 0 || !bien || !tenantId || !debut || !fin) return { ligne, statut: "ERREUR", ...messages.enBloc(), donnees };
 
     // Doublon : même bien, même locataire, même date de début (fichier déjà importé, ou bail déjà saisi).
     if (vus.some((c) => c.propertyId === bien!.id && c.tenantId === tenantId && c.start.getTime() === debut.getTime())) {
-      return { ligne, statut: "DOUBLON", messages: ["Un contrat de ce locataire sur ce bien, avec la même date de début, existe déjà (ou figure plus haut dans le fichier)."], donnees };
+      return {
+        ligne,
+        statut: "DOUBLON",
+        ...unMessage("Un contrat de ce locataire sur ce bien, avec la même date de début, existe déjà (ou figure plus haut dans le fichier).", "IMPORT_ROW_CONTRACT_DUPLICATE"),
+        donnees,
+      };
     }
     // Deux baux actifs ne peuvent pas se chevaucher sur un même bien.
     if (status === "ACTIVE" && vus.some((c) => c.actif && c.propertyId === bien!.id && c.start < fin && c.end > debut)) {
-      return { ligne, statut: "ERREUR", messages: ["Ce bien a déjà un contrat actif sur cette période (déjà enregistré, ou plus haut dans le fichier)."], donnees };
+      return {
+        ligne,
+        statut: "ERREUR",
+        ...unMessage("Ce bien a déjà un contrat actif sur cette période (déjà enregistré, ou plus haut dans le fichier).", "IMPORT_ROW_CONTRACT_OVERLAP"),
+        donnees,
+      };
     }
     vus.push({ propertyId: bien.id, tenantId, start: debut, end: fin, actif: status === "ACTIVE" });
-    return { ligne, statut: "OK", messages: [], donnees };
+    return { ligne, statut: "OK", messages: [], details: [], donnees };
   });
 
   return { type: "contracts", delimiteur: csv.delimiteur, lignes, resume: resumer(lignes) };

@@ -117,14 +117,26 @@ export function fileUrl(path?: string | null) {
   return `${API_URL}${path}`;
 }
 
+/**
+ * Le serveur écrit ses messages en français : quand il envoie un CODE que l'interface sait traduire, on affiche la
+ * traduction dans la langue choisie (avec les valeurs qu'il fournit) ; sinon (code absent ou inconnu) `repli`, le
+ * texte français du serveur, sert de secours. Sert aux erreurs de l'API comme aux messages d'un résultat (lignes
+ * d'un aperçu d'import).
+ */
+export function messageDuServeur(code: unknown, params: Record<string, string | number> | undefined, repli: string): string {
+  if (typeof code === "string") {
+    const cle = `common.serverErrors.${code}`;
+    if (i18n.exists(cle)) return String(i18n.t(cle, params ?? {}));
+  }
+  return repli;
+}
+
 export function apiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
-    // Le serveur écrit ses messages en français : quand il envoie un CODE que l'interface sait traduire, on affiche
-    // la traduction dans la langue choisie ; sinon (code absent ou inconnu) le texte du serveur sert de secours.
     const code = err.response?.data?.code;
     if (typeof code === "string") {
-      const cle = `common.serverErrors.${code}`;
-      if (i18n.exists(cle)) return String(i18n.t(cle, err.response?.data?.params ?? {}));
+      const traduit = messageDuServeur(code, err.response?.data?.params, "");
+      if (traduit) return traduit;
     }
     if (err.response?.data?.error) return err.response.data.error;
     // Sans ce contrôle, `err.message` retombait sur le texte brut d'axios

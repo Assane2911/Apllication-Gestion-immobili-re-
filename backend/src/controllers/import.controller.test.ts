@@ -43,6 +43,10 @@ describe("import de biens — aperçu", () => {
     expect(garage).toMatchObject({ ligne: 4, statut: "ERREUR" });
     expect(garage.messages.join(" ")).toContain("Adresse");
     expect(loft.messages.join(" ")).toContain("Surface invalide : « abc »");
+    // Chaque message porte, au même rang, le code que l'interface traduit, avec la valeur lue dans le fichier.
+    expect(garage.details).toHaveLength(garage.messages.length);
+    expect(loft.details).toEqual([{ code: "IMPORT_ROW_AREA_INVALID", params: { value: "abc" } }]);
+    expect(studio.details).toEqual([]);
     // Même bien, écrit autrement (casse, accents) : repéré comme doublon du premier.
     expect(doublon).toMatchObject({ ligne: 6, statut: "DOUBLON" });
     expect(await biensDe(manager.id)).toHaveLength(0);
@@ -61,6 +65,7 @@ describe("import de biens — aperçu", () => {
     expect(res.body.lignes[0]).toMatchObject({ statut: "OK", donnees: { currency: "XOF" } });
     expect(res.body.lignes[1]).toMatchObject({ statut: "ERREUR" });
     expect(res.body.lignes[1].messages.join(" ")).toContain("Devise inconnue");
+    expect(res.body.lignes[1].details).toEqual([{ code: "IMPORT_ROW_CURRENCY_UNKNOWN", params: { value: "ZZZ" } }]);
   });
 
   it("refuse tout le fichier, en nommant les colonnes manquantes", async () => {
@@ -138,6 +143,7 @@ describe("import de biens — écriture", () => {
     expect(res.body.importees).toBe(3);
     expect(res.body.resume.erreurs).toBe(3);
     expect(res.body.lignes[3].messages.join(" ")).toContain("Limite de 5 biens");
+    expect(res.body.lignes[3].details).toEqual([{ code: "IMPORT_ROW_PLAN_LIMIT", params: { max: 5 } }]);
     expect(await biensDe(manager.id)).toHaveLength(5);
   });
 
@@ -184,6 +190,10 @@ describe("import de locataires", () => {
     expect(ibou.statut).toBe("ERREUR");
     expect(ibou.messages.join(" ")).toContain("indicatif");
     expect(fatou.messages).toContain("Nom manquant.");
+    expect(fatou.details.map((d: { code: string }) => d.code)).toContain("IMPORT_ROW_LASTNAME_MISSING");
+    // Le message du téléphone sans indicatif réutilise le code de validation PHONE_INVALID, traduit lui aussi.
+    expect(ibou.details.map((d: { code: string }) => d.code)).toContain("PHONE_INVALID");
+    expect(doublon.details).toEqual([{ code: "IMPORT_ROW_TENANT_DUPLICATE" }]);
     expect(omar.messages.join(" ")).toContain("Adresse email invalide");
     expect(doublon).toMatchObject({ ligne: 7, statut: "DOUBLON" });
     expect(await locatairesDe(manager.id)).toHaveLength(0);

@@ -2,7 +2,7 @@ import { FileUp, Download } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, apiErrorMessage } from "../../api/client";
+import { api, apiErrorMessage, messageDuServeur } from "../../api/client";
 
 type TypeImport = "properties" | "tenants" | "contracts";
 type StatutLigne = "OK" | "DOUBLON" | "ERREUR";
@@ -11,6 +11,8 @@ interface LigneAnalysee {
   ligne: number;
   statut: StatutLigne;
   messages: string[];
+  /** Même rang que `messages` : le code (et ses valeurs) que l'interface traduit ; absent d'un ancien serveur. */
+  details?: Array<{ code: string; params?: Record<string, string | number> }>;
   donnees: Record<string, string | number | null>;
 }
 
@@ -260,9 +262,9 @@ export default function ImportPage() {
                           {l.donnees.premiereFacture ? t("manager.import.firstInvoice", { month: l.donnees.premiereFacture }) : t("manager.import.noInvoice")}
                         </p>
                       )}
-                      {l.messages.map((m) => (
+                      {l.messages.map((m, i) => (
                         <p key={m} className="text-xs text-red-700 dark:text-red-400">
-                          {m}
+                          {messageDuServeur(l.details?.[i]?.code, l.details?.[i]?.params, m)}
                         </p>
                       ))}
                     </td>

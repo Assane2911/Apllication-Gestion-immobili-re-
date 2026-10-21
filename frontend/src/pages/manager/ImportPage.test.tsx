@@ -63,6 +63,50 @@ describe("ImportPage", () => {
     expect(screen.getByRole("button", { name: "Importer 1 ligne(s) valide(s)" })).toBeEnabled();
   });
 
+  it("traduit les messages de chaque ligne dans la langue de l'interface, avec la valeur lue dans le fichier", async () => {
+    const { changerLangue } = await import("../../i18n");
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({
+      data: analyse({
+        lignes: [
+          {
+            ligne: 3,
+            statut: "ERREUR",
+            messages: ["Surface invalide : « abc »."],
+            details: [{ code: "IMPORT_ROW_AREA_INVALID", params: { value: "abc" } }],
+            donnees: { title: "Loft", address: "8 quai" },
+          },
+        ],
+      }),
+    });
+    await changerLangue("en");
+    try {
+      renderPage();
+      await user.upload(screen.getByLabelText(/CSV/, { selector: "input" }), new File([CSV], "biens.csv", { type: "text/csv" }));
+      expect(await screen.findByText("Invalid area: “abc”.")).toBeInTheDocument();
+      expect(screen.queryByText("Surface invalide : « abc ».")).not.toBeInTheDocument();
+    } finally {
+      await changerLangue("fr");
+    }
+  });
+
+  it("sans code (ancien serveur) ou avec un code inconnu, le message français du serveur reste affiché", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({
+      data: analyse({
+        lignes: [
+          { ligne: 3, statut: "ERREUR", messages: ["Message sans code."], donnees: { title: "A", address: "x" } },
+          { ligne: 4, statut: "ERREUR", messages: ["Message au code inconnu."], details: [{ code: "CODE_QUI_NEXISTE_PAS" }], donnees: { title: "B", address: "y" } },
+        ],
+      }),
+    });
+    renderPage();
+    await deposer(user);
+
+    expect(await screen.findByText("Message sans code.")).toBeInTheDocument();
+    expect(screen.getByText("Message au code inconnu.")).toBeInTheDocument();
+  });
+
   it("importe sur confirmation, annonce le résultat et les lignes ignorées", async () => {
     const user = userEvent.setup();
     mockedApi.post.mockResolvedValueOnce({ data: analyse() });
