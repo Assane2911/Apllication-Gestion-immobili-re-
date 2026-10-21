@@ -102,6 +102,8 @@ describe("import de contrats — aperçu", () => {
     );
     expect(res.body.lignes.map((l: { statut: string }) => l.statut)).toEqual(["DOUBLON", "ERREUR", "OK", "ERREUR"]);
     expect(res.body.lignes[1].messages.join(" ")).toContain("contrat actif sur cette période");
+    expect(res.body.lignes[1].details).toEqual([{ code: "IMPORT_ROW_CONTRACT_OVERLAP" }]);
+    expect(res.body.lignes[0].details).toEqual([{ code: "IMPORT_ROW_CONTRACT_DUPLICATE" }]);
     expect(await contratsDe(manager.id)).toHaveLength(1);
   });
 
@@ -215,6 +217,8 @@ describe("import de contrats — écriture", () => {
     const res = await apercu(h, "bien;email;loyer;depot;debut;fin\nBien Secret;awa@example.com;1;0;01/01/2026;01/01/2027\nVilla B;autre@example.com;1;0;01/01/2026;01/01/2027");
     expect(res.body.resume.erreurs).toBe(2);
     expect(res.body.lignes[0].messages.join(" ")).toContain("Bien introuvable");
+    expect(res.body.lignes[0].details[0].code).toBe("IMPORT_ROW_PROPERTY_NOT_FOUND");
+    expect(res.body.lignes[0].details[0].params).toHaveProperty("title");
     expect(res.body.lignes[1].messages.join(" ")).toContain("Locataire introuvable");
   });
 

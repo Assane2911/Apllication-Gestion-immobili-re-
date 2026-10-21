@@ -37,6 +37,19 @@ function codesDuBackend(): string[] {
       if (ts.isCallExpression(n) && n.expression.getText() === "avecCode" && n.arguments[1] && ts.isStringLiteral(n.arguments[1])) {
         codes.add(n.arguments[1].text);
       }
+      // Messages ligne par ligne de l'aperçu d'import : messages.push(texte, code, valeurs) et unMessage(texte, code, valeurs).
+      if (
+        ts.isCallExpression(n) &&
+        ["messages.push", "unMessage"].includes(n.expression.getText()) &&
+        n.arguments[1] &&
+        ts.isStringLiteral(n.arguments[1])
+      ) {
+        codes.add(n.arguments[1].text);
+      }
+      // Même cas quand le code dépend d'une condition : messages.push(texte, cond ? "CODE_A" : "CODE_B", valeurs).
+      if (ts.isCallExpression(n) && n.expression.getText() === "messages.push" && n.arguments[1] && ts.isConditionalExpression(n.arguments[1])) {
+        for (const branche of [n.arguments[1].whenTrue, n.arguments[1].whenFalse]) if (ts.isStringLiteral(branche)) codes.add(branche.text);
+      }
       // Erreurs de lecture d'un fichier d'import : new CsvInvalide(message, code, valeurs).
       if (
         ts.isNewExpression(n) &&
