@@ -9,7 +9,7 @@ import BoutonsHistorique from "./BoutonsHistorique";
  * Boutons « Retour » / « Suivant » des en-têtes : l'application mobile n'a pas les boutons du navigateur, et sur
  * ordinateur ils manquent à qui navigue dans l'espace de gestion.
  */
-function Application({ accueilSiVide = false }: { accueilSiVide?: boolean }) {
+function Application() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   return (
@@ -17,17 +17,17 @@ function Application({ accueilSiVide = false }: { accueilSiVide?: boolean }) {
       <p data-testid="chemin">{pathname}</p>
       <button onClick={() => navigate("/a")}>aller en A</button>
       <button onClick={() => navigate("/b")}>aller en B</button>
-      <BoutonsHistorique variante="icone" accueilSiVide={accueilSiVide} />
+      <BoutonsHistorique />
     </div>
   );
 }
 
-function rendre(entree = "/", accueilSiVide = false) {
+function rendre(entree = "/") {
   return render(
     <MemoryRouter initialEntries={[entree]}>
       <HistoriqueProvider>
         <Routes>
-          <Route path="*" element={<Application accueilSiVide={accueilSiVide} />} />
+          <Route path="*" element={<Application />} />
         </Routes>
       </HistoriqueProvider>
     </MemoryRouter>
@@ -36,7 +36,7 @@ function rendre(entree = "/", accueilSiVide = false) {
 
 const chemin = () => screen.getByTestId("chemin").textContent;
 
-describe("BoutonsHistorique — variante icône (en-têtes)", () => {
+describe("BoutonsHistorique", () => {
   it("deux boutons nommés pour les lecteurs d'écran, tous deux inactifs sans historique", () => {
     rendre("/une/page");
     expect(screen.getByRole("button", { name: "Retour" })).toBeDisabled();
@@ -63,14 +63,6 @@ describe("BoutonsHistorique — variante icône (en-têtes)", () => {
   it("dans un en-tête, Retour sans page précédente est inactif : renvoyer à l'accueil ne ferait que recharger la page", () => {
     rendre("/tableau-de-bord");
     expect(screen.getByRole("button", { name: "Retour" })).toBeDisabled();
-  });
-
-  it("avec `accueilSiVide` (écran de chargement), Retour reste actif et mène à l'accueil", async () => {
-    const user = userEvent.setup();
-    rendre("/page/lente", true);
-    expect(screen.getByRole("button", { name: "Retour" })).toBeEnabled();
-    await user.click(screen.getByRole("button", { name: "Retour" }));
-    expect(chemin()).toBe("/");
   });
 
   it("des boutons assez grands pour le doigt (36 px)", () => {

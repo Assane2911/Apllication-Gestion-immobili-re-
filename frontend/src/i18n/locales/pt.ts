@@ -4,7 +4,7 @@ const pt: TranslationSchema = {
   common: {
     // Noms des formules : un seul nom par formule, partout dans l'interface.
     plans: { STARTER: "Starter", PRO: "Profissional", ENTERPRISE: "Agência e Multicontas" },
-    loader: { loading: "Carregando…", back: "Voltar", next: "Avançar" },
+    history: { back: "Voltar", next: "Avançar" },
     tips: {
       back: "Volta à página anterior.",
       next: "Avança para a página seguinte.",
