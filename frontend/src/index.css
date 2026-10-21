@@ -128,10 +128,26 @@
     color: var(--color-gray-400);
   }
 
-  /* Le remplissage par défaut des options de liste, que Tailwind 4 remet à 0. */
+  /* Remplissages par défaut du navigateur que Tailwind 4 remet à 0 (options de liste,
+     cellules de tableau sans classe de remplissage), et champ de recherche. */
   option {
     padding-block: 0 1px;
     padding-inline: 2px;
+  }
+
+  td,
+  th {
+    padding: 1px;
+  }
+
+  [type="search"] {
+    -webkit-appearance: textfield;
+    appearance: textfield;
+    outline-offset: -2px;
+  }
+
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
   }
 }
 
