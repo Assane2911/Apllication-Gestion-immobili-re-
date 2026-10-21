@@ -1,0 +1,74 @@
+name: Avis de sécurité
+
+# Une vulnérabilité publiée APRÈS le dernier contrôle passe inaperçue tant que personne ne lance `npm audit` à la
+# main : c'est ainsi qu'un avis « high » sur follow-redirects n'a été vu que par hasard. Ce workflow contrôle chaque
+# semaine les dépendances de PRODUCTION (celles qui partent chez les utilisateurs) et ouvre un ticket quand il en
+# trouve.
+#
+# Il ne se déclenche volontairement NI sur les pull requests NI sur les push : un avis publié du jour au lendemain
+# ferait échouer des PR qui n'ont rien à voir avec lui. Les outils de développement (--omit=dev) sont laissés de côté :
+# leurs alertes se traitent par une mise à niveau de l'outillage, pas par une alerte hebdomadaire.
+on:
+  schedule:
+    # Le lundi à 06 h 17 (UTC) : une minute « non ronde », les exécutions planifiées de la heure pile étant souvent retardées.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+# Lire le code suffit ; seul l'ouverture d'un ticket demande un droit d'écriture, limité aux tickets.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: Dépendances de production (${{ matrix.dossier }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Un dossier en alerte ne doit pas empêcher de contrôler l'autre.
+      fail-fast: false
+      matrix:
+        dossier: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # `npm audit` lit package-lock.json : aucune installation nécessaire.
+      - name: Contrôler les dépendances de production
+        id: audit
+        working-directory: ${{ matrix.dossier }}
+        shell: bash
+        run: |
+          set -o pipefail
+          npm audit --omit=dev --audit-level=moderate 2>&1 | tee ../audit.txt
+
+      # Un seul ticket ouvert par dossier : tant qu'il l'est, les semaines suivantes y ajoutent un commentaire au lieu
+      # d'en ouvrir un nouveau.
+      - name: Ouvrir ou mettre à jour le ticket
+        if: failure() && steps.audit.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOSSIER: ${{ matrix.dossier }}
+          LIEN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          titre="Avis de sécurité sur les dépendances de production ($DOSSIER)"
+          {
+            echo "Le contrôle hebdomadaire a trouvé au moins un avis de sécurité (gravité modérée ou plus) dans les dépendances de production du dossier \`$DOSSIER\`."
+            echo
+            echo "Exécution : $LIEN"
+            echo
+            echo '```'
+            head -c 4000 audit.txt
+            echo '```'
+            echo
+            echo "Pour corriger : \`cd $DOSSIER && npm audit fix\` (ou \`npm update <paquet>\`), puis relancer les tests."
+          } > corps.md
+          numero=$(gh issue list --state open --search "\"$titre\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body-file corps.md
+          else
+            gh issue create --title "$titre" --body-file corps.md
+          fi
