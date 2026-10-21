@@ -24,3 +24,22 @@ describe("AndroidManifest.xml", () => {
     expect(manifeste).toMatch(/FileProvider[\s\S]*?android:exported="false"/);
   });
 });
+
+/**
+ * Le bouton retour d'Android (useBoutonRetourAndroid) appelle le plugin `@capacitor/app`. Une dépendance JavaScript
+ * seule ne suffit pas : sans sa déclaration dans le projet Android (fichiers générés par `npx cap sync android`),
+ * l'application se compile mais l'appel échoue au lancement avec « plugin not implemented ». La CI ne compile pas le
+ * projet natif : ce contrôle lit les fichiers tels qu'ils seront livrés.
+ */
+describe("Projet Android — plugin du bouton retour", () => {
+  const racine = resolve(__dirname, "../../android");
+
+  it("déclare @capacitor/app dans les fichiers Gradle générés", () => {
+    const reglages = readFileSync(resolve(racine, "capacitor.settings.gradle"), "utf8");
+    const construction = readFileSync(resolve(racine, "app/capacitor.build.gradle"), "utf8");
+    expect(reglages).toMatch(/include ':capacitor-app'/);
+    expect(reglages).toMatch(/capacitor-app'\)\.projectDir = new File\('\.\.\/node_modules\/@capacitor\/app\/android'\)/);
+    expect(construction).toMatch(/implementation project\(':capacitor-app'\)/);
+  });
+});
+

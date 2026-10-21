@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../context/auth";
@@ -6,6 +7,7 @@ import type { AuthContextValue } from "../context/auth";
 import { CurrencyProvider } from "../context/CurrencyContext";
 import { ThemeContext } from "../context/theme";
 import type { AuthUser } from "../types";
+import { traiterRetourSurCouche } from "../utils/couchesRetour";
 import ManagerLayout from "./ManagerLayout";
 
 vi.mock("../api/client", async () => {
@@ -174,6 +176,22 @@ describe("ManagerLayout — navigation Retour / Suivant", () => {
     expect(within(barre).queryByRole("button", { name: "Retour" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retour" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Suivant" })).toBeInTheDocument();
+  });
+});
+
+describe("ManagerLayout — bouton retour d'Android", () => {
+  it("le menu ouvert sur téléphone se referme avec le bouton retour, avant toute navigation", async () => {
+    const { container } = renderManagerLayout("/dashboard");
+    const barre = container.querySelector("aside")!;
+    expect(barre.className).toMatch(/-translate-x-full/);
+    expect(traiterRetourSurCouche()).toBe(false);
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Ouvrir le menu" }));
+    expect(barre.className).toMatch(/translate-x-0/);
+
+    expect(traiterRetourSurCouche()).toBe(true);
+    await waitFor(() => expect(barre.className).toMatch(/-translate-x-full/));
+    expect(traiterRetourSurCouche()).toBe(false);
   });
 });
 

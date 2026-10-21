@@ -26,12 +26,13 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
+import { enregistrerCoucheRetour } from "../utils/couchesRetour";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useTheme } from "../context/theme";
 import GlobalSearch from "./GlobalSearch";
@@ -74,6 +75,11 @@ export default function ManagerLayout() {
   const { theme, toggleTheme } = useTheme();
   const sub = user?.subscription;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Le bouton retour d'Android referme le menu ouvert avant de changer de page (voir useBoutonRetourAndroid).
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    return enregistrerCoucheRetour(() => setMobileNavOpen(false));
+  }, [mobileNavOpen]);
   // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>) : sans lui, les vingt pages de
   // l'espace s'appelaient pareil, et un lecteur d'écran n'annonçait aucun changement de page. L'entrée de
   // navigation la plus précise gagne ; le compte-rendu de gestion d'un propriétaire a son propre libellé.
