@@ -117,4 +117,13 @@ describe("VitrinePage (vitrine publique)", () => {
       })
     );
   });
+
+  it("l'en-tête de la vitrine propose Retour et Suivant, comme les espaces connectés", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([listing()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { countries: ["SN"] } });
+    renderPage();
+
+    expect(await screen.findByRole("button", { name: "Retour" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suivant" })).toBeInTheDocument();
+  });
 });

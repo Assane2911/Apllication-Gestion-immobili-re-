@@ -8,6 +8,7 @@ import { useAuth } from "../context/auth";
 import { useTheme } from "../context/theme";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import Bulle from "./Bulle";
+import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export interface OngletEspace {
@@ -105,32 +106,35 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
         </div>
       </div>
 
-      <nav
-        ref={barre}
-        aria-label={titre}
-        className={`${colonne} mx-auto px-4 sm:px-6 flex gap-1.5 pb-2.5 overflow-x-auto no-scrollbar max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]`}
-      >
-        {onglets.map((onglet) => (
-          // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par défaut). C'est la barre latérale du
-          // gestionnaire qui fait exception avec « droite ».
-          <Bulle key={onglet.to} texte={onglet.tip} className="inline-flex shrink-0">
-            <NavLink
-              to={onglet.to}
-              end={onglet.end}
-              className={({ isActive }) =>
-                `px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
-                  isActive
-                    ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-xs shadow-brand-500/25 font-semibold"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                }`
-              }
-            >
-              <onglet.icon size={15} strokeWidth={1.9} className="shrink-0" aria-hidden="true" />
-              <span>{onglet.label}</span>
-            </NavLink>
-          </Bulle>
-        ))}
-      </nav>
+      <div className={`${colonne} mx-auto px-4 sm:px-6 pb-2.5 flex items-center gap-2`}>
+        <BoutonsHistorique variante="icone" />
+        <nav
+          ref={barre}
+          aria-label={titre}
+          className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
+        >
+          {onglets.map((onglet) => (
+            // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par défaut). C'est la barre latérale du
+            // gestionnaire qui fait exception avec « droite ».
+            <Bulle key={onglet.to} texte={onglet.tip} className="inline-flex shrink-0">
+              <NavLink
+                to={onglet.to}
+                end={onglet.end}
+                className={({ isActive }) =>
+                  `px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                    isActive
+                      ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-xs shadow-brand-500/25 font-semibold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  }`
+                }
+              >
+                <onglet.icon size={15} strokeWidth={1.9} className="shrink-0" aria-hidden="true" />
+                <span>{onglet.label}</span>
+              </NavLink>
+            </Bulle>
+          ))}
+        </nav>
+      </div>
     </header>
   );
 }
