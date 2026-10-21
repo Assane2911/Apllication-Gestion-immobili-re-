@@ -46,6 +46,15 @@ describe("AdminManagersPage", () => {
     mockedApi.get.mockReset();
   });
 
+  it("indique la date ET l'heure de création du compte", async () => {
+    mockedApi.get.mockResolvedValueOnce(page([ligne({ createdAt: "2026-10-21T15:07:48.385Z" })]));
+    renderPage();
+
+    await screen.findByRole("link", { name: "Agence Alpha" });
+    const cellule = within(screen.getByRole("table")).getByText(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
+    expect(cellule).toBeInTheDocument();
+  });
+
   it("affiche chaque gestionnaire avec formule, statut, usage et lien vers sa fiche", async () => {
     mockedApi.get.mockResolvedValueOnce(page([ligne()]));
     renderPage();

@@ -78,6 +78,15 @@ describe("AdminManagerDetailPage", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
+  it("indique la date ET l'heure d'inscription du compte", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: fiche({ createdAt: "2026-10-21T15:07:48.385Z" }) });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Agence Alpha" });
+    const ligne = screen.getByText("Inscription").closest("div");
+    expect(ligne).toHaveTextContent(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
+  });
+
   it("affiche l'abonnement, l'agence, l'usage et l'historique de facturation", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: fiche() });
     renderPage();

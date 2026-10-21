@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
+import { formaterDateHeure } from "../../utils/dateHeure";
 import { STATUS_CLASSES, type ManagerPlan, type ManagerStatus } from "./managerStatus";
 
 interface ManagerDetail {
@@ -558,7 +559,7 @@ export default function AdminManagerDetailPage() {
             <section className={carte}>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">{t("admin.managerDetail.account.title")}</h3>
               <dl>
-                {ligne(t("admin.managerDetail.account.signup"), date(manager.createdAt))}
+                {ligne(t("admin.managerDetail.account.signup"), formaterDateHeure(manager.createdAt, i18n.language))}
                 {ligne(t("admin.managerDetail.account.emailVerified"), manager.emailVerifiedAt ? t("admin.managerDetail.yes") : t("admin.managerDetail.no"))}
                 {ligne(t("admin.managerDetail.account.twoFactor"), manager.twoFactorEnabled ? t("admin.managerDetail.yes") : t("admin.managerDetail.no"))}
                 {ligne(t("admin.managerDetail.account.currency"), manager.currency)}

@@ -64,7 +64,7 @@ export const exportManagersCsv = asyncHandler(async (req: Request, res: Response
         jour(m.subscriptionEndsAt),
         m.propertiesCount,
         m.tenantsCount,
-        jour(m.createdAt),
+        dateHeure(m.createdAt),
       ].join(";")
     ),
   ];

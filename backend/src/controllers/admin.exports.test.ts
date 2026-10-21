@@ -64,6 +64,8 @@ describe("GET /api/admin/exports/managers.csv", () => {
     expect(cellules.slice(2, 5)).toEqual(["Professionnel", "Actif", "Non"]);
     expect(cellules[6]).toBe(jours(20).toISOString().slice(0, 10));
     expect(cellules.slice(7, 9)).toEqual(["2", "1"]);
+    // La création du compte porte la date ET l'heure (UTC), comme le journal d'administration exporté.
+    expect(cellules[9]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
     expect(bien.id).toBeTruthy();
   });
 
