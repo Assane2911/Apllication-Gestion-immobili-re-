@@ -283,6 +283,7 @@ const fr = {
     login: {
       suspended: "Votre compte est suspendu. Contactez le support de la plateforme pour en savoir plus.",
       inactive: "Vous avez été déconnecté après une période d'inactivité. Reconnectez-vous pour continuer.",
+      loggedOut: "Vous avez été déconnecté. À bientôt !",
       title: "Gestion Immobilière",
       subtitle: "Connectez-vous à votre espace",
       email: "Email",

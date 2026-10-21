@@ -285,6 +285,7 @@ const es: TranslationSchema = {
     login: {
       suspended: "Su cuenta está suspendida. Contacte con el soporte de la plataforma para más información.",
       inactive: "Se cerró su sesión por inactividad. Vuelva a iniciar sesión para continuar.",
+      loggedOut: "Ha cerrado sesión. ¡Hasta pronto!",
       title: "Gestión Inmobiliaria",
       subtitle: "Inicia sesión en tu espacio",
       email: "Correo electrónico",

@@ -285,6 +285,7 @@ const en: TranslationSchema = {
     login: {
       suspended: "Your account is suspended. Contact platform support to find out more.",
       inactive: "You were signed out after a period of inactivity. Sign in again to continue.",
+      loggedOut: "You have been signed out. See you soon!",
       title: "Property Management",
       subtitle: "Sign in to your account",
       email: "Email",

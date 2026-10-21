@@ -54,6 +54,7 @@ function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnair
         <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
           <MemoryRouter initialEntries={[entree]}>
             <Routes>
+              <Route path="/login" element={<div>Page de connexion</div>} />
               <Route element={<ManagerLayout />}>
                 <Route path="/dashboard" element={<div>Tableau</div>} />
                 <Route path="/tenants" element={<div>Locataires</div>} />
@@ -217,6 +218,8 @@ describe("ManagerLayout — confirmation de déconnexion", () => {
     await user.click(within(barre).getByRole("button", { name: "Se déconnecter" }));
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Se déconnecter" }));
     expect(logout).toHaveBeenCalledTimes(1);
+    // Après la fermeture de la session, on arrive sur la page de connexion.
+    expect(await screen.findByText("Page de connexion")).toBeInTheDocument();
   });
 });
 

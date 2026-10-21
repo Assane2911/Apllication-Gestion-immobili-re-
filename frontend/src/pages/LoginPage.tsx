@@ -68,6 +68,9 @@ export default function LoginPage() {
         ? t("auth.login.inactive")
         : null
   );
+  // Arrivée après une déconnexion demandée par l'utilisateur (useConfirmationDeconnexion) : un simple accusé de
+  // réception, pas une erreur, qui disparaît dès qu'il commence une nouvelle connexion.
+  const [deconnecte, setDeconnecte] = useState(() => searchParams.get("deconnecte") === "1");
   const [loading, setLoading] = useState<"form" | "google" | "2fa" | null>(null);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -81,6 +84,7 @@ export default function LoginPage() {
 
   async function doLogin(loginEmail: string, loginPassword: string, source: "form") {
     setError(null);
+    setDeconnecte(false);
     setUnverifiedEmail(null);
     setResendState("idle");
     setLoading(source);
@@ -265,6 +269,12 @@ export default function LoginPage() {
             <>
               <h2 className="text-2xl font-bold text-white text-center">{t("auth.login.title")}</h2>
               <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.login.subtitle")}</p>
+
+              {deconnecte && (
+                <p role="status" className="mt-5 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 text-center">
+                  {t("auth.login.loggedOut")}
+                </p>
+              )}
 
               <form onSubmit={handleSubmit} className="mt-8 space-y-4">
                 <div>

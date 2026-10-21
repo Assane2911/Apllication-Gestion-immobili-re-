@@ -1,7 +1,7 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Home, Wrench } from "lucide-react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../context/auth";
 import type { AuthContextValue } from "../context/auth";
@@ -33,6 +33,11 @@ const onglets = [
   { to: "/espace/incidents", label: "Incidents", tip: "Vos incidents", icon: Wrench, end: true },
 ];
 
+function Emplacement() {
+  const { pathname, search } = useLocation();
+  return <p data-testid="emplacement">{pathname + search}</p>;
+}
+
 function rendre(logout = async () => {}) {
   const auth = { user: { id: "u", email: "u@test.local", role: "ADMIN" }, loading: false, logout } as unknown as AuthContextValue;
   return render(
@@ -40,6 +45,7 @@ function rendre(logout = async () => {}) {
       <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
         <MemoryRouter initialEntries={["/espace"]}>
           <EnteteEspace largeur="4xl" titre="Mon espace" sousTitre="u@test.local" onglets={onglets} />
+          <Emplacement />
         </MemoryRouter>
       </ThemeContext.Provider>
     </AuthContext.Provider>
@@ -136,6 +142,8 @@ describe("EnteteEspace — téléphone", () => {
     await user.click(screen.getByRole("button", { name: "Se déconnecter" }));
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Se déconnecter" }));
     expect(logout).toHaveBeenCalledTimes(1);
+    // Une fois la session fermée, la page de connexion confirme la déconnexion (?deconnecte=1).
+    await waitFor(() => expect(screen.getByTestId("emplacement")).toHaveTextContent("/login?deconnecte=1"));
   });
 });
 
