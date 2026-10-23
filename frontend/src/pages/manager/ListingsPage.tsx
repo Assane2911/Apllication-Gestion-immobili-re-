@@ -15,6 +15,7 @@ import ChampTelephone from "../../components/ChampTelephone";
 import { CURRENCIES } from "../../context/currency";
 import { PAYS } from "../../data/pays";
 import Bulle from "../../components/Bulle";
+import { nomDevise } from "../../utils/nomDevise";
 
 const LISTING_TYPES: ListingType[] = ["RENT", "SALE", "PROMOTION", "LAND", "OTHER"];
 const PRICE_PERIODS: PricePeriod[] = ["MONTH", "ONE_TIME"];
@@ -259,7 +260,7 @@ export default function ListingsPage() {
               <select id="listing-currency" required value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
                 {availableCurrencies.map((devise) => (
                   <option key={devise.code} value={devise.code}>
-                    {devise.name} ({devise.symbol})
+                    {nomDevise(devise.code, i18n.language, devise.name)} ({devise.symbol})
                   </option>
                 ))}
               </select>

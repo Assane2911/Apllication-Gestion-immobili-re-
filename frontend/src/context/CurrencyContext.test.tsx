@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "./AuthContext";
-import { CurrencyProvider } from "./CurrencyContext";
+import { CurrencyProvider, CurrencySelector } from "./CurrencyContext";
 import { changerLangue } from "../i18n";
 import { useCurrency } from "./currency";
 
@@ -222,5 +222,35 @@ describe("CurrencyProvider — séparateurs selon la langue de l'interface", () 
 
     expect(screen.getByTestId("montant").textContent).toMatch(/^12,345\.67 €$/);
     await changerLangue("fr");
+  });
+});
+
+describe("CurrencySelector — noms de devises dans la langue de l'interface", () => {
+  function afficherSelecteur() {
+    return render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <CurrencySelector />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+  }
+
+  it("écrit le nom de chaque devise dans la langue choisie, pas toujours en français", async () => {
+    afficherSelecteur();
+    expect(screen.getByRole("option", { name: /USD .*Dollar/i })).toBeInTheDocument();
+
+    await act(async () => {
+      await changerLangue("en");
+    });
+    try {
+      expect(screen.getByRole("option", { name: /USD .*US Dollar/ })).toBeInTheDocument();
+      expect(screen.queryByRole("option", { name: /Dollar US/ })).not.toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /GBP .*British Pound/ })).toBeInTheDocument();
+    } finally {
+      await act(async () => {
+        await changerLangue("fr");
+      });
+    }
   });
 });
