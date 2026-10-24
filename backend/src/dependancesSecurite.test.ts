@@ -40,6 +40,17 @@ describe("dépendances : versions corrigées des avis de sécurité", () => {
     expect(pkg.dependencies.zod).toMatch(/^\^4\.(6\.[6-9]|6\.\d{2,}|[7-9]|\d{2,})/);
   });
 
+  it("vitest et @vitest/mocker ≥ 5.0.3 (GHSA-qxg6-89mg-rqv8, GHSA-xp26-3454-mjgp : injection de code par l'enregistrement manuel de simulacres)", () => {
+    expect(auMoins(version("vitest"), [5, 0, 3])).toBe(true);
+    expect(auMoins(version("@vitest/mocker"), [5, 0, 3])).toBe(true);
+  });
+
+  it("package.json n'autorise plus les versions vulnérables de vitest", () => {
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")) as { devDependencies: Record<string, string> };
+    expect(pkg.devDependencies.vitest).toMatch(/^\^5\.0\.([3-9]|\d{2,})/);
+    expect(pkg.devDependencies["@vitest/coverage-v8"]).toMatch(/^\^5\.0\.([3-9]|\d{2,})/);
+  });
+
   it("package.json n'autorise plus la version vulnérable de multer", () => {
     const pkg = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")) as { dependencies: Record<string, string> };
     expect(pkg.dependencies.multer).toMatch(/^\^2\.5\./);
