@@ -1,6 +1,16 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Bulle from "./Bulle";
+
+/**
+ * Donne le focus comme le ferait la touche Tab. Un focus donné par programme après une action à la souris n'est PAS
+ * un focus clavier (`:focus-visible`, comme dans un vrai navigateur) : on simule donc d'abord la touche.
+ */
+function focusClavier(element: HTMLElement) {
+  fireEvent.keyDown(document.body, { key: "Tab" });
+  act(() => element.focus());
+}
 
 /**
  * Une aide au survol ne vaut que si elle atteint tout le monde et ne gêne
@@ -44,7 +54,7 @@ describe("Bulle d'information", () => {
       </Bulle>
     );
 
-    fireEvent.focus(screen.getByRole("button"));
+    focusClavier(screen.getByRole("button"));
 
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
@@ -56,7 +66,7 @@ describe("Bulle d'information", () => {
       </Bulle>
     );
     const declencheur = screen.getByRole("button");
-    fireEvent.focus(declencheur);
+    focusClavier(declencheur);
 
     fireEvent.keyDown(declencheur, { key: "Escape" });
 
@@ -72,7 +82,7 @@ describe("Bulle d'information", () => {
     const declencheur = screen.getByRole("button");
 
     expect(declencheur).not.toHaveAttribute("aria-describedby");
-    fireEvent.focus(declencheur);
+    focusClavier(declencheur);
     expect(declencheur.getAttribute("aria-describedby")).toBe(screen.getByRole("tooltip").id);
   });
 
@@ -90,7 +100,7 @@ describe("Bulle d'information", () => {
 
     expect(declencheur.parentElement?.className).toBe("contents");
 
-    fireEvent.focus(declencheur);
+    focusClavier(declencheur);
     expect(screen.getByRole("tooltip")).toHaveTextContent("Bascule entre clair et sombre");
   });
 
@@ -114,7 +124,7 @@ describe("Bulle d'information", () => {
         <button type="button">Exporter</button>
       </Bulle>
     );
-    fireEvent.focus(screen.getByRole("button"));
+    focusClavier(screen.getByRole("button"));
 
     const classes = screen.getByRole("tooltip").className;
     expect(classes).toContain("text-sm");
@@ -143,7 +153,7 @@ describe("Bulle d'information", () => {
         <button type="button">Relancer</button>
       </Bulle>
     );
-    fireEvent.focus(screen.getByRole("button"));
+    focusClavier(screen.getByRole("button"));
 
     fireEvent(window, new Event("resize"));
 
@@ -169,7 +179,7 @@ describe("Bulle d'information", () => {
           <button type="button">Liste</button>
         </Bulle>
       );
-      fireEvent.focus(screen.getByRole("button"));
+      focusClavier(screen.getByRole("button"));
 
       const bulle = screen.getByRole("tooltip");
       expect(bulle.style.top).toBe("44px"); // bas du bouton (34) + écart (10)
@@ -183,7 +193,7 @@ describe("Bulle d'information", () => {
           <button type="button">Liste</button>
         </Bulle>
       );
-      fireEvent.focus(screen.getByRole("button"));
+      focusClavier(screen.getByRole("button"));
 
       expect(screen.getByRole("tooltip").style.left).toBe("8px");
     });
@@ -195,7 +205,7 @@ describe("Bulle d'information", () => {
           <button type="button">Liste</button>
         </Bulle>
       );
-      fireEvent.focus(screen.getByRole("button"));
+      focusClavier(screen.getByRole("button"));
 
       const pointe = screen.getByRole("tooltip").querySelector("[aria-hidden='true']");
       expect(pointe).not.toBeNull();
@@ -235,7 +245,7 @@ describe("Bulle d'information — écran tactile", () => {
     const bouton = screen.getByRole("button");
 
     fireEvent.mouseEnter(bouton.parentElement!);
-    fireEvent.focus(bouton);
+    focusClavier(bouton);
 
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
     expect(bouton).not.toHaveAttribute("aria-describedby");
@@ -252,5 +262,106 @@ describe("Bulle d'information — écran tactile", () => {
     fireEvent.mouseEnter(screen.getByRole("button").parentElement!);
 
     expect(screen.getByRole("tooltip")).toHaveTextContent("Ouvre la liste de vos locataires");
+  });
+});
+
+/**
+ * Le focus d'un clic ne doit pas ouvrir la bulle, et la bulle ne doit pas survivre à la fenêtre qu'on quitte.
+ *
+ * Constaté : on clique un bouton (il garde le focus), la souris s'éloigne (la bulle se ferme), on quitte la page ou
+ * l'onglet puis on revient — le navigateur redonne alors le focus au bouton, la bulle s'ouvre sans que rien ne la
+ * désigne, et aucun événement de sortie de souris ne vient plus la fermer : elle restait affichée.
+ */
+describe("Bulle d'information : focus d'un clic et fenêtre quittée", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("ne s'ouvre pas quand le navigateur redonne le focus à un bouton cliqué à la souris", async () => {
+    render(
+      <Bulle texte="Ouvre la liste de vos locataires">
+        <button type="button">Locataires</button>
+      </Bulle>
+    );
+    const bouton = screen.getByRole("button");
+    const utilisateur = userEvent.setup();
+    await utilisateur.click(bouton);
+    await utilisateur.unhover(bouton);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    expect(bouton).toHaveFocus();
+
+    // L'onglet est quitté puis retrouvé : le navigateur déclenche de nouveau « focus » sur l'élément qui l'a gardé.
+    fireEvent.focus(bouton);
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("s'ouvre toujours au focus clavier (Tab)", async () => {
+    render(
+      <Bulle texte="Ouvre la liste de vos locataires">
+        <button type="button">Locataires</button>
+      </Bulle>
+    );
+
+    await userEvent.setup().tab();
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Ouvre la liste de vos locataires");
+  });
+
+  it("se ferme quand la fenêtre perd le focus (on quitte la page ou l'application)", () => {
+    render(
+      <Bulle texte="Ouvre la liste de vos locataires">
+        <button type="button">Locataires</button>
+      </Bulle>
+    );
+    focusClavier(screen.getByRole("button"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+
+    fireEvent.blur(window);
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("se ferme quand la page passe en arrière-plan (autre onglet, écran verrouillé)", () => {
+    render(
+      <Bulle texte="Ouvre la liste de vos locataires">
+        <button type="button">Locataires</button>
+      </Bulle>
+    );
+    fireEvent.mouseEnter(screen.getByRole("button").parentElement!);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+
+    fireEvent(document, new Event("visibilitychange"));
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("ne se ferme pas quand la page redevient visible (rien à fermer, rien à rouvrir)", () => {
+    render(
+      <Bulle texte="Ouvre la liste de vos locataires">
+        <button type="button">Locataires</button>
+      </Bulle>
+    );
+    fireEvent.mouseEnter(screen.getByRole("button").parentElement!);
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+
+    fireEvent(document, new Event("visibilitychange"));
+
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("revient au retour dans la fenêtre pour un focus clavier : le focus y est vraiment", () => {
+    render(
+      <Bulle texte="Ouvre la liste de vos locataires">
+        <button type="button">Locataires</button>
+      </Bulle>
+    );
+    const bouton = screen.getByRole("button");
+    focusClavier(bouton);
+    fireEvent.blur(window);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    fireEvent.focus(bouton);
+
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
 });
