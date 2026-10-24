@@ -19,8 +19,37 @@ async function alterSiBesoin(migration: () => Promise<unknown>): Promise<void> {
     // avecVerrouBorne) ; les migrations qui sautent ensuite n'ont pas à
     // répéter la même alerte.
     if (err instanceof VerrouAbandonne) return;
+    if (estUneCourseDeDemarrage(err)) {
+      console.warn(`[db] Migration déjà jouée par une autre instance démarrée en même temps (ignorée) : ${premiereLigne(err)}`);
+      return;
+    }
     console.error("[db] Échec d'une migration additive (non bloquant) :", err);
   }
+}
+
+/**
+ * Deux instances serverless qui démarrent ensemble jouent la même migration : la seconde échoue alors que la
+ * première a fait le travail. Constaté en production au déploiement qui a ajouté des index (23505 sur pg_class,
+ * « tuple concurrently updated » sur deux REVOKE). Reconnu avec précision pour ne pas masquer un vrai échec :
+ *  - 23505 sur un index du CATALOGUE système (`pg_class_…`, `pg_type_…` : deux CREATE du même objet) — pas sur une
+ *    contrainte d'unicité de nos tables ;
+ *  - « tuple concurrently updated » (deux GRANT / REVOKE / ALTER simultanés sur le même objet) ;
+ *  - 42P07 / 42701 / 42710 : la relation, la colonne ou l'objet existe déjà.
+ * Rien n'est perdu : le prochain démarrage relit l'état réel du schéma et reprend ce qui manquerait encore.
+ */
+function estUneCourseDeDemarrage(err: unknown): boolean {
+  const e = err as { code?: string; message?: string; constraint_name?: string; cause?: { code?: string; message?: string; constraint_name?: string } };
+  const code = e?.code ?? e?.cause?.code;
+  const contrainte = e?.constraint_name ?? e?.cause?.constraint_name ?? "";
+  if (code === "23505" && /^pg_(class|type|namespace|constraint|attribute)_/.test(contrainte)) return true;
+  if (/tuple concurrently updated/i.test(`${e?.message ?? ""} ${e?.cause?.message ?? ""}`)) return true;
+  return code === "42P07" || code === "42701" || code === "42710";
+}
+
+/** Premier message lisible d'une erreur (celui de la cause Postgres, quand Drizzle l'enveloppe). */
+function premiereLigne(err: unknown): string {
+  const e = err as { message?: string; cause?: { message?: string } };
+  return String(e?.cause?.message ?? e?.message ?? err).split("\n")[0];
 }
 
 /*

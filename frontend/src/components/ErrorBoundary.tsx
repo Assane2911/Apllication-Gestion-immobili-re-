@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/react";
 import { AlertTriangle } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import i18n from "../i18n";
+import { estFichierDisparu, rechargerUneFois } from "../utils/rechargementApresDeploiement";
 
 interface Props {
   children: ReactNode;
@@ -37,6 +38,9 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Onglet resté ouvert pendant un déploiement : un rechargement récupère la version courante (une seule fois).
+    // Ce n'est pas un bug à remonter : on ne le signale à Sentry que si le rechargement n'a pas lieu.
+    if (estFichierDisparu(error) && rechargerUneFois()) return;
     Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
   }
 
