@@ -348,6 +348,11 @@ async function finalizeLogin(user: typeof users.$inferSelect, res: Response) {
       ownerId: owner?.id ?? null,
       ownerName: owner ? `${owner.firstName} ${owner.lastName}` : null,
       collaboratorId: identite.collaboratorId,
+      // L'état de la 2FA DU COMPTE QUI SE CONNECTE (pas celui du propriétaire de l'agence, pour un collaborateur).
+      // Les écrans Paramètres s'en servent pour proposer « Activer » ou « Désactiver » ; l'application ne rappelle
+      // /auth/me qu'au chargement de la page, donc sans ce champ elle proposait d'activer une 2FA déjà active
+      // à chaque connexion — juste après que l'utilisateur avait saisi son code.
+      twoFactorEnabled: !!user.totpEnabledAt,
       subscription,
     },
   });
@@ -645,6 +650,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
       hasPassword: updated.hasPassword,
       tenantId: null,
       tenantName: null,
+      twoFactorEnabled: !!updated.totpEnabledAt,
       subscription,
     },
   });
