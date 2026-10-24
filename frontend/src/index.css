@@ -59,8 +59,8 @@
      invisibles). Teintes dédiées, utilisées uniquement par `border-*`/`divide-*`
      (`border-contour-100`, `divide-contour-200`…) : le texte et les fonds en
      slate-100/200 gardent leur teinte. */
-  --color-contour-100: #e3e9f1;
-  --color-contour-200: #d4dce8;
+  --color-contour-100: #e9e9e6;
+  --color-contour-200: #dcdcd8;
 
   --animate-float: float 6s ease-in-out infinite;
   --animate-float-slow: float 9s ease-in-out infinite;
@@ -162,7 +162,11 @@
 
 @utility card-hover {
   /* Interactive smooth card lift */
-  @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-950/50 hover:border-slate-300 dark:hover:border-slate-700;
+  @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-950/50 hover:border-yellow-400/70 dark:hover:border-yellow-400/40;
+  /* Reflet jaune sous la carte soulevée (accent du thème, voir « Accent jaune » plus bas). */
+  &:hover {
+    box-shadow: 0 10px 24px -10px var(--jaune-lueur);
+  }
 }
 
 @utility brand-glow {
@@ -264,4 +268,67 @@ html:not(.dark)
     [type="color"]
   ):not(:focus) {
   box-shadow: inset 0 1px 2px 0 rgb(15 23 42 / 0.07);
+}
+
+/* Accent jaune, discret : un liseré en tête des cartes, un reflet dans leur ombre, des contours à peine réchauffés
+   (--color-contour-*) et une bordure jaune au survol (card-hover). Posé ici, une fois, plutôt que dans les ~100 cartes
+   écrites en ligne dans les pages (`bg-white … border`). Zone applicative seulement : les pages publiques et les
+   surfaces toujours sombres (`surface-sombre`) ne sont pas touchées. Le liseré ne se pose que sur les cartes de premier
+   niveau (pas sur celles imbriquées dans une autre carte) et laisse intactes celles qui déclarent leur propre ombre.
+   Vérifié par `accentJaune.test.ts`. */
+:root {
+  --jaune-trait: rgb(234 179 8 / 0.55);
+  --jaune-lueur: rgb(202 138 4 / 0.2);
+}
+
+html.dark {
+  --jaune-trait: rgb(250 204 21 / 0.4);
+  --jaune-lueur: rgb(250 204 21 / 0.12);
+}
+
+/* Cartes de premier niveau, thème clair. Le liseré passe par les variables d'ombre de Tailwind (--tw-inset-shadow,
+   --tw-ring-offset-shadow) : il S'AJOUTE à l'ombre d'une carte qui déclare `shadow-*` (et à son survol) au lieu de la
+   remplacer. Celles qui n'ont aucune ombre (voir la règle de relief plus haut) la reçoivent par la seconde règle. */
+html:not(.dark)
+  [data-surface="app"]
+  :is(div, section, article, aside).bg-white.border:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
+    .surface-sombre *,
+    .bg-white.border *
+  ) {
+  --tw-inset-shadow: inset 0 2px 0 0 var(--jaune-trait);
+  --tw-ring-offset-shadow: 0 6px 16px -8px var(--jaune-lueur);
+}
+
+html:not(.dark)
+  [data-surface="app"]
+  :is(div, section, article, aside).bg-white.border:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
+    [class*="shadow"],
+    .surface-sombre *,
+    .bg-white.border *
+  ) {
+  box-shadow:
+    var(--tw-inset-shadow),
+    0 1px 2px 0 rgb(15 23 42 / 0.08),
+    var(--tw-ring-offset-shadow);
+}
+
+/* Thème sombre : mêmes cartes (`dark:bg-slate-900`, `/90`, `/80`…). */
+html.dark
+  [data-surface="app"]
+  :is(div, section, article, aside).border[class*="dark:bg-slate-900"]:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
+    .surface-sombre *,
+    .border[class*="dark:bg-slate-900"] *
+  ) {
+  --tw-inset-shadow: inset 0 2px 0 0 var(--jaune-trait);
+  --tw-ring-offset-shadow: 0 8px 24px -12px var(--jaune-lueur);
+}
+
+html.dark
+  [data-surface="app"]
+  :is(div, section, article, aside).border[class*="dark:bg-slate-900"]:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
+    [class*="shadow"],
+    .surface-sombre *,
+    .border[class*="dark:bg-slate-900"] *
+  ) {
+  box-shadow: var(--tw-inset-shadow), var(--tw-ring-offset-shadow);
 }
