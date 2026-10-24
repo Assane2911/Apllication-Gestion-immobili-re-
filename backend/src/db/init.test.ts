@@ -155,3 +155,58 @@ describe("initDb : idempotence sans verrou inutile", () => {
     expect(emises.filter((q) => /\bUPDATE\b/i.test(q))).toEqual([]);
   });
 });
+
+/** Les tables du schéma courant, avec l'état de leur protection par lignes (RLS). */
+async function tablesEtRls(): Promise<Array<{ relname: string; relrowsecurity: boolean }>> {
+  const r = await testDb.execute(
+    sql`SELECT c.relname, c.relrowsecurity FROM pg_class c WHERE c.relnamespace = current_schema()::regnamespace AND c.relkind = 'r' ORDER BY c.relname`
+  );
+  return Array.isArray(r) ? r : ((r as { rows: Array<{ relname: string; relrowsecurity: boolean }> }).rows ?? []);
+}
+
+/**
+ * Supabase expose le schéma `public` par une API REST ouverte au rôle `anon` : sans protection par lignes (RLS),
+ * une table y est lisible et modifiable par quiconque détient la clé publique du projet. L'application, elle, se
+ * connecte directement (rôle propriétaire, qui contourne la RLS) et n'en est pas gênée. Le conseiller de sécurité
+ * de Supabase signalait 13 tables créées sans cette protection.
+ */
+describe("initDb : protection par lignes (RLS) de toutes les tables", () => {
+  it("active la RLS sur chaque table du schéma, sans en oublier", async () => {
+    await initDb();
+
+    const tables = await tablesEtRls();
+    expect(tables.length).toBeGreaterThan(25);
+    expect(tables.filter((t) => !t.relrowsecurity).map((t) => t.relname)).toEqual([]);
+  });
+
+  it("protège aussi une table ajoutée sans elle, au démarrage suivant", async () => {
+    await initDb();
+    await testDb.execute(sql`CREATE TABLE table_sans_protection_essai (id text PRIMARY KEY)`);
+    try {
+      await initDb();
+
+      const essai = (await tablesEtRls()).find((t) => t.relname === "table_sans_protection_essai");
+      expect(essai?.relrowsecurity).toBe(true);
+    } finally {
+      await testDb.execute(sql`DROP TABLE IF EXISTS table_sans_protection_essai`);
+    }
+  });
+
+  it("ne bloque pas l'application : l'accès par la connexion directe lit toujours les lignes", async () => {
+    await initDb();
+    const manager = await createManager();
+
+    const r = await testDb.execute(sql`SELECT id FROM users WHERE id = ${manager.id}`);
+    const lignes = Array.isArray(r) ? r : ((r as { rows: unknown[] }).rows ?? []);
+    expect(lignes).toHaveLength(1);
+  });
+
+  it("ne rejoue aucune instruction quand toutes les tables sont déjà protégées", async () => {
+    await initDb();
+    const emises = enregistrerInstructions();
+
+    await initDb();
+
+    expect(emises.filter((q) => /ROW LEVEL SECURITY/i.test(q))).toEqual([]);
+  });
+});
