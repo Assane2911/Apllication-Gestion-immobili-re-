@@ -221,3 +221,59 @@ describe("2FA et comptes collaborateurs (multi-utilisateurs)", () => {
     expect(ownerLogin.body.token).toBeDefined();
   });
 });
+
+/**
+ * Les écrans « Paramètres » affichent « Activer la double authentification » ou « Activée » d'après
+ * `user.twoFactorEnabled`. Cet état doit donc se trouver DANS la réponse de connexion : l'application ne rappelle
+ * /auth/me qu'au chargement de la page, pas après une connexion. Sans lui, le compte qui venait de saisir son code
+ * 2FA se voyait proposer de l'activer.
+ */
+describe("l'état de la 2FA dans la réponse de connexion", () => {
+  it("la connexion complétée par un code 2FA annonce que la 2FA est activée, comme /auth/me", async () => {
+    const manager = await createManager({ email: "2fa-etat@test.local" });
+    const { secret } = await activerDeuxFa(tokenFor(manager));
+    const loginRes = await request(app).post("/api/auth/login").send({ email: "2fa-etat@test.local", password: "Password123!" });
+
+    const verifyRes = await request(app)
+      .post("/api/auth/2fa/verify-login")
+      .send({ pendingToken: loginRes.body.pendingToken, code: await genererCodeTotp(secret) });
+
+    expect(verifyRes.body.user.twoFactorEnabled).toBe(true);
+    const meRes = await request(app).get("/api/auth/me").set(authHeader(verifyRes.body.token));
+    expect(verifyRes.body.user.twoFactorEnabled).toBe(meRes.body.twoFactorEnabled);
+  });
+
+  it("la connexion d'un compte sans 2FA annonce qu'elle n'est pas activée (faux, pas absent)", async () => {
+    await createManager({ email: "sans-2fa@test.local" });
+
+    const loginRes = await request(app).post("/api/auth/login").send({ email: "sans-2fa@test.local", password: "Password123!" });
+
+    expect(loginRes.body.user.twoFactorEnabled).toBe(false);
+  });
+
+  it("après désactivation, la connexion suivante annonce qu'elle n'est plus activée", async () => {
+    const manager = await createManager({ email: "2fa-puis-off@test.local" });
+    await activerDeuxFa(tokenFor(manager));
+    await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "Password123!" });
+
+    const loginRes = await request(app).post("/api/auth/login").send({ email: "2fa-puis-off@test.local", password: "Password123!" });
+
+    expect(loginRes.body.user.twoFactorEnabled).toBe(false);
+  });
+
+  it("un collaborateur voit SA 2FA, jamais celle du propriétaire de l'agence", async () => {
+    const manager = await createManager({ email: "agence-sans-2fa@test.local" });
+    await createTeamMember(manager.id, { email: "collab-avec-2fa@test.local" });
+    const collabLogin = await request(app).post("/api/auth/login").send({ email: "collab-avec-2fa@test.local", password: "Password123!" });
+    const { secret } = await activerDeuxFa(collabLogin.body.token);
+
+    const ownerLogin = await request(app).post("/api/auth/login").send({ email: "agence-sans-2fa@test.local", password: "Password123!" });
+    const collabPending = await request(app).post("/api/auth/login").send({ email: "collab-avec-2fa@test.local", password: "Password123!" });
+    const collabVerify = await request(app)
+      .post("/api/auth/2fa/verify-login")
+      .send({ pendingToken: collabPending.body.pendingToken, code: await genererCodeTotp(secret) });
+
+    expect(ownerLogin.body.user.twoFactorEnabled).toBe(false);
+    expect(collabVerify.body.user.twoFactorEnabled).toBe(true);
+  });
+});
