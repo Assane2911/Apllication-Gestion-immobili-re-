@@ -172,6 +172,30 @@ async function ajouterColonne(table: string, colonne: string, requete: SQL): Pro
 }
 
 /**
+ * Active la protection par lignes (RLS) sur toute table du schéma qui ne l'a pas.
+ *
+ * Supabase expose le schéma `public` par une API REST ouverte au rôle `anon`, qui y a tous les droits par défaut : sans
+ * RLS, une table est lisible ET modifiable par quiconque détient la clé publique du projet. Sans aucune politique, la
+ * RLS refuse tout à `anon` et `authenticated`. L'application n'en est pas gênée : elle se connecte directement avec le
+ * rôle propriétaire des tables, qui contourne la RLS (c'est déjà le cas des tables protégées).
+ *
+ * Générique plutôt qu'une liste de tables : une table ajoutée demain est protégée au démarrage suivant, sans qu'il
+ * faille y penser (treize tables avaient été créées sans). La liste est relue ICI, après les CREATE TABLE, pour que les
+ * tables créées pendant ce même démarrage soient comprises. Sur un schéma déjà protégé : une lecture, aucune instruction.
+ */
+async function activerRls(): Promise<void> {
+  const sansRls = lignes<{ relname: string }>(
+    await db.execute(
+      sql`SELECT c.relname FROM pg_class c WHERE c.relnamespace = current_schema()::regnamespace AND c.relkind = 'r' AND NOT c.relrowsecurity ORDER BY c.relname`
+    )
+  );
+  for (const { relname } of sansRls) {
+    // Non bloquant : une table tenue par quelqu'un d'autre sera protégée au démarrage suivant.
+    await alterSiBesoin(() => executerDdl(sql`ALTER TABLE ${sql.identifier(relname)} ENABLE ROW LEVEL SECURITY`));
+  }
+}
+
+/**
  * La contrainte `users_role_check` connaît-elle déjà les quatre rôles ? Faux si
  * elle manque. Lire sa définition ouvre la table `users` : la lecture est donc
  * bornée, et si la table est tenue on ne touche à RIEN (dans le doute, une
@@ -1019,6 +1043,8 @@ export async function initDb() {
     await creerIndex("platform_subscriptions_user_id_idx", sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_user_id_idx ON platform_subscriptions (user_id)`);
     await creerIndex("platform_subscriptions_payment_ref_idx", sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_payment_ref_idx ON platform_subscriptions (payment_ref)`);
     await creerIndex("users_referred_by_user_id_idx", sql`CREATE INDEX IF NOT EXISTS users_referred_by_user_id_idx ON users (referred_by_user_id)`);
+
+    await activerRls();
 
     console.log("✅ Tables et types de base de données initialisés avec succès.");
 
