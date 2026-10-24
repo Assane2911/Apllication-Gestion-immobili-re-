@@ -119,6 +119,24 @@ export const cronLimiter = rateLimit({
 });
 
 /**
+ * Limite par adresse IP sur POST /api/csp-report, le point de collecte des violations de la politique de sécurité de
+ * contenu (voir csp.controller.ts). Public, donc sans authentification possible : sans limite, n'importe qui pouvait
+ * remplir les journaux. Une page légitime envoie une poignée de rapports, tous les 60 s au plus : 60 par minute et par
+ * adresse laissent de la marge à un réseau d'entreprise derrière une seule IP. Le store est exporté, comme celui des
+ * routes cron, pour que les tests remettent le compteur à zéro.
+ */
+export const cspLimiterStore = new MemoryStore();
+
+export const cspLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: cspLimiterStore,
+  message: { error: "Trop de rapports envoyés depuis cette adresse." },
+});
+
+/**
  * Limite par adresse IP sur la soumission d'une demande de contact/visite
  * depuis la vitrine publique (POST /api/listings/public/:id/leads) : c'est la
  * seule route de tout le backend qui accepte une ÉCRITURE en base sans

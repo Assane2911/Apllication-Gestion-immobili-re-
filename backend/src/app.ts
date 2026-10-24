@@ -14,6 +14,7 @@ import agencyRoutes from "./routes/agency.routes";
 import importRoutes from "./routes/import.routes";
 import teamRoutes from "./routes/team.routes";
 import authRoutes from "./routes/auth.routes";
+import cspRoutes from "./routes/csp.routes";
 import contractRoutes from "./routes/contract.routes";
 import crgRoutes from "./routes/crg.routes";
 import cronRoutes from "./routes/cron.routes";
@@ -136,6 +137,11 @@ app.use(
 // paiement serait rejetée. Ce montage doit donc rester en amont.
 app.use("/api/payments/stripe/webhook", express.raw({ type: "*/*" }));
 
+// Rapports de violation de la politique de sécurité de contenu : le navigateur les envoie en `application/csp-report`
+// ou `application/reports+json`, que express.json ignorerait (type par défaut : application/json). Montage AVANT le
+// lecteur général, dont la limite de 10 Mo serait démesurée pour un rapport (quelques centaines d'octets).
+app.use("/api/csp-report", express.json({ type: ["application/csp-report", "application/reports+json", "application/json"], limit: "8kb", strict: false }));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -161,6 +167,7 @@ app.use("/api", pasDeCache);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
+app.use("/api/csp-report", cspRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/conservation", conservationRoutes);
