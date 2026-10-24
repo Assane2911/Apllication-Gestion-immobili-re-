@@ -58,8 +58,8 @@ describe("initDb : idempotence sans verrou inutile", () => {
 
     const ddl = emises.filter((q) => /\b(ALTER|CREATE|DROP)\b/i.test(q));
     expect(ddl).toEqual([]);
-    // Et se limite à quelques lectures de l'état du schéma.
-    expect(emises.length).toBeLessThan(10);
+    // Et se limite à quelques lectures de l'état du schéma (schéma, RLS, rôles de l'API publique, essais, rattrapages).
+    expect(emises.length).toBeLessThan(15);
   });
 
   it("n'ouvre de transaction à verrou borné que pour des LECTURES quand tout existe déjà", async () => {
@@ -208,5 +208,100 @@ describe("initDb : protection par lignes (RLS) de toutes les tables", () => {
     await initDb();
 
     expect(emises.filter((q) => /ROW LEVEL SECURITY/i.test(q))).toEqual([]);
+  });
+});
+
+/** Les droits d'`anon` / `authenticated` sur les tables du schéma, et leurs droits par défaut sur les futures. */
+async function droitsPublics(): Promise<{ tables: string[]; defauts: number }> {
+  const t = await testDb.execute(
+    sql`SELECT DISTINCT c.relname FROM pg_class c, aclexplode(c.relacl) a JOIN pg_roles r ON r.oid = a.grantee WHERE c.relnamespace = current_schema()::regnamespace AND c.relkind = 'r' AND r.rolname IN ('anon', 'authenticated') ORDER BY c.relname`
+  );
+  const d = await testDb.execute(
+    sql`SELECT d.oid FROM pg_default_acl d, aclexplode(d.defaclacl) a JOIN pg_roles r ON r.oid = a.grantee WHERE d.defaclnamespace = current_schema()::regnamespace AND d.defaclobjtype = 'r' AND r.rolname IN ('anon', 'authenticated')`
+  );
+  const l = (r: unknown) => (Array.isArray(r) ? r : ((r as { rows: unknown[] }).rows ?? []));
+  return { tables: (l(t) as Array<{ relname: string }>).map((x) => x.relname), defauts: l(d).length };
+}
+
+/**
+ * Seconde barrière derrière la RLS : sur Supabase, `anon` et `authenticated` reçoivent tous les droits sur chaque table
+ * du schéma `public`, existante ou à venir. Ces rôles n'existent pas dans un Postgres ordinaire : on les crée ici pour
+ * reproduire la situation de Supabase.
+ */
+describe("initDb : retrait des droits de l'API publique (anon, authenticated)", () => {
+  async function simulerSupabase() {
+    await testDb.execute(sql`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
+    END $$`);
+    await testDb.execute(sql`GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated`);
+    await testDb.execute(sql`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated`);
+  }
+
+  it("retire leurs droits sur toutes les tables existantes", async () => {
+    await initDb();
+    await simulerSupabase();
+    expect((await droitsPublics()).tables.length).toBeGreaterThan(25);
+
+    await initDb();
+
+    expect((await droitsPublics()).tables).toEqual([]);
+  });
+
+  it("retire aussi leurs droits par défaut, pour que les futures tables n'en reçoivent pas", async () => {
+    await initDb();
+    await simulerSupabase();
+    expect((await droitsPublics()).defauts).toBeGreaterThan(0);
+
+    await initDb();
+
+    expect((await droitsPublics()).defauts).toBe(0);
+    await testDb.execute(sql`CREATE TABLE table_future_essai (id text PRIMARY KEY)`);
+    try {
+      expect((await droitsPublics()).tables).toEqual([]);
+    } finally {
+      await testDb.execute(sql`DROP TABLE IF EXISTS table_future_essai`);
+    }
+  });
+
+  it("ne touche pas à l'application : l'accès par la connexion directe lit toujours les lignes", async () => {
+    await initDb();
+    await simulerSupabase();
+    await initDb();
+    const manager = await createManager();
+
+    const r = await testDb.execute(sql`SELECT id FROM users WHERE id = ${manager.id}`);
+    expect(Array.isArray(r) ? r : ((r as { rows: unknown[] }).rows ?? [])).toHaveLength(1);
+  });
+
+  it("n'émet aucune instruction de droits quand tout est déjà durci", async () => {
+    await initDb();
+    await simulerSupabase();
+    await initDb();
+    const emises = enregistrerInstructions();
+
+    await initDb();
+
+    expect(emises.filter((q) => /\b(GRANT|REVOKE|DEFAULT PRIVILEGES)\b/i.test(q))).toEqual([]);
+  });
+});
+
+describe("initDb : index des clés étrangères signalées sans index", () => {
+  it.each([
+    ["users_team_owner_id_idx", "users", "team_owner_id"],
+    ["activity_logs_actor_id_idx", "activity_logs", "actor_id"],
+    ["admin_audit_logs_admin_id_idx", "admin_audit_logs", "admin_id"],
+    ["suggestions_author_id_idx", "suggestions", "author_id"],
+  ])("recrée %s s'il manque", async (nom, table, colonne) => {
+    await initDb();
+    await testDb.execute(sql.raw(`DROP INDEX IF EXISTS ${nom}`));
+
+    await initDb();
+
+    const r = await testDb.execute(sql`SELECT indexdef FROM pg_indexes WHERE indexname = ${nom}`);
+    const lignesIdx = (Array.isArray(r) ? r : ((r as { rows: unknown[] }).rows ?? [])) as Array<{ indexdef: string }>;
+    expect(lignesIdx).toHaveLength(1);
+    expect(lignesIdx[0].indexdef).toContain(`${table} `);
+    expect(lignesIdx[0].indexdef).toContain(`(${colonne})`);
   });
 });

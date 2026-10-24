@@ -196,6 +196,46 @@ async function activerRls(): Promise<void> {
 }
 
 /**
+ * Retire à `anon` et `authenticated` leurs droits sur les tables, présentes et futures.
+ *
+ * La RLS (voir activerRls) les bloque déjà ; ceci est la seconde barrière : même si la RLS était désactivée par erreur
+ * sur une table, l'API publique n'y aurait aucun droit. L'application n'en est pas gênée : elle se connecte avec le rôle
+ * propriétaire, et n'utilise la clé `service_role` que pour le stockage de fichiers.
+ *
+ * Supabase accorde ces droits d'office à chaque nouvelle table du schéma `public` (droits par défaut) : retirer les
+ * droits existants ne suffit donc pas, on retire aussi les droits par défaut du rôle courant (celui qui crée les tables).
+ * Sans effet, et sans instruction, hors Supabase : les rôles n'y existent pas. Sur un schéma déjà durci : deux lectures.
+ */
+async function retirerDroitsPublics(): Promise<void> {
+  const roles = lignes<{ rolname: string }>(
+    await db.execute(sql`SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated') ORDER BY rolname`)
+  ).map((r) => r.rolname);
+  if (roles.length === 0) return;
+  const listeRoles = sql.join(roles.map((r) => sql.identifier(r)), sql`, `);
+
+  const avecDroits = lignes<{ relname: string }>(
+    await db.execute(
+      sql`SELECT DISTINCT c.relname FROM pg_class c, aclexplode(c.relacl) a JOIN pg_roles r ON r.oid = a.grantee WHERE c.relnamespace = current_schema()::regnamespace AND c.relkind = 'r' AND r.rolname IN ('anon', 'authenticated') ORDER BY c.relname`
+    )
+  );
+  for (const { relname } of avecDroits) {
+    // Non bloquant : une table tenue par quelqu'un d'autre sera traitée au démarrage suivant.
+    await alterSiBesoin(() => executerDdl(sql`REVOKE ALL ON TABLE ${sql.identifier(relname)} FROM ${listeRoles}`));
+  }
+
+  const defauts = lignes<{ schema: string }>(
+    await db.execute(
+      sql`SELECT DISTINCT current_schema() AS schema FROM pg_default_acl d, aclexplode(d.defaclacl) a JOIN pg_roles r ON r.oid = a.grantee WHERE d.defaclnamespace = current_schema()::regnamespace AND d.defaclobjtype = 'r' AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = current_user) AND r.rolname IN ('anon', 'authenticated')`
+    )
+  );
+  for (const { schema } of defauts) {
+    await alterSiBesoin(() =>
+      executerDdl(sql`ALTER DEFAULT PRIVILEGES IN SCHEMA ${sql.identifier(schema)} REVOKE ALL ON TABLES FROM ${listeRoles}`)
+    );
+  }
+}
+
+/**
  * La contrainte `users_role_check` connaît-elle déjà les quatre rôles ? Faux si
  * elle manque. Lire sa définition ouvre la table `users` : la lecture est donc
  * bornée, et si la table est tenue on ne touche à RIEN (dans le doute, une
@@ -1043,8 +1083,15 @@ export async function initDb() {
     await creerIndex("platform_subscriptions_user_id_idx", sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_user_id_idx ON platform_subscriptions (user_id)`);
     await creerIndex("platform_subscriptions_payment_ref_idx", sql`CREATE INDEX IF NOT EXISTS platform_subscriptions_payment_ref_idx ON platform_subscriptions (payment_ref)`);
     await creerIndex("users_referred_by_user_id_idx", sql`CREATE INDEX IF NOT EXISTS users_referred_by_user_id_idx ON users (referred_by_user_id)`);
+    // Clés étrangères qui n'avaient pas d'index couvrant (conseiller de performance de Supabase) : chaque suppression
+    // d'un compte parcourait ces tables en entier pour y chercher les lignes qui le référencent.
+    await creerIndex("users_team_owner_id_idx", sql`CREATE INDEX IF NOT EXISTS users_team_owner_id_idx ON users (team_owner_id)`);
+    await creerIndex("activity_logs_actor_id_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_actor_id_idx ON activity_logs (actor_id)`);
+    await creerIndex("admin_audit_logs_admin_id_idx", sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_admin_id_idx ON admin_audit_logs (admin_id)`);
+    await creerIndex("suggestions_author_id_idx", sql`CREATE INDEX IF NOT EXISTS suggestions_author_id_idx ON suggestions (author_id)`);
 
     await activerRls();
+    await retirerDroitsPublics();
 
     console.log("✅ Tables et types de base de données initialisés avec succès.");
 
