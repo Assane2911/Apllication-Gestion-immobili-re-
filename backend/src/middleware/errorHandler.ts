@@ -78,7 +78,7 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
     // correction (« indiquez l'indicatif du pays »), là où la formule générique
     // se contente de désigner le champ et laisse chercher. Les messages par
     // défaut de zod restent masqués : ils sont en anglais et parlent de types.
-    const explicites = err.errors.filter((issue) => issue.code === "custom");
+    const explicites = err.issues.filter((issue) => issue.code === "custom");
     if (explicites.length > 0) {
       // Un code que l'interface traduit : quand tous les messages explicites portent le même (deux numéros de
       // téléphone invalides dans la même requête, par exemple). Sinon le français reste, sans code : un code
@@ -91,7 +91,7 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
       });
     }
 
-    const fields = err.errors.map((issue) => issue.path.join(".")).filter(Boolean);
+    const fields = err.issues.map((issue) => issue.path.join(".")).filter(Boolean);
     const suffix = fields.length > 0 ? ` (champ${fields.length > 1 ? "s" : ""} concerné${fields.length > 1 ? "s" : ""} : ${fields.join(", ")})` : "";
     // Trois codes plutôt qu'un pluriel géré à l'affichage : la phrase s'accorde différemment selon la langue.
     const traduction =
