@@ -305,3 +305,90 @@ describe("initDb : index des clés étrangères signalées sans index", () => {
     expect(lignesIdx[0].indexdef).toContain(`(${colonne})`);
   });
 });
+
+/**
+ * Plusieurs instances serverless démarrent parfois en même temps et jouent la même migration : la seconde échoue
+ * sur « existe déjà » (23505 dans le catalogue pg_class) ou « tuple concurrently updated » alors que la première a
+ * fait le travail. Constaté en production au déploiement qui a ajouté des index : trois « erreurs » pour rien.
+ */
+describe("initDb : démarrages simultanés de plusieurs instances", () => {
+  /** Fait échouer, avec l'erreur donnée, toute instruction dont le texte contient `motif`. */
+  function echouerSur(motif: string, erreur: Error) {
+    const db = testDb as unknown as {
+      transaction: (fn: (tx: { execute: (q: unknown) => Promise<unknown> }) => Promise<unknown>) => Promise<unknown>;
+    };
+    const transaction = db.transaction.bind(db);
+    vi.spyOn(db, "transaction").mockImplementation((fn) =>
+      transaction((tx) =>
+        fn({
+          ...tx,
+          execute: (q: unknown) => {
+            if (texte(q).includes(motif)) throw erreur;
+            return tx.execute(q);
+          },
+        })
+      )
+    );
+  }
+
+  /** Une erreur Postgres enveloppée comme le fait Drizzle (le code est sur `cause`). */
+  const erreurPostgres = (cause: Record<string, unknown>) =>
+    Object.assign(new Error("Failed query: CREATE INDEX"), { cause: Object.assign(new Error(String(cause.message)), cause) });
+
+  it("n'en fait pas une erreur quand une autre instance a déjà créé l'index (23505 sur pg_class)", async () => {
+    await initDb();
+    await testDb.execute(sql`DROP INDEX IF EXISTS users_team_owner_id_idx`);
+    const erreurs = vi.spyOn(console, "error").mockImplementation(() => {});
+    const avertissements = vi.spyOn(console, "warn").mockImplementation(() => {});
+    echouerSur(
+      "users_team_owner_id_idx",
+      erreurPostgres({
+        code: "23505",
+        constraint_name: "pg_class_relname_nsp_index",
+        message: 'duplicate key value violates unique constraint "pg_class_relname_nsp_index"',
+      })
+    );
+
+    await initDb();
+
+    expect(erreurs.mock.calls.filter((a) => String(a[0]).includes("migration additive"))).toEqual([]);
+    expect(avertissements.mock.calls.some((a) => String(a[0]).includes("autre instance"))).toBe(true);
+  });
+
+  it("n'en fait pas une erreur sur « tuple concurrently updated » (deux REVOKE simultanés)", async () => {
+    await initDb();
+    await testDb.execute(sql`DROP INDEX IF EXISTS suggestions_author_id_idx`);
+    const erreurs = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    echouerSur("suggestions_author_id_idx", erreurPostgres({ code: "XX000", message: "tuple concurrently updated" }));
+
+    await initDb();
+
+    expect(erreurs.mock.calls.filter((a) => String(a[0]).includes("migration additive"))).toEqual([]);
+  });
+
+  it("garde l'erreur pour un vrai échec (permission refusée)", async () => {
+    await initDb();
+    await testDb.execute(sql`DROP INDEX IF EXISTS activity_logs_actor_id_idx`);
+    const erreurs = vi.spyOn(console, "error").mockImplementation(() => {});
+    echouerSur("activity_logs_actor_id_idx", erreurPostgres({ code: "42501", message: "permission denied for table activity_logs" }));
+
+    await initDb();
+
+    expect(erreurs.mock.calls.filter((a) => String(a[0]).includes("migration additive"))).toHaveLength(1);
+  });
+
+  it("garde l'erreur pour une violation d'unicité qui n'est pas une course du catalogue", async () => {
+    await initDb();
+    await testDb.execute(sql`DROP INDEX IF EXISTS admin_audit_logs_admin_id_idx`);
+    const erreurs = vi.spyOn(console, "error").mockImplementation(() => {});
+    echouerSur(
+      "admin_audit_logs_admin_id_idx",
+      erreurPostgres({ code: "23505", constraint_name: "users_email_key", message: "duplicate key value violates unique constraint" })
+    );
+
+    await initDb();
+
+    expect(erreurs.mock.calls.filter((a) => String(a[0]).includes("migration additive"))).toHaveLength(1);
+  });
+});

@@ -76,4 +76,53 @@ describe("ErrorBoundary — langue", () => {
       await changerLangue("fr");
     }
   });
+
+  describe("fichier de l'application disparu après un déploiement", () => {
+    const recharger = vi.fn();
+
+    function FichierDisparu(): never {
+      throw new TypeError("Failed to fetch dynamically imported module: https://www.immoplatformpro.com/assets/LoginPage-CTQ4Vm4-.js");
+    }
+
+    beforeEach(() => {
+      sessionStorage.clear();
+      recharger.mockReset();
+      Object.defineProperty(window, "location", { value: { ...window.location, reload: recharger }, writable: true });
+    });
+
+    it("recharge la page d'elle-même, sans le signaler à Sentry", () => {
+      render(
+        <ErrorBoundary>
+          <FichierDisparu />
+        </ErrorBoundary>
+      );
+
+      expect(recharger).toHaveBeenCalledTimes(1);
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+    });
+
+    it("n'insiste pas : si on vient de recharger, affiche le message de secours et signale l'erreur", () => {
+      sessionStorage.setItem("rechargement-apres-deploiement", String(Date.now()));
+
+      render(
+        <ErrorBoundary>
+          <FichierDisparu />
+        </ErrorBoundary>
+      );
+
+      expect(recharger).not.toHaveBeenCalled();
+      expect(screen.getByText("Une erreur est survenue")).toBeInTheDocument();
+      expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    });
+
+    it("ne recharge pas pour une erreur ordinaire", () => {
+      render(
+        <ErrorBoundary>
+          <Bomb />
+        </ErrorBoundary>
+      );
+
+      expect(recharger).not.toHaveBeenCalled();
+    });
+  });
 });

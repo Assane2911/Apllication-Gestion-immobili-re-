@@ -14,6 +14,10 @@ import '@fontsource/public-sans/700.css'
 import './index.css'
 import { i18nPret } from './i18n'
 import App from './App.tsx'
+import { installerRechargementAutomatique } from './utils/rechargementApresDeploiement'
+
+// Onglet resté ouvert pendant un déploiement : les fichiers qu'il réclame n'existent plus, on recharge (une fois).
+installerRechargementAutomatique()
 
 // La langue mémorisée du visiteur (autre que le français) se charge avant le premier affichage.
 i18nPret.then(() => {
