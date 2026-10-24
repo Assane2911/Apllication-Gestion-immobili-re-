@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { estFichierDisparu, installerRechargementAutomatique, rechargerUneFois } from "./rechargementApresDeploiement";
+import {
+  estFichierDisparu,
+  installerRechargementAutomatique,
+  rechargementEnCours,
+  rechargerUneFois,
+  reinitialiserRechargementPourTests,
+} from "./rechargementApresDeploiement";
 
 // Un onglet resté ouvert pendant un déploiement réclame des fichiers qui n'existent plus (leur nom contient une
 // empreinte qui change à chaque build) : « Failed to fetch dynamically imported module ». Un rechargement suffit.
@@ -26,6 +32,7 @@ describe("rechargerUneFois", () => {
 
   beforeEach(() => {
     sessionStorage.clear();
+    reinitialiserRechargementPourTests();
     recharger.mockReset();
     Object.defineProperty(window, "location", { value: { ...window.location, reload: recharger }, writable: true });
   });
@@ -65,6 +72,7 @@ describe("installerRechargementAutomatique", () => {
 
   beforeEach(() => {
     sessionStorage.clear();
+    reinitialiserRechargementPourTests();
     recharger.mockReset();
     Object.defineProperty(window, "location", { value: { ...window.location, reload: recharger }, writable: true });
   });
@@ -79,7 +87,62 @@ describe("installerRechargementAutomatique", () => {
     expect(evenement.defaultPrevented).toBe(true);
   });
 
-  it("laisse l'erreur se propager si on vient déjà de recharger", () => {
+  it("laisse l'erreur se propager si la page a déjà été rechargée il y a moins d'une minute (avant cette page)", () => {
+    sessionStorage.setItem("rechargement-apres-deploiement", String(Date.now()));
+    installerRechargementAutomatique();
+    const evenement = new Event("vite:preloadError", { cancelable: true });
+
+    window.dispatchEvent(evenement);
+
+    expect(recharger).not.toHaveBeenCalled();
+    expect(evenement.defaultPrevented).toBe(false);
+  });
+
+});
+
+/**
+ * Plusieurs mécanismes (l'événement de Vite, `lazyWithReload`, le filet d'erreurs) peuvent réagir au MÊME fichier
+ * disparu. Le premier recharge ; les suivants doivent le savoir pour ne pas recharger une seconde fois ni laisser
+ * apparaître l'écran d'erreur le temps que la page se remplace.
+ */
+describe("rechargementEnCours", () => {
+  const recharger = vi.fn();
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    reinitialiserRechargementPourTests();
+    recharger.mockReset();
+    Object.defineProperty(window, "location", { value: { ...window.location, reload: recharger }, writable: true });
+  });
+
+  it("est faux tant que rien n'a rechargé", () => {
+    expect(rechargementEnCours()).toBe(false);
+  });
+
+  it("devient vrai dès que le rechargement est lancé, pour toute la vie de la page", () => {
+    rechargerUneFois(1_000_000);
+
+    expect(rechargementEnCours()).toBe(true);
+    expect(rechargementEnCours()).toBe(true);
+  });
+
+  it("reste faux quand le rechargement est refusé (déjà rechargé il y a moins d'une minute, avant cette page)", () => {
+    sessionStorage.setItem("rechargement-apres-deploiement", String(1_000_000));
+
+    expect(rechargerUneFois(1_000_000 + 10_000)).toBe(false);
+
+    expect(rechargementEnCours()).toBe(false);
+  });
+
+  it("l'événement vite:preloadError le marque aussi", () => {
+    installerRechargementAutomatique();
+
+    window.dispatchEvent(new Event("vite:preloadError", { cancelable: true }));
+
+    expect(rechargementEnCours()).toBe(true);
+  });
+
+  it("un second événement pendant le rechargement est absorbé, sans second rechargement", () => {
     installerRechargementAutomatique();
     window.dispatchEvent(new Event("vite:preloadError", { cancelable: true }));
     const second = new Event("vite:preloadError", { cancelable: true });
@@ -87,6 +150,6 @@ describe("installerRechargementAutomatique", () => {
     window.dispatchEvent(second);
 
     expect(recharger).toHaveBeenCalledTimes(1);
-    expect(second.defaultPrevented).toBe(false);
+    expect(second.defaultPrevented).toBe(true);
   });
 });
