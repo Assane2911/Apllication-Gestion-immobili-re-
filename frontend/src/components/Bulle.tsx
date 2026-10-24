@@ -1,4 +1,4 @@
-import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactElement } from "react";
+import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FocusEvent, type ReactElement } from "react";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { placerBulle, type Cote, type Placement } from "../utils/placementBulle";
 
@@ -35,7 +35,10 @@ interface Props {
  * Elle apparaît au survol ET au focus clavier. Une aide réservée à la souris
  * abandonne précisément ceux qui naviguent au clavier, souvent parce qu'ils ne
  * peuvent pas faire autrement. Échap la referme, comme toute chose qui
- * s'ouvre.
+ * s'ouvre. Le focus d'un CLIC ne l'ouvre pas (`:focus-visible`) : le bouton
+ * cliqué le garde, et le navigateur le lui redonne à chaque retour dans la
+ * fenêtre — la bulle s'ouvrait alors toute seule et y restait. Elle se ferme
+ * aussi quand la fenêtre perd le focus ou que la page passe en arrière-plan.
  *
  * Elle se positionne en `fixed`, à partir des coordonnées réelles de
  * l'élément. Une bulle en `absolute` serait rognée par le premier parent qui
@@ -60,6 +63,20 @@ interface Props {
  * difficile à cliquer, et le défaut est d'autant plus déroutant qu'il vient de
  * l'aide elle-même.
  */
+/**
+ * Le focus vient-il du clavier ? Après un clic, un bouton garde le focus sans que rien ne le signale à l'utilisateur ;
+ * le navigateur le lui redonne en plus à chaque retour dans la fenêtre. `:focus-visible` est la distinction qu'il fait
+ * lui-même (vrai au clavier, faux après un clic) ; un navigateur qui ne le connaît pas lève une erreur, et on garde
+ * alors l'ancien comportement (la bulle s'ouvre au focus).
+ */
+function estFocusClavier(cible: EventTarget): boolean {
+  try {
+    return (cible as Element).matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
+
 export default function Bulle({ texte, children, position = "haut", className = "inline-flex" }: Props) {
   const id = useId();
   const ancre = useRef<HTMLSpanElement>(null);
@@ -111,11 +128,33 @@ export default function Bulle({ texte, children, position = "haut", className = 
     };
   }, [rectAncre, cacher]);
 
+  // Quitter la page (autre fenêtre, autre onglet, écran verrouillé, application mise en arrière-plan) ferme la bulle :
+  // aucun événement de sortie de souris n'arrive alors, et elle resterait affichée au retour.
+  useEffect(() => {
+    if (!rectAncre) return;
+    const surVisibilite = () => {
+      if (document.visibilityState === "hidden") cacher();
+    };
+    window.addEventListener("blur", cacher);
+    document.addEventListener("visibilitychange", surVisibilite);
+    return () => {
+      window.removeEventListener("blur", cacher);
+      document.removeEventListener("visibilitychange", surVisibilite);
+    };
+  }, [rectAncre, cacher]);
+
+  const surFocus = useCallback(
+    (e: FocusEvent<HTMLSpanElement>) => {
+      if (estFocusClavier(e.target)) montrer();
+    },
+    [montrer]
+  );
+
   const cote: Cote = placement?.cote ?? position;
   const verticale = cote === "haut" || cote === "bas";
 
   return (
-    <span ref={ancre} className={className} onMouseEnter={montrer} onMouseLeave={cacher} onFocus={montrer} onBlur={cacher}>
+    <span ref={ancre} className={className} onMouseEnter={montrer} onMouseLeave={cacher} onFocus={surFocus} onBlur={cacher}>
       {cloneElement(children, { "aria-describedby": rectAncre ? id : undefined } as Partial<unknown>)}
       {rectAncre && (
         <span
