@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { reinitialiserRechargementPourTests, rechargerUneFois } from "../utils/rechargementApresDeploiement";
 import ErrorBoundary from "./ErrorBoundary";
 
 vi.mock("@sentry/react", () => ({
@@ -86,6 +87,7 @@ describe("ErrorBoundary — langue", () => {
 
     beforeEach(() => {
       sessionStorage.clear();
+      reinitialiserRechargementPourTests();
       recharger.mockReset();
       Object.defineProperty(window, "location", { value: { ...window.location, reload: recharger }, writable: true });
     });
@@ -113,6 +115,20 @@ describe("ErrorBoundary — langue", () => {
       expect(recharger).not.toHaveBeenCalled();
       expect(screen.getByText("Une erreur est survenue")).toBeInTheDocument();
       expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    });
+
+    it("ne recharge pas une seconde fois, et ne signale rien, quand un autre mécanisme recharge déjà la page", () => {
+      rechargerUneFois(); // un autre mécanisme (événement de Vite, lazyWithReload) a lancé le rechargement
+      recharger.mockClear();
+
+      render(
+        <ErrorBoundary>
+          <FichierDisparu />
+        </ErrorBoundary>
+      );
+
+      expect(recharger).not.toHaveBeenCalled();
+      expect(Sentry.captureException).not.toHaveBeenCalled();
     });
 
     it("ne recharge pas pour une erreur ordinaire", () => {
