@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import Bulle from "../components/Bulle";
 import { useAuth } from "./auth";
 import { CURRENCIES, CurrencyContext, configDevise, useCurrency } from "./currency";
+import { nomDevise } from "../utils/nomDevise";
 
 /**
  * Usages de chaque langue de l'interface pour écrire un nombre : « 12 345,67 » en français et en portugais,
@@ -97,7 +98,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
 /** Composant Sélecteur de Devise élégant pour la barre de navigation */
 export function CurrencySelector({ className = "" }: { className?: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currency, setCurrency, availableCurrencies } = useCurrency();
 
   return (
@@ -111,7 +112,7 @@ export function CurrencySelector({ className = "" }: { className?: string }) {
       >
         {availableCurrencies.map((c) => (
           <option key={c.code} value={c.code} className="bg-slate-900 text-white">
-            {c.flag} {c.code} ({c.symbol}) — {c.name}
+            {c.flag} {c.code} ({c.symbol}) — {nomDevise(c.code, i18n.language, c.name)}
           </option>
         ))}
       </select>
