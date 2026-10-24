@@ -174,6 +174,9 @@ export const users = pgTable("users", {
   // ici : la liste des filleuls d'un parrain et l'ON DELETE SET NULL de la clé
   // étrangère parcourent cette colonne.
   referredByUserIdIdx: index("users_referred_by_user_id_idx").on(table.referredByUserId),
+  // Clé étrangère « équipe » : la liste des collaborateurs d'un propriétaire et le
+  // ON DELETE CASCADE de la clé étrangère parcourent cette colonne.
+  teamOwnerIdIdx: index("users_team_owner_id_idx").on(table.teamOwnerId),
 }));
 
 // --- Platform Subscriptions (Historique des paiements d'abonnements SaaS de la plateforme) ---
@@ -967,6 +970,7 @@ export const suggestions = pgTable(
   (table) => ({
     createdAtIdx: index("suggestions_created_at_idx").on(table.createdAt),
     statusIdx: index("suggestions_status_idx").on(table.status),
+    authorIdIdx: index("suggestions_author_id_idx").on(table.authorId),
   })
 );
 
@@ -998,6 +1002,7 @@ export const adminAuditLogs = pgTable(
   (table) => ({
     createdAtIdx: index("admin_audit_logs_created_at_idx").on(table.createdAt),
     targetUserIdIdx: index("admin_audit_logs_target_user_id_idx").on(table.targetUserId),
+    adminIdIdx: index("admin_audit_logs_admin_id_idx").on(table.adminId),
   })
 );
 
@@ -1025,6 +1030,7 @@ export const activityLogs = pgTable(
   (table) => ({
     managerIdIdx: index("activity_logs_manager_id_idx").on(table.managerId),
     createdAtIdx: index("activity_logs_created_at_idx").on(table.createdAt),
+    actorIdIdx: index("activity_logs_actor_id_idx").on(table.actorId),
   })
 );
 
