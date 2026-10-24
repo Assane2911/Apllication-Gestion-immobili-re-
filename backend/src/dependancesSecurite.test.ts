@@ -31,6 +31,15 @@ describe("dépendances : versions corrigées des avis de sécurité", () => {
     expect(auMoins(version("multer"), [2, 5, 0])).toBe(true);
   });
 
+  it("zod ≥ 4.6.6 (GHSA-mrhx-c7xc-m3w5 : mémoire saturée par la validation de très grandes collections)", () => {
+    expect(auMoins(version("zod"), [4, 6, 6])).toBe(true);
+  });
+
+  it("package.json n'autorise plus la version vulnérable de zod", () => {
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")) as { dependencies: Record<string, string> };
+    expect(pkg.dependencies.zod).toMatch(/^\^4\.(6\.[6-9]|6\.\d{2,}|[7-9]|\d{2,})/);
+  });
+
   it("package.json n'autorise plus la version vulnérable de multer", () => {
     const pkg = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")) as { dependencies: Record<string, string> };
     expect(pkg.dependencies.multer).toMatch(/^\^2\.5\./);
