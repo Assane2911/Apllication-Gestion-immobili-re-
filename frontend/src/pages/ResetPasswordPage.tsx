@@ -92,7 +92,7 @@ export default function ResetPasswordPage() {
             </p>
             <Link
               to="/mot-de-passe-oublie"
-              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
+              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
             >
               {t("auth.resetPassword.requestNewLink")}
             </Link>
@@ -170,7 +170,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
+                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
               >
                 {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                 {loading ? t("auth.resetPassword.submitting") : t("auth.resetPassword.submit")}

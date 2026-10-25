@@ -226,7 +226,7 @@ export default function TenantsPage() {
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.tenants.count", { count: tenants.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.tenantCreate")}>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
+        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
           {t("manager.tenants.addBtn")}
         </button>
         </Bulle>

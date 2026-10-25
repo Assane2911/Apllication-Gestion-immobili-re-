@@ -268,7 +268,7 @@ export default function LandingPage() {
             {user ? (
               <Link
                 to={homePathForRole(user.role)}
-                className="whitespace-nowrap bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
+                className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
               >
                 {t("landing.nav.goToSpace")}
               </Link>
@@ -282,7 +282,7 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   to="/inscription"
-                  className="whitespace-nowrap bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-2.5 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
+                  className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-2.5 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
                 >
                   {telephone ? t("landing.nav.trialShort") : t("landing.nav.trial")}
                 </Link>
@@ -328,7 +328,7 @@ export default function LandingPage() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/inscription"
-              className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-brand-600/30 transition-all hover:scale-105"
+              className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-brand-600/30 transition-all hover:scale-105"
             >
               {t("landing.hero.ctaTrial")}
             </Link>
@@ -561,7 +561,7 @@ export default function LandingPage() {
             </span>
             <Link
               to="/inscription"
-              className="bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105"
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105"
             >
               {t("landing.compare.cta.button")}
             </Link>
@@ -695,7 +695,7 @@ export default function LandingPage() {
               </div>
               <Link
                 to="/inscription"
-                className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-lg shadow-brand-600/30"
+                className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-lg shadow-brand-600/30"
               >
                 {t("landing.pricing.pro.cta")}
               </Link>

@@ -179,7 +179,7 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
+            <button type="button" onClick={onClose} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
               {t("common.actions.cancel")}
             </button>
             <button

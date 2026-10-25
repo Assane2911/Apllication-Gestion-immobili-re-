@@ -197,7 +197,7 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
               <textarea id="g-notes" rows={2} maxLength={1000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={champ} />
             </div>
             <div className="sm:col-span-2 flex justify-end gap-2">
-              <button type="button" onClick={() => setFormOuvert(false)} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
+              <button type="button" onClick={() => setFormOuvert(false)} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
                 {t("common.actions.cancel")}
               </button>
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg">
