@@ -450,3 +450,33 @@ describe("ExpensesPage", () => {
     expect(screen.queryByText(/FG/)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Audit axe-core : sur téléphone, le tableau défile horizontalement. Rempli, il contient des boutons que le clavier
+ * atteint ; VIDE, il ne contient plus rien de focalisable et le clavier ne pouvait plus le faire défiler (règle
+ * « scrollable-region-focusable »). Vide, le cadre défilant devient donc lui-même focalisable et nommé.
+ */
+describe("ExpensesPage — cadre défilant du tableau", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+  });
+
+  it("vide, le cadre défilant est atteignable au clavier et porte le nom de la page", async () => {
+    queueLoad([property()], summary({ totalExpensesByCurrency: { EUR: 0 }, expenseCount: 0, netCashFlowByCurrency: { EUR: 5000 } }), []);
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Aucune dépense enregistrée pour le moment.")).toBeInTheDocument());
+
+    const cadre = screen.getByRole("region", { name: "Dépenses & Rentabilité Réelle" });
+    expect(cadre).toHaveAttribute("tabindex", "0");
+    expect(cadre).toContainElement(screen.getByRole("table"));
+  });
+
+  it("rempli, le cadre n'ajoute pas d'arrêt de tabulation : les boutons du tableau suffisent", async () => {
+    queueLoad([property()], summary(), [expense()]);
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
+
+    expect(screen.getByRole("table").parentElement).not.toHaveAttribute("tabindex");
+    expect(screen.queryByRole("region", { name: "Dépenses & Rentabilité Réelle" })).toBeNull();
+  });
+});

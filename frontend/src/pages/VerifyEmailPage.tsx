@@ -39,7 +39,7 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
         <Link to="/login" className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors">
           {t("auth.verifyEmail.backToLogin")}
@@ -55,6 +55,7 @@ export default function VerifyEmailPage() {
 
         {!token ? (
           <div className="text-center">
+            <h1 className="sr-only">{t("auth.verifyEmail.errorTitle")}</h1>
             <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-3">
               {t("auth.verifyEmail.missingToken")}
             </p>
@@ -70,7 +71,7 @@ export default function VerifyEmailPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-brand-500/15 text-brand-400 flex items-center justify-center mb-4">
               <span className="w-5 h-5 border-2 border-brand-400/40 border-t-brand-400 rounded-full animate-spin" />
             </div>
-            <h2 className="text-xl font-bold text-white">{t("auth.verifyEmail.verifying")}</h2>
+            <h1 className="text-xl font-bold text-white">{t("auth.verifyEmail.verifying")}</h1>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.verifyingSubtitle")}</p>
           </div>
         ) : status === "success" ? (
@@ -78,7 +79,7 @@ export default function VerifyEmailPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
               <CheckCircle2 size={24} strokeWidth={1.8} />
             </div>
-            <h2 className="text-xl font-bold text-white">{t("auth.verifyEmail.successTitle")}</h2>
+            <h1 className="text-xl font-bold text-white">{t("auth.verifyEmail.successTitle")}</h1>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.successSubtitle")}</p>
           </div>
         ) : (
@@ -86,7 +87,7 @@ export default function VerifyEmailPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center mb-4">
               <XCircle size={24} strokeWidth={1.8} />
             </div>
-            <h2 className="text-xl font-bold text-white">{t("auth.verifyEmail.errorTitle")}</h2>
+            <h1 className="text-xl font-bold text-white">{t("auth.verifyEmail.errorTitle")}</h1>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{error ?? t("auth.verifyEmail.errorSubtitle")}</p>
             <Link
               to="/login"
@@ -97,6 +98,6 @@ export default function VerifyEmailPage() {
           </div>
         )}
       </Reveal>
-    </div>
+    </main>
   );
 }

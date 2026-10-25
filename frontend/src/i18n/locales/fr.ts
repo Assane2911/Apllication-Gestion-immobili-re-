@@ -2672,6 +2672,7 @@ const fr = {
 
   suggestions: {
     button: "Une suggestion ?",
+    zone: "Aide et suggestions",
     title: "Votre avis améliore la plateforme",
     subtitle: "Dites-nous ce qui vous manque ou ce qui vous gêne. La page d'où vous écrivez part avec votre message.",
     placeholder: "Ce que j'aimerais pouvoir faire ici, c'est…",

@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
         <Link to="/login" className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors">
           {t("auth.forgotPassword.backToLogin")}
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
               <MailIcon />
             </div>
-            <h2 className="text-xl font-bold text-white">{t("auth.forgotPassword.sentTitle")}</h2>
+            <h1 className="text-xl font-bold text-white">{t("auth.forgotPassword.sentTitle")}</h1>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.forgotPassword.sentSubtitle")}</p>
             <Link
               to="/login"
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-white text-center">{t("auth.forgotPassword.title")}</h2>
+            <h1 className="text-2xl font-bold text-white text-center">{t("auth.forgotPassword.title")}</h1>
             <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.forgotPassword.subtitle")}</p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -109,6 +109,6 @@ export default function ForgotPasswordPage() {
           </>
         )}
       </Reveal>
-    </div>
+    </main>
   );
 }

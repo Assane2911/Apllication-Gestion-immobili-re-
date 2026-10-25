@@ -213,7 +213,11 @@ export default function InsurancePage() {
         <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.insurance.policyLines", { count: total })}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      {/* Vide, le tableau ne contient plus rien que le clavier atteigne : le cadre défilant le devient (voir structureEtCibles). */}
+      <div
+        {...(policies.length === 0 ? { role: "region", tabIndex: 0, "aria-label": t("manager.insurance.title") } : {})}
+        className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto focus-visible:ring-2 focus-visible:ring-brand-500"
+      >
         <table className="w-full text-sm">
           <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
             <tr>
