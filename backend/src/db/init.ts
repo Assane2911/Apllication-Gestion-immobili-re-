@@ -924,6 +924,7 @@ export async function initDb() {
     await ajouterColonne("users", "totp_secret", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT`);
     await ajouterColonne("users", "totp_enabled_at", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled_at TIMESTAMP`);
     await ajouterColonne("users", "totp_backup_codes_hash", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_backup_codes_hash TEXT`);
+    await ajouterColonne("users", "totp_last_used_step", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_last_used_step INTEGER`);
     // Planification des interventions prestataires : sur une base créée avant
     // ce correctif, la table existe déjà sans cette colonne.
     await ajouterColonne("issue_reports", "scheduled_at", sql`ALTER TABLE issue_reports ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP`);

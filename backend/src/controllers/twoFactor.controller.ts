@@ -12,7 +12,9 @@ import {
   genererOtpauthUrl,
   genererQrCodeDataUrl,
   genererSecretTotp,
+  consommerPasTotp,
   verifierCodeTotp,
+  verifierCodeTotpAvecPas,
 } from "../services/totp.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
@@ -187,8 +189,10 @@ export const regenerateBackupCodes = asyncHandler(async (req: Request, res: Resp
     throw new ApiError(409, "La double authentification n'est pas activée sur ce compte.", "TWO_FACTOR_NOT_ENABLED");
   }
 
-  const valide = await verifierCodeTotp(user.totpSecret, body.code);
-  if (!valide) throw new ApiError(401, "Code invalide.", "TWO_FACTOR_CODE_WRONG");
+  // Un code déjà accepté (à la connexion, par exemple) ne sert pas à régénérer les codes de secours : sans cela, un code
+  // intercepté à la connexion permettait, dans la même fenêtre, de remplacer les codes de secours du compte.
+  const pas = await verifierCodeTotpAvecPas(user.totpSecret, body.code);
+  if (pas === null || !(await consommerPasTotp(user.id, pas))) throw new ApiError(401, "Code invalide.", "TWO_FACTOR_CODE_WRONG");
 
   const { codes, hashes } = await genererCodesSecours();
   await db.update(users).set({ totpBackupCodesHash: JSON.stringify(hashes) }).where(eq(users.id, user.id));

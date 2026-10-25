@@ -151,6 +151,9 @@ export const users = pgTable("users", {
   totpSecret: text("totp_secret"),
   totpEnabledAt: timestamp("totp_enabled_at", { mode: "date" }),
   totpBackupCodesHash: text("totp_backup_codes_hash"),
+  // Dernier pas de temps (30 s) d'un code TOTP ACCEPTÉ pour ce compte : un code de ce pas, ou d'un pas plus ancien,
+  // est refusé (RFC 6238, § 5.2 : un code ne sert qu'une fois). NULL tant qu'aucun code n'a été accepté.
+  totpLastUsedStep: integer("totp_last_used_step"),
   // Programme de parrainage (voir referral.service.ts). `referralCode` est
   // propre à CE compte et généré paresseusement (NULL jusqu'au premier appel
   // de getMyReferral) plutôt qu'à l'inscription : un backfill sur les comptes
