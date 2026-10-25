@@ -153,7 +153,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
         {error && <p role="alert" className="text-xs text-red-600 mt-2">{error}</p>}
 
         <div className="flex justify-end gap-2 mt-5">
-          <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
+          <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
             {t("common.actions.cancel")}
           </button>
           <button

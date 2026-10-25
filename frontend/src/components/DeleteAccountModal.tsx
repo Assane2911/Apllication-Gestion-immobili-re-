@@ -155,7 +155,7 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
               type="button"
               onClick={onClose}
               disabled={deleting}
-              className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2"
+              className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2"
             >
               {t("common.actions.cancel")}
             </button>

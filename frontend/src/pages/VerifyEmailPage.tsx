@@ -61,7 +61,7 @@ export default function VerifyEmailPage() {
             </p>
             <Link
               to="/login"
-              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
+              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
             >
               {t("auth.verifyEmail.backToLogin")}
             </Link>
@@ -91,7 +91,7 @@ export default function VerifyEmailPage() {
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{error ?? t("auth.verifyEmail.errorSubtitle")}</p>
             <Link
               to="/login"
-              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
+              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
             >
               {t("auth.verifyEmail.backToLogin")}
             </Link>
