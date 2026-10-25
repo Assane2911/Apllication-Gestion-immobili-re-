@@ -218,7 +218,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-brand-500 selection:text-white">
-      <Seo title={t("seo.landing.title")} description={t("seo.landing.description")} />
+      <Seo title={t("seo.landing.title")} description={t("seo.landing.description")} canonical="/" />
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}

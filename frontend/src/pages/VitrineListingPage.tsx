@@ -105,7 +105,7 @@ export default function VitrineListingPage() {
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-slate-950">
-      <Seo title={`${listing.title} — ${listing.location} | ${t("vitrine.brand")}`} description={listing.description.slice(0, 160)} />
+      <Seo title={`${listing.title} — ${listing.location} | ${t("vitrine.brand")}`} description={listing.description.slice(0, 160)} canonical={`/vitrine/annonces/${listing.id}`} />
       <JsonLd data={buildListingJsonLd(listing)} />
       <VitrineHeader />
 

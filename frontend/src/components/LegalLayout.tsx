@@ -47,7 +47,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <Seo title={`${title} | ${COMPANY.tradeName}`} description={description} />
+      <Seo title={`${title} | ${COMPANY.tradeName}`} description={description} canonical={pathname} />
       <nav className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">

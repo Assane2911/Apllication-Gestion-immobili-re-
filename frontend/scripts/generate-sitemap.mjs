@@ -24,8 +24,9 @@ const MAX_PAGE_SIZE = 100;
 
 export const STATIC_ROUTES = [
   { path: "/", priority: "1.0" },
-  { path: "/landing", priority: "1.0" },
+  // /landing affiche la même page que / et pointe vers elle (balise canonique) : seules les adresses canoniques y figurent.
   { path: "/vitrine", priority: "0.9" },
+  { path: "/inscription", priority: "0.8" },
   { path: "/mentions-legales", priority: "0.3" },
   { path: "/cgu", priority: "0.3" },
   { path: "/confidentialite", priority: "0.3" },

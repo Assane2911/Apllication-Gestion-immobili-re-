@@ -2713,6 +2713,27 @@ const en: TranslationSchema = {
       description:
         "Certified PDF rent receipts, electronic lease signing, automatic reminders, real-time dashboard. Free 15-day trial, no commitment.",
     },
+    login: {
+      title: "Sign in",
+      description:
+        "Sign in to your ImmoPlatform Pro space: receipts, leases, rents and issues for your agency or your rental, all in one place.",
+    },
+    register: {
+      title: "Create a manager account",
+      description:
+        "Create your agency account in 2 minutes and enjoy a free 15-day trial, no commitment: PDF receipts, electronic signing and automatic reminders.",
+    },
+    forgotPassword: {
+      title: "Forgot your password",
+      description:
+        "Get an email with a link to choose a new password for your ImmoPlatform Pro account.",
+    },
+    resetPassword: {
+      title: "New password",
+    },
+    verifyEmail: {
+      title: "Email confirmation",
+    },
     vitrine: {
       title: "Property Listings — Rentals, Sales, Land | ImmoPlatform Pro",
       description:
