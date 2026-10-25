@@ -140,6 +140,22 @@ describe("POST /api/csp-report", () => {
     expect(res.headers["set-cookie"]).toBeUndefined();
   });
 
+  it("autorise le navigateur à lire la réponse depuis le site : Cross-Origin-Resource-Policy cross-origin", async () => {
+    // helmet pose « same-origin » partout. Le site (immoplatformpro.com) et l'API sont deux origines : sans cette
+    // exception, le rapport ARRIVE (204, ligne de journal) mais Chrome affiche « ERR_BLOCKED_BY_RESPONSE.NotSameOrigin »
+    // dans la console de chaque visiteur qui l'ouvre.
+    const res = await envoyerHistorique(rapportHistorique());
+
+    expect(res.status).toBe(204);
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+  });
+
+  it("garde « same-origin » sur le reste de l'API (l'exception ne vaut que pour le collecteur)", async () => {
+    const res = await request(app).get("/api/health");
+
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
+
   it("refuse un corps trop volumineux (413), sans erreur serveur", async () => {
     const res = await request(app).post(ROUTE).set("Content-Type", "application/csp-report").send(JSON.stringify(rapportHistorique({ "blocked-uri": "x".repeat(20_000) })));
 
