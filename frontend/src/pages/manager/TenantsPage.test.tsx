@@ -152,6 +152,91 @@ describe("TenantsPage (manager)", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Enregistrer" })).not.toBeInTheDocument());
   });
 
+  /**
+   * Les e-mails d'un locataire (avis d'échéance, rappels, relances, quittance) partent dans la langue de sa fiche :
+   * le gestionnaire la choisit ici. Par défaut, celle de son interface.
+   */
+  describe("langue des e-mails du locataire", () => {
+    const champLangue = (container: HTMLElement) => container.querySelector("#tenant-language") as HTMLSelectElement;
+
+    async function ouvrirCreation() {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce(paginated([]));
+      const rendu = renderPage();
+      // Le libellé du bouton suit la langue de l'interface.
+      const { default: i18n } = await import("../../i18n");
+      const ajouter = i18n.t("manager.tenants.addBtn");
+      await waitFor(() => expect(screen.getAllByRole("button", { name: ajouter }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: ajouter })[0]);
+      return { user, ...rendu };
+    }
+
+    it("propose les quatre langues, chacune écrite dans sa propre langue", async () => {
+      const { container } = await ouvrirCreation();
+      const options = Array.from(champLangue(container).options).map((o) => [o.value, o.textContent]);
+      expect(options).toEqual([
+        ["fr", "Français"],
+        ["en", "English"],
+        ["pt", "Português"],
+        ["es", "Español"],
+      ]);
+      expect(screen.getByText("Langue des e-mails")).toBeInTheDocument();
+    });
+
+    it("à la création, prend la langue de l'interface", async () => {
+      const { container } = await ouvrirCreation();
+      expect(champLangue(container).value).toBe("fr");
+    });
+
+    it("à la création, prend la langue de l'interface quand ce n'est pas le français", async () => {
+      const { changerLangue } = await import("../../i18n");
+      await changerLangue("pt");
+      try {
+        const { container } = await ouvrirCreation();
+        expect(champLangue(container).value).toBe("pt");
+      } finally {
+        await changerLangue("fr");
+      }
+    });
+
+    it("envoie la langue choisie avec la fiche", async () => {
+      const { user, container } = await ouvrirCreation();
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "ten-new" } });
+      mockedApi.get.mockResolvedValueOnce(paginated([]));
+
+      const fields = getFormFields();
+      await user.type(fields.firstName, "Moussa");
+      await user.type(fields.lastName, "Traoré");
+      await user.type(fields.phone, "77 122 33 44");
+      await user.type(fields.email, "moussa@example.com");
+      await user.selectOptions(champLangue(container), "en");
+      await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
+      expect(formDataEntries(mockedApi.post.mock.calls[0][1] as FormData).language).toBe("en");
+    });
+
+    it("à la modification, montre la langue enregistrée sur la fiche", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce(paginated([tenant({ language: "es" })]));
+      const { container } = renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Modifier" }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
+
+      expect(champLangue(container).value).toBe("es");
+    });
+
+    it("à la modification d'une fiche d'avant (sans langue), montre le français", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce(paginated([tenant({ language: null })]));
+      const { container } = renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Modifier" }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
+
+      expect(champLangue(container).value).toBe("fr");
+    });
+  });
+
   // Le serveur est une fonction Vercel (4,5 Mo de requête au plus) : un PDF trop lourd ne peut pas partir, et ne
   // se réduit pas. Sans ce contrôle, l'utilisateur attendait puis voyait une erreur générique.
   it("refuse tout de suite une pièce d'identité PDF trop lourde, avec un message lisible", async () => {

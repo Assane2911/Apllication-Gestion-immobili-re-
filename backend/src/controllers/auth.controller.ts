@@ -22,7 +22,7 @@ import { consommerCodeSecours, consommerPasTotp, verifierCodeTotpAvecPas } from 
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
-import { langueDeLaRequete } from "../utils/langue";
+import { langueDemandee, langueDeLaRequete, type Langue } from "../utils/langue";
 import { AUTH_COOKIE_NAME, clearAuthCookie, CSRF_HEADER_NAME, setAuthCookie } from "../utils/authCookie";
 import { signerJetonWeb } from "../utils/session";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
@@ -293,10 +293,20 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
  * avec 2FA, une fois le code vérifié) pour qu'il n'existe qu'un seul endroit
  * où une session est réellement ouverte.
  */
-async function finalizeLogin(user: typeof users.$inferSelect, res: Response) {
+async function finalizeLogin(user: typeof users.$inferSelect, res: Response, langue?: Langue | null) {
   let tenant: typeof tenants.$inferSelect | undefined;
   if (user.role === "TENANT") {
     [tenant] = await db.select().from(tenants).where(eq(tenants.userId, user.id));
+    // La fiche prend la langue dans laquelle le locataire utilise l'application : c'est celle de ses e-mails. Sans
+    // langue demandée par la requête, elle garde la sienne. Ne doit jamais empêcher la connexion.
+    if (tenant && langue && tenant.language !== langue) {
+      try {
+        await db.update(tenants).set({ language: langue }).where(eq(tenants.id, tenant.id));
+        tenant = { ...tenant, language: langue };
+      } catch (err) {
+        console.error("[auth] Langue du locataire non enregistrée :", err);
+      }
+    }
   }
 
   let owner: typeof owners.$inferSelect | undefined;
@@ -396,7 +406,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     return;
   }
 
-  await finalizeLogin(user, res);
+  await finalizeLogin(user, res, langueDemandee(req));
 });
 
 const verifyTwoFactorLoginSchema = z.object({

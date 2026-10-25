@@ -1258,6 +1258,9 @@ const es: TranslationSchema = {
         phone: "Teléfono",
         email: "Correo electrónico",
         idDocument: "Documento de identidad (imagen o PDF)",
+        language: "Idioma de los correos",
+        languageHint:
+          "Los avisos de vencimiento, recordatorios y recibos de este inquilino se envían en este idioma.",
       },
       emptyTitle: "Aún no hay inquilinos",
       emptyDesc:

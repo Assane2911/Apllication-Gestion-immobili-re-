@@ -1257,6 +1257,9 @@ const pt: TranslationSchema = {
         phone: "Telefone",
         email: "Email",
         idDocument: "Documento de identificação (imagem ou PDF)",
+        language: "Idioma dos e-mails",
+        languageHint:
+          "Os avisos de vencimento, lembretes e recibos deste inquilino são enviados neste idioma.",
       },
       emptyTitle: "Ainda não há inquilinos",
       emptyDesc: "Adicione o seu primeiro inquilino (nome, telefone, email, documento de identificação) para poder associá-lo a um contrato.",

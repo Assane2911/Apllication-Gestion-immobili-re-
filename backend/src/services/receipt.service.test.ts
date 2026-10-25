@@ -9,7 +9,9 @@ import { sendPartialPaymentReceiptEmail, sendPaymentReceiptEmail } from "./recei
 vi.mock("./pdf.service", () => ({
   generateReceiptPdfBuffer: vi.fn(),
 }));
-vi.mock("./email.service", () => ({
+// Seul l'envoi est simulé : les modèles d'e-mail (quittance, reçu partiel) sont les vrais, le service les utilise.
+vi.mock("./email.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./email.service")>()),
   sendEmail: vi.fn(),
 }));
 

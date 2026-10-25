@@ -1256,6 +1256,9 @@ const fr = {
         phone: "Téléphone",
         email: "Email",
         idDocument: "Pièce d'identité (image ou PDF)",
+        language: "Langue des e-mails",
+        languageHint:
+          "Les avis d'échéance, rappels, relances et quittances de ce locataire sont envoyés dans cette langue.",
       },
       emptyTitle: "Aucun locataire pour l'instant",
       emptyDesc:
