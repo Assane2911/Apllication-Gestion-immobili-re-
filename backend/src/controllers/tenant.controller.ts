@@ -13,6 +13,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
+import { remplacerDansTexte } from "../utils/effacementTexte";
 import { CIVILITES } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { avecCode } from "../utils/validationExplicite";
@@ -267,10 +268,16 @@ async function envoyerExport(
  * traitement pour les données de ses locataires (voir la politique de
  * confidentialité) : c'est à lui que le locataire adresse sa demande.
  *
- * Limite connue et assumée : les messages échangés via la messagerie
- * intégrée ne sont pas touchés. Leur contenu appartient à l'échange entre les
- * deux parties et peut servir de preuve au gestionnaire ; s'il contient des
- * éléments identifiants, ils doivent être traités au cas par cas.
+ * Limites connues et assumées :
+ *  - les messages échangés via la messagerie intégrée ne sont pas touchés. Leur
+ *    contenu appartient à l'échange entre les deux parties et peut servir de
+ *    preuve au gestionnaire ; s'il contient des éléments identifiants, ils
+ *    doivent être traités au cas par cas ;
+ *  - les photos des signalements restent dans le stockage privé : elles
+ *    montrent l'état du logement, preuve utile à la restitution de la caution ;
+ *  - dans les textes libres (signalements, états des lieux), seul le nom, l'email
+ *    et le téléphone tels qu'ils sont inscrits sur la fiche sont remplacés : une
+ *    initiale ou une faute de frappe ne peut pas être retrouvée de façon fiable.
  */
 export const anonymiserTenant = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
@@ -333,6 +340,32 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
         .where(inArray(contractGuarantors.contractId, tenantContractIds));
     }
     await tx.update(inspections).set({ tenantSignatureUrl: null }).where(eq(inspections.tenantId, existing.id));
+
+    // Les textes libres écrits sur lui : le titre, la description et la note du gestionnaire de ses signalements,
+    // les commentaires et notes de pièces de ses états des lieux. Son nom, son email et son téléphone y sont
+    // remplacés, le reste du texte est conservé : c'est le contenu du signalement ou du constat.
+    const effacements: Array<[string, string]> = [
+      [nomAffiche, nomAnonyme],
+      [existing.email, "adresse effacée"],
+      [existing.phone, "numéro effacé"],
+    ];
+    await tx
+      .update(issueReports)
+      .set({
+        title: remplacerDansTexte(issueReports.title, effacements),
+        description: remplacerDansTexte(issueReports.description, effacements),
+        managerNote: remplacerDansTexte(issueReports.managerNote, effacements),
+      })
+      .where(eq(issueReports.tenantId, existing.id));
+    await tx
+      .update(inspections)
+      .set({
+        roomsData: remplacerDansTexte(inspections.roomsData, effacements),
+        metersData: remplacerDansTexte(inspections.metersData, effacements),
+        keysData: remplacerDansTexte(inspections.keysData, effacements),
+        generalComments: remplacerDansTexte(inspections.generalComments, effacements),
+      })
+      .where(eq(inspections.tenantId, existing.id));
 
     // Le journal d'activité conserve, en texte libre, le nom du locataire
     // dans les entrées passées le concernant (création/modification de sa
