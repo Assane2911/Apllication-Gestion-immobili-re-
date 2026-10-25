@@ -150,7 +150,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
       for (const garant of garants) {
         if (!garant.email) continue;
         try {
-          const avis = guarantorUnpaidNoticeEmail({ ...parametres, guarantorName: nomAvecCivilite(garant), maxAmount: garant.maxAmount, tenantName: nomComplet(ligne.tenant) });
+          const avis = guarantorUnpaidNoticeEmail({ ...parametres, guarantorName: nomAvecCivilite(garant), maxAmount: garant.maxAmount, tenantName: nomComplet(ligne.tenant), langue: langueOuDefaut(ligne.tenant.language) });
           // `sendEmail` ne lève pas : un échec revient en `error`, et ne doit pas être compté comme un garant prévenu.
           const resultatGarant = await sendEmail(garant.email, avis.subject, avis.html);
           if (!("error" in resultatGarant && resultatGarant.error)) garantsPrevenus++;

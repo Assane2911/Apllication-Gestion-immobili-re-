@@ -17,7 +17,7 @@ import { bicSchema, ibanSchema } from "../utils/iban";
 import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { avecCode } from "../utils/validationExplicite";
-import { langueDeLaRequete } from "../utils/langue";
+import { LANGUES, langueDeLaRequete } from "../utils/langue";
 import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
 
 // Champs déjà présents en base (voir schema.ts) — créés directement en SQL en
@@ -49,6 +49,8 @@ const ownerSchema = z.object({
   bic: bicSchema,
   managementFeeRate: z.coerce.number().min(0).max(100).optional(),
   notes: z.string().max(5000, "Les notes ne peuvent pas dépasser 5 000 caractères").optional(),
+  // Langue des e-mails de ce propriétaire. Facultative : à la création, elle prend la langue de l'interface du gestionnaire.
+  language: z.enum(LANGUES).optional(),
 });
 
 /**
@@ -146,7 +148,7 @@ export const createOwner = asyncHandler(async (req: Request, res: Response) => {
 
   const [owner] = await db
     .insert(owners)
-    .values({ ...body, managerId: req.user!.userId })
+    .values({ ...body, language: body.language ?? langueDeLaRequete(req), managerId: req.user!.userId })
     .returning();
 
   await logActivity({

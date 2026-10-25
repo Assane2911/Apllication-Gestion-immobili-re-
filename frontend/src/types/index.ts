@@ -119,6 +119,8 @@ export interface Owner {
   managementFeeRate: number;
   notes?: string | null;
   userId?: string | null;
+  /** Langue des e-mails de ce propriétaire (« fr », « en », « es », « pt »). Absente sur une fiche d'avant : le français. */
+  language?: string | null;
   /** NONE = aucun accès créé, PENDING = invité mais mot de passe pas encore posé, ACTIVE = accès utilisable. */
   portalStatus: OwnerPortalStatus;
   /** Date d'exercice du droit à l'effacement (RGPD art. 17) — non nulle une fois anonymisé, voir anonymiserOwner. */

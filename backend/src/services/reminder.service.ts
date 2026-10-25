@@ -246,6 +246,8 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
       // configuration : dans une fenêtre glissante, annoncer « dans 14 jours »
       // à un bail qui s'achève dans 5 serait faux.
       daysLeft: joursEntre(now, new Date(row.contract.endDate)),
+      // Écrit à l'agence, donc dans la langue de son interface.
+      langue: langueOuDefaut(row.manager.language),
     });
 
     const emailResult = await sendEmail(row.managerEmail, subject, html);
@@ -296,6 +298,7 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
       policy: insurancePolicies,
       property: properties,
       managerEmail: users.email,
+      managerLanguage: users.language,
     })
     .from(insurancePolicies)
     .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
@@ -333,6 +336,7 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
       policyNumber: row.policy.policyNumber,
       expiryDate: new Date(row.policy.expiryDate),
       daysLeft: joursEntre(now, new Date(row.policy.expiryDate)),
+      langue: langueOuDefaut(row.managerLanguage),
     });
 
     const emailResult = await sendEmail(row.managerEmail, subject, html);

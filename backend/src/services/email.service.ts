@@ -2,10 +2,11 @@ import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import { escapeHtml } from "../utils/html";
 import { formaterMontant } from "../utils/montant";
-import { formaterDate, LANGUE_PAR_DEFAUT, nomDuMois, type Langue } from "../utils/langue";
+import { formaterDate, formaterDateHeure, LANGUE_PAR_DEFAUT, nomDuMois, type Langue } from "../utils/langue";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { TEXTES_COMPTE } from "./email.comptes.textes";
 import { TEXTES_LOCATAIRE } from "./email.locataire.textes";
+import { TEXTES_SUITE } from "./email.suite.textes";
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -291,23 +292,23 @@ export function contractEndingReminderEmail(params: {
   propertyTitle: string;
   endDate: Date;
   daysLeft: number;
+  langue?: Langue;
 }) {
-  const { tenantName, propertyTitle, endDate, daysLeft } = params;
-  const formattedDate = endDate.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const { tenantName, propertyTitle, endDate, daysLeft, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].finDeContrat;
+  const formattedDate = formaterDate(endDate, langue);
   return {
-    subject: `Rappel : fin de contrat dans ${daysLeft} jours — ${propertyTitle}`,
+    subject: t.sujet(propertyTitle, daysLeft),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#1f2937;">Rappel de fin de contrat de location</h2>
-        <p>Bonjour,</p>
+        <h2 style="color:#1f2937;">${t.titre}</h2>
+        <p>${TEXTES_COMPTE[langue].bonjour}</p>
         <p>
-          Le contrat de location de <strong>${escapeHtml(tenantName)}</strong> pour le bien
-          <strong>${escapeHtml(propertyTitle)}</strong> arrive à échéance le
-          <strong>${escapeHtml(formattedDate)}</strong> (dans ${daysLeft} jours).
+          ${t.intro(escapeHtml(tenantName), escapeHtml(propertyTitle), escapeHtml(formattedDate), daysLeft)}
         </p>
-        <p>Pensez à contacter le locataire pour discuter d'un renouvellement, d'un état des lieux de sortie ou de la libération du bien.</p>
+        <p>${t.conseil}</p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+          ${TEXTES_COMPTE[langue].pied}
         </p>
       </div>
     `,
@@ -320,34 +321,35 @@ export function insurancePolicyExpiryReminderEmail(params: {
   policyNumber: string;
   expiryDate: Date;
   daysLeft: number;
+  langue?: Langue;
 }) {
-  const { propertyTitle, insurerName, policyNumber, expiryDate, daysLeft } = params;
-  const formattedDate = expiryDate.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const { propertyTitle, insurerName, policyNumber, expiryDate, daysLeft, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].assurance;
+  const formattedDate = formaterDate(expiryDate, langue);
   return {
-    subject: `Rappel : police d'assurance à renouveler dans ${daysLeft} jours — ${propertyTitle}`,
+    subject: t.sujet(propertyTitle, daysLeft),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#1f2937;">Rappel d'échéance d'assurance</h2>
-        <p>Bonjour,</p>
+        <h2 style="color:#1f2937;">${t.titre}</h2>
+        <p>${TEXTES_COMPTE[langue].bonjour}</p>
         <p>
-          La police d'assurance <strong>${escapeHtml(policyNumber)}</strong> souscrite auprès de
-          <strong>${escapeHtml(insurerName)}</strong> pour le bien <strong>${escapeHtml(propertyTitle)}</strong>
-          arrive à échéance le <strong>${escapeHtml(formattedDate)}</strong> (dans ${daysLeft} jours).
+          ${t.intro(escapeHtml(policyNumber), escapeHtml(insurerName), escapeHtml(propertyTitle), escapeHtml(formattedDate), daysLeft)}
         </p>
-        <p>Pensez à contacter votre assureur pour renouveler le contrat ou en souscrire un nouveau avant cette date.</p>
+        <p>${t.conseil}</p>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+          ${TEXTES_COMPTE[langue].pied}
         </p>
       </div>
     `,
   };
 }
 
-const issueStatusLabels: Record<string, { label: string; color: string; emoji: string }> = {
-  OPEN: { label: "Ouvert", color: "#2563eb", emoji: "📋" },
-  IN_PROGRESS: { label: "En cours de traitement", color: "#d97706", emoji: "🔧" },
-  RESOLVED: { label: "Résolu", color: "#059669", emoji: "✅" },
-  REJECTED: { label: "Rejeté", color: "#dc2626", emoji: "✖️" },
+/** Couleur et pictogramme de chaque statut (le libellé, lui, est traduit : voir TEXTES_SUITE). */
+const issueStatusStyles: Record<string, { color: string; emoji: string }> = {
+  OPEN: { color: "#2563eb", emoji: "📋" },
+  IN_PROGRESS: { color: "#d97706", emoji: "🔧" },
+  RESOLVED: { color: "#059669", emoji: "✅" },
+  REJECTED: { color: "#dc2626", emoji: "✖️" },
 };
 
 /**
@@ -363,35 +365,38 @@ export function issueStatusUpdateEmail(params: {
   // Rendez-vous d'intervention pris avec le prestataire, s'il y en a un —
   // voir updateIssueStatus (issue.controller.ts). Simple Date, pas une
   // chaîne : c'est la colonne telle que Drizzle la renvoie, à formater ici
-  // comme partout ailleurs dans ce service (voir toLocaleDateString plus bas).
+  // comme partout ailleurs dans ce service.
   scheduledAt?: Date | null;
   frontendUrl: string;
+  langue?: Langue;
 }) {
-  const { tenantName, issueTitle, propertyTitle, status, managerNote, scheduledAt, frontendUrl } = params;
-  const meta = issueStatusLabels[status] ?? { label: status, color: "#334155", emoji: "ℹ️" };
+  const { tenantName, issueTitle, propertyTitle, status, managerNote, scheduledAt, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].signalement;
+  const style = issueStatusStyles[status] ?? { color: "#334155", emoji: "ℹ️" };
+  // Un statut inconnu s'affiche tel quel, comme avant.
+  const libelle = (t.statuts as Record<string, string>)[status] ?? status;
 
   return {
-    subject: `${meta.emoji} Mise à jour de votre signalement — ${issueTitle}`,
+    subject: t.sujet(style.emoji, issueTitle),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">${meta.emoji} Mise à jour de votre incident signalé</h2>
-        <p>Bonjour ${escapeHtml(tenantName)},</p>
+        <h2 style="color:#0f172a;">${t.titre(style.emoji)}</h2>
+        <p>${t.bonjour(escapeHtml(tenantName))}</p>
         <p>
-          Le statut de votre signalement <strong>« ${escapeHtml(issueTitle)} »</strong> concernant le logement
-          <strong>${escapeHtml(propertyTitle)}</strong> a été mis à jour :
+          ${t.intro(escapeHtml(issueTitle), escapeHtml(propertyTitle))}
         </p>
-        <div style="display:inline-block; background:${meta.color}1a; color:${meta.color}; font-weight:bold; padding:8px 16px; border-radius:20px; border:1px solid ${meta.color}40; margin: 8px 0 16px 0;">
-          ${escapeHtml(meta.label)}
+        <div style="display:inline-block; background:${style.color}1a; color:${style.color}; font-weight:bold; padding:8px 16px; border-radius:20px; border:1px solid ${style.color}40; margin: 8px 0 16px 0;">
+          ${escapeHtml(libelle)}
         </div>
-        ${scheduledAt ? `<p style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; color:#1e3a8a;"><strong>📅 Intervention prévue le ${escapeHtml(new Date(scheduledAt).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }))}</strong><br/>Merci de vous assurer d'être présent ou de prévoir un accès au logement.</p>` : ""}
-        ${managerNote ? `<p style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; color:#334155;"><strong>Message de votre agence :</strong><br/>${escapeHtml(managerNote)}</p>` : ""}
+        ${scheduledAt ? `<p style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; color:#1e3a8a;">${t.intervention(escapeHtml(formaterDateHeure(scheduledAt, langue)))}</p>` : ""}
+        ${managerNote ? `<p style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; color:#334155;"><strong>${t.note}</strong><br/>${escapeHtml(managerNote)}</p>` : ""}
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${frontendUrl}/portail/incidents" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Voir mes signalements →
+            ${t.bouton}
           </a>
         </div>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+          ${TEXTES_COMPTE[langue].pied}
         </p>
       </div>
     `,
@@ -458,32 +463,32 @@ export function depositRefundEmail(params: {
  * déclenche sa récompense (voir accorderRecompenseParrainage,
  * referral.service.ts).
  */
-export function referralRewardEmail(params: { days: number; newEndDate: Date; frontendUrl: string }) {
-  const { days, newEndDate, frontendUrl } = params;
-  const dateAffichee = escapeHtml(newEndDate.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" }));
+export function referralRewardEmail(params: { days: number; newEndDate: Date; frontendUrl: string; langue?: Langue }) {
+  const { days, newEndDate, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].parrainage;
+  const dateAffichee = escapeHtml(formaterDate(newEndDate, langue));
 
   return {
-    subject: `🎁 +${days} jours offerts — votre filleul a rejoint ImmoPlatform Pro`,
+    subject: t.sujet(days),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">🎁 Merci pour votre parrainage !</h2>
-        <p>Bonjour,</p>
+        <h2 style="color:#0f172a;">${t.titre}</h2>
+        <p>${TEXTES_COMPTE[langue].bonjour}</p>
         <p>
-          La personne que vous avez parrainée vient de confirmer son compte. En remerciement,
-          <strong>${days} jours</strong> ont été ajoutés à votre accès.
+          ${t.intro(days)}
         </p>
         <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; text-align:center; margin: 16px 0;">
-          <span style="font-size:11px; color:#166534; text-transform:uppercase; letter-spacing:1px; font-weight:bold;">Nouvelle échéance</span>
+          <span style="font-size:11px; color:#166534; text-transform:uppercase; letter-spacing:1px; font-weight:bold;">${t.nouvelleEcheance}</span>
           <div style="font-size:20px; font-weight:900; color:#166534; margin-top:4px;">${dateAffichee}</div>
         </div>
-        <p>Continuez à partager votre code de parrainage pour prolonger votre accès à chaque nouveau filleul confirmé.</p>
+        <p>${t.suite}</p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${frontendUrl}/parrainage" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Voir mon programme de parrainage →
+            ${t.bouton}
           </a>
         </div>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+          ${TEXTES_COMPTE[langue].pied}
         </p>
       </div>
     `,
@@ -496,27 +501,30 @@ export function newMessageFromManagerEmail(params: {
   propertyTitle: string;
   content: string;
   frontendUrl: string;
+  langue?: Langue;
 }) {
-  const { tenantName, propertyTitle, content, frontendUrl } = params;
+  const { tenantName, propertyTitle, content, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].message;
+  const [ouvrant, fermant] = TEXTES_SUITE[langue].guillemets;
   const preview = content.length > 220 ? `${content.slice(0, 220)}…` : content;
 
   return {
-    subject: `💬 Nouveau message de votre agence — ${propertyTitle}`,
+    subject: t.sujet(propertyTitle),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">💬 Nouveau message de votre agence</h2>
-        <p>Bonjour ${escapeHtml(tenantName)},</p>
-        <p>Vous avez reçu un nouveau message concernant le logement <strong>${escapeHtml(propertyTitle)}</strong> :</p>
+        <h2 style="color:#0f172a;">${t.titre}</h2>
+        <p>${t.bonjour(escapeHtml(tenantName))}</p>
+        <p>${t.intro(escapeHtml(propertyTitle))}</p>
         <p style="background:#f8fafc; border-left:3px solid #2563eb; border-radius:4px; padding:12px 16px; color:#334155; font-style:italic;">
-          « ${escapeHtml(preview)} »
+          ${ouvrant}${escapeHtml(preview)}${fermant}
         </p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${frontendUrl}/portail/messages" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Répondre au message →
+            ${t.bouton}
           </a>
         </div>
         <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
+          ${TEXTES_COMPTE[langue].pied}
         </p>
       </div>
     `,
@@ -657,30 +665,32 @@ export function rentRevisionEmail(params: {
   /** Motif lisible (« indexation IRL : 142,06 → 145,47 », « +3 % »…), vide si aucun. */
   motif?: string | null;
   note?: string | null;
+  langue?: Langue;
 }) {
-  const { tenantName, propertyTitle, previousRent, newRent, currency = "EUR", effectiveDate, motif, note } = params;
-  const date = new Date(effectiveDate).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
-  const ancien = escapeHtml(formaterMontant(previousRent, currency));
-  const nouveau = escapeHtml(formaterMontant(newRent, currency));
+  const { tenantName, propertyTitle, previousRent, newRent, currency = "EUR", effectiveDate, motif, note, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].revision;
+  const date = formaterDate(effectiveDate, langue, { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+  const ancien = escapeHtml(formaterMontant(previousRent, currency, langue));
+  const nouveau = escapeHtml(formaterMontant(newRent, currency, langue));
   return {
-    subject: `Révision de votre loyer à compter du ${date}`,
+    subject: t.sujet(date),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
-          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Révision du loyer</h1>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">${t.bandeau}</h1>
           <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${escapeHtml(propertyTitle)}</p>
         </div>
         <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
-          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(tenantName)}</strong>,</p>
-          <p>Votre loyer pour le bien <strong>${escapeHtml(propertyTitle)}</strong> est révisé à compter du <strong>${escapeHtml(date)}</strong>.</p>
+          <p style="font-size: 15px; margin-top: 0;">${t.bonjour(escapeHtml(tenantName))}</p>
+          <p>${t.intro(escapeHtml(propertyTitle), escapeHtml(date))}</p>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
-            <span style="font-size: 13px; color: #64748b;">Loyer actuel : <s>${ancien}</s></span><br>
-            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Nouveau loyer mensuel</span><br>
+            <span style="font-size: 13px; color: #64748b;">${t.loyerActuel} <s>${ancien}</s></span><br>
+            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">${t.nouveauLoyer}</span><br>
             <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${nouveau}</span>
           </div>
-          ${motif ? `<p style="font-size: 13px; color: #475569;"><strong>Base de calcul :</strong> ${escapeHtml(motif)}</p>` : ""}
+          ${motif ? `<p style="font-size: 13px; color: #475569;"><strong>${t.base}</strong> ${escapeHtml(motif)}</p>` : ""}
           ${note ? `<p style="font-size: 13px; color: #475569;">${escapeHtml(note)}</p>` : ""}
-          <p style="font-size: 13px; color: #475569;">Les avis d'échéance émis à partir de cette date porteront ce nouveau montant. Pour toute question, répondez à votre gestionnaire.</p>
+          <p style="font-size: 13px; color: #475569;">${t.suite}</p>
         </div>
       </div>`,
   };
@@ -697,33 +707,33 @@ export function ownerPayoutEmail(params: {
   paidAt: Date;
   methodLabel: string;
   reference?: string | null;
+  langue?: Langue;
 }) {
-  const mois = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-  const periode = `${mois[params.periodMonth - 1] ?? params.periodMonth} ${params.periodYear}`;
-  const date = new Date(params.paidAt).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
-  const montant = escapeHtml(formaterMontant(params.amount, params.currency));
+  const langue = params.langue ?? LANGUE_PAR_DEFAUT;
+  const t = TEXTES_SUITE[langue].reversement;
+  const periode = `${nomDuMois(params.periodMonth, langue)} ${params.periodYear}`;
+  const date = formaterDate(params.paidAt, langue);
+  const montant = escapeHtml(formaterMontant(params.amount, params.currency, langue));
   return {
-    subject: `Reversement de vos loyers — ${periode}`,
+    subject: t.sujet(periode),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
-          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Reversement effectué</h1>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">${t.bandeau}</h1>
           <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${escapeHtml(params.agencyName)} • ${escapeHtml(periode)}</p>
         </div>
         <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
-          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(params.ownerName)}</strong>,</p>
-          <p>Votre agence vous a versé le ${escapeHtml(date)} (${escapeHtml(params.methodLabel)}) la somme suivante, au titre de la gestion de <strong>${escapeHtml(periode)}</strong> :</p>
+          <p style="font-size: 15px; margin-top: 0;">${t.bonjour(escapeHtml(params.ownerName))}</p>
+          <p>${t.intro(escapeHtml(date), escapeHtml(params.methodLabel), escapeHtml(periode))}</p>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
             <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${montant}</span>
-            ${params.reference ? `<br><span style="font-size: 12px; color: #64748b;">Référence : ${escapeHtml(params.reference)}</span>` : ""}
+            ${params.reference ? `<br><span style="font-size: 12px; color: #64748b;">${t.reference(escapeHtml(params.reference))}</span>` : ""}
           </div>
-          <p style="font-size: 13px; color: #475569;">Le détail (loyers encaissés, charges, commission) figure dans votre compte-rendu de gestion, disponible dans votre espace propriétaire.</p>
+          <p style="font-size: 13px; color: #475569;">${t.detail}</p>
         </div>
       </div>`,
   };
 }
-
-const MOIS_RELANCE = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
 /**
  * Relance d'un loyer impayé, niveau 1 (rappel amiable) à 3 (dernière relance). Le ton monte, le
@@ -774,12 +784,12 @@ export function overdueReminderEmail(params: {
 }
 
 /** Rappel du plafond de l'engagement d'un garant, quand il en a un : sans lui, le montant total dû paraît être le sien. */
-function rappelPlafondGarant(maxAmount: number | null | undefined, currency: string): string {
+function rappelPlafondGarant(maxAmount: number | null | undefined, currency: string, langue: Langue = LANGUE_PAR_DEFAUT): string {
   if (maxAmount === null || maxAmount === undefined) return "";
-  return `<p>Pour mémoire, le montant maximal que vous avez garanti est de <strong>${escapeHtml(formaterMontant(maxAmount, currency))}</strong>.</p>`;
+  return `<p>${TEXTES_SUITE[langue].garant.plafond(escapeHtml(formaterMontant(maxAmount, currency, langue)))}</p>`;
 }
 
-/** Information du garant : le locataire qu'il garantit a un loyer impayé, relancé sans succès. */
+/** Information du garant : le locataire qu'il garantit a un loyer impayé, relancé sans succès. Dans la langue du locataire. */
 export function guarantorUnpaidNoticeEmail(params: {
   guarantorName: string;
   maxAmount?: number | null;
@@ -790,21 +800,21 @@ export function guarantorUnpaidNoticeEmail(params: {
   periodMonth: number;
   periodYear: number;
   agencyName: string;
+  langue?: Langue;
 }) {
-  const periode = `${MOIS_RELANCE[params.periodMonth - 1] ?? params.periodMonth} ${params.periodYear}`;
+  const langue = params.langue ?? LANGUE_PAR_DEFAUT;
+  const t = TEXTES_SUITE[langue].garant;
+  const periode = `${nomDuMois(params.periodMonth, langue)} ${params.periodYear}`;
   return {
-    subject: `Information : loyer impayé de ${params.tenantName} — ${periode}`,
+    subject: t.sujet(params.tenantName, periode),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; color: #334155; line-height: 1.6;">
-        <p>Bonjour <strong>${escapeHtml(params.guarantorName)}</strong>,</p>
+        <p>${t.bonjour(escapeHtml(params.guarantorName))}</p>
         <p>
-          Vous êtes garant du bail de <strong>${escapeHtml(params.tenantName)}</strong> pour le logement
-          <strong>${escapeHtml(params.propertyTitle)}</strong>. Nous vous informons que le loyer de
-          <strong>${escapeHtml(periode)}</strong> reste impayé malgré nos relances, pour un montant de
-          <strong>${escapeHtml(formaterMontant(params.amount, params.currency ?? "EUR"))}</strong>.
+          ${t.corps(escapeHtml(params.tenantName), escapeHtml(params.propertyTitle), escapeHtml(periode), escapeHtml(formaterMontant(params.amount, params.currency ?? "EUR", langue)))}
         </p>
-        ${rappelPlafondGarant(params.maxAmount, params.currency ?? "EUR")}
-        <p>Pour toute question, vous pouvez contacter ${escapeHtml(params.agencyName)}.</p>
+        ${rappelPlafondGarant(params.maxAmount, params.currency ?? "EUR", langue)}
+        <p>${t.contact(escapeHtml(params.agencyName))}</p>
       </div>`,
   };
 }

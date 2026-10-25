@@ -500,6 +500,22 @@ describe("POST /api/auth/google — email de bienvenue", () => {
     expect(html).toContain("15-day free trial");
   });
 
+  it("le compte créé par Google enregistre la langue de l'interface ; une reconnexion la met à jour", async () => {
+    vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
+    mockGooglePayload({ sub: "google-sub-langue", email: "langue-google@test.local", email_verified: true });
+
+    await request(app).post("/api/auth/google").set("Accept-Language", "es").send({ credential: "tok-1" });
+    const lire = async () => (await testDb.select().from(users).where(eq(users.email, "langue-google@test.local")))[0].language;
+    expect(await lire()).toBe("es");
+
+    await request(app).post("/api/auth/google").set("Accept-Language", "pt").send({ credential: "tok-2" });
+    expect(await lire()).toBe("pt");
+
+    // Une requête qui ne demande aucune langue ne l'écrase pas.
+    await request(app).post("/api/auth/google").send({ credential: "tok-3" });
+    expect(await lire()).toBe("pt");
+  });
+
   it("n'en envoie pas quand Google se lie à un compte déjà existant", async () => {
     const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
     await createManager({ email: "deja-inscrit@test.local" });

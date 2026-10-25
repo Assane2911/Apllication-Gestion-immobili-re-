@@ -149,6 +149,63 @@ describe("OwnersPage (manager)", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Enregistrer" })).not.toBeInTheDocument());
   });
 
+  describe("langue des e-mails du propriétaire", () => {
+    it("propose les quatre langues et la langue de l'interface par défaut", async () => {
+      const user = userEvent.setup();
+      queueOwners([]);
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "+ Ajouter un propriétaire" }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: "+ Ajouter un propriétaire" })[0]);
+
+      const champ = screen.getByLabelText("Langue des e-mails") as HTMLSelectElement;
+      expect(Array.from(champ.options).map((o) => [o.value, o.textContent])).toEqual([
+        ["fr", "Français"],
+        ["en", "English"],
+        ["pt", "Português"],
+        ["es", "Español"],
+      ]);
+      expect(champ.value).toBe("fr");
+    });
+
+    it("envoie la langue choisie avec la fiche", async () => {
+      const user = userEvent.setup();
+      queueOwners([]);
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "own-new" } });
+      queueOwners([]);
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "+ Ajouter un propriétaire" }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: "+ Ajouter un propriétaire" })[0]);
+
+      await user.type(screen.getByLabelText("Prénom"), "Moussa");
+      await user.type(screen.getByLabelText("Nom"), "Traoré");
+      await user.type(screen.getByLabelText("Téléphone"), "77 122 33 44");
+      await user.type(screen.getByLabelText("Email"), "moussa@example.com");
+      await user.selectOptions(screen.getByLabelText("Langue des e-mails"), "es");
+      await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
+      expect(mockedApi.post.mock.calls[0][1]).toMatchObject({ language: "es" });
+    });
+
+    it("à la modification, montre la langue enregistrée, ou le français pour une fiche d'avant", async () => {
+      const user = userEvent.setup();
+      queueOwners([owner({ language: "pt" })]);
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Modifier" }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
+      expect((screen.getByLabelText("Langue des e-mails") as HTMLSelectElement).value).toBe("pt");
+    });
+
+    it("une fiche sans langue (d'avant) s'ouvre en français", async () => {
+      const user = userEvent.setup();
+      queueOwners([owner({ language: null })]);
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Modifier" }).length).toBeGreaterThan(0));
+      await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
+      expect((screen.getByLabelText("Langue des e-mails") as HTMLSelectElement).value).toBe("fr");
+    });
+  });
+
   it("modifie un propriétaire existant : pré-remplit le formulaire et envoie une requête PUT", async () => {
     const user = userEvent.setup();
     queueOwners([owner({ id: "own-1", companyName: "SCI Diallo" })]);

@@ -10,6 +10,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
+import { langueOuDefaut } from "../utils/langue";
 
 type Qualite = "TITULAIRE" | "COLOCATAIRE";
 type Locataire = typeof tenants.$inferSelect;
@@ -303,6 +304,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
         propertyTitle: fil.property.title,
         content,
         frontendUrl: env.frontendUrl,
+        langue: langueOuDefaut(fil.tenant.language),
       });
       await sendEmail(fil.tenant.email, subject, html).catch((err) =>
         console.error("[message] Échec de l'envoi de la notification de nouveau message:", err)

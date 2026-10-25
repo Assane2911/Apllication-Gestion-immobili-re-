@@ -3,6 +3,7 @@ import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
 import { users } from "../db/schema";
+import { langueOuDefaut } from "../utils/langue";
 import { referralRewardEmail, sendEmail } from "./email.service";
 
 /** Jours offerts au PARRAIN quand son filleul confirme son adresse email. */
@@ -161,6 +162,7 @@ export async function accorderRecompenseParrainage(filleul: typeof users.$inferS
       days: REFERRAL_REWARD_DAYS,
       newEndDate: issue.nouvelleDate,
       frontendUrl: env.frontendUrl,
+      langue: langueOuDefaut(issue.parrain.language),
     });
     await sendEmail(issue.parrain.email, subject, html).catch((err) =>
       console.error("[referral] Échec de l'envoi de la notification de récompense:", err)

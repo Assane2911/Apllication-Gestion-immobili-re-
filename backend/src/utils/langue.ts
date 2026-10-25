@@ -82,3 +82,16 @@ export function nomDuMois(mois: number, langue: Langue = LANGUE_PAR_DEFAUT): str
   if (!Number.isInteger(mois) || mois < 1 || mois > 12) return String(mois);
   return new Date(Date.UTC(2026, mois - 1, 1)).toLocaleDateString(LOCALE_PAR_LANGUE[langue], { month: "long", timeZone: "UTC" });
 }
+
+/** Une date et une heure UTC en toutes lettres dans la langue donnée (« 5 novembre 2026 à 09:30 UTC »). */
+export function formaterDateHeure(date: Date | string | number, langue: Langue = LANGUE_PAR_DEFAUT): string {
+  return new Date(date).toLocaleString(LOCALE_PAR_LANGUE[langue], {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+    timeZoneName: "short",
+  });
+}

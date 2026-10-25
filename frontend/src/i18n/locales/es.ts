@@ -1310,6 +1310,9 @@ const es: TranslationSchema = {
         bic: "BIC / SWIFT",
         managementFeeRate: "Tasa de comisión (%)",
         notes: "Notas",
+        language: "Idioma de los correos",
+        languageHint:
+          "Las liquidaciones de este propietario se le comunican en este idioma.",
       },
       emptyTitle: "Todavía no hay propietarios",
       emptyDesc: "Añade un propietario (nombre, correo, teléfono) para poder asociarle propiedades y darle acceso a su portal.",

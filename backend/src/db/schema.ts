@@ -78,6 +78,10 @@ export const users = pgTable("users", {
   // explicite de déconnexion globale.
   tokenVersion: integer("token_version").notNull().default(0),
   currency: text("currency").notNull().default("EUR"),
+  // Langue de l'interface de cette personne (fr, en, es, pt), enregistrée à l'inscription puis à chaque connexion.
+  // Les e-mails qui lui sont adressés sans qu'elle fasse de requête (rappels de fin de contrat et d'assurance,
+  // récompense de parrainage) sont écrits dans cette langue. NULL = compte d'avant : le français.
+  language: text("language"),
   // SaaS & Période d'essai (15 jours offerts à l'inscription pour les gestionnaires)
   subscriptionStatus: subscriptionStatusEnum("subscription_status").notNull().default("TRIAL"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").notNull().default("STARTER"),
@@ -304,6 +308,9 @@ export const owners = pgTable(
     // deleteOwner refuse tant qu'un bien est associé, l'anonymisation est
     // l'issue pour un propriétaire qui en demande l'effacement malgré tout.
     anonymizedAt: timestamp("anonymized_at", { mode: "date" }),
+    // Langue des e-mails de ce propriétaire (fr, en, es, pt) : choisie par le gestionnaire dans la fiche, puis mise à
+    // jour quand il se connecte à son espace. NULL = fiche d'avant : le français. Voir tenants.language.
+    language: text("language"),
     ...timestamps,
   },
   (table) => ({
