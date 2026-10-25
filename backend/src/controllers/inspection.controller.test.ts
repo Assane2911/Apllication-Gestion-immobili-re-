@@ -243,7 +243,7 @@ describe("POST /api/inspections/:id/sign", () => {
       .set(authHeader(tokenFor(otherTenantUser, otherTenant.id)))
       .send({ signatureDataUrl: "data:image/png;base64,fake" });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 

@@ -324,9 +324,9 @@ describe("GET /api/documents/formal-notice/:noticeId", () => {
     const url = `/api/documents/formal-notice/${notice.id}`;
 
     expect((await request(app).get(url).set(authHeader(await tokenLocataire(tenant.id)))).status).toBe(200);
-    expect((await request(app).get(url).set(authHeader(tokenFor(await createManager())))).status).toBe(403);
+    expect((await request(app).get(url).set(authHeader(tokenFor(await createManager())))).status).toBe(404);
     const intrus = await createTenant(manager.id);
-    expect((await request(app).get(url).set(authHeader(await tokenLocataire(intrus.id)))).status).toBe(403);
+    expect((await request(app).get(url).set(authHeader(await tokenLocataire(intrus.id)))).status).toBe(404);
   });
 });
 

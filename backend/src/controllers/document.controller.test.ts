@@ -147,7 +147,7 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
       .get(`/api/documents/receipt/${invoice.id}`)
       .set(authHeader(tokenFor(otherManager)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("autorise le locataire concerné à récupérer sa propre quittance", async () => {
@@ -176,7 +176,7 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
       .get(`/api/documents/receipt/${invoice.id}`)
       .set(authHeader(await tokenLocataire(otherTenant.id)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("refuse de générer une quittance pour une facture impayée (statut PENDING)", async () => {
@@ -212,7 +212,7 @@ describe("GET /api/documents/receipt/:invoiceId", () => {
       .get(`/api/documents/receipt/${invoice.id}`)
       .set(authHeader(tokenFor(admin)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 
@@ -250,7 +250,7 @@ describe("GET /api/documents/lease/:contractId", () => {
       .get(`/api/documents/lease/${contract.id}`)
       .set(authHeader(tokenFor(otherManager)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("imprime les clauses particulières du contrat sur le bail", async () => {
@@ -305,7 +305,7 @@ describe("GET /api/documents/lease/:contractId", () => {
       .get(`/api/documents/lease/${contract.id}`)
       .set(authHeader(await tokenLocataire(otherTenant.id)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("interdit l'accès à un administrateur", async () => {
@@ -319,7 +319,7 @@ describe("GET /api/documents/lease/:contractId", () => {
       .get(`/api/documents/lease/${contract.id}`)
       .set(authHeader(tokenFor(admin)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 
@@ -382,7 +382,7 @@ describe("GET /api/documents/lease-scan/:contractId", () => {
       .get(`/api/documents/lease-scan/${contract.id}`)
       .set(authHeader(tokenFor(managerB)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("interdit l'accès à un administrateur", async () => {
@@ -398,7 +398,7 @@ describe("GET /api/documents/lease-scan/:contractId", () => {
       .get(`/api/documents/lease-scan/${contract.id}`)
       .set(authHeader(tokenFor(admin)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 
@@ -463,7 +463,7 @@ describe("GET /api/documents/inspection/:inspectionId", () => {
       .get(`/api/documents/inspection/${inspection.id}`)
       .set(authHeader(tokenFor(managerB)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 
@@ -505,7 +505,7 @@ describe("documents — pas de mise en cache", () => {
 
     const res = await request(app).get(`/api/documents/lease/${contract.id}`).set(authHeader(tokenFor(intrus)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
     expect(res.headers["cache-control"]).toContain("no-store");
   });
 });

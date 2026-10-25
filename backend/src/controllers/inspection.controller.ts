@@ -6,7 +6,7 @@ import { contracts, inspections, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { bauxDuLocataire } from "../services/colocation.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, estLocataireDuBail, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { TAILLE_MAX_SIGNATURE } from "../utils/signature";
@@ -229,10 +229,22 @@ export const deleteInspection = asyncHandler(async (req: Request, res: Response)
 /** Signature électronique (gestionnaire ou locataire) — même mécanisme que signContract. */
 export const signInspection = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
-  const { signatureDataUrl } = signInspectionSchema.parse(req.body);
 
   const [inspection] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
   if (!inspection) throw new ApiError(404, "État des lieux introuvable", "INSPECTION_NOT_FOUND");
+
+  // Appartenance d'abord, avant le corps de la requête et avant l'état : un 400 ou un 409 sur l'état des lieux d'un
+  // autre révélerait qu'il existe (et qu'il est encore en brouillon). Pour un étranger, c'est un identifiant inventé.
+  const estLocataireDeLEtat = req.user.role === "TENANT" && inspection.tenantId === (await idLocataireDuCompte(req));
+  const estGestionnaireDeLEtat = req.user.role === "MANAGER" && inspection.managerId === req.user.userId;
+  if (!estLocataireDeLEtat && !estGestionnaireDeLEtat) {
+    // Le colocataire est partie au bail, mais la signature reste au titulaire (comme celle du bail) : il garde son 403.
+    if (req.user.role === "TENANT" && (await estLocataireDuBail(req, { id: inspection.contractId, tenantId: inspection.tenantId }))) {
+      throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+    }
+    throw new ApiError(404, "État des lieux introuvable", "INSPECTION_NOT_FOUND");
+  }
+  const { signatureDataUrl } = signInspectionSchema.parse(req.body);
 
   // Signer un constat encore en brouillon n'a pas de sens : le contenu peut
   // encore changer, la signature contradictoire doit porter sur un état
@@ -255,8 +267,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
     });
   };
 
-  if (req.user.role === "TENANT") {
-    if (inspection.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  if (estLocataireDeLEtat) {
     const [updated] = await db
       .update(inspections)
       .set({ signedByTenantAt: new Date(), tenantSignatureUrl: signatureDataUrl })
@@ -267,8 +278,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
     return res.json(parseInspection(updated));
   }
 
-  if (req.user.role === "MANAGER") {
-    assertOwnership(inspection, (i) => i.managerId, req.user.userId, "Accès refusé", 403, "ACCESS_DENIED");
+  if (estGestionnaireDeLEtat) {
     // Signature électronique : fonctionnalité Pro (CGU §3) — même règle que
     // signContract (contract.controller.ts). Le locataire (branche
     // ci-dessus) n'est jamais restreint par la formule de son gestionnaire.
@@ -283,7 +293,7 @@ export const signInspection = asyncHandler(async (req: Request, res: Response) =
     return res.json(parseInspection(updated));
   }
 
-  throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  throw new ApiError(404, "État des lieux introuvable", "INSPECTION_NOT_FOUND");
 });
 
 /** Utilisé par document.controller.ts (export HTML certifié) : mêmes règles d'accès que le contenu lui-même. */

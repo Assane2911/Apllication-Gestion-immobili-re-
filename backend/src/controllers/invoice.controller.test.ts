@@ -260,7 +260,7 @@ describe("POST /api/invoices/:id/pay (portail locataire)", () => {
       .set(authHeader(otherTenantToken))
       .send({ method: "DEMO" });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("refuse de payer une facture déjà réglée", async () => {

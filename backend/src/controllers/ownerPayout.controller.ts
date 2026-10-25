@@ -51,8 +51,9 @@ const reversementSchema = z.object({
 const moisAbsolu = (annee: number, mois: number) => annee * 12 + (mois - 1);
 
 export const createOwnerPayout = asyncHandler(async (req: Request, res: Response) => {
-  const body = reversementSchema.parse(req.body);
   const owner = await loadOwnerForManager(req.params.ownerId, req.user!.userId);
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
+  const body = reversementSchema.parse(req.body);
   const maintenant = new Date();
 
   if (moisAbsolu(body.year, body.month) > moisAbsolu(maintenant.getFullYear(), maintenant.getMonth() + 1)) {

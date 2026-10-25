@@ -346,8 +346,6 @@ const paySchema = z.object({
 
 /** Le locataire connecté initie le paiement d'une de ses factures. */
 export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
-  const body = paySchema.parse(req.body);
-
   const [row] = await db
     .select({ invoice: invoices, contract: contracts, tenant: tenants })
     .from(invoices)
@@ -356,7 +354,9 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(invoices.id, req.params.id));
 
   if (!row) throw new ApiError(404, "Facture introuvable", "INVOICE_NOT_FOUND");
-  if (!(await estLocataireDuBail(req, row.contract))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  // 404 et non 403 : la facture d'un autre existe, mais le dire à un étranger révélerait l'existence de cet identifiant.
+  if (!(await estLocataireDuBail(req, row.contract))) throw new ApiError(404, "Facture introuvable", "INVOICE_NOT_FOUND");
+  const body = paySchema.parse(req.body);
   if (row.invoice.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée", "INVOICE_ALREADY_PAID");
   // Le payeur est le locataire connecté (titulaire ou colocataire) : c'est son email qui part au prestataire.
   const payeur = await chargerLocataireDuCompte(req);

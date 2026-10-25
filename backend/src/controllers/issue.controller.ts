@@ -236,7 +236,8 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, body.contractId));
   if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
-  if (!(await estLocataireDuBail(req, contract))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  // 404 et non 403 : le bail d'un autre existe, mais le dire à un étranger révélerait l'existence de cet identifiant.
+  if (!(await estLocataireDuBail(req, contract))) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   if (contract.status !== "ACTIVE") {
     throw new ApiError(400, "Les signalements d'incidents ne peuvent être créés que sur un contrat actif", "ISSUE_CONTRACT_NOT_ACTIVE");
   }
@@ -276,7 +277,8 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
     issue.tenantId === (await idLocataireDuCompte(req)),
-    row.property.managerId === req.user.userId
+    row.property.managerId === req.user.userId,
+    { message: "Signalement introuvable", code: "ISSUE_NOT_FOUND" }
   );
 
   // Plafond vérifié AVANT l'upload : sinon un compte pourrait remplir le

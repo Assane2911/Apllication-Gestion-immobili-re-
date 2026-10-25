@@ -12,6 +12,12 @@ import { getSignedUrl } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire, estLocataireDuBail } from "../utils/authorization";
 
+/** Réponse d'un refus d'accès : celle d'un identifiant inventé, pour ne pas révéler qu'une ressource existe ailleurs. */
+const FACTURE_INTROUVABLE = { message: "Facture introuvable", code: "INVOICE_NOT_FOUND" };
+const CONTRAT_INTROUVABLE = { message: "Contrat introuvable", code: "CONTRACT_NOT_FOUND" };
+const ETAT_DES_LIEUX_INTROUVABLE = { message: "État des lieux introuvable", code: "INSPECTION_NOT_FOUND" };
+const REVISION_INTROUVABLE = { message: "Révision introuvable", code: "REVISION_NOT_FOUND" };
+
 export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { invoiceId } = req.params;
@@ -32,7 +38,8 @@ export const getInvoiceReceipt = asyncHandler(async (req: Request, res: Response
   assertAccesLocataireOuGestionnaire(
     req.user.role,
     await estLocataireDuBail(req, contract),
-    property?.managerId === req.user.userId
+    property?.managerId === req.user.userId,
+    FACTURE_INTROUVABLE
   );
 
   // Une quittance de loyer atteste juridiquement du paiement effectif du loyer :
@@ -108,7 +115,8 @@ export const getContractLease = asyncHandler(async (req: Request, res: Response)
   assertAccesLocataireOuGestionnaire(
     req.user.role,
     await estLocataireDuBail(req, contract),
-    property?.managerId === req.user.userId
+    property?.managerId === req.user.userId,
+    CONTRAT_INTROUVABLE
   );
 
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
@@ -149,7 +157,8 @@ export const getInspectionReport = asyncHandler(async (req: Request, res: Respon
   assertAccesLocataireOuGestionnaire(
     req.user.role,
     await estLocataireDuBail(req, { id: inspection.contractId, tenantId: inspection.tenantId }),
-    inspection.managerId === req.user.userId
+    inspection.managerId === req.user.userId,
+    ETAT_DES_LIEUX_INTROUVABLE
   );
 
   // Un export "certifié" n'a de sens qu'une fois le constat finalisé : tant
@@ -205,7 +214,8 @@ export const getScannedLease = asyncHandler(async (req: Request, res: Response) 
   assertAccesLocataireOuGestionnaire(
     req.user.role,
     await estLocataireDuBail(req, contract),
-    property?.managerId === req.user.userId
+    property?.managerId === req.user.userId,
+    CONTRAT_INTROUVABLE
   );
 
   if (!contract.scannedContractUrl) {
@@ -232,7 +242,8 @@ export const getRentRevisionAmendment = asyncHandler(async (req: Request, res: R
   assertAccesLocataireOuGestionnaire(
     req.user.role,
     await estLocataireDuBail(req, contract),
-    property?.managerId === req.user.userId
+    property?.managerId === req.user.userId,
+    REVISION_INTROUVABLE
   );
   if (revision.status === "CANCELLED") throw new ApiError(409, "Cette révision a été annulée : aucun avenant ne s'y rattache.", "REVISION_CANCELLED_NO_AMENDMENT");
 

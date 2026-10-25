@@ -15,7 +15,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { TAILLE_MAX_SIGNATURE } from "../utils/signature";
-import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, idLocataireDuCompte } from "../utils/authorization";
+import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, estLocataireDuBail, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
 import { ANNEE_BAIL_MAX, ANNEE_BAIL_MIN, dateDeBailPlausible } from "../utils/dates";
 import { deviseSchema } from "../utils/devises";
@@ -760,7 +760,6 @@ const signContractSchema = z.object({
 export const signContract = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { id } = req.params;
-  const { signatureDataUrl } = signContractSchema.parse(req.body);
 
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
   if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
@@ -778,7 +777,13 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     });
 
   if (req.user.role === "TENANT") {
-    if (contract.tenantId !== (await idLocataireDuCompte(req))) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+    if (contract.tenantId !== (await idLocataireDuCompte(req))) {
+      // Le colocataire est partie au bail, mais la signature reste au titulaire : il garde son 403. Pour tout autre, le
+      // bail n'existe pas (404), comme pour un identifiant inventé.
+      if (await estLocataireDuBail(req, contract)) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+      throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
+    }
+    const { signatureDataUrl } = signContractSchema.parse(req.body);
     const [bienDuBail] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
     const [updated] = await db
       .update(contracts)
@@ -793,7 +798,8 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     return res.json(await withRelations(updated.id));
   } else if (req.user.role === "MANAGER") {
     const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-    assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403, "ACCESS_DENIED");
+    assertOwnership(property, (p) => p.managerId, req.user.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
+    const { signatureDataUrl } = signContractSchema.parse(req.body);
     // Signature électronique : fonctionnalité Pro (CGU §3) — le locataire,
     // lui (branche ci-dessus), n'est jamais restreint par la formule de son
     // gestionnaire.
@@ -816,8 +822,8 @@ export const signContract = asyncHandler(async (req: Request, res: Response) => 
     // `else` s'exécuter comme s'il était toujours gestionnaire, car seul
     // `property.managerId === req.user.userId` était vérifié — jamais le
     // rôle réel. Refus explicite par défaut pour tout rôle qui n'est ni
-    // TENANT ni MANAGER.
-    throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+    // TENANT ni MANAGER. 404 : ne pas révéler que ce bail existe.
+    throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   }
 });
 
@@ -841,12 +847,11 @@ const depositRefundSchema = z.object({
  * contradictoire (l'état des lieux de sortie, signé ou non) l'a établie.
  */
 export const recordDepositRefund = asyncHandler(async (req: Request, res: Response) => {
-  const { deductions } = depositRefundSchema.parse(req.body);
-
   const [existing] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
   if (!existing) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, existing.propertyId));
   assertOwnership(property, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
+  const { deductions } = depositRefundSchema.parse(req.body);
 
   let totalDeductions = 0;
   if (deductions !== null) {
@@ -932,7 +937,7 @@ export const uploadScannedContract = asyncHandler(async (req: Request, res: Resp
   if (!contract) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
 
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-  assertOwnership(property, (p) => p.managerId, req.user.userId, "Accès refusé", 403, "ACCESS_DENIED");
+  assertOwnership(property, (p) => p.managerId, req.user.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
 
   assertFileContentMatchesDeclaredType(req.file);
   const storagePath = await uploadPrivateFile(req.file, "contracts");

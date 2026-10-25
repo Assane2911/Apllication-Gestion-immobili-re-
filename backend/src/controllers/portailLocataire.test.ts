@@ -81,7 +81,7 @@ describe("Portail locataire — la fiche est résolue par le compte", () => {
       .get(`/api/documents/receipt/${factureB.id}`)
       .set(authHeader(tokenFor(compte, ficheB.id)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("ne livre jamais le bail d'un autre locataire désigné par le jeton", async () => {
@@ -91,7 +91,7 @@ describe("Portail locataire — la fiche est résolue par le compte", () => {
       .get(`/api/documents/lease/${bailB.id}`)
       .set(authHeader(tokenFor(compte, ficheB.id)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("ne livre jamais la messagerie d'un autre locataire", async () => {

@@ -44,8 +44,9 @@ export const listFormalNotices = asyncHandler(async (req: Request, res: Response
 });
 
 export const createFormalNotice = asyncHandler(async (req: Request, res: Response) => {
-  const body = emissionSchema.parse(req.body ?? {});
   const { contrat, bien } = await contratDuGestionnaire(req);
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
+  const body = emissionSchema.parse(req.body ?? {});
 
   const resultat = await emettreMiseEnDemeure({
     contractId: contrat.id,
@@ -90,7 +91,10 @@ export const getFormalNoticeDocument = asyncHandler(async (req: Request, res: Re
   const [contract] = await db.select().from(contracts).where(eq(contracts.id, notice.contractId));
   if (!contract) throw new ApiError(404, "Mise en demeure introuvable", "FORMAL_NOTICE_NOT_FOUND");
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
-  assertAccesLocataireOuGestionnaire(req.user.role, await estLocataireDuBail(req, contract), property?.managerId === req.user.userId);
+  assertAccesLocataireOuGestionnaire(req.user.role, await estLocataireDuBail(req, contract), property?.managerId === req.user.userId, {
+    message: "Mise en demeure introuvable",
+    code: "FORMAL_NOTICE_NOT_FOUND",
+  });
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(generateFormalNoticeHtml(await donneesDuCourrier(notice)));

@@ -83,18 +83,18 @@ describe("portail du colocataire", () => {
   it("ouvre le bail imprimé et la quittance, qui nomme tous les locataires", async () => {
     const { contract, facture, hColoc, hEtranger } = await colocation();
     expect((await request(app).get(`/api/documents/lease/${contract.id}`).set(hColoc)).status).toBe(200);
-    expect((await request(app).get(`/api/documents/lease/${contract.id}`).set(hEtranger)).status).toBe(403);
+    expect((await request(app).get(`/api/documents/lease/${contract.id}`).set(hEtranger)).status).toBe(404);
 
     await testDb.update(invoices).set({ status: "PAID", paidAt: new Date("2026-10-05T00:00:00Z"), amountPaid: 600 }).where(eq(invoices.id, facture.id));
     const quittance = await request(app).get(`/api/documents/receipt/${facture.id}`).set(hColoc);
     expect(quittance.status).toBe(200);
     expect(quittance.text).toContain("Madame Awa Sow et Madame Binta Kane");
-    expect((await request(app).get(`/api/documents/receipt/${facture.id}`).set(hEtranger)).status).toBe(403);
+    expect((await request(app).get(`/api/documents/receipt/${facture.id}`).set(hEtranger)).status).toBe(404);
   });
 
   it("peut payer une facture du bail ; un autre locataire non", async () => {
     const { facture, hColoc, hEtranger } = await colocation();
-    expect((await request(app).post(`/api/invoices/${facture.id}/pay`).set(hEtranger).send({ method: "DEMO" })).status).toBe(403);
+    expect((await request(app).post(`/api/invoices/${facture.id}/pay`).set(hEtranger).send({ method: "DEMO" })).status).toBe(404);
     const paiement = await request(app).post(`/api/invoices/${facture.id}/pay`).set(hColoc).send({ method: "DEMO" });
     expect(paiement.status).not.toBe(403);
     expect(paiement.status).toBeLessThan(300);
@@ -110,7 +110,7 @@ describe("portail du colocataire", () => {
         .field("title", "Fuite d'eau")
         .field("description", "Fuite sous l'évier de la cuisine")
         .attach("photo", fakeJpegBuffer("img"), { filename: "fuite.jpg", contentType: "image/jpeg" });
-    expect((await signaler(hEtranger)).status).toBe(403);
+    expect((await signaler(hEtranger)).status).toBe(404);
     expect((await signaler(hColoc)).status).toBe(201);
   });
 
@@ -180,7 +180,7 @@ describe("portail du colocataire", () => {
     const { contract, hColoc } = await colocation();
     await testDb.delete(contractCotenants);
     expect((await request(app).get("/api/contracts/mine").set(hColoc)).body).toEqual([]);
-    expect((await request(app).get(`/api/documents/lease/${contract.id}`).set(hColoc)).status).toBe(403);
+    expect((await request(app).get(`/api/documents/lease/${contract.id}`).set(hColoc)).status).toBe(404);
   });
 });
 

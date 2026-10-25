@@ -329,7 +329,7 @@ describe("POST /api/contracts/:id/scan", () => {
         contentType: "application/pdf",
       });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 
@@ -621,7 +621,7 @@ describe("POST /api/contracts/:id/sign", () => {
       .set(authHeader(tokenFor({ id: manager.id, role: "ADMIN" })))
       .send({ signatureDataUrl: SIGNATURE_DATA_URL });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
     const [apres] = await testDb.select().from(contracts).where(eq(contracts.id, contract.id));
     expect(apres.signedByManagerAt).toBeNull();
   });
@@ -638,7 +638,7 @@ describe("POST /api/contracts/:id/sign", () => {
       .set(authHeader(await tokenLocataire(autreTenant.id)))
       .send({ signatureDataUrl: SIGNATURE_DATA_URL });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   // Signature électronique : fonctionnalité Pro (CGU §3).

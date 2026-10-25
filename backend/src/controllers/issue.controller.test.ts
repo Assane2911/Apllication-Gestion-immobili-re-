@@ -99,7 +99,7 @@ describe("POST /api/issues", () => {
       .field("description", "Fuite sous l'évier de la cuisine")
       .attach("photo", fakeJpegBuffer("fake-image-bytes"), { filename: "fuite.jpg", contentType: "image/jpeg" });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 
@@ -646,7 +646,7 @@ describe("POST /api/issues/:id/photo", () => {
       .set(await tenantToken(otherTenant.id))
       .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("refuse l'ajout de photo par un gestionnaire n'ayant pas ce bien", async () => {
@@ -668,7 +668,7 @@ describe("POST /api/issues/:id/photo", () => {
       .set(authHeader(tokenFor(otherManager)))
       .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   /**
@@ -698,7 +698,7 @@ describe("POST /api/issues/:id/photo", () => {
       .set(authHeader(tokenFor(admin)))
       .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   /**

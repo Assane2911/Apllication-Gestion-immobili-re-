@@ -480,9 +480,10 @@ const createPortalAccountSchema = z.object({
 
 /** Le gestionnaire crée l'accès au portail (email/mot de passe) d'un locataire. */
 export const createTenantPortalAccount = asyncHandler(async (req: Request, res: Response) => {
-  const body = createPortalAccountSchema.parse(req.body);
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, req.params.id));
   assertOwnership(tenant, (t) => t.managerId, req.user!.userId, "Locataire introuvable", 404, "TENANT_NOT_FOUND");
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
+  const body = createPortalAccountSchema.parse(req.body);
   assertNonAnonymise(tenant);
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, tenant.email));

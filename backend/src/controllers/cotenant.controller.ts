@@ -52,8 +52,9 @@ export const listCotenants = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const addCotenant = asyncHandler(async (req: Request, res: Response) => {
-  const { tenantId } = ajoutSchema.parse(req.body);
   const { contrat, bien } = await contratDuGestionnaire(req);
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
+  const { tenantId } = ajoutSchema.parse(req.body);
   assertBailNonSigne(contrat);
 
   const [locataire] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
