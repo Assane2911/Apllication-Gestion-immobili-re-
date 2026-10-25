@@ -2714,6 +2714,27 @@ const fr = {
       description:
         "Quittances PDF certifiées, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement.",
     },
+    login: {
+      title: "Connexion",
+      description:
+        "Connectez-vous à votre espace ImmoPlatform Pro : quittances, baux, loyers et incidents de votre agence ou de votre location, au même endroit.",
+    },
+    register: {
+      title: "Créer un compte gestionnaire",
+      description:
+        "Créez le compte de votre agence en 2 minutes et profitez de 15 jours d'essai gratuit, sans engagement : quittances PDF, signature électronique et relances automatiques.",
+    },
+    forgotPassword: {
+      title: "Mot de passe oublié",
+      description:
+        "Recevez par email un lien pour choisir un nouveau mot de passe de votre compte ImmoPlatform Pro.",
+    },
+    resetPassword: {
+      title: "Nouveau mot de passe",
+    },
+    verifyEmail: {
+      title: "Confirmation de l'email",
+    },
     vitrine: {
       title: "Annonces immobilières — Locations, ventes, terrains | ImmoPlatform Pro",
       description:

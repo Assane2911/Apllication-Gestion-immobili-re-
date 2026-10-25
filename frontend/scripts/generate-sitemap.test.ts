@@ -37,4 +37,18 @@ describe("generate-sitemap — fonctions pures", () => {
   it("utilise le domaine public du site (celui des visiteurs), pas l'adresse de l'API", () => {
     expect(SITE_URL).toBe("https://www.immoplatformpro.com");
   });
+
+  // /landing affiche la même page que / et pointe vers elle (balise canonique) : un plan du site ne liste que les
+  // adresses canoniques. /inscription est la page de conversion : elle y a sa place.
+  it("liste /inscription, et plus /landing (copie de / qui pointe vers elle)", () => {
+    const chemins = STATIC_ROUTES.map((r) => r.path);
+    expect(chemins).toContain("/inscription");
+    expect(chemins).not.toContain("/landing");
+    expect(chemins).toContain("/");
+  });
+
+  it("ne liste que des adresses distinctes", () => {
+    const chemins = STATIC_ROUTES.map((r) => r.path);
+    expect(new Set(chemins).size).toBe(chemins.length);
+  });
 });

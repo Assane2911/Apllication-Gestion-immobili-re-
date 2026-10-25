@@ -63,6 +63,9 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
     expect(screen.getByText("Bel appartement lumineux proche des commodités, à deux pas de la plage.")).toBeInTheDocument();
     expect(screen.getByText("Contacter l'agence")).toBeInTheDocument();
     expect(document.title).toContain("Appartement 2 pièces vue mer");
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(
+      "https://www.immoplatformpro.com/vitrine/annonces/list-1"
+    );
     expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
       "Bel appartement lumineux proche des commodités, à deux pas de la plage."
     );

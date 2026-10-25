@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
+import Seo from "../components/Seo";
 
 function LockIcon() {
   return (
@@ -71,6 +72,7 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
+      <Seo title={`${t("seo.resetPassword.title")} | ${t("common.appName")}`} noindex />
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
         <Link to="/login" className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors">
           {t("auth.forgotPassword.backToLogin")}

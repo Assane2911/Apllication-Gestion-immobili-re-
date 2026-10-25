@@ -2715,6 +2715,27 @@ const es: TranslationSchema = {
       description:
         "Recibos de alquiler en PDF certificados, firma electrónica de contratos, recordatorios automáticos, panel en tiempo real. Prueba gratuita de 15 días sin compromiso.",
     },
+    login: {
+      title: "Iniciar sesión",
+      description:
+        "Inicie sesión en su espacio ImmoPlatform Pro: recibos, contratos, alquileres e incidencias de su agencia o de su alquiler, en un solo lugar.",
+    },
+    register: {
+      title: "Crear una cuenta de gestor",
+      description:
+        "Cree la cuenta de su agencia en 2 minutos y disfrute de 15 días de prueba gratuita, sin compromiso: recibos en PDF, firma electrónica y recordatorios automáticos.",
+    },
+    forgotPassword: {
+      title: "Contraseña olvidada",
+      description:
+        "Reciba por correo un enlace para elegir una nueva contraseña de su cuenta ImmoPlatform Pro.",
+    },
+    resetPassword: {
+      title: "Nueva contraseña",
+    },
+    verifyEmail: {
+      title: "Confirmación del correo",
+    },
     vitrine: {
       title: "Anuncios inmobiliarios — Alquileres, ventas, terrenos | ImmoPlatform Pro",
       description:

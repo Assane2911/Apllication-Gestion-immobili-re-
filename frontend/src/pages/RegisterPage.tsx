@@ -5,6 +5,7 @@ import { apiErrorMessage } from "../api/client";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
+import Seo from "../components/Seo";
 import { useAuth } from "../context/auth";
 import { isGoogleSignInEnabled } from "../utils/googleAuth";
 import { homePathForRole } from "../utils/roleHome";
@@ -135,6 +136,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-950">
+      <Seo title={`${t("seo.register.title")} | ${t("common.appName")}`} description={t("seo.register.description")} canonical="/inscription" />
       {/* Panneau de gauche : image de marque (masqué sur mobile) */}
       <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-brand-950 p-12 xl:p-16">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">

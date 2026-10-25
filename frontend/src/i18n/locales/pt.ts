@@ -2713,6 +2713,27 @@ const pt: TranslationSchema = {
       description:
         "Recibos de renda em PDF certificados, assinatura eletrónica de contratos, lembretes automáticos, painel em tempo real. Teste gratuito de 15 dias sem compromisso.",
     },
+    login: {
+      title: "Iniciar sessão",
+      description:
+        "Inicie sessão no seu espaço ImmoPlatform Pro: recibos, contratos, rendas e incidentes da sua agência ou do seu arrendamento, no mesmo sítio.",
+    },
+    register: {
+      title: "Criar uma conta de gestor",
+      description:
+        "Crie a conta da sua agência em 2 minutos e aproveite 15 dias de teste gratuito, sem compromisso: recibos em PDF, assinatura eletrónica e lembretes automáticos.",
+    },
+    forgotPassword: {
+      title: "Palavra-passe esquecida",
+      description:
+        "Receba por email uma ligação para escolher uma nova palavra-passe da sua conta ImmoPlatform Pro.",
+    },
+    resetPassword: {
+      title: "Nova palavra-passe",
+    },
+    verifyEmail: {
+      title: "Confirmação do email",
+    },
     vitrine: {
       title: "Anúncios imobiliários — Arrendamentos, vendas, terrenos | ImmoPlatform Pro",
       description:
