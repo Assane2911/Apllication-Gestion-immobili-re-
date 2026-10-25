@@ -381,11 +381,11 @@ async function initiateStripePayment(
   }
 
   if (!response.ok || !data.id || !data.url) {
+    // Le détail de Stripe va dans les journaux, pas à l'utilisateur : à cette étape le payeur n'a pas encore saisi sa
+    // carte (il le fait sur la page de Stripe), donc l'erreur est toujours de notre côté — configuration, paramètre
+    // refusé — et son texte, en anglais, peut citer la clé API.
     console.error("[stripe] Réponse inattendue lors de la création de la session:", data);
-    // Le message de Stripe, quand il existe, dit pourquoi (carte refusée…) : on le garde tel quel. Le code ne sert
-    // que de repli, pour traduire la formule générique.
-    const detail = data.error?.message;
-    throw detail ? new ApiError(502, detail) : new ApiError(502, "Échec de l'initialisation du paiement par carte.", "CARD_PAYMENT_INIT_FAILED");
+    throw new ApiError(502, "Échec de l'initialisation du paiement par carte.", "CARD_PAYMENT_INIT_FAILED");
   }
 
   return {
@@ -634,11 +634,9 @@ async function initiatePaydunyaPayment(
   }
 
   if (!response.ok || data.response_code !== "00" || !data.token || !data.response_text) {
+    // Même logique que pour Stripe : le texte de PayDunya reste dans les journaux, l'utilisateur reçoit un message traduit.
     console.error("[paydunya] Réponse inattendue lors de la création de la facture:", data);
-    // Même logique que pour Stripe : le message de PayDunya prime, le code ne traduit que le repli.
-    throw data.response_text
-      ? new ApiError(502, data.response_text)
-      : new ApiError(502, "Échec de l'initialisation du paiement PayDunya.", "PAYDUNYA_INIT_FAILED");
+    throw new ApiError(502, "Échec de l'initialisation du paiement PayDunya.", "PAYDUNYA_INIT_FAILED");
   }
 
   return {

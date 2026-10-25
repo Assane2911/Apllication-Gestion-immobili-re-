@@ -24,8 +24,6 @@ function fichiers(dossier: string): string[] {
 const SANS_CODE: Record<string, string> = {
   "controllers/cron.controller.ts:\"Non autorisé\"": "route appelée par le planificateur de tâches, jamais par un utilisateur",
   "controllers/cron.controller.ts:\"CRON_SECRET non configuré : route désactivée par sécurité.\"": "route appelée par le planificateur, message pour l'exploitation",
-  "services/payment.service.ts:detail": "message du fournisseur de paiement (Stripe), affiché tel quel : il dit pourquoi (carte refusée…) ; le repli a son code",
-  "services/payment.service.ts:data.response_text": "message du fournisseur de paiement (PayDunya), affiché tel quel ; le repli a son code",
 };
 
 describe("ApiError sans code", () => {
