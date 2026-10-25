@@ -16,6 +16,7 @@ import {
   ROLE_EQUIPE_INVITATION_PAR_DEFAUT,
   roleEquipeEffectif,
 } from "../utils/rolesEquipe";
+import { langueDeLaRequete, type Langue } from "../utils/langue";
 import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
 
 /**
@@ -74,7 +75,7 @@ export const listTeamMembers = asyncHandler(async (req: Request, res: Response) 
  * Envoie (ou renvoie) l'email d'invitation à rejoindre l'agence : lien à usage unique valable
  * INVITATION_TOKEN_TTL_MS, pour choisir son mot de passe (voir resetPassword).
  */
-async function envoyerInvitationEquipe(proprietaireId: string, email: string, rawToken: string) {
+async function envoyerInvitationEquipe(proprietaireId: string, email: string, rawToken: string, langue: Langue) {
   const [settings] = await db
     .select({ agencyName: agencySettings.agencyName })
     .from(agencySettings)
@@ -82,10 +83,13 @@ async function envoyerInvitationEquipe(proprietaireId: string, email: string, ra
   const [proprietaire] = await db.select().from(users).where(eq(users.id, proprietaireId));
 
   const inviteUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
+  // Le collaborateur n'a pas encore de compte, donc pas de langue connue : l'e-mail suit celle du propriétaire de
+  // l'agence qui l'invite. Sans nom d'agence ni adresse, le modèle met un libellé par défaut dans cette langue.
   const { subject, html } = teamInvitationEmail({
-    agencyName: settings?.agencyName || "Votre agence",
-    ownerName: proprietaire?.email || "Votre gestionnaire",
+    agencyName: settings?.agencyName,
+    ownerName: proprietaire?.email,
     inviteUrl,
+    langue,
   });
   // Attendu avant la réponse : sur Vercel (serverless), l'exécution peut
   // s'arrêter juste après l'envoi de la réponse, avant qu'un envoi non
@@ -141,7 +145,7 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
     })
     .returning();
 
-  await envoyerInvitationEquipe(req.user!.userId, body.email, rawToken);
+  await envoyerInvitationEquipe(req.user!.userId, body.email, rawToken, langueDeLaRequete(req));
 
   await logActivity({
     req,
@@ -230,7 +234,7 @@ export const resendTeamInvitation = asyncHandler(async (req: Request, res: Respo
     .set({ resetPasswordTokenHash: hashToken(rawToken), resetPasswordExpiresAt: new Date(Date.now() + INVITATION_TOKEN_TTL_MS) })
     .where(eq(users.id, collaborateur.id));
 
-  await envoyerInvitationEquipe(req.user!.userId, collaborateur.email, rawToken);
+  await envoyerInvitationEquipe(req.user!.userId, collaborateur.email, rawToken, langueDeLaRequete(req));
 
   await logActivity({
     req,

@@ -2,6 +2,8 @@ import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import { escapeHtml } from "../utils/html";
 import { formaterMontant } from "../utils/montant";
+import { LANGUE_PAR_DEFAUT, type Langue } from "../utils/langue";
+import { TEXTES_COMPTE } from "./email.comptes.textes";
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -102,31 +104,24 @@ export async function sendEmail(to: string, subject: string, html: string, attac
  * (page "Mot de passe oublié"). Le lien contient un token à usage unique,
  * valable 1 heure — voir auth.controller.ts (forgotPassword / resetPassword).
  */
-export function passwordResetEmail(params: { resetUrl: string }) {
-  const { resetUrl } = params;
+export function passwordResetEmail(params: { resetUrl: string; langue?: Langue }) {
+  const { resetUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_COMPTE[langue];
+  const m = t.motDePasseOublie;
   return {
-    subject: "🔒 Réinitialisation de votre mot de passe",
+    subject: m.sujet,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">🔒 Réinitialisation de votre mot de passe</h2>
-        <p>Bonjour,</p>
-        <p>
-          Vous avez demandé la réinitialisation du mot de passe de votre compte.
-          Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
-          Ce lien est valable <strong>1 heure</strong>.
-        </p>
+        <h2 style="color:#0f172a;">${m.titre}</h2>
+        <p>${t.bonjour}</p>
+        <p>${m.intro}</p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${resetUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Réinitialiser mon mot de passe →
+            ${m.bouton}
           </a>
         </div>
-        <p style="color:#6b7280; font-size:12px;">
-          Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email sans risque :
-          votre mot de passe actuel reste inchangé.
-        </p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
+        <p style="color:#6b7280; font-size:12px;">${m.ignorer}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">${t.pied}</p>
       </div>
     `,
   };
@@ -141,64 +136,51 @@ export function passwordResetEmail(params: { resetUrl: string }) {
  * (inviteOwnerPortalAccount) et auth.controller.ts (resetPassword).
  */
 /** Invitation d'un collaborateur à rejoindre l'agence (formule Entreprise, voir team.controller.ts). */
-export function teamInvitationEmail(params: { agencyName: string; ownerName: string; inviteUrl: string }) {
-  const { agencyName, ownerName, inviteUrl } = params;
+export function teamInvitationEmail(params: { agencyName?: string | null; ownerName?: string | null; inviteUrl: string; langue?: Langue }) {
+  const { inviteUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_COMPTE[langue];
+  const m = t.invitationEquipe;
+  const agencyName = params.agencyName || m.agenceParDefaut;
+  const ownerName = params.ownerName || m.gestionnaireParDefaut;
   return {
     // Sujet en texte brut : l'échapper HTML affichait « Martin &amp; Fils » dans la boîte de réception.
-    subject: `🔑 ${ownerName} vous invite à rejoindre ${agencyName}`,
+    subject: m.sujet(ownerName, agencyName),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">🔑 Invitation à rejoindre l'agence</h2>
-        <p>Bonjour,</p>
-        <p>
-          <strong>${escapeHtml(ownerName)}</strong> vous invite à rejoindre <strong>${escapeHtml(agencyName)}</strong>
-          en tant que collaborateur : vous aurez accès aux mêmes biens, locataires et contrats que le reste de
-          l'agence. Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et activer votre accès.
-          Ce lien est valable <strong>7 jours</strong>.
-        </p>
+        <h2 style="color:#0f172a;">${m.titre}</h2>
+        <p>${t.bonjour}</p>
+        <p>${m.intro(escapeHtml(ownerName), escapeHtml(agencyName))}</p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${inviteUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Activer mon accès →
+            ${m.bouton}
           </a>
         </div>
-        <p style="color:#6b7280; font-size:12px;">
-          Si vous ne vous attendiez pas à cette invitation, vous pouvez ignorer cet email sans risque :
-          aucun accès ne sera créé sans confirmation de votre part.
-        </p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
+        <p style="color:#6b7280; font-size:12px;">${m.ignorer}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">${t.pied}</p>
       </div>
     `,
   };
 }
 
-export function ownerInvitationEmail(params: { ownerName: string; agencyName: string; inviteUrl: string }) {
-  const { ownerName, agencyName, inviteUrl } = params;
+export function ownerInvitationEmail(params: { ownerName: string; agencyName?: string | null; inviteUrl: string; langue?: Langue }) {
+  const { ownerName, inviteUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_COMPTE[langue];
+  const m = t.invitationProprietaire;
+  const agencyName = params.agencyName || m.agenceParDefaut;
   return {
-    subject: `🔑 ${agencyName} vous invite à votre espace propriétaire`,
+    subject: m.sujet(agencyName),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">🔑 Votre espace propriétaire</h2>
-        <p>Bonjour ${escapeHtml(ownerName)},</p>
-        <p>
-          <strong>${escapeHtml(agencyName)}</strong> vous invite à accéder à votre espace propriétaire :
-          vous pourrez y suivre le loyer perçu et en attente pour vos biens.
-          Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et activer votre accès.
-          Ce lien est valable <strong>7 jours</strong>.
-        </p>
+        <h2 style="color:#0f172a;">${m.titre}</h2>
+        <p>${t.bonjourNom(escapeHtml(ownerName))}</p>
+        <p>${m.intro(escapeHtml(agencyName))}</p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${inviteUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Activer mon accès →
+            ${m.bouton}
           </a>
         </div>
-        <p style="color:#6b7280; font-size:12px;">
-          Si vous ne vous attendiez pas à cette invitation, vous pouvez ignorer cet email sans risque :
-          aucun accès ne sera créé sans confirmation de votre part.
-        </p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
+        <p style="color:#6b7280; font-size:12px;">${m.ignorer}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">${t.pied}</p>
       </div>
     `,
   };
@@ -209,31 +191,24 @@ export function ownerInvitationEmail(params: { ownerName: string; agencyName: st
  * email avant d'activer le compte. Le lien contient un token à usage unique,
  * valable 24 heures — voir auth.controller.ts (registerManager / verifyEmail).
  */
-export function emailVerificationEmail(params: { verifyUrl: string }) {
-  const { verifyUrl } = params;
+export function emailVerificationEmail(params: { verifyUrl: string; langue?: Langue }) {
+  const { verifyUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_COMPTE[langue];
+  const m = t.confirmationAdresse;
   return {
-    subject: "✅ Confirmez votre adresse email",
+    subject: m.sujet,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">✅ Confirmez votre adresse email</h2>
-        <p>Bonjour,</p>
-        <p>
-          Merci de votre inscription ! Il ne reste qu'une étape avant de pouvoir
-          vous connecter : confirmez votre adresse email en cliquant sur le bouton
-          ci-dessous. Ce lien est valable <strong>24 heures</strong>.
-        </p>
+        <h2 style="color:#0f172a;">${m.titre}</h2>
+        <p>${t.bonjour}</p>
+        <p>${m.intro}</p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${verifyUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Confirmer mon email →
+            ${m.bouton}
           </a>
         </div>
-        <p style="color:#6b7280; font-size:12px;">
-          Si vous n'êtes pas à l'origine de cette inscription, vous pouvez ignorer cet email sans risque :
-          aucun compte ne sera activé sans confirmation.
-        </p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
+        <p style="color:#6b7280; font-size:12px;">${m.ignorer}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">${t.pied}</p>
       </div>
     `,
   };
@@ -245,40 +220,29 @@ export function emailVerificationEmail(params: { verifyUrl: string }) {
  * message lui dit que son compte existe, ce que comprend l'essai et par où commencer. Il ne contient
  * aucun lien à usage unique ni aucune donnée saisie par l'utilisateur.
  */
-export function googleWelcomeEmail(params: { appUrl: string; trialDays: number }) {
-  const { appUrl, trialDays } = params;
+export function googleWelcomeEmail(params: { appUrl: string; trialDays: number; langue?: Langue }) {
+  const { appUrl, trialDays, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_COMPTE[langue];
+  const m = t.bienvenueGoogle;
   return {
-    subject: "👋 Bienvenue sur ImmoPlatform Pro",
+    subject: m.sujet,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">👋 Bienvenue sur ImmoPlatform Pro !</h2>
-        <p>Bonjour,</p>
-        <p>
-          Votre compte vient d'être créé avec votre compte Google : votre adresse est déjà confirmée,
-          vous n'avez rien d'autre à valider. Votre <strong>essai gratuit de ${trialDays} jours</strong>
-          a commencé, avec les fonctionnalités de la formule Professionnel.
-        </p>
-        <p><strong>Pour bien démarrer :</strong></p>
+        <h2 style="color:#0f172a;">${m.titre}</h2>
+        <p>${t.bonjour}</p>
+        <p>${m.intro(trialDays)}</p>
+        <p><strong>${m.pourDemarrer}</strong></p>
         <ol style="padding-left:20px; line-height:1.6;">
-          <li>Ajoutez votre premier bien immobilier.</li>
-          <li>Enregistrez votre locataire.</li>
-          <li>Créez le contrat de bail : les loyers et les quittances se génèrent ensuite automatiquement.</li>
+          ${m.etapes.map((etape) => `<li>${etape}</li>`).join("\n          ")}
         </ol>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${appUrl}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Accéder à mon espace →
+            ${m.bouton}
           </a>
         </div>
-        <p style="color:#6b7280; font-size:12px;">
-          Vous vous connectez avec Google. Si vous souhaitez aussi pouvoir vous connecter avec un mot de passe,
-          utilisez « Mot de passe oublié » sur la page de connexion.
-        </p>
-        <p style="color:#6b7280; font-size:12px;">
-          Si vous n'êtes pas à l'origine de cette inscription, répondez simplement à ce message ou ignorez-le.
-        </p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
+        <p style="color:#6b7280; font-size:12px;">${m.noteMotDePasse}</p>
+        <p style="color:#6b7280; font-size:12px;">${m.noteIgnorer}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">${t.pied}</p>
       </div>
     `,
   };
@@ -296,34 +260,25 @@ export function googleWelcomeEmail(params: { appUrl: string; trialDays: number }
  * Le message ne révèle rien à un tiers : il part vers une adresse dont le
  * propriétaire sait déjà qu'il a un compte.
  */
-export function accountAlreadyExistsEmail(params: { loginUrl: string; resetUrl: string }) {
-  const { loginUrl, resetUrl } = params;
+export function accountAlreadyExistsEmail(params: { loginUrl: string; resetUrl: string; langue?: Langue }) {
+  const { loginUrl, resetUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_COMPTE[langue];
+  const m = t.compteDejaExistant;
   return {
-    subject: "Vous avez déjà un compte chez nous",
+    subject: m.sujet,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">Vous avez déjà un compte</h2>
-        <p>Bonjour,</p>
-        <p>
-          Une inscription vient d'être tentée avec cette adresse email, mais un
-          compte existe déjà. Pas besoin d'en créer un second : connectez-vous
-          directement.
-        </p>
+        <h2 style="color:#0f172a;">${m.titre}</h2>
+        <p>${t.bonjour}</p>
+        <p>${m.intro}</p>
         <div style="text-align:center; margin: 24px 0 12px 0;">
           <a href="${escapeHtml(loginUrl)}" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
-            Me connecter →
+            ${m.bouton}
           </a>
         </div>
-        <p style="color:#6b7280; font-size:12px;">
-          Mot de passe oublié ? <a href="${escapeHtml(resetUrl)}">Réinitialisez-le ici</a>.
-        </p>
-        <p style="color:#6b7280; font-size:12px;">
-          Si vous n'êtes pas à l'origine de cette tentative, vous pouvez ignorer cet
-          email : votre compte n'a pas été modifié et personne n'y a eu accès.
-        </p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
+        <p style="color:#6b7280; font-size:12px;">${m.motDePasseOublie(escapeHtml(resetUrl))}</p>
+        <p style="color:#6b7280; font-size:12px;">${m.ignorer}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">${t.pied}</p>
       </div>
     `,
   };

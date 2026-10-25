@@ -48,6 +48,10 @@ export const DELAI_UPLOAD_MS = 60_000;
 export const MAX_UPLOAD_SIZE_MB = 4;
 
 api.interceptors.request.use((config) => {
+  // La langue choisie dans l'interface, lue par le serveur pour écrire les e-mails dans cette langue (voir
+  // backend/src/utils/langue.ts). Sans elle, le navigateur enverrait ses propres langues, qui ne sont pas forcément
+  // celles de l'interface. Avant l'initialisation de i18n, rien n'est posé : le navigateur garde son en-tête.
+  if (i18n.language) config.headers["Accept-Language"] = i18n.language;
   // Web : le cookie httpOnly posé à la connexion suit déjà la requête grâce à
   // withCredentials ci-dessus — un en-tête Authorization n'y ajouterait rien
   // et un jeton n'est de toute façon plus stocké dans localStorage sur cette

@@ -22,6 +22,7 @@ import { consommerCodeSecours, consommerPasTotp, verifierCodeTotpAvecPas } from 
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
+import { langueDeLaRequete } from "../utils/langue";
 import { AUTH_COOKIE_NAME, clearAuthCookie, CSRF_HEADER_NAME, setAuthCookie } from "../utils/authCookie";
 import { signerJetonWeb } from "../utils/session";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
@@ -221,6 +222,7 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
     const { subject, html } = accountAlreadyExistsEmail({
       loginUrl: `${env.frontendUrl}/login`,
       resetUrl: `${env.frontendUrl}/mot-de-passe-oublie`,
+      langue: langueDeLaRequete(req),
     });
     // Attendu, comme dans l'autre branche — voir l'explication au moment de
     // créer le compte, plus bas.
@@ -258,7 +260,7 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
     .returning();
 
   const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
-  const { subject, html } = emailVerificationEmail({ verifyUrl });
+  const { subject, html } = emailVerificationEmail({ verifyUrl, langue: langueDeLaRequete(req) });
 
   // Cet `await` revient sur une décision antérieure, et la raison mérite
   // d'être écrite.
@@ -575,7 +577,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
       // commencer. Attendu avant la réponse (sur Vercel, l'exécution peut s'arrêter juste après), et son échec ne
       // doit jamais empêcher la connexion.
       try {
-        const { subject, html } = googleWelcomeEmail({ appUrl: env.frontendUrl, trialDays: 15 });
+        const { subject, html } = googleWelcomeEmail({ appUrl: env.frontendUrl, trialDays: 15, langue: langueDeLaRequete(req) });
         await sendEmail(user.email, subject, html);
       } catch (err) {
         console.error("[auth] Échec de l'envoi de l'email de bienvenue:", err);
@@ -699,7 +701,7 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
     // cas ; il continue en arrière-plan, capturé uniquement pour le journal
     // en cas d'échec.
     const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
-    const { subject, html } = emailVerificationEmail({ verifyUrl });
+    const { subject, html } = emailVerificationEmail({ verifyUrl, langue: langueDeLaRequete(req) });
     sendEmail(user.email, subject, html).catch((err) => {
       // Un simple console.error ne remonte à rien : Sentry n'instrumente que
       // les erreurs qui traversent errorHandler, pas un .catch() qui les
@@ -793,7 +795,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
     // réponse de login(), par un autre canal. La réponse ne doit donc plus
     // dépendre de l'envoi, qui continue en arrière-plan.
     const resetUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
-    const { subject, html } = passwordResetEmail({ resetUrl });
+    const { subject, html } = passwordResetEmail({ resetUrl, langue: langueDeLaRequete(req) });
     sendEmail(user.email, subject, html).catch((err) => {
       // Voir le commentaire équivalent dans resendVerification ci-dessus.
       console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err);

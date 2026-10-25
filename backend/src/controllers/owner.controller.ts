@@ -17,6 +17,7 @@ import { bicSchema, ibanSchema } from "../utils/iban";
 import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { avecCode } from "../utils/validationExplicite";
+import { langueDeLaRequete } from "../utils/langue";
 import { hashToken, INVITATION_TOKEN_TTL_MS } from "../utils/token";
 
 // Champs déjà présents en base (voir schema.ts) — créés directement en SQL en
@@ -401,10 +402,13 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
     .where(eq(agencySettings.userId, req.user!.userId));
 
   const inviteUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
+  // Le propriétaire n'a pas forcément de compte avant cette invitation : l'e-mail suit la langue du gestionnaire qui
+  // l'envoie. Sans nom d'agence, le modèle met un libellé par défaut dans cette langue.
   const { subject, html } = ownerInvitationEmail({
     ownerName: nomAvecCivilite(owner),
-    agencyName: settings?.agencyName || "Votre agence",
+    agencyName: settings?.agencyName,
     inviteUrl,
+    langue: langueDeLaRequete(req),
   });
   // Attendu avant la réponse : sur Vercel (serverless), l'exécution peut
   // s'arrêter juste après l'envoi de la réponse, avant qu'un envoi non

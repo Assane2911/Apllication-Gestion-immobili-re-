@@ -487,6 +487,19 @@ describe("POST /api/auth/google — email de bienvenue", () => {
     expect(envoi).toHaveBeenCalledTimes(1);
   });
 
+  it("l'email de bienvenue suit la langue de la requête (Accept-Language)", async () => {
+    const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
+    mockGooglePayload({ sub: "google-sub-bienvenue-en", email: "welcome-en@test.local", email_verified: true });
+
+    const res = await request(app).post("/api/auth/google").set("Accept-Language", "en").send({ credential: "tok-en" });
+
+    expect(res.status).toBe(200);
+    expect(envoi).toHaveBeenCalledTimes(1);
+    const [, sujet, html] = envoi.mock.calls[0];
+    expect(sujet).toContain("Welcome to ImmoPlatform Pro");
+    expect(html).toContain("15-day free trial");
+  });
+
   it("n'en envoie pas quand Google se lie à un compte déjà existant", async () => {
     const envoi = vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
     await createManager({ email: "deja-inscrit@test.local" });
