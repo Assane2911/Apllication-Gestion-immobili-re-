@@ -18,11 +18,11 @@ import {
 } from "../services/email.service";
 import { accorderRecompenseParrainage, trouverParrainParCode } from "../services/referral.service";
 import { supprimerCompteGestionnaire } from "../services/suppressionCompte.service";
-import { consommerCodeSecours, verifierCodeTotp } from "../services/totp.service";
+import { consommerCodeSecours, consommerPasTotp, verifierCodeTotpAvecPas } from "../services/totp.service";
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
-import { clearAuthCookie, setAuthCookie } from "../utils/authCookie";
+import { AUTH_COOKIE_NAME, clearAuthCookie, CSRF_HEADER_NAME, setAuthCookie } from "../utils/authCookie";
 import { signerJetonWeb } from "../utils/session";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 import { deviseSchema } from "../utils/devises";
@@ -423,9 +423,15 @@ export const verifyTwoFactorLogin = asyncHandler(async (req: Request, res: Respo
   }
 
   const code = body.code.trim();
-  const codeTotpValide = await verifierCodeTotp(user.totpSecret, code);
+  const pasTotp = await verifierCodeTotpAvecPas(user.totpSecret, code);
 
-  if (codeTotpValide) {
+  if (pasTotp !== null) {
+    // Un code ne sert qu'une fois (RFC 6238, § 5.2) : le même code, rejoué dans sa fenêtre de validité, par exemple
+    // avec un jeton intermédiaire intercepté, est refusé comme un code faux. Aucun repli sur les codes de secours :
+    // un code à six chiffres n'en est pas un.
+    if (!(await consommerPasTotp(user.id, pasTotp))) {
+      throw new ApiError(401, "Code invalide ou expiré.", "TWO_FACTOR_CODE_INVALID");
+    }
     await finalizeLogin(user, res);
     return;
   }
@@ -920,7 +926,15 @@ export const logoutAllDevices = asyncHandler(async (req: Request, res: Response)
  * authentification requise : un cookie déjà expiré ou absent doit pouvoir
  * être "nettoyé" sans finir en 401.
  */
-export const logout = asyncHandler(async (_req: Request, res: Response) => {
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  // Même protection CSRF que les routes authentifiées (voir authenticate) : avec SameSite=None, le navigateur joint le
+  // cookie à une requête partie de N'IMPORTE QUEL site. Sans l'en-tête que seul notre frontend pose, un site tiers
+  // pouvait déconnecter ses visiteurs à volonté. Un jeton Bearer (application mobile) n'est jamais joint
+  // automatiquement : il n'est pas concerné. Sans cookie, il n'y a rien à effacer.
+  const porteUnBearer = req.headers.authorization?.startsWith("Bearer ") ?? false;
+  if (!porteUnBearer && req.cookies?.[AUTH_COOKIE_NAME] && req.headers[CSRF_HEADER_NAME] === undefined) {
+    throw new ApiError(403, "Requête refusée (protection CSRF)", "CSRF_REFUSED");
+  }
   clearAuthCookie(res);
   res.status(204).send();
 });

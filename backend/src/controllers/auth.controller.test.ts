@@ -144,7 +144,8 @@ describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
     const agent = request.agent(app);
     await agent.post("/api/auth/login").send({ email: "cookie-logout@test.local", password: "Password123!" });
 
-    const logoutRes = await agent.post("/api/auth/logout");
+    // Comme le frontend (api/client.ts) : la déconnexion par cookie exige l'en-tête anti-CSRF, voir twoFactor.rejeu.test.ts.
+    const logoutRes = await agent.post("/api/auth/logout").set("X-Requested-With", "XMLHttpRequest");
     expect(logoutRes.status).toBe(204);
 
     const meRes = await agent.get("/api/auth/me").set("X-Requested-With", "XMLHttpRequest");

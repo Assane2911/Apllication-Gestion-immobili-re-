@@ -1,7 +1,10 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { generate, generateSecret, generateURI, verify } from "otplib";
 import QRCode from "qrcode";
+import { db } from "../db/client";
+import { users } from "../db/schema";
 
 const EMETTEUR = "ImmoPlatform Pro";
 
@@ -81,4 +84,36 @@ export async function consommerCodeSecours(code: string, hashesJson: string | nu
     }
   }
   return null;
+}
+
+/** Durée d'un pas de temps TOTP (30 s, valeur par défaut d'otplib et des applications d'authentification). */
+const PERIODE_TOTP_SECONDES = 30;
+
+/**
+ * Comme verifierCodeTotp, mais renvoie le PAS DE TEMPS auquel le code correspond (null s'il est invalide) : c'est ce
+ * numéro, et non le code, qu'on retient pour interdire qu'un même code serve deux fois (voir consommerPasTotp).
+ * Avec la tolérance d'horloge, le pas peut être celui d'avant ou d'après l'instant présent.
+ */
+export async function verifierCodeTotpAvecPas(secret: string, code: string): Promise<number | null> {
+  try {
+    const resultat = await verify({ secret, token: code, epochTolerance: TOLERANCE_HORLOGE_SECONDES });
+    if (!resultat.valid) return null;
+    return Math.floor(Date.now() / 1000 / PERIODE_TOTP_SECONDES) + resultat.delta;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Retient `pas` comme dernier pas accepté du compte, SI et seulement si il est strictement plus récent que le précédent.
+ * `false` : ce pas, ou un plus récent, a déjà servi — le code est un rejeu. La condition est dans l'UPDATE lui-même :
+ * deux requêtes simultanées avec le même code ne peuvent pas réussir toutes les deux.
+ */
+export async function consommerPasTotp(userId: string, pas: number): Promise<boolean> {
+  const lignes = await db
+    .update(users)
+    .set({ totpLastUsedStep: pas })
+    .where(and(eq(users.id, userId), or(isNull(users.totpLastUsedStep), lt(users.totpLastUsedStep, pas))))
+    .returning({ id: users.id });
+  return lignes.length === 1;
 }
