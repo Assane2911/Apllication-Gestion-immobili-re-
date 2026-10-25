@@ -125,6 +125,24 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 
 ---
 
+## Application Android — la reconstruire
+
+L'application Android (Capacitor, projet dans `frontend/android/`) embarque une COPIE du site : elle ne se met pas à jour toute seule quand le site est déployé. À chaque nouvelle version à publier :
+
+1. Compiler le site **avec l'adresse de l'API de production** (sans elle, l'application viserait `http://localhost:4000` et ne pourrait rien charger) :
+   ```bash
+   cd frontend
+   VITE_API_URL=https://apllication-gestion-immobili-re.vercel.app npm run build
+   ```
+2. Copier le site dans le projet Android (les fichiers copiés sont ignorés par git) :
+   ```bash
+   npx cap sync android
+   ```
+3. Ouvrir le projet dans Android Studio (`npx cap open android`) puis **Build → Generate Signed Bundle / APK**, avec la clé de signature de l'application. Le SDK Android et Android Studio sont nécessaires sur le poste qui compile.
+4. **Augmenter `versionCode`** (et `versionName`) dans `frontend/android/app/build.gradle` avant chaque envoi : le Play Store refuse un `versionCode` déjà utilisé, et un appareil ne met pas à jour une version de numéro égal ou inférieur.
+
+Permissions : l'application ne demande que la **caméra** (photographier un incident). Elle ne demande pas l'accès aux photos de l'appareil (`READ_MEDIA_IMAGES`) : le sélecteur de fichiers du système suffit, et cette permission restreinte de Google Play ferait refuser la publication. `src/androidPermissions.test.ts` tient cette règle.
+
 ## Dépannage : des requêtes qui ne reviennent jamais
 
 **Symptôme :** une page affiche « Le serveur met trop de temps à répondre », les journaux Vercel montrent
