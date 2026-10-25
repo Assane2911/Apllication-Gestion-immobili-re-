@@ -2,10 +2,12 @@ import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
 import { contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
+import { LANGUE_PAR_DEFAUT, langueOuDefaut, type Langue } from "../utils/langue";
 import { MONTANT_MAXIMUM } from "../utils/montant";
 import { arrondir } from "../utils/montants";
 import { envoyerCopieAuxColocataires } from "./colocation.service";
 import { rentRevisionEmail, sendEmail } from "./email.service";
+import { TEXTES_SUITE } from "./email.suite.textes";
 
 /**
  * Révision du loyer d'un bail (indexation annuelle, accord amiable).
@@ -63,12 +65,20 @@ export function debutDeMois(date: Date): Date {
 
 const moisAbsolu = (date: Date) => date.getUTCFullYear() * 12 + date.getUTCMonth();
 
-/** Motif lisible, repris dans l'email au locataire. */
-export function motifRevision(r: Pick<Revision, "method" | "percent" | "indexName" | "indexOld" | "indexNew">): string | null {
-  if (r.method === "PERCENT" && r.percent !== null) return `${r.percent > 0 ? "+" : ""}${String(r.percent).replace(".", ",")} %`;
+/**
+ * Motif lisible, repris dans l'email au locataire. Écrit dans sa langue (séparateur décimal, mot « indice ») ; le
+ * français par défaut est celui des documents et du journal.
+ */
+export function motifRevision(
+  r: Pick<Revision, "method" | "percent" | "indexName" | "indexOld" | "indexNew">,
+  langue: Langue = LANGUE_PAR_DEFAUT
+): string | null {
+  const { indice, separateurDecimal, pourcent, deuxPoints } = TEXTES_SUITE[langue].revision.motif;
+  const nombre = (valeur: number) => String(valeur).replace(".", separateurDecimal);
+  if (r.method === "PERCENT" && r.percent !== null) return `${r.percent > 0 ? "+" : ""}${nombre(r.percent)}${pourcent}`;
   if (r.method === "INDEX" && r.indexOld !== null && r.indexNew !== null) {
-    const nom = r.indexName ? `${r.indexName} : ` : "indice : ";
-    return `${nom}${String(r.indexOld).replace(".", ",")} → ${String(r.indexNew).replace(".", ",")}`;
+    const nom = `${r.indexName || indice}${deuxPoints}`;
+    return `${nom}${nombre(r.indexOld)} → ${nombre(r.indexNew)}`;
   }
   return null;
 }
@@ -187,17 +197,21 @@ export async function creerRevision(p: CreationRevision): Promise<{ revision: Re
  * du bail, chacun est nommé dans SON message) ; un échec d'envoi ne défait jamais la révision.
  */
 async function prevenirLocataire(revision: Revision, titreBien: string, contractId: string, tenantId: string, devise: string): Promise<boolean> {
-  const message = (personne: { firstName: string; lastName: string }) =>
-    rentRevisionEmail({
+  // Chaque occupant du bail reçoit l'avis dans la langue de SA fiche (le motif aussi).
+  const message = (personne: { firstName: string; lastName: string; language?: string | null }) => {
+    const langue = langueOuDefaut(personne.language);
+    return rentRevisionEmail({
       tenantName: `${personne.firstName} ${personne.lastName}`,
       propertyTitle: titreBien,
       previousRent: revision.previousRent,
       newRent: revision.newRent,
       currency: devise,
       effectiveDate: revision.effectiveDate,
-      motif: motifRevision(revision),
+      motif: motifRevision(revision, langue),
       note: revision.note,
+      langue,
     });
+  };
 
   let envoye = false;
   try {

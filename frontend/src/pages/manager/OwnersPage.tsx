@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useCurrency } from "../../context/currency";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
+import { SUPPORTED_LANGUAGES } from "../../i18n";
 import ChampTelephone from "../../components/ChampTelephone";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
@@ -39,6 +40,7 @@ const emptyForm = {
   bic: "",
   managementFeeRate: "8",
   notes: "",
+  language: "fr",
 };
 const PAGE_SIZE = 20;
 
@@ -93,7 +95,9 @@ export default function OwnersPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm(emptyForm);
+    // Par défaut, la langue dans laquelle le gestionnaire utilise l'application (voir TenantsPage).
+    const langueDeLInterface = (i18n.language || "fr").slice(0, 2);
+    setForm({ ...emptyForm, language: SUPPORTED_LANGUAGES.some((l) => l.code === langueDeLInterface) ? langueDeLInterface : "fr" });
     setShowForm(true);
   }
 
@@ -111,6 +115,7 @@ export default function OwnersPage() {
       bic: owner.bic ?? "",
       managementFeeRate: String(owner.managementFeeRate),
       notes: owner.notes ?? "",
+      language: owner.language ?? "fr",
     });
     setShowForm(true);
   }
@@ -134,6 +139,7 @@ export default function OwnersPage() {
         bic: form.bic || undefined,
         managementFeeRate: form.managementFeeRate,
         notes: form.notes || undefined,
+        language: form.language,
       };
 
       if (editing) {
@@ -300,6 +306,15 @@ export default function OwnersPage() {
             <div>
               <label htmlFor="owner-managementFeeRate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.managementFeeRate")}</label>
               <input id="owner-managementFeeRate" required type="number" step="0.1" min="0" max="100" value={form.managementFeeRate} onChange={(e) => setForm({ ...form, managementFeeRate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+            </div>
+            <div className="md:col-span-2">
+              <label htmlFor="owner-language" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.language")}</label>
+              <select id="owner-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} aria-describedby="owner-language-hint" className="w-full md:w-56 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+                {SUPPORTED_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>{l.label}</option>
+                ))}
+              </select>
+              <p id="owner-language-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.owners.fields.languageHint")}</p>
             </div>
             <div className="md:col-span-2">
               <label htmlFor="owner-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.notes")}</label>

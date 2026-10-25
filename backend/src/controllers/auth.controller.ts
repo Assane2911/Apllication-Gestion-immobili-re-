@@ -256,6 +256,7 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
       emailVerificationTokenHash,
       emailVerificationExpiresAt,
       referredByUserId,
+      language: langueDeLaRequete(req),
     })
     .returning();
 
@@ -312,6 +313,26 @@ async function finalizeLogin(user: typeof users.$inferSelect, res: Response, lan
   let owner: typeof owners.$inferSelect | undefined;
   if (user.role === "OWNER") {
     [owner] = await db.select().from(owners).where(eq(owners.userId, user.id));
+    // Même principe que pour le locataire : la fiche prend la langue dans laquelle le propriétaire utilise l'application.
+    if (owner && langue && owner.language !== langue) {
+      try {
+        await db.update(owners).set({ language: langue }).where(eq(owners.id, owner.id));
+        owner = { ...owner, language: langue };
+      } catch (err) {
+        console.error("[auth] Langue du propriétaire non enregistrée :", err);
+      }
+    }
+  }
+
+  // Un gestionnaire (ou un collaborateur, sur sa propre ligne) : la langue de son interface est celle des e-mails que
+  // l'application lui envoie sans qu'il fasse de requête (rappels de fin de contrat et d'assurance, parrainage).
+  if (user.role === "MANAGER" && langue && user.language !== langue) {
+    try {
+      await db.update(users).set({ language: langue }).where(eq(users.id, user.id));
+      user = { ...user, language: langue };
+    } catch (err) {
+      console.error("[auth] Langue du gestionnaire non enregistrée :", err);
+    }
   }
 
   // Multi-utilisateurs : un collaborateur se voit délivrer un jeton portant
@@ -572,6 +593,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
           subscriptionPlan: "STARTER",
           trialEndsAt,
           emailVerifiedAt: new Date(),
+          language: langueDeLaRequete(req),
         })
         .returning();
 
@@ -607,7 +629,7 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
   // Un collaborateur (voir identiteJetonPourManager) peut lier son compte à
   // Google comme n'importe quel gestionnaire : même résolution qu'à la
   // connexion par mot de passe (login).
-  await finalizeLogin(user, res);
+  await finalizeLogin(user, res, langueDemandee(req));
 });
 
 const verifyEmailSchema = z.object({

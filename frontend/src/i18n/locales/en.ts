@@ -1308,6 +1308,9 @@ const en: TranslationSchema = {
         bic: "BIC / SWIFT",
         managementFeeRate: "Commission rate (%)",
         notes: "Notes",
+        language: "Email language",
+        languageHint:
+          "Payment notices for this owner are sent in this language.",
       },
       emptyTitle: "No owner yet",
       emptyDesc: "Add an owner (name, email, phone) so you can link properties to them and grant them access to their owner portal.",

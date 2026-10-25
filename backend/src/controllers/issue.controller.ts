@@ -10,6 +10,7 @@ import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { dateSaisieSchema } from "../utils/dates";
+import { langueOuDefaut } from "../utils/langue";
 import { assertAccesLocataireOuGestionnaire, assertOwnership, chargerLocataireDuCompte, estLocataireDuBail, idLocataireDuCompte } from "../utils/authorization";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
@@ -170,6 +171,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
       managerNote: updated.managerNote,
       scheduledAt: updated.scheduledAt,
       frontendUrl: env.frontendUrl,
+      langue: langueOuDefaut(row.tenant.language),
     });
     await sendEmail(row.tenant.email, subject, html).catch((err) =>
       console.error("[issue] Échec de l'envoi de la notification de statut:", err)

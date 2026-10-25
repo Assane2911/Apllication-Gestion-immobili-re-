@@ -7,6 +7,8 @@ import { logActivity } from "../services/activity.service";
 import { ownerPayoutEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { finDeLaJournee } from "../utils/dates";
+import { langueOuDefaut } from "../utils/langue";
+import { TEXTES_SUITE } from "../services/email.suite.textes";
 import { arrondir } from "../utils/montants";
 import { formaterMontant } from "../utils/montant";
 import { nomAvecCivilite } from "../utils/nom";
@@ -134,8 +136,10 @@ export const createOwnerPayout = asyncHandler(async (req: Request, res: Response
         periodMonth: body.month,
         periodYear: body.year,
         paidAt: body.paidAt,
-        methodLabel: LIBELLES_MOYENS[body.method],
+        // Le libellé du moyen est celui de la langue du propriétaire ; le journal de l'agence reste en français.
+        methodLabel: TEXTES_SUITE[langueOuDefaut(owner.language)].reversement.moyens[body.method],
         reference: reversement.reference,
+        langue: langueOuDefaut(owner.language),
       });
       await sendEmail(owner.email, subject, html);
       await db.update(ownerPayouts).set({ ownerNotifiedAt: new Date() }).where(eq(ownerPayouts.id, reversement.id));

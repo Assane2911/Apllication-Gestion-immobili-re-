@@ -1308,6 +1308,9 @@ const fr = {
         bic: "BIC / SWIFT",
         managementFeeRate: "Taux de commission (%)",
         notes: "Notes",
+        language: "Langue des e-mails",
+        languageHint:
+          "Les reversements de ce propriétaire lui sont annoncés dans cette langue.",
       },
       emptyTitle: "Aucun propriétaire pour l'instant",
       emptyDesc:
