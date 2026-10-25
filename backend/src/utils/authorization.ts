@@ -63,19 +63,25 @@ export async function chargerCompteCourant(req: Request) {
 export function assertAccesLocataireOuGestionnaire(
   role: AuthPayload["role"],
   estLocataireProprietaire: boolean,
-  estGestionnaireProprietaire: boolean
+  estGestionnaireProprietaire: boolean,
+  introuvable?: { message: string; code: string }
 ): void {
+  // Avec `introuvable`, le refus est un 404 identique à celui d'un identifiant inventé : un 403 révélerait que la
+  // ressource existe, chez quelqu'un d'autre (voir assertOwnership). Sans lui, le 403 d'origine est conservé.
+  const refuser = (): never => {
+    throw introuvable ? new ApiError(404, introuvable.message, introuvable.code) : new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  };
   if (role === "TENANT") {
-    if (!estLocataireProprietaire) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+    if (!estLocataireProprietaire) refuser();
     return;
   }
   if (role === "MANAGER") {
-    if (!estGestionnaireProprietaire) throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+    if (!estGestionnaireProprietaire) refuser();
     return;
   }
   // Tout autre rôle (ADMIN compris) n'est ni le locataire ni le
   // gestionnaire propriétaires de cette ressource : refus par défaut.
-  throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  refuser();
 }
 
 /**

@@ -120,7 +120,7 @@ describe("Messages API (/api/messages)", () => {
       .get(`/api/messages/${contractA.id}`)
       .set(authHeader(tokenFor(managerB)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   /**
@@ -141,7 +141,7 @@ describe("Messages API (/api/messages)", () => {
       .get(`/api/messages/${contract.id}`)
       .set(authHeader(tokenFor(admin)));
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("POST /api/messages/:id — interdit à un administrateur d'écrire dans une conversation", async () => {
@@ -156,7 +156,7 @@ describe("Messages API (/api/messages)", () => {
       .set(authHeader(tokenFor(admin)))
       .send({ content: "Message injecté" });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   /**

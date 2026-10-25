@@ -112,15 +112,15 @@ export const createInsurancePolicy = asyncHandler(async (req: Request, res: Resp
 });
 
 export const updateInsurancePolicy = asyncHandler(async (req: Request, res: Response) => {
-  const body = insurancePolicyBodySchema.parse(req.body);
-  assertDatesCoherentes(body.startDate, body.expiryDate);
-
   const [row] = await db
     .select({ policy: insurancePolicies, property: properties })
     .from(insurancePolicies)
     .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
     .where(eq(insurancePolicies.id, req.params.id));
   assertOwnership(row, (r) => r.property.managerId, req.user!.userId, "Police d'assurance introuvable", 404, "INSURANCE_POLICY_NOT_FOUND");
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
+  const body = insurancePolicyBodySchema.parse(req.body);
+  assertDatesCoherentes(body.startDate, body.expiryDate);
 
   const [prop] = await db.select().from(properties).where(eq(properties.id, body.propertyId));
   assertOwnership(prop, (p) => p.managerId, req.user!.userId, "Bien introuvable", 404, "PROPERTY_NOT_FOUND");

@@ -46,8 +46,9 @@ export const listRentRevisions = asyncHandler(async (req: Request, res: Response
 });
 
 export const createRentRevision = asyncHandler(async (req: Request, res: Response) => {
-  const body = revisionSchema.parse(req.body);
   const { contrat, bien } = await contratDuGestionnaire(req);
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
+  const body = revisionSchema.parse(req.body);
 
   const entree =
     body.mode === "AMOUNT"

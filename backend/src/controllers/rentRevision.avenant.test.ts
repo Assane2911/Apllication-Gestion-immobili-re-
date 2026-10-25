@@ -222,7 +222,7 @@ describe("avenant de révision", () => {
     expect((await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(hLocataire)).status).toBe(200);
 
     const autre = await agence();
-    expect((await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(autre.h)).status).toBe(403);
+    expect((await request(app).get(`/api/documents/rent-revision/${revision.id}`).set(autre.h)).status).toBe(404);
     expect((await request(app).get("/api/documents/rent-revision/inconnue").set(h)).status).toBe(404);
 
     const programmee = await request(app).post(`/api/contracts/${contract.id}/rent-revisions`).set(h).send({ mode: "AMOUNT", newRent: 540, effectiveDate: "2027-01-01" });

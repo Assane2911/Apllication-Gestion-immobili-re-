@@ -103,8 +103,8 @@ describe("fils de discussion en colocation", () => {
 
     expect((await lire(hGestion, contract.id, etranger.id)).status).toBe(404);
     expect((await ecrire(hGestion, contract.id, "x", etranger.id)).status).toBe(404);
-    expect((await lire(authHeader(tokenFor(await createManager())), contract.id)).status).toBe(403);
-    expect((await lire(authHeader(await tokenLocataire(etranger.id)), contract.id)).status).toBe(403);
+    expect((await lire(authHeader(tokenFor(await createManager())), contract.id)).status).toBe(404);
+    expect((await lire(authHeader(await tokenLocataire(etranger.id)), contract.id)).status).toBe(404);
   });
 
   it("le colocataire voit son fil dans sa liste, avec sa qualité", async () => {
@@ -126,8 +126,8 @@ describe("fils de discussion en colocation", () => {
     expect(liste.body.items.map((c: { tenantId: string }) => c.tenantId)).toContain(coloc.id);
     expect(contenus(await lire(hGestion, contract.id, coloc.id))).toEqual(["Avant mon départ"]);
     expect((await ecrire(hGestion, contract.id, "Encore là ?", coloc.id)).status).toBe(409);
-    expect((await lire(hColoc, contract.id)).status).toBe(403);
-    expect((await ecrire(hColoc, contract.id, "Je peux ?")).status).toBe(403);
+    expect((await lire(hColoc, contract.id)).status).toBe(404);
+    expect((await ecrire(hColoc, contract.id, "Je peux ?")).status).toBe(404);
   });
 
   it("un ancien message non rattaché appartient au fil du titulaire", async () => {

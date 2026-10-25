@@ -193,7 +193,10 @@ async function resoudreFil(req: Request, contractId: string, ecriture: boolean) 
       return { ...row, tenant: fiche, qualite: "COLOCATAIRE" as Qualite };
     }
   }
-  assertAccesLocataireOuGestionnaire(req.user!.role, false, row.property.managerId === req.user!.userId);
+  assertAccesLocataireOuGestionnaire(req.user!.role, false, row.property.managerId === req.user!.userId, {
+    message: "Contrat introuvable",
+    code: "CONTRACT_NOT_FOUND",
+  });
 
   const demande = typeof req.query.tenantId === "string" && req.query.tenantId ? req.query.tenantId : row.contract.tenantId;
   if (demande === row.contract.tenantId) return { ...row, tenant: row.titulaire, qualite: "TITULAIRE" as Qualite };

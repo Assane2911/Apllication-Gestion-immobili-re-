@@ -65,8 +65,9 @@ export const listGuarantors = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const createGuarantor = asyncHandler(async (req: Request, res: Response) => {
-  const body = garantSchema.parse(req.body);
   const { contrat, bien } = await contratDuGestionnaire(req);
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
+  const body = garantSchema.parse(req.body);
   assertBailNonSigne(contrat);
 
   const [{ nombre }] = await db
@@ -93,11 +94,12 @@ export const createGuarantor = asyncHandler(async (req: Request, res: Response) 
 });
 
 export const updateGuarantor = asyncHandler(async (req: Request, res: Response) => {
+  const { contrat, bien } = await contratDuGestionnaire(req);
+  // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
   // Un champ absent reste absent (partial() s'arrête avant la transformation « vide » → null) :
   // modifier le téléphone ne touche ni l'email, ni l'adresse, ni la note.
   const body = garantSchema.partial().parse(req.body);
   if (Object.keys(body).length === 0) throw new ApiError(400, "Aucune modification fournie.", "NOTHING_TO_UPDATE");
-  const { contrat, bien } = await contratDuGestionnaire(req);
   assertBailNonSigne(contrat);
 
   const [garant] = await db
