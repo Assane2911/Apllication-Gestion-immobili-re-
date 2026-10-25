@@ -6,6 +6,7 @@ import { agencySettings, contracts, expenses, invoices, ownerPayouts, owners, pr
 import { generateCrgHtml } from "../services/pdf.service";
 import { developperFactures, factureEncaissee } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { langueOuDefaut } from "../utils/langue";
 import { arrondir } from "../utils/montants";
 import { nomAvecCivilite } from "../utils/nom";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
@@ -376,7 +377,8 @@ export const exportCrgForOwner = asyncHandler(async (req: Request, res: Response
   const crg = await computeCrg(owner, month, year);
   const agencyName = await loadAgencyName(req.user!.userId);
 
-  const html = generateCrgHtml({ ...crg, agencyName });
+  // Le compte-rendu est écrit à l'attention du propriétaire : dans SA langue, quelle que soit celle du gestionnaire.
+  const html = generateCrgHtml({ ...crg, agencyName, langue: langueOuDefaut(owner.language) });
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
 });
@@ -388,7 +390,7 @@ export const exportMyCrg = asyncHandler(async (req: Request, res: Response) => {
   const crg = sansNotesInternes(await computeCrg(owner, month, year));
   const agencyName = await loadAgencyName(owner.managerId);
 
-  const html = generateCrgHtml({ ...crg, agencyName });
+  const html = generateCrgHtml({ ...crg, agencyName, langue: langueOuDefaut(owner.language) });
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
 });
