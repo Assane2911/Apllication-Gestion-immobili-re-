@@ -279,6 +279,40 @@ describe("intercepteur de réponse : erreur d'un téléchargement (responseType 
   });
 });
 
+/**
+ * La langue choisie dans l'interface voyage dans l'en-tête Accept-Language de chaque requête : c'est elle que le serveur
+ * lit pour écrire les e-mails (confirmation d'adresse, mot de passe oublié, invitations) dans la bonne langue.
+ */
+describe("intercepteur de requête (langue)", () => {
+  async function langueEnvoyee() {
+    let captures: Record<string, string> = {};
+    await api.get("/quelque-chose", {
+      adapter: async (config) => {
+        captures = config.headers as unknown as Record<string, string>;
+        return { data: {}, status: 200, statusText: "OK", headers: {}, config };
+      },
+    });
+    return captures["Accept-Language"];
+  }
+
+  afterEach(async () => {
+    const { changerLangue } = await import("../i18n");
+    await changerLangue("fr");
+  });
+
+  it("envoie la langue de l'interface", async () => {
+    expect(await langueEnvoyee()).toBe("fr");
+  });
+
+  it("suit le changement de langue", async () => {
+    const { changerLangue } = await import("../i18n");
+    await changerLangue("pt");
+    expect(await langueEnvoyee()).toBe("pt");
+    await changerLangue("es");
+    expect(await langueEnvoyee()).toBe("es");
+  });
+});
+
 describe("apiErrorMessage — langue", () => {
   it("donne le message de repli dans la langue choisie", async () => {
     const { changerLangue } = await import("../i18n");
