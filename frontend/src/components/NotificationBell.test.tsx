@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import type { NotificationItem } from "../types";
 import NotificationBell from "./NotificationBell";
@@ -373,5 +373,118 @@ describe("NotificationBell", () => {
 
       expect(screen.queryByText("Déjà lu")).not.toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * Sondage de la cloche (toutes les 30 s) et visibilité de l'onglet.
+ *
+ * Un onglet laissé ouvert en arrière-plan sondait le serveur toute la journée — près de 1 000 appels par jour, chacun
+ * avec authentification, contrôle d'abonnement et sept requêtes SQL — pour une cloche que personne ne regarde. Le
+ * sondage s'arrête donc quand l'onglet est caché, et repart (avec un rafraîchissement immédiat) quand il redevient
+ * visible : la cloche est à jour dès que la personne revient.
+ */
+describe("NotificationBell — sondage et visibilité de l'onglet", () => {
+  function onglet(etat: "visible" | "hidden") {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => etat });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }
+  const avancer = (ms: number) =>
+    act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  const appels = () => mockedApi.get.mock.calls.length;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mockedApi.get.mockReset();
+    mockedApi.get.mockResolvedValue({ data: { notifications: [] } });
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (document as unknown as Record<string, unknown>).visibilityState;
+  });
+
+  it("onglet visible : une lecture à l'ouverture, puis une toutes les 30 secondes", async () => {
+    renderBell();
+    await avancer(10);
+    expect(appels()).toBe(1);
+    await avancer(30_000);
+    expect(appels()).toBe(2);
+    await avancer(30_000);
+    expect(appels()).toBe(3);
+  });
+
+  it("onglet caché : plus aucun sondage, même au bout de plusieurs minutes", async () => {
+    renderBell();
+    await avancer(10);
+    onglet("hidden");
+    const avant = appels();
+    await avancer(10 * 60_000);
+    expect(appels()).toBe(avant);
+  });
+
+  it("retour sur l'onglet : rafraîchissement immédiat, puis le rythme de 30 secondes reprend", async () => {
+    renderBell();
+    await avancer(10);
+    onglet("hidden");
+    await avancer(5 * 60_000);
+    const avant = appels();
+
+    onglet("visible");
+    await avancer(10);
+    expect(appels()).toBe(avant + 1);
+
+    await avancer(30_000);
+    expect(appels()).toBe(avant + 2);
+  });
+
+  it("ouverte dans un onglet caché : une seule lecture, puis rien jusqu'au retour", async () => {
+    onglet("hidden");
+    renderBell();
+    await avancer(10);
+    expect(appels()).toBe(1);
+    await avancer(5 * 60_000);
+    expect(appels()).toBe(1);
+
+    onglet("visible");
+    await avancer(10);
+    expect(appels()).toBe(2);
+  });
+
+  it("plusieurs retours consécutifs ne multiplient pas les sondages (un seul minuteur)", async () => {
+    renderBell();
+    await avancer(10);
+    onglet("hidden");
+    onglet("visible");
+    onglet("visible");
+    await avancer(10);
+    const avant = appels();
+    await avancer(30_000);
+    expect(appels()).toBe(avant + 1);
+    await avancer(30_000);
+    expect(appels()).toBe(avant + 2);
+  });
+
+  it("démontée, la cloche ne réagit plus aux changements de visibilité", async () => {
+    const { unmount } = renderBell();
+    await avancer(10);
+    unmount();
+    const avant = appels();
+    onglet("hidden");
+    onglet("visible");
+    await avancer(60_000);
+    expect(appels()).toBe(avant);
+  });
+
+  it("le portail locataire (autre endpoint) suit la même règle", async () => {
+    renderBell({ endpoint: "/notifications/mine", i18nPrefix: "components.notificationBell" });
+    await avancer(10);
+    onglet("hidden");
+    await avancer(5 * 60_000);
+    expect(appels()).toBe(1);
+    expect(mockedApi.get).toHaveBeenCalledWith("/notifications/mine", expect.anything());
   });
 });

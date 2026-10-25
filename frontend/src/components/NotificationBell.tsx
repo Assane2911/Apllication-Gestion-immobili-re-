@@ -85,12 +85,37 @@ export default function NotificationBell({
   // sans AbortController, une réponse arrivant après le démontage (navigation
   // au moment précis où le sondage des 30s partait) appelait quand même
   // setItems sur un composant qui n'existe plus.
+  //
+  // Le sondage s'arrête quand l'onglet est caché et repart, avec une lecture immédiate, quand il redevient visible :
+  // un onglet oublié en arrière-plan sondait le serveur toute la journée (près de 1 000 appels, chacun avec
+  // authentification, contrôle d'abonnement et sept requêtes SQL) pour une cloche que personne ne regardait.
   useEffect(() => {
     const controller = new AbortController();
+    let minuteur: ReturnType<typeof setInterval> | null = null;
+    const demarrer = () => {
+      if (minuteur === null) minuteur = setInterval(() => load(controller.signal), POLL_INTERVAL_MS);
+    };
+    const arreter = () => {
+      if (minuteur !== null) {
+        clearInterval(minuteur);
+        minuteur = null;
+      }
+    };
+    const surVisibilite = () => {
+      if (document.visibilityState === "hidden") {
+        arreter();
+      } else {
+        load(controller.signal);
+        demarrer();
+      }
+    };
+
     load(controller.signal);
-    const interval = setInterval(() => load(controller.signal), POLL_INTERVAL_MS);
+    if (document.visibilityState !== "hidden") demarrer();
+    document.addEventListener("visibilitychange", surVisibilite);
     return () => {
-      clearInterval(interval);
+      document.removeEventListener("visibilitychange", surVisibilite);
+      arreter();
       controller.abort();
     };
   }, [endpoint]);
