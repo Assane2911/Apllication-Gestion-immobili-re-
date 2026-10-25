@@ -70,7 +70,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
         <Link to="/login" className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors">
           {t("auth.forgotPassword.backToLogin")}
@@ -86,6 +86,7 @@ export default function ResetPasswordPage() {
 
         {!token ? (
           <div className="text-center">
+            <h1 className="sr-only">{t("auth.resetPassword.title")}</h1>
             <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-3">
               {t("auth.resetPassword.missingToken")}
             </p>
@@ -101,12 +102,12 @@ export default function ResetPasswordPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
               <LockIcon />
             </div>
-            <h2 className="text-xl font-bold text-white">{t("auth.resetPassword.doneTitle")}</h2>
+            <h1 className="text-xl font-bold text-white">{t("auth.resetPassword.doneTitle")}</h1>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.resetPassword.doneSubtitle")}</p>
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-white text-center">{t("auth.resetPassword.title")}</h2>
+            <h1 className="text-2xl font-bold text-white text-center">{t("auth.resetPassword.title")}</h1>
             <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.resetPassword.subtitle")}</p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -132,7 +133,7 @@ export default function ResetPasswordPage() {
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
                   >
                     <EyeIcon off={showPassword} />
                   </button>
@@ -178,6 +179,6 @@ export default function ResetPasswordPage() {
           </>
         )}
       </Reveal>
-    </div>
+    </main>
   );
 }

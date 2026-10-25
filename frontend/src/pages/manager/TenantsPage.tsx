@@ -403,7 +403,7 @@ export default function TenantsPage() {
                     <span className="text-emerald-700 dark:text-emerald-400 text-[11px] font-medium shrink-0">{t("manager.tenants.portalActiveMobile")}</span>
                   ) : (
                     <Bulle texte={t("manager.tips.tenantPortal")}>
-                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 dark:text-brand-400 hover:underline text-[11px] font-medium shrink-0">
+                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 dark:text-brand-400 hover:underline text-[11px] font-medium shrink-0 py-1 -my-1">
                       {t("manager.tenants.createAccess")}
                     </button>
                     </Bulle>
@@ -418,21 +418,21 @@ export default function TenantsPage() {
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-contour-100 dark:border-slate-800 text-xs">
                   {tenant.idDocument ? (
-                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">
+                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline py-1 -my-1">
                       {t("manager.tenants.viewIdDocumentMobile")}
                     </button></Bulle>
                   ) : (
                     <span className="text-slate-500 dark:text-slate-400">{t("manager.tenants.noIdDocument")}</span>
                   )}
-                  <div className="space-x-3">
-                    <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button></Bulle>
-                    <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline">{t("manager.tenants.exportData")}</button></Bulle>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline py-1 -my-1">{t("common.actions.edit")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline py-1 -my-1">{t("manager.tenants.exportData")}</button></Bulle>
                     {tenant.anonymizedAt ? (
                       <span className="text-slate-600 dark:text-slate-400">{t("manager.tenants.anonymized")}</span>
                     ) : (
-                      <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline">{t("manager.tenants.anonymize")}</button></Bulle>
+                      <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline py-1 -my-1">{t("manager.tenants.anonymize")}</button></Bulle>
                     )}
-                    <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline py-1 -my-1">{t("common.actions.delete")}</button></Bulle>
                   </div>
                 </div>
               </div>

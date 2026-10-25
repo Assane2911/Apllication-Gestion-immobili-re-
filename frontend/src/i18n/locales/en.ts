@@ -2671,6 +2671,7 @@ const en: TranslationSchema = {
 
   suggestions: {
     button: "Any suggestions?",
+    zone: "Help and suggestions",
     title: "Your feedback shapes the platform",
     subtitle: "Tell us what you are missing or what gets in your way. The page you are writing from travels with your message.",
     placeholder: "What I would like to be able to do here is…",

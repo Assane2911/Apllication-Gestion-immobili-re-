@@ -60,7 +60,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
         </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <main className="max-w-3xl mx-auto px-6 py-12">
         <div className="flex flex-wrap gap-2 mb-8">
           {LEGAL_PAGES.map((page) => (
             <Link
@@ -81,7 +81,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
         <p className="text-xs text-slate-400 mb-10">Dernière mise à jour : {COMPANY.lastUpdated}</p>
 
         <div className="text-sm leading-relaxed text-slate-300 space-y-8">{children}</div>
-      </div>
+      </main>
 
       <footer className="border-t border-slate-800/80 py-8 px-6 text-center text-xs text-slate-400">
         <p>

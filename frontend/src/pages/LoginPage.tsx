@@ -173,9 +173,9 @@ export default function LoginPage() {
         </Reveal>
 
         <Reveal delay={100} className="relative max-w-md">
-          <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight xl:leading-10">
+          <p className="text-3xl xl:text-4xl font-extrabold text-white leading-tight xl:leading-10">
             {t("auth.login.panel.title")}
-          </h1>
+          </p>
           <p className="mt-4 text-sm text-slate-400 leading-relaxed">{t("auth.login.panel.subtitle")}</p>
 
           <ul className="mt-8 space-y-3.5">
@@ -216,7 +216,7 @@ export default function LoginPage() {
 
           {pendingToken ? (
             <>
-              <h2 className="text-2xl font-bold text-white text-center">{t("auth.twoFactor.title")}</h2>
+              <h1 className="text-2xl font-bold text-white text-center">{t("auth.twoFactor.title")}</h1>
               <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.twoFactor.subtitle")}</p>
 
               <form onSubmit={handleTwoFactorSubmit} className="mt-8 space-y-4">
@@ -271,7 +271,7 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-white text-center">{t("auth.login.title")}</h2>
+              <h1 className="text-2xl font-bold text-white text-center">{t("auth.login.title")}</h1>
               <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.login.subtitle")}</p>
 
               {deconnecte && (
@@ -318,7 +318,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
                     >
                       <EyeIcon off={showPassword} />
                     </button>

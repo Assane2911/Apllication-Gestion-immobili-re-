@@ -2673,6 +2673,7 @@ const es: TranslationSchema = {
 
   suggestions: {
     button: "¿Alguna sugerencia?",
+    zone: "Ayuda y sugerencias",
     title: "Su opinión mejora la plataforma",
     subtitle: "Díganos qué le falta o qué le estorba. La página desde la que escribe viaja con su mensaje.",
     placeholder: "Lo que me gustaría poder hacer aquí es…",

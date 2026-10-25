@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -358,5 +358,35 @@ describe("TenantsPage (manager)", () => {
       await screen.findAllByText("Anonymisé");
       expect(screen.queryByRole("button", { name: "Anonymiser" })).not.toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * Audit axe-core (WCAG 2.2, critère 2.5.8) : sur téléphone, les actions des cartes (Modifier, Exporter…) faisaient
+ * 16 px de haut, sous les 24 px minimum. `py-1` porte la cible à 24 px ; `-my-1` annule l'espace ajouté pour que la
+ * carte ne grandisse pas.
+ */
+describe("TenantsPage — cibles des actions des cartes (téléphone)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+  });
+
+  it("chaque action d'une carte mesure au moins 24 px de haut sans agrandir la carte", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([tenant()]));
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getAllByText("Awa Diallo").length).toBeGreaterThan(0));
+
+    const cartes = container.querySelector<HTMLElement>(".sm\\:hidden.space-y-3");
+    expect(cartes).not.toBeNull();
+    // Sur deux lignes, les cases de 24 px ne doivent pas se chevaucher : 8 px d'écart entre les lignes (gap-y-2) pour
+    // des cases qui débordent de 4 px (-my-1) de chaque côté.
+    const rangee = within(cartes!).getByRole("button", { name: "Anonymiser" }).closest(".flex-wrap");
+    expect(rangee?.className).toMatch(/\bgap-y-2\b/);
+    const actions = within(cartes!).getAllByRole("button");
+    expect(actions.length).toBeGreaterThanOrEqual(3);
+    for (const action of actions) {
+      expect(action.className, action.textContent ?? "").toMatch(/\bpy-1\b/);
+      expect(action.className, action.textContent ?? "").toMatch(/(^|\s)-my-1(\s|$)/);
+    }
   });
 });

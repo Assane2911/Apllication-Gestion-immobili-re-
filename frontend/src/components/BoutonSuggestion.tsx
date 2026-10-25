@@ -58,7 +58,7 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
   return (
     <>
       {/* `aCote` : un raccourci rangé à gauche du bouton (le guide de démarrage, dans l'espace gestionnaire). */}
-      <div className="hidden sm:flex fixed bottom-4 right-4 z-40 items-center gap-2">
+      <aside aria-label={t("suggestions.zone")} className="hidden sm:flex fixed bottom-4 right-4 z-40 items-center gap-2">
         {aCote}
         <button
           type="button"
@@ -67,7 +67,7 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
         >
           <Lightbulb size={14} aria-hidden="true" /> {t("suggestions.button")}
         </button>
-      </div>
+      </aside>
 
       {ouvert && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">

@@ -148,9 +148,9 @@ export default function RegisterPage() {
         </Reveal>
 
         <Reveal delay={100} className="relative max-w-md">
-          <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight xl:leading-10">
+          <p className="text-3xl xl:text-4xl font-extrabold text-white leading-tight xl:leading-10">
             {t("auth.register.panel.title")}
-          </h1>
+          </p>
           <p className="mt-4 text-sm text-slate-400 leading-relaxed">{t("auth.register.panel.subtitle")}</p>
 
           <ul className="mt-8 space-y-3.5">
@@ -194,7 +194,7 @@ export default function RegisterPage() {
               <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
                 <MailIcon />
               </div>
-              <h2 className="text-xl font-bold text-white">{t("auth.register.sentTitle")}</h2>
+              <h1 className="text-xl font-bold text-white">{t("auth.register.sentTitle")}</h1>
               <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.register.sentSubtitle")}</p>
               <Link
                 to="/login"
@@ -205,7 +205,7 @@ export default function RegisterPage() {
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-white text-center">{t("auth.register.title")}</h2>
+              <h1 className="text-2xl font-bold text-white text-center">{t("auth.register.title")}</h1>
               <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.register.subtitle")}</p>
 
               <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -249,7 +249,7 @@ export default function RegisterPage() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
                     >
                       <EyeIcon off={showPassword} />
                     </button>
