@@ -500,6 +500,11 @@ export const tenants = pgTable(
     // plutôt qu'improprement saisie, et exclure ce locataire de tout envoi
     // ultérieur (voir reminder.service.ts).
     anonymizedAt: timestamp("anonymized_at", { mode: "date" }),
+    // Langue dans laquelle écrire à ce locataire (fr, en, es, pt) : ses e-mails partent sans requête de sa part
+    // (cron, action du gestionnaire), donc la langue de la requête ne peut pas la donner. Choisie par le gestionnaire
+    // à la création de la fiche, puis mise à jour quand le locataire se connecte à son portail. NULL = fiche d'avant :
+    // le français.
+    language: text("language"),
     ...timestamps,
   },
   (table) => ({

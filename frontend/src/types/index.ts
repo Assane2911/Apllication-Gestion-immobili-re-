@@ -182,6 +182,8 @@ export interface Tenant {
   email: string;
   idDocument?: string | null;
   userId?: string | null;
+  /** Langue des e-mails de ce locataire (« fr », « en », « es », « pt »). Absente sur une fiche d'avant : le français. */
+  language?: string | null;
   /** Date d'exercice du droit à l'effacement — voir anonymiserTenant côté API. */
   anonymizedAt?: string | null;
   createdAt: string;

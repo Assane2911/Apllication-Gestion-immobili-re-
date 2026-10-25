@@ -1,4 +1,5 @@
 import { DEVISES } from "./devises";
+import { LANGUE_PAR_DEFAUT, LOCALE_PAR_LANGUE, type Langue } from "./langue";
 
 /** Plafond d'un montant saisi (loyer, dépôt…) : au-delà, c'est une faute de frappe ou un nombre infini. */
 export const MONTANT_MAXIMUM = 1_000_000_000_000;
@@ -19,14 +20,17 @@ export const SURFACE_MAXIMUM = 1_000_000;
  * imposée, deux au maximum. Un loyer s'écrit « 450 € » et non « 450,00 € »,
  * mais une régularisation au centime garde ses centimes.
  *
+ * La langue (français par défaut) choisit les séparateurs, avec la même table que le portail : un locataire qui
+ * lit l'application en anglais lit aussi « 35,000 FCFA » dans son e-mail.
+ *
  * Une devise inconnue affiche son code brut plutôt qu'un symbole de
  * remplacement — même parti pris qu'au portail : un montant visiblement
  * inhabituel se corrige, un montant faux d'apparence normale se découvre au
  * litige.
  */
-export function formaterMontant(montant: number, devise?: string | null): string {
+export function formaterMontant(montant: number, devise?: string | null, langue: Langue = LANGUE_PAR_DEFAUT): string {
   const code = devise || "EUR";
-  const nombre = new Intl.NumberFormat("fr-FR", {
+  const nombre = new Intl.NumberFormat(LOCALE_PAR_LANGUE[langue], {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(montant);

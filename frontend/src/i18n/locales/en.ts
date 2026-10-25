@@ -1257,6 +1257,9 @@ const en: TranslationSchema = {
         phone: "Phone",
         email: "Email",
         idDocument: "ID document (image or PDF)",
+        language: "Email language",
+        languageHint:
+          "Rent notices, reminders and receipts for this tenant are sent in this language.",
       },
       emptyTitle: "No tenants yet",
       emptyDesc: "Add your first tenant (name, phone, email, ID document) so you can link them to a contract.",

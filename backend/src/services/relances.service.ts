@@ -6,6 +6,7 @@ import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
 import { debutDeLaJournee, joursEntre } from "../utils/dates";
 import { formaterMontant } from "../utils/montant";
 import { resteDu } from "../utils/montants";
+import { langueOuDefaut } from "../utils/langue";
 import { nomAvecCivilite, nomComplet } from "../utils/nom";
 import { logActivity } from "./activity.service";
 import { envoyerCopieAuxColocataires, envoyerCopieWhatsappAuxColocataires } from "./colocation.service";
@@ -102,7 +103,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
       niveau,
       agencyName: reglage.agencyName,
     };
-    const { subject, html } = overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(ligne.tenant) });
+    const { subject, html } = overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(ligne.tenant), langue: langueOuDefaut(ligne.tenant.language) });
     const resultat = await sendEmail(ligne.tenant.email, subject, html);
     // Sans modèle configuré, on ne tente rien : chaque tentative écrirait un avertissement dans les
     // journaux, par destinataire et par impayé, tous les jours.
@@ -134,7 +135,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
     };
     if (whatsappResultat.error) noterEchecs(1, whatsappResultat.raison);
 
-    await envoyerCopieAuxColocataires(ligne.contract.id, (colocataire) => overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(colocataire) }));
+    await envoyerCopieAuxColocataires(ligne.contract.id, (colocataire) => overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(colocataire), langue: langueOuDefaut(colocataire.language) }));
     if (whatsappEligible) {
       const copies = await envoyerCopieWhatsappAuxColocataires(ligne.contract.id, (colocataire) => ({
         templateName: env.whatsapp.templateNameOverdue,

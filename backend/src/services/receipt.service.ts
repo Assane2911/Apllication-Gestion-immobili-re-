@@ -2,20 +2,13 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { agencySettings, contracts, invoicePayments, invoices, properties, tenants } from "../db/schema";
 import { colocatairesActifs, envoyerCopieAuxColocataires, nomsDesLocataires } from "./colocation.service";
-import { sendEmail } from "./email.service";
-import { escapeHtml } from "../utils/html";
+import { partialPaymentReceiptEmail, paymentReceiptEmail, sendEmail } from "./email.service";
 import { periodeCouverte } from "./invoice.service";
 import { generateReceiptPdfBuffer, ReceiptData } from "./pdf.service";
 import { chargerLogoAgence } from "./storage.service";
-import { formaterMontant } from "../utils/montant";
-import { libelleMoyenPaiement } from "../utils/moyenPaiement";
+import { langueOuDefaut } from "../utils/langue";
 import { montantRegle, resteDu } from "../utils/montants";
 import { nomAvecCivilite } from "../utils/nom";
-
-const monthNames = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
-];
 
 /**
  * Envoie automatiquement la quittance de loyer (PDF en pièce jointe) au
@@ -88,24 +81,17 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
     };
 
     const pdfBuffer = await generateReceiptPdfBuffer(receiptData);
-    const monthLabel = monthNames[invoice.periodMonth - 1] || `${invoice.periodMonth}`;
-
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">✅ Paiement de loyer confirmé</h2>
-        <p>Bonjour ${escapeHtml(receiptData.tenant.fullName)},</p>
-        <p>
-          Nous confirmons la bonne réception de votre paiement de loyer pour
-          <strong>${monthLabel} ${invoice.periodYear}</strong> concernant le logement
-          <strong>${escapeHtml(receiptData.property.title)}</strong>, d'un montant de
-          <strong>${formaterMontant(invoice.amount, receiptData.invoice.currency)}</strong>.
-        </p>
-        <p>Votre quittance de loyer est jointe à cet email au format PDF.</p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
-      </div>
-    `;
+    // La quittance est une pièce commune : en colocation, tous les locataires du bail reçoivent la même, dans la langue
+    // du titulaire (son PDF les nomme tous).
+    const { subject: sujet, html } = paymentReceiptEmail({
+      tenantName: receiptData.tenant.fullName,
+      propertyTitle: receiptData.property.title,
+      periodMonth: invoice.periodMonth,
+      periodYear: invoice.periodYear,
+      amount: invoice.amount,
+      currency: receiptData.invoice.currency,
+      langue: langueOuDefaut(tenant.language),
+    });
 
     const pieceJointe = [
       {
@@ -114,7 +100,6 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
         contentType: "application/pdf",
       },
     ];
-    const sujet = `Quittance de loyer — ${monthLabel} ${invoice.periodYear}`;
     const result = await sendEmail(tenant.email, sujet, html, pieceJointe);
     // Chaque colocataire reçoit la même quittance (elle les nomme tous).
     await envoyerCopieAuxColocataires(contract.id, () => ({ subject: sujet, html, attachments: pieceJointe }));
@@ -157,41 +142,27 @@ export async function sendPartialPaymentReceiptEmail(invoiceId: string, paymentI
       : [];
 
     const devise = invoice.currency || "EUR";
-    const monthLabel = monthNames[invoice.periodMonth - 1] || `${invoice.periodMonth}`;
-    const dateReception = new Date(paiement.paidAt).toLocaleDateString("fr-FR");
+    // Chaque destinataire reçoit le reçu dans sa propre langue, avec son propre nom.
+    const recuPour = (destinataire: typeof tenant) =>
+      partialPaymentReceiptEmail({
+        tenantName: nomAvecCivilite(destinataire),
+        propertyTitle: property?.title || "Logement",
+        periodMonth: invoice.periodMonth,
+        periodYear: invoice.periodYear,
+        currency: devise,
+        paymentAmount: paiement.amount,
+        paymentDate: paiement.paidAt,
+        paymentMethod: paiement.paymentMethod,
+        rent: invoice.amount,
+        alreadyPaid: montantRegle(invoice),
+        remaining: resteDu(invoice),
+        agencyName: agency?.agencyName,
+        langue: langueOuDefaut(destinataire.language),
+      });
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
-        <h2 style="color:#0f172a;">Reçu de paiement partiel</h2>
-        <p>Bonjour ${escapeHtml(nomAvecCivilite(tenant))},</p>
-        <p>
-          Nous avons bien reçu un paiement de
-          <strong>${formaterMontant(paiement.amount, devise)}</strong> le ${dateReception}
-          (${libelleMoyenPaiement(paiement.paymentMethod)}) au titre du loyer de
-          <strong>${monthLabel} ${invoice.periodYear}</strong>, logement
-          <strong>${escapeHtml(property?.title || "Logement")}</strong>.
-        </p>
-        <table style="border-collapse:collapse; margin:16px 0; font-size:14px;">
-          <tr><td style="padding:4px 16px 4px 0; color:#334155;">Loyer</td><td style="text-align:right;">${formaterMontant(invoice.amount, devise)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0; color:#334155;">Déjà réglé</td><td style="text-align:right;">${formaterMontant(montantRegle(invoice), devise)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0;"><strong>Reste à payer</strong></td><td style="text-align:right;"><strong>${formaterMontant(resteDu(invoice), devise)}</strong></td></tr>
-        </table>
-        <p style="color:#475569; font-size:13px;">
-          Ce document est un <strong>reçu de paiement partiel</strong>, et non une quittance de loyer :
-          la quittance vous sera délivrée lorsque le loyer sera intégralement réglé.
-        </p>
-        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
-          ${agency?.agencyName ? `${escapeHtml(agency.agencyName)} — ` : ""}Cet email a été envoyé automatiquement par votre application de gestion immobilière.
-        </p>
-      </div>
-    `;
-
-    const sujet = `Reçu de paiement partiel — loyer ${monthLabel} ${invoice.periodYear}`;
-    const result = await sendEmail(tenant.email, sujet, html);
-    await envoyerCopieAuxColocataires(contract.id, (colocataire) => ({
-      subject: sujet,
-      html: html.replace(`Bonjour ${escapeHtml(nomAvecCivilite(tenant))},`, `Bonjour ${escapeHtml(nomAvecCivilite(colocataire))},`),
-    }));
+    const { subject, html } = recuPour(tenant);
+    const result = await sendEmail(tenant.email, subject, html);
+    await envoyerCopieAuxColocataires(contract.id, (colocataire) => recuPour(colocataire));
     return { sent: !result.simulated && !("error" in result && result.error), ...result };
   } catch (err) {
     console.error(`[receipt] Échec de l'envoi du reçu de paiement partiel pour la facture ${invoiceId}:`, err);

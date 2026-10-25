@@ -43,6 +43,18 @@ describe("Mise en forme d'un montant", () => {
     expect(formaterMontant(35000, "XYZ")).toBe(`35${espaceFine}000 XYZ`);
   });
 
+  it("sans langue, le français : rien ne change pour ceux qui n'en passent pas", () => {
+    expect(formaterMontant(35000, "XOF", "fr")).toBe(formaterMontant(35000, "XOF"));
+  });
+
+  it("écrit les nombres comme le portail dans la langue du destinataire", () => {
+    expect(formaterMontant(35000, "XOF", "en")).toBe("35,000 FCFA");
+    expect(formaterMontant(35000, "XOF", "es")).toBe("35.000 FCFA");
+    expect(formaterMontant(35000, "XOF", "pt")).toMatch(/^35\s000 FCFA$/);
+    expect(formaterMontant(450.5, "EUR", "en")).toBe("450.5 €");
+    expect(formaterMontant(1200, "USD", "en")).toBe("$1,200");
+  });
+
   it("traite une devise absente comme un euro, valeur par défaut en base", () => {
     expect(formaterMontant(100, undefined)).toBe("100 €");
     expect(formaterMontant(100, null)).toBe("100 €");

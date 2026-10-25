@@ -14,6 +14,7 @@ import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 import { remplacerDansTexte } from "../utils/effacementTexte";
+import { LANGUES, langueDeLaRequete } from "../utils/langue";
 import { CIVILITES } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { avecCode } from "../utils/validationExplicite";
@@ -39,6 +40,8 @@ const tenantSchema = z.object({
     .refine((v) => versE164(v) !== null, avecCode(MESSAGE_TELEPHONE_INVALIDE, "PHONE_INVALID"))
     .transform((v) => versE164(v)!),
   email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
+  // Langue des e-mails de ce locataire. Facultative : à la création, elle prend la langue de l'interface du gestionnaire.
+  language: z.enum(LANGUES).optional(),
 });
 
 /**
@@ -122,7 +125,7 @@ export const createTenant = asyncHandler(async (req: Request, res: Response) => 
 
   const [tenant] = await db
     .insert(tenants)
-    .values({ ...body, idDocument, managerId: req.user!.userId })
+    .values({ ...body, language: body.language ?? langueDeLaRequete(req), idDocument, managerId: req.user!.userId })
     .returning();
 
   await logActivity({

@@ -2,8 +2,10 @@ import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import { escapeHtml } from "../utils/html";
 import { formaterMontant } from "../utils/montant";
-import { LANGUE_PAR_DEFAUT, type Langue } from "../utils/langue";
+import { formaterDate, LANGUE_PAR_DEFAUT, nomDuMois, type Langue } from "../utils/langue";
+import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { TEXTES_COMPTE } from "./email.comptes.textes";
+import { TEXTES_LOCATAIRE } from "./email.locataire.textes";
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -535,59 +537,57 @@ export function rentDueReminderEmail(params: {
   periodYear: number;
   dueDate: Date;
   frontendUrl: string;
+  langue?: Langue;
 }) {
-  const { tenantName, propertyTitle, amount, currency = "EUR", periodMonth, periodYear, dueDate, frontendUrl } = params;
-  const monthNames = [
-    "janvier", "février", "mars", "avril", "mai", "juin",
-    "juillet", "août", "septembre", "octobre", "novembre", "décembre"
-  ];
-  const monthName = monthNames[periodMonth - 1] || `${periodMonth}`;
+  const { tenantName, propertyTitle, amount, currency = "EUR", periodMonth, periodYear, dueDate, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_LOCATAIRE[langue].avisEcheance;
+  const monthName = nomDuMois(periodMonth, langue);
   // Le montant est mis en forme comme au portail (séparateur de milliers,
   // symbole local) : le locataire ne doit pas lire deux écritures de la même
   // somme selon qu'il regarde son espace ou sa boîte aux lettres.
-  const montantAffiche = escapeHtml(formaterMontant(amount, currency));
+  const montantAffiche = escapeHtml(formaterMontant(amount, currency, langue));
   // La date limite est CELLE DE LA FACTURE. Elle était écrite « le 5 » en dur,
   // alors que la facture est due le jour du début du bail : un locataire dont
   // le bail démarre le 24 lisait « avant le 5 » pour un loyer dû le 24.
-  const dateLimite = new Date(dueDate).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const dateLimite = formaterDate(dueDate, langue);
 
   return {
-    subject: `📢 Échéance de loyer ${monthName} ${periodYear} — Règlement attendu au plus tard le ${dateLimite}`,
+    subject: t.sujet(monthName, periodYear, dateLimite),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
-          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Avis d'Échéance de Loyer</h1>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${monthName} ${periodYear} • ${escapeHtml(propertyTitle)}</p>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">${t.bandeau}</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">${t.sousTitre(monthName, periodYear, escapeHtml(propertyTitle))}</p>
         </div>
         <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
-          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(tenantName)}</strong>,</p>
+          <p style="font-size: 15px; margin-top: 0;">${t.bonjour(escapeHtml(tenantName))}</p>
           <p>
-            Votre avis d'échéance de loyer pour le mois de <strong>${monthName} ${periodYear}</strong> concernant le bien <strong>${escapeHtml(propertyTitle)}</strong> est désormais émis.
+            ${t.intro(monthName, periodYear, escapeHtml(propertyTitle))}
           </p>
           
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
-            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Montant à régler</span>
+            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">${t.montantLabel}</span>
             <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0;">${montantAffiche}</div>
             <div style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: bold; padding: 6px 14px; border-radius: 20px; border: 1px solid #fde68a;">
-              ⏰ Date limite de règlement : au plus tard le ${escapeHtml(dateLimite)}
+              ${t.delai(escapeHtml(dateLimite))}
             </div>
           </div>
 
           <p style="font-size: 13px; color: #475569;">
-            Conformément à votre bail de location, nous vous remercions de procéder au paiement de votre loyer dans les délais impartis.
+            ${t.conformite}
           </p>
 
           <div style="text-align: center; margin: 28px 0 20px 0;">
             <a href="${frontendUrl}/portail/paiements" style="background: #2563eb; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
-              Régler mon loyer →
+              ${t.bouton}
             </a>
           </div>
           <p style="font-size: 12px; color: #94a3b8; text-align: center;">
-            Moyens acceptés : Carte bancaire, PayDunya (Orange Money, Wave, MTN...), virement bancaire.
+            ${t.moyens}
           </p>
         </div>
         <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
-          Cet email vous a été envoyé automatiquement par votre agence de gestion immobilière.
+          ${t.pied}
         </div>
       </div>
     `,
@@ -609,40 +609,36 @@ export function rentDueSoonReminderEmail(params: {
   daysLeft: number;
   dueDate: Date;
   frontendUrl: string;
+  langue?: Langue;
 }) {
-  const { tenantName, propertyTitle, amount, currency, periodMonth, periodYear, daysLeft, dueDate, frontendUrl } = params;
-  const monthNames = [
-    "janvier", "février", "mars", "avril", "mai", "juin",
-    "juillet", "août", "septembre", "octobre", "novembre", "décembre"
-  ];
-  const monthName = monthNames[periodMonth - 1] || `${periodMonth}`;
-  const formattedDueDate = dueDate.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const { tenantName, propertyTitle, amount, currency, periodMonth, periodYear, daysLeft, dueDate, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_LOCATAIRE[langue].rappelAvantEcheance;
+  const monthName = nomDuMois(periodMonth, langue);
+  const formattedDueDate = formaterDate(dueDate, langue);
 
   return {
-    subject: `⏰ Rappel : votre loyer de ${monthName} arrive à échéance dans ${daysLeft} jour(s)`,
+    subject: t.sujet(monthName, daysLeft),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: #92400e; padding: 20px; text-align: center; color: #ffffff;">
-          <h1 style="margin: 0; font-size: 18px; font-weight: 700;">⏰ Rappel avant échéance</h1>
+          <h1 style="margin: 0; font-size: 18px; font-weight: 700;">${t.bandeau}</h1>
         </div>
         <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
-          <p>Bonjour <strong>${escapeHtml(tenantName)}</strong>,</p>
+          <p>${t.bonjour(escapeHtml(tenantName))}</p>
           <p>
-            Votre loyer de <strong>${monthName} ${periodYear}</strong> pour le logement
-            <strong>${escapeHtml(propertyTitle)}</strong> n'a pas encore été réglé et arrive à échéance le
-            <strong>${escapeHtml(formattedDueDate)}</strong> (dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}).
+            ${t.intro(monthName, periodYear, escapeHtml(propertyTitle), escapeHtml(formattedDueDate), daysLeft)}
           </p>
           <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px; margin: 16px 0; text-align: center;">
-            <span style="font-size: 24px; font-weight: 900; color: #92400e;">${escapeHtml(formaterMontant(amount, currency))}</span>
+            <span style="font-size: 24px; font-weight: 900; color: #92400e;">${escapeHtml(formaterMontant(amount, currency, langue))}</span>
           </div>
           <div style="text-align: center; margin: 20px 0;">
             <a href="${frontendUrl}/portail/paiements" style="background: #2563eb; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block;">
-              Régler mon loyer maintenant →
+              ${t.bouton}
             </a>
           </div>
         </div>
         <div style="background: #f8fafc; padding: 14px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
-          Cet email vous a été envoyé automatiquement par votre agence de gestion immobilière.
+          ${t.pied}
         </div>
       </div>
     `,
@@ -746,33 +742,32 @@ export function overdueReminderEmail(params: {
   daysLate: number;
   niveau: 1 | 2 | 3;
   agencyName: string;
+  langue?: Langue;
 }) {
-  const periode = `${MOIS_RELANCE[params.periodMonth - 1] ?? params.periodMonth} ${params.periodYear}`;
-  const echeance = new Date(params.dueDate).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
-  const montant = escapeHtml(formaterMontant(params.amount, params.currency ?? "EUR"));
-  const titres = { 1: "Rappel : loyer non réglé", 2: "Deuxième relance : loyer impayé", 3: "Dernière relance : loyer impayé" } as const;
-  const corps = {
-    1: `Sauf erreur de notre part, le loyer de <strong>${escapeHtml(periode)}</strong> n'a pas encore été réglé. S'il s'agit d'un oubli, merci de procéder au règlement dès que possible. Si vous avez déjà payé, vous pouvez ignorer ce message.`,
-    2: `Malgré notre précédent rappel, le loyer de <strong>${escapeHtml(periode)}</strong> reste impayé. Merci de le régler sans attendre, ou de contacter votre agence si vous rencontrez une difficulté.`,
-    3: `Le loyer de <strong>${escapeHtml(periode)}</strong> reste impayé malgré nos relances. Sans règlement ou prise de contact rapide de votre part, votre agence pourra donner à cet impayé les suites prévues par votre bail.`,
-  } as const;
+  const langue = params.langue ?? LANGUE_PAR_DEFAUT;
+  const t = TEXTES_LOCATAIRE[langue].relance;
+  const periode = `${nomDuMois(params.periodMonth, langue)} ${params.periodYear}`;
+  const echeance = formaterDate(params.dueDate, langue);
+  const montant = escapeHtml(formaterMontant(params.amount, params.currency ?? "EUR", langue));
+  const titre = t.titres[params.niveau];
+  const corps = t.corps[params.niveau](escapeHtml(periode));
   return {
-    subject: `${titres[params.niveau]} — ${periode}`,
+    subject: `${titre} — ${periode}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: ${params.niveau === 3 ? "#7f1d1d" : "#0f172a"}; padding: 24px; text-align: center; color: #ffffff;">
-          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">${titres[params.niveau]}</h1>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">${titre}</h1>
           <p style="margin: 6px 0 0 0; font-size: 13px; color: #cbd5e1;">${escapeHtml(params.agencyName)} • ${escapeHtml(params.propertyTitle)}</p>
         </div>
         <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
-          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(params.tenantName)}</strong>,</p>
-          <p>${corps[params.niveau]}</p>
+          <p style="font-size: 15px; margin-top: 0;">${t.bonjour(escapeHtml(params.tenantName))}</p>
+          <p>${corps}</p>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
-            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Reste à payer</span><br>
+            <span style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">${t.resteAPayer}</span><br>
             <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${montant}</span><br>
-            <span style="font-size: 12px; color: #64748b;">Échéance du ${escapeHtml(echeance)} — dépassée de ${params.daysLate} jour(s)</span>
+            <span style="font-size: 12px; color: #64748b;">${t.echeance(escapeHtml(echeance), params.daysLate)}</span>
           </div>
-          <p style="font-size: 13px; color: #475569;">Vous pouvez régler ce loyer depuis votre espace locataire.</p>
+          <p style="font-size: 13px; color: #475569;">${t.instruction}</p>
         </div>
       </div>`,
   };
@@ -873,5 +868,95 @@ export function guarantorFormalNoticeEmail(params: {
         ${rappelPlafondGarant(params.maxAmount, params.currency)}
         <p style="font-size: 13px; color: #64748b;">${escapeHtml(params.agencyName)}</p>
       </div>`,
+  };
+}
+
+/**
+ * Message qui accompagne la quittance de loyer (PDF en pièce jointe) quand une facture est soldée. Le PDF lui-même
+ * reste émis en français : le message le dit dans les autres langues, pour que le locataire ne soit pas surpris.
+ * `tenantName` nomme tous les locataires du bail en cas de colocation (la quittance les nomme tous).
+ */
+export function paymentReceiptEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  periodMonth: number;
+  periodYear: number;
+  amount: number;
+  currency: string;
+  langue?: Langue;
+}) {
+  const langue = params.langue ?? LANGUE_PAR_DEFAUT;
+  const t = TEXTES_LOCATAIRE[langue].quittance;
+  const mois = nomDuMois(params.periodMonth, langue);
+  return {
+    subject: t.sujet(mois, params.periodYear),
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">${t.titre}</h2>
+        <p>${t.bonjour(escapeHtml(params.tenantName))}</p>
+        <p>
+          ${t.corps(mois, params.periodYear, escapeHtml(params.propertyTitle), escapeHtml(formaterMontant(params.amount, params.currency, langue)))}
+        </p>
+        <p>${t.jointe}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          ${TEXTES_COMPTE[langue].pied}
+        </p>
+      </div>
+    `,
+  };
+}
+
+/**
+ * Reçu d'un paiement PARTIEL : ce qui vient d'être encaissé, ce qui a déjà été réglé, ce qui reste dû. Ce n'est pas
+ * une quittance, et le message le dit (la quittance n'est délivrée qu'une fois le loyer intégralement réglé).
+ */
+export function partialPaymentReceiptEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  periodMonth: number;
+  periodYear: number;
+  currency: string;
+  paymentAmount: number;
+  paymentDate: Date;
+  paymentMethod: string | null | undefined;
+  rent: number;
+  alreadyPaid: number;
+  remaining: number;
+  agencyName?: string | null;
+  langue?: Langue;
+}) {
+  const langue = params.langue ?? LANGUE_PAR_DEFAUT;
+  const t = TEXTES_LOCATAIRE[langue].recuPartiel;
+  const mois = nomDuMois(params.periodMonth, langue);
+  const montant = (valeur: number) => escapeHtml(formaterMontant(valeur, params.currency, langue));
+  return {
+    subject: t.sujet(mois, params.periodYear),
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">${t.titre}</h2>
+        <p>${t.bonjour(escapeHtml(params.tenantName))}</p>
+        <p>
+          ${t.corps(
+            montant(params.paymentAmount),
+            escapeHtml(formaterDate(params.paymentDate, langue, {})),
+            escapeHtml(libelleMoyenPaiement(params.paymentMethod, langue)),
+            mois,
+            params.periodYear,
+            escapeHtml(params.propertyTitle)
+          )}
+        </p>
+        <table style="border-collapse:collapse; margin:16px 0; font-size:14px;">
+          <tr><td style="padding:4px 16px 4px 0; color:#334155;">${t.loyer}</td><td style="text-align:right;">${montant(params.rent)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0; color:#334155;">${t.dejaRegle}</td><td style="text-align:right;">${montant(params.alreadyPaid)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;"><strong>${t.reste}</strong></td><td style="text-align:right;"><strong>${montant(params.remaining)}</strong></td></tr>
+        </table>
+        <p style="color:#475569; font-size:13px;">
+          ${t.note}
+        </p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          ${params.agencyName ? `${escapeHtml(params.agencyName)} — ` : ""}${TEXTES_COMPTE[langue].pied}
+        </p>
+      </div>
+    `,
   };
 }

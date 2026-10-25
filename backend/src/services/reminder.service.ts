@@ -24,6 +24,7 @@ import {
   rentDueSoonReminderWhatsappVariables,
   ResultatEnvoiWhatsapp,
 } from "./whatsapp.service";
+import { langueOuDefaut } from "../utils/langue";
 import { nomAvecCivilite, nomComplet } from "../utils/nom";
 import { resteDu } from "../utils/montants";
 
@@ -554,6 +555,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       periodYear: row.invoice.periodYear,
       dueDate: new Date(row.invoice.dueDate),
       frontendUrl: env.frontendUrl,
+      langue: langueOuDefaut(row.tenant.language),
     });
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
@@ -607,6 +609,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
         periodYear: row.invoice.periodYear,
         dueDate: new Date(row.invoice.dueDate),
         frontendUrl: env.frontendUrl,
+        langue: langueOuDefaut(colocataire.language),
       })
     );
     if (managersWhatsappEligibles.has(row.property.managerId)) {
@@ -732,6 +735,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       daysLeft: joursRestants,
       dueDate: new Date(row.invoice.dueDate),
       frontendUrl: env.frontendUrl,
+      langue: langueOuDefaut(row.tenant.language),
     });
 
     const emailResult = await sendEmail(row.tenant.email, subject, html);
@@ -787,6 +791,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
         daysLeft: joursRestants,
         dueDate: new Date(row.invoice.dueDate),
         frontendUrl: env.frontendUrl,
+        langue: langueOuDefaut(colocataire.language),
       })
     );
     if (managersWhatsappEligibles.has(row.property.managerId)) {
@@ -897,6 +902,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     periodYear: row.invoice.periodYear,
     dueDate: new Date(row.invoice.dueDate),
     frontendUrl: env.frontendUrl,
+    langue: langueOuDefaut(row.tenant.language),
   });
 
   const emailResult = await sendEmail(row.tenant.email, subject, html);
@@ -937,6 +943,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
         periodYear: row.invoice.periodYear,
         dueDate: new Date(row.invoice.dueDate),
         frontendUrl: env.frontendUrl,
+        langue: langueOuDefaut(colocataire.language),
       })
     );
     if (managersWhatsappEligibles.has(managerId)) {

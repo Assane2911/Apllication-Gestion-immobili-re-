@@ -906,6 +906,7 @@ export async function initDb() {
     await ajouterColonne("users", "google_id", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE`);
     await ajouterColonne("users", "token_version", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0`);
     await ajouterColonne("tenants", "anonymized_at", sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS anonymized_at TIMESTAMP`);
+    await ajouterColonne("tenants", "language", sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS language TEXT`);
     await ajouterColonne("users", "subscription_payment_attempt_started_at", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_attempt_started_at TIMESTAMP`);
     await ajouterColonne("invoices", "payment_attempt_started_at", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_attempt_started_at TIMESTAMP`);
     await ajouterColonne("properties", "owner_id", sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id TEXT REFERENCES owners(id) ON DELETE SET NULL`);
