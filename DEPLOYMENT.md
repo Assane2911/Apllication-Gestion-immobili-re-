@@ -119,6 +119,7 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 ## Étape 4 — Vérifications post-déploiement
 
 - `https://votre-backend.vercel.app/api/health` → doit répondre `{"status":"ok"}`.
+- `https://votre-backend.vercel.app/api/health/ready` → doit répondre `{"status":"ok"}` (200) : celle-ci interroge aussi la base. Voir « Surveillance de la disponibilité ».
 - Connectez-vous sur le frontend déployé avec un compte gestionnaire créé via `POST /api/auth/register` (le `seed` ne tourne jamais en production : il refuse l'environnement de production et toute base distante).
 - **Vérifiez que le mode démo des paiements est bien désactivé** : connecté, `GET /api/payments/methods` ne doit **pas** lister `DEMO`. S'il y figure, `PAYMENTS_DEMO_MODE` est à `true` sur Vercel : supprimez-le ou mettez `false`, puis redéployez. Pour essayer le flux de paiement de bout en bout, faites-le **en local** (le mode démo y est actif par défaut) ou avec les clés de test du prestataire (Stripe en mode test, `PAYDUNYA_MODE=test`), jamais en activant le mode démo sur le déploiement.
 - Testez manuellement les tâches planifiées avant d'attendre le lendemain — `interrompu: true` dans la réponse signale que le budget de temps a été atteint et qu'un reliquat sera repris à l'exécution suivante :
@@ -128,6 +129,25 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 - Vérifiez dans Supabase → Storage que les fichiers uploadés (image d'un bien, photo d'incident) apparaissent bien dans `public-uploads`.
 
 ---
+
+## Surveillance de la disponibilité
+
+Deux routes publiques, sans authentification ni détail technique :
+
+| Route | Ce qu'elle vérifie | Réponse |
+|---|---|---|
+| `/api/health` | la fonction démarre (elle ne touche pas la base) | `{"status":"ok"}` |
+| `/api/health/ready` | la base répond à un `select 1` en moins de 3 s | `{"status":"ok"}` (200) ou `{"status":"degraded"}` (**503**) |
+
+Une sonde posée sur `/api/health` seul resterait au vert avec une base injoignable (mot de passe changé, projet Supabase en
+pause, connexions épuisées) alors qu'aucune page ne s'affiche : **surveillez `/api/health/ready`**. Le résultat y est gardé
+10 s par instance, et des appels simultanés partagent une même vérification : une sonde, ou un curieux, ne peut pas
+mitrailler la base. La cause exacte d'un 503 se lit dans les journaux Vercel (`[sante] La base ne répond pas : …`).
+
+**Sonde UptimeRobot :** type **Keyword**, URL `https://votre-backend.vercel.app/api/health/ready`, mot-clé `ok` (à signaler
+s'il est **absent**), intervalle 5 minutes. Contacts d'alerte : e-mail et notification Android ; activez aussi le contact
+SMS / appel si vous voulez être réveillé. Les sondes d'UptimeRobot partent d'Amérique du Nord : leurs temps de réponse
+sont plus longs que ceux d'un utilisateur à Dakar, c'est normal, seule la disponibilité compte ici.
 
 ## Sauvegarde et restauration
 

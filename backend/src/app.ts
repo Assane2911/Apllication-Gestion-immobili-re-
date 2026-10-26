@@ -42,6 +42,7 @@ import tenantRoutes from "./routes/tenant.routes";
 import vendorRoutes from "./routes/vendor.routes";
 import { pasDeCache } from "./middleware/pasDeCache";
 import { sansCaractereNul } from "./middleware/sansCaractereNul";
+import { baseRepond } from "./services/sante.service";
 
 export const app = express();
 
@@ -166,6 +167,14 @@ app.use("/api", sansCaractereNul);
 app.use("/api", pasDeCache);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+
+// Santé « complète » pour les sondes externes (UptimeRobot) : `/api/health` répond dès que la fonction démarre, même
+// base injoignable ; celle-ci interroge la base et répond 503 si elle ne répond pas. Aucun détail technique n'est
+// renvoyé, et le résultat est gardé 10 s (voir sante.service.ts).
+app.get("/api/health/ready", async (_req, res) => {
+  const ok = await baseRepond();
+  res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "degraded" });
+});
 
 app.use("/api/csp-report", cspRoutes);
 app.use("/api/auth", authRoutes);

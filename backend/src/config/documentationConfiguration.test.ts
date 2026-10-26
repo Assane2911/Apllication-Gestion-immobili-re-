@@ -139,6 +139,21 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
     });
   });
 
+  describe("la surveillance de la disponibilité", () => {
+    it("DEPLOYMENT.md explique les deux routes de santé et la sonde à poser sur celle qui vérifie la base", () => {
+      const guide = lire("DEPLOYMENT.md");
+      expect(guide).toMatch(/Surveillance de la disponibilité/);
+      expect(guide).toMatch(/\/api\/health\/ready/);
+      expect(guide).toMatch(/503/);
+      expect(guide).toMatch(/UptimeRobot/);
+      expect(guide).toMatch(/Keyword/);
+    });
+
+    it("la route documentée existe dans l'application", () => {
+      expect(readFileSync(join(RACINE, "backend/src/app.ts"), "utf8")).toContain('"/api/health/ready"');
+    });
+  });
+
   it("le README présente les rôles et les chapitres qui existent aujourd'hui", () => {
     const readme = lire("README.md");
     for (const role of ["MANAGER", "TENANT", "OWNER", "ADMIN"]) expect(readme).toContain(role);
