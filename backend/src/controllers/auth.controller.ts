@@ -19,6 +19,7 @@ import {
 import { accorderRecompenseParrainage, trouverParrainParCode } from "../services/referral.service";
 import { supprimerCompteGestionnaire } from "../services/suppressionCompte.service";
 import { consommerCodeSecours, consommerPasTotp, verifierCodeTotpAvecPas } from "../services/totp.service";
+import { chiffrerSecretTotp, dechiffrerSecretTotp, secretTotpEstChiffre } from "../services/secretTotpChiffre";
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
@@ -457,7 +458,8 @@ export const verifyTwoFactorLogin = asyncHandler(async (req: Request, res: Respo
   }
 
   const code = body.code.trim();
-  const pasTotp = await verifierCodeTotpAvecPas(user.totpSecret, code);
+  const secretTotp = dechiffrerSecretTotp(user.totpSecret);
+  const pasTotp = await verifierCodeTotpAvecPas(secretTotp, code);
 
   if (pasTotp !== null) {
     // Un code ne sert qu'une fois (RFC 6238, § 5.2) : le même code, rejoué dans sa fenêtre de validité, par exemple
@@ -465,6 +467,10 @@ export const verifyTwoFactorLogin = asyncHandler(async (req: Request, res: Respo
     // un code à six chiffres n'en est pas un.
     if (!(await consommerPasTotp(user.id, pasTotp))) {
       throw new ApiError(401, "Code invalide ou expiré.", "TWO_FACTOR_CODE_INVALID");
+    }
+    // Secret encore en clair (enrôlé avant le chiffrement) et clé disponible : on le chiffre maintenant que le code a prouvé qu'il est bon.
+    if (env.totpEncryptionKey && !secretTotpEstChiffre(user.totpSecret)) {
+      await db.update(users).set({ totpSecret: chiffrerSecretTotp(secretTotp) }).where(eq(users.id, user.id));
     }
     await finalizeLogin(user, res);
     return;

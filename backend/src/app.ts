@@ -5,6 +5,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env";
+import { signalerCleTotp } from "./config/cleTotp";
 import { signalerModeDemoIgnore } from "./config/modeDemo";
 import { verifierSecretJwt } from "./config/secretJwt";
 import { initDb } from "./db/init";
@@ -53,6 +54,9 @@ verifierSecretJwt(env.jwtSecret, process.env.VERCEL === "1" || env.nodeEnv === "
 
 // PAYMENTS_DEMO_MODE=true sur un déploiement est ignoré (voir config/modeDemo.ts) ; le signaler pour que la variable soit retirée.
 signalerModeDemoIgnore(env.payments.demoModeIgnore);
+
+// Secrets de double authentification : signalés en production tant qu'ils sont stockés en clair (voir config/cleTotp.ts).
+signalerCleTotp(process.env.VERCEL === "1" || env.nodeEnv === "production", env.totpEncryptionKey, env.totpEncryptionKeyInvalide);
 
 // Sur Vercel, ce fichier est directement le point d'entrée serverless (voir
 // l'export par défaut en bas de fichier) : src/index.ts, qui appelait
