@@ -5,6 +5,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env";
+import { verifierSecretJwt } from "./config/secretJwt";
 import { initDb } from "./db/init";
 import { errorHandler, notFoundHandler, OrigineNonAutorisee } from "./middleware/errorHandler";
 import activityLogRoutes from "./routes/activityLog.routes";
@@ -45,6 +46,9 @@ import { sansCaractereNul } from "./middleware/sansCaractereNul";
 import { baseRepond } from "./services/sante.service";
 
 export const app = express();
+
+// Un JWT_SECRET faible (court, ou le texte d'exemple public) est signalé en production, sans bloquer le démarrage.
+verifierSecretJwt(env.jwtSecret, process.env.VERCEL === "1" || env.nodeEnv === "production");
 
 // Sur Vercel, ce fichier est directement le point d'entrée serverless (voir
 // l'export par défaut en bas de fichier) : src/index.ts, qui appelait
