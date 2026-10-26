@@ -99,6 +99,8 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
 5. Déployez. Notez l'URL générée (ex: `https://gestion-immo-api.vercel.app`).
 6. Une fois déployé, vérifiez dans **Project Settings → Cron Jobs** que `contract-reminders` apparaît bien planifié.
 
+> **Région d'exécution** : `backend/vercel.json` fixe `"regions": ["cdg1"]` (Paris), la même région que la base Supabase (`eu-west-3`, Paris). Sans ce réglage, Vercel exécute les fonctions dans sa région par défaut (`iad1`, côte Est des États-Unis) : chaque requête SQL traverse l'Atlantique, et une page qui en enchaîne plusieurs attend cet aller-retour à chaque fois. **Si vous créez ou déplacez le projet Supabase dans une autre région, changez `regions` en conséquence** (Paris `cdg1`, Francfort `fra1`, Londres `lhr1`, Dublin `dub1`, Virginie `iad1`, San Francisco `sfo1`…) : la fonction doit rester à côté de la base. Le plan Hobby n'accepte qu'une seule région ; le frontend (fichiers statiques) est servi depuis tous les points de présence et n'est pas concerné.
+
 > **Plan Hobby (gratuit)** : les Cron Jobs sont limités à une exécution par jour, avec une précision "dans l'heure" (ex: `0 8 * * *` peut se déclencher entre 8h00 et 8h59) — c'est exactement adapté à un rappel quotidien de fin de contrat.
 
 ### 3.2 Déployer le frontend
