@@ -164,6 +164,12 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
       expect(guide).toMatch(/Keyword/);
     });
 
+    it("le mot-clé de la sonde est la réponse exacte de la route, pas un « ok » que d'autres pages contiennent (« Token »)", () => {
+      const guide = lire("DEPLOYMENT.md");
+      expect(guide).toContain('mot-clé `"status":"ok"`');
+      expect(guide).not.toMatch(/mot-clé `ok`/);
+    });
+
     it("la route documentée existe dans l'application", () => {
       expect(readFileSync(join(RACINE, "backend/src/app.ts"), "utf8")).toContain('"/api/health/ready"');
     });

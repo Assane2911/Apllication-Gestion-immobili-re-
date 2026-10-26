@@ -144,8 +144,8 @@ pause, connexions épuisées) alors qu'aucune page ne s'affiche : **surveillez `
 10 s par instance, et des appels simultanés partagent une même vérification : une sonde, ou un curieux, ne peut pas
 mitrailler la base. La cause exacte d'un 503 se lit dans les journaux Vercel (`[sante] La base ne répond pas : …`).
 
-**Sonde UptimeRobot :** type **Keyword**, URL `https://votre-backend.vercel.app/api/health/ready`, mot-clé `ok` (à signaler
-s'il est **absent**), intervalle 5 minutes. Contacts d'alerte : e-mail et notification Android ; activez aussi le contact
+**Sonde UptimeRobot :** type **Keyword**, URL `https://votre-backend.vercel.app/api/health/ready`, mot-clé `"status":"ok"` (à signaler
+s'il est **absent**, sensible à la casse : un simple « ok » se trouverait aussi dans un message d'erreur comme « Token »), intervalle 5 minutes. Contacts d'alerte : e-mail et notification Android ; activez aussi le contact
 SMS / appel si vous voulez être réveillé. Les sondes d'UptimeRobot partent d'Amérique du Nord : leurs temps de réponse
 sont plus longs que ceux d'un utilisateur à Dakar, c'est normal, seule la disponibilité compte ici.
 
