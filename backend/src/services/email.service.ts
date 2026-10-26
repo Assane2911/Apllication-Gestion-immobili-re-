@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import { escapeHtml } from "../utils/html";
@@ -30,6 +31,52 @@ function getTransporter() {
     });
   }
   return transporter;
+}
+
+/** Une même cause d'échec n'est signalée à Sentry qu'une fois par tranche de ce délai (une panne ferait sinon une alerte par e-mail). */
+const DELAI_ALERTE_MS = 10 * 60_000;
+const dernieresAlertes = new Map<string, number>();
+
+/** Remet les alertes à zéro entre deux tests. */
+export function reinitialiserAlertesEmailPourTests(): void {
+  dernieresAlertes.clear();
+}
+
+/**
+ * Signale à Sentry l'échec d'un envoi. `sendEmail` avale volontairement ses échecs (un SMTP en panne ne doit jamais
+ * faire échouer l'action métier), ce qui les rendait invisibles hors lecture des journaux : serveur d'envoi mal
+ * configuré, mot de passe expiré, expéditeur refusé... plus aucun e-mail ne partait sans que personne ne le sache.
+ *
+ * Rien de personnel n'est transmis : ni destinataire, ni sujet, ni le message du serveur (qui cite parfois l'adresse
+ * refusée) — seulement le code d'erreur, l'hôte SMTP et le domaine de l'expéditeur, de quoi voir si l'hôte et
+ * l'expéditeur correspondent au domaine authentifié (SPF, DKIM). Une alerte par cause et par tranche de dix minutes.
+ */
+function signalerEchecEnvoi(err: unknown): void {
+  try {
+    const { code, responseCode, command } = (err ?? {}) as { code?: unknown; responseCode?: unknown; command?: unknown };
+    const codeErreur = typeof code === "string" && code ? code : "INCONNU";
+    const reponse = typeof responseCode === "number" ? responseCode : undefined;
+    const cause = [codeErreur, reponse ?? ""].join("|");
+
+    const maintenant = Date.now();
+    const derniere = dernieresAlertes.get(cause);
+    if (derniere !== undefined && maintenant - derniere < DELAI_ALERTE_MS) return;
+    dernieresAlertes.set(cause, maintenant);
+
+    Sentry.captureException(new Error(`Échec d'envoi d'e-mail (SMTP) : ${codeErreur}${reponse ? ` ${reponse}` : ""}`), {
+      tags: { source: "email.sendEmail", smtp_code: codeErreur },
+      extra: {
+        responseCode: reponse,
+        command: typeof command === "string" ? command : undefined,
+        hote: env.smtp.host,
+        port: env.smtp.port,
+        domaine_expediteur: env.smtp.from.match(/@([^>\s]+)/)?.[1],
+      },
+      fingerprint: ["email-send-failure", codeErreur, String(reponse ?? "")],
+    });
+  } catch {
+    // L'alerte ne doit jamais faire échouer l'envoi, ni le masquer davantage.
+  }
 }
 
 export interface EmailAttachment {
@@ -98,6 +145,7 @@ export async function sendEmail(to: string, subject: string, html: string, attac
     return { simulated: false, messageId: info.messageId };
   } catch (err) {
     console.error(`[email] Échec de l'envoi vers ${masquer(destinataire)}:`, err instanceof Error ? err.message : err);
+    signalerEchecEnvoi(err);
     return { simulated: false, error: true };
   }
 }

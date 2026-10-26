@@ -119,6 +119,26 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
     });
   });
 
+  describe("les e-mails partent d'un serveur qui correspond au domaine authentifié", () => {
+    it("DEPLOYMENT.md explique la configuration, la vérification SPF / DKIM / DMARC et l'alerte Sentry", () => {
+      const guide = lire("DEPLOYMENT.md");
+      expect(guide).toMatch(/Délivrabilité des e-mails/);
+      expect(guide).toMatch(/smtp\.zoho\.com/);
+      expect(guide).toMatch(/spf=pass/);
+      expect(guide).toMatch(/dkim=pass/);
+      expect(guide).toMatch(/dmarc=pass/);
+      expect(guide).toMatch(/Sentry/);
+    });
+
+    it("backend/.env.example donne la configuration d'un domaine à soi, pas seulement Gmail", () => {
+      const exemple = lire("backend/.env.example");
+      expect(exemple).toMatch(/smtp\.zoho\.com/);
+      expect(exemple).toMatch(/EMAIL_FROM/);
+      // Gmail ne signe pas au nom d'un autre domaine : l'exemple doit le dire.
+      expect(exemple).toMatch(/SPF|DKIM/);
+    });
+  });
+
   it("le README présente les rôles et les chapitres qui existent aujourd'hui", () => {
     const readme = lire("README.md");
     for (const role of ["MANAGER", "TENANT", "OWNER", "ADMIN"]) expect(readme).toContain(role);

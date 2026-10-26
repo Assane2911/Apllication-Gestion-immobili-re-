@@ -22,6 +22,7 @@ import { consommerCodeSecours, consommerPasTotp, verifierCodeTotpAvecPas } from 
 import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
+import { enArrierePlan } from "../utils/arrierePlan";
 import { langueDemandee, langueDeLaRequete, type Langue } from "../utils/langue";
 import { AUTH_COOKIE_NAME, clearAuthCookie, CSRF_HEADER_NAME, setAuthCookie } from "../utils/authCookie";
 import { signerJetonWeb } from "../utils/session";
@@ -734,7 +735,8 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
     // en cas d'échec.
     const verifyUrl = `${env.frontendUrl}/verifier-email?token=${rawToken}`;
     const { subject, html } = emailVerificationEmail({ verifyUrl, langue: langueDeLaRequete(req) });
-    sendEmail(user.email, subject, html).catch((err) => {
+    // `enArrierePlan` : sur Vercel, sans lui, la fonction est figée à l'envoi de la réponse et le message ne part jamais.
+    enArrierePlan(sendEmail(user.email, subject, html).catch((err) => {
       // Un simple console.error ne remonte à rien : Sentry n'instrumente que
       // les erreurs qui traversent errorHandler, pas un .catch() qui les
       // avale ici (même raison que activity.service.ts::logActivity). Sans
@@ -743,7 +745,7 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
       // que rien ne le signale hors lecture manuelle des journaux serveur.
       console.error("[auth] Échec de l'envoi de l'email de confirmation:", err);
       Sentry.captureException(err, { tags: { source: "auth.controller.resendVerification" } });
-    });
+    }));
   }
 
   res.json({
@@ -828,11 +830,13 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
     // dépendre de l'envoi, qui continue en arrière-plan.
     const resetUrl = `${env.frontendUrl}/reinitialiser-mot-de-passe?token=${rawToken}`;
     const { subject, html } = passwordResetEmail({ resetUrl, langue: langueDeLaRequete(req) });
-    sendEmail(user.email, subject, html).catch((err) => {
-      // Voir le commentaire équivalent dans resendVerification ci-dessus.
-      console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err);
-      Sentry.captureException(err, { tags: { source: "auth.controller.forgotPassword" } });
-    });
+    enArrierePlan(
+      sendEmail(user.email, subject, html).catch((err) => {
+        // Voir le commentaire équivalent dans resendVerification ci-dessus.
+        console.error("[auth] Échec de l'envoi de l'email de réinitialisation:", err);
+        Sentry.captureException(err, { tags: { source: "auth.controller.forgotPassword" } });
+      })
+    );
   }
 
   res.json({

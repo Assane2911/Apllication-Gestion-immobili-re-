@@ -75,7 +75,11 @@ Ouvrez http://localhost:5173 et connectez-vous avec l'un des comptes ci-dessus (
 
 ## Configuration
 
-### Emails de rappel (SMTP Gmail)
+### E-mails (SMTP)
+
+L'exemple ci-dessous utilise Gmail, pratique en local. **En production, avec un expéditeur en `@votre-domaine`, utilisez le SMTP de la messagerie de ce domaine** (par exemple Zoho), sans quoi SPF et DKIM ne correspondent pas et les messages risquent le courrier indésirable : voir [`DEPLOYMENT.md`](./DEPLOYMENT.md), « Délivrabilité des e-mails ».
+
+#### Exemple avec Gmail
 
 Dans `backend/.env` :
 
