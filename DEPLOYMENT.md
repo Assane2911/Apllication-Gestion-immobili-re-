@@ -125,6 +125,45 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 
 ---
 
+## Sauvegarde et restauration
+
+Le plan gratuit de Supabase **ne fait aucune sauvegarde automatique** : après une fausse manipulation (un `DROP`, un `UPDATE` sans `WHERE`) ou une panne, il n'y aurait aucun moyen de revenir en arrière. Le workflow `.github/workflows/sauvegarde.yml` y supplée : chaque nuit (02 h 43 UTC), il copie la base (schéma `public`, celui de l'application), **chiffre** la copie, **prouve qu'elle se restaure** (dans un PostgreSQL jetable, avec le nombre de lignes de chaque table dans le résumé du run), puis la dépose comme artefact du run, conservé 30 jours. Un échec ouvre un ticket.
+
+> Le vrai filet est le plan **Pro** de Supabase (sauvegardes quotidiennes conservées 7 jours, retour à un instant donné en option). À prévoir dès le premier client payant ; cette sauvegarde reste utile en complément, car elle vit hors de Supabase.
+
+### Mise en place (une seule fois)
+
+1. **Adresse de connexion.** Dans Supabase → *Connect*, choisissez **Session pooler** (port **5432** du serveur `…pooler.supabase.com`, utilisateur `postgres.<réf-du-projet>`), copiez l'adresse et remplacez `[YOUR-PASSWORD]` par le mot de passe de la base. Ni la connexion directe (`db.<réf>.supabase.co`, en IPv6 seulement : les machines de GitHub n'y accèdent pas), ni le **Transaction pooler** (port 6543, celui du backend sur Vercel : il ne convient pas à `pg_dump`) ne marchent ici.
+2. **Deux secrets** dans GitHub → *Settings → Secrets and variables → Actions → New repository secret* :
+   - `SUPABASE_DB_URL` : l'adresse de l'étape 1 ;
+   - `BACKUP_PASSPHRASE` : une phrase de passe longue et aléatoire (`openssl rand -base64 32`). **Gardez-la aussi dans un gestionnaire de mots de passe, hors de GitHub** : GitHub ne la réaffiche jamais, et sans elle les copies sont illisibles.
+3. **Premier essai.** *Actions → Sauvegarde de la base → Run workflow*. Le run doit être vert, avec l'artefact `sauvegarde-base` et, dans le résumé, la liste des tables et de leurs lignes.
+
+### Restaurer (cas réel)
+
+1. Téléchargez l'artefact du run voulu (*Actions →* le run *→ Artifacts*) et décompressez-le : un fichier `immoplatform-AAAAMMJJ-HHMMSS.dump.gpg` et son `.sha256`.
+2. Créez un **projet Supabase neuf** (ou une base vide) ; installez les clients PostgreSQL 17 et `gpg`.
+3. Lancez, depuis ce dépôt :
+   ```bash
+   RESTORE_DATABASE_URL="postgresql://…adresse de la base VIDE…" \
+   BACKUP_PASSPHRASE="…" \
+   backend/scripts/sauvegarde/verifier-sauvegarde.sh immoplatform-AAAAMMJJ-HHMMSS.dump.gpg
+   ```
+   Le script contrôle l'empreinte, refuse une base qui n'est pas vide (et la base sauvegardée, si vous ajoutez `DATABASE_URL`), restaure **tout ou rien**, puis affiche le nombre de lignes de chaque table.
+4. Faites pointer `DATABASE_URL` du backend (Vercel) vers la nouvelle base, redéployez, puis vérifiez `/api/health` et une connexion.
+
+Pour simplement lire une copie : `gpg --decrypt immoplatform-….dump.gpg > base.dump`, puis `pg_restore --list base.dump`.
+
+### Ce que cette sauvegarde ne couvre pas
+
+- **Les fichiers déposés** (photos d'incident, justificatifs, pièces : espaces de stockage `public-uploads` et `private-uploads`) ne sont pas dans une copie de base. Supabase ne les sauvegarde pas non plus sur le plan gratuit. Il n'y en a presque pas aujourd'hui ; c'est à traiter avant un usage réel.
+- **Jusqu'à 24 h de données** peuvent être perdues (une copie par nuit).
+- La copie est dans **le même compte GitHub** que le code : elle protège d'une erreur sur la base, pas de la perte du compte. Téléchargez-en une de temps en temps, ailleurs.
+- Le quota d'artefacts de GitHub est limité (500 Mo en plan gratuit) : à quelques Mo par copie, 30 jours tiennent largement ; à surveiller si la base grossit (sinon, réduire `retention-days`).
+- Le workflow rejoue chaque nuit une restauration à blanc, mais un **essai complet dans un projet Supabase neuf**, une fois par trimestre, reste la seule preuve de bout en bout (adresse du backend comprise).
+
+---
+
 ## Application Android — la reconstruire
 
 L'application Android (Capacitor, projet dans `frontend/android/`) embarque une COPIE du site : elle ne se met pas à jour toute seule quand le site est déployé. À chaque nouvelle version à publier :
