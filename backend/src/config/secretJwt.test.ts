@@ -104,13 +104,14 @@ describe("au démarrage de l'application", () => {
     process.env.JWT_SECRET = "secretcourt123";
     const { app } = await import("../app");
     expect(app).toBeDefined();
-    expect(sentry.captureMessage).toHaveBeenCalledTimes(1);
+    // Filtré : sur Vercel, les tests posent aussi PAYMENTS_DEMO_MODE=true, signalé à part (modeDemo.test.ts).
+    expect(sentry.captureMessage.mock.calls.filter((a) => /JWT_SECRET/.test(String(a[0])))).toHaveLength(1);
   });
 
   it("hors Vercel (développement, tests), rien n'est signalé", async () => {
     delete process.env.VERCEL;
     process.env.JWT_SECRET = "secretcourt123";
     await import("../app");
-    expect(sentry.captureMessage).not.toHaveBeenCalled();
+    expect(sentry.captureMessage.mock.calls.filter((a) => /JWT_SECRET/.test(String(a[0])))).toHaveLength(0);
   });
 });

@@ -83,6 +83,13 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
       expect(guide).toMatch(/\/api\/payments\/methods/);
     });
 
+    it("la documentation dit que « true » est ignoré sur un déploiement, comme le fait le code", () => {
+      for (const chemin of ["DEPLOYMENT.md", "README.md", "backend/.env.example"]) {
+        expect(lire(chemin), chemin).toMatch(/ignor/i);
+      }
+      expect(readFileSync(join(RACINE, "backend/src/config/modeDemo.ts"), "utf8")).toContain("ignore: valeur === \"true\"");
+    });
+
     it("le README ne dit plus que le mode démo est actif par défaut", () => {
       const readme = lire("README.md");
       expect(readme).not.toMatch(/PAYMENTS_DEMO_MODE=true`\s*par défaut/);

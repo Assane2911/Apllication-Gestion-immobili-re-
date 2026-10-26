@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { resoudreModeDemo } from "./modeDemo";
 
 dotenv.config();
 
@@ -9,6 +10,9 @@ function required(name: string, fallback?: string): string {
   }
   return value;
 }
+
+// Mode démo des paiements : local et tests seulement (voir modeDemo.ts). `VERCEL` couvre aussi les préversions.
+const modeDemo = resoudreModeDemo(process.env.PAYMENTS_DEMO_MODE, process.env.NODE_ENV === "production" || !!process.env.VERCEL);
 
 export const env = {
   port: parseInt(process.env.PORT ?? "4000", 10),
@@ -122,8 +126,8 @@ export const env = {
   enableInternalCron: (process.env.ENABLE_INTERNAL_CRON ?? "true") === "true",
 
   payments: {
-    // Fail-closed, comme pour CRON_SECRET (voir cron.controller.ts) : en
-    // production, le mode démo doit être demandé EXPLICITEMENT.
+    // Fail-closed, comme pour CRON_SECRET (voir cron.controller.ts) : le mode démo n'existe qu'en local et dans
+    // les tests. Sur un déploiement, `PAYMENTS_DEMO_MODE=true` est ignoré (voir modeDemo.ts).
     //
     // Ce drapeau ne se contente pas d'activer le moyen de paiement "DEMO" : il
     // court-circuite aussi Stripe et PayDunya, qui renvoient alors un paiement
@@ -132,9 +136,9 @@ export const env = {
     // n'était pas renseignée sur l'hébergeur — un abonnement pouvait être
     // activé sans qu'un centime ne soit encaissé, quel que soit le moyen
     // choisi. On ne conserve ce défaut permissif qu'en local/dev.
-    demoMode:
-      (process.env.PAYMENTS_DEMO_MODE ??
-        (process.env.NODE_ENV === "production" || process.env.VERCEL ? "false" : "true")) === "true",
+    demoMode: modeDemo.actif,
+    // Vrai si `PAYMENTS_DEMO_MODE=true` a été demandé sur un déploiement et refusé (voir modeDemo.ts) : signalé au démarrage.
+    demoModeIgnore: modeDemo.ignore,
     // Stripe et PayDunya sont le compte de la PLATEFORME : ils encaissent les abonnements des agences.
     // Laisser un locataire y payer son loyer ferait passer l'argent des agences par ce compte (voir
     // payment.service.ts::indisponibilitePourLoyer). Désactivé tant qu'un montage dédié (un compte par
