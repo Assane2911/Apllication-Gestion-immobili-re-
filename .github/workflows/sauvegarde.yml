@@ -1,0 +1,127 @@
+name: Sauvegarde de la base
+
+# Le projet Supabase est sur le plan gratuit : aucune sauvegarde automatique, donc aucun retour en arrière après une
+# fausse manipulation (un DROP, un UPDATE sans WHERE) ou une panne. Chaque nuit, ce workflow copie la base (schéma
+# `public`), chiffre la copie, PROUVE qu'elle se restaure (dans un PostgreSQL jetable, avec le compte des lignes de
+# chaque table) et ne la dépose qu'ensuite, comme artefact du run. Un échec ouvre un ticket.
+#
+# Il ne se déclenche volontairement NI sur les pull requests NI sur les push : il lit la vraie base, de nuit ou à la
+# main (onglet Actions → « Sauvegarde de la base » → Run workflow).
+#
+# Secrets à créer (Settings → Secrets and variables → Actions) : voir DEPLOYMENT.md, « Sauvegarde et restauration ».
+on:
+  schedule:
+    # Tous les jours à 02 h 43 (UTC) : hors de l'heure pile, et loin de la tâche quotidienne de l'application (08 h).
+    - cron: "43 2 * * *"
+  workflow_dispatch:
+
+# Lire le code suffit ; seul l'ouverture d'un ticket (échec) demande un droit d'écriture, limité aux tickets.
+permissions:
+  contents: read
+  issues: write
+
+# Deux sauvegardes à la fois n'ont aucun intérêt.
+concurrency:
+  group: sauvegarde
+  cancel-in-progress: false
+
+jobs:
+  sauvegarde:
+    name: Copie chiffrée et restauration à blanc
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      # La base jetable où l'on restaure pour vérifier. Même version majeure que Supabase (17).
+      verification:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: jetable
+          POSTGRES_DB: verification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Les secrets ne passent que par l'environnement de l'étape, jamais dans le texte de la commande.
+      - name: Contrôler que les secrets sont présents
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          manque=0
+          if [ -z "$SUPABASE_DB_URL" ]; then echo "::error::Secret manquant : SUPABASE_DB_URL (adresse de connexion Supabase, mode « Session pooler »). Voir DEPLOYMENT.md."; manque=1; fi
+          if [ -z "$BACKUP_PASSPHRASE" ]; then echo "::error::Secret manquant : BACKUP_PASSPHRASE (phrase de passe de chiffrement). Voir DEPLOYMENT.md."; manque=1; fi
+          exit "$manque"
+
+      # pg_dump refuse un serveur plus récent que lui : le client doit être en version 17, comme la base.
+      - name: Installer le client PostgreSQL 17
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Sauvegarder la base (copie chiffrée)
+        id: copie
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          mkdir -p sauvegardes
+          backend/scripts/sauvegarde/sauvegarder.sh sauvegardes
+
+      # La preuve : la copie qu'on vient de faire doit se restaurer entièrement dans une base vide. Sinon, le run
+      # échoue et la copie n'est pas déposée.
+      - name: Restaurer à blanc pour vérifier
+        shell: bash
+        env:
+          RESTORE_DATABASE_URL: postgresql://postgres:jetable@localhost:5432/verification
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          backend/scripts/sauvegarde/verifier-sauvegarde.sh sauvegardes/*.gpg | tee "$GITHUB_STEP_SUMMARY"
+
+      - name: Déposer la copie chiffrée
+        uses: actions/upload-artifact@v4
+        with:
+          name: sauvegarde-base
+          path: |
+            sauvegardes/*.gpg
+            sauvegardes/*.sha256
+          # 30 jours : une copie par nuit, chiffrée. Le quota d'artefacts du dépôt est limité (voir DEPLOYMENT.md).
+          retention-days: 30
+          if-no-files-found: error
+
+      # Un seul ticket ouvert : tant qu'il l'est, les nuits suivantes y ajoutent un commentaire au lieu d'en ouvrir un
+      # nouveau.
+      - name: Ouvrir ou mettre à jour le ticket
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIEN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          titre="La sauvegarde nocturne de la base a échoué"
+          {
+            echo "La sauvegarde (ou sa restauration à blanc) a échoué : il n'y a pas de copie récente à jour."
+            echo
+            echo "Exécution : $LIEN"
+            echo
+            echo "Causes fréquentes : secret absent ou expiré (SUPABASE_DB_URL, BACKUP_PASSPHRASE), mot de passe de la base changé, projet Supabase en pause. Voir DEPLOYMENT.md, « Sauvegarde et restauration »."
+          } > corps.md
+          numero=$(gh issue list --state open --search "\"$titre\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body-file corps.md
+          else
+            gh issue create --title "$titre" --body-file corps.md
+          fi
