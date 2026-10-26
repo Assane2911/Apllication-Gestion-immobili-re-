@@ -88,7 +88,9 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
 3. Vercel détecte automatiquement Express (zero-config).
 4. Renseignez les variables d'environnement (Project Settings → Environment Variables) — reprenez tout `backend/.env.example`, notamment :
    - `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLIC_BUCKET`, `SUPABASE_PRIVATE_BUCKET`
-   - `JWT_SECRET` (générez une vraie valeur aléatoire, différente de celle de dev)
+   - `JWT_SECRET` (générez une vraie valeur aléatoire, différente de celle de dev : `openssl rand -base64 48`)
+   - `PAYMENTS_DEMO_MODE` : **ne le définissez pas** (ou mettez `false`). Sur Vercel il vaut `false` par défaut, et l'activer rend tout paiement « réussi » sans qu'un centime ne soit encaissé — un abonnement s'activerait gratuitement. C'est pourquoi `backend/.env.example` le livre en commentaire.
+   - `RENT_ONLINE_PAYMENTS` : laissez `false` (voir le `README`, section Paiements).
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_APP_PASSWORD`, `EMAIL_FROM`, `CONTRACT_REMINDER_DAYS`
    - `CRON_SECRET` : générez une valeur aléatoire (16+ caractères) — Vercel l'enverra automatiquement en en-tête `Authorization` lors de l'appel du Cron Job
    - `ENABLE_INTERNAL_CRON=false` (important : sur Vercel, le scheduler interne node-cron ne doit pas tourner — ce sont les Vercel Cron Jobs déclarés dans `backend/vercel.json` qui appellent `/api/cron/daily` chaque jour et `/api/cron/rent-due-reminders` le 1er du mois)
@@ -115,8 +117,8 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
 ## Étape 4 — Vérifications post-déploiement
 
 - `https://votre-backend.vercel.app/api/health` → doit répondre `{"status":"ok"}`.
-- Connectez-vous sur le frontend déployé avec le compte gestionnaire créé par le seed (ou créez-en un via `POST /api/auth/register`).
-- Testez un paiement en mode démo depuis le portail locataire.
+- Connectez-vous sur le frontend déployé avec un compte gestionnaire créé via `POST /api/auth/register` (le `seed` ne tourne jamais en production : il refuse l'environnement de production et toute base distante).
+- **Vérifiez que le mode démo des paiements est bien désactivé** : connecté, `GET /api/payments/methods` ne doit **pas** lister `DEMO`. S'il y figure, `PAYMENTS_DEMO_MODE` est à `true` sur Vercel : supprimez-le ou mettez `false`, puis redéployez. Pour essayer le flux de paiement de bout en bout, faites-le **en local** (le mode démo y est actif par défaut) ou avec les clés de test du prestataire (Stripe en mode test, `PAYDUNYA_MODE=test`), jamais en activant le mode démo sur le déploiement.
 - Testez manuellement les tâches planifiées avant d'attendre le lendemain — `interrompu: true` dans la réponse signale que le budget de temps a été atteint et qu'un reliquat sera repris à l'exécution suivante :
   ```bash
   curl -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-backend.vercel.app/api/cron/daily
