@@ -166,6 +166,31 @@ Pour simplement lire une copie : `gpg --decrypt immoplatform-….dump.gpg > base
 
 ---
 
+## Délivrabilité des e-mails
+
+L'application envoie ses e-mails (confirmation d'adresse, mot de passe oublié, invitations, avis d'échéance, quittances, relances) par SMTP, avec l'expéditeur `EMAIL_FROM`. Pour qu'ils arrivent en boîte de réception et non en courrier indésirable, **le serveur d'envoi doit correspondre au domaine de l'expéditeur** :
+
+| Réglage | Valeur attendue (exemple Zoho Mail, domaine `immoplatformpro.com`) |
+|---|---|
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` | `smtp.zoho.com` (ou `smtp.zoho.eu`) / `465` / `true` |
+| `SMTP_USER` | l'adresse de la boîte, par exemple `contact@immoplatformpro.com` |
+| `SMTP_APP_PASSWORD` | un **mot de passe d'application** Zoho (pas celui du compte) |
+| `EMAIL_FROM` | la **même adresse** que `SMTP_USER`, par exemple `ImmoPlatform Pro <contact@immoplatformpro.com>` |
+| SPF (TXT sur le domaine) | `v=spf1 include:zohomail.com ~all` |
+| DKIM (TXT `zmail._domainkey`) | la clé fournie par Zoho (Mail Admin → Domaines → DKIM) |
+| DMARC (TXT `_dmarc`) | `v=DMARC1; p=none; rua=mailto:<votre adresse>` pour observer, puis `p=quarantine` quand tout passe |
+
+Le défaut du code (`smtp.gmail.com`) ne convient **pas** à un expéditeur en `@votre-domaine` : Gmail signe au nom de `gmail.com`, donc SPF et DKIM ne correspondent pas au domaine de l'expéditeur.
+
+**Vérifier, après tout changement de ces réglages :**
+1. Déclenchez un vrai « mot de passe oublié » vers une adresse Gmail ou Outlook à vous.
+2. Ouvrez le message → menu ⋮ → **Afficher l'original** (Gmail). Les trois lignes doivent être : `spf=pass`, `dkim=pass`, `dmarc=pass`.
+3. Le message doit arriver en boîte de réception, pas en courrier indésirable.
+
+**Si l'envoi échoue en production**, l'application ne s'arrête pas (un SMTP en panne ne doit pas bloquer un encaissement), mais elle **émet une alerte Sentry** « Échec d'envoi d'e-mail (SMTP) : <code> », au plus une par cause et par dix minutes, avec le code d'erreur, l'hôte SMTP et le domaine de l'expéditeur (jamais le destinataire ni le sujet). Causes fréquentes : `EAUTH` (identifiant ou mot de passe d'application refusé, ou hôte qui ne correspond pas aux identifiants), `ECONNECTION` / `ETIMEDOUT` (hôte ou port faux), `EENVELOPE` avec le code 553 (expéditeur non autorisé pour ce compte).
+
+---
+
 ## Application Android — la reconstruire
 
 L'application Android (Capacitor, projet dans `frontend/android/`) embarque une COPIE du site : elle ne se met pas à jour toute seule quand le site est déployé. À chaque nouvelle version à publier :
