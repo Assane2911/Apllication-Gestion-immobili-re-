@@ -27,9 +27,38 @@ echec() {
 sortie="${1:-}"
 [[ -n "$sortie" && -d "$sortie" ]] || { echo "Usage : sauvegarder.sh <dossier-de-sortie existant>" >&2; exit 2; }
 
-# Le mot de passe de l'adresse, s'il y en a un : retiré de tout message d'erreur renvoyé par un outil.
+# Forme de l'adresse, vérifiée AVANT d'appeler pg_dump. Une faute de frappe courante (crochets du « [YOUR-PASSWORD] » de
+# Supabase gardés, « @ » dans le mot de passe, mauvais port) fait sinon répondre à pg_dump « could not translate host name
+# "…fin-du-mot-de-passe@serveur" », et ce journal est public : un morceau du mot de passe y apparaît. Les messages ci-dessous
+# disent quoi corriger sans jamais citer un morceau de l'adresse.
+[[ "$DATABASE_URL" =~ ^postgres(ql)?:// ]] || echec "l'adresse (DATABASE_URL) doit commencer par postgresql://"
+arobases="${DATABASE_URL//[^@]/}"
+if [[ "${#arobases}" -gt 1 ]]; then
+  echec "l'adresse contient ${#arobases} « @ » au lieu d'un seul (celui qui précède le nom du serveur). Un « @ » dans le mot de passe doit s'écrire %40 ; sinon choisissez un mot de passe en lettres et chiffres."
+fi
 mot_de_passe=""
-if [[ "$DATABASE_URL" =~ ^[a-z]+://[^:/@]+:([^@]+)@ ]]; then mot_de_passe="${BASH_REMATCH[1]}"; fi
+infos=""
+if [[ "${#arobases}" -eq 1 ]]; then
+  reste="${DATABASE_URL#*://}"
+  infos="${reste%%@*}"
+  if [[ "$infos" == *"["* || "$infos" == *"]"* ]]; then
+    echec "l'adresse contient des crochets autour de l'utilisateur ou du mot de passe. Remplacez « [YOUR-PASSWORD] » tout entier, crochets compris, par le mot de passe."
+  fi
+  if [[ "$infos" == *:* ]]; then mot_de_passe="${infos#*:}"; fi
+  hote_port="${reste#*@}"
+  hote_port="${hote_port%%/*}"
+  hote="${hote_port%%:*}"
+  port=""
+  if [[ "$hote_port" == *:* ]]; then port="${hote_port##*:}"; fi
+  if [[ "$hote" == *.pooler.supabase.com ]]; then
+    if [[ -n "$port" && "$port" != "5432" ]]; then
+      echec "le port est $port : il faut le Session pooler de Supabase, port 5432 (le Transaction pooler, port 6543, ne convient pas à pg_dump)."
+    fi
+    [[ "${infos%%:*}" == *.* ]] || echec "sur le pooler Supabase, l'utilisateur doit s'écrire « nom.référence du projet » (par exemple sauvegarde.abcdefghij), pas le nom seul."
+  fi
+fi
+
+# Le mot de passe de l'adresse, retiré de tout message d'erreur renvoyé par un outil.
 masquer() {
   local texte
   texte="$(cat)"

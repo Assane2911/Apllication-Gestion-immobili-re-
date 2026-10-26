@@ -161,6 +161,14 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
     });
   });
 
+  it("DEPLOYMENT.md explique la forme de l'adresse de sauvegarde (crochets, %40, rôle dédié) que le script vérifie", () => {
+    const guide = lire("DEPLOYMENT.md");
+    expect(guide).toMatch(/sans crochets/);
+    expect(guide).toMatch(/%40/);
+    expect(guide).toMatch(/bypassrls/);
+    expect(readFileSync(join(RACINE, "backend/scripts/sauvegarde/sauvegarder.sh"), "utf8")).toContain("%40");
+  });
+
   describe("la surveillance de la disponibilité", () => {
     it("DEPLOYMENT.md explique les deux routes de santé et la sonde à poser sur celle qui vérifie la base", () => {
       const guide = lire("DEPLOYMENT.md");
