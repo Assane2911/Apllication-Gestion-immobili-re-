@@ -3,7 +3,9 @@ import { formaterMontant, symboleDevise } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { libelleEcheance } from "../utils/jourEcheance";
 import { libelleSurface, titreDuBail } from "../utils/typeBail";
+import { formaterDate, LANGUE_PAR_DEFAUT, LOCALE_PAR_LANGUE, nomDuMois, type Langue } from "../utils/langue";
 import { nomAvecCivilite } from "../utils/nom";
+import { TEXTES_CRG } from "./document.crg.textes";
 import { estUrlPubliqueDuStockage } from "./storage.service";
 
 /**
@@ -1014,15 +1016,9 @@ export interface CrgExportData {
   /** Reversements enregistrés au titre du mois (voir ownerPayout.controller.ts). */
   reversements?: Array<{ currency: string; amount: number; paidAt: Date | string; method: string; reference: string | null }>;
   resteAReverserByCurrency?: Record<string, number>;
+  /** Langue du propriétaire à qui le document est destiné (français par défaut). */
+  langue?: Langue;
 }
-
-const MOYENS_REVERSEMENT_LIBELLES: Record<string, string> = {
-  BANK_TRANSFER: "Virement",
-  CASH: "Espèces",
-  CHEQUE: "Chèque",
-  MOBILE_MONEY: "Mobile money",
-  OTHER: "Autre",
-};
 
 /**
  * Export HTML du Compte-Rendu de Gestion (CRG) mensuel d'un propriétaire —
@@ -1038,8 +1034,11 @@ const MOYENS_REVERSEMENT_LIBELLES: Record<string, string> = {
  * pouvoir constater l'absence d'encaissement, pas seulement l'ignorer.
  */
 export function generateCrgHtml(data: CrgExportData): string {
-  const periodLabel = `${monthNames[data.month - 1]} ${data.year}`;
-  const generatedDate = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date());
+  const langue = data.langue ?? LANGUE_PAR_DEFAUT;
+  const t = TEXTES_CRG[langue];
+  const mois = nomDuMois(data.month, langue);
+  const periodLabel = `${mois.charAt(0).toUpperCase()}${mois.slice(1)} ${data.year}`;
+  const generatedDate = new Intl.DateTimeFormat(LOCALE_PAR_LANGUE[langue], { dateStyle: "long" }).format(new Date());
 
   const propertyRows = data.properties.length
     ? data.properties
@@ -1047,14 +1046,14 @@ export function generateCrgHtml(data: CrgExportData): string {
           (p) => `
       <tr>
         <td>${escapeHtml(p.propertyTitle)}</td>
-        <td style="text-align:right;">${escapeHtml(formaterMontant(p.loyersEncaisses, p.currency))}</td>
-        <td style="text-align:right;">${escapeHtml(formaterMontant(p.chargesDeduites, p.currency))}</td>
-        <td style="text-align:right;">${escapeHtml(formaterMontant(p.commission, p.currency))}</td>
-        <td style="text-align:right; font-weight:700;">${escapeHtml(formaterMontant(p.netAReverser, p.currency))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(p.loyersEncaisses, p.currency, langue))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(p.chargesDeduites, p.currency, langue))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(p.commission, p.currency, langue))}</td>
+        <td style="text-align:right; font-weight:700;">${escapeHtml(formaterMontant(p.netAReverser, p.currency, langue))}</td>
       </tr>`
         )
         .join("")
-    : `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Aucun bien rattaché à ce propriétaire</td></tr>`;
+    : `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">${t.aucunBien}</td></tr>`;
 
   const currencies = Array.from(
     new Set([
@@ -1070,11 +1069,11 @@ export function generateCrgHtml(data: CrgExportData): string {
         .map(
           (currency) => `
       <tr class="total-row">
-        <td>Total ${escapeHtml(symboleDevise(currency))}</td>
-        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalLoyersByCurrency[currency] ?? 0, currency))}</td>
-        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalChargesByCurrency[currency] ?? 0, currency))}</td>
-        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalCommissionByCurrency[currency] ?? 0, currency))}</td>
-        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalNetByCurrency[currency] ?? 0, currency))}</td>
+        <td>${escapeHtml(t.total(symboleDevise(currency)))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalLoyersByCurrency[currency] ?? 0, currency, langue))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalChargesByCurrency[currency] ?? 0, currency, langue))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalCommissionByCurrency[currency] ?? 0, currency, langue))}</td>
+        <td style="text-align:right;">${escapeHtml(formaterMontant(data.totalNetByCurrency[currency] ?? 0, currency, langue))}</td>
       </tr>`
         )
         .join("")
@@ -1082,10 +1081,10 @@ export function generateCrgHtml(data: CrgExportData): string {
 
   return `
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="${langue}">
 <head>
   <meta charset="UTF-8">
-  <title>Compte-Rendu de Gestion - ${escapeHtml(periodLabel)} - ${escapeHtml(data.ownerName)}</title>
+  <title>${escapeHtml(t.titreDocument(periodLabel, data.ownerName))}</title>
   <style>
     @page { size: A4; margin: 20mm; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; line-height: 1.6; padding: 24px; }
@@ -1104,28 +1103,28 @@ export function generateCrgHtml(data: CrgExportData): string {
   </style>
 </head>
 <body>
-  <h1>COMPTE-RENDU DE GESTION</h1>
-  <p class="subtitle">Période : ${escapeHtml(periodLabel)}</p>
+  <h1>${t.titre}</h1>
+  <p class="subtitle">${escapeHtml(t.periode(periodLabel))}</p>
 
   <div class="section">
-    <div class="section-title">Propriétaire</div>
+    <div class="section-title">${t.sectionProprietaire}</div>
     <div class="box">
-      <strong>Agence / Mandataire :</strong> ${escapeHtml(data.agencyName)}<br>
-      <strong>Propriétaire :</strong> ${escapeHtml(data.ownerName)}${data.ownerCompanyName ? ` (${escapeHtml(data.ownerCompanyName)})` : ""}<br>
-      <strong>Taux de commission :</strong> ${data.managementFeeRate} %
+      <strong>${t.agence}</strong> ${escapeHtml(data.agencyName)}<br>
+      <strong>${t.proprietaire}</strong> ${escapeHtml(data.ownerName)}${data.ownerCompanyName ? ` (${escapeHtml(data.ownerCompanyName)})` : ""}<br>
+      <strong>${t.tauxCommission}</strong> ${t.pourcent(data.managementFeeRate)}
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">Détail par bien</div>
+    <div class="section-title">${t.sectionDetail}</div>
     <table>
       <thead>
         <tr>
-          <th>Bien</th>
-          <th class="num">Loyers encaissés</th>
-          <th class="num">Charges déduites</th>
-          <th class="num">Commission</th>
-          <th class="num">Net à reverser</th>
+          <th>${t.colonnes.bien}</th>
+          <th class="num">${t.colonnes.loyers}</th>
+          <th class="num">${t.colonnes.charges}</th>
+          <th class="num">${t.colonnes.commission}</th>
+          <th class="num">${t.colonnes.net}</th>
         </tr>
       </thead>
       <tbody>${propertyRows}${totalRows}</tbody>
@@ -1135,17 +1134,17 @@ export function generateCrgHtml(data: CrgExportData): string {
   ${sectionReversements(data)}
 
   <div class="section">
-    <div class="section-title">Coordonnées bancaires du propriétaire</div>
+    <div class="section-title">${t.sectionBanque}</div>
     <div class="box">
       ${
         data.iban
-          ? `<strong>IBAN :</strong> ${escapeHtml(data.iban)}<br>${data.bic ? `<strong>BIC :</strong> ${escapeHtml(data.bic)}` : ""}`
-          : `<span style="color:#94a3b8;">Aucune coordonnée bancaire renseignée pour ce propriétaire.</span>`
+          ? `<strong>${t.iban}</strong> ${escapeHtml(data.iban)}<br>${data.bic ? `<strong>${t.bic}</strong> ${escapeHtml(data.bic)}` : ""}`
+          : `<span style="color:#94a3b8;">${t.aucuneBanque}</span>`
       }
     </div>
   </div>
 
-  <div class="footer-legal">Document généré le ${escapeHtml(generatedDate)} — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire.</div>
+  <div class="footer-legal">${escapeHtml(t.pied(generatedDate))}</div>
 </body>
 </html>
   `.trim();
@@ -1153,6 +1152,8 @@ export function generateCrgHtml(data: CrgExportData): string {
 
 /** Reversements du mois au propriétaire, et ce qui reste à lui verser (section omise si rien à montrer). */
 function sectionReversements(data: CrgExportData): string {
+  const langue = data.langue ?? LANGUE_PAR_DEFAUT;
+  const t = TEXTES_CRG[langue];
   const reversements = data.reversements ?? [];
   const restes = Object.entries(data.resteAReverserByCurrency ?? {}).filter(([, montant]) => montant !== 0);
   if (reversements.length === 0 && restes.length === 0) return "";
@@ -1161,20 +1162,20 @@ function sectionReversements(data: CrgExportData): string {
         .map(
           (r) => `
       <tr>
-        <td>${escapeHtml(new Date(r.paidAt).toLocaleDateString("fr-FR"))}</td>
-        <td>${escapeHtml(MOYENS_REVERSEMENT_LIBELLES[r.method] ?? r.method)}${r.reference ? ` — ${escapeHtml(r.reference)}` : ""}</td>
-        <td style="text-align:right; font-weight:700;">${escapeHtml(formaterMontant(r.amount, r.currency))}</td>
+        <td>${escapeHtml(formaterDate(r.paidAt, langue, {}))}</td>
+        <td>${escapeHtml((t.moyens as Record<string, string>)[r.method] ?? r.method)}${r.reference ? ` — ${escapeHtml(r.reference)}` : ""}</td>
+        <td style="text-align:right; font-weight:700;">${escapeHtml(formaterMontant(r.amount, r.currency, langue))}</td>
       </tr>`
         )
         .join("")
-    : `<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Aucun reversement enregistré pour ce mois</td></tr>`;
+    : `<tr><td colspan="3" style="text-align:center; color:#94a3b8;">${t.aucunReversement}</td></tr>`;
   const reste = restes
-    .map(([devise, montant]) => `<tr class="total-row"><td colspan="2">${montant > 0 ? "Reste à reverser" : "Versé en trop"} (${escapeHtml(devise)})</td><td style="text-align:right;">${escapeHtml(formaterMontant(Math.abs(montant), devise))}</td></tr>`)
+    .map(([devise, montant]) => `<tr class="total-row"><td colspan="2">${escapeHtml(montant > 0 ? t.resteAReverser(devise) : t.verseEnTrop(devise))}</td><td style="text-align:right;">${escapeHtml(formaterMontant(Math.abs(montant), devise, langue))}</td></tr>`)
     .join("");
   return `<div class="section">
-    <div class="section-title">Reversements au propriétaire</div>
+    <div class="section-title">${t.sectionReversements}</div>
     <table>
-      <thead><tr><th>Date</th><th>Moyen</th><th class="num">Montant</th></tr></thead>
+      <thead><tr><th>${t.colonnesReversements.date}</th><th>${t.colonnesReversements.moyen}</th><th class="num">${t.colonnesReversements.montant}</th></tr></thead>
       <tbody>${lignes}${reste}</tbody>
     </table>
   </div>`;
