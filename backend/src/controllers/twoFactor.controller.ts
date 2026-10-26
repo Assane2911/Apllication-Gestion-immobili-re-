@@ -7,6 +7,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
+import { chiffrerSecretTotp, dechiffrerSecretTotp } from "../services/secretTotpChiffre";
 import {
   genererCodesSecours,
   genererOtpauthUrl,
@@ -53,7 +54,7 @@ export const setupTwoFactor = asyncHandler(async (req: Request, res: Response) =
   }
 
   const secret = genererSecretTotp();
-  await db.update(users).set({ totpSecret: secret }).where(eq(users.id, user.id));
+  await db.update(users).set({ totpSecret: chiffrerSecretTotp(secret) }).where(eq(users.id, user.id));
 
   const otpauthUrl = genererOtpauthUrl(user.email, secret);
   const qrCodeDataUrl = await genererQrCodeDataUrl(otpauthUrl);
@@ -86,7 +87,7 @@ export const confirmTwoFactor = asyncHandler(async (req: Request, res: Response)
     throw new ApiError(400, "Aucun enrôlement en cours : lancez d'abord la configuration.", "TWO_FACTOR_NO_ENROLLMENT");
   }
 
-  const valide = await verifierCodeTotp(user.totpSecret, body.code);
+  const valide = await verifierCodeTotp(dechiffrerSecretTotp(user.totpSecret), body.code);
   if (!valide) throw new ApiError(401, "Code invalide. Vérifiez l'heure de votre téléphone et réessayez.", "TWO_FACTOR_SETUP_CODE_INVALID");
 
   const { codes, hashes } = await genererCodesSecours();
@@ -191,7 +192,7 @@ export const regenerateBackupCodes = asyncHandler(async (req: Request, res: Resp
 
   // Un code déjà accepté (à la connexion, par exemple) ne sert pas à régénérer les codes de secours : sans cela, un code
   // intercepté à la connexion permettait, dans la même fenêtre, de remplacer les codes de secours du compte.
-  const pas = await verifierCodeTotpAvecPas(user.totpSecret, body.code);
+  const pas = await verifierCodeTotpAvecPas(dechiffrerSecretTotp(user.totpSecret), body.code);
   if (pas === null || !(await consommerPasTotp(user.id, pas))) throw new ApiError(401, "Code invalide.", "TWO_FACTOR_CODE_WRONG");
 
   const { codes, hashes } = await genererCodesSecours();

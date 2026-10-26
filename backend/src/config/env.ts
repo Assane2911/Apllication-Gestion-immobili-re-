@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { lireCleTotp } from "./cleTotp";
 import { resoudreModeDemo } from "./modeDemo";
 
 dotenv.config();
@@ -13,6 +14,8 @@ function required(name: string, fallback?: string): string {
 
 // Mode démo des paiements : local et tests seulement (voir modeDemo.ts). `VERCEL` couvre aussi les préversions.
 const modeDemo = resoudreModeDemo(process.env.PAYMENTS_DEMO_MODE, process.env.NODE_ENV === "production" || !!process.env.VERCEL);
+
+const cleTotp = lireCleTotp(process.env.TOTP_ENCRYPTION_KEY);
 
 export const env = {
   port: parseInt(process.env.PORT ?? "4000", 10),
@@ -40,6 +43,11 @@ export const env = {
   // refuser de démarrer plutôt que d'utiliser un secret public et prévisible.
   jwtSecret: required("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
+
+  // Clé de chiffrement des secrets de double authentification (voir services/secretTotpChiffre.ts) : 32 octets en base64,
+  // `null` si absente ou invalide (les secrets restent alors en clair, comme avant ; signalé au démarrage).
+  totpEncryptionKey: cleTotp.cle as Buffer | null,
+  totpEncryptionKeyInvalide: cleTotp.invalide,
 
   // Identifiant client OAuth Google (public, PAS le secret — voir
   // loginWithGoogle dans auth.controller.ts, qui vérifie le jeton d'identité

@@ -149,6 +149,16 @@ s'il est **absent**, sensible à la casse : un simple « ok » se trouverait aus
 SMS / appel si vous voulez être réveillé. Les sondes d'UptimeRobot partent d'Amérique du Nord : leurs temps de réponse
 sont plus longs que ceux d'un utilisateur à Dakar, c'est normal, seule la disponibilité compte ici.
 
+## Chiffrement du secret de double authentification
+
+Le secret TOTP de chaque compte (`users.totp_secret`) est chiffré en base (AES-256-GCM) avec la clé `TOTP_ENCRYPTION_KEY`. Sans cela, quiconque lit la base pourrait calculer les codes à 6 chiffres du compte, dont celui de l'administrateur.
+
+1. Générez la clé : `openssl rand -base64 32`.
+2. Ajoutez-la dans Vercel (Settings → Environment Variables), nom `TOTP_ENCRYPTION_KEY`, **type « sensitive »**, pour Production, puis redéployez.
+3. **Conservez-la dans un gestionnaire de mots de passe, hors de GitHub.** Elle est distincte de `JWT_SECRET` : changer l'un ne rend pas l'autre illisible. Sans la clé, un secret chiffré est irrécupérable : il faut alors remettre à zéro la double authentification du compte dans la base (`totp_secret`, `totp_enabled_at` et `totp_backup_codes_hash` à `NULL`), puis la reconfigurer.
+
+Tant que la clé est absente, les secrets restent en clair et le démarrage le signale en production (journal et Sentry : « TOTP_ENCRYPTION_KEY est absente »). Les secrets déjà en clair restent lisibles, et sont chiffrés à la première connexion réussie du compte après la pose de la clé. Ne changez pas la clé une fois posée : les secrets déjà chiffrés ne seraient plus lisibles.
+
 ## Sauvegarde et restauration
 
 Le plan gratuit de Supabase **ne fait aucune sauvegarde automatique** : après une fausse manipulation (un `DROP`, un `UPDATE` sans `WHERE`) ou une panne, il n'y aurait aucun moyen de revenir en arrière. Le workflow `.github/workflows/sauvegarde.yml` y supplée : chaque nuit (02 h 43 UTC), il copie la base (schéma `public`, celui de l'application), **chiffre** la copie, **prouve qu'elle se restaure** (dans un PostgreSQL jetable, avec le nombre de lignes de chaque table dans le résumé du run), puis la dépose comme artefact du run, conservé 30 jours. Un échec ouvre un ticket.

@@ -169,6 +169,16 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
     expect(readFileSync(join(RACINE, "backend/scripts/sauvegarde/sauvegarder.sh"), "utf8")).toContain("%40");
   });
 
+  it("DEPLOYMENT.md explique la clé de chiffrement du secret TOTP : génération, type sensible, conservation et perte", () => {
+    const guide = lire("DEPLOYMENT.md");
+    expect(guide).toMatch(/Chiffrement du secret de double authentification/);
+    expect(guide).toMatch(/TOTP_ENCRYPTION_KEY/);
+    expect(guide).toMatch(/openssl rand -base64 32/);
+    expect(guide).toMatch(/sensitive/);
+    expect(guide).toMatch(/irrécupérable/);
+    expect(lire("backend/.env.example")).toMatch(/TOTP_ENCRYPTION_KEY/);
+  });
+
   describe("la surveillance de la disponibilité", () => {
     it("DEPLOYMENT.md explique les deux routes de santé et la sonde à poser sur celle qui vérifie la base", () => {
       const guide = lire("DEPLOYMENT.md");
