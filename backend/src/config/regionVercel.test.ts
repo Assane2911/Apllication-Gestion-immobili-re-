@@ -21,7 +21,7 @@ describe.skipIf(!dispo)("région d'exécution des fonctions du backend", () => {
     expect(configuration().regions).toEqual(["cdg1"]);
   });
 
-  it("une seule région : le plan gratuit (Hobby) n'en accepte pas davantage", () => {
+  it("une seule région, voulue : la base n'est qu'à Paris, une fonction ailleurs ne ferait qu'ajouter de la distance", () => {
     expect(configuration().regions).toHaveLength(1);
   });
 
@@ -35,6 +35,17 @@ describe.skipIf(!dispo)("région d'exécution des fonctions du backend", () => {
   it("les tâches planifiées sont conservées", () => {
     const crons = (configuration().crons ?? []) as Array<{ path: string; schedule: string }>;
     expect(crons.map((c) => c.path)).toEqual(["/api/cron/daily", "/api/cron/rent-due-reminders"]);
+  });
+
+  it("le guide ne présente pas la région unique comme une limite du plan : le projet est sur Vercel Pro, qui en accepte plusieurs", () => {
+    const texte = guide();
+    expect(texte).not.toMatch(/Le plan Hobby n'accepte qu'une seule région/);
+    expect(texte).toMatch(/Pro/);
+    expect(texte).toMatch(/Hobby/);
+  });
+
+  it("les tâches planifiées : le guide ne les dit pas limitées à une exécution par jour, ce n'est plus le cas du plan Pro", () => {
+    expect(guide()).not.toMatch(/Plan Hobby \(gratuit\)\*\* : les Cron Jobs/);
   });
 
   it("le guide de déploiement dit pourquoi, et quoi faire si la base change de région", () => {
