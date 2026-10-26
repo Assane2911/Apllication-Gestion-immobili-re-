@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lte, max, notInArray, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -6,7 +6,9 @@ import { db } from "../db/client";
 import { contracts, invoices, issueReports, listingLeads, listings, messages, notificationVues, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bauxDuLocataire } from "../services/colocation.service";
+import { TEXTES_NOTIFICATION } from "../services/notification.textes";
 import { idLocataireDuCompte } from "../utils/authorization";
+import { formaterDate, langueDeLaRequete, type Langue } from "../utils/langue";
 
 export type NotificationType = "message" | "invoice" | "issue" | "contract_ending" | "lead";
 export type NotificationSeverity = "info" | "warning" | "danger";
@@ -26,30 +28,6 @@ export interface NotificationItem {
 // (voir CONTRACT_REMINDER_DAYS) pour donner de la visibilité en amont.
 const CONTRACT_ENDING_WINDOW_DAYS = 14;
 
-type MessageRow = {
-  message: typeof messages.$inferSelect;
-  contract: typeof contracts.$inferSelect;
-  tenant: typeof tenants.$inferSelect;
-  property: typeof properties.$inferSelect;
-};
-type InvoiceRow = {
-  invoice: typeof invoices.$inferSelect;
-  contract: typeof contracts.$inferSelect;
-  tenant: typeof tenants.$inferSelect;
-  property: typeof properties.$inferSelect;
-};
-type IssueRow = {
-  issue: typeof issueReports.$inferSelect;
-  tenant: typeof tenants.$inferSelect;
-  contract: typeof contracts.$inferSelect;
-  property: typeof properties.$inferSelect;
-};
-type ContractRow = {
-  contract: typeof contracts.$inferSelect;
-  tenant: typeof tenants.$inferSelect;
-  property: typeof properties.$inferSelect;
-};
-
 /**
  * Centre de notifications du gestionnaire : agrège en un seul flux les
  * éléments qui nécessitent son attention (messages non lus des locataires,
@@ -57,99 +35,93 @@ type ContractRow = {
  * échéance). Calculé à la volée à partir de l'état actuel des données plutôt
  * que stocké dans une table dédiée — plus simple et toujours à jour.
  */
-async function calculerNotificationsGestionnaire(managerId: string): Promise<NotificationItem[]> {
+async function calculerNotificationsGestionnaire(managerId: string, langue: Langue): Promise<NotificationItem[]> {
   const notifications: NotificationItem[] = [];
+  const t = TEXTES_NOTIFICATION[langue];
+
+  // Chaque requête ne lit que les colonnes dont la notification a besoin : la cloche est interrogée toutes les 30 s
+  // par chaque onglet ouvert, et les lignes entières de quatre tables jointes (dont des champs longs) n'y servent à rien.
 
   // --- Messages non lus envoyés par les locataires ---
   // Le filtre isRead=false est porté par le SQL, pas par une boucle JS après
   // coup : sans lui, cette requête chargeait l'intégralité de l'historique
   // des messages de l'agence (des années de conversations, la quasi-totalité
   // déjà lus) à chaque affichage du centre de notifications, pour n'en
-  // retenir qu'une poignée.
-  const unreadRows = (await db
-    .select({ message: messages, contract: contracts, tenant: tenants, property: properties })
+  // retenir qu'une poignée. Le regroupement par fil est fait par la base : une
+  // ligne par fil, quel que soit le nombre de messages en attente.
+  const unreadRows = await db
+    .select({
+      contractId: contracts.id,
+      titulaireId: contracts.tenantId,
+      tenantId: tenants.id,
+      firstName: tenants.firstName,
+      lastName: tenants.lastName,
+      propertyTitle: properties.title,
+      count: sql<number>`count(*)::int`,
+      latest: max(messages.createdAt),
+    })
     .from(messages)
     .innerJoin(contracts, eq(messages.contractId, contracts.id))
     // Le locataire du fil (titulaire ou colocataire) ; une ligne non rattachée est au titulaire.
     .innerJoin(tenants, sql`${tenants.id} = coalesce(${messages.tenantId}, ${contracts.tenantId})`)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(
-      and(eq(messages.senderRole, "TENANT"), eq(messages.isRead, false), eq(properties.managerId, managerId))
-    )) as MessageRow[];
+    .where(and(eq(messages.senderRole, "TENANT"), eq(messages.isRead, false), eq(properties.managerId, managerId)))
+    .groupBy(contracts.id, contracts.tenantId, tenants.id, tenants.firstName, tenants.lastName, properties.title);
 
-  const unreadByContract = new Map<
-    string,
-    { count: number; tenantName: string; propertyTitle: string; latest: Date }
-  >();
   for (const r of unreadRows) {
     // Un fil par locataire : le titulaire garde la clé historique (le bail seul), pour que les
     // notifications déjà vues ne réapparaissent pas.
-    const key = r.tenant.id === r.contract.tenantId ? r.contract.id : `${r.contract.id}-${r.tenant.id}`;
-    const createdAt = new Date(r.message.createdAt);
-    const existing = unreadByContract.get(key);
-    if (existing) {
-      existing.count += 1;
-      if (createdAt > existing.latest) existing.latest = createdAt;
-    } else {
-      unreadByContract.set(key, {
-        count: 1,
-        tenantName: `${r.tenant.firstName} ${r.tenant.lastName}`,
-        propertyTitle: r.property.title,
-        latest: createdAt,
-      });
-    }
-  }
-  for (const [contractId, info] of unreadByContract) {
+    const key = r.tenantId === r.titulaireId ? r.contractId : `${r.contractId}-${r.tenantId}`;
     notifications.push({
-      id: `message-${contractId}`,
+      id: `message-${key}`,
       type: "message",
       severity: "info",
-      title: `${info.count} nouveau${info.count > 1 ? "x" : ""} message${info.count > 1 ? "s" : ""} de ${info.tenantName}`,
-      description: info.propertyTitle,
+      title: t.messagesDuLocataire(r.count, `${r.firstName} ${r.lastName}`),
+      description: r.propertyTitle,
       link: "/messages",
-      createdAt: info.latest.toISOString(),
+      createdAt: new Date(r.latest!).toISOString(),
     });
   }
 
   // --- Factures en retard ---
-  const lateInvoiceRows = (await db
-    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+  const lateInvoiceRows = await db
+    .select({ id: invoices.id, dueDate: invoices.dueDate, firstName: tenants.firstName, lastName: tenants.lastName, propertyTitle: properties.title })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(and(eq(invoices.status, "LATE"), eq(properties.managerId, managerId)))) as InvoiceRow[];
+    .where(and(eq(invoices.status, "LATE"), eq(properties.managerId, managerId)));
 
   for (const r of lateInvoiceRows) {
     notifications.push({
-      id: `invoice-${r.invoice.id}`,
+      id: `invoice-${r.id}`,
       type: "invoice",
       severity: "danger",
-      title: `Loyer en retard — ${r.tenant.firstName} ${r.tenant.lastName}`,
-      description: `${r.property.title} · échéance du ${new Date(r.invoice.dueDate).toLocaleDateString("fr-FR")}`,
+      title: t.loyerEnRetard(`${r.firstName} ${r.lastName}`),
+      description: t.echeanceDuBien(r.propertyTitle, formaterDate(r.dueDate, langue, t.optionsDate)),
       link: "/invoices",
-      createdAt: new Date(r.invoice.dueDate).toISOString(),
+      createdAt: new Date(r.dueDate).toISOString(),
     });
   }
 
   // --- Signalements d'incidents ouverts ---
-  const openIssueRows = (await db
-    .select({ issue: issueReports, tenant: tenants, contract: contracts, property: properties })
+  const openIssueRows = await db
+    .select({ id: issueReports.id, title: issueReports.title, createdAt: issueReports.createdAt, firstName: tenants.firstName, lastName: tenants.lastName, propertyTitle: properties.title })
     .from(issueReports)
     .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(and(eq(issueReports.status, "OPEN"), eq(properties.managerId, managerId)))) as IssueRow[];
+    .where(and(eq(issueReports.status, "OPEN"), eq(properties.managerId, managerId)));
 
   for (const r of openIssueRows) {
     notifications.push({
-      id: `issue-${r.issue.id}`,
+      id: `issue-${r.id}`,
       type: "issue",
       severity: "warning",
-      title: `Signalement : ${r.issue.title}`,
-      description: `${r.property.title} · ${r.tenant.firstName} ${r.tenant.lastName}`,
+      title: t.signalement(r.title),
+      description: `${r.propertyTitle} · ${r.firstName} ${r.lastName}`,
       link: "/issues",
-      createdAt: new Date(r.issue.createdAt).toISOString(),
+      createdAt: new Date(r.createdAt).toISOString(),
     });
   }
 
@@ -157,49 +129,49 @@ async function calculerNotificationsGestionnaire(managerId: string): Promise<Not
   // C'est la seule écriture sans compte du service : sans signalement, une demande de visite dormait dans le CRM
   // tant que le gestionnaire n'ouvrait pas cette page.
   const nouvellesDemandes = await db
-    .select({ lead: listingLeads, listing: listings })
+    .select({ id: listingLeads.id, requestType: listingLeads.requestType, prospectName: listingLeads.prospectName, createdAt: listingLeads.createdAt, listingTitle: listings.title })
     .from(listingLeads)
     .innerJoin(listings, eq(listingLeads.listingId, listings.id))
     .where(and(eq(listingLeads.status, "NEW"), eq(listingLeads.managerId, managerId)));
 
   for (const r of nouvellesDemandes) {
     notifications.push({
-      id: `lead-${r.lead.id}`,
+      id: `lead-${r.id}`,
       type: "lead",
       severity: "info",
-      title: `${r.lead.requestType === "INFO" ? "Demande d'information" : "Demande de visite"} — ${r.lead.prospectName}`,
-      description: r.listing.title,
+      title: r.requestType === "INFO" ? t.demandeInformation(r.prospectName) : t.demandeVisite(r.prospectName),
+      description: r.listingTitle,
       link: "/leads",
-      createdAt: new Date(r.lead.createdAt).toISOString(),
+      createdAt: new Date(r.createdAt).toISOString(),
     });
   }
 
   // --- Contrats arrivant à échéance ---
+  // La fenêtre est portée par le SQL : seuls les baux qui se terminent dans les prochains jours sont lus, pas tous
+  // les baux actifs de l'agence.
   const now = new Date();
   const windowEnd = new Date(now);
   windowEnd.setDate(windowEnd.getDate() + CONTRACT_ENDING_WINDOW_DAYS);
 
-  const activeContractRows = (await db
-    .select({ contract: contracts, tenant: tenants, property: properties })
+  const activeContractRows = await db
+    .select({ id: contracts.id, endDate: contracts.endDate, firstName: tenants.firstName, lastName: tenants.lastName, propertyTitle: properties.title })
     .from(contracts)
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
-    .where(and(eq(contracts.status, "ACTIVE"), eq(properties.managerId, managerId)))) as ContractRow[];
+    .where(and(eq(contracts.status, "ACTIVE"), eq(properties.managerId, managerId), gte(contracts.endDate, now), lte(contracts.endDate, windowEnd)));
 
   for (const r of activeContractRows) {
-    const endDate = new Date(r.contract.endDate);
-    if (endDate >= now && endDate <= windowEnd) {
-      const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-      notifications.push({
-        id: `contract-${r.contract.id}`,
-        type: "contract_ending",
-        severity: daysLeft <= 7 ? "danger" : "warning",
-        title: `Contrat se terminant dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}`,
-        description: `${r.property.title} · ${r.tenant.firstName} ${r.tenant.lastName}`,
-        link: "/contracts",
-        createdAt: endDate.toISOString(),
-      });
-    }
+    const endDate = new Date(r.endDate);
+    const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    notifications.push({
+      id: `contract-${r.id}`,
+      type: "contract_ending",
+      severity: daysLeft <= 7 ? "danger" : "warning",
+      title: t.contratSeTermine(daysLeft),
+      description: `${r.propertyTitle} · ${r.firstName} ${r.lastName}`,
+      link: "/contracts",
+      createdAt: endDate.toISOString(),
+    });
   }
 
   notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -220,12 +192,14 @@ async function calculerNotificationsGestionnaire(managerId: string): Promise<Not
  * qui l'a lui-même déposé n'a besoin d'aucun rappel pour une action qu'il a
  * déjà effectuée — il consulte son statut depuis la page Incidents.
  */
-async function calculerNotificationsLocataire(tenantId: string): Promise<NotificationItem[]> {
+async function calculerNotificationsLocataire(tenantId: string, langue: Langue): Promise<NotificationItem[]> {
   const notifications: NotificationItem[] = [];
+  const t = TEXTES_NOTIFICATION[langue];
 
   // --- Messages non lus envoyés par le gestionnaire ---
-  const unreadRows = await db
-    .select({ message: messages, contract: contracts })
+  // Seuls le nombre et la date du dernier comptent : la base les calcule, au lieu de renvoyer chaque message.
+  const [unread] = await db
+    .select({ count: sql<number>`count(*)::int`, latest: max(messages.createdAt) })
     .from(messages)
     .innerJoin(contracts, eq(messages.contractId, contracts.id))
     .where(
@@ -237,19 +211,15 @@ async function calculerNotificationsLocataire(tenantId: string): Promise<Notific
       )
     );
 
-  if (unreadRows.length > 0) {
-    const latest = unreadRows.reduce(
-      (max, r) => (new Date(r.message.createdAt) > max ? new Date(r.message.createdAt) : max),
-      new Date(unreadRows[0].message.createdAt)
-    );
+  if (unread.count > 0) {
     notifications.push({
       id: "message-mine",
       type: "message",
       severity: "info",
-      title: `${unreadRows.length} nouveau${unreadRows.length > 1 ? "x" : ""} message${unreadRows.length > 1 ? "s" : ""} de votre gestionnaire`,
-      description: "Consultez votre messagerie",
+      title: t.messagesDuGestionnaire(unread.count),
+      description: t.consulterMessagerie,
       link: "/portail/messages",
-      createdAt: latest.toISOString(),
+      createdAt: new Date(unread.latest!).toISOString(),
     });
   }
 
@@ -262,29 +232,30 @@ async function calculerNotificationsLocataire(tenantId: string): Promise<Notific
   // son portail, il doit aussi être prévenu d'un loyer en retard ou de la fin du bail.
   const idsBaux = [...(await bauxDuLocataire(tenantId)).keys()];
 
+  // En retard, quelle que soit l'ancienneté ; en attente, seulement si l'échéance tombe dans la fenêtre « bientôt dus ».
   const invoiceRows =
     idsBaux.length === 0
       ? []
       : await db
-          .select({ invoice: invoices, contract: contracts })
+          .select({ id: invoices.id, status: invoices.status, dueDate: invoices.dueDate })
           .from(invoices)
-          .innerJoin(contracts, eq(invoices.contractId, contracts.id))
-          .where(and(inArray(contracts.id, idsBaux), inArray(invoices.status, ["LATE", "PENDING"])));
+          .where(
+            and(
+              inArray(invoices.contractId, idsBaux),
+              or(eq(invoices.status, "LATE"), and(eq(invoices.status, "PENDING"), gte(invoices.dueDate, now), lte(invoices.dueDate, dueSoonWindowEnd)))
+            )
+          );
 
   for (const r of invoiceRows) {
-    const dueDate = new Date(r.invoice.dueDate);
-    const estEnRetard = r.invoice.status === "LATE";
-    const estBientotDue = !estEnRetard && dueDate >= now && dueDate <= dueSoonWindowEnd;
-    if (!estEnRetard && !estBientotDue) continue;
-
+    const estEnRetard = r.status === "LATE";
     notifications.push({
-      id: `invoice-${r.invoice.id}`,
+      id: `invoice-${r.id}`,
       type: "invoice",
       severity: estEnRetard ? "danger" : "warning",
-      title: estEnRetard ? "Loyer en retard" : "Loyer à régler bientôt",
-      description: `Échéance du ${dueDate.toLocaleDateString("fr-FR")}`,
+      title: estEnRetard ? t.loyerEnRetardLocataire : t.loyerBientotDu,
+      description: t.echeance(formaterDate(r.dueDate, langue, t.optionsDate)),
       link: "/portail/paiements",
-      createdAt: dueDate.toISOString(),
+      createdAt: new Date(r.dueDate).toISOString(),
     });
   }
 
@@ -292,31 +263,29 @@ async function calculerNotificationsLocataire(tenantId: string): Promise<Notific
   // Fenêtre plus large que celle des loyers "bientôt dus" ci-dessus (3 jours,
   // trop courte pour un bail) : on reprend celle du centre de notifications
   // du gestionnaire (CONTRACT_ENDING_WINDOW_DAYS), pensée pour ça.
+  const contractEndingWindowEnd = new Date(now);
+  contractEndingWindowEnd.setDate(contractEndingWindowEnd.getDate() + CONTRACT_ENDING_WINDOW_DAYS);
+
   const activeContractRows =
     idsBaux.length === 0
       ? []
       : await db
-          .select({ contract: contracts })
+          .select({ id: contracts.id, endDate: contracts.endDate })
           .from(contracts)
-          .where(and(inArray(contracts.id, idsBaux), eq(contracts.status, "ACTIVE")));
-
-  const contractEndingWindowEnd = new Date(now);
-  contractEndingWindowEnd.setDate(contractEndingWindowEnd.getDate() + CONTRACT_ENDING_WINDOW_DAYS);
+          .where(and(inArray(contracts.id, idsBaux), eq(contracts.status, "ACTIVE"), gte(contracts.endDate, now), lte(contracts.endDate, contractEndingWindowEnd)));
 
   for (const r of activeContractRows) {
-    const endDate = new Date(r.contract.endDate);
-    if (endDate >= now && endDate <= contractEndingWindowEnd) {
-      const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-      notifications.push({
-        id: `contract-${r.contract.id}`,
-        type: "contract_ending",
-        severity: daysLeft <= 7 ? "danger" : "warning",
-        title: `Votre bail se termine dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}`,
-        description: "Contactez votre gestionnaire pour un renouvellement",
-        link: "/portail",
-        createdAt: endDate.toISOString(),
-      });
-    }
+    const endDate = new Date(r.endDate);
+    const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    notifications.push({
+      id: `contract-${r.id}`,
+      type: "contract_ending",
+      severity: daysLeft <= 7 ? "danger" : "warning",
+      title: t.bailSeTermine(daysLeft),
+      description: t.contacterGestionnaire,
+      link: "/portail",
+      createdAt: endDate.toISOString(),
+    });
   }
 
   notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -423,15 +392,15 @@ async function marquerVues(
 }
 
 export const getNotifications = asyncHandler(async (req: Request, res: Response) => {
-  await repondreAvecEtatVu(req, res, await calculerNotificationsGestionnaire(req.user!.userId));
+  await repondreAvecEtatVu(req, res, await calculerNotificationsGestionnaire(req.user!.userId, langueDeLaRequete(req)));
 });
 
 export const markNotificationsSeen = asyncHandler(async (req: Request, res: Response) => {
-  await marquerVues(req, res, await calculerNotificationsGestionnaire(req.user!.userId));
+  await marquerVues(req, res, await calculerNotificationsGestionnaire(req.user!.userId, langueDeLaRequete(req)));
 });
 
 export const markNotificationsRead = asyncHandler(async (req: Request, res: Response) => {
-  await marquerVues(req, res, await calculerNotificationsGestionnaire(req.user!.userId), true);
+  await marquerVues(req, res, await calculerNotificationsGestionnaire(req.user!.userId, langueDeLaRequete(req)), true);
 });
 
 async function idLocataireOu403(req: Request): Promise<string> {
@@ -441,13 +410,13 @@ async function idLocataireOu403(req: Request): Promise<string> {
 }
 
 export const getTenantNotifications = asyncHandler(async (req: Request, res: Response) => {
-  await repondreAvecEtatVu(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req)));
+  await repondreAvecEtatVu(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req), langueDeLaRequete(req)));
 });
 
 export const markTenantNotificationsSeen = asyncHandler(async (req: Request, res: Response) => {
-  await marquerVues(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req)));
+  await marquerVues(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req), langueDeLaRequete(req)));
 });
 
 export const markTenantNotificationsRead = asyncHandler(async (req: Request, res: Response) => {
-  await marquerVues(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req)), true);
+  await marquerVues(req, res, await calculerNotificationsLocataire(await idLocataireOu403(req), langueDeLaRequete(req)), true);
 });

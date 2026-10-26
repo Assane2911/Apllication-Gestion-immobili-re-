@@ -46,7 +46,7 @@ export default function NotificationBell({
   endpoint = "/notifications",
   i18nPrefix = "components.notificationBell",
 }: NotificationBellProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
   // Clés des notifications qui étaient nouvelles À L'OUVERTURE : le badge
@@ -118,7 +118,8 @@ export default function NotificationBell({
       arreter();
       controller.abort();
     };
-  }, [endpoint]);
+    // Les textes viennent du serveur, dans la langue de l'interface (Accept-Language) : changer de langue relit la cloche.
+  }, [endpoint, i18n.language]);
 
   // Sans clé (ancien backend), l'identifiant fait office de clé.
   const cleDe = (n: NotificationItem) => n.key ?? n.id;

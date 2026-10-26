@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
+import i18n from "../i18n";
 import type { NotificationItem } from "../types";
 import NotificationBell from "./NotificationBell";
 
@@ -486,5 +487,34 @@ describe("NotificationBell — sondage et visibilité de l'onglet", () => {
     await avancer(5 * 60_000);
     expect(appels()).toBe(1);
     expect(mockedApi.get).toHaveBeenCalledWith("/notifications/mine", expect.anything());
+  });
+});
+
+/**
+ * Les textes de la cloche sont écrits par le serveur, dans la langue de l'interface (en-tête Accept-Language). Quand
+ * la personne change de langue, la cloche se relit aussitôt : sans cela, elle gardait les textes de l'ancienne langue
+ * jusqu'au sondage suivant (30 s) ou au retour sur l'onglet.
+ */
+describe("NotificationBell — changement de langue", () => {
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+  });
+
+  it("relit les notifications quand la langue de l'interface change", async () => {
+    mockedApi.get.mockReset();
+    mockedApi.get
+      .mockResolvedValueOnce({ data: { notifications: [notification({ title: "Loyer en retard — Awa Sow" })] } })
+      .mockResolvedValueOnce({ data: { notifications: [notification({ title: "Late rent — Awa Sow" })] } })
+      .mockResolvedValue({ data: { notifications: [] } }); // le retour au français, en fin de test, relit encore une fois
+    renderBell();
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
   });
 });
