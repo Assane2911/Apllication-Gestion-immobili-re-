@@ -139,6 +139,21 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
     });
   });
 
+  describe("le secret de signature des jetons", () => {
+    it("DEPLOYMENT.md et .env.example disent comment le générer et que le texte d'exemple est public", () => {
+      const guide = lire("DEPLOYMENT.md");
+      expect(guide).toMatch(/openssl rand -base64 48/);
+      expect(guide).toMatch(/JWT_SECRET est faible/);
+      expect(lire("backend/.env.example")).toMatch(/PUBLIQUE/);
+    });
+
+    it("le texte d'exemple de .env.example est bien celui que l'application reconnaît comme faible", async () => {
+      const exemple = lire("backend/.env.example").match(/^JWT_SECRET=(.*)$/m)?.[1] ?? "";
+      const { problemeSecretJwt } = await import("./secretJwt");
+      expect(problemeSecretJwt(exemple)).toBe("exemple");
+    });
+  });
+
   describe("la surveillance de la disponibilité", () => {
     it("DEPLOYMENT.md explique les deux routes de santé et la sonde à poser sur celle qui vérifie la base", () => {
       const guide = lire("DEPLOYMENT.md");

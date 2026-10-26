@@ -88,7 +88,7 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
 3. Vercel détecte automatiquement Express (zero-config).
 4. Renseignez les variables d'environnement (Project Settings → Environment Variables) — reprenez tout `backend/.env.example`, notamment :
    - `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLIC_BUCKET`, `SUPABASE_PRIVATE_BUCKET`
-   - `JWT_SECRET` (générez une vraie valeur aléatoire, différente de celle de dev : `openssl rand -base64 48`)
+   - `JWT_SECRET` (générez une vraie valeur aléatoire, différente de celle de dev : `openssl rand -base64 48`). Une valeur de moins de 32 caractères, ou le texte d'exemple de `.env.example`, est signalée dans les journaux et dans Sentry (« JWT_SECRET est faible ») à chaque démarrage, sans empêcher l'application de tourner : quiconque connaît le secret peut fabriquer un jeton de connexion, y compris administrateur. Pour le changer, mettez la nouvelle valeur dans Vercel et redéployez ; tous les utilisateurs devront se reconnecter.
    - `PAYMENTS_DEMO_MODE` : **ne le définissez pas** (ou mettez `false`). Sur Vercel il vaut `false` par défaut, et l'activer rend tout paiement « réussi » sans qu'un centime ne soit encaissé — un abonnement s'activerait gratuitement. C'est pourquoi `backend/.env.example` le livre en commentaire.
    - `RENT_ONLINE_PAYMENTS` : laissez `false` (voir le `README`, section Paiements).
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_APP_PASSWORD`, `EMAIL_FROM`, `CONTRACT_REMINDER_DAYS`
