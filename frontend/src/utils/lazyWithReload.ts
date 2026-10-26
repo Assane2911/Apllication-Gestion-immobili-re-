@@ -1,5 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { rechargementAssure } from "./rechargementApresDeploiement";
+import { rechargementAssure, rechargementEnCours } from "./rechargementApresDeploiement";
 
 /**
  * Remplace React.lazy() : si le chunk échoue à charger, recharge la page une
@@ -22,7 +22,14 @@ export function lazyWithReload<T extends ComponentType<any>>(
 ): LazyExoticComponent<T> {
   return lazy(async () => {
     try {
-      return await factory();
+      const module = await factory();
+      // Vite ne relève plus l'échec d'un préchargement quand l'écouteur de `vite:preloadError` appelle
+      // `preventDefault()` (c'est ce que fait notre rechargement automatique) : l'`import()` se résout alors avec
+      // `undefined`, et React lisait `.default` dessus — erreur affichée, et signalée à Sentry, le temps que la page
+      // se remplace (IMMOPLATFORM-PRO-BACKEND-E). Un module absent PENDANT un rechargement reste donc en attente,
+      // comme dans le cas d'un échec rattrapé plus bas. Sans rechargement en cours, rien ne change.
+      if (module === undefined && rechargementEnCours()) return new Promise<{ default: T }>(() => {});
+      return module;
     } catch (error) {
       if (rechargementAssure()) {
         // Le rechargement remplace la page avant que cette promesse ne
