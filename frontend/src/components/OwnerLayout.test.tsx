@@ -69,6 +69,27 @@ describe("OwnerLayout", () => {
     expect(lienCrg.className).toMatch(/from-brand-600/);
   });
 
+  it("sur téléphone, l'onglet du CRG s'intitule « Compte-rendu » pour laisser la place au tableau de bord", () => {
+    vi.stubGlobal("matchMedia", (requete: string) => ({
+      matches: requete === "(max-width: 639px)",
+      media: requete,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+      onchange: null,
+    }));
+    try {
+      renderOwnerLayout("/proprietaire/crg");
+      const lienCrg = screen.getByRole("link", { name: "Compte-rendu de gestion" });
+      expect(lienCrg).toHaveTextContent(/^Compte-rendu$/);
+      expect(screen.getByRole("link", { name: "Tableau de bord" })).toHaveTextContent(/^Tableau de bord$/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("demande confirmation, puis appelle logout", async () => {
     const user = userEvent.setup();
     const logout = vi.fn(async () => {});

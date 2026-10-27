@@ -147,12 +147,66 @@ describe("EnteteEspace — téléphone", () => {
       expect(barre.className).not.toMatch(FONDU_DROITE);
     });
 
+    it("pas de marge à droite de la rangée : elle ne servait qu'à sortir le dernier onglet du fondu permanent", () => {
+      // Avec le fondu permanent, une marge de 2 rem permettait de faire défiler le dernier onglet hors du fondu. Le
+      // fondu ne s'affiche plus qu'à côté d'onglets cachés : la marge, elle, faisait défiler une rangée qui tenait
+      // (propriétaire à 405 px : 268 px d'onglets dans 289 px, « Tableau de bord » rogné de 11 px).
+      rendre();
+      expect(screen.getByRole("navigation", { name: "Mon espace" }).className).not.toMatch(/(^|\s)(max-sm:)?pr-/);
+    });
+
     it("quand tout tient, aucun fondu", () => {
       rendre();
       const barre = screen.getByRole("navigation", { name: "Mon espace" });
       placer(barre, { visible: 400, total: 400, position: 0 });
       expect(barre.className).not.toMatch(FONDU_GAUCHE);
       expect(barre.className).not.toMatch(FONDU_DROITE);
+    });
+  });
+
+  /**
+   * « Compte-rendu de gestion » ne laissait la place au premier onglet sur aucun téléphone. Un intitulé court est
+   * affiché sur téléphone ; le lien garde son nom complet pour les lecteurs d'écran.
+   */
+  describe("intitulé court sur téléphone", () => {
+    function rendreAvecIntituleCourt() {
+      const auth = { user: { id: "u", email: "u@test.local", role: "OWNER" }, loading: false, logout: async () => {} } as unknown as AuthContextValue;
+      return render(
+        <AuthContext.Provider value={auth}>
+          <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
+            <MemoryRouter initialEntries={["/espace/crg"]}>
+              <EnteteEspace
+                largeur="4xl"
+                titre="Mon espace"
+                onglets={[...onglets, { to: "/espace/crg", label: "Compte-rendu de gestion", labelCourt: "Compte-rendu", tip: "Le détail", icon: Home, end: true }]}
+              />
+            </MemoryRouter>
+          </ThemeContext.Provider>
+        </AuthContext.Provider>
+      );
+    }
+
+    it("sur téléphone, l'onglet affiche l'intitulé court mais garde son nom complet", () => {
+      simulerEcran(true);
+      rendreAvecIntituleCourt();
+      const lien = screen.getByRole("link", { name: "Compte-rendu de gestion" });
+      expect(lien).toHaveTextContent(/^Compte-rendu$/);
+    });
+
+    it("sur un écran large, l'intitulé reste complet", () => {
+      simulerEcran(false);
+      rendreAvecIntituleCourt();
+      const lien = screen.getByRole("link", { name: "Compte-rendu de gestion" });
+      expect(lien).toHaveTextContent(/^Compte-rendu de gestion$/);
+      expect(lien).not.toHaveAttribute("aria-label");
+    });
+
+    it("sans intitulé court, rien ne change sur téléphone", () => {
+      simulerEcran(true);
+      rendreAvecIntituleCourt();
+      const lien = screen.getByRole("link", { name: "Incidents" });
+      expect(lien).toHaveTextContent(/^Incidents$/);
+      expect(lien).not.toHaveAttribute("aria-label");
     });
   });
 

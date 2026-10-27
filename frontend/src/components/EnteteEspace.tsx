@@ -14,6 +14,8 @@ import LanguageSwitcher from "./LanguageSwitcher";
 export interface OngletEspace {
   to: string;
   label: string;
+  /** Intitulé affiché sur téléphone quand `label` est trop long ; le lien garde `label` comme nom accessible. */
+  labelCourt?: string;
   /** Texte de l'infobulle. */
   tip: string;
   icon: LucideIcon;
@@ -142,7 +144,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
           <nav
             ref={barre}
             aria-label={titre}
-            className={`flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar max-sm:pr-8 ${FONDUS[bords.gauche ? (bords.droite ? "deux" : "gauche") : bords.droite ? "droite" : "aucun"]}`}
+            className={`flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar ${FONDUS[bords.gauche ? (bords.droite ? "deux" : "gauche") : bords.droite ? "droite" : "aucun"]}`}
           >
             {onglets.map((onglet) => (
               // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par défaut). C'est la barre latérale du
@@ -151,6 +153,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
                 <NavLink
                   to={onglet.to}
                   end={onglet.end}
+                  aria-label={telephone && onglet.labelCourt ? onglet.label : undefined}
                   className={({ isActive }) =>
                     `px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
                       isActive
@@ -160,7 +163,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
                   }
                 >
                   <onglet.icon size={15} strokeWidth={1.9} className="shrink-0" aria-hidden="true" />
-                  <span>{onglet.label}</span>
+                  <span>{telephone && onglet.labelCourt ? onglet.labelCourt : onglet.label}</span>
                 </NavLink>
               </Bulle>
             ))}

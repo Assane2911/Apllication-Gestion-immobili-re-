@@ -32,7 +32,15 @@ export default function OwnerLayout() {
         titre={t("components.ownerLayout.title")}
         badge={t("nav.ownerSpace")}
         sousTitre={user?.ownerName ?? user?.email}
-        onglets={navItems.map((item) => ({ to: item.to, label: t(`nav.owner.${item.key}`), tip: t(`nav.tipsOwner.${item.key}`), icon: item.icon, end: true }))}
+        onglets={navItems.map((item) => ({
+          to: item.to,
+          label: t(`nav.owner.${item.key}`),
+          // Sur téléphone, « Compte-rendu de gestion » ne laisse pas la place au tableau de bord (les deux tiennent dès 384 px avec « Compte-rendu »).
+          labelCourt: item.key === "crg" ? t("nav.ownerShort.crg") : undefined,
+          tip: t(`nav.tipsOwner.${item.key}`),
+          icon: item.icon,
+          end: true,
+        }))}
       />
 
       <main data-surface="app" className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
