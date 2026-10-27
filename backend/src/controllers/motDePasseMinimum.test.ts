@@ -18,12 +18,12 @@ const HUIT = "Abcdef12";
 
 describe("mot de passe : 8 caractères minimum sur tous les chemins", () => {
   it("inscription : refuse 7 caractères, accepte 8", async () => {
-    const court = await request(app).post("/api/auth/register").send({ email: "court@test.local", password: SEPT });
+    const court = await request(app).post("/api/auth/register").send({ country: "SN", email: "court@test.local", password: SEPT });
     expect(court.status).toBe(400);
     const [absent] = await testDb.select().from(users).where(eq(users.email, "court@test.local"));
     expect(absent).toBeUndefined();
 
-    const ok = await request(app).post("/api/auth/register").send({ email: "huit@test.local", password: HUIT });
+    const ok = await request(app).post("/api/auth/register").send({ country: "SN", email: "huit@test.local", password: HUIT });
     expect(ok.status).toBe(201);
   });
 

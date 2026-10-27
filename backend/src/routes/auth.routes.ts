@@ -11,6 +11,7 @@ import {
   resetPassword,
   logoutAllDevices,
   rafraichirSession,
+  updateCountry,
   updateCurrency,
   verifyEmail,
   verifyTwoFactorLogin,
@@ -52,6 +53,8 @@ router.post("/forgot-password", authIpLimiter, authEmailLimiter, forgotPassword)
 router.post("/reset-password", authIpLimiter, resetPassword);
 router.get("/me", authenticate, me);
 router.patch("/currency", authenticate, updateCurrency);
+// Le pays de l'agence, choisi une seule fois (voir updateCountry) : réservé au gestionnaire.
+router.post("/country", authenticate, requireRole("MANAGER"), updateCountry);
 // Sans authenticate : voir le commentaire de logout (auth.controller.ts) —
 // un cookie déjà expiré ou absent doit pouvoir être "nettoyé" sans 401.
 router.post("/logout", logout);

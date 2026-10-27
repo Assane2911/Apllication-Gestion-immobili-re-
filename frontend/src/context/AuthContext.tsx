@@ -44,6 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // profil -> affichage de CurrencyContext. Plus rien ne pouvait alors
         // rétablir le choix depuis le serveur.
         currency: data.currency,
+        // Même piège que la devise : champ facultatif, donc son oubli ne se voit pas à la compilation. Sans lui, le pays
+        // choisi disparaîtrait de l'objet à chaque rechargement et le gestionnaire serait renvoyé le choisir.
+        country: data.country ?? null,
         tenantId: data.tenant?.id ?? null,
         tenantName: data.tenant ? `${data.tenant.firstName} ${data.tenant.lastName}` : null,
         ownerId: data.owner?.id ?? null,
@@ -139,10 +142,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function register(email: string, password: string, referralCode?: string) {
+  async function register(email: string, password: string, country: string, referralCode?: string) {
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/register", { email, password, referralCode: referralCode || undefined });
+      const { data } = await api.post("/auth/register", { email, password, country, referralCode: referralCode || undefined });
       // `email` ne fait plus partie de la réponse : le renvoyer permettait de
       // distinguer une adresse libre d'une adresse déjà prise, et donc de
       // tester qui a un compte (voir registerManager côté serveur).

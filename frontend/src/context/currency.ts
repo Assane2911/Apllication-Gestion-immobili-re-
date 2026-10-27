@@ -10,22 +10,7 @@ export interface CurrencyConfig {
 
 export const CURRENCIES: Record<string, CurrencyConfig> = {
   EUR: { code: "EUR", symbol: "€", name: "Euro", flag: "🇪🇺", symbolPosition: "after" },
-  USD: { code: "USD", symbol: "$", name: "Dollar US", flag: "🇺🇸", symbolPosition: "before" },
   XOF: { code: "XOF", symbol: "FCFA", name: "Franc CFA (UEMOA)", flag: "🌍", symbolPosition: "after" },
-  XAF: { code: "XAF", symbol: "FCFA", name: "Franc CFA (CEMAC)", flag: "🌍", symbolPosition: "after" },
-  STN: { code: "STN", symbol: "Db", name: "Dobra (São Tomé)", flag: "🇸🇹", symbolPosition: "after" },
-  GBP: { code: "GBP", symbol: "£", name: "Livre Sterling", flag: "🇬🇧", symbolPosition: "before" },
-  CAD: { code: "CAD", symbol: "$CA", name: "Dollar Canadien", flag: "🇨🇦", symbolPosition: "before" },
-  CHF: { code: "CHF", symbol: "CHF", name: "Franc Suisse", flag: "🇨🇭", symbolPosition: "after" },
-  MAD: { code: "MAD", symbol: "DH", name: "Dirham Marocain", flag: "🇲🇦", symbolPosition: "after" },
-  // Trois pays figuraient dans SUPPORTED_COUNTRY_CODES (annonces, vitrine)
-  // sans que leur monnaie soit proposée : on pouvait publier un bien à
-  // Conakry, Nouakchott ou Kinshasa, mais pas en fixer le loyer dans la devise
-  // du lieu. Les deux listes décrivent le même marché ; elles doivent
-  // concorder.
-  GNF: { code: "GNF", symbol: "FG", name: "Franc Guinéen", flag: "🇬🇳", symbolPosition: "after" },
-  MRU: { code: "MRU", symbol: "UM", name: "Ouguiya (Mauritanie)", flag: "🇲🇷", symbolPosition: "after" },
-  CDF: { code: "CDF", symbol: "FC", name: "Franc Congolais (RDC)", flag: "🇨🇩", symbolPosition: "after" },
 };
 
 /**

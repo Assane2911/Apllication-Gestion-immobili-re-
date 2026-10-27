@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { rentDueReminderEmail } from "../services/email.service";
 import { generateReceiptHtml } from "../services/pdf.service";
 import { rentDueReminderWhatsappVariables } from "../services/whatsapp.service";
+import { DEVISES } from "./devises";
 import { formaterMontant } from "./montant";
 
 /**
@@ -25,7 +26,14 @@ describe("Mise en forme d'un montant", () => {
   });
 
   it("place le symbole avant le nombre là où l'usage le veut", () => {
-    expect(formaterMontant(1200, "USD")).toBe(`$1${espaceFine}200`);
+    // Aucune devise de la zone couverte (euro, franc CFA) ne place son symbole avant le nombre, mais le cas reste géré
+    // (une devise ajoutée demain peut le demander) : on l'exerce avec une devise d'essai.
+    DEVISES.ESSAI = { symbole: "$", position: "avant" };
+    try {
+      expect(formaterMontant(1200, "ESSAI")).toBe(`$1${espaceFine}200`);
+    } finally {
+      delete DEVISES.ESSAI;
+    }
   });
 
   it("n'ajoute pas de décimales à un montant rond, et en garde deux au plus", () => {
@@ -52,7 +60,12 @@ describe("Mise en forme d'un montant", () => {
     expect(formaterMontant(35000, "XOF", "es")).toBe("35.000 FCFA");
     expect(formaterMontant(35000, "XOF", "pt")).toMatch(/^35\s000 FCFA$/);
     expect(formaterMontant(450.5, "EUR", "en")).toBe("450.5 €");
-    expect(formaterMontant(1200, "USD", "en")).toBe("$1,200");
+    DEVISES.ESSAI = { symbole: "$", position: "avant" };
+    try {
+      expect(formaterMontant(1200, "ESSAI", "en")).toBe("$1,200");
+    } finally {
+      delete DEVISES.ESSAI;
+    }
   });
 
   it("traite une devise absente comme un euro, valeur par défaut en base", () => {

@@ -34,6 +34,15 @@ describe("POST /api/listings — bornes de saisie", () => {
     expect(res.status).toBe(400);
   });
 
+  it("refuse un pays hors de la zone couverte (France et UEMOA), accepte la France et ne tient pas compte de la casse", async () => {
+    const manager = await createManager();
+    const publier = (country: string) => request(app).post("/api/listings").set(authHeader(tokenFor(manager))).send({ ...base, country });
+
+    for (const horsZone of ["CM", "MA", "BE", "US"]) expect((await publier(horsZone)).status, horsZone).toBe(400);
+    expect((await publier("fr")).status).toBe(201);
+    expect((await publier("GW")).status).toBe(201);
+  });
+
   it("accepte une annonce ordinaire", async () => {
     const manager = await createManager();
     const res = await request(app)

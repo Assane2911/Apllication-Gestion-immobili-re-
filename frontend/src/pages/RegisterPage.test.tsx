@@ -46,10 +46,11 @@ function renderPage(initialEntry = "/inscription") {
   );
 }
 
-async function fillForm(user: ReturnType<typeof userEvent.setup>, password = "Password123!", confirm = password) {
+async function fillForm(user: ReturnType<typeof userEvent.setup>, password = "Password123!", confirm = password, pays: string | null = "SN") {
   await user.type(screen.getByLabelText("Email"), "nouvelle-agence@test.local");
   await user.type(screen.getByLabelText("Mot de passe"), password);
   await user.type(screen.getByLabelText("Confirmer le mot de passe"), confirm);
+  if (pays) await user.selectOptions(screen.getByLabelText("Pays de l'agence"), pays);
 }
 
 describe("RegisterPage", () => {
@@ -96,7 +97,51 @@ describe("RegisterPage", () => {
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/register", {
       email: "nouvelle-agence@test.local",
       password: "Password123!",
+      country: "SN",
     });
+  });
+
+  /**
+   * Le pays de l'agence fixe les règles de location qui lui sont appliquées et la devise de son compte : il se choisit
+   * à l'inscription, parmi la France et les huit pays de l'UEMOA, et ne se change plus ensuite.
+   */
+  it("propose la France et les huit pays de l'UEMOA, et rien d'autre", () => {
+    renderPage();
+
+    const select = screen.getByLabelText("Pays de l'agence") as HTMLSelectElement;
+    const valeurs = Array.from(select.options).map((o) => o.value);
+
+    expect(valeurs[0]).toBe("");
+    expect(valeurs.slice(1).sort()).toEqual(["BF", "BJ", "CI", "FR", "GW", "ML", "NE", "SN", "TG"]);
+  });
+
+  it("refuse l'inscription sans pays, sans appeler l'API", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await fillForm(user, "Password123!", "Password123!", null);
+    await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
+
+    expect(await screen.findByText("Choisissez le pays de votre agence.")).toBeInTheDocument();
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("annonce que le pays ne pourra plus être modifié", () => {
+    renderPage();
+
+    expect(screen.getByText(/Il ne pourra pas être modifié ensuite/)).toBeInTheDocument();
+  });
+
+  it("envoie le pays choisi (la France)", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { pendingVerification: true } });
+    renderPage();
+
+    await fillForm(user, "Password123!", "Password123!", "FR");
+    await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
+
+    await screen.findByText("Vérifiez votre boîte mail");
+    expect(mockedApi.post).toHaveBeenCalledWith("/auth/register", expect.objectContaining({ country: "FR" }));
   });
 
   it("affiche l'erreur du serveur (ex: email déjà utilisé)", async () => {
@@ -136,6 +181,7 @@ describe("RegisterPage", () => {
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/register", {
       email: "nouvelle-agence@test.local",
       password: "Password123!",
+      country: "SN",
       referralCode: "PARRAIN1",
     });
   });

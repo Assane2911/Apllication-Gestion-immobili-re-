@@ -11,6 +11,7 @@ import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { assertOwnership } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { deviseSchema } from "../utils/devises";
+import { paysSchema } from "../utils/pays";
 import { dateSaisieSchema } from "../utils/dates";
 import { MONTANT_MAXIMUM, SURFACE_MAXIMUM } from "../utils/montant";
 
@@ -64,8 +65,9 @@ const listingSchema = z.object({
   // pays côté vitrine publique (listPublicCountries/listPublicListings
   // ci-dessous) : une annonce sans pays renseigné n'apparaîtra jamais dans un
   // filtre par pays, d'où le format contraint (mais le champ reste optionnel
-  // pour rester compatible avec des lignes existantes créées hors API).
-  country: z.string().length(2).transform((v) => v.toUpperCase()).optional(),
+  // pour rester compatible avec des lignes existantes créées hors API). Limité à la zone couverte (France et UEMOA,
+  // voir utils/pays.ts) ; le filtre public ci-dessous reste large : filtrer sur un autre pays ne renvoie simplement rien.
+  country: paysSchema.optional(),
 });
 
 const publicFilterSchema = z.object({

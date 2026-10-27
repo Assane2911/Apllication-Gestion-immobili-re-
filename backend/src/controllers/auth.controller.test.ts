@@ -23,7 +23,7 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
   it("crée un compte non vérifié et bloque la connexion tant que l'email n'est pas confirmé", async () => {
     const registerRes = await request(app)
       .post("/api/auth/register")
-      .send({ email: "nouveau@test.local", password: "Password123!" });
+      .send({ country: "SN", email: "nouveau@test.local", password: "Password123!" });
 
     expect(registerRes.status).toBe(201);
     expect(registerRes.body.pendingVerification).toBe(true);
@@ -47,10 +47,10 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
   // deux cas ; ce qui reste à garantir, c'est qu'aucun second compte n'est
   // créé et que l'existant n'est pas touché.
   it("ne crée pas de second compte si l'email existe déjà", async () => {
-    await request(app).post("/api/auth/register").send({ email: "dup@test.local", password: "Password123!" });
+    await request(app).post("/api/auth/register").send({ country: "SN", email: "dup@test.local", password: "Password123!" });
     const secondRes = await request(app)
       .post("/api/auth/register")
-      .send({ email: "dup@test.local", password: "AutreMotDePasse1!" });
+      .send({ country: "SN", email: "dup@test.local", password: "AutreMotDePasse1!" });
 
     expect(secondRes.status).toBe(201);
 
@@ -66,7 +66,7 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
   });
 
   it("connecte un compte une fois l'email vérifié, avec un JWT exploitable sur /api/auth/me", async () => {
-    await request(app).post("/api/auth/register").send({ email: "verifie@test.local", password: "Password123!" });
+    await request(app).post("/api/auth/register").send({ country: "SN", email: "verifie@test.local", password: "Password123!" });
 
     // On simule la confirmation d'email (le flux réel passe par le lien envoyé
     // par email, hors-scope ici) en marquant directement le compte comme vérifié.
@@ -93,7 +93,7 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
   });
 
   it("refuse la connexion avec un mauvais mot de passe", async () => {
-    await request(app).post("/api/auth/register").send({ email: "mdp@test.local", password: "Password123!" });
+    await request(app).post("/api/auth/register").send({ country: "SN", email: "mdp@test.local", password: "Password123!" });
     await testDb.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.email, "mdp@test.local"));
 
     const res = await request(app)
@@ -111,7 +111,7 @@ describe("POST /api/auth/register puis /api/auth/login", () => {
 
 describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
   it("pose un cookie httpOnly `token` à la connexion, exploitable par /me sans en-tête Authorization", async () => {
-    await request(app).post("/api/auth/register").send({ email: "cookie@test.local", password: "Password123!" });
+    await request(app).post("/api/auth/register").send({ country: "SN", email: "cookie@test.local", password: "Password123!" });
     await testDb.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.email, "cookie@test.local"));
 
     const agent = request.agent(app);
@@ -135,7 +135,7 @@ describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
   it("POST /api/auth/logout efface le cookie : /me échoue ensuite (401) pour ce même navigateur", async () => {
     await request(app)
       .post("/api/auth/register")
-      .send({ email: "cookie-logout@test.local", password: "Password123!" });
+      .send({ country: "SN", email: "cookie-logout@test.local", password: "Password123!" });
     await testDb
       .update(users)
       .set({ emailVerifiedAt: new Date() })
@@ -175,7 +175,7 @@ describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
     try {
       await request(app)
         .post("/api/auth/register")
-        .send({ email: "cookie-vercel@test.local", password: "Password123!" });
+        .send({ country: "SN", email: "cookie-vercel@test.local", password: "Password123!" });
       await testDb
         .update(users)
         .set({ emailVerifiedAt: new Date() })
@@ -206,7 +206,7 @@ describe("Cookie httpOnly posé à la connexion (frontend web)", () => {
     try {
       await request(app)
         .post("/api/auth/register")
-        .send({ email: "cookie-local@test.local", password: "Password123!" });
+        .send({ country: "SN", email: "cookie-local@test.local", password: "Password123!" });
       await testDb
         .update(users)
         .set({ emailVerifiedAt: new Date() })

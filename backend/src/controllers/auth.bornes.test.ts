@@ -10,22 +10,22 @@ const emailLong = `${"a".repeat(250)}@example.com`;
 
 describe("inscription — bornes", () => {
   it("refuse un email démesuré", async () => {
-    const res = await request(app).post("/api/auth/register").send({ email: emailLong, password: "Password123!" });
+    const res = await request(app).post("/api/auth/register").send({ country: "SN", email: emailLong, password: "Password123!" });
     expect(res.status).toBe(400);
   });
 
   it("refuse un mot de passe démesuré", async () => {
-    const res = await request(app).post("/api/auth/register").send({ email: "long@test.local", password: "P".repeat(129) });
+    const res = await request(app).post("/api/auth/register").send({ country: "SN", email: "long@test.local", password: "P".repeat(129) });
     expect(res.status).toBe(400);
   });
 
   it("refuse un code de parrainage démesuré", async () => {
-    const res = await request(app).post("/api/auth/register").send({ email: "parrain@test.local", password: "Password123!", referralCode: "R".repeat(65) });
+    const res = await request(app).post("/api/auth/register").send({ country: "SN", email: "parrain@test.local", password: "Password123!", referralCode: "R".repeat(65) });
     expect(res.status).toBe(400);
   });
 
   it("accepte une inscription ordinaire", async () => {
-    const res = await request(app).post("/api/auth/register").send({ email: "ordinaire@test.local", password: "Password123!" });
+    const res = await request(app).post("/api/auth/register").send({ country: "SN", email: "ordinaire@test.local", password: "Password123!" });
     expect(res.status).toBe(201);
   });
 });

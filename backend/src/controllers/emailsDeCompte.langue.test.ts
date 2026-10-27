@@ -44,7 +44,7 @@ describe("mot de passe oublié", () => {
 });
 
 describe("inscription", () => {
-  const corps = (email: string) => ({ email, password: "Password123!" });
+  const corps = (email: string) => ({ email, password: "Password123!", country: "SN" });
 
   it("l'e-mail de confirmation suit la langue de la requête", async () => {
     const envoi = espionner();

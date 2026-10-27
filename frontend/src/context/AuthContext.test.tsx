@@ -21,6 +21,7 @@ function TestConsumer() {
       <span data-testid="user-email">{user?.email ?? "aucun"}</span>
       <span data-testid="tenant-name">{user?.tenantName ?? "aucun"}</span>
       <span data-testid="devise">{user?.currency ?? "aucune"}</span>
+      <span data-testid="pays">{user === null ? "aucun" : user?.country === undefined ? "inconnu" : (user.country ?? "non choisi")}</span>
       <span data-testid="pending-token">{pendingToken ?? "aucun"}</span>
       <button
         type="button"
@@ -243,7 +244,7 @@ describe("AuthProvider — la devise du profil survit au rafraîchissement", () 
         id: "u1",
         email: "alice@test.local",
         role: "MANAGER",
-        currency: "GNF",
+        currency: "XOF",
         hasPassword: true,
         subscription: null,
       },
@@ -252,7 +253,37 @@ describe("AuthProvider — la devise du profil survit au rafraîchissement", () 
     renderAuth();
 
     await waitFor(() => expect(screen.getByTestId("user-email").textContent).toBe("alice@test.local"));
-    expect(screen.getByTestId("devise").textContent).toBe("GNF");
-    expect(JSON.parse(localStorage.getItem("user")!).currency).toBe("GNF");
+    expect(screen.getByTestId("devise").textContent).toBe("XOF");
+    expect(JSON.parse(localStorage.getItem("user")!).currency).toBe("XOF");
+  });
+
+  /**
+   * Même piège que la devise : `refreshUser` reconstruit l'objet champ par champ, et `country` est facultatif dans
+   * AuthUser, donc son oubli ne se voit pas à la compilation. Sans lui, le pays choisi disparaîtrait de l'objet à
+   * chaque rechargement de la page et le gestionnaire serait renvoyé le choisir (voir ProtectedRoute).
+   */
+  it("conserve le pays renvoyé par le serveur, et distingue « pas encore choisi » (null)", async () => {
+    localStorage.setItem("user", JSON.stringify({ id: "u1", email: "alice@test.local", role: "MANAGER" }));
+    localStorage.setItem("hasSession", "1");
+    mockedApi.get.mockResolvedValue({
+      data: { id: "u1", email: "alice@test.local", role: "MANAGER", currency: "XOF", country: "SN", hasPassword: true, subscription: null },
+    });
+
+    renderAuth();
+
+    await waitFor(() => expect(screen.getByTestId("pays").textContent).toBe("SN"));
+    expect(JSON.parse(localStorage.getItem("user")!).country).toBe("SN");
+  });
+
+  it("rend null un pays que le serveur n'a pas encore enregistré, pour que le gestionnaire soit renvoyé le choisir", async () => {
+    localStorage.setItem("user", JSON.stringify({ id: "u1", email: "alice@test.local", role: "MANAGER" }));
+    localStorage.setItem("hasSession", "1");
+    mockedApi.get.mockResolvedValue({
+      data: { id: "u1", email: "alice@test.local", role: "MANAGER", currency: "EUR", country: null, hasPassword: true, subscription: null },
+    });
+
+    renderAuth();
+
+    await waitFor(() => expect(screen.getByTestId("pays").textContent).toBe("non choisi"));
   });
 });
