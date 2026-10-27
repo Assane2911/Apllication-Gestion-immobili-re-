@@ -1926,8 +1926,8 @@ const fr = {
       fields: {
         agencyName: "Nom commercial de l'agence *",
         agencyNamePlaceholder: "Ex: Horizon Immobilier Prestige",
-        siretOrId: "N° SIRET / Registre du Commerce (NIF)",
-        siretOrIdPlaceholder: "Ex: 849 203 194 00012",
+        siretOrId: "Identifiants légaux (SIRET, NIF, NINEA, RCCM…)",
+        siretOrIdPlaceholder: "Ex : NINEA 000000000 · RCCM SN-DKR-0000-B-0000",
         email: "Email de contact officiel *",
         emailPlaceholder: "contact@monagence.com",
         phone: "Téléphone de l'agence",

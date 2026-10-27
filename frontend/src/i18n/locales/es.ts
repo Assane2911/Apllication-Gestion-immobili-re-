@@ -1927,8 +1927,8 @@ const es: TranslationSchema = {
       fields: {
         agencyName: "Nombre comercial de la agencia *",
         agencyNamePlaceholder: "Ej: Horizon Inmobiliaria Prestige",
-        siretOrId: "N.º de registro mercantil / NIF",
-        siretOrIdPlaceholder: "Ej: 849 203 194 00012",
+        siretOrId: "Identificadores legales (SIRET, NIF, NINEA, registro mercantil…)",
+        siretOrIdPlaceholder: "Ej.: NINEA 000000000 · RCCM SN-DKR-0000-B-0000",
         email: "Correo de contacto oficial *",
         emailPlaceholder: "contacto@miagencia.com",
         phone: "Teléfono de la agencia",

@@ -58,6 +58,48 @@ describe("PDF : séparateur des milliers lisible", () => {
   });
 });
 
+describe("PDF : identifiants légaux de l'agence", () => {
+  const identifiants = "NINEA 000000000 · RCCM SN-DKR-0000-B-0000";
+
+  it("quittance : « Identifiants légaux : … », sans « SIRET »", async () => {
+    const textes = textesEcrits();
+
+    await generateReceiptPdfBuffer({
+      receiptNumber: "QUITT-2026-09-ABC123",
+      agency: { name: "Agence Téranga", siretOrId: identifiants },
+      tenant: { fullName: "Awa Diop", email: "awa@test.local", phone: "+221770000000" },
+      property: { title: "Appartement Plateau", address: "12 rue Carnot", surface: 70 },
+      invoice: { periodMonth: 9, periodYear: 2026, amount: 250000, currency: "XOF", paidAt: new Date(2026, 8, 5), paymentMethod: "CASH" },
+    });
+
+    expect(textes()).toContain(`Identifiants légaux : ${identifiants}`);
+    expect(textes().filter((t) => t.includes("SIRET"))).toEqual([]);
+  });
+
+  it("mise en demeure : « Identifiants légaux : … », sans « SIRET »", async () => {
+    const textes = textesEcrits();
+
+    await generateFormalNoticePdfBuffer({
+      reference: "MED-2026-ABC123",
+      createdAt: new Date(2026, 9, 12),
+      deadlineDays: 8,
+      currency: "XOF",
+      totalDue: 250000,
+      factures: [{ periodMonth: 9, periodYear: 2026, dueDate: "2026-09-05T00:00:00.000Z", amount: 250000, resteDu: 250000 }],
+      destinataires: "Madame Awa DIOP",
+      adresse: "12 rue Carnot, Dakar",
+      propertyTitle: "Appartement Plateau",
+      contractStartDate: new Date(2025, 0, 1),
+      applicableLaw: null,
+      garants: [],
+      agency: { name: "Agence Téranga", address: null, phone: null, email: null, siretOrId: identifiants },
+    });
+
+    expect(textes()).toContain(`Identifiants légaux : ${identifiants}`);
+    expect(textes().filter((t) => t.includes("SIRET"))).toEqual([]);
+  });
+});
+
 describe("PDF : mise en demeure avec beaucoup de loyers impayés", () => {
   const nombreDePages = (pdf: Buffer) => (pdf.toString("latin1").match(/\/Type \/Page\b/g) ?? []).length;
   const courrier = (loyers: number) => ({
