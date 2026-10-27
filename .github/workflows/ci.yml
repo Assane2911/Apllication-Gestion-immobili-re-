@@ -50,6 +50,41 @@ jobs:
         working-directory: backend
         run: npm test
 
+  # Démarrage réel du backend, tel qu'il tourne en production : Node 24 (celui de Vercel), dépendances de production
+  # SEULEMENT (les outils de test ne sont pas là-bas), instrumentation Sentry active. Du 5 au 7 octobre 2026, le site est
+  # resté en panne deux jours alors que la CI était verte : les tests tournent sous Node 22, avec toutes les dépendances de
+  # développement, et par un chargeur qui n'est pas celui du serveur. Ce job charge dist/app.js et exige /api/health = 200.
+  # Il attrape ce qui ne manque qu'en production (une dépendance de développement utilisée par l'application, un module qui
+  # ne se charge plus) ; il ne remplace pas un contrôle sur le déploiement Vercel lui-même.
+  demarrage:
+    name: Backend — démarrage réel (Node 24)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Installer les dépendances
+        working-directory: backend
+        run: npm ci
+
+      - name: Compiler
+        working-directory: backend
+        run: npm run build
+
+      # Comme en production : plus aucune dépendance de développement.
+      - name: Retirer les dépendances de développement
+        working-directory: backend
+        run: npm prune --omit=dev
+
+      - name: Démarrer l'application et appeler /api/health
+        working-directory: backend
+        run: node scripts/verifier-demarrage.js
+
   frontend:
     name: Frontend — build et tests
     runs-on: ubuntu-latest
