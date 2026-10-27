@@ -242,6 +242,16 @@ L'application Android (Capacitor, projet dans `frontend/android/`) embarque une 
 
 Permissions : l'application ne demande que la **caméra** (photographier un incident). Elle ne demande pas l'accès aux photos de l'appareil (`READ_MEDIA_IMAGES`) : le sélecteur de fichiers du système suffit, et cette permission restreinte de Google Play ferait refuser la publication. `src/androidPermissions.test.ts` tient cette règle.
 
+## Le site entier est en panne (500, `FUNCTION_INVOCATION_FAILED`)
+
+**Symptôme :** toutes les routes, même `/api/health`, répondent 500 avec l'en-tête `X-Vercel-Error: FUNCTION_INVOCATION_FAILED`. La fonction ne se charge pas du tout : ce n'est pas une erreur de base de données.
+
+**Précédent (5 au 7 octobre 2026, 2 jours) :** la double authentification a ajouté `otplib`, qui tirait deux bibliothèques (`@scure/base`, `@noble/hashes`) passées à l'ESM pur ; sous Node 24 avec l'instrumentation Sentry, leur chargement échouait (`ERR_REQUIRE_ESM`) sur toutes les routes. La CI était verte : elle tourne sous Node 22, avec les dépendances de développement, par le chargeur de vitest. Le correctif fige ces versions (`overrides` de `backend/package.json`).
+
+**Que faire :** ouvrir le journal du déploiement dans Vercel, lire l'erreur de chargement (nom du module et code), puis annuler le dernier déploiement (« Instant Rollback ») pendant qu'on corrige.
+
+**Ce que la CI vérifie maintenant :** le job « Backend — démarrage réel (Node 24) » compile le backend, retire les dépendances de développement, le démarre sous Node 24 avec Sentry actif et exige `/api/health` = 200 (`backend/scripts/verifier-demarrage.js`). Il attrape ce qui ne manque qu'en production, par exemple une dépendance de développement utilisée par l'application. **Il ne reproduit pas tout :** l'incident d'octobre dépendait du chargeur de Vercel lui-même et ne se reproduit pas en local. Après une mise à jour de dépendances, ouvrez aussi `/api/health` sur le déploiement de préversion de la PR avant de fusionner.
+
 ## Dépannage : des requêtes qui ne reviennent jamais
 
 **Symptôme :** une page affiche « Le serveur met trop de temps à répondre », les journaux Vercel montrent
