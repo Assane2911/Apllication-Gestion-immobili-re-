@@ -1424,6 +1424,11 @@ const fr = {
       addBtn: "+ Nouveau contrat",
       formTitle: "Nouveau contrat",
       regles: {
+        CI: {
+          titre: "À vérifier au regard du droit ivoirien",
+          deposit: "Le dépôt de garantie ne peut pas excéder deux mois de loyer (loi n° 2019-576 du 26 juin 2019, article 416). Le montant comparé est le loyer saisi dans ce formulaire.",
+          note: "Ces rappels sont donnés à titre d'information : vous restez libre de votre choix, et ils ne remplacent pas l'avis d'un professionnel.",
+        },
         FR: {
           titre: "À vérifier au regard de la loi française",
           deposit: "Le dépôt de garantie ne peut pas dépasser un mois de loyer en principal (loi du 6 juillet 1989, article 22). Le montant comparé est le loyer saisi dans ce formulaire, supposé hors charges.",

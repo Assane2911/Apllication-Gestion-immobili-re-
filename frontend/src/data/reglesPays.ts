@@ -9,6 +9,10 @@
  * Rien n'est jamais bloquant. Les valeurs sont des propositions que le gestionnaire peut changer, et les avertissements
  * informent sans interdire : il connaît son bail, et un texte n'a pas prévu tous les cas.
  *
+ * Côte d'Ivoire — texte lu : loi n° 2019-576 du 26 juin 2019 instituant Code de la construction et de l'habitat (articles 414 à
+ * 456, version de la DGI). Pas encore : l'enregistrement du bail, la révision triennale, les congés (3 mois) et la procédure
+ * d'expulsion, qui demandent des décisions de produit. À faire relire par un professionnel ivoirien.
+ *
  * France — textes lus : loi n° 89-462 du 6 juillet 1989 (articles 10 et 22). Pas encore : le commandement de payer (art. 24),
  * le contrat type complet (décret 2015-587) et les honoraires (décret 2014-890), qui demandent des décisions de produit.
  *
@@ -30,6 +34,16 @@ export interface ReglesPays {
 const NEUTRES: ReglesPays = { droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 };
 
 const REGLES: Record<string, ReglesPays> = {
+  CI: {
+    // Loi n° 2019-576, article 414 et suivants : le bail d'habitation est écrit, à durée déterminée ou indéterminée.
+    droitApplicable: "Loi n° 2019-576 du 26 juin 2019 instituant Code de la construction et de l'habitat (art. 414 et suivants)",
+    // Article 422 : « payé mensuellement à une date indiquée dans le contrat » — aucun jour imposé, on garde le 5 d'avant.
+    jourEcheance: "5",
+    // Article 414 : aucune durée minimale ni durée imposée (déterminée ou indéterminée) : aucune durée proposée.
+    dureeBailMois: null,
+    // Aucun délai légal lu pour la mise en demeure (la résiliation passe par une lettre, article 443) : 8 jours, comme avant.
+    delaiMiseEnDemeureJours: 8,
+  },
   FR: {
     // Loi n° 89-462 du 6 juillet 1989, article 3 : le contrat de location est écrit et précise la durée.
     droitApplicable: "Loi n° 89-462 du 6 juillet 1989 tendant à améliorer les rapports locatifs",
@@ -111,6 +125,7 @@ const SEUIL_DECRET_FCFA = 500000;
 export function avertissementsDuBail(pays: string | null | undefined, bail: BailAControler): AvertissementBail[] {
   if (bail.leaseType !== TYPE_HABITATION) return [];
   if (pays === "FR") return avertissementsFrance(bail);
+  if (pays === "CI") return avertissementsCoteDIvoire(bail);
   if (pays !== "SN") return [];
   const avertissements: AvertissementBail[] = [];
 
@@ -147,4 +162,13 @@ function avertissementsFrance(bail: BailAControler): AvertissementBail[] {
     if (minimum && fin < new Date(`${minimum}T00:00:00Z`) && fin > debut) avertissements.push({ cle: "duration" });
   }
   return avertissements;
+}
+
+/**
+ * Côte d'Ivoire, loi n° 2019-576 : un seul rappel, non bloquant, sur le point dont le texte est lu.
+ * - Article 416 : le dépôt de garantie ne peut pas excéder deux mois de loyer (le loyer comparé est celui saisi ici).
+ * Le texte lu ne fixe ni durée minimale ni jour d'échéance : aucun rappel là-dessus.
+ */
+function avertissementsCoteDIvoire(bail: BailAControler): AvertissementBail[] {
+  return bail.rent > 0 && bail.deposit > 2 * bail.rent ? [{ cle: "deposit" }] : [];
 }

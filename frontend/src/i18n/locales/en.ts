@@ -1423,6 +1423,11 @@ const en: TranslationSchema = {
       addBtn: "+ New contract",
       formTitle: "New contract",
       regles: {
+        CI: {
+          titre: "To check against Ivorian law",
+          deposit: "The security deposit cannot exceed two months' rent (Law no. 2019-576 of 26 June 2019, article 416). The amount compared is the rent entered in this form.",
+          note: "These reminders are for information only: the choice stays yours, and they do not replace professional advice.",
+        },
         FR: {
           titre: "To check against French law",
           deposit: "The security deposit cannot exceed one month's rent excluding charges (law of 6 July 1989, article 22). The amount compared is the rent entered in this form, assumed to exclude charges.",

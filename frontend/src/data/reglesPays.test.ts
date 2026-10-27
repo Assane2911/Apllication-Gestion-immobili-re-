@@ -38,18 +38,28 @@ describe("règles par pays — valeurs proposées", () => {
     expect(r.delaiMiseEnDemeureJours).toBe(8);
   });
 
+  it("Côte d'Ivoire : droit applicable prérempli ; aucune durée ni échéance imposée, mise en demeure inchangée", () => {
+    const r = reglesDuPays("CI");
+    expect(r.droitApplicable).toBe("Loi n° 2019-576 du 26 juin 2019 instituant Code de la construction et de l'habitat (art. 414 et suivants)");
+    expect(r.jourEcheance).toBe("5");
+    expect(r.dureeBailMois).toBeNull();
+    expect(r.delaiMiseEnDemeureJours).toBe(8);
+  });
+
   it("autre pays, et un compte sans pays : le comportement neutre d'avant", () => {
-    for (const code of [...CODES_PAYS.filter((c) => c !== "SN" && c !== "FR"), null, undefined, "XX"]) {
+    for (const code of [...CODES_PAYS.filter((c) => !["SN", "FR", "CI"].includes(c)), null, undefined, "XX"]) {
       const r = reglesDuPays(code);
       expect(r, String(code)).toEqual({ droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 });
     }
   });
 
   it("n'attribue pas le COCC aux autres pays de l'UEMOA", () => {
-    for (const code of ["CI", "ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
+    for (const code of ["CI", "ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).not.toContain("Code des obligations civiles et commerciales");
+    for (const code of ["ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
   });
 
-  it("renouvellement : 36 mois pour un bail d'habitation au Sénégal et en France, 12 mois ailleurs et pour un bail commercial", () => {
+  it("renouvellement : 36 mois pour un bail d'habitation au Sénégal et en France, 12 mois ailleurs (Côte d'Ivoire comprise) et pour un bail commercial", () => {
+    expect(dureeRenouvellementMois("CI", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("SN", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("FR", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("SN", "COMMERCIAL")).toBe(12);
@@ -111,8 +121,8 @@ describe("règles par pays — avertissements du bail (Sénégal)", () => {
     expect(avertissementsDuBail("SN", bail({ leaseType: "COMMERCIAL", deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" }))).toEqual([]);
   });
 
-  it("aucun avertissement hors de la France et du Sénégal : les règles des autres pays n'ont pas été lues", () => {
-    for (const code of ["CI", "ML", null, undefined]) {
+  it("aucun avertissement hors de la France, de la Côte d'Ivoire et du Sénégal : les règles des autres pays n'ont pas été lues", () => {
+    for (const code of ["BF", "ML", null, undefined]) {
       expect(avertissementsDuBail(code, bail({ deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" })), String(code)).toEqual([]);
     }
   });
@@ -137,5 +147,24 @@ describe("règles par pays — avertissements du bail (France, loi du 6 juillet 
 
   it("un bail commercial n'est pas concerné en France non plus", () => {
     expect(avertissementsDuBail("FR", bail({ leaseType: "COMMERCIAL", rent: 800, deposit: 9000, endDate: "2027-01-01" }))).toEqual([]);
+  });
+});
+
+describe("règles par pays — avertissements du bail (Côte d'Ivoire, loi n° 2019-576)", () => {
+  const ci = (surcharge: Partial<Parameters<typeof avertissementsDuBail>[1]> = {}) => bail({ rent: 200000, deposit: 400000, paymentDay: "5", endDate: "2027-01-01", ...surcharge });
+
+  it("dépôt de garantie : deux mois de loyer au plus, quelle que soit la durée ou l'échéance (article 416)", () => {
+    expect(avertissementsDuBail("CI", ci())).toEqual([]);
+    expect(avertissementsDuBail("CI", ci({ deposit: 400001 })).map((a) => a.cle)).toEqual(["deposit"]);
+    expect(avertissementsDuBail("CI", ci({ currency: "EUR", rent: 300, deposit: 900 })).map((a) => a.cle)).toEqual(["deposit"]);
+  });
+
+  it("ne dit rien tant que le loyer n'est pas saisi, ni pour un bail commercial", () => {
+    expect(avertissementsDuBail("CI", ci({ rent: 0, deposit: 500000 }))).toEqual([]);
+    expect(avertissementsDuBail("CI", ci({ leaseType: "COMMERCIAL", deposit: 9000000 }))).toEqual([]);
+  });
+
+  it("pas de rappel de durée ni d'échéance : le texte lu n'impose ni durée minimale ni jour de paiement", () => {
+    expect(avertissementsDuBail("CI", ci({ paymentDay: "", endDate: "2026-06-01" }))).toEqual([]);
   });
 });
