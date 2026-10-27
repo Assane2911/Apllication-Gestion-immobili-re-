@@ -30,8 +30,16 @@ describe("règles par pays — valeurs proposées", () => {
     expect(r.delaiMiseEnDemeureJours).toBe(30);
   });
 
-  it("tout autre pays, et un compte sans pays : le comportement neutre d'avant", () => {
-    for (const code of [...CODES_PAYS.filter((c) => c !== "SN"), null, undefined, "XX"]) {
+  it("France : droit applicable, durée de 36 mois ; échéance et mise en demeure inchangées", () => {
+    const r = reglesDuPays("FR");
+    expect(r.droitApplicable).toBe("Loi n° 89-462 du 6 juillet 1989 tendant à améliorer les rapports locatifs");
+    expect(r.dureeBailMois).toBe(36);
+    expect(r.jourEcheance).toBe("5");
+    expect(r.delaiMiseEnDemeureJours).toBe(8);
+  });
+
+  it("autre pays, et un compte sans pays : le comportement neutre d'avant", () => {
+    for (const code of [...CODES_PAYS.filter((c) => c !== "SN" && c !== "FR"), null, undefined, "XX"]) {
       const r = reglesDuPays(code);
       expect(r, String(code)).toEqual({ droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 });
     }
@@ -41,10 +49,11 @@ describe("règles par pays — valeurs proposées", () => {
     for (const code of ["CI", "ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
   });
 
-  it("renouvellement : 36 mois pour un bail d'habitation au Sénégal, 12 mois partout ailleurs et pour un bail commercial", () => {
+  it("renouvellement : 36 mois pour un bail d'habitation au Sénégal et en France, 12 mois ailleurs et pour un bail commercial", () => {
     expect(dureeRenouvellementMois("SN", "HABITATION")).toBe(36);
+    expect(dureeRenouvellementMois("FR", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("SN", "COMMERCIAL")).toBe(12);
-    expect(dureeRenouvellementMois("FR", "HABITATION")).toBe(12);
+    expect(dureeRenouvellementMois("FR", "COMMERCIAL")).toBe(12);
     expect(dureeRenouvellementMois(null, "HABITATION")).toBe(12);
   });
 
@@ -52,7 +61,7 @@ describe("règles par pays — valeurs proposées", () => {
     expect(dateDeFinParDefaut("SN", "HABITATION", "2026-03-15")).toBe("2029-03-15");
     expect(dateDeFinParDefaut("SN", "HABITATION", "2028-02-29")).toBe("2031-02-28");
     expect(dateDeFinParDefaut("SN", "COMMERCIAL", "2026-03-15")).toBe("");
-    expect(dateDeFinParDefaut("FR", "HABITATION", "2026-03-15")).toBe("");
+    expect(dateDeFinParDefaut("FR", "HABITATION", "2026-03-15")).toBe("2029-03-15");
     expect(dateDeFinParDefaut("SN", "HABITATION", "")).toBe("");
   });
 });
@@ -102,9 +111,31 @@ describe("règles par pays — avertissements du bail (Sénégal)", () => {
     expect(avertissementsDuBail("SN", bail({ leaseType: "COMMERCIAL", deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" }))).toEqual([]);
   });
 
-  it("aucun avertissement hors du Sénégal : les règles des autres pays n'ont pas été lues", () => {
-    for (const code of ["FR", "CI", "ML", null, undefined]) {
+  it("aucun avertissement hors de la France et du Sénégal : les règles des autres pays n'ont pas été lues", () => {
+    for (const code of ["CI", "ML", null, undefined]) {
       expect(avertissementsDuBail(code, bail({ deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" })), String(code)).toEqual([]);
     }
+  });
+});
+
+describe("règles par pays — avertissements du bail (France, loi du 6 juillet 1989)", () => {
+  it("aucun avertissement pour un bail conforme : dépôt d'un mois, durée de trois ans", () => {
+    expect(avertissementsDuBail("FR", bail({ currency: "EUR", rent: 800, deposit: 800, paymentDay: "5", endDate: "2029-01-01" }))).toEqual([]);
+  });
+
+  it("dépôt de garantie : plus d'un mois de loyer (article 22)", () => {
+    expect(avertissementsDuBail("FR", bail({ currency: "EUR", rent: 800, deposit: 1600, endDate: "2029-01-01" })).map((a) => a.cle)).toEqual(["deposit"]);
+  });
+
+  it("durée : moins de trois ans (article 10)", () => {
+    expect(avertissementsDuBail("FR", bail({ currency: "EUR", rent: 800, deposit: 800, endDate: "2028-06-01" })).map((a) => a.cle)).toEqual(["duration"]);
+  });
+
+  it("pas de rappel d'échéance en France : le jour de paiement n'est pas encadré par le texte lu", () => {
+    expect(avertissementsDuBail("FR", bail({ currency: "EUR", rent: 800, deposit: 800, paymentDay: "5", endDate: "2029-01-01" }))).toEqual([]);
+  });
+
+  it("un bail commercial n'est pas concerné en France non plus", () => {
+    expect(avertissementsDuBail("FR", bail({ leaseType: "COMMERCIAL", rent: 800, deposit: 9000, endDate: "2027-01-01" }))).toEqual([]);
   });
 });

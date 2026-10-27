@@ -1423,6 +1423,12 @@ const pt: TranslationSchema = {
       addBtn: "+ Novo contrato",
       formTitle: "Novo contrato",
       regles: {
+        FR: {
+          titre: "A verificar à luz do direito francês",
+          deposit: "A caução não pode exceder um mês de renda sem encargos (lei de 6 de julho de 1989, artigo 22). O valor comparado é a renda introduzida neste formulário, presumindo-se sem encargos.",
+          duration: "Um contrato de habitação principal dura pelo menos três anos se o senhorio for uma pessoa singular, e seis anos se for uma pessoa coletiva (lei de 6 de julho de 1989, artigo 10).",
+          note: "Estes lembretes são meramente informativos: a decisão continua a ser sua e não substituem o parecer de um profissional.",
+        },
         SN: {
           titre: "A verificar à luz do direito senegalês",
           deposit: "Para uma renda de, no máximo, 500 000 FCFA por mês, a caução não pode exceder dois meses de renda (decreto n.º 2023-382, de 24 de fevereiro de 2023). Apenas um mês é pago na entrada; o resto é repartido por doze meses.",

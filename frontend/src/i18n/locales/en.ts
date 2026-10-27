@@ -1423,6 +1423,12 @@ const en: TranslationSchema = {
       addBtn: "+ New contract",
       formTitle: "New contract",
       regles: {
+        FR: {
+          titre: "To check against French law",
+          deposit: "The security deposit cannot exceed one month's rent excluding charges (law of 6 July 1989, article 22). The amount compared is the rent entered in this form, assumed to exclude charges.",
+          duration: "A main-residence lease lasts at least three years if the landlord is a natural person, six years if it is a legal entity (law of 6 July 1989, article 10).",
+          note: "These reminders are for information only: the choice remains yours, and they do not replace professional advice.",
+        },
         SN: {
           titre: "To check against Senegalese law",
           deposit: "For a rent of no more than 500,000 FCFA a month, the deposit cannot exceed two months' rent (decree no. 2023-382 of 24 February 2023). Only one month is payable at entry; the rest is spread over twelve months.",

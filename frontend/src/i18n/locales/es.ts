@@ -1425,6 +1425,12 @@ const es: TranslationSchema = {
       addBtn: "+ Nuevo contrato",
       formTitle: "Nuevo contrato",
       regles: {
+        FR: {
+          titre: "Para comprobar según la ley francesa",
+          deposit: "La fianza no puede superar un mes de alquiler sin cargas (ley de 6 de julio de 1989, artículo 22). El importe comparado es el alquiler introducido en este formulario, supuesto sin cargas.",
+          duration: "Un contrato de residencia principal dura al menos tres años si el arrendador es una persona física, y seis años si es una persona jurídica (ley de 6 de julio de 1989, artículo 10).",
+          note: "Estos recordatorios son meramente informativos: la decisión sigue siendo suya y no sustituyen el asesoramiento de un profesional.",
+        },
         SN: {
           titre: "Para comprobar según el derecho senegalés",
           deposit: "Para un alquiler de como máximo 500 000 FCFA al mes, la fianza no puede superar dos meses de alquiler (decreto n.º 2023-382 de 24 de febrero de 2023). Solo un mes se paga al entrar; el resto se reparte en doce meses.",

@@ -222,7 +222,7 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
-  it.each(["FR", "CI", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
+  it.each(["CI", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
     charger();
     const { container } = rendre(pays);
     const user = await ouvrirNouveauBail();
@@ -239,7 +239,52 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     expect(screen.queryByText(TITRE_RAPPELS)).not.toBeInTheDocument();
   });
 
-  it("renouvelle pour 12 mois", async () => {
+  it("renouvelle pour 12 mois hors de la France et du Sénégal", async () => {
+    charger([bail({ currency: "EUR" })]);
+    mockedApi.post.mockResolvedValueOnce({ data: {} });
+    charger([bail({ currency: "EUR" })]);
+    rendre("CI");
+
+    const user = userEvent.setup();
+    await user.click((await screen.findAllByRole("button", { name: /Renouveler/ }))[0]);
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/renew", { months: 12 }));
+  });
+});
+
+describe("ContractsPage — règles de la France (loi du 6 juillet 1989)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+  });
+
+  it("propose le droit français et une fin de bail à trois ans, sans échéance imposée", async () => {
+    charger();
+    const { container } = rendre("FR");
+    await ouvrirNouveauBail();
+
+    expect((screen.getByLabelText(/Droit applicable/) as HTMLInputElement).value).toBe("Loi n° 89-462 du 6 juillet 1989 tendant à améliorer les rapports locatifs");
+    fireEvent.change(container.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-03-01" } });
+    expect((container.querySelectorAll('input[type="date"]')[1] as HTMLInputElement).value).toBe("2029-03-01");
+  });
+
+  it("rappelle un dépôt de garantie supérieur à un mois de loyer, sans bloquer", async () => {
+    charger();
+    rendre("FR");
+    const user = await ouvrirNouveauBail();
+
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    fireEvent.change(screen.getByLabelText("Loyer mensuel"), { target: { value: "800" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "1600" } });
+
+    expect(screen.getByText("À vérifier au regard de la loi française")).toBeInTheDocument();
+    expect(screen.getByText(/ne peut pas dépasser un mois de loyer en principal/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Créer le contrat" })).toBeEnabled();
+  });
+
+  it("renouvelle un bail d'habitation pour 36 mois", async () => {
     charger([bail({ currency: "EUR" })]);
     mockedApi.post.mockResolvedValueOnce({ data: {} });
     charger([bail({ currency: "EUR" })]);
@@ -248,6 +293,6 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     const user = userEvent.setup();
     await user.click((await screen.findAllByRole("button", { name: /Renouveler/ }))[0]);
 
-    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/renew", { months: 12 }));
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/renew", { months: 36 }));
   });
 });

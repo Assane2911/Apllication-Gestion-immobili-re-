@@ -9,6 +9,9 @@
  * Rien n'est jamais bloquant. Les valeurs sont des propositions que le gestionnaire peut changer, et les avertissements
  * informent sans interdire : il connaît son bail, et un texte n'a pas prévu tous les cas.
  *
+ * France — textes lus : loi n° 89-462 du 6 juillet 1989 (articles 10 et 22). Pas encore : le commandement de payer (art. 24),
+ * le contrat type complet (décret 2015-587) et les honoraires (décret 2014-890), qui demandent des décisions de produit.
+ *
  * Sénégal — textes lus : Code des obligations civiles et commerciales (loi n° 66-70 du 13 juillet 1966), art. 571 ; décret
  * n° 2023-382 du 24 février 2023 (JO n° 7605), art. 1er. À faire relire par un professionnel sénégalais (voir la fiche Sénégal).
  * Côté serveur, le délai et la mention de la mise en demeure sont dans `backend/src/utils/reglesPays.ts`.
@@ -27,6 +30,15 @@ export interface ReglesPays {
 const NEUTRES: ReglesPays = { droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 };
 
 const REGLES: Record<string, ReglesPays> = {
+  FR: {
+    // Loi n° 89-462 du 6 juillet 1989, article 3 : le contrat de location est écrit et précise la durée.
+    droitApplicable: "Loi n° 89-462 du 6 juillet 1989 tendant à améliorer les rapports locatifs",
+    jourEcheance: "5",
+    // Loi du 6 juillet 1989, article 10 : au moins trois ans pour un bailleur personne physique (six ans pour une personne morale).
+    dureeBailMois: 36,
+    // Pas de délai légal pour la mise en demeure : le commandement de payer (article 24) est une autre procédure, non implémentée.
+    delaiMiseEnDemeureJours: 8,
+  },
   SN: {
     droitApplicable: "Code des obligations civiles et commerciales du Sénégal (art. 544 et suivants) ; décret n° 2023-382 du 24 février 2023",
     // Décret 2023-382 : « le loyer ne peut être payé à l'avance. Il est payable à la fin du mois de jouissance ».
@@ -97,7 +109,9 @@ const SEUIL_DECRET_FCFA = 500000;
  * et pour un bail commercial (autre régime).
  */
 export function avertissementsDuBail(pays: string | null | undefined, bail: BailAControler): AvertissementBail[] {
-  if (pays !== "SN" || bail.leaseType !== TYPE_HABITATION) return [];
+  if (bail.leaseType !== TYPE_HABITATION) return [];
+  if (pays === "FR") return avertissementsFrance(bail);
+  if (pays !== "SN") return [];
   const avertissements: AvertissementBail[] = [];
 
   // Décret 2023-382 : caution d'au plus deux mois de loyer pour les baux d'au plus 500 000 FCFA par mois.
@@ -113,6 +127,24 @@ export function avertissementsDuBail(pays: string | null | undefined, bail: Bail
     lendemain.setUTCDate(lendemain.getUTCDate() + 1);
     const troisAns = [bail.endDate, lendemain.toISOString().slice(0, 10)].some((fin) => ajouterMois(bail.startDate, 36) === fin);
     if (!troisAns) avertissements.push({ cle: "duration" });
+  }
+  return avertissements;
+}
+
+/**
+ * France, loi du 6 juillet 1989 : deux rappels, non bloquants, sur les deux points dont le texte est lu.
+ * - Article 22 : le dépôt de garantie ne peut pas dépasser un mois de loyer en principal. Le loyer comparé est celui saisi
+ *   dans ce formulaire, supposé hors charges.
+ * - Article 10 : durée d'au moins trois ans (six ans pour une personne morale : le rappel ne se déclenche pas au-delà de trois ans).
+ */
+function avertissementsFrance(bail: BailAControler): AvertissementBail[] {
+  const avertissements: AvertissementBail[] = [];
+  if (bail.rent > 0 && bail.deposit > bail.rent) avertissements.push({ cle: "deposit" });
+  if (bail.startDate && bail.endDate) {
+    const debut = new Date(`${bail.startDate}T00:00:00Z`);
+    const fin = new Date(`${bail.endDate}T00:00:00Z`);
+    const minimum = ajouterMois(bail.startDate, 36);
+    if (minimum && fin < new Date(`${minimum}T00:00:00Z`) && fin > debut) avertissements.push({ cle: "duration" });
   }
   return avertissements;
 }
