@@ -7,7 +7,7 @@ import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { AnnualFiscalSynthesis, ExpenseCategory } from "../../types";
-import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
+import { devisesPresentes, formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
 import { moisCourt } from "../../utils/moisDuGraphique";
 import Bulle from "../../components/Bulle";
 
@@ -328,7 +328,7 @@ export default function FiscalPage() {
                     {formatMoney(row.revenue, row.currency)}
                   </td>
                   <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold tabular-nums">
-                    -{formatMoney(row.expense, row.currency)}
+                    {formatDeduction(row.expense, row.currency, formatMoney)}
                   </td>
                   <td
                     className={`px-4 py-3 font-bold tabular-nums ${row.net >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}

@@ -9,7 +9,7 @@ import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { CrgSynthesis } from "../../types";
-import { formatByCurrency } from "../../utils/currencyFormat";
+import { formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
 
 /** Vrai si le montant est positif ou nul dans TOUTES les devises. */
@@ -213,10 +213,10 @@ export default function CrgPage() {
                     {formatMoney(row.loyersEncaisses, row.currency)}
                   </td>
                   <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold tabular-nums">
-                    -{formatMoney(row.chargesDeduites, row.currency)}
+                    {formatDeduction(row.chargesDeduites, row.currency, formatMoney)}
                   </td>
                   <td className="px-4 py-3 text-amber-700 dark:text-amber-400 font-semibold tabular-nums">
-                    -{formatMoney(row.commission, row.currency)}
+                    {formatDeduction(row.commission, row.currency, formatMoney)}
                   </td>
                   <td
                     className={`px-4 py-3 font-bold tabular-nums ${row.netAReverser >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}

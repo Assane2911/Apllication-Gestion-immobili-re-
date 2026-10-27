@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Home, Wrench } from "lucide-react";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -104,6 +104,56 @@ describe("EnteteEspace — téléphone", () => {
     } finally {
       Element.prototype.scrollIntoView = original;
     }
+  });
+
+  /**
+   * Un fondu à droite signalait les onglets cachés de ce côté. Mais l'onglet actif est ramené au centre : sur la
+   * page « Compte-rendu de gestion » du propriétaire, ou « Incidents » du locataire, la rangée défile et c'est le
+   * premier onglet, à GAUCHE, qui est caché en partie, coupé net sans aucun fondu, comme un défaut d'affichage
+   * (constaté sur les captures, aucun téléphone n'a la place pour tous les onglets). Le fondu suit désormais la
+   * position : du côté où des onglets sont cachés, et seulement de ce côté.
+   */
+  describe("fondus de la rangée d'onglets, selon la position", () => {
+    function placer(barre: HTMLElement, mesures: { visible: number; total: number; position: number }) {
+      Object.defineProperty(barre, "clientWidth", { configurable: true, value: mesures.visible });
+      Object.defineProperty(barre, "scrollWidth", { configurable: true, value: mesures.total });
+      Object.defineProperty(barre, "scrollLeft", { configurable: true, value: mesures.position });
+      fireEvent.scroll(barre);
+    }
+    const FONDU_GAUCHE = /mask-\[linear-gradient\(to_right,transparent,black_1\.5rem/;
+    const FONDU_DROITE = /black_calc\(100%-1\.5rem\),transparent\)\]/;
+
+    it("au début de la rangée : fondu à droite seulement", () => {
+      rendre();
+      const barre = screen.getByRole("navigation", { name: "Mon espace" });
+      placer(barre, { visible: 250, total: 400, position: 0 });
+      expect(barre.className).toMatch(FONDU_DROITE);
+      expect(barre.className).not.toMatch(FONDU_GAUCHE);
+    });
+
+    it("au milieu : fondu des deux côtés", () => {
+      rendre();
+      const barre = screen.getByRole("navigation", { name: "Mon espace" });
+      placer(barre, { visible: 250, total: 400, position: 80 });
+      expect(barre.className).toMatch(FONDU_GAUCHE);
+      expect(barre.className).toMatch(FONDU_DROITE);
+    });
+
+    it("à la fin (l'onglet actif est le dernier) : fondu à gauche, plus de coupure nette", () => {
+      rendre();
+      const barre = screen.getByRole("navigation", { name: "Mon espace" });
+      placer(barre, { visible: 250, total: 400, position: 150 });
+      expect(barre.className).toMatch(FONDU_GAUCHE);
+      expect(barre.className).not.toMatch(FONDU_DROITE);
+    });
+
+    it("quand tout tient, aucun fondu", () => {
+      rendre();
+      const barre = screen.getByRole("navigation", { name: "Mon espace" });
+      placer(barre, { visible: 400, total: 400, position: 0 });
+      expect(barre.className).not.toMatch(FONDU_GAUCHE);
+      expect(barre.className).not.toMatch(FONDU_DROITE);
+    });
   });
 
   it("l'en-tête reste en haut de l'écran pendant le défilement", () => {

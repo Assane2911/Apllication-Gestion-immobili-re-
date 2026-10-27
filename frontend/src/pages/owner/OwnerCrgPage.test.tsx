@@ -125,4 +125,20 @@ describe("OwnerCrgPage", () => {
       })
     );
   });
+
+  it("une charge ou une commission nulle s'affiche « 0 € », jamais « -0 € »", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: crg({
+        properties: [{ propertyId: "prop-1", propertyTitle: "Villa Ngor", currency: "EUR", loyersEncaisses: 1000, chargesDeduites: 0, commission: 0, netAReverser: 1000 }],
+        totalChargesByCurrency: { EUR: 0 },
+        totalCommissionByCurrency: { EUR: 0 },
+        totalNetByCurrency: { EUR: 1000 },
+      }),
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+    expect(screen.queryByText(/-0\s?€/)).toBeNull();
+    expect(screen.queryAllByText(/^-0/)).toHaveLength(0);
+  });
 });
