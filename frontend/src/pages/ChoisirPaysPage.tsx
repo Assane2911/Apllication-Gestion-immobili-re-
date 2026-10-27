@@ -5,6 +5,7 @@ import { api, apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import SelecteurPays from "../components/SelecteurPays";
 import { useAuth } from "../context/auth";
+import { useTheme } from "../context/theme";
 import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
 import { homePathForRole } from "../utils/roleHome";
 
@@ -17,6 +18,7 @@ import { homePathForRole } from "../utils/roleHome";
 export default function ChoisirPaysPage() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { demanderDeconnexion, dialogue } = useConfirmationDeconnexion();
   const [country, setCountry] = useState("");
@@ -54,7 +56,7 @@ export default function ChoisirPaysPage() {
     <div className="min-h-screen bg-canvas dark:bg-slate-950 flex flex-col items-center justify-center px-6 py-12 relative">
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
         <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow" />
-        <LanguageSwitcher />
+        <LanguageSwitcher variant={theme === "dark" ? "dark" : "light"} />
       </div>
 
       <main className="w-full max-w-sm">
