@@ -1,6 +1,6 @@
 import { LogOut, Moon, Sun } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
@@ -34,6 +34,14 @@ interface EnteteEspaceProps {
 
 const LARGEURS = { "4xl": "max-w-4xl", "5xl": "max-w-5xl" } as const;
 
+// Classes écrites en entier (et non composées) pour que Tailwind les trouve à la compilation.
+const FONDUS = {
+  aucun: "",
+  droite: "max-sm:mask-[linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]",
+  gauche: "max-sm:mask-[linear-gradient(to_right,transparent,black_1.5rem)]",
+  deux: "max-sm:mask-[linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]",
+} as const;
+
 /**
  * En-tête des espaces administrateur, propriétaire et locataire : identité à gauche, commandes (langue, thème,
  * déconnexion) à droite, puis les onglets.
@@ -51,11 +59,33 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
   const { pathname } = useLocation();
   const barre = useRef<HTMLElement>(null);
 
+  // Fondus de la rangée : du côté où des onglets sont cachés, et seulement de ce côté. L'onglet actif étant ramené au
+  // centre, c'est souvent le premier, à gauche, qui est caché en partie : sans fondu, il paraissait coupé par erreur.
+  const [bords, setBords] = useState({ gauche: false, droite: false });
+  const mesurerBords = useCallback(() => {
+    const n = barre.current;
+    if (!n) return;
+    const gauche = n.scrollLeft > 1;
+    const droite = n.scrollLeft + n.clientWidth < n.scrollWidth - 1;
+    setBords((b) => (b.gauche === gauche && b.droite === droite ? b : { gauche, droite }));
+  }, []);
+  useEffect(() => {
+    const n = barre.current;
+    if (!n) return;
+    n.addEventListener("scroll", mesurerBords, { passive: true });
+    window.addEventListener("resize", mesurerBords);
+    return () => {
+      n.removeEventListener("scroll", mesurerBords);
+      window.removeEventListener("resize", mesurerBords);
+    };
+  }, [mesurerBords]);
+
   // Sur téléphone, les onglets défilent : celui de la page courante doit rester visible.
   useEffect(() => {
     const actif = barre.current?.querySelector<HTMLElement>('[aria-current="page"]');
     if (actif && typeof actif.scrollIntoView === "function") actif.scrollIntoView({ block: "nearest", inline: "center" });
-  }, [pathname]);
+    mesurerBords();
+  }, [pathname, mesurerBords]);
 
   const colonne = LARGEURS[largeur];
 
@@ -112,7 +142,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
           <nav
             ref={barre}
             aria-label={titre}
-            className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar max-sm:pr-8 max-sm:mask-[linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
+            className={`flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar max-sm:pr-8 ${FONDUS[bords.gauche ? (bords.droite ? "deux" : "gauche") : bords.droite ? "droite" : "aucun"]}`}
           >
             {onglets.map((onglet) => (
               // Barre HORIZONTALE : la bulle s'ouvre au-dessus (position par défaut). C'est la barre latérale du

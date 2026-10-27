@@ -8,7 +8,7 @@ import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { CrgSynthesis } from "../../types";
-import { formatByCurrency } from "../../utils/currencyFormat";
+import { formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
 
 /** Vrai si le montant est positif ou nul dans TOUTES les devises. */
@@ -182,11 +182,11 @@ export default function OwnerCrgPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-slate-600 dark:text-slate-400">{t("owner.crg.table.charges")}</p>
-                    <p className="font-bold text-red-600 dark:text-red-400">-{formatMoney(row.chargesDeduites, row.currency)}</p>
+                    <p className="font-bold text-red-600 dark:text-red-400">{formatDeduction(row.chargesDeduites, row.currency, formatMoney)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-slate-600 dark:text-slate-400">{t("owner.crg.table.commission")}</p>
-                    <p className="font-bold text-amber-700 dark:text-amber-400">-{formatMoney(row.commission, row.currency)}</p>
+                    <p className="font-bold text-amber-700 dark:text-amber-400">{formatDeduction(row.commission, row.currency, formatMoney)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-slate-600 dark:text-slate-400">{t("owner.crg.table.net")}</p>

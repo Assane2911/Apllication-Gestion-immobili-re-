@@ -51,3 +51,16 @@ export function devisesPresentes(...totaux: Array<Record<string, number> | undef
   }
   return Array.from(vues);
 }
+
+/**
+ * Un montant DÉDUIT (charges, commission, dépense), précédé d'un « - ». Le signe n'est mis que si le montant est
+ * positif : un zéro reste « 0 », jamais « -0 € », qui se lit comme une valeur négative ou une erreur.
+ */
+export function formatDeduction(
+  montant: number | null | undefined,
+  devise: string | null | undefined,
+  formatMoney: (amount: number | null | undefined, overrideCurrency?: string | null) => string
+): string {
+  const valeur = montant ?? 0;
+  return `${valeur > 0 ? "-" : ""}${formatMoney(valeur, devise)}`;
+}

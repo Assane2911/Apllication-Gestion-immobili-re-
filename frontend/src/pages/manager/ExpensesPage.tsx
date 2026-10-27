@@ -7,7 +7,7 @@ import Pagination from "../../components/Pagination";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { Expense, ExpenseCategory, ExpenseRecurrence, PaginatedResponse, Property } from "../../types";
-import { devisesPresentes, formatByCurrency } from "../../utils/currencyFormat";
+import { devisesPresentes, formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { formaterJour } from "../../utils/jourCivil";
@@ -423,7 +423,7 @@ export default function ExpensesPage() {
                     )}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400">-{formatMoney(exp.amount, exp.currency)}</td>
+                <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400">{formatDeduction(exp.amount, exp.currency, formatMoney)}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
                   <Bulle texte={t("manager.tips.expenseDelete")}>

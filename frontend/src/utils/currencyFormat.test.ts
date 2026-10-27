@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatByCurrency } from "./currencyFormat";
+import { formatByCurrency, formatDeduction } from "./currencyFormat";
 
 /**
  * Un écran qui affiche « 35 000 FCFA », « 0 FG » et « 35 000 FCFA » côte à
@@ -35,5 +35,27 @@ describe("Totaux groupés par devise", () => {
 
   it("ignore les références quand le total a ses propres devises", () => {
     expect(formatByCurrency({ EUR: 50 }, formatMoneyFactice, ["XOF"])).toBe("50 EUR");
+  });
+});
+
+/**
+ * Un montant déduit (charges, commission, dépense) s'affiche précédé d'un « - ». Le signe était collé devant le montant
+ * formaté sans condition : une commission nulle s'affichait « -0 FCFA », comme une valeur négative ou une erreur, sur le
+ * compte-rendu de gestion que l'agence montre à ses propriétaires.
+ */
+describe("formatDeduction", () => {
+  const fmt = (montant: number | null | undefined, devise?: string | null) => `${montant ?? 0} ${devise ?? "XOF"}`;
+
+  it("précède d'un « - » un montant déduit positif", () => {
+    expect(formatDeduction(100, "EUR", fmt)).toBe("-100 EUR");
+  });
+
+  it("n'affiche pas « -0 » : un montant nul reste « 0 »", () => {
+    expect(formatDeduction(0, "XOF", fmt)).toBe("0 XOF");
+  });
+
+  it("un montant absent se lit comme zéro, sans signe", () => {
+    expect(formatDeduction(null, "EUR", fmt)).toBe("0 EUR");
+    expect(formatDeduction(undefined, "EUR", fmt)).toBe("0 EUR");
   });
 });
