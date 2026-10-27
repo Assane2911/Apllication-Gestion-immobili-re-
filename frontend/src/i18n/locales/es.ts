@@ -1424,6 +1424,15 @@ const es: TranslationSchema = {
       count: "{{count}} contrato(s) en gestión",
       addBtn: "+ Nuevo contrato",
       formTitle: "Nuevo contrato",
+      regles: {
+        SN: {
+          titre: "Para comprobar según el derecho senegalés",
+          deposit: "Para un alquiler de como máximo 500 000 FCFA al mes, la fianza no puede superar dos meses de alquiler (decreto n.º 2023-382 de 24 de febrero de 2023). Solo un mes se paga al entrar; el resto se reparte en doce meses.",
+          paymentDay: "El alquiler no puede pagarse por adelantado: se paga al final del mes de disfrute (decreto n.º 2023-382). Elija «Último día del mes».",
+          duration: "Un contrato de vivienda se celebra por tres años, renovables por períodos de tres años, o por tiempo indefinido (Código de Obligaciones Civiles y Comerciales, artículo 571).",
+          note: "Estos recordatorios son meramente informativos: la decisión sigue siendo suya y no sustituyen el asesoramiento de un profesional.",
+        },
+      },
       fields: {
         property: "Propiedad",
         selectProperty: "Seleccionar una propiedad",

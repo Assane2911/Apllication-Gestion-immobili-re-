@@ -1423,6 +1423,15 @@ const fr = {
       count: "{{count}} contrat(s) de bail en gestion",
       addBtn: "+ Nouveau contrat",
       formTitle: "Nouveau contrat",
+      regles: {
+        SN: {
+          titre: "À vérifier au regard du droit sénégalais",
+          deposit: "Pour un loyer d'au plus 500 000 FCFA par mois, la caution ne peut pas excéder deux mois de loyer (décret n° 2023-382 du 24 février 2023). Seul un mois est payable à l'entrée ; le reste s'étale sur douze mois.",
+          paymentDay: "Le loyer ne peut pas être payé à l'avance : il est payable à la fin du mois de jouissance (décret n° 2023-382). Choisissez « Dernier jour du mois ».",
+          duration: "Un bail d'habitation est conclu pour trois ans, renouvelables par périodes de trois ans, ou pour une durée indéterminée (Code des obligations civiles et commerciales, article 571).",
+          note: "Ces rappels sont donnés à titre d'information : vous restez libre de votre choix, et ils ne remplacent pas l'avis d'un professionnel.",
+        },
+      },
       fields: {
         property: "Bien",
         selectProperty: "Sélectionner un bien",

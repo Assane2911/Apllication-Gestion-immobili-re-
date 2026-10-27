@@ -1422,6 +1422,15 @@ const en: TranslationSchema = {
       count: "{{count}} lease contract(s) under management",
       addBtn: "+ New contract",
       formTitle: "New contract",
+      regles: {
+        SN: {
+          titre: "To check against Senegalese law",
+          deposit: "For a rent of no more than 500,000 FCFA a month, the deposit cannot exceed two months' rent (decree no. 2023-382 of 24 February 2023). Only one month is payable at entry; the rest is spread over twelve months.",
+          paymentDay: "Rent cannot be paid in advance: it is payable at the end of the month of occupancy (decree no. 2023-382). Choose “Last day of the month”.",
+          duration: "A residential lease is made for three years, renewable for three-year periods, or for an indefinite term (Code of Civil and Commercial Obligations, article 571).",
+          note: "These reminders are for information only: the choice remains yours, and they do not replace professional advice.",
+        },
+      },
       fields: {
         property: "Property",
         selectProperty: "Select a property",

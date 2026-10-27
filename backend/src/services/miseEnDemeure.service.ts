@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
-import { agencySettings, contractGuarantors, contracts, formalNotices, invoices, properties, tenants } from "../db/schema";
+import { agencySettings, contractGuarantors, contracts, formalNotices, invoices, properties, tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { debutDeLaJournee, joursEntre } from "../utils/dates";
 import { arrondir, resteDu } from "../utils/montants";
@@ -20,8 +20,6 @@ import { NIVEAU_MAXIMAL } from "./relances.service";
  * colocataires et, au choix, aux garants.
  */
 
-/** Délai de paiement proposé par défaut, en jours à compter de la réception. */
-export const DELAI_PAR_DEFAUT_JOURS = 8;
 /**
  * Fenêtre pendant laquelle une mise en demeure IDENTIQUE (mêmes factures, mêmes restes dus) à la
  * précédente est refusée : un double envoi accidentel (appel rejoué, double requête) ne doit pas
@@ -188,6 +186,7 @@ export async function donneesDuCourrier(notice: typeof formalNotices.$inferSelec
   const [property] = await db.select().from(properties).where(eq(properties.id, contract.propertyId));
   const [tenant] = await db.select().from(tenants).where(eq(tenants.id, contract.tenantId));
   const [agency] = await db.select().from(agencySettings).where(eq(agencySettings.userId, notice.managerId));
+  const [compte] = await db.select({ country: users.country }).from(users).where(eq(users.id, notice.managerId));
   const garants = await db.select().from(contractGuarantors).where(eq(contractGuarantors.contractId, contract.id));
   return {
     reference: referenceMiseEnDemeure(notice),
@@ -202,6 +201,7 @@ export async function donneesDuCourrier(notice: typeof formalNotices.$inferSelec
     contractStartDate: contract.startDate,
     applicableLaw: contract.applicableLaw,
     garants: garants.map((g: typeof contractGuarantors.$inferSelect) => nomComplet(g)),
+    pays: compte?.country ?? null,
     agency: {
       name: agency?.agencyName || "Agence Immobilière",
       address: agency?.address ?? null,

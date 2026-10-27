@@ -1422,6 +1422,15 @@ const pt: TranslationSchema = {
       count: "{{count}} contrato(s) de arrendamento em gestão",
       addBtn: "+ Novo contrato",
       formTitle: "Novo contrato",
+      regles: {
+        SN: {
+          titre: "A verificar à luz do direito senegalês",
+          deposit: "Para uma renda de, no máximo, 500 000 FCFA por mês, a caução não pode exceder dois meses de renda (decreto n.º 2023-382, de 24 de fevereiro de 2023). Apenas um mês é pago na entrada; o resto é repartido por doze meses.",
+          paymentDay: "A renda não pode ser paga antecipadamente: é paga no fim do mês de fruição (decreto n.º 2023-382). Escolha «Último dia do mês».",
+          duration: "Um contrato de habitação é celebrado por três anos, renováveis por períodos de três anos, ou por prazo indeterminado (Código das Obrigações Civis e Comerciais, artigo 571).",
+          note: "Estes lembretes são meramente informativos: a decisão continua a ser sua e não substituem o parecer de um profissional.",
+        },
+      },
       fields: {
         property: "Imóvel",
         selectProperty: "Selecionar um imóvel",

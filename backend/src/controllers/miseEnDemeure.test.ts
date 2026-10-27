@@ -68,6 +68,57 @@ describe("factureMure — quand un impayé appelle une mise en demeure", () => {
   });
 });
 
+/**
+ * Règles du pays de l'agence (voir utils/reglesPays.ts) : au Sénégal, la résiliation d'un bail d'habitation suppose une
+ * mise en demeure de trente jours signifiée par acte extrajudiciaire (COCC, art. 571). Le courrier de l'agence n'est pas cet
+ * acte : le délai proposé par défaut est celui de la loi, et le courrier le dit. Ailleurs, rien ne change.
+ */
+describe("mise en demeure — règles du pays de l'agence", () => {
+  async function agenceDuPays(country: string | null) {
+    const manager = await createManager({ country });
+    const property = await createProperty(manager.id, { title: "Appartement Plateau", address: "12 rue Carnot, Dakar" });
+    const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Diop", email: "awa@test.local" });
+    const contract = await createContract(property.id, tenant.id, { status: "ACTIVE", startDate: new Date(2025, 0, 1), endDate: new Date(2028, 0, 1) });
+    await createInvoice(contract.id, { periodMonth: 7, periodYear: 2026, amount: 650, status: "LATE", dueDate: ilYa(40) });
+    return { contract, h: authHeader(tokenFor(manager)) };
+  }
+  const document = (h: Record<string, string>, id: string) => request(app).get(`/api/documents/formal-notice/${id}`).set(h);
+
+  it("Sénégal : 30 jours quand le délai n'est pas précisé, et la mention de l'acte extrajudiciaire sur le courrier", async () => {
+    const { contract, h } = await agenceDuPays("SN");
+
+    const res = await emettre(h, contract.id);
+
+    expect(res.status).toBe(201);
+    expect(res.body.deadlineDays).toBe(30);
+    const doc = await document(h, res.body.id);
+    expect(doc.text).toContain("dans un délai de 30 jours");
+    expect(doc.text).toContain("acte extrajudiciaire");
+    expect(doc.text).toContain("article 571");
+  });
+
+  it("Sénégal : un délai choisi par le gestionnaire est respecté", async () => {
+    const { contract, h } = await agenceDuPays("SN");
+
+    const res = await emettre(h, contract.id, { deadlineDays: 15 });
+
+    expect(res.body.deadlineDays).toBe(15);
+  });
+
+  it("France et compte sans pays : 8 jours par défaut, aucune mention (comportement d'avant)", async () => {
+    for (const country of ["FR", "CI", null]) {
+      const { contract, h } = await agenceDuPays(country);
+
+      const res = await emettre(h, contract.id);
+
+      expect(res.body.deadlineDays, String(country)).toBe(8);
+      const doc = await document(h, res.body.id);
+      expect(doc.text, String(country)).toContain("dans un délai de 8 jours");
+      expect(doc.text, String(country)).not.toContain("acte extrajudiciaire");
+    }
+  });
+});
+
 describe("GET /api/contracts/formal-notices-due", () => {
   it("signale si l'agence est joignable : sans téléphone ni email, le courrier ne dirait pas comment la contacter", async () => {
     const { manager, contract, h } = await agence();

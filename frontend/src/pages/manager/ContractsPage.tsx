@@ -14,7 +14,9 @@ import { CLAUSE_CAUTION, clauseCautionIncomplete, insererClause } from "../../da
 import RentRevisionModal from "../../components/RentRevisionModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
 import SignatureModal from "../../components/SignatureModal";
+import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
+import { avertissementsDuBail, dateDeFinParDefaut, dureeRenouvellementMois, reglesDuPays } from "../../data/reglesPays";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
 import { ecartEnJours, formaterJour } from "../../utils/jourCivil";
@@ -106,6 +108,11 @@ function jourEcheance(c: Contract): number {
 export default function ContractsPage() {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
+  // Pays de l'agence : il décide des valeurs proposées et des rappels du formulaire (voir data/reglesPays.ts).
+  const { user } = useAuth();
+  const pays = user?.country ?? null;
+  const regles = reglesDuPays(pays);
+  const formulaireVide = () => ({ ...emptyForm, paymentDay: regles.jourEcheance, applicableLaw: regles.droitApplicable });
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -227,10 +234,43 @@ export default function ContractsPage() {
     window.scrollTo?.({ top: 0, behavior: "smooth" });
   }
 
+  /** Début du bail : la fin proposée par le pays le suit, tant que le gestionnaire n'a pas choisi la sienne. */
+  function changerDebut(startDate: string) {
+    const finAvant = dateDeFinParDefaut(pays, form.leaseType, form.startDate);
+    const finProposee = dateDeFinParDefaut(pays, form.leaseType, startDate);
+    const suit = !editingContract && finProposee !== "" && (form.endDate === "" || form.endDate === finAvant);
+    setForm({ ...form, startDate, endDate: suit ? finProposee : form.endDate });
+  }
+
+  /** Type de bail : le droit prérempli ne vaut que pour l'habitation, et ne remplace jamais un droit saisi à la main. */
+  function changerTypeDeBail(leaseType: string) {
+    let applicableLaw = form.applicableLaw;
+    if (!editingContract) {
+      if (leaseType !== "HABITATION" && applicableLaw === regles.droitApplicable) applicableLaw = "";
+      else if (leaseType === "HABITATION" && applicableLaw === "") applicableLaw = regles.droitApplicable;
+    }
+    setForm({ ...form, leaseType, applicableLaw });
+  }
+
+  // Rappels du pays sur le bail en cours de saisie : jamais bloquants, et seulement à la création (un bail existant
+  // n'a pas à être rappelé à l'ordre à chaque modification).
+  const bienChoisi = properties.find((p) => p.id === form.propertyId);
+  const rappels = editingContract
+    ? []
+    : avertissementsDuBail(pays, {
+        leaseType: form.leaseType,
+        rent: Number(form.rent),
+        deposit: Number(form.deposit),
+        currency: bienChoisi?.currency ?? "",
+        paymentDay: form.paymentDay,
+        startDate: form.startDate,
+        endDate: form.endDate,
+      });
+
   function fermerFormulaire() {
     setShowForm(false);
     setEditingContract(null);
-    setForm(emptyForm);
+    setForm(formulaireVide());
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -261,7 +301,7 @@ export default function ContractsPage() {
         ...(applicableLaw.trim() ? { applicableLaw: applicableLaw.trim() } : {}),
       });
       setShowForm(false);
-      setForm(emptyForm);
+      setForm(formulaireVide());
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -315,7 +355,7 @@ export default function ContractsPage() {
       return;
     }
     try {
-      await api.post(`/contracts/${c.id}/renew`, { months: 12 });
+      await api.post(`/contracts/${c.id}/renew`, { months: dureeRenouvellementMois(pays, c.leaseType) });
       load();
     } catch (err) {
       alert(apiErrorMessage(err));
@@ -391,7 +431,7 @@ export default function ContractsPage() {
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.contractCreate")}>
-        <button onClick={() => { setEditingContract(null); setForm(emptyForm); setShowForm(true); }} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
+        <button onClick={() => { setEditingContract(null); setForm(formulaireVide()); setShowForm(true); }} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
           {t("manager.contracts.addBtn")}
         </button>
         </Bulle>
@@ -476,7 +516,7 @@ export default function ContractsPage() {
             </div>
             <div>
               <label htmlFor="contract-startDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.startDate")}</label>
-              <input id="contract-startDate" required type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <input id="contract-startDate" required type="date" value={form.startDate} onChange={(e) => changerDebut(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
@@ -496,7 +536,7 @@ export default function ContractsPage() {
             </div>
             <div>
               <label htmlFor="contract-leaseType" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.leaseType")}</label>
-              <select id="contract-leaseType" value={form.leaseType} onChange={(e) => setForm({ ...form, leaseType: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              <select id="contract-leaseType" value={form.leaseType} onChange={(e) => changerTypeDeBail(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
                 {(["HABITATION", "MEUBLE", "COMMERCIAL", "PROFESSIONNEL"] as const).map((type) => (
                   <option key={type} value={type}>{t(`manager.contracts.fields.leaseTypes.${type}`)}</option>
                 ))}
@@ -507,6 +547,17 @@ export default function ContractsPage() {
               <input id="contract-applicableLaw" type="text" maxLength={300} value={form.applicableLaw} onChange={(e) => setForm({ ...form, applicableLaw: e.target.value })} placeholder={t("manager.contracts.fields.applicableLawPlaceholder")} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
               <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.applicableLawHint")}</p>
             </div>
+            {rappels.length > 0 && pays && (
+              <div role="status" className="md:col-span-2 rounded-lg border border-amber-300/70 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
+                <p className="font-semibold">{t(`manager.contracts.regles.${pays}.titre`)}</p>
+                <ul className="mt-1 list-disc pl-4 space-y-1">
+                  {rappels.map((r) => (
+                    <li key={r.cle}>{t(`manager.contracts.regles.${pays}.${r.cle}`)}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 opacity-80">{t(`manager.contracts.regles.${pays}.note`)}</p>
+              </div>
+            )}
             <div className="md:col-span-2">
               <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.terms")}</label>
               <textarea

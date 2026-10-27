@@ -2,7 +2,9 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
+import { useAuth } from "../context/auth";
 import { useCurrency } from "../context/currency";
+import { reglesDuPays } from "../data/reglesPays";
 import type { FormalNotice, FormalNoticeDue } from "../types";
 import { useDialogue } from "../hooks/useDialogue";
 
@@ -18,7 +20,9 @@ interface FormalNoticeModalProps {
 export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onClose }: FormalNoticeModalProps) {
   const { t } = useTranslation();
   const { formatMoney } = useCurrency();
-  const [deadlineDays, setDeadlineDays] = useState("8");
+  // Délai proposé : celui du pays de l'agence (30 jours au Sénégal, 8 ailleurs), que le gestionnaire peut changer.
+  const { user } = useAuth();
+  const [deadlineDays, setDeadlineDays] = useState(String(reglesDuPays(user?.country).delaiMiseEnDemeureJours));
   const [sendEmail, setSendEmail] = useState(true);
   const [notifyGuarantors, setNotifyGuarantors] = useState(false);
   const [saving, setSaving] = useState(false);
