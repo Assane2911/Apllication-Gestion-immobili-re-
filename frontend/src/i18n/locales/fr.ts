@@ -1424,6 +1424,12 @@ const fr = {
       addBtn: "+ Nouveau contrat",
       formTitle: "Nouveau contrat",
       regles: {
+        FR: {
+          titre: "À vérifier au regard de la loi française",
+          deposit: "Le dépôt de garantie ne peut pas dépasser un mois de loyer en principal (loi du 6 juillet 1989, article 22). Le montant comparé est le loyer saisi dans ce formulaire, supposé hors charges.",
+          duration: "Un bail de résidence principale dure au moins trois ans si le bailleur est une personne physique, six ans s'il est une personne morale (loi du 6 juillet 1989, article 10).",
+          note: "Ces rappels sont donnés à titre d'information : vous restez libre de votre choix, et ils ne remplacent pas l'avis d'un professionnel.",
+        },
         SN: {
           titre: "À vérifier au regard du droit sénégalais",
           deposit: "Pour un loyer d'au plus 500 000 FCFA par mois, la caution ne peut pas excéder deux mois de loyer (décret n° 2023-382 du 24 février 2023). Seul un mois est payable à l'entrée ; le reste s'étale sur douze mois.",
