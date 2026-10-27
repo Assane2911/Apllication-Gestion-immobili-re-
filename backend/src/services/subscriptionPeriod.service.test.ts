@@ -289,7 +289,7 @@ describe("calculerPeriodeActivation", () => {
 
 describe("calculerPeriodeActivation — changement de devise", () => {
   /**
-   * Le catalogue tarife chaque plan dans neuf devises (voir TARIFS dans
+   * Le catalogue tarife chaque plan en euros et en franc CFA (voir TARIFS dans
    * subscription.controller.ts). Le montant d'un paiement n'a donc de sens
    * qu'avec sa devise, et `PATCH /auth/currency` laisse un gestionnaire
    * changer la sienne quand il veut. Proratiser en divisant 5 000 FCFA par un

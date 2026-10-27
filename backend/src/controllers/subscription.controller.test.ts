@@ -110,6 +110,14 @@ describe("deviseFacturee / tarifPourDevise — résolution de la devise facturé
     }
   });
 
+  it("ne tarife que l'euro et le franc CFA : les devises retirées du périmètre retombent sur l'euro", () => {
+    expect(devisesTarifees().sort()).toEqual(["EUR", "XOF"]);
+    for (const devise of ["USD", "GBP", "CAD", "CHF", "MAD", "XAF", "STN", "GNF", "MRU", "CDF"]) {
+      expect(deviseFacturee(devise), devise).toBe("EUR");
+      expect(tarifPourDevise("PRO", devise), devise).toBeNull();
+    }
+  });
+
   it("retombe sur la devise par défaut pour une devise non tarifée, une entrée vide ou absente", () => {
     for (const devise of ["JPY", "AUD", "SEK", ""]) {
       expect(deviseFacturee(devise)).toBe(DEVISE_PAR_DEFAUT);

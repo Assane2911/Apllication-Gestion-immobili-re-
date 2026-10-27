@@ -26,17 +26,16 @@ export const DEVISE_PAR_DEFAUT = "EUR";
  * (subscription.controller.test.ts) qui échoue si un prix futur le rompt.
  *
  * TOUTES les devises proposées par le sélecteur de l'interface
- * (frontend/src/context/currency.ts) doivent être tarifées ici : parité pour
- * les marchés à pouvoir d'achat comparable (USD, GBP, CAD, CHF), ajustement à
- * la baisse pour les autres (MAD, STN, GNF, MRU, CDF), au même niveau que le
- * choix déjà fait pour le XOF. Le XAF partage la parité fixe du XOF avec
- * l'euro et le même marché : mêmes montants, délibérément.
+ * (frontend/src/context/currency.ts) doivent être tarifées ici. Le sélecteur
+ * ne propose que l'euro (France) et le franc CFA (UEMOA) : ce sont les deux
+ * seules devises du catalogue. Les autres devises (dollar, livre, dirham, ou
+ * les francs d'Afrique centrale et de Guinée) ont été retirées avec le
+ * périmètre : elles n'étaient plus proposées nulle part, et les garder
+ * laissait croire qu'un compte pouvait les payer. Le XAF partageait la
+ * parité fixe du XOF ; il n'y a plus de marché qui l'utilise ici.
  *
- * RÉGRESSION à ne pas rejouer : GNF, MRU et CDF ont été ajoutées au sélecteur
- * sans l'être ici. `deviseFacturee` retombant silencieusement sur l'euro, le
- * gestionnaire voyait ses prix en euros alors que son sélecteur affichait sa
- * devise — et aurait été RÉELLEMENT débité en euros. Le test de couverture
- * lit désormais la liste du frontend au lieu de la recopier, de sorte qu'une
+ * RÉGRESSION à ne pas rejouer : une devise ajoutée au sélecteur sans l'être
+ * ici. `deviseFacturee` retombant silencieusement sur l'euro, le
  * devise ajoutée à l'écran et oubliée ici fasse échouer la CI.
  *
  * Attention, tarifer n'est pas encaisser : le paiement par carte refuse toute
@@ -51,45 +50,15 @@ export const DEVISE_PAR_DEFAUT = "EUR";
 const TARIFS: Record<string, Record<string, { monthly: number; annual: number }>> = {
   STARTER: {
     EUR: { monthly: 9, annual: 86 },
-    USD: { monthly: 10, annual: 96 },
-    GBP: { monthly: 8, annual: 77 },
-    CAD: { monthly: 14, annual: 134 },
-    CHF: { monthly: 9, annual: 86 },
-    MAD: { monthly: 89, annual: 854 },
     XOF: { monthly: 5000, annual: 48000 },
-    XAF: { monthly: 5000, annual: 48000 },
-    STN: { monthly: 179, annual: 1718 },
-    GNF: { monthly: 75000, annual: 720000 },
-    MRU: { monthly: 300, annual: 2880 },
-    CDF: { monthly: 18000, annual: 172800 },
   },
   PRO: {
     EUR: { monthly: 29, annual: 278 },
-    USD: { monthly: 32, annual: 307 },
-    GBP: { monthly: 25, annual: 240 },
-    CAD: { monthly: 44, annual: 422 },
-    CHF: { monthly: 29, annual: 278 },
-    MAD: { monthly: 289, annual: 2774 },
     XOF: { monthly: 15000, annual: 144000 },
-    XAF: { monthly: 15000, annual: 144000 },
-    STN: { monthly: 579, annual: 5558 },
-    GNF: { monthly: 225000, annual: 2160000 },
-    MRU: { monthly: 900, annual: 8640 },
-    CDF: { monthly: 54000, annual: 518400 },
   },
   ENTERPRISE: {
     EUR: { monthly: 49, annual: 470 },
-    USD: { monthly: 54, annual: 518 },
-    GBP: { monthly: 42, annual: 403 },
-    CAD: { monthly: 74, annual: 710 },
-    CHF: { monthly: 49, annual: 470 },
-    MAD: { monthly: 489, annual: 4694 },
     XOF: { monthly: 25000, annual: 240000 },
-    XAF: { monthly: 25000, annual: 240000 },
-    STN: { monthly: 979, annual: 9398 },
-    GNF: { monthly: 375000, annual: 3600000 },
-    MRU: { monthly: 1500, annual: 14400 },
-    CDF: { monthly: 90000, annual: 864000 },
   },
 };
 
