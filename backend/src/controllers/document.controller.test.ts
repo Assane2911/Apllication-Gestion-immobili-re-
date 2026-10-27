@@ -268,6 +268,21 @@ describe("GET /api/documents/lease/:contractId", () => {
     expect(res.text).toContain("Animaux interdits.<br>Sous-location prohibée.");
   });
 
+  it("imprime les identifiants légaux renseignés dans les réglages de l'agence sur le bail", async () => {
+    const manager = await createManager();
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence Teranga", siretOrId: "NINEA 000000000 · RCCM SN-DKR-0000-B-0000" });
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+
+    const res = await request(app)
+      .get(`/api/documents/lease/${contract.id}`)
+      .set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("Identifiants légaux :</strong> NINEA 000000000 · RCCM SN-DKR-0000-B-0000");
+  });
+
   it("n'affiche aucune section de clauses pour un contrat qui n'en a pas", async () => {
     const manager = await createManager();
     const property = await createProperty(manager.id);

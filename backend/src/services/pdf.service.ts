@@ -272,7 +272,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
         ${data.agency.address ? `<p style="margin:2px 0;">${escapeHtml(data.agency.address)}</p>` : ""}
         ${data.agency.phone ? `<p style="margin:2px 0;">Tél : ${escapeHtml(data.agency.phone)}</p>` : ""}
         ${data.agency.email ? `<p style="margin:2px 0;">Email : ${escapeHtml(data.agency.email)}</p>` : ""}
-        ${data.agency.siretOrId ? `<p style="margin:2px 0;">N° SIRET / NIF : ${escapeHtml(data.agency.siretOrId)}</p>` : ""}
+        ${data.agency.siretOrId ? `<p style="margin:2px 0;">Identifiants légaux : ${escapeHtml(data.agency.siretOrId)}</p>` : ""}
       </div>
     </div>
     <div class="doc-badge">
@@ -429,7 +429,7 @@ export function generateReceiptPdfBuffer(data: ReceiptData): Promise<Buffer> {
       if (data.agency.address) doc.text(data.agency.address, { width: pageWidth * 0.6 });
       if (data.agency.phone) doc.text(`Tél : ${data.agency.phone}`, { width: pageWidth * 0.6 });
       if (data.agency.email) doc.text(`Email : ${data.agency.email}`, { width: pageWidth * 0.6 });
-      if (data.agency.siretOrId) doc.text(`N° SIRET / NIF : ${data.agency.siretOrId}`, { width: pageWidth * 0.6 });
+      if (data.agency.siretOrId) doc.text(`Identifiants légaux : ${data.agency.siretOrId}`, { width: pageWidth * 0.6 });
       const leftColumnBottomY = doc.y;
 
       doc
@@ -673,6 +673,14 @@ export interface LeaseExportData {
 export interface LeaseAgencyInfo {
   agencyName: string | null;
   address?: string | null;
+  /** Identifiants légaux de l'agence (champ libre : SIRET, NIF, NINEA, RCCM…) ; vide : aucune ligne. */
+  siretOrId?: string | null;
+}
+
+/** Ligne « Identifiants légaux » du bailleur, à la suite de son nom ; vide quand l'agence n'en a pas renseigné. */
+function ligneIdentifiantsBailleur(agency: LeaseAgencyInfo): string {
+  const identifiants = agency.siretOrId?.trim();
+  return identifiants ? `<br><strong>Identifiants légaux :</strong> ${escapeHtml(identifiants)}` : "";
 }
 
 type Colocataire = { civility: string | null; firstName: string; lastName: string; email: string; phone: string };
@@ -788,7 +796,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
   <div class="section">
     <div class="section-title">1. Les Parties</div>
     <div class="box">
-      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"}${agency.address ? ` (${escapeHtml(agency.address)})` : ""}<br>
+      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"}${agency.address ? ` (${escapeHtml(agency.address)})` : ""}${ligneIdentifiantsBailleur(agency)}<br>
       <strong>Le Locataire :</strong> ${escapeHtml(contract.tenant?.firstName)} ${escapeHtml(contract.tenant?.lastName)} (Email : ${escapeHtml(contract.tenant?.email)}, Tél : ${escapeHtml(contract.tenant?.phone)})${colocatairesHtml}${garantsHtml}
     </div>
   </div>
@@ -1235,7 +1243,7 @@ export function generateRentRevisionHtml(data: RentRevisionExportData, agency: L
   <div class="section">
     <div class="section-title">1. Les Parties</div>
     <div class="box">
-      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"}${agency.address ? ` (${escapeHtml(agency.address)})` : ""}<br>
+      <strong>Le Bailleur / Mandataire :</strong> ${escapeHtml(agency.agencyName) || "L'Agence"}${agency.address ? ` (${escapeHtml(agency.address)})` : ""}${ligneIdentifiantsBailleur(agency)}<br>
       <strong>Le Locataire :</strong> ${escapeHtml(data.tenant?.firstName)} ${escapeHtml(data.tenant?.lastName)}${lignesColocataires(data.cotenants ?? [])}${lignesGarants(data.guarantors ?? [], data.currency)}
     </div>
   </div>
@@ -1391,7 +1399,7 @@ export function generateFormalNoticeHtml(d: FormalNoticeData): string {
       ${d.agency.address ? `${escapeHtml(d.agency.address)}<br>` : ""}
       ${d.agency.phone ? `Tél : ${escapeHtml(d.agency.phone)}<br>` : ""}
       ${d.agency.email ? `${escapeHtml(d.agency.email)}<br>` : ""}
-      ${d.agency.siretOrId ? `N° SIRET / NIF : ${escapeHtml(d.agency.siretOrId)}` : ""}
+      ${d.agency.siretOrId ? `Identifiants légaux : ${escapeHtml(d.agency.siretOrId)}` : ""}
     </div>
     <div style="text-align:right; color:#64748b;">Réf : ${escapeHtml(d.reference)}<br>${escapeHtml(t.lieuEtDate)}</div>
   </div>
@@ -1442,7 +1450,7 @@ export function generateFormalNoticePdfBuffer(d: FormalNoticeData): Promise<Buff
       const haut = doc.y;
       doc.fillColor(dark).font("Helvetica-Bold").fontSize(12).text(d.agency.name, gauche, haut, { width: largeur * 0.6 });
       doc.font("Helvetica").fontSize(9).fillColor(gray);
-      for (const ligne of [d.agency.address, d.agency.phone && `Tél : ${d.agency.phone}`, d.agency.email, d.agency.siretOrId && `N° SIRET / NIF : ${d.agency.siretOrId}`]) {
+      for (const ligne of [d.agency.address, d.agency.phone && `Tél : ${d.agency.phone}`, d.agency.email, d.agency.siretOrId && `Identifiants légaux : ${d.agency.siretOrId}`]) {
         if (ligne) doc.text(ligne, { width: largeur * 0.6 });
       }
       const basGauche = doc.y;

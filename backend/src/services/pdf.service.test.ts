@@ -5,6 +5,8 @@ import {
   generateInspectionHtml,
   generateLeaseHtml,
   generateReceiptHtml,
+  generateRentRevisionHtml,
+  generateFormalNoticeHtml,
   colonnesRecapQuittance,
   generateReceiptPdfBuffer,
   MENTION_PIED_QUITTANCE,
@@ -79,6 +81,12 @@ describe("generateReceiptHtml", () => {
     expect(html).toContain("Agence agréée n° 42");
   });
 
+  it("nomme « identifiants légaux » le numéro de l'agence : le champ est libre, le libellé ne dit pas « SIRET »", () => {
+    const html = generateReceiptHtml({ ...baseReceipt, agency: { ...baseReceipt.agency, siretOrId: "NINEA 000000000 · RCCM SN-DKR-0000-B-0000" } });
+    expect(html).toContain("Identifiants légaux : NINEA 000000000 · RCCM SN-DKR-0000-B-0000");
+    expect(html).not.toContain("SIRET");
+  });
+
   it("échappe les champs contrôlés par l'utilisateur (protection XSS stockée)", () => {
     const html = generateReceiptHtml({
       ...baseReceipt,
@@ -124,7 +132,7 @@ describe("generateReceiptHtml", () => {
 
     expect(html).toContain("Agence Minimale");
     expect(html).not.toContain("Tél :");
-    expect(html).not.toContain("N° SIRET / NIF :");
+    expect(html).not.toContain("Identifiants légaux");
     expect(html).toContain("Document émis par le système de gestion locative immobilière.");
     // La plateforme n'atteste la conformité d'aucun document (voir le bail) : pas de « certifié conforme » par défaut.
     expect(html).not.toContain("certifié conforme");
@@ -226,6 +234,27 @@ describe("generateLeaseHtml", () => {
     expect(html).toContain("Agence Teranga");
     expect(html).not.toContain("()");
     expect(generateLeaseHtml(contract, agency)).toContain("Agence Teranga (12 Corniche Ouest, Dakar)");
+  });
+
+  /**
+   * La quittance imprimait déjà l'identifiant de l'agence, mais pas le bail ni l'avenant : le bailleur y était
+   * nommé sans aucun numéro d'immatriculation. Le champ est libre (SIRET, NIF, NINEA, RCCM…) : le libellé du
+   * document ne doit pas annoncer un numéro français.
+   */
+  it("imprime les identifiants légaux de l'agence dans les parties du bail, échappés", () => {
+    const html = generateLeaseHtml(contract, { ...agency, siretOrId: "NINEA 000000000 · RCCM SN-DKR-0000-B-0000" });
+    expect(html).toContain("Identifiants légaux :</strong> NINEA 000000000 · RCCM SN-DKR-0000-B-0000");
+    expect(html).not.toContain("SIRET");
+
+    const piege = generateLeaseHtml(contract, { ...agency, siretOrId: "<script>x</script>" });
+    expect(piege).not.toContain("<script>x</script>");
+    expect(piege).toContain("&lt;script&gt;x&lt;/script&gt;");
+  });
+
+  it("n'imprime pas de ligne d'identifiants quand l'agence n'en a pas renseigné", () => {
+    expect(generateLeaseHtml(contract, agency)).not.toContain("Identifiants légaux");
+    expect(generateLeaseHtml(contract, { ...agency, siretOrId: "   " })).not.toContain("Identifiants légaux");
+    expect(generateLeaseHtml(contract, { ...agency, siretOrId: null })).not.toContain("Identifiants légaux");
   });
 
   it("dit « non précisé » quand un garant n'a pas de montant maximal, au lieu de se taire", () => {
@@ -367,6 +396,52 @@ describe("generateLeaseHtml", () => {
     // "sig-img" apparaît dans la feuille de style : on vérifie l'absence de la
     // balise elle-même, pas de la classe CSS.
     expect(html).not.toContain("<img");
+  });
+});
+
+describe("identifiants légaux de l'agence sur l'avenant et la mise en demeure", () => {
+  const identifiants = "NINEA 000000000 · RCCM SN-DKR-0000-B-0000";
+  const avenant = {
+    numero: 1,
+    status: "APPLIED",
+    previousRent: 200000,
+    newRent: 210000,
+    currency: "XOF",
+    effectiveDate: "2026-07-01T00:00:00.000Z",
+    motif: null,
+    note: null,
+    createdAt: "2026-06-01T00:00:00.000Z",
+    contract: { startDate: "2025-01-01T00:00:00.000Z", endDate: "2028-01-01T00:00:00.000Z" },
+    property: { title: "Villa Ngor", address: "3 rue des Almadies" },
+    tenant: { firstName: "Aminata", lastName: "Ba" },
+  };
+  const miseEnDemeure = {
+    reference: "MED-2026-ABC123",
+    createdAt: new Date(2026, 9, 12),
+    deadlineDays: 8,
+    currency: "XOF",
+    totalDue: 250000,
+    factures: [{ periodMonth: 9, periodYear: 2026, dueDate: "2026-09-05T00:00:00.000Z", amount: 250000, resteDu: 250000 }],
+    destinataires: "Madame Aminata BA",
+    adresse: "3 rue des Almadies, Dakar",
+    propertyTitle: "Villa Ngor",
+    contractStartDate: new Date(2025, 0, 1),
+    applicableLaw: null,
+    garants: [],
+    agency: { name: "Agence Teranga", address: null, phone: null, email: null, siretOrId: identifiants },
+  };
+
+  it("l'avenant de révision nomme les identifiants légaux du bailleur, échappés", () => {
+    const html = generateRentRevisionHtml(avenant, { agencyName: "Agence Teranga", siretOrId: identifiants });
+    expect(html).toContain("Identifiants légaux :</strong> NINEA 000000000 · RCCM SN-DKR-0000-B-0000");
+    expect(generateRentRevisionHtml(avenant, { agencyName: "Agence Teranga", siretOrId: "<b>x</b>" })).toContain("&lt;b&gt;x&lt;/b&gt;");
+    expect(generateRentRevisionHtml(avenant, { agencyName: "Agence Teranga" })).not.toContain("Identifiants légaux");
+  });
+
+  it("la mise en demeure n'annonce plus un « N° SIRET / NIF »", () => {
+    const html = generateFormalNoticeHtml(miseEnDemeure);
+    expect(html).toContain("Identifiants légaux : NINEA 000000000 · RCCM SN-DKR-0000-B-0000");
+    expect(html).not.toContain("SIRET");
   });
 });
 
