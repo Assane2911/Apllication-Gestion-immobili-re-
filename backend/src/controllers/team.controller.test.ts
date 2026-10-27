@@ -326,6 +326,6 @@ describe("PATCH /api/auth/currency par un collaborateur", () => {
 
     const complet = await tokenCollaborateur(manager, { teamRole: "FULL" });
     expect((await request(app).patch("/api/auth/currency").set(authHeader(complet)).send({ currency: "XOF" })).status).toBe(200);
-    expect((await request(app).patch("/api/auth/currency").set(authHeader(tokenFor(manager))).send({ currency: "USD" })).status).toBe(200);
+    expect((await request(app).patch("/api/auth/currency").set(authHeader(tokenFor(manager))).send({ currency: "EUR" })).status).toBe(200);
   });
 });

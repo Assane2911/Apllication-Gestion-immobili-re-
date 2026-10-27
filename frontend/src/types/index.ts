@@ -35,6 +35,12 @@ export interface AuthUser {
   role: Role;
   currency?: string;
   /**
+   * Pays de l'agence (ISO 3166-1 alpha-2, dans la zone couverte : France et UEMOA). `null` tant qu'il n'est pas choisi
+   * (compte créé par Google, ou d'avant ce champ) : le gestionnaire est alors envoyé le choisir (voir ProtectedRoute).
+   * Absent (undefined) sur un profil gardé en mémoire avant ce champ : inconnu, pas « non choisi ».
+   */
+  country?: string | null;
+  /**
    * false uniquement pour un compte gestionnaire créé directement via "Se
    * connecter avec Google" (jamais de vrai mot de passe défini) — voir
    * DeleteAccountModal, qui adapte sa confirmation en conséquence. Absent

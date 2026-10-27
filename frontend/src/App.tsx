@@ -24,6 +24,7 @@ const MentionsLegalesPage = lazyWithReload(() => import("./pages/legal/MentionsL
 const PolitiqueConfidentialitePage = lazyWithReload(() => import("./pages/legal/PolitiqueConfidentialitePage"));
 const LoginPage = lazyWithReload(() => import("./pages/LoginPage"));
 const RegisterPage = lazyWithReload(() => import("./pages/RegisterPage"));
+const ChoisirPaysPage = lazyWithReload(() => import("./pages/ChoisirPaysPage"));
 const ResetPasswordPage = lazyWithReload(() => import("./pages/ResetPasswordPage"));
 const VerifyEmailPage = lazyWithReload(() => import("./pages/VerifyEmailPage"));
 const ActivityLogPage = lazyWithReload(() => import("./pages/manager/ActivityLogPage"));
@@ -99,6 +100,17 @@ function AppRoutes() {
             côté backend, dont les routes /public/... suivent la même logique). */}
         <Route path="/vitrine" element={<VitrinePage />} />
         <Route path="/vitrine/annonces/:id" element={<VitrineListingPage />} />
+
+        {/* Choix du pays de l'agence : réservé au gestionnaire, hors du ManagerLayout (ni menu ni en-tête d'agence tant que
+            le pays n'est pas choisi) ; ProtectedRoute y renvoie tout gestionnaire dont le pays est `null`. */}
+        <Route
+          path="/pays"
+          element={
+            <ProtectedRoute role="MANAGER">
+              <ChoisirPaysPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           element={

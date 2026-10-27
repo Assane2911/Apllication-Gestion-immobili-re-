@@ -98,7 +98,7 @@ describe("langue d'un propriétaire — connexion à son espace", () => {
 describe("langue d'un gestionnaire — compte", () => {
   it("l'inscription l'enregistre, d'après la langue de l'interface", async () => {
     vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true });
-    const res = await request(app).post("/api/auth/register").set("Accept-Language", "en").send({ email: "nouveau-en@test.local", password: "Password123!" });
+    const res = await request(app).post("/api/auth/register").set("Accept-Language", "en").send({ email: "nouveau-en@test.local", password: "Password123!", country: "SN" });
     expect(res.status).toBe(201);
     const [compte] = await testDb.select().from(users).where(eq(users.email, "nouveau-en@test.local"));
     expect(compte.language).toBe("en");

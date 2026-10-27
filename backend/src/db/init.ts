@@ -1046,6 +1046,7 @@ export async function initDb() {
     await ajouterColonne("users", "referral_code", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE`);
     await ajouterColonne("users", "referred_by_user_id", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL`);
     await ajouterColonne("users", "referral_reward_granted_at", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_reward_granted_at TIMESTAMP`);
+    await ajouterColonne("users", "country", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS country TEXT`);
     // Dépenses récurrentes : sur une base créée avant ce correctif, la table
     // existe déjà sans ces colonnes — voir recurringExpense.service.ts.
     await ajouterColonne("expenses", "recurrence", sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS recurrence TEXT`);

@@ -16,6 +16,22 @@ import { CODES_PAYS, DEVISES_DES_PAYS, DEVISES_HORS_TABLE, PAYS } from "./pays";
  * un pays se déclare une fois, entièrement, et tout ce qui en dérive doit
  * suivre.
  */
+describe("Périmètre de la table des pays", () => {
+  it("se limite à la France et aux huit pays de l'UEMOA", () => {
+    // Le pays choisi à l'inscription fixe les règles de location de l'agence : en ajouter un, c'est d'abord disposer de
+    // ses règles, pas seulement de son indicatif téléphonique. Ce test échoue donc à tout ajout, pour qu'il soit voulu.
+    expect([...CODES_PAYS].sort()).toEqual(["BF", "BJ", "CI", "FR", "GW", "ML", "NE", "SN", "TG"]);
+  });
+
+  it("met le franc CFA (XOF) pour les huit pays de l'UEMOA et l'euro pour la France", () => {
+    for (const pays of PAYS) expect(pays.devise, pays.code).toBe(pays.code === "FR" ? "EUR" : "XOF");
+  });
+
+  it("n'expose que l'euro et le franc CFA comme devises", () => {
+    expect(Object.keys(CURRENCIES).sort()).toEqual(["EUR", "XOF"]);
+  });
+});
+
 describe("Cohérence de la table des pays", () => {
   it("décrit chaque pays entièrement : code, indicatif, exemple, devise", () => {
     for (const pays of PAYS) {

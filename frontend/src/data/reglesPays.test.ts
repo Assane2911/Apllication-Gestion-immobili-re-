@@ -1,0 +1,110 @@
+import { describe, expect, it } from "vitest";
+import { CODES_PAYS } from "./pays";
+import { avertissementsDuBail, dateDeFinParDefaut, dureeRenouvellementMois, reglesDuPays } from "./reglesPays";
+
+/**
+ * Les règles de location propres à chaque pays, côté affichage. Seul le Sénégal en porte, tirées de textes lus : le COCC
+ * (loi n° 66-70 du 13 juillet 1966), art. 571, et le décret n° 2023-382 du 24 février 2023 (JO n° 7605). Le COCC est un code
+ * sénégalais, pas un texte de l'UEMOA : les autres pays, dont ceux de l'UEMOA, gardent le comportement neutre d'avant tant
+ * que leurs règles n'ont pas été lues et validées. Rien n'est jamais bloquant : le gestionnaire reste libre.
+ */
+const bail = (surcharge: Partial<Parameters<typeof avertissementsDuBail>[1]> = {}) => ({
+  leaseType: "HABITATION",
+  rent: 200000,
+  deposit: 400000,
+  currency: "XOF",
+  paymentDay: "31",
+  startDate: "2026-01-01",
+  endDate: "2029-01-01",
+  ...surcharge,
+});
+
+describe("règles par pays — valeurs proposées", () => {
+  it("Sénégal : droit applicable prérempli, échéance en fin de mois, bail de 36 mois, mise en demeure à 30 jours", () => {
+    const r = reglesDuPays("SN");
+
+    expect(r.droitApplicable).toContain("Code des obligations civiles et commerciales");
+    expect(r.droitApplicable).toContain("2023-382");
+    expect(r.jourEcheance).toBe("31");
+    expect(r.dureeBailMois).toBe(36);
+    expect(r.delaiMiseEnDemeureJours).toBe(30);
+  });
+
+  it("tout autre pays, et un compte sans pays : le comportement neutre d'avant", () => {
+    for (const code of [...CODES_PAYS.filter((c) => c !== "SN"), null, undefined, "XX"]) {
+      const r = reglesDuPays(code);
+      expect(r, String(code)).toEqual({ droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 });
+    }
+  });
+
+  it("n'attribue pas le COCC aux autres pays de l'UEMOA", () => {
+    for (const code of ["CI", "ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
+  });
+
+  it("renouvellement : 36 mois pour un bail d'habitation au Sénégal, 12 mois partout ailleurs et pour un bail commercial", () => {
+    expect(dureeRenouvellementMois("SN", "HABITATION")).toBe(36);
+    expect(dureeRenouvellementMois("SN", "COMMERCIAL")).toBe(12);
+    expect(dureeRenouvellementMois("FR", "HABITATION")).toBe(12);
+    expect(dureeRenouvellementMois(null, "HABITATION")).toBe(12);
+  });
+
+  it("date de fin proposée : début + 36 mois au Sénégal (même convention que le renouvellement), rien ailleurs", () => {
+    expect(dateDeFinParDefaut("SN", "HABITATION", "2026-03-15")).toBe("2029-03-15");
+    expect(dateDeFinParDefaut("SN", "HABITATION", "2028-02-29")).toBe("2031-02-28");
+    expect(dateDeFinParDefaut("SN", "COMMERCIAL", "2026-03-15")).toBe("");
+    expect(dateDeFinParDefaut("FR", "HABITATION", "2026-03-15")).toBe("");
+    expect(dateDeFinParDefaut("SN", "HABITATION", "")).toBe("");
+  });
+});
+
+describe("règles par pays — avertissements du bail (Sénégal)", () => {
+  it("aucun avertissement pour un bail conforme : 3 ans, échéance en fin de mois, caution de 2 mois", () => {
+    expect(avertissementsDuBail("SN", bail())).toEqual([]);
+  });
+
+  it("caution : plus de 2 mois de loyer pour un loyer d'au plus 500 000 FCFA (décret 2023-382)", () => {
+    expect(avertissementsDuBail("SN", bail({ deposit: 400001 })).map((a) => a.cle)).toEqual(["deposit"]);
+    expect(avertissementsDuBail("SN", bail({ rent: 500000, deposit: 1000001 })).map((a) => a.cle)).toEqual(["deposit"]);
+  });
+
+  it("caution : le décret ne plafonne rien au-dessus de 500 000 FCFA, ni dans une autre devise", () => {
+    expect(avertissementsDuBail("SN", bail({ rent: 500001, deposit: 3000000 }))).toEqual([]);
+    expect(avertissementsDuBail("SN", bail({ currency: "EUR", rent: 300, deposit: 3000 }))).toEqual([]);
+  });
+
+  it("caution : ne dit rien tant que le loyer ou la caution ne sont pas saisis", () => {
+    expect(avertissementsDuBail("SN", bail({ rent: 0, deposit: 500000 }))).toEqual([]);
+    expect(avertissementsDuBail("SN", bail({ rent: Number.NaN, deposit: Number.NaN }))).toEqual([]);
+  });
+
+  it("échéance : le loyer est payable à la fin du mois de jouissance, pas à un autre jour ni au jour de début", () => {
+    expect(avertissementsDuBail("SN", bail({ paymentDay: "5" })).map((a) => a.cle)).toEqual(["paymentDay"]);
+    expect(avertissementsDuBail("SN", bail({ paymentDay: "" })).map((a) => a.cle)).toEqual(["paymentDay"]);
+    expect(avertissementsDuBail("SN", bail({ paymentDay: "31" }))).toEqual([]);
+  });
+
+  it("durée : un bail d'habitation est de trois ans renouvelables ou à durée indéterminée (COCC, art. 571)", () => {
+    expect(avertissementsDuBail("SN", bail({ endDate: "2027-01-01" })).map((a) => a.cle)).toEqual(["duration"]);
+    expect(avertissementsDuBail("SN", bail({ endDate: "2029-06-01" })).map((a) => a.cle)).toEqual(["duration"]);
+  });
+
+  it("durée : trois ans exactement, en comptant la fin au dernier jour ou au lendemain", () => {
+    expect(avertissementsDuBail("SN", bail({ endDate: "2029-01-01" }))).toEqual([]);
+    expect(avertissementsDuBail("SN", bail({ endDate: "2028-12-31" }))).toEqual([]);
+  });
+
+  it("durée : ne dit rien tant que les dates ne sont pas saisies", () => {
+    expect(avertissementsDuBail("SN", bail({ startDate: "", endDate: "" }))).toEqual([]);
+    expect(avertissementsDuBail("SN", bail({ endDate: "" }))).toEqual([]);
+  });
+
+  it("un bail commercial n'est pas concerné (il relève d'un autre régime)", () => {
+    expect(avertissementsDuBail("SN", bail({ leaseType: "COMMERCIAL", deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" }))).toEqual([]);
+  });
+
+  it("aucun avertissement hors du Sénégal : les règles des autres pays n'ont pas été lues", () => {
+    for (const code of ["FR", "CI", "ML", null, undefined]) {
+      expect(avertissementsDuBail(code, bail({ deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" })), String(code)).toEqual([]);
+    }
+  });
+});

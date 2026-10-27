@@ -126,8 +126,8 @@ describe("ListingsPage (manager)", () => {
     await user.selectOptions(screen.getByLabelText("Pays"), "SN");
     expect(devise.value).toBe("XOF");
 
-    await user.selectOptions(devise, "USD");
-    expect(devise.value).toBe("USD");
+    await user.selectOptions(devise, "EUR");
+    expect(devise.value).toBe("EUR");
   });
 
   it("crée une annonce : envoie un FormData avec les bons champs, y compris featured et l'image", async () => {

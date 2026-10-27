@@ -41,6 +41,13 @@ function devisesDuFrontend(): DeviseDuFrontend[] {
 }
 
 describe("Devises acceptées par le serveur", () => {
+  it("se limite à l'euro et au franc CFA (XOF), les devises de la France et de l'UEMOA", () => {
+    expect([...DEVISES_ACCEPTEES].sort()).toEqual(["EUR", "XOF"]);
+    for (const refusee of ["USD", "XAF", "GBP", "CAD", "CHF", "MAD", "GNF", "MRU", "CDF", "STN"]) {
+      expect(estDeviseAcceptee(refusee), refusee).toBe(false);
+    }
+  });
+
   it("expose exactement les devises que le frontend propose", () => {
     const attendues = devisesDuFrontend();
 

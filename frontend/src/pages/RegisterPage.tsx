@@ -6,6 +6,7 @@ import GoogleSignInButton from "../components/GoogleSignInButton";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
+import SelecteurPays from "../components/SelecteurPays";
 import { useAuth } from "../context/auth";
 import { isGoogleSignInEnabled } from "../utils/googleAuth";
 import { homePathForRole } from "../utils/roleHome";
@@ -69,6 +70,9 @@ export default function RegisterPage() {
   const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState("");
+  // Pays de l'agence : vide tant qu'il n'est pas choisi, jamais deviné (pas de pays « par défaut » : il fixe les règles
+  // de location appliquées et ne se change plus ensuite).
+  const [country, setCountry] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   // Pré-rempli depuis un lien de parrainage partagé (?ref=CODE, voir
@@ -96,10 +100,14 @@ export default function RegisterPage() {
       setError(t("auth.register.tooShortError"));
       return;
     }
+    if (!country) {
+      setError(t("auth.register.countryRequiredError"));
+      return;
+    }
 
     setLoading(true);
     try {
-      await register(email, password, referralCode);
+      await register(email, password, country, referralCode);
       setSent(true);
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -279,6 +287,18 @@ export default function RegisterPage() {
                       placeholder={t("auth.register.passwordPlaceholder")}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="register-country" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.register.country")}</label>
+                  <SelecteurPays
+                    id="register-country"
+                    value={country}
+                    onChange={setCountry}
+                    placeholder={t("auth.register.countryPlaceholder")}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+                  />
+                  <p className="mt-1.5 text-[11px] text-slate-400">{t("auth.register.countryHint")}</p>
                 </div>
 
                 <div>

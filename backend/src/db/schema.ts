@@ -78,6 +78,10 @@ export const users = pgTable("users", {
   // explicite de déconnexion globale.
   tokenVersion: integer("token_version").notNull().default(0),
   currency: text("currency").notNull().default("EUR"),
+  // Pays de l'agence (ISO 3166-1 alpha-2, dans la zone couverte : voir utils/pays.ts). Il fixe, pays par pays, les règles de
+  // location applicables à l'agence ; choisi à l'inscription, puis ne change plus. NULL = pas encore choisi : un compte
+  // créé par Google, ou d'avant ce champ, le choisit à sa prochaine connexion (POST /auth/country).
+  country: text("country"),
   // Langue de l'interface de cette personne (fr, en, es, pt), enregistrée à l'inscription puis à chaque connexion.
   // Les e-mails qui lui sont adressés sans qu'elle fasse de requête (rappels de fin de contrat et d'assurance,
   // récompense de parrainage) sont écrits dans cette langue. NULL = compte d'avant : le français.

@@ -1,5 +1,11 @@
 /**
- * Les pays couverts par la plateforme — source unique.
+ * Les pays couverts par la plateforme — source unique : la France et les huit pays de l'UEMOA.
+ *
+ * Le périmètre est volontairement restreint (le choix du pays à l'inscription fixe ensuite les règles de location
+ * applicables à l'agence, pays par pays). Les autres pays d'Afrique et d'Europe en ont été retirés ; en ajouter un,
+ * c'est d'abord disposer de ses règles de location, pas seulement d'un indicatif téléphonique.
+ *
+ * Contexte historique :
  *
  * Trois listes indépendantes décrivaient le même marché : les codes pays des
  * annonces et de la vitrine, les indicatifs téléphoniques, et les devises.
@@ -33,7 +39,7 @@ export interface Pays {
   prefixeNational: string | null;
   /** Numéro local plausible, écrit comme on l'écrit sur place. Sert de repère de saisie. */
   exempleTelephone: string;
-  /** ISO 4217. Plusieurs pays partagent la même — sept sont en XOF ici. */
+  /** ISO 4217. Plusieurs pays partagent la même — huit sont en XOF ici. */
   devise: string;
 }
 
@@ -45,22 +51,8 @@ export const PAYS = [
   { code: "BJ", indicatif: "229", prefixeNational: null, exempleTelephone: "01 97 12 34 56", devise: "XOF" },
   { code: "TG", indicatif: "228", prefixeNational: null, exempleTelephone: "90 12 34 56", devise: "XOF" },
   { code: "NE", indicatif: "227", prefixeNational: null, exempleTelephone: "90 12 34 56", devise: "XOF" },
-  { code: "GN", indicatif: "224", prefixeNational: null, exempleTelephone: "62 12 34 56 7", devise: "GNF" },
-  { code: "CM", indicatif: "237", prefixeNational: null, exempleTelephone: "6 71 23 45 67", devise: "XAF" },
-  { code: "GA", indicatif: "241", prefixeNational: null, exempleTelephone: "06 12 34 56", devise: "XAF" },
-  { code: "CG", indicatif: "242", prefixeNational: null, exempleTelephone: "06 123 45 67", devise: "XAF" },
-  { code: "CD", indicatif: "243", prefixeNational: "0", exempleTelephone: "081 234 56 78", devise: "CDF" },
-  { code: "TD", indicatif: "235", prefixeNational: null, exempleTelephone: "66 12 34 56", devise: "XAF" },
-  // Ajoutée pour compléter la zone franc CEMAC, dont quatre pays sur six
-  // figuraient déjà : une zone monétaire à trous se remarque surtout le jour
-  // où un gestionnaire cherche son pays et ne le trouve pas.
-  { code: "CF", indicatif: "236", prefixeNational: null, exempleTelephone: "70 12 34 56", devise: "XAF" },
-  { code: "MR", indicatif: "222", prefixeNational: null, exempleTelephone: "22 12 34 56", devise: "MRU" },
-  { code: "MA", indicatif: "212", prefixeNational: "0", exempleTelephone: "06 12 34 56 78", devise: "MAD" },
+  { code: "GW", indicatif: "245", prefixeNational: null, exempleTelephone: "955 123 456", devise: "XOF" },
   { code: "FR", indicatif: "33", prefixeNational: "0", exempleTelephone: "06 12 34 56 78", devise: "EUR" },
-  { code: "BE", indicatif: "32", prefixeNational: "0", exempleTelephone: "0475 12 34 56", devise: "EUR" },
-  { code: "CH", indicatif: "41", prefixeNational: "0", exempleTelephone: "079 123 45 67", devise: "CHF" },
-  { code: "CA", indicatif: "1", prefixeNational: null, exempleTelephone: "514 123 4567", devise: "CAD" },
 ] as const satisfies readonly Pays[];
 
 export type CodePays = (typeof PAYS)[number]["code"];
@@ -79,11 +71,7 @@ export const DEVISES_DES_PAYS: string[] = Array.from(new Set(PAYS.map((p) => p.d
  * orpheline qui ne figure pas dans cette liste, de sorte qu'un ajout distrait
  * échoue, tandis qu'un ajout réfléchi coûte une ligne d'explication.
  */
-export const DEVISES_HORS_TABLE: Record<string, string> = {
-  USD: "Monnaie de référence pour les loyers d'expatriés et les biens haut de gamme, y compris là où elle n'a pas cours légal.",
-  GBP: "Diaspora ouest-africaine du Royaume-Uni, qui gère des biens au pays depuis Londres.",
-  STN: "São Tomé n'est pas encore dans la table, mais l'application est traduite en portugais : la devise précède l'ouverture du marché.",
-};
+export const DEVISES_HORS_TABLE: Record<string, string> = {};
 
 /** Le pays d'un code, ou `undefined` — utile aux dérivations et aux tests. */
 export function paysParCode(code: string): Pays | undefined {

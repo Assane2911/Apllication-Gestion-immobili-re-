@@ -10,7 +10,7 @@ import { avecCode } from "./validationExplicite";
  * `backend` et `frontend`, on ne peut pas l'importer ; `devises.test.ts` lit
  * donc le fichier du frontend et échoue si les deux divergent. C'est
  * inhabituel, et c'est moins coûteux que de faire du dépôt un monorepo pour
- * une liste de douze codes.
+ * une liste de deux codes.
  *
  * Pourquoi valider ici alors que le sélecteur ne propose que ces codes : le
  * serveur ne peut pas supposer que ses appels viennent de son interface.
@@ -30,18 +30,9 @@ export interface PresentationDevise {
 
 export const DEVISES: Record<string, PresentationDevise> = {
   EUR: { symbole: "€", position: "apres" },
-  USD: { symbole: "$", position: "avant" },
   XOF: { symbole: "FCFA", position: "apres" },
-  XAF: { symbole: "FCFA", position: "apres" },
-  STN: { symbole: "Db", position: "apres" },
-  GBP: { symbole: "£", position: "avant" },
-  CAD: { symbole: "$CA", position: "avant" },
-  CHF: { symbole: "CHF", position: "apres" },
-  MAD: { symbole: "DH", position: "apres" },
-  GNF: { symbole: "FG", position: "apres" },
-  MRU: { symbole: "UM", position: "apres" },
-  CDF: { symbole: "FC", position: "apres" },
 };
+
 
 export const DEVISES_ACCEPTEES = Object.keys(DEVISES);
 

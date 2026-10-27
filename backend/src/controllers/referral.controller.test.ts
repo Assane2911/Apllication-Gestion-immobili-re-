@@ -72,7 +72,7 @@ describe("POST /api/auth/register — rattachement au parrain", () => {
 
     const res = await request(app)
       .post("/api/auth/register")
-      .send({ email: "filleul@test.local", password: "Password123!", referralCode: code });
+      .send({ country: "SN", email: "filleul@test.local", password: "Password123!", referralCode: code });
 
     expect(res.status).toBe(201);
     const [filleul] = await testDb.select().from(users).where(eq(users.email, "filleul@test.local"));
@@ -82,7 +82,7 @@ describe("POST /api/auth/register — rattachement au parrain", () => {
   it("ignore en silence un code de parrainage inconnu", async () => {
     const res = await request(app)
       .post("/api/auth/register")
-      .send({ email: "sanscode@test.local", password: "Password123!", referralCode: "DEADBEEF" });
+      .send({ country: "SN", email: "sanscode@test.local", password: "Password123!", referralCode: "DEADBEEF" });
 
     expect(res.status).toBe(201);
     const [filleul] = await testDb.select().from(users).where(eq(users.email, "sanscode@test.local"));
@@ -96,7 +96,7 @@ describe("POST /api/auth/register — rattachement au parrain", () => {
 
     const res = await request(app)
       .post("/api/auth/register")
-      .send({ email: "viacollab@test.local", password: "Password123!", referralCode: "ABCD1234" });
+      .send({ country: "SN", email: "viacollab@test.local", password: "Password123!", referralCode: "ABCD1234" });
 
     expect(res.status).toBe(201);
     const [filleul] = await testDb.select().from(users).where(eq(users.email, "viacollab@test.local"));

@@ -40,11 +40,11 @@ describe("énumération des comptes", () => {
 
       const surAdressePrise = await request(app)
         .post("/api/auth/register")
-        .send({ email: existant.email, password: "MotDePasse123" });
+        .send({ country: "SN", email: existant.email, password: "MotDePasse123" });
 
       const surAdresseLibre = await request(app)
         .post("/api/auth/register")
-        .send({ email: `libre-${Date.now()}@exemple.fr`, password: "MotDePasse123" });
+        .send({ country: "SN", email: `libre-${Date.now()}@exemple.fr`, password: "MotDePasse123" });
 
       expect(surAdressePrise.status).toBe(surAdresseLibre.status);
       expect(surAdressePrise.body).toEqual(surAdresseLibre.body);
@@ -62,7 +62,7 @@ describe("énumération des comptes", () => {
 
       await request(app)
         .post("/api/auth/register")
-        .send({ email: existant.email, password: "UnAutreMotDePasse123" });
+        .send({ country: "SN", email: existant.email, password: "UnAutreMotDePasse123" });
 
       const connexion = await request(app)
         .post("/api/auth/login")
@@ -85,7 +85,7 @@ describe("énumération des comptes", () => {
 
       const res = await request(app)
         .post("/api/auth/register")
-        .send({ email: existant.email, password: "UnAutreMotDePasse123" });
+        .send({ country: "SN", email: existant.email, password: "UnAutreMotDePasse123" });
 
       expect(res.status).toBe(201);
       expect(espion).toHaveBeenCalledTimes(1);
@@ -122,7 +122,7 @@ describe("énumération des comptes", () => {
       // Adresse déjà prise : la réponse ne doit pas arriver avant l'envoi.
       const surPrise = request(app)
         .post("/api/auth/register")
-        .send({ email: existant.email, password: "UnAutreMotDePasse123" })
+        .send({ country: "SN", email: existant.email, password: "UnAutreMotDePasse123" })
         .then((r) => r.status);
       let termine = false;
       void surPrise.then(() => {
@@ -139,7 +139,7 @@ describe("énumération des comptes", () => {
       resoudre = undefined;
       const surLibre = request(app)
         .post("/api/auth/register")
-        .send({ email: `libre-${Date.now()}@exemple.fr`, password: "UnAutreMotDePasse123" })
+        .send({ country: "SN", email: `libre-${Date.now()}@exemple.fr`, password: "UnAutreMotDePasse123" })
         .then((r) => r.status);
       let termine2 = false;
       void surLibre.then(() => {

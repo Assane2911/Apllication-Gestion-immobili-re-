@@ -5,6 +5,7 @@ import { libelleEcheance } from "../utils/jourEcheance";
 import { libelleSurface, titreDuBail } from "../utils/typeBail";
 import { formaterDate, LANGUE_PAR_DEFAUT, LOCALE_PAR_LANGUE, nomDuMois, type Langue } from "../utils/langue";
 import { nomAvecCivilite } from "../utils/nom";
+import { mentionMiseEnDemeure } from "../utils/reglesPays";
 import { TEXTES_CRG } from "./document.crg.textes";
 import { estUrlPubliqueDuStockage } from "./storage.service";
 
@@ -1310,6 +1311,8 @@ export interface FormalNoticeData {
   applicableLaw: string | null;
   garants: string[];
   agency: { name: string; address: string | null; phone: string | null; email: string | null; siretOrId: string | null };
+  /** Pays de l'agence (voir utils/pays.ts) : il décide d'une éventuelle mention propre au droit local ; absent, aucune. */
+  pays?: string | null;
 }
 
 const MOIS_COURRIER = [
@@ -1357,6 +1360,8 @@ export function texteMiseEnDemeure(d: FormalNoticeData) {
       "Si vous rencontrez des difficultés, nous vous invitons à prendre contact avec nous sans attendre afin d'examiner une solution. " +
       "Si vous avez réglé ces sommes entre-temps, nous vous prions de ne pas tenir compte de ce courrier.",
     droit: d.applicableLaw?.trim() ? `Droit applicable au bail : ${d.applicableLaw.trim()}` : null,
+    // Rappel du droit du pays de l'agence (voir utils/reglesPays.ts) : au Sénégal, ce courrier n'est pas l'acte extrajudiciaire.
+    mentionPays: mentionMiseEnDemeure(d.pays),
     formule: "Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.",
     signature: `Pour ${d.agency.name}`,
   };
@@ -1423,6 +1428,7 @@ export function generateFormalNoticeHtml(d: FormalNoticeData): string {
   <p>${escapeHtml(t.suites)}</p>
   <p>${escapeHtml(t.contact)}</p>
   ${t.droit ? `<p style="font-size:12px; color:#64748b;">${escapeHtml(t.droit)}</p>` : ""}
+  ${t.mentionPays ? `<p style="font-size:12px; color:#64748b;">${escapeHtml(t.mentionPays)}</p>` : ""}
   <p>${escapeHtml(t.formule)}</p>
   <div class="signature"><strong>${escapeHtml(t.signature)}</strong></div>
 </body>
@@ -1506,6 +1512,10 @@ export function generateFormalNoticePdfBuffer(d: FormalNoticeData): Promise<Buff
       paragraphe(t.contact);
       if (t.droit) {
         doc.fillColor(gray).font("Helvetica").fontSize(9).text(t.droit, gauche, doc.y, { width: largeur });
+        doc.moveDown(0.8);
+      }
+      if (t.mentionPays) {
+        doc.fillColor(gray).font("Helvetica").fontSize(9).text(t.mentionPays, gauche, doc.y, { width: largeur });
         doc.moveDown(0.8);
       }
       paragraphe(t.formule);

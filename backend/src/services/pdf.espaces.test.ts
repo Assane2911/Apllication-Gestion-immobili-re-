@@ -100,6 +100,43 @@ describe("PDF : identifiants légaux de l'agence", () => {
   });
 });
 
+describe("PDF : mention du pays sur la mise en demeure", () => {
+  const courrierDuPays = (pays: string | null) => ({
+    reference: "MED-2026-ABC123",
+    createdAt: new Date(2026, 9, 12),
+    deadlineDays: 30,
+    currency: "XOF",
+    totalDue: 250000,
+    factures: [{ periodMonth: 9, periodYear: 2026, dueDate: "2026-09-05T00:00:00.000Z", amount: 250000, resteDu: 250000 }],
+    destinataires: "Madame Awa DIOP",
+    adresse: "12 rue Carnot, Dakar",
+    propertyTitle: "Appartement Plateau",
+    contractStartDate: new Date(2025, 0, 1),
+    applicableLaw: null,
+    garants: [],
+    pays,
+    agency: { name: "Agence Téranga", address: null, phone: null, email: null, siretOrId: null },
+  });
+
+  it("Sénégal : le PDF rappelle l'acte extrajudiciaire", async () => {
+    const textes = textesEcrits();
+
+    await generateFormalNoticePdfBuffer(courrierDuPays("SN"));
+
+    expect(textes().some((t) => t.includes("acte extrajudiciaire") && t.includes("article 571"))).toBe(true);
+  });
+
+  it("France et compte sans pays : aucune mention", async () => {
+    for (const pays of ["FR", null]) {
+      const textes = textesEcrits();
+
+      await generateFormalNoticePdfBuffer(courrierDuPays(pays));
+
+      expect(textes().some((t) => t.includes("acte extrajudiciaire")), String(pays)).toBe(false);
+    }
+  });
+});
+
 describe("PDF : mise en demeure avec beaucoup de loyers impayés", () => {
   const nombreDePages = (pdf: Buffer) => (pdf.toString("latin1").match(/\/Type \/Page\b/g) ?? []).length;
   const courrier = (loyers: number) => ({

@@ -72,16 +72,14 @@ describe("AdminDashboardPage", () => {
     expect(screen.getByText("19")).toBeInTheDocument();
   });
 
-  // Régression : cette page formatait le MRR avec sa propre table de symboles
-  // (EUR/XOF/XAF/USD/GBP, symbole toujours après le montant), au lieu du
-  // formatage partagé (CurrencyContext) déjà utilisé par le reste de l'admin
-  // — un abonnement en USD ou GBP s'affichait donc "150 $" au lieu de "$150",
-  // et une devise plus récente (ex. CHF, MAD) retombait sur son code brut.
-  it("place le symbole avant le montant pour une devise qui le veut (USD)", async () => {
+  // Régression : cette page formatait le MRR avec sa propre table de symboles (symbole toujours après le montant), au
+  // lieu du formatage partagé (CurrencyContext) déjà utilisé par le reste de l'admin. Les devises de la zone couverte
+  // (euro, franc CFA) mettent leur symbole après le montant : le montant en FCFA doit s'écrire « 150 FCFA », pas « XOF 150 ».
+  it("écrit le MRR d'une devise avec le formatage partagé (franc CFA : symbole après le montant)", async () => {
     mockedApi.get.mockResolvedValueOnce({
       data: stats({
         mrr: {
-          byCurrency: [{ currency: "USD", total: 150, byPlan: { STARTER: 0, PRO: 150, ENTERPRISE: 0 }, contributors: 1 }],
+          byCurrency: [{ currency: "XOF", total: 150, byPlan: { STARTER: 0, PRO: 150, ENTERPRISE: 0 }, contributors: 1 }],
           contributors: 1,
         },
       }),
@@ -89,10 +87,10 @@ describe("AdminDashboardPage", () => {
 
     renderPage();
 
-    // "$150" apparaît deux fois (la tuile MRR et la ventilation par formule,
+    // « 150 FCFA » apparaît deux fois (la tuile MRR et la ventilation par formule,
     // toutes deux sur cette seule devise) : les deux affichages doivent
     // s'accorder.
-    await waitFor(() => expect(screen.getAllByText("$150").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText("150 FCFA").length).toBeGreaterThan(0));
   });
 
   it("liste les essais se terminant bientôt avec le nom de l'agence", async () => {

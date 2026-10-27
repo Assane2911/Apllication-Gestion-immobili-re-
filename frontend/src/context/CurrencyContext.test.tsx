@@ -5,7 +5,7 @@ import { api } from "../api/client";
 import { AuthProvider } from "./AuthContext";
 import { CurrencyProvider, CurrencySelector } from "./CurrencyContext";
 import { changerLangue } from "../i18n";
-import { useCurrency } from "./currency";
+import { CURRENCIES, configDevise, useCurrency } from "./currency";
 
 // AuthProvider ne fait un appel réseau (api.get("/auth/me")) que si une
 // session locale est déjà connue (voir AuthContext.tsx) — aucun test
@@ -27,9 +27,11 @@ function TestConsumer() {
       <span data-testid="amount-500">{formatMoney(500)}</span>
       <span data-testid="amount-null">{formatMoney(null)}</span>
       <span data-testid="amount-nan">{formatMoney(NaN)}</span>
-      <span data-testid="amount-override">{formatMoney(1234.5, "USD")}</span>
+      <span data-testid="amount-override">{formatMoney(1234.5, "XOF")}</span>
+      <span data-testid="amount-override-eur">{formatMoney(1234.5, "EUR")}</span>
       <span data-testid="amount-inconnue">{formatMoney(35000, "XYZ")}</span>
-      <span data-testid="amount-gnf">{formatMoney(50000, "GNF")}</span>
+      <span data-testid="amount-essai">{formatMoney(1234.5, "ESSAI")}</span>
+      <span data-testid="amount-xof">{formatMoney(50000, "XOF")}</span>
       <select data-testid="select" value={currency} onChange={(e) => setCurrency(e.target.value)}>
         {availableCurrencies.map((c) => (
           <option key={c.code} value={c.code}>
@@ -66,7 +68,7 @@ describe("CurrencyProvider — formatMoney", () => {
     expect(screen.getByTestId("amount-nan").textContent).toBe("—");
   });
 
-  it("respecte une devise de remplacement (overrideCurrency), symbole avant le nombre pour l'USD", () => {
+  it("respecte une devise de remplacement (overrideCurrency) : un montant en FCFA reste en FCFA quand l'affichage est en euros", () => {
     renderWithProviders();
     // fr-FR sépare les milliers par une espace fine insécable (U+202F), pas
     // une espace normale — on reproduit le même formatage que l'app plutôt que
@@ -75,7 +77,21 @@ describe("CurrencyProvider — formatMoney", () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(1234.5);
-    expect(screen.getByTestId("amount-override").textContent).toBe(`$${expectedNumber}`);
+    expect(screen.getByTestId("amount-override").textContent).toBe(`${expectedNumber} FCFA`);
+  });
+
+  it("place le symbole avant le nombre quand la devise le demande", () => {
+    // Aucune devise de la zone couverte (euro, franc CFA) ne place son symbole avant le nombre, mais le cas reste géré
+    // (une devise ajoutée demain peut le demander) : on l'exerce avec une devise d'essai.
+    CURRENCIES.ESSAI = { code: "ESSAI", symbol: "$", name: "Devise d'essai", flag: "", symbolPosition: "before" };
+    try {
+      expect(configDevise("ESSAI").symbolPosition).toBe("before");
+      renderWithProviders();
+      const nombre = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(1234.5);
+      expect(screen.getByTestId("amount-essai").textContent).toBe(`$${nombre}`);
+    } finally {
+      delete CURRENCIES.ESSAI;
+    }
   });
 
   it("affiche le code brut d'une devise inconnue, au lieu de la faire passer pour une autre", () => {
@@ -96,19 +112,17 @@ describe("CurrencyProvider — formatMoney", () => {
     expect(screen.getByTestId("amount-inconnue").textContent).toBe(`${expectedNumber} XYZ`);
   });
 
-  it("propose les devises des pays déjà couverts par la plateforme", () => {
-    // La Guinée, la Mauritanie et la RDC figuraient dans la liste des pays
-    // sans que leur monnaie existe ici : on pouvait publier un bien à Conakry
-    // sans pouvoir en fixer le loyer en francs guinéens.
+  it("propose exactement les devises de la zone couverte : l'euro et le franc CFA", () => {
+    // La France est en euros, les huit pays de l'UEMOA en franc CFA (XOF) : aucune autre devise n'est proposée.
     renderWithProviders();
 
     const expectedNumber = new Intl.NumberFormat("fr-FR", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(50000);
-    expect(screen.getByTestId("amount-gnf").textContent).toBe(`${expectedNumber} FG`);
+    expect(screen.getByTestId("amount-xof").textContent).toBe(`${expectedNumber} FCFA`);
     const codes = Array.from(screen.getByTestId("select").querySelectorAll("option")).map((o) => o.value);
-    expect(codes).toEqual(expect.arrayContaining(["GNF", "MRU", "CDF"]));
+    expect(codes.sort()).toEqual(["EUR", "XOF"]);
   });
 });
 
@@ -128,7 +142,7 @@ describe("CurrencyProvider — la devise de la pièce prime sur celle du gestion
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(1234.5);
-    expect(screen.getByTestId("amount-override").textContent).toBe(`$${attendu}`);
+    expect(screen.getByTestId("amount-override-eur").textContent).toBe(`${attendu} €`);
   });
 });
 
@@ -238,15 +252,15 @@ describe("CurrencySelector — noms de devises dans la langue de l'interface", (
 
   it("écrit le nom de chaque devise dans la langue choisie, pas toujours en français", async () => {
     afficherSelecteur();
-    expect(screen.getByRole("option", { name: /USD .*Dollar/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /XOF .*franc CFA/i })).toBeInTheDocument();
 
     await act(async () => {
       await changerLangue("en");
     });
     try {
-      expect(screen.getByRole("option", { name: /USD .*US Dollar/ })).toBeInTheDocument();
-      expect(screen.queryByRole("option", { name: /Dollar US/ })).not.toBeInTheDocument();
-      expect(screen.getByRole("option", { name: /GBP .*British Pound/ })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /XOF .*West African CFA Franc/ })).toBeInTheDocument();
+      expect(screen.queryByRole("option", { name: /Franc CFA \(UEMOA\)/ })).not.toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /EUR .*Euro/ })).toBeInTheDocument();
     } finally {
       await act(async () => {
         await changerLangue("fr");

@@ -2,11 +2,10 @@ import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client";
-import { contracts, formalNotices, properties, tenants } from "../db/schema";
+import { contracts, formalNotices, properties, tenants, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import {
   bauxAMettreEnDemeure,
-  DELAI_PAR_DEFAUT_JOURS,
   donneesDuCourrier,
   emettreMiseEnDemeure,
   listerMisesEnDemeure,
@@ -17,9 +16,11 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertAccesLocataireOuGestionnaire, assertOwnership, estLocataireDuBail } from "../utils/authorization";
 import { formaterMontant } from "../utils/montant";
 import { nomComplet } from "../utils/nom";
+import { delaiMiseEnDemeureParDefaut } from "../utils/reglesPays";
 
 const emissionSchema = z.object({
-  deadlineDays: z.coerce.number().int("Le délai est un nombre entier de jours.").min(1).max(60).default(DELAI_PAR_DEFAUT_JOURS),
+  // Absent : le délai par défaut du pays de l'agence (30 jours au Sénégal, 8 ailleurs), résolu plus bas.
+  deadlineDays: z.coerce.number().int("Le délai est un nombre entier de jours.").min(1).max(60).optional(),
   sendEmail: z.boolean().default(false),
   notifyGuarantors: z.boolean().default(false),
 });
@@ -47,11 +48,12 @@ export const createFormalNotice = asyncHandler(async (req: Request, res: Respons
   const { contrat, bien } = await contratDuGestionnaire(req);
   // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
   const body = emissionSchema.parse(req.body ?? {});
+  const [compte] = await db.select({ country: users.country }).from(users).where(eq(users.id, bien.managerId));
 
   const resultat = await emettreMiseEnDemeure({
     contractId: contrat.id,
     managerId: bien.managerId,
-    deadlineDays: body.deadlineDays,
+    deadlineDays: body.deadlineDays ?? delaiMiseEnDemeureParDefaut(compte?.country),
     envoyerParEmail: body.sendEmail,
     prevenirGarants: body.notifyGuarantors,
     createdBy: req.user!.collaboratorId ?? req.user!.userId,

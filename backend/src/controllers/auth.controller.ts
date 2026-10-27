@@ -29,6 +29,7 @@ import { AUTH_COOKIE_NAME, clearAuthCookie, CSRF_HEADER_NAME, setAuthCookie } fr
 import { signerJetonWeb } from "../utils/session";
 import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 import { deviseSchema } from "../utils/devises";
+import { deviseDuPays, paysSchema } from "../utils/pays";
 import { roleEquipeEffectif } from "../utils/rolesEquipe";
 
 // Durée de validité du lien de confirmation d'email envoyé à l'inscription.
@@ -37,6 +38,10 @@ const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
 const registerManagerSchema = z.object({
   email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
   password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").max(128, "Le mot de passe ne peut pas dépasser 128 caractères"),
+  // Pays de l'agence, dans la zone couverte (France et UEMOA, voir utils/pays.ts). Obligatoire : il fixe les règles de
+  // location applicables à l'agence, et la devise de son compte. Vérifié ici, AVANT de regarder si l'adresse existe,
+  // pour que la réponse reste la même qu'elle soit libre ou déjà prise.
+  country: paysSchema,
   // Code de parrainage (voir referral.service.ts), saisi manuellement ou
   // pré-rempli depuis le lien partagé (?ref=CODE). Facultatif, et un code
   // introuvable n'empêche jamais l'inscription — voir plus bas : ce n'est
@@ -259,6 +264,8 @@ export const registerManager = asyncHandler(async (req: Request, res: Response) 
       emailVerificationExpiresAt,
       referredByUserId,
       language: langueDeLaRequete(req),
+      country: body.country,
+      currency: deviseDuPays(body.country),
     })
     .returning();
 
@@ -377,6 +384,7 @@ async function finalizeLogin(user: typeof users.$inferSelect, res: Response, lan
       email: user.email,
       role: user.role,
       currency: user.currency ?? "EUR",
+      country: user.country ?? null,
       hasPassword: user.hasPassword,
       tenantId: tenant?.id ?? null,
       tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : null,
@@ -694,6 +702,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
       email: updated.email,
       role: updated.role,
       currency: updated.currency ?? "EUR",
+      country: updated.country ?? null,
       hasPassword: updated.hasPassword,
       tenantId: null,
       tenantName: null,
@@ -788,6 +797,7 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     email: identite.email,
     role: identite.role,
     currency: user.currency ?? "EUR",
+    country: user.country ?? null,
     hasPassword: identite.hasPassword,
     // `identite` ci-dessus est déjà la ligne du compte RÉELLEMENT connecté
     // (son email/mot de passe propres) — jamais celle du propriétaire de
@@ -895,6 +905,39 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   res.json({
     message: "Mot de passe mis à jour avec succès. Les sessions ouvertes sur vos autres appareils ont été fermées.",
   });
+});
+
+/**
+ * Choix du pays de l'agence, pour un compte qui n'en a pas encore (créé par Google, ou d'avant ce champ). Une seule
+ * fois : le pays décide des règles de location applicables, donc d'un bail déjà signé ; le changer ensuite passe
+ * par le support. La devise du compte devient celle du pays.
+ */
+export const updateCountry = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
+  const { country } = z.object({ country: paysSchema }).parse(req.body);
+
+  // Le pays est celui du COMPTE de l'agence (req.user.userId désigne le propriétaire pour un collaborateur) : même garde
+  // que la devise, un lecteur ou un agent n'a pas à le choisir pour toute l'équipe.
+  if (req.user.collaboratorId && req.roleEquipe !== "FULL") {
+    throw new ApiError(403, "Seul le propriétaire de l'agence, ou un collaborateur « tous droits », peut choisir le pays de l'agence.", "OWNER_ONLY_COUNTRY");
+  }
+
+  const compte = await chargerCompteCourant(req);
+  if (compte.country) {
+    throw new ApiError(409, "Le pays de l'agence est déjà choisi. Contactez le support pour le modifier.", "COUNTRY_ALREADY_SET");
+  }
+
+  // Conditionnée à « pas encore de pays » : deux requêtes simultanées ne peuvent pas toutes deux réussir.
+  const [updated] = await db
+    .update(users)
+    .set({ country, currency: deviseDuPays(country) })
+    .where(and(eq(users.id, req.user.userId), isNull(users.country)))
+    .returning();
+  if (!updated) {
+    throw new ApiError(409, "Le pays de l'agence est déjà choisi. Contactez le support pour le modifier.", "COUNTRY_ALREADY_SET");
+  }
+
+  res.json({ success: true, country: updated.country, currency: updated.currency });
 });
 
 /** Mise à jour de la devise préférée de l'utilisateur. */
