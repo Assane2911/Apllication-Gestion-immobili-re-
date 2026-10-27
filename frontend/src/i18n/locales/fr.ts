@@ -457,6 +457,9 @@ const fr = {
       home: "Tableau de bord",
       crg: "Compte-rendu de gestion",
     },
+    ownerShort: {
+      crg: "Compte-rendu",
+    },
     logout: "Se déconnecter",
     managerSpace: "Espace gestionnaire",
     tenantSpace: "Espace locataire",

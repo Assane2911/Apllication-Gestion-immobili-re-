@@ -459,6 +459,9 @@ const pt: TranslationSchema = {
       home: "Painel",
       crg: "Relatório de gestão",
     },
+    ownerShort: {
+      crg: "Relatório",
+    },
     logout: "Terminar sessão",
     managerSpace: "Área do gestor",
     tenantSpace: "Área do inquilino",
