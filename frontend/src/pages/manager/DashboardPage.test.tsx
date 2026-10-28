@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
@@ -32,12 +33,15 @@ function stats(overrides: Partial<DashboardStats> = {}): DashboardStats {
 }
 
 function renderPage() {
+  // Dans un routeur, comme en production : le guide de démarrage contient des liens.
   return render(
-    <AuthProvider>
-      <CurrencyProvider>
-        <DashboardPage />
-      </CurrencyProvider>
-    </AuthProvider>
+    <MemoryRouter>
+      <AuthProvider>
+        <CurrencyProvider>
+          <DashboardPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    </MemoryRouter>
   );
 }
 

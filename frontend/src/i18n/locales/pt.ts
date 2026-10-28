@@ -1131,6 +1131,26 @@ const pt: TranslationSchema = {
   },
 
   manager: {
+    demarrage: {
+      titre: "Para começar",
+      sousTitre: "A sua agência está configurada para {{pays}} (moeda: {{devise}}). Bastam quatro passos para emitir os seus primeiros documentos.",
+      sousTitreSansPays: "Bastam quatro passos para emitir os seus primeiros documentos.",
+      masquer: "Ocultar este guia",
+      faite: "Feito",
+      afaire: "Por fazer",
+      ouvrir: "Abrir",
+      identifiants: {
+        FR: "O seu SIRET. É impresso nos seus contratos, recibos e notificações.",
+        SN: "O seu NINEA e o seu RCCM. São impressos nos seus contratos, recibos e notificações.",
+        autre: "O número de registo da sua agência e o seu identificador fiscal. São impressos nos seus contratos, recibos e notificações.",
+      },
+      etapes: {
+        ids: { titre: "Indicar os identificadores legais da agência" },
+        bien: { titre: "Adicionar o seu primeiro imóvel", detail: "Morada, área e renda: um imóvel é o ponto de partida de um contrato." },
+        locataire: { titre: "Adicionar um inquilino", detail: "O nome, o email e o telefone com o indicativo do país." },
+        bail: { titre: "Criar um contrato ativo", detail: "Gera as faturas de renda e os seus primeiros documentos." },
+      },
+    },
     dashboard: {
       title: "Painel",
       loadingHint: "A carregar os indicadores principais...",
