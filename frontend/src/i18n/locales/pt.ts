@@ -798,7 +798,7 @@ const pt: TranslationSchema = {
           title: "Avisos de vencimento e lembretes de renda",
           description: "Antecipação dos pagamentos e redução das rendas em atraso",
           traditional: "Esquecimentos frequentes, chamadas incómodas, mensagens de WhatsApp dispersas, atrasos de pagamento regulares.",
-          immoplatform: "Alerta automático no dia 1 de cada mês com vencimento rigoroso no dia 5. Faturas instantâneas com estado em direto.",
+          immoplatform: "Aviso de vencimento automático no dia 1 de cada mês, com lembrete antes da data de vencimento fixada no contrato. Faturas instantâneas com estado em direto.",
         },
         receipts: {
           title: "Recibos de renda automáticos",

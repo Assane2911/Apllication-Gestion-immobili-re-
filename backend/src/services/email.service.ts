@@ -79,6 +79,21 @@ function signalerEchecEnvoi(err: unknown): void {
   }
 }
 
+/** Un envoi qui échoue pour une raison passagère est tenté une seconde fois, une seule : les envois attendent la réponse. */
+export const reglagesEnvoi = { essais: 2, pauseEntreEssaisMs: 1000 };
+
+/**
+ * L'échec a-t-il eu lieu AVANT que le serveur n'accepte le message ? Alors réessayer ne peut pas envoyer deux fois le
+ * même e-mail : résolution de l'adresse du serveur (un délai DNS isolé a fait perdre un e-mail le 26 octobre), connexion
+ * refusée ou trop lente (commande « CONN » pour nodemailer), ou refus temporaire du serveur (réponse 4xx). Une coupure en
+ * cours d'envoi, un délai après la commande DATA ou une erreur d'identifiants ne sont jamais réessayés : le message a pu
+ * partir, ou un second essai échouerait de la même façon.
+ */
+function peutEtreReessaye(err: unknown): boolean {
+  const { command, responseCode } = (err ?? {}) as { command?: unknown; responseCode?: unknown };
+  return command === "CONN" || (typeof responseCode === "number" && responseCode >= 400 && responseCode < 500);
+}
+
 export interface EmailAttachment {
   filename: string;
   content: Buffer;
@@ -134,20 +149,29 @@ export async function sendEmail(to: string, subject: string, html: string, attac
     );
     return { simulated: true };
   }
-  try {
-    const info = await t.sendMail({
-      from: env.smtp.from,
-      to: destinataire,
-      subject: sujet,
-      html,
-      attachments,
-    });
-    return { simulated: false, messageId: info.messageId };
-  } catch (err) {
-    console.error(`[email] Échec de l'envoi vers ${masquer(destinataire)}:`, err instanceof Error ? err.message : err);
-    signalerEchecEnvoi(err);
-    return { simulated: false, error: true };
+  let derniereErreur: unknown;
+  for (let essai = 1; essai <= reglagesEnvoi.essais; essai++) {
+    try {
+      const info = await t.sendMail({
+        from: env.smtp.from,
+        to: destinataire,
+        subject: sujet,
+        html,
+        attachments,
+      });
+      return { simulated: false, messageId: info.messageId };
+    } catch (err) {
+      derniereErreur = err;
+      if (essai < reglagesEnvoi.essais && peutEtreReessaye(err)) {
+        await new Promise((resolve) => setTimeout(resolve, reglagesEnvoi.pauseEntreEssaisMs));
+        continue;
+      }
+      break;
+    }
   }
+  console.error(`[email] Échec de l'envoi vers ${masquer(destinataire)}:`, derniereErreur instanceof Error ? derniereErreur.message : derniereErreur);
+  signalerEchecEnvoi(derniereErreur);
+  return { simulated: false, error: true };
 }
 
 /**

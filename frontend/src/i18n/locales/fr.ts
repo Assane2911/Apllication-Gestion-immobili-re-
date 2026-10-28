@@ -796,7 +796,7 @@ const fr = {
           title: "Avis d'échéance & Relances de loyer",
           description: "Anticipation des paiements et réduction des impayés",
           traditional: "Oublis fréquents, appels gênants, messages WhatsApp éparpillés, retards de paiement réguliers.",
-          immoplatform: "Alerte automatique chaque 1er du mois avec échéance stricte au 5. Factures instantanées avec statut en direct.",
+          immoplatform: "Avis d'échéance automatique chaque 1er du mois, rappel avant la date d'échéance fixée dans le bail. Factures instantanées avec statut en direct.",
         },
         receipts: {
           title: "Quittances de loyer automatiques",
