@@ -3,8 +3,8 @@ import { CODES_PAYS_ACCEPTES } from "./pays";
 import { delaiMiseEnDemeureParDefaut, mentionMiseEnDemeure } from "./reglesPays";
 
 /**
- * Les règles de location propres à chaque pays. Seuls le Sénégal (COCC, art. 571) et le Burkina Faso (loi n° 103-2015/CNT,
- * art. 28 à 30) en portent aujourd'hui, tirées de textes que l'équipe a lus ; les autres pays gardent le comportement neutre d'avant (8 jours, aucune mention) tant que leurs
+ * Les règles de location propres à chaque pays. Seuls le Sénégal (COCC, art. 571), le Burkina Faso (loi n° 103-2015/CNT,
+ * art. 28 à 30) et le Bénin (loi n° 2022-30, art. 75 et 76) en portent aujourd'hui, tirées de textes que l'équipe a lus ; les autres pays gardent le comportement neutre d'avant (8 jours, aucune mention) tant que leurs
  * règles n'ont pas été lues et validées. Le COCC est un code sénégalais, pas un texte de l'UEMOA.
  */
 describe("règles par pays — mise en demeure", () => {
@@ -26,8 +26,18 @@ describe("règles par pays — mise en demeure", () => {
     expect(mention).toMatch(/ne remplace pas/);
   });
 
+  it("Bénin : 30 jours par défaut (un mois pour payer) et une mention qui cite les articles 75 et 76", () => {
+    expect(delaiMiseEnDemeureParDefaut("BJ")).toBe(30);
+    const mention = mentionMiseEnDemeure("BJ");
+    expect(mention).toContain("dans le mois qui suit la mise en demeure");
+    expect(mention).toContain("loi n° 2022-30 du 20 décembre 2022");
+    expect(mention).toContain("articles 75 et 76");
+    // Au Bénin la mise en demeure écrite est l'acte prévu par la loi : la mention ne dit pas que le courrier est insuffisant.
+    expect(mention).not.toMatch(/ne remplace pas/);
+  });
+
   it("tout autre pays, et un compte sans pays : le comportement d'avant (8 jours, aucune mention)", () => {
-    for (const code of CODES_PAYS_ACCEPTES.filter((c) => c !== "SN" && c !== "BF")) {
+    for (const code of CODES_PAYS_ACCEPTES.filter((c) => !["SN", "BF", "BJ"].includes(c))) {
       expect(delaiMiseEnDemeureParDefaut(code), code).toBe(8);
       expect(mentionMiseEnDemeure(code), code).toBeNull();
     }
@@ -38,7 +48,7 @@ describe("règles par pays — mise en demeure", () => {
   });
 
   it("n'attribue pas le COCC aux autres pays de l'UEMOA", () => {
-    for (const code of ["CI", "ML", "BJ", "TG", "NE", "GW"]) expect(mentionMiseEnDemeure(code), code).toBeNull();
+    for (const code of ["CI", "ML", "TG", "NE", "GW"]) expect(mentionMiseEnDemeure(code), code).toBeNull();
     expect(mentionMiseEnDemeure("BF")).not.toContain("Code des obligations civiles et commerciales");
   });
 });

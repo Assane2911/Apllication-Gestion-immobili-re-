@@ -222,7 +222,7 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
-  it.each(["BJ", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
+  it.each(["TG", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
     charger();
     const { container } = rendre(pays);
     const user = await ouvrirNouveauBail();
@@ -243,7 +243,7 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     charger([bail({ currency: "EUR" })]);
     mockedApi.post.mockResolvedValueOnce({ data: {} });
     charger([bail({ currency: "EUR" })]);
-    rendre("BJ");
+    rendre("TG");
 
     const user = userEvent.setup();
     await user.click((await screen.findAllByRole("button", { name: /Renouveler/ }))[0]);
@@ -270,6 +270,30 @@ describe("ContractsPage — règles du Mali (décret n° 2016-0482/P-RM)", () =>
     fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "9000000" } });
     expect((container.querySelectorAll('input[type="date"]')[1] as HTMLInputElement).value).toBe("");
     expect(screen.queryByText(/À vérifier au regard/)).not.toBeInTheDocument();
+  });
+});
+
+describe("ContractsPage — règles du Bénin (loi n° 2022-30)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("préremplit le droit béninois et rappelle, sans bloquer, un cautionnement de plus de trois mois de loyer", async () => {
+    charger();
+    rendre("BJ");
+    const user = await ouvrirNouveauBail();
+
+    expect((screen.getByLabelText(/Droit applicable/) as HTMLInputElement).value).toContain("Loi n° 2022-30 du 20 décembre 2022");
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    fireEvent.change(screen.getByLabelText("Loyer mensuel"), { target: { value: "200000" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "600000" } });
+    expect(screen.queryByText("À vérifier au regard du droit béninois")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "800000" } });
+    expect(screen.getByText("À vérifier au regard du droit béninois")).toBeInTheDocument();
+    expect(screen.getByText(/ne peut pas excéder trois mois de loyer/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Créer le contrat" })).toBeEnabled();
   });
 });
 

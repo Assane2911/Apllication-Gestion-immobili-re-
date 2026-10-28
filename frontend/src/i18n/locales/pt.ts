@@ -1423,6 +1423,11 @@ const pt: TranslationSchema = {
       addBtn: "+ Novo contrato",
       formTitle: "Novo contrato",
       regles: {
+        BJ: {
+          titre: "A verificar à luz do direito beninense",
+          deposit: "A caução não pode exceder três meses de renda (Lei n.º 2022-30, de 20 de dezembro de 2022, artigos 57 e 69). O valor comparado é a renda introduzida neste formulário.",
+          note: "Estes avisos são informativos: a decisão continua a ser sua e não substituem o parecer de um profissional.",
+        },
         BF: {
           titre: "A verificar à luz do direito burquinense",
           deposit: "A caução não pode ser superior a dois meses de renda (Lei n.º 103-2015/CNT, de 22 de dezembro de 2015, artigo 26). O valor comparado é a renda introduzida neste formulário.",

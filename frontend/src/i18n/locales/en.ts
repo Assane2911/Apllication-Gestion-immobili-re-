@@ -1423,6 +1423,11 @@ const en: TranslationSchema = {
       addBtn: "+ New contract",
       formTitle: "New contract",
       regles: {
+        BJ: {
+          titre: "To check against Beninese law",
+          deposit: "The security deposit cannot exceed three months' rent (Law no. 2022-30 of 20 December 2022, articles 57 and 69). The amount compared is the rent entered in this form.",
+          note: "These reminders are for information only: the choice stays yours, and they do not replace professional advice.",
+        },
         BF: {
           titre: "To check against Burkinabè law",
           deposit: "The security deposit cannot be more than two months' rent (Law no. 103-2015/CNT of 22 December 2015, article 26). The amount compared is the rent entered in this form.",

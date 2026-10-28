@@ -13,6 +13,11 @@
  * 456, version de la DGI). Pas encore : l'enregistrement du bail, la révision triennale, les congés (3 mois) et la procédure
  * d'expulsion, qui demandent des décisions de produit. À faire relire par un professionnel ivoirien.
  *
+ * Bénin — texte lu : loi n° 2022-30 du 20 décembre 2022 fixant le régime juridique du bail à usage d'habitation en République du
+ * Bénin (141 articles, entièrement lue ; elle abroge les lois n° 2018-12 et n° 2021-02). Pas encore : le plafond du loyer (8 % de
+ * la valeur réelle selon un barème de commission d'évaluation, art. 57 à 64), la révision (2 % au plus, art. 68), les préavis, les
+ * plafonds de commission d'agent immobilier (art. 27). À faire relire par un professionnel béninois.
+ *
  * Burkina Faso — texte lu : loi n° 103-2015/CNT du 22 décembre 2015 portant bail d'habitation privée au Burkina Faso (68 articles,
  * entièrement lue). Pas encore : le plafond du loyer (7 % du coût de réalisation, art. 6 : il faut le référentiel du ministère),
  * la révision (décret non lu), le commandement de payer, les préavis. À faire relire par un professionnel burkinabè.
@@ -43,6 +48,15 @@ export interface ReglesPays {
 const NEUTRES: ReglesPays = { droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 };
 
 const REGLES: Record<string, ReglesPays> = {
+  BJ: {
+    droitApplicable: "Loi n° 2022-30 du 20 décembre 2022 fixant le régime juridique du bail à usage d'habitation en République du Bénin",
+    // Article 66 : paiement mensuel « à la date arrêtée par les parties » : aucun jour imposé, on garde le 5 d'avant.
+    jourEcheance: "5",
+    // Article 72 : « durée déterminée, librement fixée par les parties » : aucune durée proposée.
+    dureeBailMois: null,
+    // Articles 75 et 76 : après la mise en demeure, le locataire doit payer dans un délai d'un mois.
+    delaiMiseEnDemeureJours: 30,
+  },
   BF: {
     droitApplicable: "Loi n° 103-2015/CNT du 22 décembre 2015 portant bail d'habitation privée au Burkina Faso",
     // Article 16 : le loyer est versé « selon les modalités convenues dans le contrat » : aucun jour imposé, on garde le 5 d'avant.
@@ -153,7 +167,7 @@ const SEUIL_DECRET_FCFA = 500000;
 export function avertissementsDuBail(pays: string | null | undefined, bail: BailAControler): AvertissementBail[] {
   if (bail.leaseType !== TYPE_HABITATION) return [];
   if (pays === "FR") return avertissementsFrance(bail);
-  if (pays === "CI" || pays === "BF") return avertissementDepotDeuxMois(bail);
+  if (pays && pays in PLAFOND_DEPOT_MOIS) return avertissementDepotPlafonne(bail, PLAFOND_DEPOT_MOIS[pays]);
   if (pays !== "SN") return [];
   const avertissements: AvertissementBail[] = [];
 
@@ -193,10 +207,15 @@ function avertissementsFrance(bail: BailAControler): AvertissementBail[] {
 }
 
 /**
- * Côte d'Ivoire (loi n° 2019-576, article 416) et Burkina Faso (loi n° 103-2015/CNT, article 26) : un seul rappel, non
- * bloquant — le dépôt de garantie ne peut pas excéder deux mois de loyer (le loyer comparé est celui saisi ici). Les textes lus
- * ne fixent ni durée minimale ni jour d'échéance : aucun rappel là-dessus.
+ * Plafond du dépôt de garantie, en mois de loyer, pour les pays dont le texte lu le fixe : Côte d'Ivoire (loi n° 2019-576,
+ * article 416) et Burkina Faso (loi n° 103-2015/CNT, article 26), deux mois ; Bénin (loi n° 2022-30, articles 57 et 69), trois mois.
  */
-function avertissementDepotDeuxMois(bail: BailAControler): AvertissementBail[] {
-  return bail.rent > 0 && bail.deposit > 2 * bail.rent ? [{ cle: "deposit" }] : [];
+const PLAFOND_DEPOT_MOIS: Record<string, number> = { CI: 2, BF: 2, BJ: 3 };
+
+/**
+ * Un seul rappel, non bloquant : le dépôt de garantie dépasse le plafond du pays (le loyer comparé est celui saisi ici). Les
+ * textes lus ne fixent ni durée minimale ni jour d'échéance : aucun rappel là-dessus.
+ */
+function avertissementDepotPlafonne(bail: BailAControler, mois: number): AvertissementBail[] {
+  return bail.rent > 0 && bail.deposit > mois * bail.rent ? [{ cle: "deposit" }] : [];
 }
