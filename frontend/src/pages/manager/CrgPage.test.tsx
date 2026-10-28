@@ -129,6 +129,22 @@ describe("CrgPage", () => {
     );
   });
 
+  it("ouvre le relevé annuel de l'année choisie, pas du mois", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+
+    mockedApi.get.mockResolvedValueOnce({ data: "<html><body>Relevé</body></html>" });
+    await userEvent.setup().click(screen.getByRole("button", { name: "Relevé annuel 2026" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/owner-1/annual/export?year=2026", {
+        responseType: "text",
+        signal: expect.anything(),
+      })
+    );
+  });
+
   it("s'ouvre sur le mois indiqué dans l'adresse (lien « Reverser » de la page des propriétaires)", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: crg({ month: 9, year: 2025 }) });
     renderPage("/proprietaires/owner-1/crg?month=9&year=2025");

@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
 import { agencySettings, contracts, expenses, invoices, ownerPayouts, owners, properties } from "../db/schema";
+import { generateReleveAnnuelHtml } from "../services/document.releveAnnuel";
 import { generateCrgHtml } from "../services/pdf.service";
 import { developperFactures, factureEncaissee } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -337,6 +338,152 @@ function assemblerCrg(owner: OwnerRow, month: number, year: number, donnees: Don
   };
 }
 
+/** Relevé annuel des loyers d'UN propriétaire : la somme des douze comptes-rendus de gestion mensuels de l'année. */
+export type ReleveAnnuel = {
+  ownerId: string;
+  ownerName: string;
+  ownerCompanyName: string | null;
+  managementFeeRate: number;
+  year: number;
+  months: Array<{
+    month: number;
+    totalLoyersByCurrency: Record<string, number>;
+    totalChargesByCurrency: Record<string, number>;
+    totalCommissionByCurrency: Record<string, number>;
+    totalNetByCurrency: Record<string, number>;
+    totalReverseByCurrency: Record<string, number>;
+  }>;
+  /** Une ligne par couple (bien, devise), cumulée sur l'année. */
+  properties: CrgSynthesis["properties"];
+  totalLoyersByCurrency: Record<string, number>;
+  totalChargesByCurrency: Record<string, number>;
+  totalCommissionByCurrency: Record<string, number>;
+  totalNetByCurrency: Record<string, number>;
+  /** Reversements enregistrés au titre de l'année, du plus ancien au plus récent. */
+  reversements: CrgSynthesis["reversements"];
+  totalReverseByCurrency: Record<string, number>;
+  /** Net de l'année moins ce qui a été reversé ; négatif si l'agence a versé plus que le net. */
+  resteAReverserByCurrency: Record<string, number>;
+};
+
+function ajouterParDevise(cumul: Record<string, number>, ajout: Record<string, number>) {
+  for (const [devise, montant] of Object.entries(ajout)) cumul[devise] = arrondir((cumul[devise] ?? 0) + montant);
+}
+
+/**
+ * Relevé annuel d'un propriétaire. Chaque mois est calculé par assemblerCrg, le même code que le compte-rendu mensuel que le
+ * propriétaire reçoit déjà : les douze mois du relevé sont donc exactement ceux de ses comptes-rendus (même base d'encaissement,
+ * même commission arrondie mois par mois), et le total de l'année en est la somme. Les données de l'année sont lues une seule
+ * fois, puis réparties par mois en mémoire.
+ */
+export async function computeReleveAnnuel(owner: OwnerRow, year: number): Promise<ReleveAnnuel> {
+  const debutAnnee = monthBounds(1, year).start;
+  const finAnnee = monthBounds(12, year).end;
+
+  const biens: Array<typeof properties.$inferSelect> = await db.select().from(properties).where(eq(properties.ownerId, owner.id));
+  const propertyIds = biens.map((p) => p.id);
+  const baux: Array<typeof contracts.$inferSelect> =
+    propertyIds.length > 0 ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds)) : [];
+  const contractIds = baux.map((c) => c.id);
+
+  const [paidInvoiceRows, expenseRows, payoutRows] = await Promise.all([
+    contractIds.length > 0
+      ? db.select().from(invoices).where(and(inArray(invoices.contractId, contractIds), factureEncaissee))
+      : Promise.resolve([] as (typeof invoices.$inferSelect)[]),
+    propertyIds.length > 0
+      ? db
+          .select()
+          .from(expenses)
+          .where(and(inArray(expenses.propertyId, propertyIds), gte(expenses.expenseDate, debutAnnee), lte(expenses.expenseDate, finAnnee)))
+      : Promise.resolve([] as (typeof expenses.$inferSelect)[]),
+    db
+      .select()
+      .from(ownerPayouts)
+      .where(and(eq(ownerPayouts.ownerId, owner.id), eq(ownerPayouts.periodYear, year)))
+      .orderBy(asc(ownerPayouts.paidAt), asc(ownerPayouts.createdAt)),
+  ]);
+
+  const invoiceDate = (inv: typeof invoices.$inferSelect) => new Date(inv.paidAt ?? inv.dueDate);
+  const encaissementsDeLAnnee = (await developperFactures(paidInvoiceRows)).filter((inv) => {
+    const d = invoiceDate(inv);
+    return d >= debutAnnee && d <= finAnnee;
+  });
+
+  const mois: ReleveAnnuel["months"] = [];
+  const parBien = new Map<string, CrgSynthesis["properties"][number]>();
+  const totalLoyersByCurrency: Record<string, number> = {};
+  const totalChargesByCurrency: Record<string, number> = {};
+  const totalCommissionByCurrency: Record<string, number> = {};
+  const totalNetByCurrency: Record<string, number> = {};
+  const totalReverseByCurrency: Record<string, number> = {};
+
+  for (let month = 1; month <= 12; month++) {
+    const { start, end } = monthBounds(month, year);
+    const crg = assemblerCrg(owner, month, year, {
+      biens,
+      baux,
+      encaissements: encaissementsDeLAnnee.filter((inv) => {
+        const d = invoiceDate(inv);
+        return d >= start && d <= end;
+      }),
+      depenses: expenseRows.filter((e) => e.expenseDate >= start && e.expenseDate <= end),
+      reversements: payoutRows.filter((r) => r.periodMonth === month),
+    });
+    mois.push({
+      month,
+      totalLoyersByCurrency: crg.totalLoyersByCurrency,
+      totalChargesByCurrency: crg.totalChargesByCurrency,
+      totalCommissionByCurrency: crg.totalCommissionByCurrency,
+      totalNetByCurrency: crg.totalNetByCurrency,
+      totalReverseByCurrency: crg.totalReverseByCurrency,
+    });
+    ajouterParDevise(totalLoyersByCurrency, crg.totalLoyersByCurrency);
+    ajouterParDevise(totalChargesByCurrency, crg.totalChargesByCurrency);
+    ajouterParDevise(totalCommissionByCurrency, crg.totalCommissionByCurrency);
+    ajouterParDevise(totalNetByCurrency, crg.totalNetByCurrency);
+    ajouterParDevise(totalReverseByCurrency, crg.totalReverseByCurrency);
+    for (const ligneDuMois of crg.properties) {
+      const cleBien = `${ligneDuMois.propertyId}|${ligneDuMois.currency}`;
+      const cumul = parBien.get(cleBien) ?? { ...ligneDuMois, loyersEncaisses: 0, chargesDeduites: 0, commission: 0, netAReverser: 0 };
+      cumul.loyersEncaisses = arrondir(cumul.loyersEncaisses + ligneDuMois.loyersEncaisses);
+      cumul.chargesDeduites = arrondir(cumul.chargesDeduites + ligneDuMois.chargesDeduites);
+      cumul.commission = arrondir(cumul.commission + ligneDuMois.commission);
+      cumul.netAReverser = arrondir(cumul.netAReverser + ligneDuMois.netAReverser);
+      parBien.set(cleBien, cumul);
+    }
+  }
+
+  const resteAReverserByCurrency: Record<string, number> = {};
+  for (const devise of new Set([...Object.keys(totalNetByCurrency), ...Object.keys(totalReverseByCurrency)])) {
+    resteAReverserByCurrency[devise] = arrondir((totalNetByCurrency[devise] ?? 0) - (totalReverseByCurrency[devise] ?? 0));
+  }
+
+  return {
+    ownerId: owner.id,
+    ownerName: nomAvecCivilite(owner),
+    ownerCompanyName: owner.companyName,
+    managementFeeRate: owner.managementFeeRate,
+    year,
+    months: mois,
+    properties: Array.from(parBien.values()).sort((a, b) => a.propertyTitle.localeCompare(b.propertyTitle) || a.currency.localeCompare(b.currency)),
+    totalLoyersByCurrency,
+    totalChargesByCurrency,
+    totalCommissionByCurrency,
+    totalNetByCurrency,
+    reversements: payoutRows.map((r) => ({
+      id: r.id,
+      currency: r.currency,
+      amount: r.amount,
+      paidAt: r.paidAt,
+      method: r.method,
+      reference: r.reference,
+      note: r.note,
+    })),
+    totalReverseByCurrency,
+    resteAReverserByCurrency,
+  };
+}
+
 export async function loadAgencyName(managerId: string): Promise<string> {
   const [settings] = await db
     .select({ agencyName: agencySettings.agencyName })
@@ -393,4 +540,38 @@ export const exportMyCrg = asyncHandler(async (req: Request, res: Response) => {
   const html = generateCrgHtml({ ...crg, agencyName, langue: langueOuDefaut(owner.language) });
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
+});
+
+const anneeQuerySchema = z.object({ year: z.coerce.number().int().min(2000).max(2100).optional() });
+
+function resolveYear(req: Request): number {
+  return anneeQuerySchema.parse(req.query).year ?? new Date().getFullYear();
+}
+
+export const getReleveAnnuelForOwner = asyncHandler(async (req: Request, res: Response) => {
+  const owner = await loadOwnerForManager(req.params.ownerId, req.user!.userId);
+  res.json(await computeReleveAnnuel(owner, resolveYear(req)));
+});
+
+export const getMyReleveAnnuel = asyncHandler(async (req: Request, res: Response) => {
+  const owner = await chargerProprietaireDuCompte(req);
+  const releve = await computeReleveAnnuel(owner, resolveYear(req));
+  // Comme pour le compte-rendu mensuel : la note d'un reversement est interne à l'agence.
+  res.json({ ...releve, reversements: releve.reversements.map(({ note: _note, ...visible }) => visible) });
+});
+
+export const exportReleveAnnuelForOwner = asyncHandler(async (req: Request, res: Response) => {
+  const owner = await loadOwnerForManager(req.params.ownerId, req.user!.userId);
+  const releve = await computeReleveAnnuel(owner, resolveYear(req));
+  const agencyName = await loadAgencyName(req.user!.userId);
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(generateReleveAnnuelHtml({ ...releve, agencyName, langue: langueOuDefaut(owner.language) }));
+});
+
+export const exportMyReleveAnnuel = asyncHandler(async (req: Request, res: Response) => {
+  const owner = await chargerProprietaireDuCompte(req);
+  const releve = await computeReleveAnnuel(owner, resolveYear(req));
+  const agencyName = await loadAgencyName(owner.managerId);
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(generateReleveAnnuelHtml({ ...releve, agencyName, langue: langueOuDefaut(owner.language) }));
 });

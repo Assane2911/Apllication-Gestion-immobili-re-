@@ -1795,6 +1795,8 @@ const en: TranslationSchema = {
       monthLabel: "Month",
       yearLabel: "Year",
       exportHtml: "Printable HTML export",
+      exportAnnual: "Annual statement {{year}}",
+      annualTitle: "Annual rent statement {{year}}",
       feeRateHint: "Agency fee rate: {{rate}}%",
       stats: {
         totalLoyers: "Rent collected",
@@ -2386,6 +2388,8 @@ const en: TranslationSchema = {
       monthLabel: "Month",
       yearLabel: "Year",
       exportHtml: "Printable HTML export",
+      exportAnnual: "Annual statement {{year}}",
+      annualTitle: "Annual rent statement {{year}}",
       feeRateHint: "Agency fee rate: {{rate}}%",
       stats: {
         totalLoyers: "Rent collected",
