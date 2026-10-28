@@ -878,10 +878,10 @@ const en: TranslationSchema = {
       reload: "Reload the page",
     },
     documentModal: {
-      subtitle: "Official certified preview & Download / Print",
+      subtitle: "Document preview · Print or save as PDF",
       print: "Print / Save as PDF",
       printFailed: "Printing is not available from this window. Use your browser's print menu.",
-      loading: "Loading the official document...",
+      loading: "Loading the document...",
     },
     signatureModal: {
       title: "Electronic lease signature",
