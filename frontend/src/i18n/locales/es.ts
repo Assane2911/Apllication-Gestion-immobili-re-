@@ -1425,6 +1425,11 @@ const es: TranslationSchema = {
       addBtn: "+ Nuevo contrato",
       formTitle: "Nuevo contrato",
       regles: {
+        BJ: {
+          titre: "Para comprobar según el derecho beninés",
+          deposit: "La fianza no puede exceder tres meses de alquiler (Ley n.º 2022-30 de 20 de diciembre de 2022, artículos 57 y 69). El importe comparado es el alquiler introducido en este formulario.",
+          note: "Estos avisos son informativos: la decisión sigue siendo suya y no sustituyen el consejo de un profesional.",
+        },
         BF: {
           titre: "Para comprobar según el derecho burkinés",
           deposit: "La fianza no puede ser superior a dos meses de alquiler (Ley n.º 103-2015/CNT de 22 de diciembre de 2015, artículo 26). El importe comparado es el alquiler introducido en este formulario.",

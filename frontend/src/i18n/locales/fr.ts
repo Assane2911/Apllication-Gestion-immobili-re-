@@ -1424,6 +1424,11 @@ const fr = {
       addBtn: "+ Nouveau contrat",
       formTitle: "Nouveau contrat",
       regles: {
+        BJ: {
+          titre: "À vérifier au regard du droit béninois",
+          deposit: "Le cautionnement ne peut pas excéder trois mois de loyer (loi n° 2022-30 du 20 décembre 2022, articles 57 et 69). Le montant comparé est le loyer saisi dans ce formulaire.",
+          note: "Ces rappels sont donnés à titre d'information : vous restez libre de votre choix, et ils ne remplacent pas l'avis d'un professionnel.",
+        },
         BF: {
           titre: "À vérifier au regard du droit burkinabè",
           deposit: "Le dépôt de garantie ne peut pas être supérieur à deux mois de loyer (loi n° 103-2015/CNT du 22 décembre 2015, article 26). Le montant comparé est le loyer saisi dans ce formulaire.",

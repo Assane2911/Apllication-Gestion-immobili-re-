@@ -10,6 +10,10 @@
  * `frontend/src/data/reglesPays.ts`. Ici, seul ce que le serveur écrit lui-même : le délai par défaut et la mention de la
  * mise en demeure.
  *
+ * Bénin — texte lu : loi n° 2022-30 du 20 décembre 2022 fixant le régime juridique du bail à usage d'habitation en République du Bénin
+ * (141 articles, entièrement lue ; elle abroge les lois n° 2018-12 et n° 2021-02), art. 75 et 76 (mise en demeure : un mois pour payer).
+ * À faire relire par un professionnel béninois.
+ *
  * Burkina Faso — texte lu : loi n° 103-2015/CNT du 22 décembre 2015 portant bail d'habitation privée au Burkina Faso, art. 28 à 30
  * (commandement de payer, au moins quinze jours). À faire relire par un professionnel burkinabè.
  *
@@ -26,6 +30,14 @@ interface ReglesPaysServeur {
 const NEUTRES: ReglesPaysServeur = { delaiMiseEnDemeureJours: 8, mentionMiseEnDemeure: null };
 
 const REGLES: Record<string, ReglesPaysServeur> = {
+  BJ: {
+    // Loi n° 2022-30, art. 75 et 76 : la résiliation pour loyer impayé débute par une mise en demeure laissant trace écrite (ou une
+    // sommation d'huissier) ; le locataire doit payer dans le mois qui suit, faute de quoi le bailleur saisit le président du tribunal en référé.
+    delaiMiseEnDemeureJours: 30,
+    mentionMiseEnDemeure:
+      "Au Bénin, le locataire est tenu de payer dans le mois qui suit la mise en demeure ; à défaut, le bailleur peut saisir le " +
+      "président du tribunal compétent en référé (loi n° 2022-30 du 20 décembre 2022, articles 75 et 76).",
+  },
   BF: {
     // Loi n° 103-2015/CNT, art. 30 : le commandement de payer laisse au locataire un délai d'au moins quinze jours à compter de sa notification.
     delaiMiseEnDemeureJours: 15,

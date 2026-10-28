@@ -62,8 +62,16 @@ describe("règles par pays — valeurs proposées", () => {
     expect(r.delaiMiseEnDemeureJours).toBe(15);
   });
 
+  it("Bénin : droit applicable prérempli, mise en demeure à 30 jours (un mois pour payer) ; aucune durée ni échéance imposée", () => {
+    const r = reglesDuPays("BJ");
+    expect(r.droitApplicable).toBe("Loi n° 2022-30 du 20 décembre 2022 fixant le régime juridique du bail à usage d'habitation en République du Bénin");
+    expect(r.jourEcheance).toBe("5");
+    expect(r.dureeBailMois).toBeNull();
+    expect(r.delaiMiseEnDemeureJours).toBe(30);
+  });
+
   it("autre pays, et un compte sans pays : le comportement neutre d'avant", () => {
-    for (const code of [...CODES_PAYS.filter((c) => !["SN", "FR", "CI", "ML", "BF"].includes(c)), null, undefined, "XX"]) {
+    for (const code of [...CODES_PAYS.filter((c) => !["SN", "FR", "CI", "ML", "BF", "BJ"].includes(c)), null, undefined, "XX"]) {
       const r = reglesDuPays(code);
       expect(r, String(code)).toEqual({ droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 });
     }
@@ -71,13 +79,14 @@ describe("règles par pays — valeurs proposées", () => {
 
   it("n'attribue pas le COCC aux autres pays de l'UEMOA", () => {
     for (const code of ["CI", "ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).not.toContain("Code des obligations civiles et commerciales");
-    for (const code of ["BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
+    for (const code of ["TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
   });
 
   it("renouvellement : 36 mois pour un bail d'habitation au Sénégal et en France, 12 mois ailleurs (Côte d'Ivoire comprise) et pour un bail commercial", () => {
     expect(dureeRenouvellementMois("CI", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("ML", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("BF", "HABITATION")).toBe(12);
+    expect(dureeRenouvellementMois("BJ", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("SN", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("FR", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("SN", "COMMERCIAL")).toBe(12);
@@ -140,7 +149,7 @@ describe("règles par pays — avertissements du bail (Sénégal)", () => {
   });
 
   it("aucun avertissement hors de la France, de la Côte d'Ivoire et du Sénégal : le Mali n'a aucun plafond lu, les autres pays n'ont pas été lus", () => {
-    for (const code of ["BJ", "ML", null, undefined]) {
+    for (const code of ["TG", "ML", null, undefined]) {
       expect(avertissementsDuBail(code, bail({ deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" })), String(code)).toEqual([]);
     }
   });
@@ -174,6 +183,14 @@ describe("règles par pays — avertissements du bail (Côte d'Ivoire, loi n° 2
     expect(avertissementsDuBail("BF", b)).toEqual([]);
     expect(avertissementsDuBail("BF", { ...b, deposit: 400001 }).map((a) => a.cle)).toEqual(["deposit"]);
     expect(avertissementsDuBail("BF", { ...b, deposit: 9000000, leaseType: "COMMERCIAL" })).toEqual([]);
+  });
+
+  it("Bénin : le plafond est de trois mois de loyer (articles 57 et 69), pas deux ; rien d'autre", () => {
+    const b = bail({ rent: 200000, deposit: 600000, paymentDay: "5", endDate: "2027-01-01" });
+    expect(avertissementsDuBail("BJ", b)).toEqual([]);
+    expect(avertissementsDuBail("BJ", { ...b, deposit: 600001 }).map((a) => a.cle)).toEqual(["deposit"]);
+    expect(avertissementsDuBail("BF", { ...b, deposit: 600000 }).map((a) => a.cle)).toEqual(["deposit"]);
+    expect(avertissementsDuBail("BJ", { ...b, deposit: 9000000, leaseType: "COMMERCIAL" })).toEqual([]);
   });
 
   const ci = (surcharge: Partial<Parameters<typeof avertissementsDuBail>[1]> = {}) => bail({ rent: 200000, deposit: 400000, paymentDay: "5", endDate: "2027-01-01", ...surcharge });
