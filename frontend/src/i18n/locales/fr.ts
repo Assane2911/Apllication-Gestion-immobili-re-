@@ -1424,6 +1424,11 @@ const fr = {
       addBtn: "+ Nouveau contrat",
       formTitle: "Nouveau contrat",
       regles: {
+        BF: {
+          titre: "À vérifier au regard du droit burkinabè",
+          deposit: "Le dépôt de garantie ne peut pas être supérieur à deux mois de loyer (loi n° 103-2015/CNT du 22 décembre 2015, article 26). Le montant comparé est le loyer saisi dans ce formulaire.",
+          note: "Ces rappels sont donnés à titre d'information : vous restez libre de votre choix, et ils ne remplacent pas l'avis d'un professionnel.",
+        },
         CI: {
           titre: "À vérifier au regard du droit ivoirien",
           deposit: "Le dépôt de garantie ne peut pas excéder deux mois de loyer (loi n° 2019-576 du 26 juin 2019, article 416). Le montant comparé est le loyer saisi dans ce formulaire.",
