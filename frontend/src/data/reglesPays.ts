@@ -13,6 +13,11 @@
  * 456, version de la DGI). Pas encore : l'enregistrement du bail, la révision triennale, les congés (3 mois) et la procédure
  * d'expulsion, qui demandent des décisions de produit. À faire relire par un professionnel ivoirien.
  *
+ * Mali — texte lu : Titre VI « Du bail » (articles 32 à 55) du décret n° 2016-0482/P-RM du 7 juillet 2016, pris pour l'application
+ * de la loi n° 2015-036 du 16 juillet 2015 portant protection du consommateur. Ce texte ne plafonne ni le dépôt de garantie, ni le
+ * loyer, ni sa révision, et n'impose ni durée ni écrit : seul le droit applicable est proposé. À faire relire par un professionnel
+ * malien, notamment sur d'autres textes éventuels (Régime général des obligations, loi n° 87-31, décret de 1967 sur les loyers).
+ *
  * France — textes lus : loi n° 89-462 du 6 juillet 1989 (articles 10 et 22). Pas encore : le commandement de payer (art. 24),
  * le contrat type complet (décret 2015-587) et les honoraires (décret 2014-890), qui demandent des décisions de produit.
  *
@@ -34,6 +39,16 @@ export interface ReglesPays {
 const NEUTRES: ReglesPays = { droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 };
 
 const REGLES: Record<string, ReglesPays> = {
+  ML: {
+    // Décret n° 2016-0482/P-RM, article 39 : le bail peut être écrit ou verbal, à durée déterminée ou non.
+    droitApplicable: "Décret n° 2016-0482/P-RM du 7 juillet 2016, Titre VI (Du bail), pris pour l'application de la loi n° 2015-036 du 16 juillet 2015",
+    // Article 36 : le loyer est payé « aux termes convenus » : aucun jour imposé, on garde le 5 d'avant.
+    jourEcheance: "5",
+    // Article 39 : aucune durée minimale ni durée imposée : aucune durée proposée.
+    dureeBailMois: null,
+    // Aucun délai légal lu pour la mise en demeure (article 37 : le tribunal accorde un mois au locataire) : 8 jours, comme avant.
+    delaiMiseEnDemeureJours: 8,
+  },
   CI: {
     // Loi n° 2019-576, article 414 et suivants : le bail d'habitation est écrit, à durée déterminée ou indéterminée.
     droitApplicable: "Loi n° 2019-576 du 26 juin 2019 instituant Code de la construction et de l'habitat (art. 414 et suivants)",
