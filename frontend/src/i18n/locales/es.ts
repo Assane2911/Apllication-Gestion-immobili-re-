@@ -1425,6 +1425,11 @@ const es: TranslationSchema = {
       addBtn: "+ Nuevo contrato",
       formTitle: "Nuevo contrato",
       regles: {
+        TG: {
+          titre: "Para comprobar según el derecho togolés",
+          deposit: "La fianza y la garantía de alquiler están limitadas a tres meses de alquiler cada una, seis meses en total (Decreto n.º 2022-001/PR de 5 de enero de 2022, artículos 4 y 8). El importe comparado es el alquiler introducido en este formulario. El decreto se aplica primero en el Gran Lomé (artículo 33).",
+          note: "Estos avisos son informativos: la decisión sigue siendo suya y no sustituyen el consejo de un profesional.",
+        },
         BJ: {
           titre: "Para comprobar según el derecho beninés",
           deposit: "La fianza no puede exceder tres meses de alquiler (Ley n.º 2022-30 de 20 de diciembre de 2022, artículos 57 y 69). El importe comparado es el alquiler introducido en este formulario.",

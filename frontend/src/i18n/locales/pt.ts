@@ -1423,6 +1423,11 @@ const pt: TranslationSchema = {
       addBtn: "+ Novo contrato",
       formTitle: "Novo contrato",
       regles: {
+        TG: {
+          titre: "A verificar à luz do direito togolês",
+          deposit: "A caução e a garantia de renda estão limitadas a três meses de renda cada uma, seis meses no total (Decreto n.º 2022-001/PR, de 5 de janeiro de 2022, artigos 4.º e 8.º). O valor comparado é a renda introduzida neste formulário. O decreto aplica-se primeiro no Grande Lomé (artigo 33.º).",
+          note: "Estes avisos são informativos: a decisão continua a ser sua e não substituem o parecer de um profissional.",
+        },
         BJ: {
           titre: "A verificar à luz do direito beninense",
           deposit: "A caução não pode exceder três meses de renda (Lei n.º 2022-30, de 20 de dezembro de 2022, artigos 57 e 69). O valor comparado é a renda introduzida neste formulário.",
