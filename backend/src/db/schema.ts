@@ -749,6 +749,30 @@ export const ownerPayouts = pgTable(
   })
 );
 
+// --- Taux de commission d'un propriétaire, mois par mois ---
+// owners.managementFeeRate est le taux d'aujourd'hui. Cette table garde, pour chaque
+// changement, le mois à partir duquel un taux s'applique : un compte-rendu ou un relevé
+// d'un mois passé garde ainsi le taux qui était en vigueur, au lieu d'être recalculé au
+// nouveau. Un propriétaire sans ligne ici n'a jamais changé de taux : son taux actuel
+// vaut pour tous les mois. Le premier changement enregistre aussi l'ancien taux, daté de
+// janvier 1970 (voir services/tauxCommission.service.ts).
+export const ownerFeeRates = pgTable(
+  "owner_fee_rates",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => owners.id, { onDelete: "cascade" }),
+    effectiveYear: integer("effective_year").notNull(),
+    effectiveMonth: integer("effective_month").notNull(),
+    rate: doublePrecision("rate").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerPeriodUnique: uniqueIndex("owner_fee_rates_owner_period_unique").on(table.ownerId, table.effectiveYear, table.effectiveMonth),
+  })
+);
+
 // --- Révisions de loyer ---
 // Historique des changements de loyer d'un bail (indexation annuelle, accord
 // amiable). Une révision est PENDING tant que sa date d'effet n'est pas arrivée

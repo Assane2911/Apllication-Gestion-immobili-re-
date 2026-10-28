@@ -306,6 +306,7 @@ export default function OwnersPage() {
             <div>
               <label htmlFor="owner-managementFeeRate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.managementFeeRate")}</label>
               <input id="owner-managementFeeRate" required type="number" step="0.1" min="0" max="100" value={form.managementFeeRate} onChange={(e) => setForm({ ...form, managementFeeRate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              {editing && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("manager.owners.fields.managementFeeRateHint")}</p>}
             </div>
             <div className="md:col-span-2">
               <label htmlFor="owner-language" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.language")}</label>

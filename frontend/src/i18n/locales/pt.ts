@@ -1347,6 +1347,7 @@ const pt: TranslationSchema = {
         iban: "IBAN",
         bic: "BIC / SWIFT",
         managementFeeRate: "Taxa de comissão (%)",
+        managementFeeRateHint: "Uma nova taxa aplica-se a partir do mês em curso: os relatórios dos meses passados mantêm a taxa anterior.",
         notes: "Notas",
         language: "Idioma dos e-mails",
         languageHint:
