@@ -1445,6 +1445,7 @@ const fr = {
         },
         BJ: {
           titre: "À vérifier au regard du droit béninois",
+          agencyFee: "La commission d'un agent immobilier qui met seulement en relation les parties ne peut pas excéder 50 % du loyer mensuel (loi n° 2022-30 du 20 décembre 2022, article 27).",
           deposit: "Le cautionnement ne peut pas excéder trois mois de loyer (loi n° 2022-30 du 20 décembre 2022, articles 57 et 69). Le montant comparé est le loyer saisi dans ce formulaire.",
           note: "Ces rappels sont donnés à titre d'information : vous restez libre de votre choix, et ils ne remplacent pas l'avis d'un professionnel.",
         },
@@ -1466,6 +1467,7 @@ const fr = {
         },
         SN: {
           titre: "À vérifier au regard du droit sénégalais",
+          agencyFee: "La commission d'agence ou de courtage est ramenée à la moitié d'un mois de loyer pour un loyer d'au plus 500 000 FCFA par mois (décret n° 2023-382 du 24 février 2023, article 1er).",
           deposit: "Pour un loyer d'au plus 500 000 FCFA par mois, la caution ne peut pas excéder deux mois de loyer (décret n° 2023-382 du 24 février 2023). Seul un mois est payable à l'entrée ; le reste s'étale sur douze mois.",
           paymentDay: "Le loyer ne peut pas être payé à l'avance : il est payable à la fin du mois de jouissance (décret n° 2023-382). Choisissez « Dernier jour du mois ».",
           duration: "Un bail d'habitation est conclu pour trois ans, renouvelables par périodes de trois ans, ou pour une durée indéterminée (Code des obligations civiles et commerciales, article 571).",
@@ -1479,6 +1481,8 @@ const fr = {
         selectTenant: "Sélectionner un locataire",
         rent: "Loyer mensuel",
         deposit: "Dépôt de garantie",
+        agencyFee: "Frais d'agence à la charge du locataire (facultatif)",
+        agencyFeeHint: "Montant dû une fois à la signature, imprimé sur le bail. La plateforme ne le facture pas.",
         startDate: "Date de début",
         endDate: "Date de fin",
         terms: "Clauses particulières (facultatif)",

@@ -542,6 +542,7 @@ export async function initDb() {
     await ajouterColonne("contracts", "lease_type", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS lease_type TEXT NOT NULL DEFAULT 'HABITATION'`);
     await ajouterColonne("contracts", "applicable_law", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS applicable_law TEXT`);
     await ajouterColonne("contracts", "housing_mentions", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS housing_mentions TEXT`);
+    await ajouterColonne("contracts", "agency_fee", sql`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS agency_fee DOUBLE PRECISION`);
     await ajouterColonne("invoices", "amount_paid", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS amount_paid DOUBLE PRECISION NOT NULL DEFAULT 0`);
 
     // Historique des encaissements d'une facture (paiements partiels).

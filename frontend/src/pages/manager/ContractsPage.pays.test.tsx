@@ -252,6 +252,68 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
   });
 });
 
+describe("ContractsPage — frais d'agence à la charge du locataire", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  async function remplirBail(user: ReturnType<typeof userEvent.setup>, container: HTMLElement, loyer: string) {
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    await user.selectOptions(screen.getByLabelText("Locataire"), "ten-1");
+    fireEvent.change(screen.getByLabelText("Loyer mensuel"), { target: { value: loyer } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: String(Number(loyer) * 2) } });
+    fireEvent.change(container.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-03-01" } });
+    // Fin renseignée à la main : certains pays ne proposent aucune durée, et le champ est obligatoire.
+    fireEvent.change(container.querySelectorAll('input[type="date"]')[1], { target: { value: "2027-03-01" } });
+  }
+
+  it("Sénégal : rappelle, sans bloquer, des frais de plus d'un demi-mois de loyer", async () => {
+    charger();
+    const { container } = rendre("SN");
+    const user = await ouvrirNouveauBail();
+    await remplirBail(user, container, "200000");
+
+    fireEvent.change(screen.getByLabelText("Frais d'agence à la charge du locataire (facultatif)"), { target: { value: "100000" } });
+    expect(screen.queryByText(/ramenée à la moitié d'un mois de loyer/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Frais d'agence à la charge du locataire (facultatif)"), { target: { value: "150000" } });
+    expect(screen.getByText(/ramenée à la moitié d'un mois de loyer/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Créer le contrat" })).toBeEnabled();
+  });
+
+  it("Bénin : rappelle des frais de plus de 50 % du loyer mensuel", async () => {
+    charger();
+    const { container } = rendre("BJ");
+    const user = await ouvrirNouveauBail();
+    await remplirBail(user, container, "200000");
+
+    fireEvent.change(screen.getByLabelText("Frais d'agence à la charge du locataire (facultatif)"), { target: { value: "120000" } });
+    expect(screen.getByText(/ne peut pas excéder 50 % du loyer mensuel/)).toBeInTheDocument();
+  });
+
+  it("envoie le montant à la création, et rien quand le champ est vide", async () => {
+    charger();
+    mockedApi.post.mockResolvedValue({ data: {} });
+    charger();
+    const { container } = rendre("CI");
+    const user = await ouvrirNouveauBail();
+    await remplirBail(user, container, "200000");
+    fireEvent.change(screen.getByLabelText("Frais d'agence à la charge du locataire (facultatif)"), { target: { value: "75000" } });
+    await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
+    expect((mockedApi.post.mock.calls[0] as [string, Record<string, unknown>])[1].agencyFee).toBe(75000);
+
+    charger();
+    const second = await ouvrirNouveauBail();
+    await remplirBail(second, container, "200000");
+    await second.click(screen.getByRole("button", { name: "Créer le contrat" }));
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(2));
+    expect(mockedApi.post.mock.calls[1][1]).not.toHaveProperty("agencyFee");
+  });
+});
+
 describe("ContractsPage — règles du Mali (décret n° 2016-0482/P-RM)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();

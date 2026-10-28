@@ -1446,6 +1446,7 @@ const es: TranslationSchema = {
         },
         BJ: {
           titre: "Para comprobar según el derecho beninés",
+          agencyFee: "La comisión de un agente inmobiliario que solo pone en contacto a las partes no puede exceder el 50 % del alquiler mensual (Ley n.º 2022-30 de 20 de diciembre de 2022, artículo 27).",
           deposit: "La fianza no puede exceder tres meses de alquiler (Ley n.º 2022-30 de 20 de diciembre de 2022, artículos 57 y 69). El importe comparado es el alquiler introducido en este formulario.",
           note: "Estos avisos son informativos: la decisión sigue siendo suya y no sustituyen el consejo de un profesional.",
         },
@@ -1467,6 +1468,7 @@ const es: TranslationSchema = {
         },
         SN: {
           titre: "Para comprobar según el derecho senegalés",
+          agencyFee: "La comisión de agencia o de corretaje se reduce a medio mes de alquiler para un alquiler de hasta 500 000 FCFA al mes (Decreto n.º 2023-382 de 24 de febrero de 2023, artículo 1).",
           deposit: "Para un alquiler de como máximo 500 000 FCFA al mes, la fianza no puede superar dos meses de alquiler (decreto n.º 2023-382 de 24 de febrero de 2023). Solo un mes se paga al entrar; el resto se reparte en doce meses.",
           paymentDay: "El alquiler no puede pagarse por adelantado: se paga al final del mes de disfrute (decreto n.º 2023-382). Elija «Último día del mes».",
           duration: "Un contrato de vivienda se celebra por tres años, renovables por períodos de tres años, o por tiempo indefinido (Código de Obligaciones Civiles y Comerciales, artículo 571).",
@@ -1480,6 +1482,8 @@ const es: TranslationSchema = {
         selectTenant: "Seleccionar un inquilino",
         rent: "Alquiler mensual",
         deposit: "Depósito de garantía",
+        agencyFee: "Gastos de agencia a cargo del inquilino (opcional)",
+        agencyFeeHint: "Importe debido una sola vez en la firma, impreso en el contrato. La plataforma no lo factura.",
         startDate: "Fecha de inicio",
         endDate: "Fecha de fin",
         terms: "Cláusulas particulares (opcional)",

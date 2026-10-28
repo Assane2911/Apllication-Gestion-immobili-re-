@@ -171,7 +171,7 @@ export function dateDeFinParDefaut(pays: string | null | undefined, leaseType: s
   return ajouterMois(debut, mois) ?? "";
 }
 
-export type CleAvertissement = "deposit" | "paymentDay" | "duration";
+export type CleAvertissement = "deposit" | "paymentDay" | "duration" | "agencyFee";
 
 export interface AvertissementBail {
   /** Clé de traduction : `manager.contracts.regles.<cle>`. */
@@ -187,6 +187,8 @@ export interface BailAControler {
   paymentDay: string;
   startDate: string;
   endDate: string;
+  /** Frais d'agence à la charge du locataire saisis ; absent ou nul : aucun frais indiqué. */
+  agencyFee?: number;
 }
 
 /** Plafond du décret 2023-382 : les règles de caution et de commission valent pour les baux d'au plus 500 000 FCFA par mois. */
@@ -198,6 +200,11 @@ const SEUIL_DECRET_FCFA = 500000;
  */
 export function avertissementsDuBail(pays: string | null | undefined, bail: BailAControler): AvertissementBail[] {
   if (bail.leaseType !== TYPE_HABITATION) return [];
+  return [...avertissementsDeBase(pays, bail), ...avertissementsFraisAgence(pays, bail)];
+}
+
+/** Rappels sur le dépôt de garantie, la durée et l'échéance (voir les règles de chaque pays plus haut). */
+function avertissementsDeBase(pays: string | null | undefined, bail: BailAControler): AvertissementBail[] {
   if (pays === "FR") return avertissementsFrance(bail);
   if (pays && pays in PLAFOND_DEPOT_MOIS) return avertissementDepotPlafonne(bail, PLAFOND_DEPOT_MOIS[pays]);
   if (pays !== "SN") return [];
@@ -252,4 +259,20 @@ const PLAFOND_DEPOT_MOIS: Record<string, number> = { CI: 2, BF: 2, BJ: 3, TG: 6 
  */
 function avertissementDepotPlafonne(bail: BailAControler, mois: number): AvertissementBail[] {
   return bail.rent > 0 && bail.deposit > mois * bail.rent ? [{ cle: "deposit" }] : [];
+}
+
+/**
+ * Frais d'agence à la charge du locataire : un rappel, non bloquant, pour les deux pays dont le texte lu plafonne la commission.
+ * - Sénégal, décret n° 2023-382, art. 1er : la commission d'agence ou de courtage est ramenée à la moitié d'un mois de loyer pour
+ *   les baux d'au plus 500 000 FCFA par mois (au-delà, aucune règle lue : aucun rappel).
+ * - Bénin, loi n° 2022-30, art. 27 : la commission d'un agent immobilier qui met seulement en relation les parties, payée par le
+ *   demandeur du service, ne peut pas excéder 50 % du loyer mensuel.
+ * Les autres pays n'ont, dans les textes lus, aucun plafond de ce genre : le champ est libre. La France attend les arrêtés de 2026.
+ */
+function avertissementsFraisAgence(pays: string | null | undefined, bail: BailAControler): AvertissementBail[] {
+  const frais = bail.agencyFee ?? 0;
+  if (!(frais > 0) || !(bail.rent > 0) || frais <= bail.rent / 2) return [];
+  if (pays === "BJ") return [{ cle: "agencyFee" }];
+  if (pays === "SN" && bail.currency === "XOF" && bail.rent <= SEUIL_DECRET_FCFA) return [{ cle: "agencyFee" }];
+  return [];
 }

@@ -56,6 +56,8 @@ const contractSchema = z.object({
     .nullable()
     .optional()
     .transform((v) => (v ? v : null)),
+  // Frais d'agence à la charge du locataire (montant ; imprimé sur le bail, jamais facturé) ; null : aucun frais indiqué.
+  agencyFee: z.union([z.null(), z.coerce.number().finite().nonnegative().max(MONTANT_MAXIMUM, "Les frais d'agence sont trop élevés")]).optional(),
   // Mentions du logement du contrat type français (voir utils/mentionsLogement.ts) : objet à l'entrée, JSON stringifié en
   // base ; vide ou null : aucune mention.
   housingMentions: mentionsLogementSchema
@@ -316,7 +318,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   //
   // Le statut reste modifiable : résilier ou clore un bail ne réécrit rien de
   // ce qui a été signé, et doit rester possible à tout moment.
-  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms", "paymentDay", "leaseType", "applicableLaw", "housingMentions"] as const;
+  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms", "paymentDay", "leaseType", "applicableLaw", "housingMentions", "agencyFee"] as const;
   const toucheAuContenu = CHAMPS_CONTRACTUELS.some((champ) => body[champ] !== undefined);
   if (existing.signedByTenantAt && toucheAuContenu) {
     throw new ApiError(

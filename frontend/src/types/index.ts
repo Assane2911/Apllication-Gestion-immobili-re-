@@ -244,6 +244,8 @@ export interface Contract {
     loyerReferenceMajore?: number;
     dernierLoyer?: number;
   } | null;
+  /** Frais d'agence à la charge du locataire, dans la devise du bail ; imprimés sur le bail, jamais facturés ; absent ou `null` : aucun. */
+  agencyFee?: number | null;
   reminderSentAt?: string | null;
   signedByManagerAt?: string | null;
   managerSignatureUrl?: string | null;

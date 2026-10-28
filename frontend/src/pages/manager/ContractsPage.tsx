@@ -53,7 +53,7 @@ interface BailRevisable {
 }
 
 // Jour d'échéance proposé à la création : le 5, ce que disaient déjà les documents remis aux locataires.
-const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "", ...MENTIONS_VIDES };
+const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "", agencyFee: "", ...MENTIONS_VIDES };
 type FormulaireContrat = typeof emptyForm;
 
 /** Valeurs du formulaire pour un contrat existant (dates en AAAA-MM-JJ, telles que le serveur les a enregistrées). */
@@ -69,6 +69,7 @@ export function formulaireDepuisContrat(c: Contract): FormulaireContrat {
     paymentDay: c.paymentDay ? String(c.paymentDay) : "",
     leaseType: c.leaseType ?? "HABITATION",
     applicableLaw: c.applicableLaw ?? "",
+    agencyFee: c.agencyFee ? String(c.agencyFee) : "",
     ...formulaireDepuisMentions(c.housingMentions),
   };
 }
@@ -88,6 +89,7 @@ export function changementsDuContrat(avant: FormulaireContrat, apres: Formulaire
     const v = apres[cle];
     if (cle === "rent" || cle === "deposit") corps[cle] = Number(v);
     else if (cle === "paymentDay") corps[cle] = v ? Number(v) : null;
+    else if (cle === "agencyFee") corps[cle] = v.trim() ? Number(v) : null;
     else if (cle === "terms" || cle === "applicableLaw") corps[cle] = v.trim();
     else corps[cle] = v;
   }
@@ -280,6 +282,7 @@ export default function ContractsPage() {
         leaseType: form.leaseType,
         rent: Number(form.rent),
         deposit: Number(form.deposit),
+        agencyFee: form.agencyFee.trim() ? Number(form.agencyFee) : undefined,
         currency: bienChoisi?.currency ?? "",
         paymentDay: form.paymentDay,
         startDate: form.startDate,
@@ -310,13 +313,15 @@ export default function ContractsPage() {
         return;
       }
       // Les clauses vides ne sont pas envoyées : le bail n'imprime alors aucune section.
-      const { terms, paymentDay, applicableLaw, ...reste } = form;
+      const { terms, paymentDay, applicableLaw, agencyFee, ...reste } = form;
       const champs = Object.fromEntries(Object.entries(reste).filter(([cle]) => !CLES_MENTIONS.has(cle)));
       const mentions = proposeMentionsLogement(pays, form.leaseType) ? mentionsDepuisFormulaire(form) : null;
       await api.post("/contracts", {
         ...champs,
         // Aucune mention renseignée : rien n'est envoyé, le bail n'imprime aucune ligne de plus.
         ...(mentions ? { housingMentions: mentions } : {}),
+        // Vide : aucun frais d'agence n'est indiqué sur le bail.
+        ...(agencyFee.trim() ? { agencyFee: Number(agencyFee) } : {}),
         ...(terms.trim() ? { terms: terms.trim() } : {}),
         // Vide : le jour de la date de début du bail (comportement d'avant).
         ...(paymentDay ? { paymentDay: Number(paymentDay) } : {}),
@@ -536,6 +541,11 @@ export default function ContractsPage() {
             <div>
               <label htmlFor="contract-deposit" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.deposit")}</label>
               <input id="contract-deposit" required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label htmlFor="contract-agencyFee" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.agencyFee")}</label>
+              <input id="contract-agencyFee" type="number" min="0" step="0.01" value={form.agencyFee} onChange={(e) => setForm({ ...form, agencyFee: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.agencyFeeHint")}</p>
             </div>
             <div>
               <label htmlFor="contract-startDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.startDate")}</label>
