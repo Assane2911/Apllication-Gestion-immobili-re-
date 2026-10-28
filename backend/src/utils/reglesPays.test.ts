@@ -3,7 +3,7 @@ import { CODES_PAYS_ACCEPTES } from "./pays";
 import { delaiMiseEnDemeureParDefaut, mentionMiseEnDemeure } from "./reglesPays";
 
 /**
- * Les règles de location propres à chaque pays. Seuls le Sénégal (COCC, art. 571), le Burkina Faso (loi n° 103-2015/CNT,
+ * Les règles de location propres à chaque pays. Seuls le Sénégal (COCC, art. 571), la France (loi du 6 juillet 1989, art. 24), le Burkina Faso (loi n° 103-2015/CNT,
  * art. 28 à 30) et le Bénin (loi n° 2022-30, art. 75 et 76) en portent aujourd'hui, tirées de textes que l'équipe a lus ; les autres pays gardent le comportement neutre d'avant (8 jours, aucune mention) tant que leurs
  * règles n'ont pas été lues et validées. Le COCC est un code sénégalais, pas un texte de l'UEMOA.
  */
@@ -36,8 +36,18 @@ describe("règles par pays — mise en demeure", () => {
     expect(mention).not.toMatch(/ne remplace pas/);
   });
 
+  it("France : 8 jours par défaut et une mention qui rappelle le commandement de payer, sans dire qui le délivre", () => {
+    expect(delaiMiseEnDemeureParDefaut("FR")).toBe(8);
+    const mention = mentionMiseEnDemeure("FR");
+    expect(mention).toContain("commandement de payer");
+    expect(mention).toContain("six semaines");
+    expect(mention).toContain("loi n° 89-462 du 6 juillet 1989, article 24");
+    expect(mention).toMatch(/ne remplace pas/);
+    expect(mention).not.toMatch(/commissaire de justice|huissier/);
+  });
+
   it("tout autre pays, et un compte sans pays : le comportement d'avant (8 jours, aucune mention)", () => {
-    for (const code of CODES_PAYS_ACCEPTES.filter((c) => !["SN", "BF", "BJ"].includes(c))) {
+    for (const code of CODES_PAYS_ACCEPTES.filter((c) => !["SN", "FR", "BF", "BJ"].includes(c))) {
       expect(delaiMiseEnDemeureParDefaut(code), code).toBe(8);
       expect(mentionMiseEnDemeure(code), code).toBeNull();
     }
