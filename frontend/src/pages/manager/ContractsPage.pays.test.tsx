@@ -222,7 +222,7 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
-  it.each(["ML", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
+  it.each(["BF", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
     charger();
     const { container } = rendre(pays);
     const user = await ouvrirNouveauBail();
@@ -243,12 +243,33 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     charger([bail({ currency: "EUR" })]);
     mockedApi.post.mockResolvedValueOnce({ data: {} });
     charger([bail({ currency: "EUR" })]);
-    rendre("ML");
+    rendre("BF");
 
     const user = userEvent.setup();
     await user.click((await screen.findAllByRole("button", { name: /Renouveler/ }))[0]);
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/renew", { months: 12 }));
+  });
+});
+
+describe("ContractsPage — règles du Mali (décret n° 2016-0482/P-RM)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("préremplit le droit malien, sans imposer ni échéance ni durée, et sans rappel", async () => {
+    charger();
+    const { container } = rendre("ML");
+    const user = await ouvrirNouveauBail();
+
+    expect((screen.getByLabelText(/Droit applicable/) as HTMLInputElement).value).toContain("Décret n° 2016-0482/P-RM du 7 juillet 2016");
+    expect(screen.getByLabelText("Jour d'échéance du loyer")).toHaveValue("5");
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    fireEvent.change(container.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-03-01" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "9000000" } });
+    expect((container.querySelectorAll('input[type="date"]')[1] as HTMLInputElement).value).toBe("");
+    expect(screen.queryByText(/À vérifier au regard/)).not.toBeInTheDocument();
   });
 });
 
