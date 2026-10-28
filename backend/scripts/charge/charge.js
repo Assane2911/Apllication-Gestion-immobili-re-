@@ -21,6 +21,8 @@ const DUREE_S = Number(arg("duree", "60"));
 const PAUSE_MS = Number(arg("pause", "1000"));
 const MONTEE_S = Number(arg("montee", "5"));
 const SCENARIO = String(arg("scenario", "session"));
+// Numéros d'agences à cycler (ex. « 100,200,300 » pour les grandes agences du jeu de données) ; par défaut 1 à N.
+const AGENCES = arg("agences", "") ? String(arg("agences", "")).split(",").map(Number) : null;
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
   console.error("JWT_SECRET manquant");
@@ -56,10 +58,11 @@ const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let finMesure = 0;
 let envoyees = 0;
-async function utilisateur(n) {
+async function utilisateur(rang) {
+  const n = AGENCES ? AGENCES[rang % AGENCES.length] : rang;
   const jeton = jwt.sign({ userId: `m${n}`, role: "MANAGER", tenantId: null, ownerId: null, collaboratorId: null }, SECRET, { expiresIn: "2h" });
-  const port = PORTS[n % PORTS.length];
-  await dormir((MONTEE_S * 1000 * n) / UTILISATEURS); // montée en charge progressive
+  const port = PORTS[rang % PORTS.length];
+  await dormir((MONTEE_S * 1000 * rang) / UTILISATEURS); // montée en charge progressive
   while (Date.now() < finMesure) {
     for (const [nom, chemin] of ETAPES) {
       if (Date.now() >= finMesure) return;
