@@ -71,7 +71,8 @@ describe("factureMure — quand un impayé appelle une mise en demeure", () => {
 /**
  * Règles du pays de l'agence (voir utils/reglesPays.ts) : au Sénégal, la résiliation d'un bail d'habitation suppose une
  * mise en demeure de trente jours signifiée par acte extrajudiciaire (COCC, art. 571). Le courrier de l'agence n'est pas cet
- * acte : le délai proposé par défaut est celui de la loi, et le courrier le dit. Ailleurs, rien ne change.
+ * acte : le délai proposé par défaut est celui de la loi, et le courrier le dit. En France, la clause résolutoire exige un
+ * commandement de payer (loi du 6 juillet 1989, art. 24) : le courrier le rappelle, sans changer le délai. Ailleurs, rien ne change.
  */
 describe("mise en demeure — règles du pays de l'agence", () => {
   async function agenceDuPays(country: string | null) {
@@ -105,8 +106,23 @@ describe("mise en demeure — règles du pays de l'agence", () => {
     expect(res.body.deadlineDays).toBe(15);
   });
 
-  it("France et compte sans pays : 8 jours par défaut, aucune mention (comportement d'avant)", async () => {
-    for (const country of ["FR", "CI", null]) {
+  it("France : 8 jours par défaut et la mention du commandement de payer sur le courrier", async () => {
+    const { contract, h } = await agenceDuPays("FR");
+
+    const res = await emettre(h, contract.id);
+
+    expect(res.status).toBe(201);
+    expect(res.body.deadlineDays).toBe(8);
+    const doc = await document(h, res.body.id);
+    expect(doc.text).toContain("dans un délai de 8 jours");
+    expect(doc.text).toContain("commandement de payer");
+    expect(doc.text).toContain("six semaines");
+    expect(doc.text).toContain("article 24");
+    expect(doc.text).not.toContain("acte extrajudiciaire");
+  });
+
+  it("Côte d'Ivoire et compte sans pays : 8 jours par défaut, aucune mention (comportement d'avant)", async () => {
+    for (const country of ["CI", null]) {
       const { contract, h } = await agenceDuPays(country);
 
       const res = await emettre(h, contract.id);
@@ -115,6 +131,7 @@ describe("mise en demeure — règles du pays de l'agence", () => {
       const doc = await document(h, res.body.id);
       expect(doc.text, String(country)).toContain("dans un délai de 8 jours");
       expect(doc.text, String(country)).not.toContain("acte extrajudiciaire");
+      expect(doc.text, String(country)).not.toContain("commandement de payer");
     }
   });
 });

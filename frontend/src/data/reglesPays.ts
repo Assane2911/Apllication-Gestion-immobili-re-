@@ -40,8 +40,9 @@
  * loyer, ni sa révision, et n'impose ni durée ni écrit : seul le droit applicable est proposé. À faire relire par un professionnel
  * malien, notamment sur d'autres textes éventuels (Régime général des obligations, loi n° 87-31, décret de 1967 sur les loyers).
  *
- * France — textes lus : loi n° 89-462 du 6 juillet 1989 (articles 10 et 22). Pas encore : le commandement de payer (art. 24),
- * le contrat type complet (décret 2015-587) et les honoraires (décret 2014-890), qui demandent des décisions de produit.
+ * France — textes lus : loi n° 89-462 du 6 juillet 1989 (articles 10, 22 et 24). Le courrier de mise en demeure rappelle le
+ * commandement de payer de l'article 24 (voir `backend/src/utils/reglesPays.ts`) ; les mentions du logement du contrat type
+ * (décret 2015-587) sont facultatives (voir data/mentionsLogement.ts). Pas encore : les honoraires (décret 2014-890).
  *
  * Sénégal — textes lus : Code des obligations civiles et commerciales (loi n° 66-70 du 13 juillet 1966), art. 571 ; décret
  * n° 2023-382 du 24 février 2023 (JO n° 7605), art. 1er. À faire relire par un professionnel sénégalais (voir la fiche Sénégal).

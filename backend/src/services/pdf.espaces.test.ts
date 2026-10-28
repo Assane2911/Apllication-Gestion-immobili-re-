@@ -126,14 +126,21 @@ describe("PDF : mention du pays sur la mise en demeure", () => {
     expect(textes().some((t) => t.includes("acte extrajudiciaire") && t.includes("article 571"))).toBe(true);
   });
 
-  it("France et compte sans pays : aucune mention", async () => {
-    for (const pays of ["FR", null]) {
-      const textes = textesEcrits();
+  it("France : le PDF rappelle le commandement de payer, sans parler d'acte extrajudiciaire", async () => {
+    const textes = textesEcrits();
 
-      await generateFormalNoticePdfBuffer(courrierDuPays(pays));
+    await generateFormalNoticePdfBuffer(courrierDuPays("FR"));
 
-      expect(textes().some((t) => t.includes("acte extrajudiciaire")), String(pays)).toBe(false);
-    }
+    expect(textes().some((t) => t.includes("commandement de payer") && t.includes("six semaines") && t.includes("article 24"))).toBe(true);
+    expect(textes().some((t) => t.includes("acte extrajudiciaire"))).toBe(false);
+  });
+
+  it("compte sans pays : aucune mention", async () => {
+    const textes = textesEcrits();
+
+    await generateFormalNoticePdfBuffer(courrierDuPays(null));
+
+    expect(textes().some((t) => t.includes("acte extrajudiciaire") || t.includes("commandement de payer"))).toBe(false);
   });
 });
 

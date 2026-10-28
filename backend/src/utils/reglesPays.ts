@@ -10,6 +10,10 @@
  * `frontend/src/data/reglesPays.ts`. Ici, seul ce que le serveur écrit lui-même : le délai par défaut et la mention de la
  * mise en demeure.
  *
+ * France — texte lu : loi n° 89-462 du 6 juillet 1989, art. 24 (clause résolutoire : elle ne produit effet que six semaines après un
+ * commandement de payer demeuré infructueux). Le courrier de l'agence n'est pas ce commandement : il le dit, sans dire qui le délivre
+ * (la fiche France le demande à un professionnel). Le délai proposé reste de 8 jours, la loi n'en fixe aucun pour le courrier.
+ *
  * Bénin — texte lu : loi n° 2022-30 du 20 décembre 2022 fixant le régime juridique du bail à usage d'habitation en République du Bénin
  * (141 articles, entièrement lue ; elle abroge les lois n° 2018-12 et n° 2021-02), art. 75 et 76 (mise en demeure : un mois pour payer).
  * À faire relire par un professionnel béninois.
@@ -30,6 +34,13 @@ interface ReglesPaysServeur {
 const NEUTRES: ReglesPaysServeur = { delaiMiseEnDemeureJours: 8, mentionMiseEnDemeure: null };
 
 const REGLES: Record<string, ReglesPaysServeur> = {
+  FR: {
+    // Loi du 6 juillet 1989, art. 24 : aucun délai légal pour le courrier de mise en demeure, 8 jours comme avant.
+    delaiMiseEnDemeureJours: 8,
+    mentionMiseEnDemeure:
+      "En France, la clause résolutoire d'un bail d'habitation ne produit effet que six semaines après un commandement de payer " +
+      "demeuré infructueux (loi n° 89-462 du 6 juillet 1989, article 24). Le présent courrier ne remplace pas ce commandement.",
+  },
   BJ: {
     // Loi n° 2022-30, art. 75 et 76 : la résiliation pour loyer impayé débute par une mise en demeure laissant trace écrite (ou une
     // sommation d'huissier) ; le locataire doit payer dans le mois qui suit, faute de quoi le bailleur saisit le président du tribunal en référé.
