@@ -1,6 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { api } from "../api/client";
+import en from "../i18n/locales/en";
+import es from "../i18n/locales/es";
+import fr from "../i18n/locales/fr";
+import pt from "../i18n/locales/pt";
 import DocumentModal from "./DocumentModal";
 
 vi.mock("../api/client", async () => {
@@ -55,5 +59,34 @@ describe("DocumentModal", () => {
     rerender(<DocumentModal title="Document" docUrl="/documents/receipt/b" onClose={() => {}} />);
 
     await waitFor(() => expect(documentAffiche("Document")).toBeNull());
+  });
+});
+
+/**
+ * La modale ouvre des documents que la plateforme ne certifie pas : le compte-rendu de gestion et le relevé annuel sont
+ * informatifs, et un bail ou une quittance est un écrit de l'agence. Elle affichait pourtant « Aperçu officiel certifié » et
+ * « document officiel » : un libellé neutre ne promet rien que le document ne soit.
+ */
+describe("DocumentModal — libellés", () => {
+  it("annonce un aperçu du document, sans le dire officiel ni certifié", async () => {
+    mockedApi.get.mockReset();
+    mockedApi.get.mockResolvedValueOnce({ data: "<p>Relevé</p>" });
+    render(<DocumentModal title="Relevé annuel" docUrl="/crg/mine/annual/export?year=2026" onClose={() => {}} />);
+
+    expect(screen.getByText("Aperçu du document · Imprimer ou enregistrer en PDF")).toBeInTheDocument();
+    await waitFor(() => expect(documentAffiche("Relevé annuel")).not.toBeNull());
+    expect(screen.queryByText(/officiel|certifi/i)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["fr", fr],
+    ["en", en],
+    ["es", es],
+    ["pt", pt],
+  ])("%s : aucun libellé de la modale ne promet un document officiel ou certifié", (_langue, textes) => {
+    const { subtitle, loading, print, printFailed } = textes.components.documentModal;
+    for (const libelle of [subtitle, loading, print, printFailed]) {
+      expect(libelle).not.toMatch(/offici|certifi/i);
+    }
   });
 });

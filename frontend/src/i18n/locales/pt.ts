@@ -878,10 +878,10 @@ const pt: TranslationSchema = {
       reload: "Recarregar a página",
     },
     documentModal: {
-      subtitle: "Pré-visualização oficial certificada & Descarregamento / Impressão",
+      subtitle: "Pré-visualização do documento · Imprimir ou guardar em PDF",
       print: "Imprimir / Guardar como PDF",
       printFailed: "Não é possível imprimir a partir desta janela. Utilize o menu de impressão do seu navegador.",
-      loading: "A carregar o documento oficial...",
+      loading: "A carregar o documento...",
     },
     signatureModal: {
       title: "Assinatura eletrónica do contrato",

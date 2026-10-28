@@ -876,10 +876,10 @@ const fr = {
       reload: "Recharger la page",
     },
     documentModal: {
-      subtitle: "Aperçu officiel certifié & Téléchargement / Impression",
+      subtitle: "Aperçu du document · Imprimer ou enregistrer en PDF",
       print: "Imprimer / Enregistrer PDF",
       printFailed: "Impression impossible depuis cette fenêtre. Utilisez le menu d'impression de votre navigateur.",
-      loading: "Chargement du document officiel...",
+      loading: "Chargement du document...",
     },
     signatureModal: {
       title: "Signature électronique du bail",
