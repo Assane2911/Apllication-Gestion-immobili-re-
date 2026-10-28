@@ -498,7 +498,7 @@ const en: TranslationSchema = {
         title: "Rental management, finally made simple.",
         subtitle: "Automatic receipts, electronic signature and overdue reminders — all in one place.",
         highlights: [
-          "Certified PDF receipts generated automatically",
+          "PDF receipts generated automatically",
           "Electronic lease signature in a few clicks",
           "Automatic reminders for unpaid rent",
           "Interface available in French, English, Portuguese and Spanish",
@@ -549,7 +549,7 @@ const en: TranslationSchema = {
         title: "Your agency, ready in 2 minutes.",
         subtitle: "Create your manager account and start managing your properties today.",
         highlights: [
-          "Certified PDF receipts generated automatically",
+          "PDF receipts generated automatically",
           "Electronic lease signature in a few clicks",
           "Automatic reminders for unpaid rent",
           "Interface available in French, English, Portuguese and Spanish",
@@ -628,14 +628,14 @@ const en: TranslationSchema = {
       titleLine1: "Rental property management,",
       titleLine2: "reinvented & automated.",
       subtitle:
-        "Generate certified PDF rent receipts, get your leases signed online, send automatic reminders on the 1st of each month, and track your net profitability in real time.",
+        "Generate PDF rent receipts, get your leases signed online, send automatic reminders on the 1st of each month, and track your net profitability in real time.",
       ctaTrial: "Start your free 15-day trial →",
       ctaPricing: "See pricing",
       mobileSoon: "Coming soon on the App Store and Google Play",
     },
     features: {
       receipts: {
-        title: "Certified PDF Receipts & Leases",
+        title: "PDF Receipts & Leases",
         desc: "Instant download of rent receipts with the agency's stamp, serial number and legal notices as soon as payment is confirmed.",
       },
       signature: {
@@ -786,7 +786,7 @@ const en: TranslationSchema = {
       roi: {
         adminTime: "Admin time",
         unpaidRent: "Forgotten unpaid rent",
-        certified: "Certified leases & receipts",
+        certified: "Automated leases & receipts",
       },
       headers: {
         feature: "Feature & process",
@@ -801,16 +801,16 @@ const en: TranslationSchema = {
           immoplatform: "Automatic alert on the 1st of every month with a strict due date on the 5th. Instant invoices with live status.",
         },
         receipts: {
-          title: "Certified rent receipts",
+          title: "Automatic rent receipts",
           description: "Legal generation and delivery to tenants",
           traditional: "Manual creation in Word/Excel, tedious PDF conversion, emails often forgotten.",
-          immoplatform: "Automatic one-click generation in the official certified format with agency stamp, unique number and legal notices.",
+          immoplatform: "Automatic one-click generation as a PDF with agency stamp, unique number and legal notices.",
         },
         signature: {
           title: "Lease signing",
           description: "Legal validation and conclusion of leases",
           traditional: "Paper printing, initialling page by page, mandatory trips in person, lost leases.",
-          immoplatform: "Electronic touch signature (computer, tablet, mobile) with a certified timestamp in 2 minutes.",
+          immoplatform: "Electronic touch signature (computer, tablet, mobile) with a timestamp in 2 minutes.",
         },
         incidents: {
           title: "Breakdown & incident reports",
@@ -846,7 +846,7 @@ const en: TranslationSchema = {
     },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. All rights reserved.",
-      tagline: "Certified and secure rental property management software.",
+      tagline: "Secure rental property management software.",
       legal: "Legal notice",
       terms: "Terms & conditions",
       privacy: "Privacy",
@@ -2815,7 +2815,7 @@ const en: TranslationSchema = {
     landing: {
       title: "ImmoPlatform Pro — Smart Property & Rental Management",
       description:
-        "Certified PDF rent receipts, electronic lease signing, automatic reminders, real-time dashboard. Free 15-day trial, no commitment.",
+        "Automatic PDF rent receipts, electronic lease signing, automatic reminders, real-time dashboard. Free 15-day trial, no commitment.",
     },
     login: {
       title: "Sign in",

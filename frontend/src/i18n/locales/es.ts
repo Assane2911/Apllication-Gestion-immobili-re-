@@ -498,7 +498,7 @@ const es: TranslationSchema = {
         title: "La gestión de alquileres, por fin sencilla.",
         subtitle: "Recibos automáticos, firma electrónica y recordatorios de impagos — todo en un solo lugar.",
         highlights: [
-          "Recibos en PDF certificados generados automáticamente",
+          "Recibos en PDF generados automáticamente",
           "Firma electrónica de los contratos en unos pocos clics",
           "Recordatorios automáticos de alquileres impagados",
           "Interfaz disponible en francés, inglés, portugués y español",
@@ -549,7 +549,7 @@ const es: TranslationSchema = {
         title: "Tu agencia, lista en 2 minutos.",
         subtitle: "Crea tu cuenta de gestor y empieza a gestionar tus propiedades hoy mismo.",
         highlights: [
-          "Recibos en PDF certificados generados automáticamente",
+          "Recibos en PDF generados automáticamente",
           "Firma electrónica de los contratos en unos pocos clics",
           "Recordatorios automáticos de alquileres impagados",
           "Interfaz disponible en francés, inglés, portugués y español",
@@ -628,14 +628,14 @@ const es: TranslationSchema = {
       titleLine1: "La gestión de alquileres,",
       titleLine2: "reinventada y automatizada.",
       subtitle:
-        "Genera tus recibos en PDF certificado, firma tus contratos en línea, envía tus recordatorios automáticos desde el día 1 de cada mes y sigue tu rentabilidad neta en tiempo real.",
+        "Genera tus recibos en PDF, firma tus contratos en línea, envía tus recordatorios automáticos desde el día 1 de cada mes y sigue tu rentabilidad neta en tiempo real.",
       ctaTrial: "Comenzar la prueba gratuita de 15 días →",
       ctaPricing: "Ver precios",
       mobileSoon: "Próximamente en App Store y Google Play",
     },
     features: {
       receipts: {
-        title: "Recibos y Contratos PDF Certificados",
+        title: "Recibos y Contratos en PDF",
         desc: "Descarga instantánea de los recibos de alquiler con sello de la agencia, número de serie y menciones legales en cuanto se confirma el pago.",
       },
       signature: {
@@ -786,7 +786,7 @@ const es: TranslationSchema = {
       roi: {
         adminTime: "Tiempo administrativo",
         unpaidRent: "Alquiler impagado olvidado",
-        certified: "Contratos y recibos certificados",
+        certified: "Contratos y recibos automatizados",
       },
       headers: {
         feature: "Funcionalidad y proceso",
@@ -801,16 +801,16 @@ const es: TranslationSchema = {
           immoplatform: "Alerta automática el día 1 de cada mes con vencimiento estricto el día 5. Facturas instantáneas con estado en directo.",
         },
         receipts: {
-          title: "Recibos de alquiler certificados",
+          title: "Recibos de alquiler automáticos",
           description: "Generación y entrega legal a los inquilinos",
           traditional: "Creación manual en Word/Excel, conversión a PDF tediosa, envíos por correo a menudo olvidados.",
-          immoplatform: "Generación automática con 1 clic en el formato oficial certificado, con sello de la agencia, número único y menciones legales.",
+          immoplatform: "Generación automática con 1 clic en PDF, con sello de la agencia, número único y menciones legales.",
         },
         signature: {
           title: "Firma de los contratos de alquiler",
           description: "Validación jurídica y formalización de los contratos",
           traditional: "Impresión en papel, rúbrica página por página, desplazamientos físicos obligatorios, contratos extraviados.",
-          immoplatform: "Firma electrónica táctil (ordenador, tableta, móvil) con sello de tiempo certificado en 2 minutos.",
+          immoplatform: "Firma electrónica táctil (ordenador, tableta, móvil) con sello de tiempo en 2 minutos.",
         },
         incidents: {
           title: "Aviso de averías e incidencias",
@@ -846,7 +846,7 @@ const es: TranslationSchema = {
     },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. Todos los derechos reservados.",
-      tagline: "Software de gestión de alquileres inmobiliarios certificado y seguro.",
+      tagline: "Software de gestión de alquileres inmobiliarios seguro.",
       legal: "Aviso legal",
       terms: "Términos y condiciones",
       privacy: "Privacidad",
@@ -2817,7 +2817,7 @@ const es: TranslationSchema = {
     landing: {
       title: "ImmoPlatform Pro — Gestión inmobiliaria y de alquileres inteligente",
       description:
-        "Recibos de alquiler en PDF certificados, firma electrónica de contratos, recordatorios automáticos, panel en tiempo real. Prueba gratuita de 15 días sin compromiso.",
+        "Recibos de alquiler en PDF automáticos, firma electrónica de contratos, recordatorios automáticos, panel en tiempo real. Prueba gratuita de 15 días sin compromiso.",
     },
     login: {
       title: "Iniciar sesión",

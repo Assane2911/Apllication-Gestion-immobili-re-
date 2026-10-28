@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
 import { changerLangue } from "../i18n";
+import en from "../i18n/locales/en";
+import es from "../i18n/locales/es";
+import fr from "../i18n/locales/fr";
+import pt from "../i18n/locales/pt";
 import LandingPage from "./LandingPage";
 
 vi.mock("../api/client", async () => {
@@ -45,7 +49,7 @@ describe("LandingPage", () => {
     renderPage();
     expect(document.title).toBe("ImmoPlatform Pro — Gestion locative et immobilière intelligente");
     expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
-      "Quittances PDF certifiées, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement."
+      "Quittances PDF automatiques, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement."
     );
   });
 
@@ -142,7 +146,7 @@ describe("LandingPage", () => {
 
   it("affiche les sections fonctionnalités et tarifs", () => {
     renderPage();
-    expect(screen.getByText("Quittances & Baux PDF Certifiés")).toBeInTheDocument();
+    expect(screen.getByText("Quittances & Baux en PDF")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Des formules simples et transparentes", level: 2 })).toBeInTheDocument();
   });
 
@@ -181,14 +185,14 @@ describe("LandingPage", () => {
       "Loyer de septembre",
       "Mentions légales",
       "Confidentialité",
-      "Quittances de loyer certifiées",
+      "Quittances de loyer automatiques",
       "Démarrer 15 jours d'essai gratuit",
     ];
 
     it.each([
-      ["en", ["Comparison & Added Value", "Traditional management (Excel / paper)", "Certified rent receipts", "Net flow", "September rent", "Legal notice"]],
-      ["pt", ["Comparação e Valor Acrescentado", "Gestão tradicional (Excel / papel)", "Recibos de renda certificados", "Fluxo líquido", "Renda de setembro", "Aviso legal"]],
-      ["es", ["Comparativa y valor añadido", "Gestión tradicional (Excel / papel)", "Recibos de alquiler certificados", "Flujo neto", "Alquiler de septiembre", "Aviso legal"]],
+      ["en", ["Comparison & Added Value", "Traditional management (Excel / paper)", "Automatic rent receipts", "Net flow", "September rent", "Legal notice"]],
+      ["pt", ["Comparação e Valor Acrescentado", "Gestão tradicional (Excel / papel)", "Recibos de renda automáticos", "Fluxo líquido", "Renda de setembro", "Aviso legal"]],
+      ["es", ["Comparativa y valor añadido", "Gestión tradicional (Excel / papel)", "Recibos de alquiler automáticos", "Flujo neto", "Alquiler de septiembre", "Aviso legal"]],
     ])("affiche le comparatif, les maquettes et le pied de page en « %s », sans reste de français", async (langue, attendus) => {
       await changerLangue(langue);
       try {
@@ -208,5 +212,25 @@ describe("LandingPage", () => {
         expect(texte).toContain(phrase);
       }
     });
+  });
+});
+
+/**
+ * La plateforme n'atteste la conformité d'aucun document : un bail ou une quittance est un écrit de l'agence, et le
+ * compte-rendu de gestion est informatif. La page d'accueil et les descriptions du site (Google, réseaux) décrivent ce que
+ * fait l'outil, sans promettre de document « certifié » ni de « format officiel ».
+ */
+describe("LandingPage — aucune promesse de certification", () => {
+  it.each([
+    ["fr", fr],
+    ["en", en],
+    ["es", es],
+    ["pt", pt],
+  ])("%s : ni la page d'accueil ni la description du site ne parlent de certification", (_langue, textes) => {
+    const promesse = /certifi|certificad|offici/i;
+    // Les textes seulement : le nom d'une clé (`roi.certified`) n'est jamais affiché.
+    const valeurs = (n: unknown): string[] => (typeof n === "string" ? [n] : n && typeof n === "object" ? Object.values(n).flatMap(valeurs) : []);
+    expect(valeurs(textes.landing).filter((v) => promesse.test(v))).toEqual([]);
+    expect(valeurs(textes.seo.landing).filter((v) => promesse.test(v))).toEqual([]);
   });
 });
