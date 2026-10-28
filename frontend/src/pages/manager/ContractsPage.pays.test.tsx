@@ -222,7 +222,7 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
-  it.each(["CI", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
+  it.each(["ML", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
     charger();
     const { container } = rendre(pays);
     const user = await ouvrirNouveauBail();
@@ -243,12 +243,46 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     charger([bail({ currency: "EUR" })]);
     mockedApi.post.mockResolvedValueOnce({ data: {} });
     charger([bail({ currency: "EUR" })]);
-    rendre("CI");
+    rendre("ML");
 
     const user = userEvent.setup();
     await user.click((await screen.findAllByRole("button", { name: /Renouveler/ }))[0]);
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/contracts/c1/renew", { months: 12 }));
+  });
+});
+
+describe("ContractsPage — règles de la Côte d'Ivoire (loi n° 2019-576)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+  });
+
+  it("préremplit le droit ivoirien, sans imposer ni échéance ni durée", async () => {
+    charger();
+    const { container } = rendre("CI");
+    await ouvrirNouveauBail();
+
+    expect((screen.getByLabelText(/Droit applicable/) as HTMLInputElement).value).toContain("Loi n° 2019-576 du 26 juin 2019");
+    expect(screen.getByLabelText("Jour d'échéance du loyer")).toHaveValue("5");
+    fireEvent.change(container.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-03-01" } });
+    expect((container.querySelectorAll('input[type="date"]')[1] as HTMLInputElement).value).toBe("");
+  });
+
+  it("rappelle un dépôt de garantie supérieur à deux mois de loyer, sans bloquer", async () => {
+    charger();
+    rendre("CI");
+    const user = await ouvrirNouveauBail();
+
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    fireEvent.change(screen.getByLabelText("Loyer mensuel"), { target: { value: "200000" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "600000" } });
+
+    expect(screen.getByText("À vérifier au regard du droit ivoirien")).toBeInTheDocument();
+    expect(screen.getByText(/ne peut pas excéder deux mois de loyer/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Créer le contrat" })).toBeEnabled();
   });
 });
 

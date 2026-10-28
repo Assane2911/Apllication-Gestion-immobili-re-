@@ -1425,6 +1425,11 @@ const es: TranslationSchema = {
       addBtn: "+ Nuevo contrato",
       formTitle: "Nuevo contrato",
       regles: {
+        CI: {
+          titre: "Para comprobar según el derecho marfileño",
+          deposit: "La fianza no puede exceder dos meses de alquiler (Ley n.º 2019-576 de 26 de junio de 2019, artículo 416). El importe comparado es el alquiler introducido en este formulario.",
+          note: "Estos avisos son informativos: la decisión sigue siendo suya y no sustituyen el consejo de un profesional.",
+        },
         FR: {
           titre: "Para comprobar según la ley francesa",
           deposit: "La fianza no puede superar un mes de alquiler sin cargas (ley de 6 de julio de 1989, artículo 22). El importe comparado es el alquiler introducido en este formulario, supuesto sin cargas.",

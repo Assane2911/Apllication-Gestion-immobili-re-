@@ -1423,6 +1423,11 @@ const pt: TranslationSchema = {
       addBtn: "+ Novo contrato",
       formTitle: "Novo contrato",
       regles: {
+        CI: {
+          titre: "A verificar à luz do direito marfinense",
+          deposit: "A caução não pode exceder dois meses de renda (Lei n.º 2019-576, de 26 de junho de 2019, artigo 416). O valor comparado é a renda introduzida neste formulário.",
+          note: "Estes avisos são informativos: a decisão continua a ser sua e não substituem o parecer de um profissional.",
+        },
         FR: {
           titre: "A verificar à luz do direito francês",
           deposit: "A caução não pode exceder um mês de renda sem encargos (lei de 6 de julho de 1989, artigo 22). O valor comparado é a renda introduzida neste formulário, presumindo-se sem encargos.",
