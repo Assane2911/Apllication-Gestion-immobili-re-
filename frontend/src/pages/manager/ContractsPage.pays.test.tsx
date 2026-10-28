@@ -273,6 +273,27 @@ describe("ContractsPage — règles du Mali (décret n° 2016-0482/P-RM)", () =>
   });
 });
 
+describe("ContractsPage — règles de la Guinée-Bissau (Lei do Inquilinato)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("préremplit le droit bissau-guinéen, sans imposer ni durée ni plafond, et sans rappel", async () => {
+    charger();
+    const { container } = rendre("GW");
+    const user = await ouvrirNouveauBail();
+
+    expect((screen.getByLabelText(/Droit applicable/) as HTMLInputElement).value).toContain("Decreto n.º 13-A/89, de 9 de Junho");
+    expect(screen.getByLabelText("Jour d'échéance du loyer")).toHaveValue("5");
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    fireEvent.change(container.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-03-01" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "9000000" } });
+    expect((container.querySelectorAll('input[type="date"]')[1] as HTMLInputElement).value).toBe("");
+    expect(screen.queryByText(/À vérifier au regard/)).not.toBeInTheDocument();
+  });
+});
+
 describe("ContractsPage — règles du Togo (décret n° 2022-001/PR)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
