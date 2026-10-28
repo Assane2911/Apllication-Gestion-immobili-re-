@@ -13,6 +13,11 @@
  * 456, version de la DGI). Pas encore : l'enregistrement du bail, la révision triennale, les congés (3 mois) et la procédure
  * d'expulsion, qui demandent des décisions de produit. À faire relire par un professionnel ivoirien.
  *
+ * Togo — texte lu : décret n° 2022-001/PR du 5 janvier 2022 portant réglementation de la caution, de la garantie de loyer et du bail
+ * d'habitation (34 articles, entièrement lu, Journal officiel du 31 janvier 2022). Il s'applique d'abord dans le Grand Lomé
+ * (art. 33) : un décret doit en fixer l'extension aux autres villes. Pas encore : la révision (10 % tous les trois ans, art. 10),
+ * les congés (deux mois), le contrat type (art. 31). À faire relire par un professionnel togolais.
+ *
  * Bénin — texte lu : loi n° 2022-30 du 20 décembre 2022 fixant le régime juridique du bail à usage d'habitation en République du
  * Bénin (141 articles, entièrement lue ; elle abroge les lois n° 2018-12 et n° 2021-02). Pas encore : le plafond du loyer (8 % de
  * la valeur réelle selon un barème de commission d'évaluation, art. 57 à 64), la révision (2 % au plus, art. 68), les préavis, les
@@ -48,6 +53,15 @@ export interface ReglesPays {
 const NEUTRES: ReglesPays = { droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 };
 
 const REGLES: Record<string, ReglesPays> = {
+  TG: {
+    droitApplicable: "Décret n° 2022-001/PR du 5 janvier 2022 portant réglementation de la caution, de la garantie de loyer et du bail d'habitation",
+    // Article 19 : loyer payable mensuellement, trimestriellement, semestriellement ou annuellement selon le contrat : aucun jour imposé.
+    jourEcheance: "5",
+    // Article 10 : durée déterminée ou indéterminée : aucune durée proposée.
+    dureeBailMois: null,
+    // Aucun délai de mise en demeure lu pour un bail sous seing privé (le commandement de quinze jours de l'article 25 vise les contrats notariés) : 8 jours, comme avant.
+    delaiMiseEnDemeureJours: 8,
+  },
   BJ: {
     droitApplicable: "Loi n° 2022-30 du 20 décembre 2022 fixant le régime juridique du bail à usage d'habitation en République du Bénin",
     // Article 66 : paiement mensuel « à la date arrêtée par les parties » : aucun jour imposé, on garde le 5 d'avant.
@@ -208,9 +222,11 @@ function avertissementsFrance(bail: BailAControler): AvertissementBail[] {
 
 /**
  * Plafond du dépôt de garantie, en mois de loyer, pour les pays dont le texte lu le fixe : Côte d'Ivoire (loi n° 2019-576,
- * article 416) et Burkina Faso (loi n° 103-2015/CNT, article 26), deux mois ; Bénin (loi n° 2022-30, articles 57 et 69), trois mois.
+ * article 416) et Burkina Faso (loi n° 103-2015/CNT, article 26), deux mois ; Bénin (loi n° 2022-30, articles 57 et 69), trois mois ;
+ * Togo (décret n° 2022-001/PR, articles 4 et 8), trois mois de caution et trois mois de garantie de loyer, soit six mois au plus au
+ * total : le formulaire n'a qu'un champ de dépôt, c'est donc le cumul qui est comparé.
  */
-const PLAFOND_DEPOT_MOIS: Record<string, number> = { CI: 2, BF: 2, BJ: 3 };
+const PLAFOND_DEPOT_MOIS: Record<string, number> = { CI: 2, BF: 2, BJ: 3, TG: 6 };
 
 /**
  * Un seul rappel, non bloquant : le dépôt de garantie dépasse le plafond du pays (le loyer comparé est celui saisi ici). Les

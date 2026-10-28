@@ -70,8 +70,16 @@ describe("règles par pays — valeurs proposées", () => {
     expect(r.delaiMiseEnDemeureJours).toBe(30);
   });
 
+  it("Togo : droit applicable prérempli ; aucune durée ni échéance imposée, mise en demeure inchangée", () => {
+    const r = reglesDuPays("TG");
+    expect(r.droitApplicable).toBe("Décret n° 2022-001/PR du 5 janvier 2022 portant réglementation de la caution, de la garantie de loyer et du bail d'habitation");
+    expect(r.jourEcheance).toBe("5");
+    expect(r.dureeBailMois).toBeNull();
+    expect(r.delaiMiseEnDemeureJours).toBe(8);
+  });
+
   it("autre pays, et un compte sans pays : le comportement neutre d'avant", () => {
-    for (const code of [...CODES_PAYS.filter((c) => !["SN", "FR", "CI", "ML", "BF", "BJ"].includes(c)), null, undefined, "XX"]) {
+    for (const code of [...CODES_PAYS.filter((c) => !["SN", "FR", "CI", "ML", "BF", "BJ", "TG"].includes(c)), null, undefined, "XX"]) {
       const r = reglesDuPays(code);
       expect(r, String(code)).toEqual({ droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 });
     }
@@ -79,7 +87,7 @@ describe("règles par pays — valeurs proposées", () => {
 
   it("n'attribue pas le COCC aux autres pays de l'UEMOA", () => {
     for (const code of ["CI", "ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).not.toContain("Code des obligations civiles et commerciales");
-    for (const code of ["TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
+    for (const code of ["NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
   });
 
   it("renouvellement : 36 mois pour un bail d'habitation au Sénégal et en France, 12 mois ailleurs (Côte d'Ivoire comprise) et pour un bail commercial", () => {
@@ -87,6 +95,7 @@ describe("règles par pays — valeurs proposées", () => {
     expect(dureeRenouvellementMois("ML", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("BF", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("BJ", "HABITATION")).toBe(12);
+    expect(dureeRenouvellementMois("TG", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("SN", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("FR", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("SN", "COMMERCIAL")).toBe(12);
@@ -149,7 +158,7 @@ describe("règles par pays — avertissements du bail (Sénégal)", () => {
   });
 
   it("aucun avertissement hors de la France, de la Côte d'Ivoire et du Sénégal : le Mali n'a aucun plafond lu, les autres pays n'ont pas été lus", () => {
-    for (const code of ["TG", "ML", null, undefined]) {
+    for (const code of ["NE", "ML", null, undefined]) {
       expect(avertissementsDuBail(code, bail({ deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" })), String(code)).toEqual([]);
     }
   });
@@ -191,6 +200,14 @@ describe("règles par pays — avertissements du bail (Côte d'Ivoire, loi n° 2
     expect(avertissementsDuBail("BJ", { ...b, deposit: 600001 }).map((a) => a.cle)).toEqual(["deposit"]);
     expect(avertissementsDuBail("BF", { ...b, deposit: 600000 }).map((a) => a.cle)).toEqual(["deposit"]);
     expect(avertissementsDuBail("BJ", { ...b, deposit: 9000000, leaseType: "COMMERCIAL" })).toEqual([]);
+  });
+
+  it("Togo : caution et garantie de loyer sont plafonnées à trois mois chacune, le cumul de six mois est comparé (articles 4 et 8)", () => {
+    const b = bail({ rent: 200000, deposit: 1200000, paymentDay: "5", endDate: "2027-01-01" });
+    expect(avertissementsDuBail("TG", b)).toEqual([]);
+    expect(avertissementsDuBail("TG", { ...b, deposit: 1200001 }).map((a) => a.cle)).toEqual(["deposit"]);
+    expect(avertissementsDuBail("BJ", { ...b, deposit: 1200000 }).map((a) => a.cle)).toEqual(["deposit"]);
+    expect(avertissementsDuBail("TG", { ...b, deposit: 9000000, leaseType: "COMMERCIAL" })).toEqual([]);
   });
 
   const ci = (surcharge: Partial<Parameters<typeof avertissementsDuBail>[1]> = {}) => bail({ rent: 200000, deposit: 400000, paymentDay: "5", endDate: "2027-01-01", ...surcharge });

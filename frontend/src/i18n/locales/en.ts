@@ -1423,6 +1423,11 @@ const en: TranslationSchema = {
       addBtn: "+ New contract",
       formTitle: "New contract",
       regles: {
+        TG: {
+          titre: "To check against Togolese law",
+          deposit: "The security deposit and the rent guarantee are each capped at three months' rent, six months in total (Decree no. 2022-001/PR of 5 January 2022, articles 4 and 8). The amount compared is the rent entered in this form. The decree applies first in Greater Lomé (article 33).",
+          note: "These reminders are for information only: the choice stays yours, and they do not replace professional advice.",
+        },
         BJ: {
           titre: "To check against Beninese law",
           deposit: "The security deposit cannot exceed three months' rent (Law no. 2022-30 of 20 December 2022, articles 57 and 69). The amount compared is the rent entered in this form.",

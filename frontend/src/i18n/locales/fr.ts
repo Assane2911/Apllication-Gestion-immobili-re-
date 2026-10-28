@@ -1424,6 +1424,11 @@ const fr = {
       addBtn: "+ Nouveau contrat",
       formTitle: "Nouveau contrat",
       regles: {
+        TG: {
+          titre: "À vérifier au regard du droit togolais",
+          deposit: "Le dépôt de caution et la garantie de loyer sont plafonnés à trois mois de loyer chacun, soit six mois au total (décret n° 2022-001/PR du 5 janvier 2022, articles 4 et 8). Le montant comparé est le loyer saisi dans ce formulaire. Le décret s'applique d'abord dans le Grand Lomé (article 33).",
+          note: "Ces rappels sont donnés à titre d'information : vous restez libre de votre choix, et ils ne remplacent pas l'avis d'un professionnel.",
+        },
         BJ: {
           titre: "À vérifier au regard du droit béninois",
           deposit: "Le cautionnement ne peut pas excéder trois mois de loyer (loi n° 2022-30 du 20 décembre 2022, articles 57 et 69). Le montant comparé est le loyer saisi dans ce formulaire.",

@@ -222,7 +222,7 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
-  it.each(["TG", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
+  it.each(["NE", null, undefined])("pays %s : échéance le 5, aucun droit prérempli, aucune fin proposée, aucun rappel", async (pays) => {
     charger();
     const { container } = rendre(pays);
     const user = await ouvrirNouveauBail();
@@ -243,7 +243,7 @@ describe("ContractsPage — hors du Sénégal, le comportement d'avant", () => {
     charger([bail({ currency: "EUR" })]);
     mockedApi.post.mockResolvedValueOnce({ data: {} });
     charger([bail({ currency: "EUR" })]);
-    rendre("TG");
+    rendre("NE");
 
     const user = userEvent.setup();
     await user.click((await screen.findAllByRole("button", { name: /Renouveler/ }))[0]);
@@ -270,6 +270,31 @@ describe("ContractsPage — règles du Mali (décret n° 2016-0482/P-RM)", () =>
     fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "9000000" } });
     expect((container.querySelectorAll('input[type="date"]')[1] as HTMLInputElement).value).toBe("");
     expect(screen.queryByText(/À vérifier au regard/)).not.toBeInTheDocument();
+  });
+});
+
+describe("ContractsPage — règles du Togo (décret n° 2022-001/PR)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("préremplit le droit togolais et rappelle, sans bloquer, un dépôt cumulé de plus de six mois de loyer", async () => {
+    charger();
+    rendre("TG");
+    const user = await ouvrirNouveauBail();
+
+    expect((screen.getByLabelText(/Droit applicable/) as HTMLInputElement).value).toContain("Décret n° 2022-001/PR du 5 janvier 2022");
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    fireEvent.change(screen.getByLabelText("Loyer mensuel"), { target: { value: "200000" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "1200000" } });
+    expect(screen.queryByText("À vérifier au regard du droit togolais")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "1400000" } });
+    expect(screen.getByText("À vérifier au regard du droit togolais")).toBeInTheDocument();
+    expect(screen.getByText(/soit six mois au total/)).toBeInTheDocument();
+    expect(screen.getByText(/s'applique d'abord dans le Grand Lomé/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Créer le contrat" })).toBeEnabled();
   });
 });
 
