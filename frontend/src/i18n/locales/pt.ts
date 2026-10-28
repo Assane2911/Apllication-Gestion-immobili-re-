@@ -1444,6 +1444,7 @@ const pt: TranslationSchema = {
         },
         BJ: {
           titre: "A verificar à luz do direito beninense",
+          agencyFee: "A comissão de um agente imobiliário que apenas põe as partes em contacto não pode exceder 50 % da renda mensal (Lei n.º 2022-30, de 20 de dezembro de 2022, artigo 27.º).",
           deposit: "A caução não pode exceder três meses de renda (Lei n.º 2022-30, de 20 de dezembro de 2022, artigos 57 e 69). O valor comparado é a renda introduzida neste formulário.",
           note: "Estes avisos são informativos: a decisão continua a ser sua e não substituem o parecer de um profissional.",
         },
@@ -1465,6 +1466,7 @@ const pt: TranslationSchema = {
         },
         SN: {
           titre: "A verificar à luz do direito senegalês",
+          agencyFee: "A comissão de agência ou de corretagem é reduzida a meio mês de renda para uma renda até 500 000 FCFA por mês (Decreto n.º 2023-382, de 24 de fevereiro de 2023, artigo 1.º).",
           deposit: "Para uma renda de, no máximo, 500 000 FCFA por mês, a caução não pode exceder dois meses de renda (decreto n.º 2023-382, de 24 de fevereiro de 2023). Apenas um mês é pago na entrada; o resto é repartido por doze meses.",
           paymentDay: "A renda não pode ser paga antecipadamente: é paga no fim do mês de fruição (decreto n.º 2023-382). Escolha «Último dia do mês».",
           duration: "Um contrato de habitação é celebrado por três anos, renováveis por períodos de três anos, ou por prazo indeterminado (Código das Obrigações Civis e Comerciais, artigo 571).",
@@ -1478,6 +1480,8 @@ const pt: TranslationSchema = {
         selectTenant: "Selecionar um inquilino",
         rent: "Renda mensal",
         deposit: "Depósito de garantia",
+        agencyFee: "Despesas de agência a cargo do inquilino (facultativo)",
+        agencyFeeHint: "Montante devido uma só vez na assinatura, impresso no contrato. A plataforma não o fatura.",
         startDate: "Data de início",
         endDate: "Data de fim",
         terms: "Cláusulas particulares (opcional)",

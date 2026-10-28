@@ -562,6 +562,10 @@ export const contracts = pgTable(
     // Mentions du logement du contrat type français (DPE, identifiant fiscal, période de construction, chauffage, loyers de
     // référence), JSON stringifié — voir utils/mentionsLogement.ts. NULL : aucune mention renseignée.
     housingMentions: text("housing_mentions"),
+    // Frais d'agence à la charge du locataire, dus à la signature du bail (montant dans la devise du contrat) : imprimés sur le
+    // bail, jamais facturés par la plateforme. NULL : aucun frais indiqué — tous les contrats d'avant. Contenu du bail :
+    // verrouillé après la signature du locataire ; non repris au renouvellement (frais ponctuels).
+    agencyFee: doublePrecision("agency_fee"),
     reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     // Signature électronique
     signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),

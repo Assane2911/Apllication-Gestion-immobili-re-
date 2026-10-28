@@ -1444,6 +1444,7 @@ const en: TranslationSchema = {
         },
         BJ: {
           titre: "To check against Beninese law",
+          agencyFee: "The commission of a real estate agent who only brings the parties together cannot exceed 50% of the monthly rent (Law no. 2022-30 of 20 December 2022, article 27).",
           deposit: "The security deposit cannot exceed three months' rent (Law no. 2022-30 of 20 December 2022, articles 57 and 69). The amount compared is the rent entered in this form.",
           note: "These reminders are for information only: the choice stays yours, and they do not replace professional advice.",
         },
@@ -1465,6 +1466,7 @@ const en: TranslationSchema = {
         },
         SN: {
           titre: "To check against Senegalese law",
+          agencyFee: "The agency or brokerage commission is reduced to half a month's rent for a rent of up to 500,000 FCFA per month (Decree no. 2023-382 of 24 February 2023, article 1).",
           deposit: "For a rent of no more than 500,000 FCFA a month, the deposit cannot exceed two months' rent (decree no. 2023-382 of 24 February 2023). Only one month is payable at entry; the rest is spread over twelve months.",
           paymentDay: "Rent cannot be paid in advance: it is payable at the end of the month of occupancy (decree no. 2023-382). Choose “Last day of the month”.",
           duration: "A residential lease is made for three years, renewable for three-year periods, or for an indefinite term (Code of Civil and Commercial Obligations, article 571).",
@@ -1478,6 +1480,8 @@ const en: TranslationSchema = {
         selectTenant: "Select a tenant",
         rent: "Monthly rent",
         deposit: "Security deposit",
+        agencyFee: "Agency fee payable by the tenant (optional)",
+        agencyFeeHint: "Amount due once at signing, printed on the lease. The platform does not invoice it.",
         startDate: "Start date",
         endDate: "End date",
         terms: "Special clauses (optional)",

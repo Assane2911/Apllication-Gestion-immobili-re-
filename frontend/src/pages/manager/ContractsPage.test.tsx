@@ -809,4 +809,13 @@ describe("changementsDuContrat", () => {
     const base = formulaireDepuisContrat(contract({ housingMentions: { dpe: "D" } }));
     expect(changementsDuContrat(base, { ...base, dpe: "" })).toEqual({ housingMentions: null });
   });
+
+  it("les frais d'agence partent en nombre, ou null quand le champ est vidé", () => {
+    const base = formulaireDepuisContrat(contract({ agencyFee: 100000 }));
+    expect(base.agencyFee).toBe("100000");
+    expect(changementsDuContrat(base, { ...base })).toEqual({});
+    expect(changementsDuContrat(base, { ...base, agencyFee: "90000" })).toEqual({ agencyFee: 90000 });
+    expect(changementsDuContrat(base, { ...base, agencyFee: "" })).toEqual({ agencyFee: null });
+    expect(formulaireDepuisContrat(contract({})).agencyFee).toBe("");
+  });
 });

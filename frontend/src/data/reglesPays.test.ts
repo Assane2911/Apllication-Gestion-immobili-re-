@@ -240,3 +240,42 @@ describe("règles par pays — avertissements du bail (Côte d'Ivoire, loi n° 2
     expect(avertissementsDuBail("CI", ci({ paymentDay: "", endDate: "2026-06-01" }))).toEqual([]);
   });
 });
+
+describe("règles par pays — frais d'agence à la charge du locataire", () => {
+  // Loyer de 200 000 FCFA : la moitié d'un mois est 100 000.
+  const avecFrais = (agencyFee: number | undefined, surcharge: Partial<Parameters<typeof avertissementsDuBail>[1]> = {}) =>
+    bail({ rent: 200000, deposit: 400000, paymentDay: "31", agencyFee, ...surcharge });
+
+  it("Sénégal : plus d'un demi-mois de loyer pour un loyer d'au plus 500 000 FCFA (décret 2023-382, art. 1er)", () => {
+    expect(avertissementsDuBail("SN", avecFrais(100000))).toEqual([]);
+    expect(avertissementsDuBail("SN", avecFrais(100001)).map((a) => a.cle)).toEqual(["agencyFee"]);
+    expect(avertissementsDuBail("SN", avecFrais(250000, { rent: 500000, deposit: 1000000 })).map((a) => a.cle)).toEqual([]);
+    expect(avertissementsDuBail("SN", avecFrais(300000, { rent: 500000, deposit: 1000000 })).map((a) => a.cle)).toEqual(["agencyFee"]);
+  });
+
+  it("Sénégal : aucune règle lue au-delà de 500 000 FCFA, ni dans une autre devise", () => {
+    expect(avertissementsDuBail("SN", avecFrais(900000, { rent: 500001, deposit: 1000000 }))).toEqual([]);
+    expect(avertissementsDuBail("SN", avecFrais(900, { currency: "EUR", rent: 300, deposit: 600 }))).toEqual([]);
+  });
+
+  it("Bénin : plus de 50 % du loyer mensuel (loi 2022-30, art. 27), sans seuil de montant", () => {
+    expect(avertissementsDuBail("BJ", avecFrais(100000))).toEqual([]);
+    expect(avertissementsDuBail("BJ", avecFrais(100001)).map((a) => a.cle)).toEqual(["agencyFee"]);
+    expect(avertissementsDuBail("BJ", avecFrais(900000, { rent: 800000, deposit: 1600000 })).map((a) => a.cle)).toEqual(["agencyFee"]);
+  });
+
+  it("se cumule avec les autres rappels du pays, dans l'ordre : dépôt, durée, échéance puis frais", () => {
+    const rappels = avertissementsDuBail("SN", avecFrais(150000, { deposit: 500000, paymentDay: "5" })).map((a) => a.cle);
+    expect(rappels).toEqual(["deposit", "paymentDay", "agencyFee"]);
+  });
+
+  it("aucun rappel sans frais saisis, pour un loyer vide, un bail commercial, la France et les autres pays", () => {
+    expect(avertissementsDuBail("SN", avecFrais(undefined))).toEqual([]);
+    expect(avertissementsDuBail("SN", avecFrais(0))).toEqual([]);
+    expect(avertissementsDuBail("SN", avecFrais(500000, { rent: 0 }))).toEqual([]);
+    expect(avertissementsDuBail("SN", avecFrais(500000, { leaseType: "COMMERCIAL" }))).toEqual([]);
+    for (const pays of ["FR", "CI", "ML", "BF", "TG", "NE", "GW", null, undefined]) {
+      expect(avertissementsDuBail(pays, avecFrais(9000000, { paymentDay: "5" })).map((a) => a.cle), String(pays)).not.toContain("agencyFee");
+    }
+  });
+});

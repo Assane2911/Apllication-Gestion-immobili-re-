@@ -671,6 +671,8 @@ export interface LeaseExportData {
   applicableLaw?: string | null;
   /** Mentions du logement du contrat type français, JSON stringifié (voir utils/mentionsLogement.ts) ; vide : aucune ligne. */
   housingMentions?: string | null;
+  /** Frais d'agence à la charge du locataire, dans la devise du bail ; absent, nul ou à zéro : aucune ligne. */
+  agencyFee?: number | null;
 }
 
 /**
@@ -839,7 +841,11 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="box">
       <strong>Date de prise d'effet :</strong> ${startDate} | <strong>Date de fin :</strong> ${endDate}<br>
       ${loyerHtml}<br>
-      <strong>Dépôt de garantie :</strong> ${escapeHtml(formaterMontant(contract.deposit, contract.currency))}
+      <strong>Dépôt de garantie :</strong> ${escapeHtml(formaterMontant(contract.deposit, contract.currency))}${
+        contract.agencyFee && contract.agencyFee > 0
+          ? `<br><strong>Frais d'agence à la charge du locataire :</strong> ${escapeHtml(formaterMontant(contract.agencyFee, contract.currency))}`
+          : ""
+      }
     </div>
   </div>
 
