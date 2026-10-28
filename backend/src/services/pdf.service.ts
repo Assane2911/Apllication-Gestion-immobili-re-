@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit";
 import { formaterMontant, symboleDevise } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { libelleEcheance } from "../utils/jourEcheance";
+import { lireMentions } from "../utils/mentionsLogement";
 import { libelleSurface, titreDuBail } from "../utils/typeBail";
 import { formaterDate, LANGUE_PAR_DEFAUT, LOCALE_PAR_LANGUE, nomDuMois, type Langue } from "../utils/langue";
 import { nomAvecCivilite } from "../utils/nom";
@@ -668,6 +669,28 @@ export interface LeaseExportData {
   leaseType?: string | null;
   /** Droit applicable saisi par le gestionnaire ; vide : aucune mention. */
   applicableLaw?: string | null;
+  /** Mentions du logement du contrat type français, JSON stringifié (voir utils/mentionsLogement.ts) ; vide : aucune ligne. */
+  housingMentions?: string | null;
+}
+
+/**
+ * Lignes « Désignation » complémentaires du contrat type français : seules les mentions renseignées s'impriment, rien n'est
+ * déduit ni complété — un champ vide n'apparaît pas, et le bail n'affirme la conformité de rien.
+ */
+function lignesMentionsLogement(contract: LeaseExportData): string {
+  const m = lireMentions(contract.housingMentions);
+  if (!m) return "";
+  const ligne = (libelle: string, valeur: string | undefined) => (valeur ? `<br><strong>${libelle} :</strong> ${escapeHtml(valeur)}` : "");
+  const argent = (v: number | undefined) => (v === undefined ? undefined : formaterMontant(v, contract.currency));
+  return [
+    ligne("Classe du diagnostic de performance énergétique (DPE)", m.dpe),
+    ligne("Identifiant fiscal du logement", m.identifiantFiscal),
+    ligne("Période de construction", m.periodeConstruction),
+    ligne("Chauffage et eau chaude", m.chauffage),
+    ligne("Loyer de référence (par m²)", argent(m.loyerReference)),
+    ligne("Loyer de référence majoré (par m²)", argent(m.loyerReferenceMajore)),
+    ligne("Montant du dernier loyer acquitté par le précédent locataire", argent(m.dernierLoyer)),
+  ].join("");
 }
 
 /** Coordonnées d'agence affichées sur le bail — voir document.controller.ts pour le repli par défaut. */
@@ -807,7 +830,7 @@ export function generateLeaseHtml(contract: LeaseExportData, agency: LeaseAgency
     <div class="box">
       <strong>Bien loué :</strong> ${escapeHtml(contract.property?.title)}<br>
       <strong>Adresse :</strong> ${escapeHtml(contract.property?.address)}<br>
-      <strong>${libelleSurface(contract.leaseType)} :</strong> ${contract.property?.surface} m²
+      <strong>${libelleSurface(contract.leaseType)} :</strong> ${contract.property?.surface} m²${lignesMentionsLogement(contract)}
     </div>
   </div>
 

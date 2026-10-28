@@ -1422,6 +1422,20 @@ const en: TranslationSchema = {
       count: "{{count}} lease contract(s) under management",
       addBtn: "+ New contract",
       formTitle: "New contract",
+      mentionsFr: {
+        titre: "Model lease details (France)",
+        hint: "Optional. They are printed on the lease when filled in (decree no. 2015-587 of 29 May 2015). The platform does not certify that any lease is compliant.",
+        dpe: "Energy performance diagnostic (DPE) class",
+        dpeNone: "Not provided",
+        identifiantFiscal: "Tax identifier of the dwelling",
+        periodeConstruction: "Construction period",
+        chauffage: "Heating and hot water",
+        loyerReference: "Reference rent (per m²)",
+        loyerReferenceMajore: "Increased reference rent (per m²)",
+        dernierLoyer: "Previous tenant's last rent",
+        montantsHint: "The three amounts only apply in rent-control areas.",
+        absentes: "Model lease details not provided: {{liste}}. They are optional here, but the decree provides for them.",
+      },
       regles: {
         TG: {
           titre: "To check against Togolese law",

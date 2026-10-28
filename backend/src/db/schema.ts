@@ -559,6 +559,9 @@ export const contracts = pgTable(
     // Droit applicable, texte libre saisi par le gestionnaire et imprimé sur le
     // bail (ex. « Droit sénégalais »). Vide : aucune mention n'est imprimée.
     applicableLaw: text("applicable_law"),
+    // Mentions du logement du contrat type français (DPE, identifiant fiscal, période de construction, chauffage, loyers de
+    // référence), JSON stringifié — voir utils/mentionsLogement.ts. NULL : aucune mention renseignée.
+    housingMentions: text("housing_mentions"),
     reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     // Signature électronique
     signedByManagerAt: timestamp("signed_by_manager_at", { mode: "date" }),

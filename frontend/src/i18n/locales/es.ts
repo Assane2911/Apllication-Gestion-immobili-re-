@@ -1424,6 +1424,20 @@ const es: TranslationSchema = {
       count: "{{count}} contrato(s) en gestión",
       addBtn: "+ Nuevo contrato",
       formTitle: "Nuevo contrato",
+      mentionsFr: {
+        titre: "Menciones del contrato tipo (Francia)",
+        hint: "Opcionales. Se imprimen en el contrato cuando se rellenan (decreto n.º 2015-587 de 29 de mayo de 2015). La plataforma no certifica la conformidad de ningún contrato.",
+        dpe: "Clase del diagnóstico de eficiencia energética (DPE)",
+        dpeNone: "No indicada",
+        identifiantFiscal: "Identificador fiscal de la vivienda",
+        periodeConstruction: "Período de construcción",
+        chauffage: "Calefacción y agua caliente",
+        loyerReference: "Alquiler de referencia (por m²)",
+        loyerReferenceMajore: "Alquiler de referencia incrementado (por m²)",
+        dernierLoyer: "Último alquiler del inquilino anterior",
+        montantsHint: "Los tres importes solo afectan a las zonas con control de alquileres.",
+        absentes: "Menciones del contrato tipo no indicadas: {{liste}}. Aquí son opcionales, pero el decreto las prevé.",
+      },
       regles: {
         TG: {
           titre: "Para comprobar según el derecho togolés",

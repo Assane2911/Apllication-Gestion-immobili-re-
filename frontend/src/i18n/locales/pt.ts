@@ -1422,6 +1422,20 @@ const pt: TranslationSchema = {
       count: "{{count}} contrato(s) de arrendamento em gestão",
       addBtn: "+ Novo contrato",
       formTitle: "Novo contrato",
+      mentionsFr: {
+        titre: "Menções do contrato tipo (França)",
+        hint: "Facultativas. Imprimem-se no contrato quando preenchidas (decreto n.º 2015-587, de 29 de maio de 2015). A plataforma não atesta a conformidade de nenhum contrato.",
+        dpe: "Classe do diagnóstico de desempenho energético (DPE)",
+        dpeNone: "Não indicada",
+        identifiantFiscal: "Identificador fiscal da habitação",
+        periodeConstruction: "Período de construção",
+        chauffage: "Aquecimento e água quente",
+        loyerReference: "Renda de referência (por m²)",
+        loyerReferenceMajore: "Renda de referência majorada (por m²)",
+        dernierLoyer: "Última renda do inquilino anterior",
+        montantsHint: "Os três montantes só dizem respeito às zonas de controlo de rendas.",
+        absentes: "Menções do contrato tipo não indicadas: {{liste}}. São facultativas aqui, mas o decreto prevê-as.",
+      },
       regles: {
         TG: {
           titre: "A verificar à luz do direito togolês",
