@@ -78,8 +78,16 @@ describe("règles par pays — valeurs proposées", () => {
     expect(r.delaiMiseEnDemeureJours).toBe(8);
   });
 
+  it("Guinée-Bissau : droit applicable prérempli seulement (Lei do Inquilinato) ; aucune durée ni échéance imposée, mise en demeure inchangée", () => {
+    const r = reglesDuPays("GW");
+    expect(r.droitApplicable).toBe("Decreto n.º 13-A/89, de 9 de Junho (Lei do Inquilinato), e Código Civil");
+    expect(r.jourEcheance).toBe("5");
+    expect(r.dureeBailMois).toBeNull();
+    expect(r.delaiMiseEnDemeureJours).toBe(8);
+  });
+
   it("autre pays, et un compte sans pays : le comportement neutre d'avant", () => {
-    for (const code of [...CODES_PAYS.filter((c) => !["SN", "FR", "CI", "ML", "BF", "BJ", "TG"].includes(c)), null, undefined, "XX"]) {
+    for (const code of [...CODES_PAYS.filter((c) => !["SN", "FR", "CI", "ML", "BF", "BJ", "TG", "GW"].includes(c)), null, undefined, "XX"]) {
       const r = reglesDuPays(code);
       expect(r, String(code)).toEqual({ droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 });
     }
@@ -87,7 +95,7 @@ describe("règles par pays — valeurs proposées", () => {
 
   it("n'attribue pas le COCC aux autres pays de l'UEMOA", () => {
     for (const code of ["CI", "ML", "BF", "BJ", "TG", "NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).not.toContain("Code des obligations civiles et commerciales");
-    for (const code of ["NE", "GW"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
+    for (const code of ["NE"]) expect(reglesDuPays(code).droitApplicable, code).toBe("");
   });
 
   it("renouvellement : 36 mois pour un bail d'habitation au Sénégal et en France, 12 mois ailleurs (Côte d'Ivoire comprise) et pour un bail commercial", () => {
@@ -96,6 +104,7 @@ describe("règles par pays — valeurs proposées", () => {
     expect(dureeRenouvellementMois("BF", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("BJ", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("TG", "HABITATION")).toBe(12);
+    expect(dureeRenouvellementMois("GW", "HABITATION")).toBe(12);
     expect(dureeRenouvellementMois("SN", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("FR", "HABITATION")).toBe(36);
     expect(dureeRenouvellementMois("SN", "COMMERCIAL")).toBe(12);
@@ -155,6 +164,10 @@ describe("règles par pays — avertissements du bail (Sénégal)", () => {
 
   it("un bail commercial n'est pas concerné (il relève d'un autre régime)", () => {
     expect(avertissementsDuBail("SN", bail({ leaseType: "COMMERCIAL", deposit: 9000000, paymentDay: "5", endDate: "2027-01-01" }))).toEqual([]);
+  });
+
+  it("Guinée-Bissau : aucun rappel, le texte lu ne plafonne ni le dépôt de garantie ni la durée", () => {
+    expect(avertissementsDuBail("GW", bail({ deposit: 9000000, paymentDay: "", endDate: "2027-01-01" }))).toEqual([]);
   });
 
   it("aucun avertissement hors de la France, de la Côte d'Ivoire et du Sénégal : le Mali n'a aucun plafond lu, les autres pays n'ont pas été lus", () => {

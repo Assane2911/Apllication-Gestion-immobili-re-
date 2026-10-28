@@ -13,6 +13,14 @@
  * 456, version de la DGI). Pas encore : l'enregistrement du bail, la révision triennale, les congés (3 mois) et la procédure
  * d'expulsion, qui demandent des décisions de produit. À faire relire par un professionnel ivoirien.
  *
+ * Guinée-Bissau — texte lu : Lei do Inquilinato (décret n° 13-A/89 du 9 juin 1989, 2e supplément au Boletim Oficial n° 23), modifiée par le
+ * décret-loi n° 6/97 du 27 mai 1997, dans l'édition « Guiné-Bissau, Código Civil e Legislação Complementar » (Faculdade de Direito de
+ * Lisboa, 2006) : ce n'est pas l'exemplaire du Boletim Oficial, et un texte postérieur a pu modifier celui-ci. Le Código Civil de 1966
+ * n'est que subsidiaire pour le bail urbain (art. 1er). Il ne plafonne pas le dépôt de garantie : seul le droit applicable est proposé.
+ * Lu et non codé : avance de loyer d'un mois au plus (art. 26), loyer payable du 1er au 5e jour ouvrable (art. 25), indemnité de 50 %
+ * si le retard dépasse huit jours (art. 40), augmentation tous les trois ans avec préavis de trois mois (art. 82 à 84). À faire relire
+ * par un professionnel bissau-guinéen, notamment sur l'entrée en vigueur d'éventuels textes postérieurs.
+ *
  * Togo — texte lu : décret n° 2022-001/PR du 5 janvier 2022 portant réglementation de la caution, de la garantie de loyer et du bail
  * d'habitation (34 articles, entièrement lu, Journal officiel du 31 janvier 2022). Il s'applique d'abord dans le Grand Lomé
  * (art. 33) : un décret doit en fixer l'extension aux autres villes. Pas encore : la révision (10 % tous les trois ans, art. 10),
@@ -53,6 +61,15 @@ export interface ReglesPays {
 const NEUTRES: ReglesPays = { droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 };
 
 const REGLES: Record<string, ReglesPays> = {
+  GW: {
+    droitApplicable: "Decreto n.º 13-A/89, de 9 de Junho (Lei do Inquilinato), e Código Civil",
+    // Lei do Inquilinato, art. 25 : sauf stipulation contraire, le loyer est payé du premier au cinquième jour ouvrable du mois : on garde le 5 d'avant.
+    jourEcheance: "5",
+    // Art. 20 et 21 : durée librement convenue, 30 ans au plus, six mois si le contrat est muet : aucune durée proposée.
+    dureeBailMois: null,
+    // Art. 40 et 101 : le locataire peut mettre fin à sa mora dans les huit jours, au-delà une indemnité de 50 % est due : 8 jours, comme avant.
+    delaiMiseEnDemeureJours: 8,
+  },
   TG: {
     droitApplicable: "Décret n° 2022-001/PR du 5 janvier 2022 portant réglementation de la caution, de la garantie de loyer et du bail d'habitation",
     // Article 19 : loyer payable mensuellement, trimestriellement, semestriellement ou annuellement selon le contrat : aucun jour imposé.
