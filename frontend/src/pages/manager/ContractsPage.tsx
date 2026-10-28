@@ -17,6 +17,16 @@ import SignatureModal from "../../components/SignatureModal";
 import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
 import { avertissementsDuBail, dateDeFinParDefaut, dureeRenouvellementMois, reglesDuPays } from "../../data/reglesPays";
+import {
+  CLASSES_DPE,
+  MENTIONS_DE_BASE,
+  MENTIONS_MONTANTS,
+  MENTIONS_VIDES,
+  formulaireDepuisMentions,
+  mentionsAbsentes,
+  mentionsDepuisFormulaire,
+  proposeMentionsLogement,
+} from "../../data/mentionsLogement";
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
 import { ecartEnJours, formaterJour } from "../../utils/jourCivil";
@@ -43,7 +53,7 @@ interface BailRevisable {
 }
 
 // Jour d'échéance proposé à la création : le 5, ce que disaient déjà les documents remis aux locataires.
-const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "" };
+const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "", ...MENTIONS_VIDES };
 type FormulaireContrat = typeof emptyForm;
 
 /** Valeurs du formulaire pour un contrat existant (dates en AAAA-MM-JJ, telles que le serveur les a enregistrées). */
@@ -59,8 +69,11 @@ export function formulaireDepuisContrat(c: Contract): FormulaireContrat {
     paymentDay: c.paymentDay ? String(c.paymentDay) : "",
     leaseType: c.leaseType ?? "HABITATION",
     applicableLaw: c.applicableLaw ?? "",
+    ...formulaireDepuisMentions(c.housingMentions),
   };
 }
+
+const CLES_MENTIONS = new Set<string>([...MENTIONS_DE_BASE, ...MENTIONS_MONTANTS]);
 
 /**
  * Seuls les champs réellement modifiés partent au serveur : ses garde-fous (factures émises, dépôt
@@ -69,12 +82,18 @@ export function formulaireDepuisContrat(c: Contract): FormulaireContrat {
 export function changementsDuContrat(avant: FormulaireContrat, apres: FormulaireContrat): Record<string, unknown> {
   const corps: Record<string, unknown> = {};
   for (const cle of Object.keys(apres) as Array<keyof FormulaireContrat>) {
+    // Les mentions du logement partent ensemble, en un seul objet, plus bas.
+    if (CLES_MENTIONS.has(cle)) continue;
     if (apres[cle] === avant[cle]) continue;
     const v = apres[cle];
     if (cle === "rent" || cle === "deposit") corps[cle] = Number(v);
     else if (cle === "paymentDay") corps[cle] = v ? Number(v) : null;
     else if (cle === "terms" || cle === "applicableLaw") corps[cle] = v.trim();
     else corps[cle] = v;
+  }
+  // Un changement sur une seule mention renvoie toutes les mentions : le serveur remplace l'objet, il ne le fusionne pas.
+  if ([...CLES_MENTIONS].some((cle) => apres[cle as keyof FormulaireContrat] !== avant[cle as keyof FormulaireContrat])) {
+    corps.housingMentions = mentionsDepuisFormulaire(apres);
   }
   return corps;
 }
@@ -291,9 +310,13 @@ export default function ContractsPage() {
         return;
       }
       // Les clauses vides ne sont pas envoyées : le bail n'imprime alors aucune section.
-      const { terms, paymentDay, applicableLaw, ...champs } = form;
+      const { terms, paymentDay, applicableLaw, ...reste } = form;
+      const champs = Object.fromEntries(Object.entries(reste).filter(([cle]) => !CLES_MENTIONS.has(cle)));
+      const mentions = proposeMentionsLogement(pays, form.leaseType) ? mentionsDepuisFormulaire(form) : null;
       await api.post("/contracts", {
         ...champs,
+        // Aucune mention renseignée : rien n'est envoyé, le bail n'imprime aucune ligne de plus.
+        ...(mentions ? { housingMentions: mentions } : {}),
         ...(terms.trim() ? { terms: terms.trim() } : {}),
         // Vide : le jour de la date de début du bail (comportement d'avant).
         ...(paymentDay ? { paymentDay: Number(paymentDay) } : {}),
@@ -547,6 +570,41 @@ export default function ContractsPage() {
               <input id="contract-applicableLaw" type="text" maxLength={300} value={form.applicableLaw} onChange={(e) => setForm({ ...form, applicableLaw: e.target.value })} placeholder={t("manager.contracts.fields.applicableLawPlaceholder")} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
               <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.applicableLawHint")}</p>
             </div>
+            {proposeMentionsLogement(pays, form.leaseType) && (
+              <fieldset className="md:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-3">
+                <legend className="px-1 text-sm font-medium text-slate-700 dark:text-slate-300">{t("manager.contracts.mentionsFr.titre")}</legend>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">{t("manager.contracts.mentionsFr.hint")}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="contract-dpe" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.mentionsFr.dpe")}</label>
+                    <select id="contract-dpe" value={form.dpe} onChange={(e) => setForm({ ...form, dpe: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+                      <option value="">{t("manager.contracts.mentionsFr.dpeNone")}</option>
+                      {CLASSES_DPE.map((classe) => (
+                        <option key={classe} value={classe}>{classe}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {(["identifiantFiscal", "periodeConstruction", "chauffage"] as const).map((cle) => (
+                    <div key={cle}>
+                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
+                      <input id={`contract-${cle}`} type="text" maxLength={cle === "identifiantFiscal" ? 40 : cle === "periodeConstruction" ? 60 : 100} value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+                    </div>
+                  ))}
+                  {MENTIONS_MONTANTS.map((cle) => (
+                    <div key={cle}>
+                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
+                      <input id={`contract-${cle}`} type="number" min="0" step="0.01" value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.mentionsFr.montantsHint")}</p>
+                {mentionsAbsentes(form).length > 0 && (
+                  <p role="status" className="mt-2 rounded-lg border border-amber-300/70 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                    {t("manager.contracts.mentionsFr.absentes", { liste: mentionsAbsentes(form).map((cle) => t(`manager.contracts.mentionsFr.${cle}`)).join(", ") })}
+                  </p>
+                )}
+              </fieldset>
+            )}
             {rappels.length > 0 && pays && (
               <div role="status" className="md:col-span-2 rounded-lg border border-amber-300/70 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
                 <p className="font-semibold">{t(`manager.contracts.regles.${pays}.titre`)}</p>

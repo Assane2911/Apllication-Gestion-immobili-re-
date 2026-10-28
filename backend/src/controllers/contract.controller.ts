@@ -20,6 +20,7 @@ import { assertPlanAtLeast } from "../middleware/auth";
 import { ANNEE_BAIL_MAX, ANNEE_BAIL_MIN, dateDeBailPlausible } from "../utils/dates";
 import { deviseSchema } from "../utils/devises";
 import { MONTANT_MAXIMUM } from "../utils/montant";
+import { lireMentions, mentionsLogementSchema, serialiserMentions } from "../utils/mentionsLogement";
 import { TYPES_BAIL } from "../utils/typeBail";
 import { avecCode } from "../utils/validationExplicite";
 
@@ -55,6 +56,12 @@ const contractSchema = z.object({
     .nullable()
     .optional()
     .transform((v) => (v ? v : null)),
+  // Mentions du logement du contrat type français (voir utils/mentionsLogement.ts) : objet à l'entrée, JSON stringifié en
+  // base ; vide ou null : aucune mention.
+  housingMentions: mentionsLogementSchema
+    .nullable()
+    .optional()
+    .transform((v) => (v === undefined ? undefined : serialiserMentions(v))),
 });
 
 export async function resolveScannedUrl(value: string | null | undefined): Promise<string | null | undefined> {
@@ -73,10 +80,17 @@ export async function resolveScannedUrl(value: string | null | undefined): Promi
  * convention que `parseInspection` pour `roomsData`/`metersData`/`keysData`
  * (inspection.controller.ts).
  */
-function parseDepositDeductions<T extends { depositDeductions: string | null }>(
+function parseDepositDeductions<T extends { depositDeductions: string | null; housingMentions: string | null }>(
   contract: T
-): Omit<T, "depositDeductions"> & { depositDeductions: Array<{ label: string; amount: number }> | null } {
-  return { ...contract, depositDeductions: contract.depositDeductions ? JSON.parse(contract.depositDeductions) : null };
+): Omit<T, "depositDeductions" | "housingMentions"> & {
+  depositDeductions: Array<{ label: string; amount: number }> | null;
+  housingMentions: ReturnType<typeof lireMentions>;
+} {
+  return {
+    ...contract,
+    depositDeductions: contract.depositDeductions ? JSON.parse(contract.depositDeductions) : null,
+    housingMentions: lireMentions(contract.housingMentions),
+  };
 }
 
 /**
@@ -302,7 +316,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   //
   // Le statut reste modifiable : résilier ou clore un bail ne réécrit rien de
   // ce qui a été signé, et doit rester possible à tout moment.
-  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms", "paymentDay", "leaseType", "applicableLaw"] as const;
+  const CHAMPS_CONTRACTUELS = ["propertyId", "tenantId", "rent", "deposit", "currency", "startDate", "endDate", "terms", "paymentDay", "leaseType", "applicableLaw", "housingMentions"] as const;
   const toucheAuContenu = CHAMPS_CONTRACTUELS.some((champ) => body[champ] !== undefined);
   if (existing.signedByTenantAt && toucheAuContenu) {
     throw new ApiError(
@@ -501,7 +515,8 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
     details: `Contrat modifié pour le bien ${property?.title ?? ""}${body.status ? ` (statut : ${body.status})` : ""}`,
   });
 
-  res.json(contract);
+  // Les mentions du logement sont stockées en JSON : la réponse les rend en objet, comme toutes les lectures du contrat.
+  res.json({ ...contract, housingMentions: lireMentions(contract.housingMentions) });
 });
 
 export const deleteContract = asyncHandler(async (req: Request, res: Response) => {
@@ -714,6 +729,7 @@ export const renewContract = asyncHandler(async (req: Request, res: Response) =>
         paymentDay: existing.paymentDay,
         leaseType: existing.leaseType,
         applicableLaw: existing.applicableLaw,
+        housingMentions: existing.housingMentions,
         status: "ACTIVE",
       })
       .returning();

@@ -1423,6 +1423,20 @@ const fr = {
       count: "{{count}} contrat(s) de bail en gestion",
       addBtn: "+ Nouveau contrat",
       formTitle: "Nouveau contrat",
+      mentionsFr: {
+        titre: "Mentions du contrat type (France)",
+        hint: "Facultatives. Elles s'impriment sur le bail quand elles sont renseignées (décret n° 2015-587 du 29 mai 2015). La plateforme n'atteste la conformité d'aucun bail.",
+        dpe: "Classe du diagnostic de performance énergétique (DPE)",
+        dpeNone: "Non renseignée",
+        identifiantFiscal: "Identifiant fiscal du logement",
+        periodeConstruction: "Période de construction",
+        chauffage: "Chauffage et eau chaude",
+        loyerReference: "Loyer de référence (par m²)",
+        loyerReferenceMajore: "Loyer de référence majoré (par m²)",
+        dernierLoyer: "Dernier loyer du précédent locataire",
+        montantsHint: "Les trois montants ne concernent que les zones d'encadrement des loyers.",
+        absentes: "Mentions du contrat type non renseignées : {{liste}}. Elles sont facultatives ici, mais le décret les prévoit.",
+      },
       regles: {
         TG: {
           titre: "À vérifier au regard du droit togolais",

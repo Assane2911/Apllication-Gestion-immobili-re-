@@ -294,6 +294,91 @@ describe("ContractsPage — règles de la Guinée-Bissau (Lei do Inquilinato)", 
   });
 });
 
+describe("ContractsPage — mentions du logement du contrat type français", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("propose les mentions en France et rappelle, sans bloquer, celles de base qui manquent", async () => {
+    charger();
+    rendre("FR");
+    const user = await ouvrirNouveauBail();
+
+    expect(screen.getByText("Mentions du contrat type (France)")).toBeInTheDocument();
+    expect(screen.getByText(/Mentions du contrat type non renseignées : Classe du diagnostic de performance énergétique \(DPE\), Identifiant fiscal du logement, Période de construction, Chauffage et eau chaude/)).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Classe du diagnostic de performance énergétique (DPE)"), "D");
+    fireEvent.change(screen.getByLabelText("Identifiant fiscal du logement"), { target: { value: "123456789012" } });
+    expect(screen.queryByText(/Classe du diagnostic de performance énergétique \(DPE\), Identifiant fiscal/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Mentions du contrat type non renseignées : Période de construction, Chauffage et eau chaude/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Créer le contrat" })).toBeEnabled();
+  });
+
+  it("n'envoie que les mentions renseignées à la création", async () => {
+    charger();
+    mockedApi.post.mockResolvedValueOnce({ data: {} });
+    charger();
+    const { container } = rendre("FR");
+    const user = await ouvrirNouveauBail();
+
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    await user.selectOptions(screen.getByLabelText("Locataire"), "ten-1");
+    fireEvent.change(screen.getByLabelText("Loyer mensuel"), { target: { value: "800" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "800" } });
+    const dates = container.querySelectorAll('input[type="date"]');
+    fireEvent.change(dates[0], { target: { value: "2026-03-01" } });
+    await user.selectOptions(screen.getByLabelText("Classe du diagnostic de performance énergétique (DPE)"), "D");
+    fireEvent.change(screen.getByLabelText("Chauffage et eau chaude"), { target: { value: "Individuel, gaz" } });
+    fireEvent.change(screen.getByLabelText("Loyer de référence (par m²)"), { target: { value: "24.5" } });
+    await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+    const [url, corps] = mockedApi.post.mock.calls[0] as [string, Record<string, unknown>];
+    expect(url).toBe("/contracts");
+    expect(corps.housingMentions).toEqual({ dpe: "D", chauffage: "Individuel, gaz", loyerReference: 24.5 });
+    // Les champs de saisie des mentions ne partent pas à plat dans le corps de la requête.
+    for (const cle of ["dpe", "identifiantFiscal", "periodeConstruction", "chauffage", "loyerReference", "loyerReferenceMajore", "dernierLoyer"]) {
+      expect(corps, cle).not.toHaveProperty(cle);
+    }
+  });
+
+  it("sans aucune mention renseignée, la requête n'en porte pas", async () => {
+    charger();
+    mockedApi.post.mockResolvedValueOnce({ data: {} });
+    charger();
+    const { container } = rendre("FR");
+    const user = await ouvrirNouveauBail();
+
+    await user.selectOptions(screen.getByLabelText("Bien"), "prop-1");
+    await user.selectOptions(screen.getByLabelText("Locataire"), "ten-1");
+    fireEvent.change(screen.getByLabelText("Loyer mensuel"), { target: { value: "800" } });
+    fireEvent.change(screen.getByLabelText("Dépôt de garantie"), { target: { value: "800" } });
+    fireEvent.change(container.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-03-01" } });
+    await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalled());
+    const corps = (mockedApi.post.mock.calls[0] as [string, Record<string, unknown>])[1];
+    expect(corps).not.toHaveProperty("housingMentions");
+  });
+
+  it("ne propose rien hors de la France, ni pour un bail commercial en France", async () => {
+    charger();
+    rendre("SN");
+    await ouvrirNouveauBail();
+    expect(screen.queryByText("Mentions du contrat type (France)")).not.toBeInTheDocument();
+  });
+
+  it("un bail commercial en France ne propose pas les mentions", async () => {
+    charger();
+    rendre("FR");
+    const user = await ouvrirNouveauBail();
+    expect(screen.getByText("Mentions du contrat type (France)")).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Type de bail"), "COMMERCIAL");
+    expect(screen.queryByText("Mentions du contrat type (France)")).not.toBeInTheDocument();
+  });
+});
+
 describe("ContractsPage — règles du Togo (décret n° 2022-001/PR)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();

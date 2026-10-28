@@ -796,4 +796,17 @@ describe("changementsDuContrat", () => {
       applicableLaw: "",
     });
   });
+
+  it("un changement sur une mention du logement renvoie toutes les mentions, en un seul objet", () => {
+    const base = formulaireDepuisContrat(contract({ housingMentions: { dpe: "D", chauffage: "Gaz" } }));
+    expect(changementsDuContrat(base, { ...base })).toEqual({});
+    expect(changementsDuContrat(base, { ...base, dpe: "C", loyerReference: "24,5" })).toEqual({
+      housingMentions: { dpe: "C", chauffage: "Gaz", loyerReference: 24.5 },
+    });
+  });
+
+  it("vider toutes les mentions envoie null, pas un objet vide", () => {
+    const base = formulaireDepuisContrat(contract({ housingMentions: { dpe: "D" } }));
+    expect(changementsDuContrat(base, { ...base, dpe: "" })).toEqual({ housingMentions: null });
+  });
 });

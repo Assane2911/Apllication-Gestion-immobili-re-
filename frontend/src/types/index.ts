@@ -234,6 +234,16 @@ export interface Contract {
   leaseType?: "HABITATION" | "MEUBLE" | "COMMERCIAL" | "PROFESSIONNEL";
   /** Droit applicable saisi par le gestionnaire, imprimé sur le bail. */
   applicableLaw?: string | null;
+  /** Mentions du logement du contrat type français (DPE, identifiant fiscal, période de construction, chauffage, loyers de référence) ; absent ou `null` : aucune. */
+  housingMentions?: {
+    dpe?: "A" | "B" | "C" | "D" | "E" | "F" | "G";
+    identifiantFiscal?: string;
+    periodeConstruction?: string;
+    chauffage?: string;
+    loyerReference?: number;
+    loyerReferenceMajore?: number;
+    dernierLoyer?: number;
+  } | null;
   reminderSentAt?: string | null;
   signedByManagerAt?: string | null;
   managerSignatureUrl?: string | null;
