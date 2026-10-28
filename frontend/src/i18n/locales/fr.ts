@@ -496,7 +496,7 @@ const fr = {
         title: "La gestion locative, enfin simple.",
         subtitle: "Quittances automatiques, signature électronique et relances des impayés — tout au même endroit.",
         highlights: [
-          "Quittances PDF certifiées générées automatiquement",
+          "Quittances PDF générées automatiquement",
           "Signature électronique des baux en quelques clics",
           "Relances automatiques des loyers impayés",
           "Interface disponible en français, anglais, portugais et espagnol",
@@ -547,7 +547,7 @@ const fr = {
         title: "Votre agence, prête en 2 minutes.",
         subtitle: "Créez votre compte gestionnaire et commencez à gérer vos biens dès aujourd'hui.",
         highlights: [
-          "Quittances PDF certifiées générées automatiquement",
+          "Quittances PDF générées automatiquement",
           "Signature électronique des baux en quelques clics",
           "Relances automatiques des loyers impayés",
           "Interface disponible en français, anglais, portugais et espagnol",
@@ -626,14 +626,14 @@ const fr = {
       titleLine1: "La gestion locative",
       titleLine2: "réinventée & automatisée.",
       subtitle:
-        "Générez vos quittances en PDF certifié, faites signer vos baux en ligne, envoyez vos relances automatiques du 1er du mois et suivez votre rentabilité nette en temps réel.",
+        "Générez vos quittances en PDF, faites signer vos baux en ligne, envoyez vos relances automatiques du 1er du mois et suivez votre rentabilité nette en temps réel.",
       ctaTrial: "Démarrer l'essai 15 jours gratuit →",
       ctaPricing: "Voir les tarifs",
       mobileSoon: "Bientôt disponible sur l'App Store et Google Play",
     },
     features: {
       receipts: {
-        title: "Quittances & Baux PDF Certifiés",
+        title: "Quittances & Baux en PDF",
         desc: "Téléchargement instantané des quittances de loyer avec cachet de l'agence, numéro de série et mentions légales dès confirmation du paiement.",
       },
       signature: {
@@ -784,7 +784,7 @@ const fr = {
       roi: {
         adminTime: "Temps administratif",
         unpaidRent: "Loyer impayé oublié",
-        certified: "Baux & quittances certifiés",
+        certified: "Baux & quittances automatisés",
       },
       headers: {
         feature: "Fonctionnalité & Processus",
@@ -799,16 +799,16 @@ const fr = {
           immoplatform: "Alerte automatique chaque 1er du mois avec échéance stricte au 5. Factures instantanées avec statut en direct.",
         },
         receipts: {
-          title: "Quittances de loyer certifiées",
+          title: "Quittances de loyer automatiques",
           description: "Génération et délivrance légale aux locataires",
           traditional: "Création manuelle sur Word/Excel, conversion PDF fastidieuse, envois par email souvent oubliés.",
-          immoplatform: "Génération automatique en 1 clic au format officiel certifié avec cachet agence, numéro unique et mentions légales.",
+          immoplatform: "Génération automatique en 1 clic, en PDF, avec cachet agence, numéro unique et mentions légales.",
         },
         signature: {
           title: "Signature des contrats de bail",
           description: "Validation juridique et conclusion des baux",
           traditional: "Impression papier, paraphage page par page, déplacements physiques obligatoires, baux égarés.",
-          immoplatform: "Signature tactile électronique (ordinateur, tablette, mobile) avec horodatage certifié en 2 minutes.",
+          immoplatform: "Signature tactile électronique (ordinateur, tablette, mobile) avec horodatage en 2 minutes.",
         },
         incidents: {
           title: "Signalement des pannes & Incidents",
@@ -844,7 +844,7 @@ const fr = {
     },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. Tous droits réservés.",
-      tagline: "Logiciel de gestion locative immobilière certifié et sécurisé.",
+      tagline: "Logiciel de gestion locative immobilière sécurisé.",
       legal: "Mentions légales",
       terms: "CGU & CGV",
       privacy: "Confidentialité",
@@ -2816,7 +2816,7 @@ const fr = {
     landing: {
       title: "ImmoPlatform Pro — Gestion locative et immobilière intelligente",
       description:
-        "Quittances PDF certifiées, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement.",
+        "Quittances PDF automatiques, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement.",
     },
     login: {
       title: "Connexion",

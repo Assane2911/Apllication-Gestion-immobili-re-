@@ -199,7 +199,7 @@ export default function ContractsPage() {
   function modifierLien(c: Contract) {
     if (c.signedByTenantAt) return null;
     return (
-      <button type="button" onClick={() => ouvrirModification(c)} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => ouvrirModification(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
         {t("manager.contracts.edit")}
       </button>
     );
@@ -208,7 +208,7 @@ export default function ContractsPage() {
   /** Lien « Colocataires (n) » : ouvre la gestion des colocataires du bail. */
   function colocatairesLien(c: Contract) {
     return (
-      <button type="button" onClick={() => setCotenantsContract(c)} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => setCotenantsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
         {t("manager.contracts.cotenantsLink", { count: c.cotenantNames?.length ?? 0 })}
       </button>
     );
@@ -217,7 +217,7 @@ export default function ContractsPage() {
   /** Lien « Garants (n) » : ouvre la gestion des garants du bail (consultation seule une fois signé). */
   function garantsLien(c: Contract) {
     return (
-      <button type="button" onClick={() => setGuarantorsContract(c)} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => setGuarantorsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
         {t("manager.contracts.guarantorsLink", { count: c.guarantorsCount ?? 0 })}
       </button>
     );
@@ -227,7 +227,7 @@ export default function ContractsPage() {
   function revisionLien(c: Contract) {
     if (c.status !== "ACTIVE") return null;
     return (
-      <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="mt-1 block text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
         {t("manager.contracts.reviseRent")}
       </button>
     );
@@ -236,10 +236,10 @@ export default function ContractsPage() {
   function echeanceLigne(c: Contract) {
     const jour = jourEcheance(c);
     return (
-      <span className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+      <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[11px] text-slate-600 dark:text-slate-400">
         {c.paymentDay === 31 ? t("manager.contracts.paymentDayRowLast") : t("manager.contracts.paymentDayRow", { day: jour })}
         {!c.signedByTenantAt && (
-          <button type="button" onClick={() => setEditingPaymentDay(c)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+          <button type="button" onClick={() => setEditingPaymentDay(c)} className="whitespace-nowrap text-left text-brand-600 dark:text-brand-400 font-semibold hover:underline">
             {t("manager.contracts.editPaymentDay")}
           </button>
         )}
@@ -687,7 +687,7 @@ export default function ContractsPage() {
                   {(c.cotenantNames ?? []).length > 0 && <span className="block text-[11px]">+ {c.cotenantNames!.join(", ")}</span>}
                 </td>
                 <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">
-                  {formatMoney(c.rent, c.currency)}
+                  <span className="whitespace-nowrap">{formatMoney(c.rent, c.currency)}</span>
                   {revisionLien(c)}
                   {garantsLien(c)}
                   {colocatairesLien(c)}
@@ -703,7 +703,7 @@ export default function ContractsPage() {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-xs space-y-1">
+                <td className="px-4 py-3 text-xs space-y-1 whitespace-nowrap">
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-600 dark:text-slate-400">{t("manager.contracts.agency")}</span>
                     {c.signedByManagerAt ? (

@@ -498,7 +498,7 @@ const pt: TranslationSchema = {
         title: "A gestão de arrendamento, finalmente simples.",
         subtitle: "Recibos automáticos, assinatura eletrónica e lembretes de rendas em atraso — tudo num só lugar.",
         highlights: [
-          "Recibos em PDF certificados gerados automaticamente",
+          "Recibos em PDF gerados automaticamente",
           "Assinatura eletrónica dos contratos em poucos cliques",
           "Lembretes automáticos de rendas em atraso",
           "Interface disponível em francês, inglês, português e espanhol",
@@ -549,7 +549,7 @@ const pt: TranslationSchema = {
         title: "A sua agência, pronta em 2 minutos.",
         subtitle: "Crie a sua conta de gestor e comece a gerir os seus imóveis hoje mesmo.",
         highlights: [
-          "Recibos em PDF certificados gerados automaticamente",
+          "Recibos em PDF gerados automaticamente",
           "Assinatura eletrónica dos contratos em poucos cliques",
           "Lembretes automáticos de rendas em atraso",
           "Interface disponível em francês, inglês, português e espanhol",
@@ -628,14 +628,14 @@ const pt: TranslationSchema = {
       titleLine1: "A gestão de arrendamento,",
       titleLine2: "reinventada & automatizada.",
       subtitle:
-        "Gere os seus recibos de renda em PDF certificado, faça assinar os contratos online, envie lembretes automáticos no dia 1 de cada mês e acompanhe a sua rentabilidade líquida em tempo real.",
+        "Gere os seus recibos de renda em PDF, faça assinar os contratos online, envie lembretes automáticos no dia 1 de cada mês e acompanhe a sua rentabilidade líquida em tempo real.",
       ctaTrial: "Iniciar o teste grátis de 15 dias →",
       ctaPricing: "Ver os preços",
       mobileSoon: "Em breve na App Store e no Google Play",
     },
     features: {
       receipts: {
-        title: "Recibos & Contratos em PDF Certificados",
+        title: "Recibos & Contratos em PDF",
         desc: "Descarregamento instantâneo dos recibos de renda com o carimbo da agência, número de série e menções legais assim que o pagamento é confirmado.",
       },
       signature: {
@@ -786,7 +786,7 @@ const pt: TranslationSchema = {
       roi: {
         adminTime: "Tempo administrativo",
         unpaidRent: "Renda em atraso esquecida",
-        certified: "Contratos e recibos certificados",
+        certified: "Contratos e recibos automatizados",
       },
       headers: {
         feature: "Funcionalidade e processo",
@@ -801,16 +801,16 @@ const pt: TranslationSchema = {
           immoplatform: "Alerta automático no dia 1 de cada mês com vencimento rigoroso no dia 5. Faturas instantâneas com estado em direto.",
         },
         receipts: {
-          title: "Recibos de renda certificados",
+          title: "Recibos de renda automáticos",
           description: "Geração e entrega legal aos inquilinos",
           traditional: "Criação manual em Word/Excel, conversão em PDF fastidiosa, envios por email muitas vezes esquecidos.",
-          immoplatform: "Geração automática com 1 clique no formato oficial certificado, com carimbo da agência, número único e menções legais.",
+          immoplatform: "Geração automática com 1 clique em PDF, com carimbo da agência, número único e menções legais.",
         },
         signature: {
           title: "Assinatura dos contratos de arrendamento",
           description: "Validação jurídica e celebração dos contratos",
           traditional: "Impressão em papel, rubrica página a página, deslocações físicas obrigatórias, contratos extraviados.",
-          immoplatform: "Assinatura eletrónica tátil (computador, tablet, telemóvel) com carimbo de data/hora certificado em 2 minutos.",
+          immoplatform: "Assinatura eletrónica tátil (computador, tablet, telemóvel) com carimbo de data/hora em 2 minutos.",
         },
         incidents: {
           title: "Comunicação de avarias e incidentes",
@@ -846,7 +846,7 @@ const pt: TranslationSchema = {
     },
     footer: {
       rights: "© 2026 ImmoPlatform Pro. Todos os direitos reservados.",
-      tagline: "Software de gestão de arrendamento imobiliário certificado e seguro.",
+      tagline: "Software de gestão de arrendamento imobiliário seguro.",
       legal: "Aviso legal",
       terms: "Termos e condições",
       privacy: "Privacidade",
@@ -2815,7 +2815,7 @@ const pt: TranslationSchema = {
     landing: {
       title: "ImmoPlatform Pro — Gestão imobiliária e de arrendamentos inteligente",
       description:
-        "Recibos de renda em PDF certificados, assinatura eletrónica de contratos, lembretes automáticos, painel em tempo real. Teste gratuito de 15 dias sem compromisso.",
+        "Recibos de renda em PDF automáticos, assinatura eletrónica de contratos, lembretes automáticos, painel em tempo real. Teste gratuito de 15 dias sem compromisso.",
     },
     login: {
       title: "Iniciar sessão",
