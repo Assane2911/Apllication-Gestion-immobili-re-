@@ -1131,6 +1131,26 @@ const en: TranslationSchema = {
   },
 
   manager: {
+    demarrage: {
+      titre: "Getting started",
+      sousTitre: "Your agency is set up for {{pays}} (currency: {{devise}}). Four steps are enough to issue your first documents.",
+      sousTitreSansPays: "Four steps are enough to issue your first documents.",
+      masquer: "Hide this guide",
+      faite: "Done",
+      afaire: "To do",
+      ouvrir: "Open",
+      identifiants: {
+        FR: "Your SIRET. It is printed on your leases, receipts and formal notices.",
+        SN: "Your NINEA and your RCCM. They are printed on your leases, receipts and formal notices.",
+        autre: "Your agency's registration number and its tax identifier. They are printed on your leases, receipts and formal notices.",
+      },
+      etapes: {
+        ids: { titre: "Enter your agency's legal identifiers" },
+        bien: { titre: "Add your first property", detail: "Address, surface and rent: a property is the starting point of a lease." },
+        locataire: { titre: "Add a tenant", detail: "Their name, email and phone number with the country code." },
+        bail: { titre: "Create an active lease", detail: "It generates the rent invoices and your first documents." },
+      },
+    },
     dashboard: {
       title: "Dashboard",
       loadingHint: "Loading key metrics...",

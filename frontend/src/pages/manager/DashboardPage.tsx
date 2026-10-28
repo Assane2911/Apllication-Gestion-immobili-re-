@@ -12,6 +12,7 @@ import {
 import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import DemarrageAgence from "../../components/DemarrageAgence";
 import { COULEURS_STATUT } from "../../components/graphiques/couleurs";
 import { GraphiqueParc, GraphiqueRevenusDepenses } from "../../components/graphiques/graphiquesALaDemande";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
@@ -140,6 +141,10 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.dashboard.overviewSubtitle")}</p>
         </div>
       </div>
+
+      <DemarrageAgence
+        stats={{ totalProperties: stats.totalProperties ?? 0, totalTenants: stats.totalTenants ?? 0, activeContracts: stats.activeContracts ?? 0 }}
+      />
 
       {/* Grille des 8 indicateurs clés */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

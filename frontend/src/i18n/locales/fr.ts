@@ -1129,6 +1129,26 @@ const fr = {
   },
 
   manager: {
+    demarrage: {
+      titre: "Pour bien démarrer",
+      sousTitre: "Votre agence est configurée pour {{pays}} (devise : {{devise}}). Quatre gestes suffisent pour émettre vos premiers documents.",
+      sousTitreSansPays: "Quatre gestes suffisent pour émettre vos premiers documents.",
+      masquer: "Masquer ce guide",
+      faite: "Fait",
+      afaire: "À faire",
+      ouvrir: "Ouvrir",
+      identifiants: {
+        FR: "Votre SIRET. Il s'imprime sur vos baux, quittances et mises en demeure.",
+        SN: "Votre NINEA et votre RCCM. Ils s'impriment sur vos baux, quittances et mises en demeure.",
+        autre: "Le numéro d'immatriculation de votre agence et son identifiant fiscal. Ils s'impriment sur vos baux, quittances et mises en demeure.",
+      },
+      etapes: {
+        ids: { titre: "Renseigner les identifiants légaux de l'agence" },
+        bien: { titre: "Ajouter votre premier bien", detail: "Adresse, surface et loyer : un bien est le point de départ d'un bail." },
+        locataire: { titre: "Ajouter un locataire", detail: "Son nom, son email et son téléphone avec l'indicatif du pays." },
+        bail: { titre: "Créer un bail actif", detail: "Il génère les factures de loyer et vos premiers documents." },
+      },
+    },
     dashboard: {
       title: "Tableau de bord",
       loadingHint: "Chargement des indicateurs clés...",
