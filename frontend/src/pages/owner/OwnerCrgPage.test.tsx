@@ -126,6 +126,23 @@ describe("OwnerCrgPage", () => {
     );
   });
 
+  it("ouvre le relevé annuel de l'année affichée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+
+    mockedApi.get.mockResolvedValueOnce({ data: "<html><body>Relevé</body></html>" });
+    await userEvent.setup().click(screen.getByRole("button", { name: "Relevé annuel 2026" }));
+
+    await waitFor(() =>
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/mine/annual/export?year=2026", {
+        responseType: "text",
+        signal: expect.anything(),
+      })
+    );
+    expect(screen.getByText("Relevé annuel des loyers 2026")).toBeInTheDocument();
+  });
+
   it("une charge ou une commission nulle s'affiche « 0 € », jamais « -0 € »", async () => {
     mockedApi.get.mockResolvedValueOnce({
       data: crg({

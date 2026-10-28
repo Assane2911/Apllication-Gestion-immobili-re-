@@ -1796,6 +1796,8 @@ const fr = {
       monthLabel: "Mois",
       yearLabel: "Année",
       exportHtml: "Export HTML imprimable",
+      exportAnnual: "Relevé annuel {{year}}",
+      annualTitle: "Relevé annuel des loyers {{year}}",
       feeRateHint: "Taux de commission : {{rate}}%",
       stats: {
         totalLoyers: "Loyers encaissés",
@@ -2387,6 +2389,8 @@ const fr = {
       monthLabel: "Mois",
       yearLabel: "Année",
       exportHtml: "Export HTML imprimable",
+      exportAnnual: "Relevé annuel {{year}}",
+      annualTitle: "Relevé annuel des loyers {{year}}",
       feeRateHint: "Taux de commission : {{rate}}%",
       stats: {
         totalLoyers: "Loyers encaissés",

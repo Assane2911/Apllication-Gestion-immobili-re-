@@ -35,6 +35,7 @@ export default function OwnerCrgPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showExport, setShowExport] = useState(false);
+  const [showAnnual, setShowAnnual] = useState(false);
 
   const loadData = useCallback((selectedMonth: number, selectedYear: number, signal?: AbortSignal) => {
     setLoading(true);
@@ -144,6 +145,12 @@ export default function OwnerCrgPage() {
           <FileText size={13} aria-hidden="true" /> {t("owner.crg.exportHtml")}
         </button>
         </Bulle>
+        <button
+          onClick={() => setShowAnnual(true)}
+          className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+        >
+          <FileText size={13} aria-hidden="true" /> {t("owner.crg.exportAnnual", { year })}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -225,6 +232,14 @@ export default function OwnerCrgPage() {
           title={t("owner.crg.title")}
           docUrl={`/crg/mine/export?month=${month}&year=${year}`}
           onClose={() => setShowExport(false)}
+        />
+      )}
+
+      {showAnnual && (
+        <DocumentModal
+          title={t("owner.crg.annualTitle", { year })}
+          docUrl={`/crg/mine/annual/export?year=${year}`}
+          onClose={() => setShowAnnual(false)}
         />
       )}
     </div>
