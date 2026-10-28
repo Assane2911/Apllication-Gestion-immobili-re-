@@ -230,6 +230,21 @@ describe("OwnersPage (manager)", () => {
     expect(body).toMatchObject({ lastName: "Diallo-Ndiaye", companyName: "SCI Diallo" });
   });
 
+  it("à la modification seulement, prévient qu'un nouveau taux vaut à partir du mois en cours", async () => {
+    const user = userEvent.setup();
+    queueOwners([owner({ id: "own-1" })]);
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Modifier" }).length).toBeGreaterThan(0));
+    const mention = /à partir du mois en cours/;
+
+    await user.click(screen.getByRole("button", { name: "+ Ajouter un propriétaire" }));
+    expect(screen.queryByText(mention)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+
+    await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
+    expect(screen.getByText(mention)).toBeInTheDocument();
+  });
+
   it("supprime un propriétaire après confirmation", async () => {
     const user = userEvent.setup();
     queueOwners([owner({ id: "own-1" })]);

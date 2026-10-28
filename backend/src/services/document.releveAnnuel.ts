@@ -74,6 +74,8 @@ export interface ReleveAnnuelExportData {
   ownerName: string;
   ownerCompanyName?: string | null;
   managementFeeRate: number;
+  /** Taux appliqués dans l'année, dans l'ordre : plusieurs si le taux a changé en cours d'année. Absent : `managementFeeRate` seul. */
+  managementFeeRates?: number[];
   year: number;
   months: Array<{
     month: number;
@@ -226,7 +228,7 @@ export function generateReleveAnnuelHtml(data: ReleveAnnuelExportData): string {
     <div class="box">
       <strong>${c.agence}</strong> ${escapeHtml(data.agencyName)}<br>
       <strong>${c.proprietaire}</strong> ${escapeHtml(data.ownerName)}${data.ownerCompanyName ? ` (${escapeHtml(data.ownerCompanyName)})` : ""}<br>
-      <strong>${c.tauxCommission}</strong> ${c.pourcent(data.managementFeeRate)}
+      <strong>${c.tauxCommission}</strong> ${(data.managementFeeRates?.length ? data.managementFeeRates : [data.managementFeeRate]).map(c.pourcent).join(" → ")}
     </div>
   </div>
 

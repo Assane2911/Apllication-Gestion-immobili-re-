@@ -1347,6 +1347,7 @@ const fr = {
         iban: "IBAN",
         bic: "BIC / SWIFT",
         managementFeeRate: "Taux de commission (%)",
+        managementFeeRateHint: "Un nouveau taux s'applique à partir du mois en cours : les comptes-rendus des mois passés gardent l'ancien taux.",
         notes: "Notes",
         language: "Langue des e-mails",
         languageHint:

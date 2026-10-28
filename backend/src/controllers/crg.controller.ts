@@ -6,10 +6,12 @@ import { agencySettings, contracts, expenses, invoices, ownerPayouts, owners, pr
 import { generateReleveAnnuelHtml } from "../services/document.releveAnnuel";
 import { generateCrgHtml } from "../services/pdf.service";
 import { developperFactures, factureEncaissee } from "../services/encaissements.service";
+import { chargerHistoriqueTaux } from "../services/tauxCommission.service";
 import { asyncHandler } from "../utils/asyncHandler";
 import { langueOuDefaut } from "../utils/langue";
 import { arrondir } from "../utils/montants";
 import { nomAvecCivilite } from "../utils/nom";
+import { TauxDepuis, tauxDuMois } from "../utils/tauxCommission";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
 
 /**
@@ -189,6 +191,7 @@ export async function computeCrgPourProprietaires(proprietaires: OwnerRow[], mon
   }
   const reversementsParProprietaire = new Map<string, Array<typeof ownerPayouts.$inferSelect>>();
   for (const r of payoutRows) parCle(reversementsParProprietaire, r.ownerId).push(r);
+  const historiqueTaux = await chargerHistoriqueTaux(ownerIds);
 
   return proprietaires.map((owner) =>
     assemblerCrg(owner, month, year, {
@@ -197,6 +200,7 @@ export async function computeCrgPourProprietaires(proprietaires: OwnerRow[], mon
       encaissements: encaissementsParProprietaire.get(owner.id) ?? [],
       depenses: depensesParProprietaire.get(owner.id) ?? [],
       reversements: reversementsParProprietaire.get(owner.id) ?? [],
+      historiqueTaux: historiqueTaux.get(owner.id) ?? [],
     })
   );
 }
@@ -207,6 +211,8 @@ type DonneesCrg = {
   encaissements: Array<typeof invoices.$inferSelect>;
   depenses: Array<typeof expenses.$inferSelect>;
   reversements: Array<typeof ownerPayouts.$inferSelect>;
+  /** Changements de taux de commission du propriétaire ; vide s'il n'en a jamais fait. */
+  historiqueTaux: TauxDepuis[];
 };
 
 /** Le calcul proprement dit, sur des données d'UN propriétaire déjà lues : aucune requête. */
@@ -274,8 +280,10 @@ function assemblerCrg(owner: OwnerRow, month: number, year: number, donnees: Don
   // principale de la devise, pas en centimes — voir doublePrecision dans
   // schema.ts) : sans cet arrondi, un taux non entier (ex: 8.5%) produit des
   // décimales binaires non représentatives (ex: 42.500000000000007).
+  // Taux en vigueur CE mois-là : un changement de taux ne recalcule pas les mois passés.
+  const tauxCommission = tauxDuMois(owner.managementFeeRate, donnees.historiqueTaux, month, year);
   for (const entry of perProperty.values()) {
-    entry.commission = Math.round(entry.loyersEncaisses * owner.managementFeeRate) / 100;
+    entry.commission = Math.round(entry.loyersEncaisses * tauxCommission) / 100;
     entry.netAReverser = Math.round((entry.loyersEncaisses - entry.chargesDeduites - entry.commission) * 100) / 100;
   }
 
@@ -316,7 +324,7 @@ function assemblerCrg(owner: OwnerRow, month: number, year: number, donnees: Don
     ownerCompanyName: owner.companyName,
     iban: owner.iban,
     bic: owner.bic,
-    managementFeeRate: owner.managementFeeRate,
+    managementFeeRate: tauxCommission,
     month,
     year,
     properties: propertyLines,
@@ -343,7 +351,10 @@ export type ReleveAnnuel = {
   ownerId: string;
   ownerName: string;
   ownerCompanyName: string | null;
+  /** Taux de commission de la fin de l'année (le dernier de `managementFeeRates`). */
   managementFeeRate: number;
+  /** Taux appliqués dans l'année aux mois qui ont une activité, dans l'ordre des mois : plusieurs valeurs si le taux a changé en cours d'année. */
+  managementFeeRates: number[];
   year: number;
   months: Array<{
     month: number;
@@ -385,6 +396,7 @@ export async function computeReleveAnnuel(owner: OwnerRow, year: number): Promis
   const baux: Array<typeof contracts.$inferSelect> =
     propertyIds.length > 0 ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds)) : [];
   const contractIds = baux.map((c) => c.id);
+  const historiqueTaux = (await chargerHistoriqueTaux([owner.id])).get(owner.id) ?? [];
 
   const [paidInvoiceRows, expenseRows, payoutRows] = await Promise.all([
     contractIds.length > 0
@@ -416,6 +428,7 @@ export async function computeReleveAnnuel(owner: OwnerRow, year: number): Promis
   const totalCommissionByCurrency: Record<string, number> = {};
   const totalNetByCurrency: Record<string, number> = {};
   const totalReverseByCurrency: Record<string, number> = {};
+  const tauxParMois: Array<{ taux: number; actif: boolean }> = [];
 
   for (let month = 1; month <= 12; month++) {
     const { start, end } = monthBounds(month, year);
@@ -428,7 +441,10 @@ export async function computeReleveAnnuel(owner: OwnerRow, year: number): Promis
       }),
       depenses: expenseRows.filter((e) => e.expenseDate >= start && e.expenseDate <= end),
       reversements: payoutRows.filter((r) => r.periodMonth === month),
+      historiqueTaux,
     });
+    const actif = [crg.totalLoyersByCurrency, crg.totalChargesByCurrency, crg.totalReverseByCurrency].some((t) => Object.values(t).some((m) => m !== 0));
+    tauxParMois.push({ taux: crg.managementFeeRate, actif });
     mois.push({
       month,
       totalLoyersByCurrency: crg.totalLoyersByCurrency,
@@ -458,11 +474,17 @@ export async function computeReleveAnnuel(owner: OwnerRow, year: number): Promis
     resteAReverserByCurrency[devise] = arrondir((totalNetByCurrency[devise] ?? 0) - (totalReverseByCurrency[devise] ?? 0));
   }
 
+  // Taux des mois qui ont une activité, sans répétition ; sans aucune activité, le taux du dernier mois de l'année.
+  const tauxDistincts: number[] = [];
+  for (const { taux, actif } of tauxParMois) if (actif && tauxDistincts[tauxDistincts.length - 1] !== taux) tauxDistincts.push(taux);
+  const managementFeeRates = tauxDistincts.length > 0 ? tauxDistincts : [tauxParMois[tauxParMois.length - 1].taux];
+
   return {
     ownerId: owner.id,
     ownerName: nomAvecCivilite(owner),
     ownerCompanyName: owner.companyName,
-    managementFeeRate: owner.managementFeeRate,
+    managementFeeRate: managementFeeRates[managementFeeRates.length - 1],
+    managementFeeRates,
     year,
     months: mois,
     properties: Array.from(parBien.values()).sort((a, b) => a.propertyTitle.localeCompare(b.propertyTitle) || a.currency.localeCompare(b.currency)),

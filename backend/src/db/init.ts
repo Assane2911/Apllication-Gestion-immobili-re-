@@ -616,6 +616,22 @@ export async function initDb() {
       sql`CREATE INDEX IF NOT EXISTS owner_payouts_owner_period_idx ON owner_payouts (owner_id, period_year, period_month)`
     );
 
+    // Taux de commission d'un propriétaire, mois par mois (après owners : FK).
+    await creerTable("owner_fee_rates", sql`
+      CREATE TABLE IF NOT EXISTS owner_fee_rates (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+        effective_year INTEGER NOT NULL,
+        effective_month INTEGER NOT NULL,
+        rate DOUBLE PRECISION NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex(
+      "owner_fee_rates_owner_period_unique",
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS owner_fee_rates_owner_period_unique ON owner_fee_rates (owner_id, effective_year, effective_month)`
+    );
+
     // Historique des révisions de loyer d'un bail (après contracts : FK).
     await creerTable("rent_revisions", sql`
       CREATE TABLE IF NOT EXISTS rent_revisions (

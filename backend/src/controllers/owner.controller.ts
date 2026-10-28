@@ -9,6 +9,7 @@ import { activityLogs, agencySettings, contracts, invoices, owners, properties, 
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
 import { developperFactures } from "../services/encaissements.service";
+import { enregistrerChangementTaux } from "../services/tauxCommission.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { resteDu } from "../utils/montants";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
@@ -171,7 +172,13 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
   assertNonAnonymise(existing);
 
-  const [owner] = await db.update(owners).set(body).where(eq(owners.id, req.params.id)).returning();
+  // Un nouveau taux de commission vaut à partir du mois en cours : les comptes-rendus des mois passés gardent l'ancien.
+  const tauxChange = body.managementFeeRate !== undefined && body.managementFeeRate !== existing.managementFeeRate;
+  const owner = await db.transaction(async (tx: Transaction) => {
+    const [maj] = await tx.update(owners).set(body).where(eq(owners.id, req.params.id)).returning();
+    if (tauxChange) await enregistrerChangementTaux(tx, existing.id, existing.managementFeeRate, body.managementFeeRate!);
+    return maj;
+  });
 
   await logActivity({
     req,
