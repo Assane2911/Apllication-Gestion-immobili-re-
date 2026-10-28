@@ -1425,6 +1425,11 @@ const es: TranslationSchema = {
       addBtn: "+ Nuevo contrato",
       formTitle: "Nuevo contrato",
       regles: {
+        BF: {
+          titre: "Para comprobar según el derecho burkinés",
+          deposit: "La fianza no puede ser superior a dos meses de alquiler (Ley n.º 103-2015/CNT de 22 de diciembre de 2015, artículo 26). El importe comparado es el alquiler introducido en este formulario.",
+          note: "Estos avisos son informativos: la decisión sigue siendo suya y no sustituyen el consejo de un profesional.",
+        },
         CI: {
           titre: "Para comprobar según el derecho marfileño",
           deposit: "La fianza no puede exceder dos meses de alquiler (Ley n.º 2019-576 de 26 de junio de 2019, artículo 416). El importe comparado es el alquiler introducido en este formulario.",

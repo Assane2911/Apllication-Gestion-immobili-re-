@@ -1423,6 +1423,11 @@ const pt: TranslationSchema = {
       addBtn: "+ Novo contrato",
       formTitle: "Novo contrato",
       regles: {
+        BF: {
+          titre: "A verificar à luz do direito burquinense",
+          deposit: "A caução não pode ser superior a dois meses de renda (Lei n.º 103-2015/CNT, de 22 de dezembro de 2015, artigo 26). O valor comparado é a renda introduzida neste formulário.",
+          note: "Estes avisos são informativos: a decisão continua a ser sua e não substituem o parecer de um profissional.",
+        },
         CI: {
           titre: "A verificar à luz do direito marfinense",
           deposit: "A caução não pode exceder dois meses de renda (Lei n.º 2019-576, de 26 de junho de 2019, artigo 416). O valor comparado é a renda introduzida neste formulário.",

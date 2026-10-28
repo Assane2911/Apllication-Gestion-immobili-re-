@@ -1423,6 +1423,11 @@ const en: TranslationSchema = {
       addBtn: "+ New contract",
       formTitle: "New contract",
       regles: {
+        BF: {
+          titre: "To check against Burkinabè law",
+          deposit: "The security deposit cannot be more than two months' rent (Law no. 103-2015/CNT of 22 December 2015, article 26). The amount compared is the rent entered in this form.",
+          note: "These reminders are for information only: the choice stays yours, and they do not replace professional advice.",
+        },
         CI: {
           titre: "To check against Ivorian law",
           deposit: "The security deposit cannot exceed two months' rent (Law no. 2019-576 of 26 June 2019, article 416). The amount compared is the rent entered in this form.",

@@ -13,6 +13,10 @@
  * 456, version de la DGI). Pas encore : l'enregistrement du bail, la révision triennale, les congés (3 mois) et la procédure
  * d'expulsion, qui demandent des décisions de produit. À faire relire par un professionnel ivoirien.
  *
+ * Burkina Faso — texte lu : loi n° 103-2015/CNT du 22 décembre 2015 portant bail d'habitation privée au Burkina Faso (68 articles,
+ * entièrement lue). Pas encore : le plafond du loyer (7 % du coût de réalisation, art. 6 : il faut le référentiel du ministère),
+ * la révision (décret non lu), le commandement de payer, les préavis. À faire relire par un professionnel burkinabè.
+ *
  * Mali — texte lu : Titre VI « Du bail » (articles 32 à 55) du décret n° 2016-0482/P-RM du 7 juillet 2016, pris pour l'application
  * de la loi n° 2015-036 du 16 juillet 2015 portant protection du consommateur. Ce texte ne plafonne ni le dépôt de garantie, ni le
  * loyer, ni sa révision, et n'impose ni durée ni écrit : seul le droit applicable est proposé. À faire relire par un professionnel
@@ -39,6 +43,15 @@ export interface ReglesPays {
 const NEUTRES: ReglesPays = { droitApplicable: "", jourEcheance: "5", dureeBailMois: null, delaiMiseEnDemeureJours: 8 };
 
 const REGLES: Record<string, ReglesPays> = {
+  BF: {
+    droitApplicable: "Loi n° 103-2015/CNT du 22 décembre 2015 portant bail d'habitation privée au Burkina Faso",
+    // Article 16 : le loyer est versé « selon les modalités convenues dans le contrat » : aucun jour imposé, on garde le 5 d'avant.
+    jourEcheance: "5",
+    // Article 10 : durée déterminée ou indéterminée, sans minimum : aucune durée proposée.
+    dureeBailMois: null,
+    // Article 30 : le commandement de payer laisse au locataire au moins quinze jours.
+    delaiMiseEnDemeureJours: 15,
+  },
   ML: {
     // Décret n° 2016-0482/P-RM, article 39 : le bail peut être écrit ou verbal, à durée déterminée ou non.
     droitApplicable: "Décret n° 2016-0482/P-RM du 7 juillet 2016, Titre VI (Du bail), pris pour l'application de la loi n° 2015-036 du 16 juillet 2015",
@@ -140,7 +153,7 @@ const SEUIL_DECRET_FCFA = 500000;
 export function avertissementsDuBail(pays: string | null | undefined, bail: BailAControler): AvertissementBail[] {
   if (bail.leaseType !== TYPE_HABITATION) return [];
   if (pays === "FR") return avertissementsFrance(bail);
-  if (pays === "CI") return avertissementsCoteDIvoire(bail);
+  if (pays === "CI" || pays === "BF") return avertissementDepotDeuxMois(bail);
   if (pays !== "SN") return [];
   const avertissements: AvertissementBail[] = [];
 
@@ -180,10 +193,10 @@ function avertissementsFrance(bail: BailAControler): AvertissementBail[] {
 }
 
 /**
- * Côte d'Ivoire, loi n° 2019-576 : un seul rappel, non bloquant, sur le point dont le texte est lu.
- * - Article 416 : le dépôt de garantie ne peut pas excéder deux mois de loyer (le loyer comparé est celui saisi ici).
- * Le texte lu ne fixe ni durée minimale ni jour d'échéance : aucun rappel là-dessus.
+ * Côte d'Ivoire (loi n° 2019-576, article 416) et Burkina Faso (loi n° 103-2015/CNT, article 26) : un seul rappel, non
+ * bloquant — le dépôt de garantie ne peut pas excéder deux mois de loyer (le loyer comparé est celui saisi ici). Les textes lus
+ * ne fixent ni durée minimale ni jour d'échéance : aucun rappel là-dessus.
  */
-function avertissementsCoteDIvoire(bail: BailAControler): AvertissementBail[] {
+function avertissementDepotDeuxMois(bail: BailAControler): AvertissementBail[] {
   return bail.rent > 0 && bail.deposit > 2 * bail.rent ? [{ cle: "deposit" }] : [];
 }
