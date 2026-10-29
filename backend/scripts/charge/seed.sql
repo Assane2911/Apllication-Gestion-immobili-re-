@@ -1,39 +1,33 @@
--- Jeu de données pour simuler N agences (par défaut 500) sur une base LOCALE vide, jamais en production.
--- Profil : 90 % de petites agences (25 biens), 9 % moyennes (100 biens), 1 % grandes (400 biens) ;
--- un bail actif par bien, douze mois de factures (le dernier mois en cours, en partie impayé).
--- Usage : psql -v agences=500 -f seed.sql <base>
-\set ON_ERROR_STOP on
-\if :{?agences}
-\else
-\set agences 500
-\endif
-
+-- Jeu de données pour simuler {{AGENCES}} agences sur une base LOCALE vide, jamais en production.
+-- Modèle de texte rempli par simuler.js ({{AGENCES}}, {{N_STARTER}}, {{N_PRO}}) : ne pas l'exécuter tel quel.
+--
+-- Profil : le plan d'une agence suit sa taille, comme les limites de chaque formule (Starter : 5 biens, Pro : 25 biens,
+-- Enterprise : illimité). Les agences Starter ont 5 biens, les Pro 20, les Enterprise 100 (une sur dix en a 400).
+-- Un bail actif par bien, douze mois de factures jusqu'au mois d'octobre 2026 (le dernier mois en cours, en partie impayé).
 BEGIN;
 
--- Agences (gestionnaires) : abonnement actif ; le mot de passe n'est pas utilisé (les jetons sont forgés par le script de charge).
-INSERT INTO users (id, email, password_hash, role, subscription_status, subscription_plan, email_verified_at, trial_ends_at)
-SELECT 'm' || n, 'agence' || n || '@charge.local', 'x', 'MANAGER', 'ACTIVE', 'PRO', now(), now() + interval '30 days'
-FROM generate_series(1, :agences) n;
-
-INSERT INTO agency_settings (id, user_id)
-SELECT 'as' || n, 'm' || n FROM generate_series(1, :agences) n;
-
--- Taille de chaque agence : 1 % grandes, 9 % moyennes, le reste petites.
 CREATE TEMP TABLE agence AS
 SELECT n, 'm' || n AS id,
-       CASE WHEN n % 100 = 0 THEN 400 WHEN n % 100 BETWEEN 1 AND 9 THEN 100 ELSE 25 END AS biens
-FROM generate_series(1, :agences) n;
+       CASE WHEN n <= {{N_STARTER}} THEN 'STARTER' WHEN n <= {{N_STARTER}} + {{N_PRO}} THEN 'PRO' ELSE 'ENTERPRISE' END AS plan,
+       CASE WHEN n <= {{N_STARTER}} THEN 5 WHEN n <= {{N_STARTER}} + {{N_PRO}} THEN 20 WHEN n % 10 = 0 THEN 400 ELSE 100 END AS biens
+FROM generate_series(1, {{AGENCES}}) n;
+
+-- Agences (gestionnaires) : abonnement actif ; le mot de passe n'est pas utilisé (les jetons sont forgés par charge.js).
+INSERT INTO users (id, email, password_hash, role, subscription_status, subscription_plan, email_verified_at, trial_ends_at)
+SELECT id, 'agence' || n || '@charge.local', 'x', 'MANAGER', 'ACTIVE', plan, now(), now() + interval '30 days' FROM agence;
+
+INSERT INTO agency_settings (id, user_id) SELECT 'as' || n, id FROM agence;
 
 -- Propriétaires : un pour cinq biens.
 INSERT INTO owners (id, manager_id, first_name, last_name, phone, email, management_fee_rate)
 SELECT 'o' || a.n || '_' || k, a.id, 'Prop' || k, 'Agence' || a.n, '+22177' || lpad((a.n * 100 + k)::text, 7, '0'),
        'prop' || a.n || '_' || k || '@charge.local', 8
-FROM agence a, LATERAL generate_series(1, a.biens / 5) k;
+FROM agence a, LATERAL generate_series(1, greatest(1, a.biens / 5)) k;
 
 -- Biens, locataires, baux : un de chaque par rang.
 INSERT INTO properties (id, manager_id, title, address, surface, rent, currency, owner_id)
 SELECT 'p' || a.n || '_' || k, a.id, 'Bien ' || k || ' agence ' || a.n, k || ' rue de la Charge, Dakar', 40 + (k % 60), 150000 + (k % 20) * 25000, 'XOF',
-       'o' || a.n || '_' || (1 + (k - 1) % (a.biens / 5))
+       'o' || a.n || '_' || (1 + (k - 1) % greatest(1, a.biens / 5))
 FROM agence a, LATERAL generate_series(1, a.biens) k;
 
 INSERT INTO tenants (id, manager_id, first_name, last_name, phone, email)
@@ -71,7 +65,3 @@ SELECT 'al' || a.n || '_' || k, a.id, 'contract.update', 'Gestionnaire', 'contra
 FROM agence a, LATERAL generate_series(1, 60) k;
 
 COMMIT;
-ANALYZE;
-SELECT 'users' t, count(*) FROM users UNION ALL SELECT 'owners', count(*) FROM owners UNION ALL SELECT 'properties', count(*) FROM properties
-UNION ALL SELECT 'tenants', count(*) FROM tenants UNION ALL SELECT 'contracts', count(*) FROM contracts UNION ALL SELECT 'invoices', count(*) FROM invoices
-UNION ALL SELECT 'invoice_payments', count(*) FROM invoice_payments UNION ALL SELECT 'expenses', count(*) FROM expenses;
