@@ -127,6 +127,8 @@ export const env = {
   // réclamée. À ajuster de pair avec `maxDuration` si elle est un jour
   // configurée dans vercel.json.
   cronBudgetMs: parseInt(process.env.CRON_BUDGET_SECONDS ?? "240", 10) * 1000,
+  // Envois (e-mail, WhatsApp) menés de front par la tâche quotidienne. 1 = un par un, comme avant.
+  cronConcurrence: Math.max(1, parseInt(process.env.CRON_ENVOIS_PARALLELES ?? "5", 10) || 1),
 
   // En local/dev, le scheduler node-cron interne tourne automatiquement.
   // Sur Vercel (serverless, pas de processus persistant), il est désactivé :

@@ -48,3 +48,45 @@ export const SANS_LIMITE: BudgetTemps = {
   epuise: () => false,
   restant: () => Number.POSITIVE_INFINITY,
 };
+
+/**
+ * Traite `elements` avec au plus `concurrence` éléments en cours à la fois, en consultant le budget AVANT de prendre le suivant
+ * (comme les boucles séquentielles qu'elle remplace : un élément non pris n'a pas été réclamé, l'exécution suivante le reprend).
+ *
+ * Un envoi d'e-mail attend la réponse du serveur d'envoi (une demi-seconde environ) : un par un, une exécution quotidienne de
+ * quatre minutes ne dépassait pas quelques centaines d'envois. Les éléments en cours quand le budget s'épuise sont menés à
+ * leur terme, et la durée de la fonction dépasse donc le budget d'au plus un envoi.
+ *
+ * Si `traiter` lève une erreur, plus aucun élément n'est pris et l'erreur est relayée une fois les éléments en cours terminés,
+ * comme l'arrêt de la boucle séquentielle.
+ */
+export async function traiterParLots<T>(
+  elements: readonly T[],
+  concurrence: number,
+  budget: BudgetTemps,
+  traiter: (element: T, rang: number) => Promise<void>
+): Promise<{ interrompu: boolean }> {
+  let prochain = 0;
+  let interrompu = false;
+  let erreur: { cause: unknown } | null = null;
+
+  const travailleur = async () => {
+    while (prochain < elements.length && !erreur) {
+      if (budget.epuise()) {
+        interrompu = true;
+        return;
+      }
+      const rang = prochain++;
+      try {
+        await traiter(elements[rang], rang);
+      } catch (cause) {
+        erreur ??= { cause };
+      }
+    }
+  };
+
+  const travailleurs = Math.max(1, Math.min(Math.floor(concurrence) || 1, elements.length));
+  await Promise.all(Array.from({ length: travailleurs }, travailleur));
+  if (erreur) throw (erreur as { cause: unknown }).cause;
+  return { interrompu };
+}

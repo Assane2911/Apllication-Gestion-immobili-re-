@@ -48,3 +48,6 @@ backend/data/
 
 # Config locale d'un outil AI tiers (non liee au projet)
 .snapshots/
+
+# Rapports de simulation de charge (générés par backend/scripts/charge/simuler.js)
+backend/scripts/charge/rapports/

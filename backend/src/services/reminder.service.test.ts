@@ -728,3 +728,92 @@ describe("Un rappel qui n'est pas parti ne doit pas être compté comme envoyé"
     whatsapp.mockRestore();
   });
 });
+
+/**
+ * La tâche quotidienne envoyait les e-mails un par un : à une demi-seconde l'envoi, quatre minutes de budget n'en couvraient
+ * que quelques centaines, et le reste attendait le lendemain. Les envois se font maintenant de front (CRON_ENVOIS_PARALLELES),
+ * chaque facture restant réclamée individuellement avant son envoi : aucun avis en double.
+ */
+describe("runRentDueReminders — envois de front", () => {
+  const concurrenceInitiale = env.cronConcurrence;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 7, 1));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    env.cronConcurrence = concurrenceInitiale;
+    vi.restoreAllMocks();
+  });
+
+  async function huitLocataires() {
+    const manager = await createManager();
+    for (let i = 0; i < 8; i++) {
+      const property = await createProperty(manager.id, { title: `Bien ${i}` });
+      const tenant = await createTenant(manager.id);
+      await createContract(property.id, tenant.id, { startDate: new Date(2026, 7, 1), endDate: new Date(2027, 7, 1) });
+    }
+  }
+
+  function espionAvecDelai() {
+    const etat = { enCours: 0, maximum: 0, appels: 0 };
+    vi.spyOn(emailService, "sendEmail").mockImplementation(async () => {
+      etat.appels++;
+      etat.enCours++;
+      etat.maximum = Math.max(etat.maximum, etat.enCours);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      etat.enCours--;
+      return { simulated: true };
+    });
+    return etat;
+  }
+
+  it("envoie plusieurs avis à la fois, sans dépasser le plafond réglé, et chaque locataire n'en reçoit qu'un", async () => {
+    await huitLocataires();
+    env.cronConcurrence = 4;
+    const etat = espionAvecDelai();
+
+    const resultat = await runRentDueReminders();
+
+    expect(resultat.sent).toBe(8);
+    expect(resultat.echecs).toBe(0);
+    expect(resultat.details).toHaveLength(8);
+    expect(etat.appels).toBe(8);
+    expect(etat.maximum).toBeGreaterThan(1);
+    expect(etat.maximum).toBeLessThanOrEqual(4);
+    const factures = await testDb.select().from(invoices);
+    expect(factures.every((f: typeof invoices.$inferSelect) => f.reminderSentAt !== null)).toBe(true);
+    expect((await runRentDueReminders()).sent).toBe(0);
+  });
+
+  it("à 1, les envois repartent un par un comme avant", async () => {
+    await huitLocataires();
+    env.cronConcurrence = 1;
+    const etat = espionAvecDelai();
+
+    const resultat = await runRentDueReminders();
+
+    expect(resultat.sent).toBe(8);
+    expect(etat.maximum).toBe(1);
+  });
+
+  it("un envoi en échec relâche son marqueur et ne gêne pas les autres, même de front", async () => {
+    await huitLocataires();
+    env.cronConcurrence = 4;
+    let appel = 0;
+    vi.spyOn(emailService, "sendEmail").mockImplementation(async () => {
+      const numero = ++appel;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return numero === 3 ? { simulated: false, error: true } : { simulated: true };
+    });
+
+    const resultat = await runRentDueReminders();
+
+    expect(resultat.sent).toBe(7);
+    expect(resultat.echecs).toBe(1);
+    const factures = await testDb.select().from(invoices);
+    expect(factures.filter((f: typeof invoices.$inferSelect) => f.reminderSentAt === null)).toHaveLength(1);
+  });
+});

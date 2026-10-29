@@ -798,7 +798,7 @@ const es: TranslationSchema = {
           title: "Avisos de vencimiento y recordatorios de alquiler",
           description: "Anticipación de los pagos y reducción de los impagos",
           traditional: "Olvidos frecuentes, llamadas incómodas, mensajes de WhatsApp dispersos, retrasos de pago habituales.",
-          immoplatform: "Alerta automática el día 1 de cada mes con vencimiento estricto el día 5. Facturas instantáneas con estado en directo.",
+          immoplatform: "Aviso de vencimiento automático el día 1 de cada mes, con recordatorio antes de la fecha de vencimiento fijada en el contrato. Facturas instantáneas con estado en directo.",
         },
         receipts: {
           title: "Recibos de alquiler automáticos",

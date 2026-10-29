@@ -798,7 +798,7 @@ const en: TranslationSchema = {
           title: "Rent notices & reminders",
           description: "Anticipate payments and reduce unpaid rent",
           traditional: "Frequent oversights, awkward phone calls, scattered WhatsApp messages, regular late payments.",
-          immoplatform: "Automatic alert on the 1st of every month with a strict due date on the 5th. Instant invoices with live status.",
+          immoplatform: "Automatic rent notice on the 1st of every month, with a reminder before the due date set in the lease. Instant invoices with live status.",
         },
         receipts: {
           title: "Automatic rent receipts",

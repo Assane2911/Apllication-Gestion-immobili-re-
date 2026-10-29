@@ -234,3 +234,18 @@ describe("LandingPage — aucune promesse de certification", () => {
     expect(valeurs(textes.seo.landing).filter((v) => promesse.test(v))).toEqual([]);
   });
 });
+
+/**
+ * Le jour d'échéance dépend du pays de l'agence (le dernier jour du mois au Sénégal, le 5 ailleurs) et se règle sur chaque
+ * bail : la page d'accueil ne peut plus promettre « une échéance stricte au 5 ».
+ */
+describe("LandingPage — jour d'échéance", () => {
+  it.each([
+    ["fr", fr],
+    ["en", en],
+    ["es", es],
+    ["pt", pt],
+  ])("%s : le comparatif ne fixe pas l'échéance au 5", (_langue, textes) => {
+    expect(textes.landing.compare.rows.reminders.immoplatform).not.toMatch(/\b5(th|º|\s?e)?\b|\bcinco\b/i);
+  });
+});
