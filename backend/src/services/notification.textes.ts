@@ -14,7 +14,11 @@ export interface TextesNotification {
   // --- Gestionnaire ---
   messagesDuLocataire(nombre: number, locataire: string): string;
   loyerEnRetard(locataire: string): string;
+  /** Plusieurs loyers en retard du même bail, regroupés en une seule ligne. */
+  loyersEnRetard(nombre: number, locataire: string): string;
   echeanceDuBien(bien: string, date: string): string;
+  /** Le bien, la plus ancienne et la plus récente échéance en retard, et le total restant dû. */
+  echeancesDuBien(bien: string, du: string, au: string, total: string): string;
   signalement(titre: string): string;
   demandeInformation(prospect: string): string;
   demandeVisite(prospect: string): string;
@@ -38,7 +42,9 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
     optionsDate: {},
     messagesDuLocataire: (n, nom) => `${n} nouveau${n > 1 ? "x" : ""} message${n > 1 ? "s" : ""} de ${nom}`,
     loyerEnRetard: (nom) => `Loyer en retard — ${nom}`,
+    loyersEnRetard: (n, nom) => `${n} loyers en retard — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · échéance du ${date}`,
+    echeancesDuBien: (bien, du, au, total) => `${bien} · échéances du ${du} au ${au} · ${total} restant dû`,
     signalement: (titre) => `Signalement : ${titre}`,
     demandeInformation: (nom) => `Demande d'information — ${nom}`,
     demandeVisite: (nom) => `Demande de visite — ${nom}`,
@@ -55,7 +61,9 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
     optionsDate: { year: "numeric", month: "long", day: "numeric" },
     messagesDuLocataire: (n, nom) => `${n} new ${pluriel(n, "message", "messages")} from ${nom}`,
     loyerEnRetard: (nom) => `Late rent — ${nom}`,
+    loyersEnRetard: (n, nom) => `${n} late rent payments — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · due ${date}`,
+    echeancesDuBien: (bien, du, au, total) => `${bien} · due from ${du} to ${au} · ${total} outstanding`,
     signalement: (titre) => `Issue: ${titre}`,
     demandeInformation: (nom) => `Information request — ${nom}`,
     demandeVisite: (nom) => `Viewing request — ${nom}`,
@@ -72,7 +80,9 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
     optionsDate: { year: "numeric", month: "long", day: "numeric" },
     messagesDuLocataire: (n, nom) => `${n} ${pluriel(n, "mensaje nuevo", "mensajes nuevos")} de ${nom}`,
     loyerEnRetard: (nom) => `Alquiler atrasado — ${nom}`,
+    loyersEnRetard: (n, nom) => `${n} alquileres atrasados — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · vence el ${date}`,
+    echeancesDuBien: (bien, du, au, total) => `${bien} · vencimientos del ${du} al ${au} · ${total} pendiente`,
     signalement: (titre) => `Incidencia: ${titre}`,
     demandeInformation: (nom) => `Solicitud de información — ${nom}`,
     demandeVisite: (nom) => `Solicitud de visita — ${nom}`,
@@ -89,7 +99,9 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
     optionsDate: { year: "numeric", month: "long", day: "numeric" },
     messagesDuLocataire: (n, nom) => `${n} ${pluriel(n, "nova mensagem", "novas mensagens")} de ${nom}`,
     loyerEnRetard: (nom) => `Renda em atraso — ${nom}`,
+    loyersEnRetard: (n, nom) => `${n} rendas em atraso — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · vencimento em ${date}`,
+    echeancesDuBien: (bien, du, au, total) => `${bien} · vencimentos de ${du} a ${au} · ${total} em dívida`,
     signalement: (titre) => `Incidente: ${titre}`,
     demandeInformation: (nom) => `Pedido de informações — ${nom}`,
     demandeVisite: (nom) => `Pedido de visita — ${nom}`,

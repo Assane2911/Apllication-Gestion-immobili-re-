@@ -66,6 +66,13 @@ const contractSchema = z.object({
     .transform((v) => (v === undefined ? undefined : serialiserMentions(v))),
 });
 
+// À la création seulement : début de la facturation d'un bail commencé dans le passé (voir contracts.billingFrom). Les
+// mois d'avant ne sont pas facturés : ils n'apparaissent ni en retard, ni dans les encaissements. Vide ou null : la
+// facturation part du début du bail, comme avant.
+const creationContratSchema = contractSchema.extend({
+  billingFrom: z.union([z.null(), dateDeBailSchema]).optional(),
+});
+
 export async function resolveScannedUrl(value: string | null | undefined): Promise<string | null | undefined> {
   if (!value) return value;
   if (/^https?:\/\//i.test(value)) return value;
@@ -227,10 +234,13 @@ export const getContract = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const createContract = asyncHandler(async (req: Request, res: Response) => {
-  const body = contractSchema.parse(req.body);
+  const body = creationContratSchema.parse(req.body);
 
   if (body.endDate <= body.startDate) {
     throw new ApiError(400, "La date de fin doit être postérieure à la date de début", "CONTRACT_END_BEFORE_START");
+  }
+  if (body.billingFrom && (body.billingFrom < body.startDate || body.billingFrom >= body.endDate)) {
+    throw new ApiError(400, "La facturation doit commencer entre le début et la fin du bail", "CONTRACT_BILLING_FROM_INVALID");
   }
 
   const [property] = await db.select().from(properties).where(eq(properties.id, body.propertyId));

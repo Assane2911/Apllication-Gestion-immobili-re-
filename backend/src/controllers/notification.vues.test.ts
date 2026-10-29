@@ -28,6 +28,14 @@ async function gestionnaireAvecFactureEnRetard() {
   return { manager, property, tenant, contract, invoice, header: authHeader(tokenFor(manager)) };
 }
 
+/** Un autre bail de la même agence, lui aussi en retard : une seconde notification, indépendante de la première. */
+async function autreBailEnRetard(managerId: string) {
+  const property = await createProperty(managerId);
+  const tenant = await createTenant(managerId);
+  const contract = await createContract(property.id, tenant.id);
+  await createInvoice(contract.id, { status: "LATE", periodMonth: 1, dueDate: new Date("2026-01-05T00:00:00Z") });
+}
+
 const lire = (header: Record<string, string>) => request(app).get("/api/notifications").set(header);
 const marquerVues = (header: Record<string, string>, body?: object) =>
   request(app).post("/api/notifications/seen").set(header).send(body);
@@ -69,10 +77,10 @@ describe("état « vu » des notifications du gestionnaire", () => {
   });
 
   it("redevient une nouveauté quand un nouvel événement arrive, et seulement celui-là", async () => {
-    const { header, contract } = await gestionnaireAvecFactureEnRetard();
+    const { header, manager } = await gestionnaireAvecFactureEnRetard();
     await marquerVues(header);
 
-    await createInvoice(contract.id, { status: "LATE", periodMonth: 1, dueDate: new Date("2026-01-05T00:00:00Z") });
+    await autreBailEnRetard(manager.id);
 
     const res = await lire(header);
     expect(res.body.count).toBe(2);
@@ -111,8 +119,8 @@ describe("état « vu » des notifications du gestionnaire", () => {
   });
 
   it("ne marque que les notifications dont la clé est fournie (celles que la personne avait sous les yeux)", async () => {
-    const { header, contract } = await gestionnaireAvecFactureEnRetard();
-    await createInvoice(contract.id, { status: "LATE", periodMonth: 1, dueDate: new Date("2026-01-05T00:00:00Z") });
+    const { header, manager } = await gestionnaireAvecFactureEnRetard();
+    await autreBailEnRetard(manager.id);
     const avant = await lire(header);
     const [premiere] = avant.body.notifications as Notif[];
 
@@ -255,10 +263,10 @@ describe("« Tout marquer comme lu » (gestionnaire)", () => {
   });
 
   it("garde l'état d'un appareil à l'autre, et un nouvel événement reste non lu", async () => {
-    const { manager, header, contract } = await gestionnaireAvecFactureEnRetard();
+    const { manager, header } = await gestionnaireAvecFactureEnRetard();
     await marquerLues(header);
 
-    await createInvoice(contract.id, { status: "LATE", periodMonth: 1, dueDate: new Date("2026-01-05T00:00:00Z") });
+    await autreBailEnRetard(manager.id);
 
     const res = await lire(authHeader(tokenFor(manager)));
     expect(res.body.count).toBe(2);
@@ -291,8 +299,8 @@ describe("« Tout marquer comme lu » (gestionnaire)", () => {
   });
 
   it("ne marque lues que les clés fournies et ignore une clé inventée", async () => {
-    const { manager, header, contract } = await gestionnaireAvecFactureEnRetard();
-    await createInvoice(contract.id, { status: "LATE", periodMonth: 1, dueDate: new Date("2026-01-05T00:00:00Z") });
+    const { manager, header } = await gestionnaireAvecFactureEnRetard();
+    await autreBailEnRetard(manager.id);
     const [premiere] = (await lire(header)).body.notifications as Notif[];
 
     await marquerLues(header, { keys: [premiere.key, "invoice-inexistante|2026-01-01T00:00:00.000Z"] });

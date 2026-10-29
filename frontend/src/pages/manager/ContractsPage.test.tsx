@@ -638,6 +638,76 @@ describe("ContractsPage (manager)", () => {
     });
   });
 
+  /**
+   * Un bail créé avec une date de début passée recevait une facture par mois depuis cette date, toutes « en retard » : neuf
+   * notifications pour un bail commencé en janvier. Le formulaire propose maintenant « Facturer à partir du », seulement quand
+   * le bail commence avant le mois en cours ; vide, il garde le comportement d'avant.
+   */
+  describe("début de la facturation (bail commencé dans le passé)", () => {
+    async function ouvrirFormulaire(debut: string) {
+      const user = userEvent.setup();
+      queueLoad([], [property({ id: "prop-1", rent: 500 })], [tenant({ id: "ten-1" })]);
+      const rendu = renderPage();
+      await user.click(await screen.findByRole("button", { name: /Nouveau contrat/ }));
+      await user.selectOptions(screen.getAllByRole("combobox")[0], "prop-1");
+      await user.selectOptions(screen.getAllByRole("combobox")[1], "ten-1");
+      const dates = rendu.container.querySelectorAll('input[type="date"]');
+      fireEvent.change(dates[0], { target: { value: debut } });
+      fireEvent.change(dates[1], { target: { value: "2101-01-01" } });
+      return { user };
+    }
+
+    it("n'apparaît pas pour un bail qui commence plus tard que ce mois-ci", async () => {
+      await ouvrirFormulaire("2099-01-01");
+      expect(screen.queryByLabelText("Facturer à partir du")).not.toBeInTheDocument();
+    });
+
+    it("apparaît pour un bail commencé dans le passé, vide par défaut : rien n'est envoyé", async () => {
+      const { user } = await ouvrirFormulaire("2020-01-01");
+      expect(screen.getByLabelText("Facturer à partir du")).toHaveValue("");
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+      queueLoad([]);
+
+      await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
+      expect(mockedApi.post.mock.calls[0][1]).not.toHaveProperty("billingFrom");
+    });
+
+    it("envoie la date choisie", async () => {
+      const { user } = await ouvrirFormulaire("2020-01-01");
+      fireEvent.change(screen.getByLabelText("Facturer à partir du"), { target: { value: "2020-06-01" } });
+      mockedApi.post.mockResolvedValueOnce({ data: { id: "c-new" } });
+      queueLoad([]);
+
+      await user.click(screen.getByRole("button", { name: "Créer le contrat" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/contracts", expect.objectContaining({ startDate: "2020-01-01", billingFrom: "2020-06-01" })));
+    });
+
+    it("« Mois en cours » règle la date au premier jour du mois courant", async () => {
+      const { user } = await ouvrirFormulaire("2020-01-01");
+      const maintenant = new Date();
+      const attendu = `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, "0")}-01`;
+
+      await user.click(screen.getByRole("button", { name: "Mois en cours" }));
+
+      expect(screen.getByLabelText("Facturer à partir du")).toHaveValue(attendu);
+    });
+
+    it("n'est pas proposé à la modification d'un bail, et ne part jamais avec les changements", async () => {
+      const user = userEvent.setup();
+      const c = contract({ id: "c1", rent: 500, deposit: 1000, startDate: "2020-01-01T00:00:00.000Z", endDate: "2101-01-01T00:00:00.000Z", paymentDay: 5 });
+      queueLoad([c], [property({ id: "prop-1", status: "OCCUPIED" })], [tenant({ id: "ten-1" })]);
+      renderPage();
+
+      await user.click((await screen.findAllByRole("button", { name: "Modifier" }))[0]);
+
+      expect(screen.queryByLabelText("Facturer à partir du")).not.toBeInTheDocument();
+      expect(changementsDuContrat(formulaireDepuisContrat(c), { ...formulaireDepuisContrat(c), billingFrom: "2020-06-01" })).toEqual({});
+    });
+  });
+
   describe("jour d'échéance du loyer", () => {
     it("propose le 5 par défaut à la création, avec le repli « jour du début du bail », et l'envoie", async () => {
       const user = userEvent.setup();

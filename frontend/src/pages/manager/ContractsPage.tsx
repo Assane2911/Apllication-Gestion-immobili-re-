@@ -53,7 +53,7 @@ interface BailRevisable {
 }
 
 // Jour d'échéance proposé à la création : le 5, ce que disaient déjà les documents remis aux locataires.
-const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "", agencyFee: "", ...MENTIONS_VIDES };
+const emptyForm = { propertyId: "", tenantId: "", rent: "", deposit: "", startDate: "", endDate: "", terms: "", paymentDay: "5", leaseType: "HABITATION", applicableLaw: "", agencyFee: "", billingFrom: "", ...MENTIONS_VIDES };
 type FormulaireContrat = typeof emptyForm;
 
 /** Valeurs du formulaire pour un contrat existant (dates en AAAA-MM-JJ, telles que le serveur les a enregistrées). */
@@ -70,6 +70,7 @@ export function formulaireDepuisContrat(c: Contract): FormulaireContrat {
     leaseType: c.leaseType ?? "HABITATION",
     applicableLaw: c.applicableLaw ?? "",
     agencyFee: c.agencyFee ? String(c.agencyFee) : "",
+    billingFrom: "",
     ...formulaireDepuisMentions(c.housingMentions),
   };
 }
@@ -85,6 +86,8 @@ export function changementsDuContrat(avant: FormulaireContrat, apres: Formulaire
   for (const cle of Object.keys(apres) as Array<keyof FormulaireContrat>) {
     // Les mentions du logement partent ensemble, en un seul objet, plus bas.
     if (CLES_MENTIONS.has(cle)) continue;
+    // Le début de facturation ne se règle qu'à la création du bail.
+    if (cle === "billingFrom") continue;
     if (apres[cle] === avant[cle]) continue;
     const v = apres[cle];
     if (cle === "rent" || cle === "deposit") corps[cle] = Number(v);
@@ -275,6 +278,8 @@ export default function ContractsPage() {
 
   // Rappels du pays sur le bail en cours de saisie : jamais bloquants, et seulement à la création (un bail existant
   // n'a pas à être rappelé à l'ordre à chaque modification).
+  const maintenant = new Date();
+  const premierDuMoisCourant = `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, "0")}-01`;
   const bienChoisi = properties.find((p) => p.id === form.propertyId);
   const rappels = editingContract
     ? []
@@ -313,13 +318,15 @@ export default function ContractsPage() {
         return;
       }
       // Les clauses vides ne sont pas envoyées : le bail n'imprime alors aucune section.
-      const { terms, paymentDay, applicableLaw, agencyFee, ...reste } = form;
+      const { terms, paymentDay, applicableLaw, agencyFee, billingFrom, ...reste } = form;
       const champs = Object.fromEntries(Object.entries(reste).filter(([cle]) => !CLES_MENTIONS.has(cle)));
       const mentions = proposeMentionsLogement(pays, form.leaseType) ? mentionsDepuisFormulaire(form) : null;
       await api.post("/contracts", {
         ...champs,
         // Aucune mention renseignée : rien n'est envoyé, le bail n'imprime aucune ligne de plus.
         ...(mentions ? { housingMentions: mentions } : {}),
+        // Vide : la facturation part du début du bail.
+        ...(billingFrom ? { billingFrom } : {}),
         // Vide : aucun frais d'agence n'est indiqué sur le bail.
         ...(agencyFee.trim() ? { agencyFee: Number(agencyFee) } : {}),
         ...(terms.trim() ? { terms: terms.trim() } : {}),
@@ -555,6 +562,16 @@ export default function ContractsPage() {
               <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
               <input id="contract-endDate" required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
             </div>
+            {!editingContract && form.startDate !== "" && form.startDate < premierDuMoisCourant && (
+              <div>
+                <label htmlFor="contract-billingFrom" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.billingFrom")}</label>
+                <div className="flex gap-2">
+                  <input id="contract-billingFrom" type="date" min={form.startDate} max={form.endDate || undefined} value={form.billingFrom} onChange={(e) => setForm({ ...form, billingFrom: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+                  <button type="button" onClick={() => setForm({ ...form, billingFrom: premierDuMoisCourant })} className="shrink-0 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">{t("manager.contracts.fields.billingFromCurrentMonth")}</button>
+                </div>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.billingFromHint")}</p>
+              </div>
+            )}
             <div>
               <label htmlFor="contract-paymentDay" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.paymentDay")}</label>
               <select id="contract-paymentDay" value={form.paymentDay} onChange={(e) => setForm({ ...form, paymentDay: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
