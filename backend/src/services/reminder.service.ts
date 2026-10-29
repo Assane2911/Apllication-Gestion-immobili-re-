@@ -6,7 +6,7 @@ import { contracts, insurancePolicies, invoices, properties, tenants, users } fr
 import { logActivity } from "./activity.service";
 import { planAuMoins } from "../middleware/auth";
 import { ApiError } from "../utils/asyncHandler";
-import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
+import { BudgetTemps, SANS_LIMITE, traiterParLots } from "../utils/budgetTemps";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
 import {
   contractEndingReminderEmail,
@@ -154,6 +154,17 @@ export async function signalerEchecsWhatsapp(
  * recevait le rappel de ses propres baux et l'exploitant les recevait tous,
  * nom du locataire et intitulé du bien compris.
  */
+/** Une ligne du détail renvoyé à l'appelant : un envoi réussi, rangé à la place de sa ligne d'origine. */
+type DetailEnvoi = {
+  tenantName: string;
+  tenantEmail: string;
+  propertyTitle: string;
+  amount: number;
+  simulated?: boolean;
+  whatsappSimulated?: boolean;
+  whatsappError: boolean;
+};
+
 export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMITE) {
   const daysBefore = env.reminder.daysBefore;
 
@@ -212,14 +223,10 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
   let sent = 0;
   let echecs = 0;
   let interrompu = false;
-  for (const row of rows) {
+  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row, rang) => {
     // Le budget se consulte AVANT de réclamer la ligne : s'arrêter ici la
     // laisse non marquée, donc reprenable telle quelle par l'exécution
     // suivante (voir utils/budgetTemps.ts).
-    if (budget.epuise()) {
-      interrompu = true;
-      break;
-    }
 
     // Réclamation atomique AVANT l'envoi (même principe que
     // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : la
@@ -236,7 +243,7 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
       .set({ reminderSentAt: new Date() })
       .where(and(eq(contracts.id, row.contract.id), isNull(contracts.reminderSentAt)))
       .returning();
-    if (!reclame) continue;
+    if (!reclame) return;
 
     const { subject, html } = contractEndingReminderEmail({
       tenantName: nomAvecCivilite(row.tenant),
@@ -256,10 +263,11 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
       // plutôt que d'être perdu pour ce bail.
       await db.update(contracts).set({ reminderSentAt: null }).where(eq(contracts.id, row.contract.id));
       echecs += 1;
-      continue;
+      return;
     }
     sent += 1;
-  }
+  });
+  interrompu = parLots.interrompu;
 
   if (sent > 0) {
     console.log(`[reminder] ${sent} rappel(s) de fin de contrat envoyé(s).`);
@@ -315,11 +323,7 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
   let sent = 0;
   let echecs = 0;
   let interrompu = false;
-  for (const row of rows) {
-    if (budget.epuise()) {
-      interrompu = true;
-      break;
-    }
+  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row, rang) => {
 
     // Réclamation atomique AVANT l'envoi — même course concurrentielle que
     // runContractEndingReminders (chevauchement du cron quotidien).
@@ -328,7 +332,7 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
       .set({ reminderSentAt: new Date() })
       .where(and(eq(insurancePolicies.id, row.policy.id), isNull(insurancePolicies.reminderSentAt)))
       .returning();
-    if (!reclamee) continue;
+    if (!reclamee) return;
 
     const { subject, html } = insurancePolicyExpiryReminderEmail({
       propertyTitle: row.property.title,
@@ -345,10 +349,11 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
       // plutôt que d'être perdu pour cette police.
       await db.update(insurancePolicies).set({ reminderSentAt: null }).where(eq(insurancePolicies.id, row.policy.id));
       echecs += 1;
-      continue;
+      return;
     }
     sent += 1;
-  }
+  });
+  interrompu = parLots.interrompu;
 
   if (sent > 0) {
     console.log(`[reminder] 🛡️ ${sent} rappel(s) d'échéance d'assurance envoyé(s).`);
@@ -520,17 +525,13 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   let sent = 0;
   let echecs = 0;
   let whatsappEchecs = 0;
-  const details = [];
+  const details: DetailEnvoi[] = [];
   const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
   const managersWhatsappEligibles = await managersEligiblesPro([
     ...new Set(rows.map((r) => r.property.managerId)),
   ]);
 
-  for (const row of rows) {
-    if (budget.epuise()) {
-      interrompu = true;
-      break;
-    }
+  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row, rang) => {
 
     // Réclamation atomique AVANT l'envoi (même principe que
     // invoice.controller.ts::payInvoice / paymentAttemptStartedAt) : le
@@ -548,7 +549,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       .set({ reminderSentAt: new Date() })
       .where(and(eq(invoices.id, row.invoice.id), isNull(invoices.reminderSentAt)))
       .returning();
-    if (!reclamee) continue;
+    if (!reclamee) return;
 
     const { subject, html } = rentDueReminderEmail({
       tenantName: nomAvecCivilite(row.tenant),
@@ -585,7 +586,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     if (!aEteJoint(emailResult, whatsappResult)) {
       await db.update(invoices).set({ reminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
       echecs += 1;
-      continue;
+      return;
     }
 
     // Voir signalerEchecsWhatsapp : l'email a réussi (sinon on serait déjà
@@ -635,7 +636,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       }
     }
     sent += 1;
-    details.push({
+    details[rang] = {
       tenantName: nomComplet(row.tenant),
       tenantEmail: row.tenant.email,
       propertyTitle: row.property.title,
@@ -643,8 +644,9 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       simulated: emailResult.simulated,
       whatsappSimulated: whatsappResult.simulated,
       whatsappError: whatsappResult.error === true,
-    });
-  }
+    };
+  });
+  interrompu = interrompu || parLots.interrompu;
 
   await signalerEchecsWhatsapp(whatsappEchecsParManager, "avis d'échéance du mois");
 
@@ -652,7 +654,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   if (interrompu) {
     console.warn("[reminder] Budget de temps épuisé : avis d'échéance restants reportés à la prochaine exécution.");
   }
-  return { sent, echecs, whatsappEchecs, generationEchecs, details, interrompu };
+  return { sent, echecs, whatsappEchecs, generationEchecs, details: details.filter(Boolean), interrompu };
 }
 
 /**
@@ -703,17 +705,13 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
   let echecs = 0;
   let whatsappEchecs = 0;
   let interrompu = false;
-  const details = [];
+  const details: DetailEnvoi[] = [];
   const whatsappEchecsParManager = new Map<string, { count: number; dernierMotif: string }>();
   const managersWhatsappEligibles = await managersEligiblesPro([
     ...new Set(rows.map((r) => r.property.managerId)),
   ]);
 
-  for (const row of rows) {
-    if (budget.epuise()) {
-      interrompu = true;
-      break;
-    }
+  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row, rang) => {
 
     // Réclamation atomique AVANT l'envoi — même course concurrentielle que
     // runRentDueReminders ci-dessus (chevauchement du cron quotidien si un
@@ -723,7 +721,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       .set({ dueSoonReminderSentAt: new Date() })
       .where(and(eq(invoices.id, row.invoice.id), isNull(invoices.dueSoonReminderSentAt)))
       .returning();
-    if (!reclamee) continue;
+    if (!reclamee) return;
 
     // Jours réellement restants pour CETTE facture (voir la fenêtre
     // glissante ci-dessus) : 0 signifie « à régler aujourd'hui ».
@@ -771,7 +769,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
     if (!aEteJoint(emailResult, whatsappResult)) {
       await db.update(invoices).set({ dueSoonReminderSentAt: null }).where(eq(invoices.id, row.invoice.id));
       echecs += 1;
-      continue;
+      return;
     }
 
     if (whatsappResult.error) {
@@ -818,7 +816,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       }
     }
     sent += 1;
-    details.push({
+    details[rang] = {
       tenantName: nomComplet(row.tenant),
       tenantEmail: row.tenant.email,
       propertyTitle: row.property.title,
@@ -826,8 +824,9 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       simulated: emailResult.simulated,
       whatsappSimulated: whatsappResult.simulated,
       whatsappError: whatsappResult.error === true,
-    });
-  }
+    };
+  });
+  interrompu = parLots.interrompu;
 
   await signalerEchecsWhatsapp(whatsappEchecsParManager, 'rappel "avant échéance"');
 
@@ -839,7 +838,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) "avant échéance" reportés à la prochaine exécution.`
     );
   }
-  return { sent, echecs, whatsappEchecs, details, interrompu };
+  return { sent, echecs, whatsappEchecs, details: details.filter(Boolean), interrompu };
 }
 
 // Fenêtre de réclamation pour l'envoi manuel d'un rappel individuel : assez

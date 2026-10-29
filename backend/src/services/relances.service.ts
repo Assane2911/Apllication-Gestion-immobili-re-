@@ -2,7 +2,7 @@ import { and, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { db } from "../db/client";
 import { agencySettings, contractGuarantors, contracts, invoices, properties, tenants, users } from "../db/schema";
 import { env } from "../config/env";
-import { BudgetTemps, SANS_LIMITE } from "../utils/budgetTemps";
+import { BudgetTemps, SANS_LIMITE, traiterParLots } from "../utils/budgetTemps";
 import { debutDeLaJournee, joursEntre } from "../utils/dates";
 import { formaterMontant } from "../utils/montant";
 import { resteDu } from "../utils/montants";
@@ -72,25 +72,21 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
   let sent = 0;
   let echecs = 0;
   let interrompu = false;
-  for (const ligne of lignes) {
-    if (budget.epuise()) {
-      interrompu = true;
-      break;
-    }
+  const parLots = await traiterParLots(lignes, env.cronConcurrence, budget, async (ligne) => {
     const reglage = parGestionnaire.get(ligne.property.managerId)!;
     const reste = resteDu(ligne.invoice);
-    if (reste <= 0) continue;
+    if (reste <= 0) return;
     const joursDeRetard = joursEntre(new Date(ligne.invoice.dueDate), aujourdhui);
     const niveau = niveauAttendu(joursDeRetard, reglage.overdueGraceDays, reglage.overdueIntervalDays);
     const precedent = ligne.invoice.overdueReminderLevel;
-    if (niveau === 0 || niveau <= precedent) continue;
+    if (niveau === 0 || niveau <= precedent) return;
 
     const [reclamee] = await db
       .update(invoices)
       .set({ overdueReminderLevel: niveau, overdueReminderSentAt: maintenant })
       .where(and(eq(invoices.id, ligne.invoice.id), lt(invoices.overdueReminderLevel, niveau)))
       .returning();
-    if (!reclamee) continue;
+    if (!reclamee) return;
 
     const parametres = {
       propertyTitle: ligne.property.title,
@@ -126,7 +122,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
       // Relâché : la relance repartira à la prochaine exécution plutôt que d'être perdue.
       await db.update(invoices).set({ overdueReminderLevel: precedent, overdueReminderSentAt: ligne.invoice.overdueReminderSentAt }).where(eq(invoices.id, ligne.invoice.id));
       echecs++;
-      continue;
+      return;
     }
     sent++;
     const noterEchecs = (count: number, motif?: string) => {
@@ -171,7 +167,8 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
         `${formaterMontant(reste, parametres.currency)} restant dû, ${joursDeRetard} jour(s) de retard)` +
         (garantsPrevenus > 0 ? ` ; ${garantsPrevenus} garant(s) prévenu(s).` : "."),
     });
-  }
+  });
+  interrompu = parLots.interrompu;
 
   await signalerEchecsWhatsapp(whatsappEchecsParManager, "relances d'impayés");
 
