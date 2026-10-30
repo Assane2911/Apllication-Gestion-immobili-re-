@@ -1285,6 +1285,7 @@ const fr = {
       invoiceReceipt: "Ouvre la quittance en PDF, prête à être envoyée ou imprimée.",
       invoiceRemind: "Envoie un rappel au locataire, par email, et en plus par WhatsApp si votre formule le permet (Professionnel et au-delà) et que WhatsApp est en service.",
       invoiceMarkPaid: "Enregistre le paiement et génère la quittance correspondante.",
+      invoiceCancel: "Annule une facture sans paiement : elle n'est plus réclamée et ne compte plus en retard.",
     },
     tenants: {
       exportData: "Exporter ses données",
@@ -1627,6 +1628,9 @@ const fr = {
       sendingReminder: "Envoi...",
       markPaid: "Marquer réglée",
       markingPaid: "Enregistrement...",
+      cancelInvoice: "Annuler la facture",
+      confirmCancelInvoice: "Annuler cette facture ? Elle ne sera plus réclamée au locataire et n'apparaîtra plus en retard. Vous ne pourrez pas la remettre en attente.",
+      cancelling: "Annulation...",
       partiallyPaid: "Réglé : {{paid}} · Reste : {{remaining}}",
       noInvoicesForFilter: "Aucune facture pour ce filtre",
       receiptTitle: "Quittance de loyer - {{period}}",

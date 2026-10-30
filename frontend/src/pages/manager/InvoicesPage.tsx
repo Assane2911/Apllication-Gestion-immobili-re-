@@ -44,6 +44,7 @@ export default function InvoicesPage() {
   const [sendingMonthly, setSendingMonthly] = useState(false);
   const [sendingSingleId, setSendingSingleId] = useState<string | null>(null);
   const [factureAMarquer, setFactureAMarquer] = useState<Invoice | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
@@ -119,6 +120,24 @@ export default function InvoicesPage() {
       setError(apiErrorMessage(err));
     } finally {
       setSendingMonthly(false);
+    }
+  }
+
+  // Une facture sans aucun paiement, en attente ou en retard, peut être annulée (le serveur refuse le reste : voir cancelInvoice).
+  const annulable = (inv: Invoice) => (inv.status === "PENDING" || inv.status === "LATE") && !(inv.amountPaid && inv.amountPaid > 0);
+
+  async function handleCancelInvoice(inv: Invoice) {
+    if (!confirm(t("manager.invoices.confirmCancelInvoice"))) return;
+    setCancellingId(inv.id);
+    setFeedback(null);
+    setError(null);
+    try {
+      await api.post(`/invoices/${inv.id}/cancel`);
+      load();
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -305,6 +324,15 @@ export default function InvoicesPage() {
                       >
                         {t("manager.invoices.markPaid")}
                       </button></Bulle>
+                      {annulable(inv) && (
+                        <Bulle texte={t("manager.tips.invoiceCancel")}><button
+                          onClick={() => handleCancelInvoice(inv)}
+                          disabled={cancellingId === inv.id}
+                          className="text-xs bg-white hover:bg-rose-50 dark:bg-transparent dark:hover:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
+                        >
+                          {cancellingId === inv.id ? t("manager.invoices.cancelling") : t("manager.invoices.cancelInvoice")}
+                        </button></Bulle>
+                      )}
                     </>
                   )}
                   </div>
@@ -395,6 +423,15 @@ export default function InvoicesPage() {
                     >
                       {t("manager.invoices.markPaid")}
                     </button></Bulle>
+                    {annulable(inv) && (
+                      <Bulle texte={t("manager.tips.invoiceCancel")}><button
+                        onClick={() => handleCancelInvoice(inv)}
+                        disabled={cancellingId === inv.id}
+                        className="text-xs bg-white dark:bg-transparent text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
+                      >
+                        {cancellingId === inv.id ? t("manager.invoices.cancelling") : t("manager.invoices.cancelInvoice")}
+                      </button></Bulle>
+                    )}
                   </>
                 )}
               </div>

@@ -230,6 +230,73 @@ describe("InvoicesPage (manager)", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/Relance envoyée à Awa Diallo\./));
   });
 
+  /**
+   * Aucun bouton n'annulait une facture alors que le serveur sait le faire : un bail de test et ses factures « en retard » ne
+   * pouvaient plus être retirés (le serveur refuse de supprimer un bail qui a des factures en retard). Le bouton n'apparaît que
+   * pour une facture en attente ou en retard, sans aucun paiement, et demande confirmation.
+   */
+  describe("annuler une facture", () => {
+    it("n'apparaît que pour une facture en attente ou en retard, sans paiement", async () => {
+      getFactures.mockResolvedValue(
+        paginated([
+          invoice({ id: "a", status: "PENDING" }),
+          invoice({ id: "b", status: "LATE", periodMonth: 5 }),
+          invoice({ id: "c", status: "PAID", periodMonth: 4 }),
+          invoice({ id: "d", status: "CANCELLED", periodMonth: 3 }),
+          invoice({ id: "e", status: "PENDING", periodMonth: 2, amountPaid: 100 }),
+        ])
+      );
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Annuler la facture" }).length).toBeGreaterThan(0));
+      // Deux factures annulables (a et b), chacune dans les deux vues (tableau et cartes).
+      expect(screen.getAllByRole("button", { name: "Annuler la facture" })).toHaveLength(4);
+    });
+
+    it("demande confirmation, puis annule la facture et recharge la liste", async () => {
+      const user = userEvent.setup();
+      getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "LATE" })]));
+      mockedApi.post.mockResolvedValueOnce({ data: {} });
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Annuler la facture" }).length).toBeGreaterThan(0));
+      const appelsAvant = getFactures.mock.calls.length;
+
+      await user.click(screen.getAllByRole("button", { name: "Annuler la facture" })[0]);
+
+      expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("Annuler cette facture ?"));
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/cancel"));
+      await waitFor(() => expect(getFactures.mock.calls.length).toBeGreaterThan(appelsAvant));
+    });
+
+    it("n'annule rien si la confirmation est refusée", async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "LATE" })]));
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Annuler la facture" }).length).toBeGreaterThan(0));
+
+      await user.click(screen.getAllByRole("button", { name: "Annuler la facture" })[0]);
+
+      expect(mockedApi.post).not.toHaveBeenCalled();
+    });
+
+    it("affiche l'erreur du serveur quand l'annulation est refusée", async () => {
+      const user = userEvent.setup();
+      getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+      mockedApi.post.mockRejectedValueOnce(
+        new AxiosError("refusé", "ERR_BAD_REQUEST", undefined, undefined, {
+          status: 409,
+          data: { error: "Des paiements ont déjà été enregistrés sur cette facture : elle ne peut plus être annulée.", code: "INVOICE_HAS_PAYMENTS" },
+        } as never)
+      );
+      renderPage();
+      await waitFor(() => expect(screen.getAllByRole("button", { name: "Annuler la facture" }).length).toBeGreaterThan(0));
+
+      await user.click(screen.getAllByRole("button", { name: "Annuler la facture" })[0]);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(/paiements/i);
+    });
+  });
+
   it("envoyer les alertes mensuelles : demande confirmation puis envoie la requête", async () => {
     const user = userEvent.setup();
     getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));

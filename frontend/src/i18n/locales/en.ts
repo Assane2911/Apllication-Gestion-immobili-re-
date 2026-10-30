@@ -1286,6 +1286,7 @@ const en: TranslationSchema = {
       invoiceReceipt: "Opens the receipt as a PDF, ready to send or print.",
       invoiceRemind: "Sends the tenant a reminder, by email, plus WhatsApp if your plan allows it (Professional and above) and WhatsApp is in service.",
       invoiceMarkPaid: "Records the payment and issues the matching receipt.",
+      invoiceCancel: "Cancels an invoice with no payment: it is no longer claimed and no longer counts as late.",
     },
     tenants: {
       exportData: "Export their data",
@@ -1626,6 +1627,9 @@ const en: TranslationSchema = {
       sendingReminder: "Sending...",
       markPaid: "Mark as paid",
       markingPaid: "Recording...",
+      cancelInvoice: "Cancel invoice",
+      confirmCancelInvoice: "Cancel this invoice? It will no longer be claimed from the tenant and will stop showing as late. You will not be able to put it back on hold.",
+      cancelling: "Cancelling...",
       partiallyPaid: "Paid: {{paid}} · Remaining: {{remaining}}",
       noInvoicesForFilter: "No invoices for this filter",
       receiptTitle: "Rent receipt - {{period}}",
