@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
@@ -247,5 +248,74 @@ describe("LandingPage — jour d'échéance", () => {
     ["pt", pt],
   ])("%s : le comparatif ne fixe pas l'échéance au 5", (_langue, textes) => {
     expect(textes.landing.compare.rows.reminders.immoplatform).not.toMatch(/\b5(th|º|\s?e)?\b|\bcinco\b/i);
+  });
+});
+
+/**
+ * La zone d'accueil propose de démarrer l'essai gratuit depuis une carte : l'adresse saisie est reprise, déjà remplie, sur la
+ * page d'inscription. Rien n'est envoyé ni enregistré avant que la personne ait validé l'inscription elle-même.
+ */
+describe("LandingPage — carte d'essai gratuit", () => {
+  function Destination() {
+    const { pathname, search } = useLocation();
+    return <p data-testid="destination">{pathname + search}</p>;
+  }
+  function renderAvecDestination() {
+    return render(
+      <MemoryRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/inscription" element={<Destination />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+  }
+
+  it("propose un champ e-mail étiqueté et un bouton qui démarre l'essai", () => {
+    renderPage();
+    const formulaire = screen.getByRole("form", { name: "Essai d'inscription" });
+    expect(within(formulaire).getByLabelText("Votre adresse e-mail")).toHaveAttribute("type", "email");
+    expect(within(formulaire).getByRole("button", { name: "Démarrer l'essai 15 jours gratuit →" })).toBeInTheDocument();
+    expect(within(formulaire).getByRole("link", { name: "Voir les tarifs" })).toHaveAttribute("href", "#pricing");
+  });
+
+  it("reprend l'adresse saisie sur la page d'inscription, encodée dans le lien", async () => {
+    const user = userEvent.setup();
+    renderAvecDestination();
+
+    await user.type(screen.getByLabelText("Votre adresse e-mail"), "awa+test@agence.sn");
+    await user.click(screen.getByRole("button", { name: /Démarrer l'essai 15 jours gratuit/ }));
+
+    expect(screen.getByTestId("destination")).toHaveTextContent("/inscription?email=awa%2Btest%40agence.sn");
+  });
+
+  it("sans adresse, mène quand même à l'inscription, sans paramètre", async () => {
+    const user = userEvent.setup();
+    renderAvecDestination();
+
+    await user.click(screen.getByRole("button", { name: /Démarrer l'essai 15 jours gratuit/ }));
+
+    expect(screen.getByTestId("destination")).toHaveTextContent(/^\/inscription$/);
+  });
+
+  it("n'appelle aucune API : la saisie n'est pas enregistrée à l'accueil", async () => {
+    const user = userEvent.setup();
+    renderAvecDestination();
+    await user.type(screen.getByLabelText("Votre adresse e-mail"), "awa@agence.sn");
+    await user.click(screen.getByRole("button", { name: /Démarrer l'essai 15 jours gratuit/ }));
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["fr", fr],
+    ["en", en],
+    ["es", es],
+    ["pt", pt],
+  ])("%s : les textes de la carte existent", (_langue, textes) => {
+    for (const cle of ["logoCaption", "formTitle", "formSubtitle", "emailLabel", "emailPlaceholder", "formLabel"] as const) {
+      expect(textes.landing.hero[cle], cle).toBeTruthy();
+    }
   });
 });
