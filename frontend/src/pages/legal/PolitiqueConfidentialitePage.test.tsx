@@ -1,14 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ThemeProvider } from "../../context/ThemeContext";
 import { describe, expect, it } from "vitest";
 import PolitiqueConfidentialitePage from "./PolitiqueConfidentialitePage";
 
 describe("PolitiqueConfidentialitePage", () => {
   it("affiche le titre et les sections principales sur le traitement des données", () => {
     render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <PolitiqueConfidentialitePage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     expect(screen.getByRole("heading", { name: "Politique de confidentialité", level: 1 })).toBeInTheDocument();
@@ -18,9 +19,9 @@ describe("PolitiqueConfidentialitePage", () => {
 
   it("définit un titre d'onglet propre à la page", () => {
     render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <PolitiqueConfidentialitePage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     expect(document.title).toBe("Politique de confidentialité | ImmoPlatform Pro");
@@ -35,9 +36,9 @@ describe("PolitiqueConfidentialitePage", () => {
    */
   it("ne revendique pas de row-level security, que la base n'implémente pas", () => {
     const { container } = render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <PolitiqueConfidentialitePage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     // L'isolation entre agences est réelle mais appliquée par le code
@@ -49,9 +50,9 @@ describe("PolitiqueConfidentialitePage", () => {
 
   it("déclare tous les destinataires que le code appelle réellement", () => {
     const { container } = render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <PolitiqueConfidentialitePage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     const texte = container.textContent ?? "";

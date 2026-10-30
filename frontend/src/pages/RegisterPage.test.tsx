@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ThemeProvider } from "../context/ThemeContext";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
@@ -35,14 +36,14 @@ const mockedApi = vi.mocked(api, { deep: true });
 
 function renderPage(initialEntry = "/inscription") {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <ThemeProvider><MemoryRouter initialEntries={[initialEntry]}>
       <AuthProvider>
         <Routes>
           <Route path="/inscription" element={<RegisterPage />} />
           <Route path="/dashboard" element={<p>Espace gestionnaire</p>} />
         </Routes>
       </AuthProvider>
-    </MemoryRouter>
+    </MemoryRouter></ThemeProvider>
   );
 }
 

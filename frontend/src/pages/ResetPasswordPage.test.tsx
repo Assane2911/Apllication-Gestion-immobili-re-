@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ThemeProvider } from "../context/ThemeContext";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import ResetPasswordPage from "./ResetPasswordPage";
@@ -14,12 +15,12 @@ const mockedApi = vi.mocked(api, { deep: true });
 
 function renderPage(path = "/reinitialiser-mot-de-passe?token=abc123") {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <ThemeProvider><MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
         <Route path="/login" element={<p>Page de connexion</p>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter></ThemeProvider>
   );
 }
 
