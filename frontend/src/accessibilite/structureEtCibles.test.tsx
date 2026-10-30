@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
+import { ThemeProvider } from "../context/ThemeContext";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import BoutonSuggestion from "../components/BoutonSuggestion";
@@ -35,9 +36,9 @@ const mockedApi = vi.mocked(api, { deep: true });
 
 function rendre(page: ReactElement, entree: string) {
   return render(
-    <MemoryRouter initialEntries={[entree]}>
+    <ThemeProvider><MemoryRouter initialEntries={[entree]}>
       <AuthProvider>{page}</AuthProvider>
-    </MemoryRouter>
+    </MemoryRouter></ThemeProvider>
   );
 }
 

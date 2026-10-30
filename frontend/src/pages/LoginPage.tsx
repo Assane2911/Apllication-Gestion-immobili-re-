@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { api, apiErrorCode, apiErrorMessage } from "../api/client";
 import GoogleSignInButton from "../components/GoogleSignInButton";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+import { LangueEtTheme } from "../components/BoutonTheme";
+import FondDecor from "../components/FondDecor";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
 import { useAuth } from "../context/auth";
@@ -160,10 +161,11 @@ export default function LoginPage() {
   if (utilisateur) return <Navigate to={homePathForRole(utilisateur.role)} replace />;
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-950">
+    <div className="relative isolate min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      <FondDecor />
       <Seo title={`${t("seo.login.title")} | ${t("common.appName")}`} description={t("seo.login.description")} canonical="/login" />
       {/* Panneau de gauche : image de marque (masqué sur mobile) */}
-      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-brand-950 p-12 xl:p-16">
+      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden border-r border-slate-200/70 bg-white/55 backdrop-blur-sm dark:border-slate-800/70 dark:bg-slate-950/55 p-12 xl:p-16">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -left-16 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl animate-float-slow" />
           <div className="absolute bottom-0 right-0 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl animate-float-delay" />
@@ -171,19 +173,19 @@ export default function LoginPage() {
 
         <Reveal className="relative flex items-center gap-3">
           <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow" />
-          <span className="font-bold text-lg tracking-tight text-white">{t("common.appName")}</span>
+          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">{t("common.appName")}</span>
         </Reveal>
 
         <Reveal delay={100} className="relative max-w-md">
-          <p className="text-3xl xl:text-4xl font-extrabold text-white leading-tight xl:leading-10">
+          <p className="text-3xl xl:text-4xl font-extrabold text-slate-900 dark:text-white leading-tight xl:leading-10">
             {t("auth.login.panel.title")}
           </p>
-          <p className="mt-4 text-sm text-slate-400 leading-relaxed">{t("auth.login.panel.subtitle")}</p>
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{t("auth.login.panel.subtitle")}</p>
 
           <ul className="mt-8 space-y-3.5">
             {highlights.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
-                <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+              <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
+                <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
                   <CheckIcon />
                 </span>
                 {item}
@@ -192,38 +194,38 @@ export default function LoginPage() {
           </ul>
         </Reveal>
 
-        <Reveal delay={200} className="relative inline-flex items-center gap-2 text-xs text-brand-300 bg-brand-950/60 border border-brand-500/20 rounded-full px-4 py-2 w-fit">
+        <Reveal delay={200} className="relative inline-flex items-center gap-2 text-xs text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/40 border border-brand-200 dark:border-brand-500/20 rounded-full px-4 py-2 w-fit">
           <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
           {t("auth.login.panel.trialNote")}
         </Reveal>
       </aside>
 
       {/* Panneau de droite : formulaire */}
-      <main className="flex flex-col items-center justify-center px-6 py-12 relative">
+      <main className="flex flex-col items-center justify-center px-6 pt-20 pb-12 lg:pt-12 relative">
         <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
           <Link
             to="/landing"
-            className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
+            className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 transition-colors"
           >
             {t("auth.login.backToHome")}
           </Link>
-          <LanguageSwitcher />
+          <LangueEtTheme />
         </div>
 
         <Reveal className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
             <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow" />
-            <span className="font-bold text-lg tracking-tight text-white">{t("common.appName")}</span>
+            <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">{t("common.appName")}</span>
           </div>
 
           {pendingToken ? (
             <>
-              <h1 className="text-2xl font-bold text-white text-center">{t("auth.twoFactor.title")}</h1>
-              <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.twoFactor.subtitle")}</p>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white text-center">{t("auth.twoFactor.title")}</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-1.5">{t("auth.twoFactor.subtitle")}</p>
 
               <form onSubmit={handleTwoFactorSubmit} className="mt-8 space-y-4">
                 <div>
-                  <label htmlFor="login-2fa-code" className="block text-xs font-medium text-slate-400 mb-1.5">
+                  <label htmlFor="login-2fa-code" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                     {t("auth.twoFactor.codeLabel")}
                   </label>
                   <input
@@ -235,14 +237,14 @@ export default function LoginPage() {
                     required
                     value={twoFactorCode}
                     onChange={(e) => setTwoFactorCode(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 px-3.5 py-2.5 text-sm text-center tracking-[0.3em] placeholder:text-slate-600 placeholder:tracking-normal focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3.5 py-2.5 text-sm text-center tracking-[0.3em] placeholder:text-slate-400 dark:placeholder:text-slate-600 placeholder:tracking-normal focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                     placeholder={t("auth.twoFactor.codePlaceholder")}
                   />
                   <p className="mt-1.5 text-xs text-slate-500">{t("auth.twoFactor.backupCodeHint")}</p>
                 </div>
 
                 {error && (
-                  <p role="alert" className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                  <p role="alert" className="text-xs text-red-700 dark:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                     {error}
                   </p>
                 )}
@@ -265,7 +267,7 @@ export default function LoginPage() {
                     setTwoFactorCode("");
                     setError(null);
                   }}
-                  className="w-full text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors text-center"
+                  className="w-full text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 transition-colors text-center"
                 >
                   {t("auth.twoFactor.back")}
                 </button>
@@ -273,18 +275,18 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-white text-center">{t("auth.login.title")}</h1>
-              <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.login.subtitle")}</p>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white text-center">{t("auth.login.title")}</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-1.5">{t("auth.login.subtitle")}</p>
 
               {deconnecte && (
-                <p role="status" className="mt-5 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 text-center">
+                <p role="status" className="mt-5 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 text-center">
                   {t("auth.login.loggedOut")}
                 </p>
               )}
 
               <form onSubmit={handleSubmit} className="mt-8 space-y-4">
                 <div>
-                  <label htmlFor="login-email" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.email")}</label>
+                  <label htmlFor="login-email" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">{t("auth.login.email")}</label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                       <MailIcon />
@@ -295,14 +297,14 @@ export default function LoginPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                       placeholder={t("auth.login.emailPlaceholder")}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="login-password" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.password")}</label>
+                  <label htmlFor="login-password" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">{t("auth.login.password")}</label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                       <LockIcon />
@@ -313,27 +315,27 @@ export default function LoginPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                       placeholder={t("auth.login.passwordPlaceholder")}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-slate-300 transition-colors"
                     >
                       <EyeIcon off={showPassword} />
                     </button>
                   </div>
                   <div className="mt-1.5 text-right">
-                    <Link to="/mot-de-passe-oublie" className="text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors">
+                    <Link to="/mot-de-passe-oublie" className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">
                       {t("auth.login.forgotPasswordLink")}
                     </Link>
                   </div>
                 </div>
 
                 {error && (
-                  <p role="alert" className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                  <p role="alert" className="text-xs text-red-700 dark:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                     {error}
                   </p>
                 )}
@@ -343,7 +345,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={handleResendVerification}
                     disabled={resendState !== "idle"}
-                    className="w-full text-xs font-medium text-brand-400 hover:text-brand-300 disabled:opacity-60 transition-colors text-center"
+                    className="w-full text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 disabled:opacity-60 transition-colors text-center"
                   >
                     {resendState === "sending"
                       ? t("auth.login.resendVerificationSending")
@@ -368,9 +370,9 @@ export default function LoginPage() {
               {isGoogleSignInEnabled() && (
                 <div className="mt-5">
                   <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-slate-800" />
-                    <span className="text-[11px] uppercase tracking-wide text-slate-600">{t("auth.google.orDivider")}</span>
-                    <div className="h-px flex-1 bg-slate-800" />
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+                    <span className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-600">{t("auth.google.orDivider")}</span>
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
                   </div>
                   <div className="mt-4">
                     <GoogleSignInButton
@@ -380,7 +382,7 @@ export default function LoginPage() {
                     />
                   </div>
                   {googleError && (
-                    <p role="alert" className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                    <p role="alert" className="mt-3 text-xs text-red-700 dark:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                       {googleError}
                     </p>
                   )}
@@ -390,9 +392,9 @@ export default function LoginPage() {
           )}
 
           {!pendingToken && (
-            <p className="mt-6 text-center text-xs text-slate-400">
+            <p className="mt-6 text-center text-xs text-slate-600 dark:text-slate-400">
               {t("auth.login.noAccountText")}{" "}
-              <Link to="/inscription" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
+              <Link to="/inscription" className="font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">
                 {t("auth.login.registerLink")}
               </Link>
             </p>

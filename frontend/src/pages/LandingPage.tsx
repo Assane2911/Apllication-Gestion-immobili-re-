@@ -10,13 +10,11 @@ import {
   LayoutDashboard,
   Lock,
   Megaphone,
-  Moon,
   PenLine,
   Receipt,
   Scale,
   Smartphone,
   Sparkles,
-  Sun,
   Wallet,
   X,
 } from "lucide-react";
@@ -26,6 +24,7 @@ import { Link, useNavigate } from "react-router-dom";
 import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import BoutonTheme from "../components/BoutonTheme";
 import FondDecor from "../components/FondDecor";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
@@ -250,7 +249,7 @@ function TenantMockup() {
 export default function LandingPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   // Sous 640 px, l'en-tête ne tient qu'en version resserrée (voir LandingPage.mobile.test.tsx).
   const telephone = useMediaQuery("(max-width: 639px)");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -280,12 +279,12 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 shrink-0">
             <img src="/app-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow transition-transform duration-300 hover:rotate-6 hover:scale-105" />
-            <span className="sr-only sm:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-linear-to-r from-slate-900 dark:from-white via-slate-800 dark:via-slate-200 to-slate-600 dark:to-slate-400 bg-clip-text text-transparent">
+            <span className="sr-only sm:not-sr-only lg:sr-only xl:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-linear-to-r from-slate-900 dark:from-white via-slate-800 dark:via-slate-200 to-slate-600 dark:to-slate-400 bg-clip-text text-transparent">
               {t("common.appName")}
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-700 dark:text-slate-300">
+          <div className="hidden lg:flex items-center gap-3 xl:gap-6 whitespace-nowrap text-[11px] xl:text-xs font-medium text-slate-700 dark:text-slate-300">
             {/*
               La vitrine publique existait — route, page, API — mais AUCUN
               écran n'y menait : `/vitrine` n'apparaissait qu'une fois dans
@@ -319,15 +318,7 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher compact={telephone} variant={theme === "dark" ? "dark" : "light"} />
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={t("common.theme.toggleAria")}
-              title={theme === "dark" ? t("common.theme.toLight") : t("common.theme.toDark")}
-              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-            >
-              {theme === "dark" ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
-            </button>
+            <BoutonTheme />
             {user ? (
               <Link
                 to={homePathForRole(user.role)}

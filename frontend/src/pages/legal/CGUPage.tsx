@@ -18,7 +18,7 @@ export default function CGUPage() {
         <p>
           L'utilisation du Service implique l'acceptation pleine et entière des présentes CGU/CGV. Elles sont
           éditées par {COMPANY.fullName} ({COMPANY.legalStatus}) — voir les{" "}
-          <a href="/mentions-legales" className="text-brand-400 hover:text-brand-300 underline">
+          <a href="/mentions-legales" className="text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 underline">
             mentions légales
           </a>
           .
@@ -46,16 +46,16 @@ export default function CGUPage() {
         <LegalList
           items={[
             <>
-              <strong className="text-slate-100">Starter</strong> — jusqu'à 5 biens gérés.
+              <strong className="text-slate-900 dark:text-slate-100">Starter</strong> — jusqu'à 5 biens gérés.
             </>,
             <>
-              <strong className="text-slate-100">Professionnel</strong> — tout ce qui est inclus dans Starter, jusqu'à 25 biens
+              <strong className="text-slate-900 dark:text-slate-100">Professionnel</strong> — tout ce qui est inclus dans Starter, jusqu'à 25 biens
               gérés, suivi des dépenses (y compris récurrentes) et de rentabilité, signature électronique des baux et des
               états des lieux, marque blanche (logo, tampon et en-tête de l'agence), messagerie avec les locataires,
               alertes de fin de bail et support prioritaire (réponse sous un jour ouvré).
             </>,
             <>
-              <strong className="text-slate-100">Agence &amp; Multi-Comptes</strong> — tout ce qui est inclus dans Professionnel,
+              <strong className="text-slate-900 dark:text-slate-100">Agence &amp; Multi-Comptes</strong> — tout ce qui est inclus dans Professionnel,
               biens illimités, multi-utilisateurs et collaborateurs, export comptable avancé, accompagnement à la prise en main
               (guide de démarrage pas à pas et modèles de fichiers).
             </>,
@@ -106,7 +106,7 @@ export default function CGUPage() {
               Locataires ; à cet égard, le Gestionnaire agit en qualité de responsable du traitement pour les
               données de ses propres locataires, {COMPANY.tradeName} agissant en qualité de sous-traitant au
               sens du RGPD (voir la{" "}
-              <a href="/confidentialite" className="text-brand-400 hover:text-brand-300 underline">
+              <a href="/confidentialite" className="text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 underline">
                 Politique de confidentialité
               </a>
               ) ;
