@@ -1286,6 +1286,7 @@ const pt: TranslationSchema = {
       invoiceReceipt: "Abre o recibo em PDF, pronto a enviar ou a imprimir.",
       invoiceRemind: "Envia um lembrete ao inquilino, por email e, além disso, por WhatsApp se o seu plano o permitir (Profissional e superior) e o WhatsApp estiver em serviço.",
       invoiceMarkPaid: "Regista o pagamento e gera o recibo correspondente.",
+      invoiceCancel: "Anula uma fatura sem pagamento: deixa de ser cobrada e deixa de contar como em atraso.",
     },
     tenants: {
       exportData: "Exportar os seus dados",
@@ -1626,6 +1627,9 @@ const pt: TranslationSchema = {
       sendingReminder: "A enviar...",
       markPaid: "Marcar como pago",
       markingPaid: "A registar...",
+      cancelInvoice: "Anular a fatura",
+      confirmCancelInvoice: "Anular esta fatura? Deixará de ser cobrada ao inquilino e deixará de aparecer em atraso. Não poderás voltá-la a pôr pendente.",
+      cancelling: "A anular...",
       partiallyPaid: "Pago: {{paid}} · Em falta: {{remaining}}",
       noInvoicesForFilter: "Nenhuma fatura para este filtro",
       receiptTitle: "Recibo de renda - {{period}}",
