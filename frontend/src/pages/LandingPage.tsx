@@ -113,7 +113,7 @@ function CarteEssai() {
 
   return (
     <form onSubmit={demarrer} className="mx-auto w-full max-w-3xl rounded-sm bg-white px-5 py-6 shadow-2xl shadow-slate-900/15 sm:px-8" aria-label={t("landing.hero.formLabel")}>
-      <p className="text-center text-[11px] tracking-wide text-slate-600 uppercase">
+      <p className="text-center font-accueil text-[11px] tracking-wide text-slate-700 uppercase">
         <span className="font-bold text-slate-900">{t("landing.hero.formTitle")}</span> / {t("landing.hero.formSubtitle")}
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -131,7 +131,7 @@ function CarteEssai() {
           placeholder={t("landing.hero.emailPlaceholder")}
           className="min-w-0 flex-1 border border-brand-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-brand-600 focus:outline-2 focus:outline-offset-0 focus:outline-brand-600"
         />
-        <button type="submit" className="bg-brand-600 px-6 py-3 text-sm font-bold tracking-wide text-white uppercase transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700">
+        <button type="submit" className="bg-brand-600 px-6 py-3 font-accueil text-sm font-black tracking-wide text-white uppercase transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700">
           {t("landing.hero.ctaTrial")}
         </button>
       </div>
@@ -395,7 +395,7 @@ export default function LandingPage() {
                 <img src="/app-icon.png" alt="" className="h-8 w-8 rounded-lg" />
                 <span className="text-lg font-bold tracking-tight">{t("common.appName")}</span>
               </div>
-              <p className="mt-1 text-[10px] tracking-[0.3em] text-slate-300 uppercase">{t("landing.hero.logoCaption")}</p>
+              <p className="mt-1 font-accueil text-[10px] tracking-[0.3em] text-slate-300 uppercase">{t("landing.hero.logoCaption")}</p>
             </div>
           </Reveal>
 
@@ -407,14 +407,14 @@ export default function LandingPage() {
           </Reveal>
 
           <Reveal delay={140}>
-            <h1 className="mt-8 max-w-5xl text-3xl leading-tight tracking-wide text-slate-900 uppercase sm:text-4xl lg:text-5xl">
+            <h1 className="mt-8 max-w-5xl font-accueil text-3xl leading-tight tracking-wide text-slate-900 uppercase sm:text-4xl lg:text-5xl">
               <span className="block font-light">{t("landing.hero.titleLine1")}</span>
-              <strong className="mt-1 block font-extrabold">{t("landing.hero.titleLine2")}</strong>
+              <strong className="mt-1 block font-black">{t("landing.hero.titleLine2")}</strong>
             </h1>
           </Reveal>
 
           <Reveal delay={200}>
-            <p className="mt-6 max-w-2xl text-base leading-relaxed font-light text-slate-700 sm:text-lg">{t("landing.hero.subtitle")}</p>
+            <p className="mt-6 max-w-2xl font-accueil text-base leading-relaxed font-light text-slate-800 sm:text-lg">{t("landing.hero.subtitle")}</p>
           </Reveal>
 
           <Reveal delay={260} className="mt-14 w-full">
