@@ -633,12 +633,6 @@ const es: TranslationSchema = {
       ctaTrial: "Comenzar la prueba gratuita de 15 días →",
       ctaPricing: "Ver precios",
       mobileSoon: "Próximamente en App Store y Google Play",
-      logoCaption: "GESTIÓN DE ALQUILERES",
-      formTitle: "Empieza tu prueba gratuita",
-      formSubtitle: "15 días, sin compromiso",
-      emailLabel: "Tu correo electrónico",
-      emailPlaceholder: "Tu correo electrónico",
-      formLabel: "Alta de prueba gratuita",
     },
     features: {
       receipts: {

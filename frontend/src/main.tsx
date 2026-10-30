@@ -4,10 +4,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Polices servies par nous : les charger depuis les serveurs de Google enverrait l'adresse IP de chaque visiteur à
 // Google avant tout consentement (voir src/rgpd/polices.test.ts). Mêmes graisses qu'avant (index.css, tailwind).
-import '@fontsource/lato/300.css'
-import '@fontsource/lato/400.css'
-import '@fontsource/lato/700.css'
-import '@fontsource/lato/900.css'
 import '@fontsource/manrope/600.css'
 import '@fontsource/manrope/700.css'
 import '@fontsource/manrope/800.css'

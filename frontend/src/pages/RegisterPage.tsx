@@ -69,11 +69,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Adresse saisie sur la carte d'essai de l'accueil (?email=...) : reprise, jamais envoyée ailleurs ; toujours modifiable.
-  const [email, setEmail] = useState(() => {
-    const reprise = (searchParams.get("email") ?? "").trim();
-    return reprise.length <= 254 && /^[^\s@]+@[^\s@]+$/.test(reprise) ? reprise : "";
-  });
+  const [email, setEmail] = useState("");
   // Pays de l'agence : vide tant qu'il n'est pas choisi, jamais deviné (pas de pays « par défaut » : il fixe les règles
   // de location appliquées et ne se change plus ensuite).
   const [country, setCountry] = useState("");

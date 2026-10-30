@@ -6,8 +6,6 @@
 @theme {
   --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
-  /* Titre de la zone d'accueil : une ligne vraiment fine et une ligne en gras, comme le modèle. */
-  --font-accueil: 'Lato', ui-sans-serif, system-ui, sans-serif;
 
   /* Interlignes des tailles de texte en longueurs fixes, comme dans Tailwind 3.
      Tailwind 4 les exprime en rapports (1,43 pour text-sm…), que les enfants

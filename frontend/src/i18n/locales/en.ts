@@ -633,12 +633,6 @@ const en: TranslationSchema = {
       ctaTrial: "Start your free 15-day trial →",
       ctaPricing: "See pricing",
       mobileSoon: "Coming soon on the App Store and Google Play",
-      logoCaption: "PROPERTY MANAGEMENT",
-      formTitle: "Start your free trial",
-      formSubtitle: "15 days, no commitment",
-      emailLabel: "Your email address",
-      emailPlaceholder: "Your email address",
-      formLabel: "Free trial sign-up",
     },
     features: {
       receipts: {
