@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { ThemeProvider } from "../../context/ThemeContext";
 import { describe, expect, it } from "vitest";
 import { COMPANY } from "../../legal/companyInfo";
 import CGUPage from "./CGUPage";
@@ -8,9 +7,9 @@ import CGUPage from "./CGUPage";
 describe("CGUPage", () => {
   it("affiche le titre et les sections principales", () => {
     render(
-      <ThemeProvider><MemoryRouter>
+      <MemoryRouter>
         <CGUPage />
-      </MemoryRouter></ThemeProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByRole("heading", { name: "Conditions Générales d'Utilisation et de Vente", level: 1 })).toBeInTheDocument();
@@ -20,9 +19,9 @@ describe("CGUPage", () => {
 
   it("énonce le droit applicable comme un choix distinct du pays de l'éditeur", () => {
     render(
-      <ThemeProvider><MemoryRouter>
+      <MemoryRouter>
         <CGUPage />
-      </MemoryRouter></ThemeProvider>
+      </MemoryRouter>
     );
 
     // Le droit applicable (choix contractuel) ne se déduit pas du pays du siège : l'éditeur est américain.
@@ -34,9 +33,9 @@ describe("CGUPage", () => {
 
   it("définit un titre d'onglet propre à la page", () => {
     render(
-      <ThemeProvider><MemoryRouter>
+      <MemoryRouter>
         <CGUPage />
-      </MemoryRouter></ThemeProvider>
+      </MemoryRouter>
     );
 
     expect(document.title).toBe("Conditions Générales d'Utilisation et de Vente | ImmoPlatform Pro");
@@ -44,9 +43,9 @@ describe("CGUPage", () => {
 
   it("annonce le guide de démarrage dans l'essai gratuit, comme dans l'accompagnement de la formule Entreprise", () => {
     render(
-      <ThemeProvider><MemoryRouter>
+      <MemoryRouter>
         <CGUPage />
-      </MemoryRouter></ThemeProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByText(/essai gratuite de 15 jours[\s\S]*guide de démarrage/)).toBeInTheDocument();
@@ -54,9 +53,9 @@ describe("CGUPage", () => {
 
   it("nomme les formules comme le reste de l'application : Starter, Professionnel, Agence & Multi-Comptes", () => {
     render(
-      <ThemeProvider><MemoryRouter>
+      <MemoryRouter>
         <CGUPage />
-      </MemoryRouter></ThemeProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByText("Starter")).toBeInTheDocument();
@@ -68,9 +67,9 @@ describe("CGUPage", () => {
 
   it("décrit chaque formule comme les cartes de l'application : support prioritaire et fonctionnalités dans Professionnel, Agence reprenant Professionnel", () => {
     render(
-      <ThemeProvider><MemoryRouter>
+      <MemoryRouter>
         <CGUPage />
-      </MemoryRouter></ThemeProvider>
+      </MemoryRouter>
     );
 
     const pro = screen.getByText("Professionnel").closest("li")!;

@@ -26,45 +26,45 @@ export default function PolitiqueConfidentialitePage() {
         <LegalList
           items={[
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Données de compte</strong> : email, mot de passe (stocké
+              <strong className="text-slate-100">Données de compte</strong> : email, mot de passe (stocké
               sous forme hachée, jamais en clair), rôle (gestionnaire ou locataire).
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Données d'agence</strong> (Gestionnaire) : nom commercial,
+              <strong className="text-slate-100">Données d'agence</strong> (Gestionnaire) : nom commercial,
               numéro d'immatriculation, adresse, coordonnées, mentions légales personnalisées.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Données de biens immobiliers</strong> : adresse, surface,
+              <strong className="text-slate-100">Données de biens immobiliers</strong> : adresse, surface,
               loyer, photographies.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Données de locataire</strong> : nom, prénom, téléphone,
+              <strong className="text-slate-100">Données de locataire</strong> : nom, prénom, téléphone,
               email, pièce d'identité (image ou PDF).
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Données contractuelles et financières</strong> : contrats de
+              <strong className="text-slate-100">Données contractuelles et financières</strong> : contrats de
               bail, montants de loyer et dépôts de garantie, historique des paiements, dépenses.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Coordonnées bancaires de virement</strong> : IBAN et BIC
+              <strong className="text-slate-100">Coordonnées bancaires de virement</strong> : IBAN et BIC
               saisis par le Gestionnaire — ceux de son agence, affichés au Locataire qui règle par virement,
               et ceux des propriétaires auxquels il reverse les loyers. Aucune coordonnée bancaire de
               Locataire n'est enregistrée.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Photos d'incidents</strong> : photographies transmises par
+              <strong className="text-slate-100">Photos d'incidents</strong> : photographies transmises par
               les Locataires lors du signalement d'un problème dans leur logement.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Messages</strong> échangés entre Gestionnaire et Locataire
+              <strong className="text-slate-100">Messages</strong> échangés entre Gestionnaire et Locataire
               via la messagerie intégrée.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Données de préférence</strong> : langue d'affichage, thème
+              <strong className="text-slate-100">Données de préférence</strong> : langue d'affichage, thème
               clair/sombre, devise d'affichage — stockées localement dans votre navigateur.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">Données techniques</strong> : journaux de connexion et
+              <strong className="text-slate-100">Données techniques</strong> : journaux de connexion et
               d'activité nécessaires à la sécurité et à la traçabilité des actions (journal d'activité de
               l'agence).
             </>,
@@ -103,49 +103,49 @@ export default function PolitiqueConfidentialitePage() {
         <LegalList
           items={[
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.database.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.database.name}</strong> —{" "}
               {SUBPROCESSORS.database.role} {SUBPROCESSORS.database.address}
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.hostingFrontendBackend.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.hostingFrontendBackend.name}</strong> —{" "}
               {SUBPROCESSORS.hostingFrontendBackend.role} Société établie aux États-Unis ; les transferts de
               données hors Union Européenne sont, le cas échéant, encadrés par les clauses contractuelles
               types de la Commission européenne.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.paymentStripe.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.paymentStripe.name}</strong> —{" "}
               {SUBPROCESSORS.paymentStripe.role}
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.paymentPaydunya.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.paymentPaydunya.name}</strong> —{" "}
               {SUBPROCESSORS.paymentPaydunya.role}
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.email.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.email.name}</strong> —{" "}
               {SUBPROCESSORS.email.role}
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.whatsapp.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.whatsapp.name}</strong> —{" "}
               {SUBPROCESSORS.whatsapp.role}
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.googleSignIn.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.googleSignIn.name}</strong> —{" "}
               {SUBPROCESSORS.googleSignIn.role}
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.errorMonitoring.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.errorMonitoring.name}</strong> —{" "}
               {SUBPROCESSORS.errorMonitoring.role}
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.analytics.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.analytics.name}</strong> —{" "}
               {SUBPROCESSORS.analytics.role} Voir la section 9 « Cookies et mesure d'audience » ci-dessous.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.metaPixel.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.metaPixel.name}</strong> —{" "}
               {SUBPROCESSORS.metaPixel.role} Voir la section 9 ci-dessous.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.linkedinInsight.name}</strong> —{" "}
+              <strong className="text-slate-100">{SUBPROCESSORS.linkedinInsight.name}</strong> —{" "}
               {SUBPROCESSORS.linkedinInsight.role} Voir la section 9 ci-dessous.
             </>,
           ]}
@@ -216,7 +216,7 @@ export default function PolitiqueConfidentialitePage() {
           de portabilité, et d'opposition pour motif légitime.
         </p>
         <p>
-          Ces droits s'exercent de la manière suivante. En tant que <strong className="text-slate-900 dark:text-slate-100">Locataire</strong>,
+          Ces droits s'exercent de la manière suivante. En tant que <strong className="text-slate-100">Locataire</strong>,
           adressez-vous d'abord à votre Gestionnaire (agence ou bailleur) : c'est lui qui est responsable des
           données qu'il a saisies à votre sujet, lui seul peut les rectifier ou les effacer depuis son
           espace de gestion, et {COMPANY.tradeName} n'y intervient que sur son instruction. Pour l'effacement,
@@ -228,11 +228,11 @@ export default function PolitiqueConfidentialitePage() {
           moment et sans demande préalable, une copie complète des données détenues à votre sujet, dans un
           format lisible par machine ; il ne comporte en revanche pas de suppression de votre fiche à votre
           propre initiative — celle-ci relève de votre Gestionnaire, comme indiqué ci-dessus. En tant que{" "}
-          <strong className="text-slate-900 dark:text-slate-100">Propriétaire</strong>, la même logique s'applique : adressez-vous
+          <strong className="text-slate-100">Propriétaire</strong>, la même logique s'applique : adressez-vous
           à votre Gestionnaire, qui dispose de la même fonction d'effacement pour vos propres données
           identifiantes (nom, raison sociale, email, téléphone, adresse, IBAN/BIC et accès au portail), tandis
           que les biens qui vous sont associés et l'historique de vos comptes-rendus de gestion sont conservés
-          pour les mêmes raisons comptables. En tant que <strong className="text-slate-900 dark:text-slate-100">Gestionnaire</strong>,
+          pour les mêmes raisons comptables. En tant que <strong className="text-slate-100">Gestionnaire</strong>,
           vous pouvez rectifier vos données à tout moment depuis votre espace, et supprimer définitivement votre
           compte et l'ensemble des données associées depuis les paramètres du Service.
         </p>
@@ -256,7 +256,7 @@ export default function PolitiqueConfidentialitePage() {
           Un bandeau vous propose par ailleurs d'accepter ou de refuser le dépôt de cookies de mesure
           d'audience et de publicité par {SUBPROCESSORS.analytics.name}, {SUBPROCESSORS.metaPixel.name} et{" "}
           {SUBPROCESSORS.linkedinInsight.name} (voir leur finalité détaillée en section 5 ci-dessus). Les
-          cookies de Meta et LinkedIn servent notamment au <strong className="text-slate-900 dark:text-slate-100">reciblage
+          cookies de Meta et LinkedIn servent notamment au <strong className="text-slate-100">reciblage
           publicitaire</strong> : si vous avez visité le site sans finaliser votre inscription, il est
           possible que des publicités d'ImmoPlatform Pro vous soient ensuite présentées sur Facebook,
           Instagram ou LinkedIn. Aucun de ces cookies n'est déposé avant votre acceptation explicite ; en cas

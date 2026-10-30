@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
-import { ThemeProvider } from "../context/ThemeContext";
 import { AuthProvider } from "../context/AuthContext";
 import { changerLangue } from "../i18n";
 import en from "../i18n/locales/en";
@@ -22,9 +21,9 @@ const mockedApi = vi.mocked(api, { deep: true });
 function renderPage() {
   return render(
     <MemoryRouter>
-      <ThemeProvider><AuthProvider>
+      <AuthProvider>
         <LandingPage />
-      </AuthProvider></ThemeProvider>
+      </AuthProvider>
     </MemoryRouter>
   );
 }
@@ -264,12 +263,12 @@ describe("LandingPage — carte d'essai gratuit", () => {
   function renderAvecDestination() {
     return render(
       <MemoryRouter>
-        <ThemeProvider><AuthProvider>
+        <AuthProvider>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/inscription" element={<Destination />} />
           </Routes>
-        </AuthProvider></ThemeProvider>
+        </AuthProvider>
       </MemoryRouter>
     );
   }
@@ -318,39 +317,5 @@ describe("LandingPage — carte d'essai gratuit", () => {
     for (const cle of ["logoCaption", "formTitle", "formSubtitle", "emailLabel", "emailPlaceholder", "formLabel"] as const) {
       expect(textes.landing.hero[cle], cle).toBeTruthy();
     }
-  });
-});
-
-describe("LandingPage — thème clair par défaut", () => {
-  beforeEach(() => {
-    mockedApi.get.mockReset();
-    mockedApi.post.mockReset();
-    localStorage.clear();
-    document.documentElement.classList.remove("dark");
-  });
-
-  it("s'affiche en clair tant que la personne n'a rien choisi", () => {
-    renderPage();
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
-  });
-
-  it("le bouton de l'en-tête bascule en sombre, puis revient au clair, et retient le choix", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    const bouton = screen.getByRole("button", { name: "Basculer le thème clair/sombre" });
-
-    await user.click(bouton);
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
-    expect(localStorage.getItem("theme")).toBe("dark");
-
-    await user.click(bouton);
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
-    expect(localStorage.getItem("theme")).toBe("light");
-  });
-
-  it("le fond dessiné est décoratif : masqué aux lecteurs d'écran", () => {
-    const { container } = renderPage();
-    const fond = container.querySelector(".fixed.inset-0");
-    expect(fond?.getAttribute("aria-hidden")).toBe("true");
   });
 });
