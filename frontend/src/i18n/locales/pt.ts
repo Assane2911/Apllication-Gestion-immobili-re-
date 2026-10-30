@@ -633,12 +633,6 @@ const pt: TranslationSchema = {
       ctaTrial: "Iniciar o teste grátis de 15 dias →",
       ctaPricing: "Ver os preços",
       mobileSoon: "Em breve na App Store e no Google Play",
-      logoCaption: "GESTÃO DE ARRENDAMENTOS",
-      formTitle: "Começa o teu teste gratuito",
-      formSubtitle: "15 dias, sem compromisso",
-      emailLabel: "O teu endereço de e-mail",
-      emailPlaceholder: "O teu endereço de e-mail",
-      formLabel: "Registo de teste gratuito",
     },
     features: {
       receipts: {

@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { ThemeProvider } from "../context/ThemeContext";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
@@ -36,14 +35,14 @@ const mockedApi = vi.mocked(api, { deep: true });
 
 function renderPage(initialEntry = "/inscription") {
   return render(
-    <ThemeProvider><MemoryRouter initialEntries={[initialEntry]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <AuthProvider>
         <Routes>
           <Route path="/inscription" element={<RegisterPage />} />
           <Route path="/dashboard" element={<p>Espace gestionnaire</p>} />
         </Routes>
       </AuthProvider>
-    </MemoryRouter></ThemeProvider>
+    </MemoryRouter>
   );
 }
 
@@ -162,27 +161,6 @@ describe("RegisterPage", () => {
   it("ne montre pas le bouton Google si VITE_GOOGLE_CLIENT_ID n'est pas configuré", () => {
     renderPage();
     expect(screen.queryByRole("button", { name: "Simuler connexion Google" })).not.toBeInTheDocument();
-  });
-
-  it("reprend l'adresse saisie sur l'accueil (?email=...), modifiable", async () => {
-    const user = userEvent.setup();
-    renderPage("/inscription?email=awa%2Btest%40agence.sn");
-
-    const champ = screen.getByLabelText("Email");
-    expect(champ).toHaveValue("awa+test@agence.sn");
-    await user.clear(champ);
-    await user.type(champ, "autre@agence.sn");
-    expect(champ).toHaveValue("autre@agence.sn");
-  });
-
-  it("ignore une adresse du lien qui n'en est pas une, ou démesurée", () => {
-    renderPage("/inscription?email=pas-une-adresse");
-    expect(screen.getByLabelText("Email")).toHaveValue("");
-  });
-
-  it("ignore une adresse du lien de plus de 254 caractères", () => {
-    renderPage(`/inscription?email=${"a".repeat(260)}%40agence.sn`);
-    expect(screen.getByLabelText("Email")).toHaveValue("");
   });
 
   it("pré-remplit le code de parrainage depuis le lien partagé (?ref=CODE)", () => {

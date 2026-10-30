@@ -631,12 +631,6 @@ const fr = {
       ctaTrial: "Démarrer l'essai 15 jours gratuit →",
       ctaPricing: "Voir les tarifs",
       mobileSoon: "Bientôt disponible sur l'App Store et Google Play",
-      logoCaption: "GESTION LOCATIVE",
-      formTitle: "Démarrez votre essai gratuit",
-      formSubtitle: "15 jours, sans engagement",
-      emailLabel: "Votre adresse e-mail",
-      emailPlaceholder: "Votre adresse e-mail",
-      formLabel: "Essai d'inscription",
     },
     features: {
       receipts: {

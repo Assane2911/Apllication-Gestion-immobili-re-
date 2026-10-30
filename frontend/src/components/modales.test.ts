@@ -10,8 +10,8 @@ function fichiersSource(dossier: string): string[] {
   });
 }
 
-/** Superpositions plein écran qui ne sont pas des fenêtres modales (le tiroir du menu mobile, le fond décoratif derrière les pages). */
-const NON_MODALES = ["ManagerLayout.tsx", "FondDecor.tsx"];
+/** Superpositions plein écran qui ne sont pas des fenêtres modales (le tiroir du menu mobile). */
+const NON_MODALES = ["ManagerLayout.tsx"];
 
 describe("fenêtres modales", () => {
   it("toute superposition plein écran passe par useDialogue ou <Dialogue> (Échap, focus, rôle dialog)", () => {
