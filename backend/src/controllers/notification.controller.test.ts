@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { contractCotenants, invoices, issueReports, listingLeads, listings } from "../db/schema";
+import { contractCotenants, contracts, invoices, issueReports, listingLeads, listings, properties, tenants } from "../db/schema";
 import {
   authHeader,
   createContract,
@@ -465,12 +465,22 @@ describe("GET /api/notifications/mine — colocataire", () => {
 describe("POST /api/notifications/seen et /read — beaucoup de notifications", () => {
   async function agenceAvecNotifications(nombre: number) {
     const manager = await createManager();
-    const property = await createProperty(manager.id);
-    const tenant = await createTenant(manager.id);
-    const contract = await createContract(property.id, tenant.id);
+    // Un bail par facture : les loyers en retard d'un même bail sont regroupés en une seule notification.
+    const biens = await testDb
+      .insert(properties)
+      .values(Array.from({ length: nombre }, (_, i) => ({ managerId: manager.id, title: `Bien ${i}`, address: "1 rue du Test", surface: 50, rent: 500 })))
+      .returning();
+    const locataires = await testDb
+      .insert(tenants)
+      .values(Array.from({ length: nombre }, (_, i) => ({ managerId: manager.id, firstName: "Jean", lastName: `Dupont${i}`, phone: "0600000000", email: `loc${i}-${manager.id}@test.local` })))
+      .returning();
+    const baux = await testDb
+      .insert(contracts)
+      .values(biens.map((b: { id: string }, i: number) => ({ propertyId: b.id, tenantId: locataires[i].id, rent: 500, deposit: 1000, startDate: new Date(2026, 0, 1), endDate: new Date(2027, 0, 1) })))
+      .returning();
     await testDb.insert(invoices).values(
-      Array.from({ length: nombre }, (_, i) => ({
-        contractId: contract.id,
+      baux.map((bail: { id: string }, i: number) => ({
+        contractId: bail.id,
         periodMonth: 1,
         periodYear: 3000 + i,
         amount: 500,
@@ -508,5 +518,128 @@ describe("POST /api/notifications/seen et /read — beaucoup de notifications", 
     expect(res.status).toBe(200);
     const apres = await request(app).get("/api/notifications").set(h);
     expect(apres.body.unreadCount).toBe(0);
+  });
+});
+
+/**
+ * Un bail dont neuf mois de loyer sont impayés remplissait la cloche de neuf lignes identiques. Les loyers en retard d'un
+ * même bail sont maintenant regroupés en une seule notification, avec les échéances et le reste dû ; un seul loyer en
+ * retard garde son texte d'avant.
+ */
+describe("GET /api/notifications — loyers en retard regroupés par bail", () => {
+  async function bailAvecRetards(nombreDeMois: number, extra: Record<string, unknown> = {}) {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { title: "CHAMBRE 1" });
+    const tenant = await createTenant(manager.id, { firstName: "El Adji", lastName: "Niass" });
+    const contract = await createContract(property.id, tenant.id);
+    for (let mois = 1; mois <= nombreDeMois; mois++) {
+      await createInvoice(contract.id, {
+        periodMonth: mois,
+        periodYear: 2026,
+        amount: 35000,
+        currency: "XOF",
+        status: "LATE",
+        dueDate: new Date(2026, mois - 1, 28),
+        ...extra,
+      });
+    }
+    return { manager, contract, h: authHeader(tokenFor(manager)) };
+  }
+  const lire = (h: Record<string, string>, langue?: string) => request(app).get("/api/notifications").set(h).set(langue ? { "Accept-Language": langue } : {});
+
+  it("neuf loyers impayés du même bail donnent une seule ligne, avec le total restant dû", async () => {
+    const { h } = await bailAvecRetards(9);
+
+    const res = await lire(h);
+
+    expect(res.body.count).toBe(1);
+    expect(res.body.unseenCount).toBe(1);
+    const [n] = res.body.notifications;
+    expect(n.title).toBe("9 loyers en retard — El Adji Niass");
+    expect(n.description).toContain("CHAMBRE 1");
+    expect(n.description).toMatch(/315[\s  ]000/);
+    expect(n.severity).toBe("danger");
+    expect(n.link).toBe("/invoices");
+  });
+
+  it("un seul loyer en retard garde son texte et sa clé d'avant : une notification déjà vue ne réapparaît pas", async () => {
+    const { h } = await bailAvecRetards(1);
+    const { body } = await lire(h);
+    expect(body.notifications[0].title).toBe("Loyer en retard — El Adji Niass");
+    expect(body.notifications[0].id).toMatch(/^invoice-/);
+  });
+
+  it("un nouveau mois qui passe en retard rallume la ligne, même déjà vue", async () => {
+    const { h, contract } = await bailAvecRetards(3);
+    const avant = await lire(h);
+    await request(app).post("/api/notifications/seen").set(h).send({ keys: avant.body.notifications.map((n: { key: string }) => n.key) });
+    expect((await lire(h)).body.unseenCount).toBe(0);
+
+    await createInvoice(contract.id, { periodMonth: 4, periodYear: 2026, amount: 35000, currency: "XOF", status: "LATE", dueDate: new Date(2026, 3, 28) });
+
+    const apres = await lire(h);
+    expect(apres.body.count).toBe(1);
+    expect(apres.body.unseenCount).toBe(1);
+    expect(apres.body.notifications[0].title).toBe("4 loyers en retard — El Adji Niass");
+  });
+
+  it("deux baux différents restent deux lignes", async () => {
+    const { manager, h } = await bailAvecRetards(2);
+    const property = await createProperty(manager.id, { title: "CHAMBRE 2" });
+    const tenant = await createTenant(manager.id, { firstName: "Awa", lastName: "Diop" });
+    const autre = await createContract(property.id, tenant.id);
+    await createInvoice(autre.id, { status: "LATE", amount: 20000, currency: "XOF" });
+
+    const res = await lire(h);
+
+    expect(res.body.count).toBe(2);
+    expect(res.body.notifications.map((n: { title: string }) => n.title).sort()).toEqual(["2 loyers en retard — El Adji Niass", "Loyer en retard — Awa Diop"]);
+  });
+
+  it("le total est le reste dû : un paiement partiel est déduit, un loyer payé n'est pas compté", async () => {
+    const { h, contract } = await bailAvecRetards(2, { amountPaid: 10000 });
+    await createInvoice(contract.id, { periodMonth: 3, periodYear: 2026, amount: 35000, currency: "XOF", status: "PAID", amountPaid: 35000, dueDate: new Date(2026, 2, 28) });
+
+    const res = await lire(h);
+
+    expect(res.body.notifications[0].title).toBe("2 loyers en retard — El Adji Niass");
+    expect(res.body.notifications[0].description).toMatch(/50[\s  ]000/); // 2 × (35 000 − 10 000)
+  });
+
+  it("les devises d'un même bail ne se mélangent pas dans le total", async () => {
+    const { h, contract } = await bailAvecRetards(1);
+    await createInvoice(contract.id, { periodMonth: 2, periodYear: 2026, amount: 100, currency: "EUR", status: "LATE", dueDate: new Date(2026, 1, 28) });
+
+    const { body } = await lire(h);
+
+    expect(body.notifications[0].description).toMatch(/35[\s  ]000/);
+    expect(body.notifications[0].description).toContain("+");
+    expect(body.notifications[0].description).toContain("€");
+  });
+
+  it("le texte suit la langue de la personne", async () => {
+    const { h } = await bailAvecRetards(3);
+    const en = (await lire(h, "en")).body.notifications[0];
+    expect(en.title).toBe("3 late rent payments — El Adji Niass");
+    const es = (await lire(h, "es")).body.notifications[0];
+    expect(es.title).toBe("3 alquileres atrasados — El Adji Niass");
+    const pt = (await lire(h, "pt")).body.notifications[0];
+    expect(pt.title).toBe("3 rendas em atraso — El Adji Niass");
+  });
+
+  it("côté locataire, les loyers en retard restent détaillés : le locataire doit les voir un par un", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    await createInvoice(contract.id, { periodMonth: 1, periodYear: 2026, status: "LATE", dueDate: new Date(2026, 0, 28) });
+    await createInvoice(contract.id, { periodMonth: 2, periodYear: 2026, status: "LATE", dueDate: new Date(2026, 1, 28) });
+    const portail = await createTenantPortalUser(tenant);
+
+    const res = await request(app).get("/api/notifications/mine").set(authHeader(await tokenLocataire(tenant.id)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.notifications.filter((n: { type: string }) => n.type === "invoice")).toHaveLength(2);
+    expect(portail.id).toBeTruthy();
   });
 });

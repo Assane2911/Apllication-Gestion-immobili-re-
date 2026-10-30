@@ -8,6 +8,8 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bauxDuLocataire } from "../services/colocation.service";
 import { TEXTES_NOTIFICATION } from "../services/notification.textes";
 import { idLocataireDuCompte } from "../utils/authorization";
+import { formaterMontant } from "../utils/montant";
+import { resteDu } from "../utils/montants";
 import { formaterDate, langueDeLaRequete, type Langue } from "../utils/langue";
 
 export type NotificationType = "message" | "invoice" | "issue" | "contract_ending" | "lead";
@@ -84,23 +86,65 @@ async function calculerNotificationsGestionnaire(managerId: string, langue: Lang
   }
 
   // --- Factures en retard ---
+  // Une ligne par BAIL, pas par mois : un loyer impayé depuis neuf mois remplissait la cloche de neuf lignes identiques.
+  // Un seul loyer en retard garde sa clé et son texte d'avant (la notification déjà vue ne réapparaît pas) ; à partir de
+  // deux, la ligne regroupe les échéances et le reste dû. Sa date est celle de la plus récente échéance en retard : un
+  // nouveau mois qui passe en retard produit une clé jamais vue, donc une vraie nouveauté.
   const lateInvoiceRows = await db
-    .select({ id: invoices.id, dueDate: invoices.dueDate, firstName: tenants.firstName, lastName: tenants.lastName, propertyTitle: properties.title })
+    .select({
+      id: invoices.id,
+      contractId: invoices.contractId,
+      dueDate: invoices.dueDate,
+      amount: invoices.amount,
+      amountPaid: invoices.amountPaid,
+      currency: invoices.currency,
+      firstName: tenants.firstName,
+      lastName: tenants.lastName,
+      propertyTitle: properties.title,
+    })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(and(eq(invoices.status, "LATE"), eq(properties.managerId, managerId)));
 
-  for (const r of lateInvoiceRows) {
+  const retardsParBail = new Map<string, typeof lateInvoiceRows>();
+  for (const r of lateInvoiceRows) retardsParBail.set(r.contractId, [...(retardsParBail.get(r.contractId) ?? []), r]);
+
+  for (const lignes of retardsParBail.values()) {
+    const parEcheance = [...lignes].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    const premiere = parEcheance[0];
+    const derniere = parEcheance[parEcheance.length - 1];
+    const nom = `${derniere.firstName} ${derniere.lastName}`;
+    if (parEcheance.length === 1) {
+      notifications.push({
+        id: `invoice-${derniere.id}`,
+        type: "invoice",
+        severity: "danger",
+        title: t.loyerEnRetard(nom),
+        description: t.echeanceDuBien(derniere.propertyTitle, formaterDate(derniere.dueDate, langue, t.optionsDate)),
+        link: "/invoices",
+        createdAt: new Date(derniere.dueDate).toISOString(),
+      });
+      continue;
+    }
+    // Le reste dû, devise par devise : un bail peut avoir des factures dans deux devises, qu'on ne somme jamais.
+    const parDevise = new Map<string, number>();
+    for (const l of parEcheance) parDevise.set(l.currency, (parDevise.get(l.currency) ?? 0) + resteDu({ status: "LATE", amount: l.amount, amountPaid: l.amountPaid }));
+    const total = [...parDevise.entries()].map(([devise, montant]) => formaterMontant(montant, devise, langue)).join(" + ");
     notifications.push({
-      id: `invoice-${r.id}`,
+      id: `invoices-${derniere.contractId}`,
       type: "invoice",
       severity: "danger",
-      title: t.loyerEnRetard(`${r.firstName} ${r.lastName}`),
-      description: t.echeanceDuBien(r.propertyTitle, formaterDate(r.dueDate, langue, t.optionsDate)),
+      title: t.loyersEnRetard(parEcheance.length, nom),
+      description: t.echeancesDuBien(
+        derniere.propertyTitle,
+        formaterDate(premiere.dueDate, langue, t.optionsDate),
+        formaterDate(derniere.dueDate, langue, t.optionsDate),
+        total
+      ),
       link: "/invoices",
-      createdAt: new Date(r.dueDate).toISOString(),
+      createdAt: new Date(derniere.dueDate).toISOString(),
     });
   }
 
