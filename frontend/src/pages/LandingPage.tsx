@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -52,6 +52,97 @@ const COMPARE_ROWS = [
   { key: "expenses", icon: Wallet },
   { key: "branding", icon: Building2 },
 ] as const;
+
+/**
+ * Fond clair de la zone d'accueil, dessiné (aucune photo : pas de droit d'auteur, aucun poids d'image) : la lumière du jour
+ * qui entre par de grandes fenêtres, légèrement floue, comme une photo d'intérieur. Purement décoratif.
+ */
+function FondAccueil() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-linear-to-b from-slate-200 via-slate-100 to-white">
+      <div className="absolute -top-40 -right-24 h-152 w-152 rounded-full bg-sky-200/60 blur-3xl" />
+      <div className="absolute top-1/3 -left-32 h-112 w-md rounded-full bg-brand-200/50 blur-3xl" />
+      <svg className="absolute inset-0 h-full w-full opacity-60 blur-[3px]" viewBox="0 0 1200 760" preserveAspectRatio="xMaxYMid slice">
+        <defs>
+          <linearGradient id="accueil-vitre" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
+            <stop offset="1" stopColor="#bae6fd" stopOpacity="0.55" />
+          </linearGradient>
+          <linearGradient id="accueil-rayon" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.55" />
+            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* La grande fenêtre de droite : quatre vitres derrière un cadre clair */}
+        <g transform="translate(700 40)">
+          <rect width="440" height="640" rx="10" fill="#e2e8f0" />
+          {[0, 1].flatMap((colonne) =>
+            [0, 1].map((ligne) => (
+              <rect key={`${colonne}-${ligne}`} x={16 + colonne * 214} y={16 + ligne * 312} width="196" height="296" rx="4" fill="url(#accueil-vitre)" stroke="#94a3b8" strokeOpacity="0.5" />
+            )),
+          )}
+        </g>
+        {/* Un encadrement de porte à gauche, dans l'ombre */}
+        <g transform="translate(60 120)">
+          <rect width="170" height="560" rx="6" fill="#cbd5e1" fillOpacity="0.7" />
+          <rect x="18" y="18" width="134" height="524" rx="3" fill="#e2e8f0" />
+          <rect x="112" y="280" width="26" height="8" rx="4" fill="#64748b" fillOpacity="0.6" />
+        </g>
+        {/* Le rayon de lumière qui traverse la pièce */}
+        <polygon points="520,0 760,0 380,760 140,760" fill="url(#accueil-rayon)" />
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Carte d'essai gratuit de l'accueil : l'adresse e-mail saisie ici est reprise, déjà remplie, sur la page d'inscription. Rien n'est
+ * envoyé ni enregistré tant que la personne n'a pas validé l'inscription elle-même.
+ */
+function CarteEssai() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+
+  function demarrer(e: React.FormEvent) {
+    e.preventDefault();
+    const adresse = email.trim();
+    navigate(adresse ? `/inscription?email=${encodeURIComponent(adresse)}` : "/inscription");
+  }
+
+  return (
+    <form onSubmit={demarrer} className="mx-auto w-full max-w-3xl rounded-sm bg-white px-5 py-6 shadow-2xl shadow-slate-900/15 sm:px-8" aria-label={t("landing.hero.formLabel")}>
+      <p className="text-center text-[11px] tracking-wide text-slate-600 uppercase">
+        <span className="font-bold text-slate-900">{t("landing.hero.formTitle")}</span> / {t("landing.hero.formSubtitle")}
+      </p>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <label htmlFor="accueil-email" className="sr-only">
+          {t("landing.hero.emailLabel")}
+        </label>
+        <input
+          id="accueil-email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t("landing.hero.emailPlaceholder")}
+          className="min-w-0 flex-1 border border-brand-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-brand-600 focus:outline-2 focus:outline-offset-0 focus:outline-brand-600"
+        />
+        <button type="submit" className="bg-brand-600 px-6 py-3 text-sm font-bold tracking-wide text-white uppercase transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700">
+          {t("landing.hero.ctaTrial")}
+        </button>
+      </div>
+      <p className="mt-3 text-center text-xs text-slate-600">
+        <a href="#pricing" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
+          {t("landing.hero.ctaPricing")}
+        </a>
+      </p>
+    </form>
+  );
+}
 
 /** Petite maquette illustrative du tableau de bord (pas une vraie capture d'écran). */
 function DashboardMockup() {
@@ -293,68 +384,53 @@ export default function LandingPage() {
       </nav>
 
       <main>
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-44 md:pb-32 px-6 max-w-7xl mx-auto text-center overflow-hidden">
-        {/* Formes décoratives flottantes en arrière-plan */}
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-24 left-1/4 w-72 h-72 bg-brand-600/20 rounded-full blur-3xl animate-float-slow" />
-          <div className="absolute top-10 right-1/4 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl animate-float-delay" />
-          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl animate-float" />
+      {/* Zone d'accueil : fond clair dessiné, bloc logo, titre fin avec le nom en gras, carte d'essai gratuit, barre de la marque. */}
+      <section className="relative isolate overflow-hidden pt-16">
+        <FondAccueil />
+
+        <div className="mx-auto flex max-w-7xl flex-col items-center px-6 text-center">
+          <Reveal>
+            <div className="bg-slate-950 px-8 py-5 text-white shadow-xl shadow-slate-900/20">
+              <div className="flex items-center justify-center gap-3">
+                <img src="/app-icon.png" alt="" className="h-8 w-8 rounded-lg" />
+                <span className="text-lg font-bold tracking-tight">{t("common.appName")}</span>
+              </div>
+              <p className="mt-1 text-[10px] tracking-[0.3em] text-slate-300 uppercase">{t("landing.hero.logoCaption")}</p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={80}>
+            <div className="mt-10 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white/80 px-4 py-1.5 text-xs font-medium text-brand-800 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-brand-600 motion-safe:animate-pulse"></span>
+              {t("landing.badge")}
+            </div>
+          </Reveal>
+
+          <Reveal delay={140}>
+            <h1 className="mt-8 max-w-5xl text-3xl leading-tight tracking-wide text-slate-900 uppercase sm:text-4xl lg:text-5xl">
+              <span className="block font-light">{t("landing.hero.titleLine1")}</span>
+              <strong className="mt-1 block font-extrabold">{t("landing.hero.titleLine2")}</strong>
+            </h1>
+          </Reveal>
+
+          <Reveal delay={200}>
+            <p className="mt-6 max-w-2xl text-base leading-relaxed font-light text-slate-700 sm:text-lg">{t("landing.hero.subtitle")}</p>
+          </Reveal>
+
+          <Reveal delay={260} className="mt-14 w-full">
+            <div className="relative z-10 -mb-8">
+              <CarteEssai />
+            </div>
+          </Reveal>
         </div>
 
-        <Reveal>
-          <div className="inline-flex items-center gap-2 bg-brand-950/80 border border-brand-500/30 rounded-full px-4 py-1.5 text-xs text-brand-300 font-medium mb-8 shadow-inner">
-            <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
-            {t("landing.badge")}
-          </div>
-        </Reveal>
-
-        <Reveal delay={80}>
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1] sm:leading-none">
-            {t("landing.hero.titleLine1")} <br />
-            <span className="bg-size-[200%_auto] bg-linear-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent italic animate-gradient-x">
-              {t("landing.hero.titleLine2")}
-            </span>
-          </h1>
-        </Reveal>
-
-        <Reveal delay={160}>
-          <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed sm:leading-7">
-            {t("landing.hero.subtitle")}
-          </p>
-        </Reveal>
-
-        <Reveal delay={240}>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/inscription"
-              className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-brand-600/30 transition-all hover:scale-105"
-            >
-              {t("landing.hero.ctaTrial")}
-            </Link>
-            {/* Ce bouton annoncait « Tester en mode demo » et menait a /login,
-                ou deux comptes de demonstration remplissaient le formulaire.
-                Ces comptes ont ete retires : leur mot de passe etait ecrit en
-                clair dans le code du frontend, donc servi au navigateur de
-                chaque visiteur. Le bouton promettait donc une porte qui
-                n'existe plus. Il mene desormais aux tarifs — ce que veut
-                generalement voir un visiteur qui hesite a demarrer l'essai. */}
-            <a
-              href="#pricing"
-              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-all hover:scale-105"
-            >
-              {t("landing.hero.ctaPricing")}
-            </a>
-          </div>
-        </Reveal>
-
-        <Reveal delay={320}>
-          <p className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400">
-            <Apple className="w-4 h-4 shrink-0" aria-hidden="true" />
-            <Smartphone className="w-4 h-4 shrink-0" aria-hidden="true" />
+        <div className="bg-brand-600 pt-14 pb-5">
+          <p className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-6 text-xs text-white">
+            <Apple className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Smartphone className="h-4 w-4 shrink-0" aria-hidden="true" />
             {t("landing.hero.mobileSoon")}
           </p>
-        </Reveal>
+        </div>
       </section>
 
       {/* Features Section */}
