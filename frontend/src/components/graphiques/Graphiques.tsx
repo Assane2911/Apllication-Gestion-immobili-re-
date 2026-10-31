@@ -21,6 +21,16 @@ const STYLE_INFOBULLE = {
   padding: "10px 14px",
 };
 
+/** Hachure diagonale d'une couleur : les dépenses se lisent « au trait », les revenus restent pleins, comme sur un plan. */
+function Hachure({ id, couleur }: { id: string; couleur: string }) {
+  return (
+    <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill={couleur} fillOpacity="0.14" />
+      <rect width="2.5" height="6" fill={couleur} />
+    </pattern>
+  );
+}
+
 /** Revenus et dépenses par mois, dans une devise (tableau de bord). */
 export function GraphiqueRevenusDepenses({ data, currency }: { data: Array<{ month: string; revenue: number; expense: number }>; currency: string }) {
   const { t } = useTranslation();
@@ -28,6 +38,9 @@ export function GraphiqueRevenusDepenses({ data, currency }: { data: Array<{ mon
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
+        <defs>
+          <Hachure id="hachure-depenses" couleur={COULEUR_DEPENSES} />
+        </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100" />
         <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
         <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
@@ -43,8 +56,8 @@ export function GraphiqueRevenusDepenses({ data, currency }: { data: Array<{ mon
           formatter={(value) => (value === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense"))}
           wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
         />
-        <Bar dataKey="revenue" name="revenue" fill={COULEUR_REVENUS} radius={[6, 6, 0, 0]} />
-        <Bar dataKey="expense" name="expense" fill={COULEUR_DEPENSES} radius={[6, 6, 0, 0]} />
+        <Bar dataKey="revenue" name="revenue" fill={COULEUR_REVENUS} radius={[2, 2, 0, 0]} />
+        <Bar dataKey="expense" name="expense" fill="url(#hachure-depenses)" stroke={COULEUR_DEPENSES} strokeWidth={1} radius={[2, 2, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -85,6 +98,11 @@ export function GraphiqueComparaisonFiscale({ data, devises }: { data: Array<Rec
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
+        <defs>
+          {COULEURS_DEPENSES_FISCAL.map((couleur, idx) => (
+            <Hachure key={couleur} id={`hachure-fiscal-${idx}`} couleur={couleur} />
+          ))}
+        </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100" />
         <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
         <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
@@ -107,8 +125,8 @@ export function GraphiqueComparaisonFiscale({ data, devises }: { data: Array<Rec
         />
         {devises.map((currency, idx) => (
           <Fragment key={currency}>
-            <Bar dataKey={`revenue_${currency}`} name={`revenue_${currency}`} fill={COULEURS_REVENUS_FISCAL[idx % COULEURS_REVENUS_FISCAL.length]} radius={[6, 6, 0, 0]} />
-            <Bar dataKey={`expense_${currency}`} name={`expense_${currency}`} fill={COULEURS_DEPENSES_FISCAL[idx % COULEURS_DEPENSES_FISCAL.length]} radius={[6, 6, 0, 0]} />
+            <Bar dataKey={`revenue_${currency}`} name={`revenue_${currency}`} fill={COULEURS_REVENUS_FISCAL[idx % COULEURS_REVENUS_FISCAL.length]} radius={[2, 2, 0, 0]} />
+            <Bar dataKey={`expense_${currency}`} name={`expense_${currency}`} fill={`url(#hachure-fiscal-${idx % COULEURS_DEPENSES_FISCAL.length})`} stroke={COULEURS_DEPENSES_FISCAL[idx % COULEURS_DEPENSES_FISCAL.length]} strokeWidth={1} radius={[2, 2, 0, 0]} />
           </Fragment>
         ))}
       </BarChart>

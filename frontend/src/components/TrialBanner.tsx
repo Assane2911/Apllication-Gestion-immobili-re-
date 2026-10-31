@@ -15,7 +15,7 @@ export default function TrialBanner() {
 
   if (isExpired) {
     return (
-      <div className="surface-sombre bg-linear-to-r from-red-600 to-rose-700 text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 animate-pulse">
+      <div className="surface-sombre bg-red-700 text-white px-4 py-3 rounded-md mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <AlertTriangle size={20} className="shrink-0" aria-hidden="true" />
           <div>
@@ -40,18 +40,18 @@ export default function TrialBanner() {
     const isWarning = trialDaysRemaining <= 7;
 
     const bgGradient = isUrgent
-      ? "from-amber-600 to-orange-700"
+      ? "bg-orange-700"
       : isWarning
-      ? "from-brand-600 to-brand-800"
+      ? "bg-brand-700"
       : "";
 
     return (
       <div
         className={`${
           bgGradient
-            ? `surface-sombre bg-linear-to-r ${bgGradient} text-white border border-white/10`
+            ? `surface-sombre ${bgGradient} text-white border border-ink-900`
             : "bg-white text-slate-900 border-2 border-ink-900"
-        } px-4 py-3 rounded-md shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3`}
+        } px-4 py-3 rounded-md mb-6 flex flex-wrap items-center justify-between gap-3`}
       >
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-full ${bgGradient ? "bg-white/20" : "bg-ocre/40"} flex items-center justify-center shrink-0`}>
@@ -89,7 +89,7 @@ export default function TrialBanner() {
     return (
       <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl mb-6 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
           <span>
             <Trans i18nKey="components.trialBanner.activePlan" values={{ plan: t(`common.plans.${plan}`, { defaultValue: plan }) }} components={{ 1: <strong /> }} />
           </span>

@@ -9,8 +9,39 @@ const PLANS = [
   "M2 2H110V82H2Z M2 28H110 M34 28V82 M72 28V82",
 ] as const;
 
+function rangDuPlan(id: string): number {
+  return [...id].reduce((somme, c) => somme + c.charCodeAt(0), 0) % PLANS.length;
+}
+
+/** Miniature du plan d'un bien, à poser devant son nom dans les tableaux et les cartes. Décorative. */
+export function PlanMiniature({ id, className = "" }: { id: string; className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width="26"
+      height="20"
+      viewBox="0 0 112 84"
+      fill="none"
+      className={`inline-block shrink-0 text-ink-900 ${className}`}
+    >
+      <path d={PLANS[rangDuPlan(id)]} stroke="currentColor" strokeWidth="7" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Nom d'un bien précédé de son petit plan ; ne rend rien si le bien n'a pas de nom. */
+export function NomDuBien({ titre, id, className = "" }: { titre?: string | null; id?: string | null; className?: string }) {
+  if (!titre) return null;
+  return (
+    <span className={`inline-flex items-center gap-2 ${className}`}>
+      <PlanMiniature id={id || titre} />
+      <span className="min-w-0">{titre}</span>
+    </span>
+  );
+}
+
 export default function PlanLogement({ id, className = "" }: { id: string; className?: string }) {
-  const rang = [...id].reduce((somme, c) => somme + c.charCodeAt(0), 0) % PLANS.length;
+  const rang = rangDuPlan(id);
   return (
     <div
       aria-hidden="true"

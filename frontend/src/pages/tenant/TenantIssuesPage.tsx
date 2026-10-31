@@ -236,7 +236,7 @@ export default function TenantIssuesPage() {
                 className="h-44 rounded-xl object-cover border border-slate-300 shadow-sm cursor-pointer"
                 onClick={() => setLightbox(preview)}
               />
-              <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-sm backdrop-blur-xs">
+              <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-sm">
                 {t("tenant.issues.photoReady")}
               </span>
             </div>

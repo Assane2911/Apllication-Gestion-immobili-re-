@@ -23,6 +23,7 @@ import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, Inspection } from "../../types";
 import Bulle from "../../components/Bulle";
+import PlanLogement from "../../components/PlanLogement";
 import { formaterJour } from "../../utils/jourCivil";
 
 export default function TenantDashboardPage() {
@@ -137,7 +138,6 @@ export default function TenantDashboardPage() {
     <div className="space-y-6">
       {/* Welcome Banner */}
       <div className="relative overflow-hidden rounded-md bg-white text-slate-900 p-6 sm:p-7 border-2 border-ink-900">
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-ocre/30 blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-ocre/25 border border-ocre/60 text-[11px] font-semibold text-slate-900 mb-2.5">
             <ShieldCheck size={13} className="text-emerald-700" />
@@ -158,7 +158,7 @@ export default function TenantDashboardPage() {
             className="bg-white rounded-2xl border border-contour-200/90 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden"
           >
             {/* Property Photo Header */}
-            <div className={`relative h-48 sm:h-56 overflow-hidden ${c.property?.imageUrl ? "bg-slate-100" : "bg-slate-700"}`}>
+            <div className={`relative h-48 sm:h-56 overflow-hidden bg-slate-100`}>
               {c.property?.imageUrl ? (
                 <img
                   src={fileUrl(c.property.imageUrl) ?? undefined}
@@ -166,9 +166,7 @@ export default function TenantDashboardPage() {
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-400">
-                  <Home size={48} strokeWidth={1.5} aria-hidden="true" />
-                </div>
+                <PlanLogement id={c.property?.id ?? c.id} className="w-full h-full pb-16" />
               )}
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
@@ -382,7 +380,7 @@ export default function TenantDashboardPage() {
 
               {/* Unpaid Alerts */}
               {unpaid.length > 0 && (
-                <div className="bg-linear-to-r from-amber-50 to-amber-100/60 border border-amber-200 text-amber-900 text-xs rounded-xl p-4 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="bg-amber-50 border border-amber-300 text-amber-900 text-xs rounded-md p-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 font-medium">
                     <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
                     <span>{t("tenant.dashboard.unpaidWarning", { count: unpaid.length })}</span>

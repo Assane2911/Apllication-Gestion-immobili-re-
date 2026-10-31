@@ -8,6 +8,7 @@ import type { InsurancePolicy, PaginatedResponse, Property } from "../../types";
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { formaterJour } from "../../utils/jourCivil";
+import { NomDuBien } from "../../components/PlanLogement";
 
 const PAGE_SIZE = 20;
 // Pour le filtre "par bien" : on ne le pagine pas comme la liste principale,
@@ -232,7 +233,7 @@ export default function InsurancePage() {
           <tbody className="divide-y divide-contour-100">
             {policies.map((policy) => (
               <tr key={policy.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">{policy.property?.title}</td>
+                <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={policy.property?.title} id={policy.property?.id} /></td>
                 <td className="px-4 py-3 text-slate-800">{policy.insurerName}</td>
                 <td className="px-4 py-3 text-slate-600 text-xs">{policy.policyNumber}</td>
                 <td className="px-4 py-3 text-slate-800">
@@ -277,7 +278,7 @@ export default function InsurancePage() {
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
           <Dialogue onClose={() => setShowModal(false)} titreId="insurance-modal-title" fermable={!saving} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
             <div className="flex items-center justify-between mb-4">
               <h3 id="insurance-modal-title" className="font-bold text-slate-900 text-lg">

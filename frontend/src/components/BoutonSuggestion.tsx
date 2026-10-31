@@ -63,14 +63,14 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
         <button
           type="button"
           onClick={() => setOuvert(true)}
-          className="flex items-center gap-2 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur-sm transition-colors"
+          className="flex items-center gap-2 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 shadow-md transition-colors"
         >
           <Lightbulb size={14} aria-hidden="true" /> {t("suggestions.button")}
         </button>
       </aside>
 
       {ouvert && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-end sm:items-center justify-center p-4">
           <Dialogue
             onClose={fermer}
             titreId="suggestion-titre"

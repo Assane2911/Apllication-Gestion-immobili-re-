@@ -84,7 +84,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200 ${
+      className={`fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 transition-opacity duration-200 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >

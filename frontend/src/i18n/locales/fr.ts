@@ -315,6 +315,7 @@ const fr = {
       cancelled: "Paiement annulé. Aucun montant n'a été débité.",
     },
     appName: "ImmoPlatform Pro",
+    sheet: "Feuille",
     civility: {
       label: "Civilité",
       none: "Non précisée",

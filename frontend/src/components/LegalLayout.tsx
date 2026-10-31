@@ -49,7 +49,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
   return (
     <div className="relative isolate min-h-screen text-slate-900">
       <Seo title={`${title} | ${COMPANY.tradeName}`} description={description} canonical={pathname} />
-      <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-xl sticky top-0 z-10">
+      <nav className="border-b border-slate-200 bg-white sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <Logo taille={28} />
@@ -84,7 +84,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
         <div className="text-sm leading-relaxed text-slate-700 space-y-8">{children}</div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white/70 backdrop-blur py-8 px-6 text-center text-xs text-slate-600">
+      <footer className="border-t border-slate-200 bg-white py-8 px-6 text-center text-xs text-slate-600">
         <p>
           © 2026 {COMPANY.tradeName}. {COMPANY.legalStatus}.
         </p>

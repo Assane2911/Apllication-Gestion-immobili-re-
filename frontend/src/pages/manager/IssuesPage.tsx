@@ -177,7 +177,7 @@ export default function IssuesPage() {
                         alt={t("manager.issues.photoAlt", { index: idx + 1 })}
                         className="w-full h-full object-cover hover:scale-105 transition-transform"
                       />
-                      <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-sm backdrop-blur-xs">
+                      <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-sm">
                         {t("manager.issues.photoCount", { current: idx + 1, total: allPhotos.length })}
                       </span>
                     </div>

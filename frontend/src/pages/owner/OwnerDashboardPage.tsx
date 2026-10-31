@@ -61,7 +61,6 @@ export default function OwnerDashboardPage() {
     <div className="space-y-6">
       {/* Bandeau d'accueil */}
       <div className="relative overflow-hidden rounded-md bg-white text-slate-900 p-6 sm:p-7 border-2 border-ink-900">
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-ocre/30 blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("owner.dashboard.title")}</h2>
           <p className="text-xs sm:text-sm text-slate-700 mt-1 max-w-xl">{t("owner.dashboard.subtitle")}</p>

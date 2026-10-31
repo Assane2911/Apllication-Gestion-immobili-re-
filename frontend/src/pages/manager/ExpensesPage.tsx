@@ -11,6 +11,7 @@ import { devisesPresentes, formatByCurrency, formatDeduction } from "../../utils
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { formaterJour } from "../../utils/jourCivil";
+import { NomDuBien } from "../../components/PlanLogement";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
@@ -403,7 +404,7 @@ export default function ExpensesPage() {
                 <td className="px-4 py-3 text-slate-600 text-xs">
                   {formaterJour(exp.expenseDate, i18n.language)}
                 </td>
-                <td className="px-4 py-3 font-medium text-slate-900">{exp.property?.title}</td>
+                <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={exp.property?.title} id={exp.property?.id} /></td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
@@ -451,7 +452,7 @@ export default function ExpensesPage() {
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
           <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
             <div className="flex items-center justify-between mb-4">
               <h3 id="expense-modal-title" className="font-bold text-slate-900 text-lg">{t("manager.expenses.modalTitle")}</h3>

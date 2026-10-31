@@ -92,7 +92,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-contour-200/80 shadow-2xs">
+      <header className="sticky top-0 z-30 bg-white border-b border-contour-200">
         <div className={`${colonne} mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-3 min-w-0">
             <Logo className="hidden min-[380px]:block" />
@@ -145,7 +145,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
                   className={({ isActive }) =>
                     `px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
                       isActive
-                        ? "bg-linear-to-r from-brand-600 to-brand-700 text-white shadow-xs shadow-brand-500/25 font-semibold"
+                        ? "bg-ink-900 text-white font-semibold"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     }`
                   }

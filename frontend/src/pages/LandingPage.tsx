@@ -81,7 +81,7 @@ function DashboardMockup() {
         {bars.map((h, i) => (
           <div
             key={i}
-            className="flex-1 rounded-t-md bg-linear-to-t from-brand-600 to-ocre transition-all duration-700 ease-out motion-reduce:transition-none"
+            className="flex-1 rounded-t-xs bg-brand-600 transition-all duration-700 ease-out motion-reduce:transition-none"
             style={{ height: inView ? `${h}%` : "4%", transitionDelay: `${i * 80}ms` }}
           />
         ))}
@@ -170,7 +170,7 @@ function TenantMockup() {
     <div ref={ref} className="bg-white border border-slate-300 rounded-2xl p-5 h-full flex flex-col gap-3">
       <div className="bg-slate-100 rounded-xl p-3 flex items-center justify-between">
         <span className="text-[11px] text-slate-700">{t("landing.mock.rentMonth")}</span>
-        <span className="text-[10px] font-bold text-white bg-brand-600 px-2.5 py-1 rounded-full animate-pulse">
+        <span className="text-[10px] font-bold text-white bg-brand-600 px-2.5 py-1 rounded-full">
           {t("landing.mock.pay")}
         </span>
       </div>
@@ -359,6 +359,10 @@ const PORTEES_FONCTIONS = [
   "md:col-span-3",
 ] as const;
 
+/** Entrées du menu : onglets numérotés, comme les feuilles d'un jeu de plans. */
+const LIEN_MENU = "flex items-center gap-1.5 px-3 xl:px-4 whitespace-nowrap border-l border-slate-300 last:border-r transition-colors";
+const NUMERO_MENU = "font-mono text-[10px] text-orange-700";
+
 export default function LandingPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -401,16 +405,17 @@ export default function LandingPage() {
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
-      <nav className="fixed top-3 inset-x-3 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 rounded-2xl border border-slate-300 bg-white/97 backdrop-blur-xl shadow-md flex items-center justify-between gap-2">
+      <nav className="fixed inset-x-0 top-0 z-50 bg-white border-b-[1.5px] border-ink-900">
+        <div aria-hidden="true" className="bande-motif h-1.5" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-stretch justify-between gap-2">
           <div className="flex items-center gap-3 shrink-0">
-            <Logo taille={32} className="transition-transform duration-300 hover:rotate-6 hover:scale-105" />
-            <span className="sr-only sm:not-sr-only lg:sr-only xl:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-linear-to-r from-slate-900 via-slate-800 to-slate-600 bg-clip-text text-transparent">
+            <Logo taille={32} />
+            <span className="sr-only sm:not-sr-only lg:sr-only xl:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight text-slate-900">
               {t("common.appName")}
             </span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-3 xl:gap-6 whitespace-nowrap text-[11px] xl:text-xs font-medium text-slate-700">
+          <div className="hidden lg:flex items-stretch whitespace-nowrap text-[11px] xl:text-xs font-medium text-slate-700">
             {/*
               La vitrine publique existait — route, page, API — mais AUCUN
               écran n'y menait : `/vitrine` n'apparaissait qu'une fois dans
@@ -418,29 +423,30 @@ export default function LandingPage() {
               annonces étaient donc publiées et servies correctement, et
               simplement invisibles pour qui ne tapait pas l'adresse à la main.
             */}
-            <Link
-              to="/vitrine"
-              className="relative hover:text-slate-900 transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-brand-400 after:transition-all after:duration-300 hover:after:w-full"
-            >
+            <Link to="/vitrine" className={LIEN_MENU}>
               {t("landing.nav.vitrine")}
             </Link>
             {[
               { href: "#features", label: t("landing.nav.features") },
               { href: "#pdf", label: t("landing.nav.receipts") },
               { href: "#compare", label: t("landing.nav.compare") },
-              { href: "#pricing", label: t("landing.nav.pricing") },
               { href: "#trust", label: t("landing.nav.security") },
               { href: "#faq", label: t("landing.nav.faq") },
-            ].map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className={`${"relative hover:text-slate-900 transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-brand-400 after:transition-all after:duration-300 hover:after:w-full"} ${sectionActive === link.href.slice(1) ? "text-slate-900 after:w-full after:bg-ocre!" : ""}`}
-                aria-current={sectionActive === link.href.slice(1) ? "location" : undefined}
-              >
-                {link.label}
-              </a>
-            ))}
+              { href: "#pricing", label: t("landing.nav.pricing") },
+            ].map((link) => {
+              const actif = sectionActive === link.href.slice(1);
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className={`${LIEN_MENU} ${actif ? "bg-ink-900 text-white" : "hover:bg-slate-100 hover:text-slate-900"}`}
+                  aria-current={actif ? "location" : undefined}
+                >
+                  <span aria-hidden="true" className={`${NUMERO_MENU} ${actif ? "text-orange-300" : ""}`}>{sectionsSuivies.find((section) => section.id === link.href.slice(1))?.numero}</span>
+                  {link.label}
+                </a>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
@@ -448,7 +454,7 @@ export default function LandingPage() {
             {user ? (
               <Link
                 to={homePathForRole(user.role)}
-                className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
+                className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 sm:px-4 py-2 transition-colors shadow-sm"
               >
                 {t("landing.nav.goToSpace")}
               </Link>
@@ -462,7 +468,7 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   to="/inscription"
-                  className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-2.5 sm:px-4 py-2 rounded-xl transition-all shadow-lg shadow-brand-600/30"
+                  className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-2.5 sm:px-4 py-2 transition-colors shadow-sm"
                 >
                   {telephone ? t("landing.nav.trialShort") : t("landing.nav.trial")}
                 </Link>
@@ -479,7 +485,7 @@ export default function LandingPage() {
           <div className="lg:col-span-6 text-center lg:text-left">
             <Reveal>
               <div className="inline-flex items-center gap-2 bg-ocre/20 border border-ocre/60 rounded-full px-4 py-1.5 text-xs text-slate-900 font-medium mb-7">
-                <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-brand-600"></span>
                 {t("landing.badge")}
               </div>
             </Reveal>
@@ -615,12 +621,12 @@ export default function LandingPage() {
       {/* Comparison Section: Gestion Traditionnelle vs ImmoPlatform Pro */}
       <section id="compare" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-300/80">
         <Reveal className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 bg-emerald-100 border border-emerald-500/30 rounded-full px-4 py-1.5 text-xs text-emerald-800 font-semibold mb-4 shadow-inner">
+          <div className="inline-flex items-center gap-2 bg-white border border-slate-300 rounded-sm px-4 py-1.5 text-xs text-slate-800 font-semibold mb-4">
             <Scale size={13} aria-hidden="true" /> <span>{t("landing.compare.badge")}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
             {t("landing.compare.titlePrefix")}{" "}
-            <span className="bg-linear-to-r from-ocre via-brand-300 to-brand-400 bg-clip-text text-transparent">
+            <span className="text-orange-700">
               ImmoPlatform Pro
             </span>
           </h2>
@@ -647,22 +653,22 @@ export default function LandingPage() {
 
         {/* Tableau comparatif */}
         <Reveal delay={120}>
-          <div className="bg-white/50 border border-slate-300 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+          <div className="bg-white border border-slate-300 rounded-md overflow-hidden shadow-md">
             {/* En-tête du tableau */}
             <div className="grid grid-cols-1 md:grid-cols-12 border-b border-slate-300 bg-white/90 text-sm font-bold">
               <div className="md:col-span-4 p-5 text-slate-700 uppercase tracking-wider text-xs flex items-center">
                 {t("landing.compare.headers.feature")}
               </div>
-              <div className="md:col-span-4 p-5 bg-rose-50 text-rose-700 border-t md:border-t-0 md:border-l border-slate-300 flex items-center gap-2">
+              <div className="md:col-span-4 p-5 bg-slate-50 text-rose-700 border-t md:border-t-0 md:border-l border-slate-300 flex items-center gap-2">
                 <X size={16} className="shrink-0" aria-hidden="true" />
                 <span>{t("landing.compare.headers.traditional")}</span>
               </div>
-              <div className="md:col-span-4 p-5 bg-emerald-50 text-emerald-800 border-t md:border-t-0 md:border-l border-slate-300 flex items-center justify-between">
+              <div className="md:col-span-4 p-5 bg-brand-50 text-brand-800 border-t md:border-t-0 md:border-l border-slate-300 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles size={16} className="shrink-0" aria-hidden="true" />
                   <span>ImmoPlatform Pro</span>
                 </div>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-semibold">
+                <span className="text-[10px] bg-white text-brand-800 px-2.5 py-0.5 rounded-sm border border-brand-600 font-semibold">
                   {t("landing.compare.headers.recommended")}
                 </span>
               </div>
@@ -685,15 +691,15 @@ export default function LandingPage() {
                   </div>
 
                   {/* Gestion traditionnelle */}
-                  <div className="md:col-span-4 p-5 bg-rose-50 border-t md:border-t-0 md:border-l border-slate-300/80 flex items-start gap-2.5">
+                  <div className="md:col-span-4 p-5 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-300/80 flex items-start gap-2.5">
                     <X size={15} className="text-rose-700 shrink-0" aria-hidden="true" />
                     <span className="text-xs text-slate-700 leading-relaxed">{t(`landing.compare.rows.${row.key}.traditional`)}</span>
                   </div>
 
                   {/* ImmoPlatform Pro */}
-                  <div className="md:col-span-4 p-5 bg-emerald-50 border-t md:border-t-0 md:border-l border-slate-300/80 flex items-start gap-2.5">
-                    <Check size={15} strokeWidth={2.5} className="text-emerald-800 shrink-0" aria-hidden="true" />
-                    <span className="text-xs text-emerald-900 font-medium leading-relaxed">
+                  <div className="md:col-span-4 p-5 bg-brand-50 border-t md:border-t-0 md:border-l border-slate-300/80 flex items-start gap-2.5">
+                    <Check size={15} strokeWidth={2.5} className="text-brand-700 shrink-0" aria-hidden="true" />
+                    <span className="text-xs text-slate-900 font-medium leading-relaxed">
                       {t(`landing.compare.rows.${row.key}.immoplatform`)}
                     </span>
                   </div>
@@ -711,7 +717,7 @@ export default function LandingPage() {
             </span>
             <Link
               to="/inscription"
-              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105"
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-sm transition-all hover:scale-105"
             >
               {t("landing.compare.cta.button")}
             </Link>
@@ -822,8 +828,8 @@ export default function LandingPage() {
 
           {/* Pro */}
           <Reveal delay={100}>
-            <div className="h-full bg-linear-to-b from-brand-50 to-white border-2 border-brand-500 rounded-lg p-8 flex flex-col justify-between relative shadow-2xl shadow-brand-900/40 hover:-translate-y-2 transition-all duration-300">
-              <span className="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] uppercase font-extrabold px-3 py-0.5 rounded-full tracking-wider animate-pulse">
+            <div className="h-full bg-brand-50 border-2 border-brand-600 rounded-md p-8 flex flex-col justify-between relative shadow-md">
+              <span className="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] uppercase font-extrabold px-3 py-0.5 rounded-full tracking-wider">
                 {t("landing.pricing.pro.badge")}
               </span>
               <div>
@@ -844,7 +850,7 @@ export default function LandingPage() {
               </div>
               <Link
                 to="/inscription"
-                className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-lg shadow-brand-600/30"
+                className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-sm"
               >
                 {t("landing.pricing.pro.cta")}
               </Link>
@@ -908,7 +914,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-300/80 py-12 px-6 bg-white/60 backdrop-blur text-center text-xs text-slate-700">
+      <footer className="border-t border-slate-300/80 py-12 px-6 bg-white text-center text-xs text-slate-700">
         <p>{t("landing.footer.rights")}</p>
         <p className="mt-2">{t("landing.footer.tagline")}</p>
         <div className="mt-4 flex items-center justify-center gap-4">

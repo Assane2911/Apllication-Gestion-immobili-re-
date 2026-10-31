@@ -11,6 +11,7 @@ import { useCurrency } from "../../context/currency";
 import type { FormalNoticeDue, Invoice, InvoiceStatus, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
 import { formaterJour } from "../../utils/jourCivil";
+import { NomDuBien } from "../../components/PlanLogement";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "short" }).format(new Date(2000, monthIndex1to12 - 1, 1));
@@ -270,7 +271,7 @@ export default function InvoicesPage() {
                   <p className="font-medium">{inv.contract?.tenant?.firstName} {inv.contract?.tenant?.lastName}</p>
                   <p className="text-[11px] text-slate-600">{inv.contract?.tenant?.email}</p>
                 </td>
-                <td className="px-4 py-3.5 text-slate-600">{inv.contract?.property?.title}</td>
+                <td className="px-4 py-3.5 text-slate-600"><NomDuBien titre={inv.contract?.property?.title} id={inv.contract?.property?.id} /></td>
                 <td className="px-4 py-3.5 font-bold text-slate-900">
                   {formatMoney(inv.amount, inv.currency)}
                   {aUnAcompte(inv) && (
@@ -364,7 +365,7 @@ export default function InvoicesPage() {
                   <p className="font-medium text-slate-900">
                     {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
                   </p>
-                  <p className="text-xs text-slate-600">{inv.contract?.property?.title}</p>
+                  <p className="text-xs text-slate-600"><NomDuBien titre={inv.contract?.property?.title} id={inv.contract?.property?.id} /></p>
                 </div>
                 <div className="text-right">
                   <Badge status={inv.status} />

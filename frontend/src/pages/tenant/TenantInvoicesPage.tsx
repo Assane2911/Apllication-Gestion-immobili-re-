@@ -11,6 +11,7 @@ import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { AgencyBankInfo, Invoice, PaymentMethod } from "../../types";
 import Bulle from "../../components/Bulle";
 import { formaterJour } from "../../utils/jourCivil";
+import { NomDuBien } from "../../components/PlanLogement";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, monthIndex1to12 - 1, 1));
@@ -196,7 +197,7 @@ export default function TenantInvoicesPage() {
                     </p>
                     <span className="text-slate-300">•</span>
                     <span className="text-xs font-medium text-slate-600">
-                      {inv.contract?.property?.title}
+                      <NomDuBien titre={inv.contract?.property?.title} id={inv.contract?.property?.id} />
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 mt-1">

@@ -49,7 +49,7 @@ const navItems = [
 ] as const;
 
 export default function ManagerLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { demanderDeconnexion, dialogue: dialogueDeconnexion } = useConfirmationDeconnexion();
   const sub = user?.subscription;
@@ -65,6 +65,8 @@ export default function ManagerLayout() {
   const { pathname } = useLocation();
   const chemin = pathname.replace(/\/+$/, "");
   const entree = [...navItems, ...pagesHorsMenu].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
+  const rangFeuille = navItems.findIndex((item) => item === entree);
+  const moisEnCours = new Intl.DateTimeFormat(i18n.language, { month: "long", year: "numeric" }).format(new Date());
   const libellePage = /^\/proprietaires\/[^/]+\/crg$/.test(chemin) ? t("nav.owner.crg") : entree ? t(`nav.manager.${entree.key}`) : null;
 
   return (
@@ -72,7 +74,7 @@ export default function ManagerLayout() {
       {libellePage && <title>{`${libellePage} | ${t("common.appName")}`}</title>}
       {mobileNavOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 sm:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-950/60 z-30 sm:hidden transition-opacity"
           onClick={() => setMobileNavOpen(false)}
           aria-hidden="true"
         />
@@ -196,6 +198,20 @@ export default function ManagerLayout() {
         </div>
         <TrialBanner />
         <Outlet />
+        {/* Cartouche de feuille, en pied de plan : repère décoratif (numéro de l'entrée du menu, mois en cours). */}
+        {rangFeuille >= 0 && (
+          <div
+            aria-hidden="true"
+            className="mt-10 mb-14 flex items-stretch justify-between border-[1.5px] border-ink-900 bg-white font-mono text-[10px] uppercase tracking-wider text-slate-600"
+          >
+            <span className="border-r-[1.5px] border-ink-900 px-3 py-1.5">{t("common.appName")}</span>
+            <span className="hidden flex-1 bande-motif opacity-25 sm:block" />
+            <span className="border-l-[1.5px] border-ink-900 px-3 py-1.5">{moisEnCours}</span>
+            <span className="border-l-[1.5px] border-ink-900 bg-ink-900 px-3 py-1.5 text-white">
+              {t("common.sheet")} {String(rangFeuille + 1).padStart(2, "0")} / {String(navItems.length).padStart(2, "0")}
+            </span>
+          </div>
+        )}
       </main>
 
       {/* Une idée arrive en travaillant, devant l'écran qui la provoque :
@@ -206,7 +222,7 @@ export default function ManagerLayout() {
           peutVoirLeGuide(user) && (
             <Link
               to="/guide-demarrage"
-              className="flex items-center gap-2 rounded-full bg-white/95 hover:bg-white text-slate-800 border border-contour-200 text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur-sm transition-colors"
+              className="flex items-center gap-2 rounded-full bg-white hover:bg-slate-50 text-slate-800 border border-contour-200 text-xs font-semibold px-4 py-2.5 shadow-md transition-colors"
             >
               <BookOpen size={14} aria-hidden="true" /> {t("nav.manager.guide")}
             </Link>

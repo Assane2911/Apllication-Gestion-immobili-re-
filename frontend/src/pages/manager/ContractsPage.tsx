@@ -30,6 +30,7 @@ import {
 import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
 import { ecartEnJours, formaterJour } from "../../utils/jourCivil";
+import { NomDuBien } from "../../components/PlanLogement";
 
 /** Bail actif dont la date anniversaire approche sans révision prévue (GET /contracts/revisions-due). */
 interface BailAReviser {
@@ -698,7 +699,7 @@ export default function ContractsPage() {
               const showRenewal = c.status === "ACTIVE" && daysLeft <= RENEWAL_WINDOW_DAYS;
               return (
               <tr key={c.id} className={`hover:bg-slate-50/50 ${showRenewal ? "bg-amber-50/50" : ""}`}>
-                <td className="px-4 py-3 text-slate-900 font-medium">{c.property?.title}</td>
+                <td className="px-4 py-3 text-slate-900 font-medium"><NomDuBien titre={c.property?.title} id={c.property?.id} /></td>
                 <td className="px-4 py-3 text-slate-600">
                   {c.tenant?.firstName} {c.tenant?.lastName}
                   {(c.cotenantNames ?? []).length > 0 && <span className="block text-[11px]">+ {c.cotenantNames!.join(", ")}</span>}
@@ -870,7 +871,7 @@ export default function ContractsPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-slate-900">{c.property?.title}</p>
+                  <p className="font-medium text-slate-900"><NomDuBien titre={c.property?.title} id={c.property?.id} /></p>
                   <p className="text-xs text-slate-600">
                     {c.tenant?.firstName} {c.tenant?.lastName}
                     {(c.cotenantNames ?? []).length > 0 && ` + ${c.cotenantNames!.join(", ")}`}

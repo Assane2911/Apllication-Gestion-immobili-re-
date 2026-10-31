@@ -317,6 +317,7 @@ const pt: TranslationSchema = {
       cancelled: "Pagamento cancelado. Nenhum valor foi cobrado.",
     },
     appName: "ImmoPlatform Pro",
+    sheet: "Folha",
     civility: {
       label: "Tratamento",
       none: "Não especificado",
