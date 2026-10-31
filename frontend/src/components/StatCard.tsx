@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface StatCardProps {
   label: string;
@@ -6,6 +7,10 @@ interface StatCardProps {
   hint?: string;
   accent?: "blue" | "green" | "amber" | "red";
   icon?: LucideIcon;
+  /** Page ouverte au clic : l'indicateur devient un raccourci vers le détail. */
+  to?: string;
+  /** Jauge de 0 à 100 sous le chiffre (taux d'occupation, part du loyer encaissé…). */
+  progress?: number;
 }
 
 const accentClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
@@ -30,9 +35,18 @@ const coteClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
   red: "text-orange-700",
 };
 
-export default function StatCard({ label, value, hint, accent = "blue", icon: Icon }: StatCardProps) {
-  return (
-    <div className="group relative bg-white rounded-2xl border border-contour-200/90 p-5 shadow-xs hover:border-ink-900 transition-colors duration-200 overflow-hidden">
+const jaugeClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
+  blue: "bg-ink-900",
+  green: "bg-emerald-700",
+  amber: "bg-orange-700",
+  red: "bg-orange-700",
+};
+
+export default function StatCard({ label, value, hint, accent = "blue", icon: Icon, to, progress }: StatCardProps) {
+  const classes =
+    "group relative block bg-white rounded-2xl border border-contour-200/90 p-5 shadow-xs hover:border-ink-900 transition-colors duration-200 overflow-hidden";
+  const contenu = (
+    <>
       <div aria-hidden="true" className={`relative z-10 mb-3 flex items-center ${coteClasses[accent]}`}>
         <svg width="8" height="10" viewBox="0 0 8 10" className="shrink-0">
           <path d="M8 0V10M8 5H0M3 2L0 5L3 8" fill="none" stroke="currentColor" strokeWidth="1.2" />
@@ -55,6 +69,30 @@ export default function StatCard({ label, value, hint, accent = "blue", icon: Ic
         {value}
       </p>
       {hint && <p className="mt-1.5 text-xs text-slate-600 flex items-center gap-1">{hint}</p>}
-    </div>
+      {progress !== undefined && (
+        <div
+          role="progressbar"
+          aria-label={label}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(Math.max(0, Math.min(100, progress)))}
+          className="relative z-10 mt-3 h-1.5 bg-slate-200"
+        >
+          <div className={`h-full ${jaugeClasses[accent]} transition-[width] duration-700 ease-out motion-reduce:transition-none`} style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+        </div>
+      )}
+      {to && (
+        <span aria-hidden="true" className="absolute bottom-3 right-4 z-10 font-mono text-[11px] text-orange-700 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+          →
+        </span>
+      )}
+    </>
+  );
+  return to ? (
+    <Link to={to} className={`${classes} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-900`}>
+      {contenu}
+    </Link>
+  ) : (
+    <div className={classes}>{contenu}</div>
   );
 }

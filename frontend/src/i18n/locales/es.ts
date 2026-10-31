@@ -1172,6 +1172,7 @@ const es: TranslationSchema = {
       loadingHint: "Cargando indicadores clave...",
       liveSystem: "Sistema en directo",
       overviewSubtitle: "Resumen y rendimiento de tu cartera inmobiliaria",
+      sections: { kpis: "Indicadores clave", analysis: "Análisis" },
       errorTitle: "Error al cargar el panel de control",
       stats: {
         properties: "Propiedades",
@@ -1205,6 +1206,7 @@ const es: TranslationSchema = {
         statusChart: "Estado de la cartera inmobiliaria",
         noProperties: "Aún no hay propiedades registradas.",
         propertiesCount: "{{count}} propiedad(es)",
+        centerLabel: "inmuebles",
       },
     },
     properties: {

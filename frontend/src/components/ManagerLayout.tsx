@@ -226,7 +226,7 @@ export default function ManagerLayout() {
               <span className="font-mono font-medium text-white bg-ocre px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
             </div>
           )}
-          <div className={`mb-2 mx-1 grid w-full grid-cols-2 gap-2 ${seulementOuvert}`}>
+          <div className={`mb-2 mx-1 flex w-full flex-col gap-2 ${seulementOuvert}`}>
             <div className="min-w-0 w-full">
               <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("nav.currencyLabel")}</span>
               <CurrencySelector className="w-full [&>select]:w-full" />

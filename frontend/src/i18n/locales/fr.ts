@@ -1170,6 +1170,7 @@ const fr = {
       loadingHint: "Chargement des indicateurs clés...",
       liveSystem: "Système en direct",
       overviewSubtitle: "Vue d'ensemble et performance de votre parc immobilier",
+      sections: { kpis: "Indicateurs clés", analysis: "Analyse" },
       errorTitle: "Erreur de chargement du tableau de bord",
       stats: {
         properties: "Biens immobiliers",
@@ -1203,6 +1204,7 @@ const fr = {
         statusChart: "Statut du parc immobilier",
         noProperties: "Aucun bien enregistré pour l'instant.",
         propertiesCount: "{{count}} bien(s)",
+        centerLabel: "biens",
       },
     },
     properties: {
