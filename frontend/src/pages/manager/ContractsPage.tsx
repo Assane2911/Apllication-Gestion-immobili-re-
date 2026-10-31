@@ -204,7 +204,7 @@ export default function ContractsPage() {
   function modifierLien(c: Contract) {
     if (c.signedByTenantAt) return null;
     return (
-      <button type="button" onClick={() => ouvrirModification(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
+      <button type="button" onClick={() => ouvrirModification(c)} className="inline-block whitespace-nowrap text-left text-[11px] font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">
         {t("manager.contracts.edit")}
       </button>
     );
@@ -213,7 +213,7 @@ export default function ContractsPage() {
   /** Lien « Colocataires (n) » : ouvre la gestion des colocataires du bail. */
   function colocatairesLien(c: Contract) {
     return (
-      <button type="button" onClick={() => setCotenantsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
+      <button type="button" onClick={() => setCotenantsContract(c)} className="inline-block whitespace-nowrap text-left text-[11px] font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">
         {t("manager.contracts.cotenantsLink", { count: c.cotenantNames?.length ?? 0 })}
       </button>
     );
@@ -222,7 +222,7 @@ export default function ContractsPage() {
   /** Lien « Garants (n) » : ouvre la gestion des garants du bail (consultation seule une fois signé). */
   function garantsLien(c: Contract) {
     return (
-      <button type="button" onClick={() => setGuarantorsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
+      <button type="button" onClick={() => setGuarantorsContract(c)} className="inline-block whitespace-nowrap text-left text-[11px] font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">
         {t("manager.contracts.guarantorsLink", { count: c.guarantorsCount ?? 0 })}
       </button>
     );
@@ -232,7 +232,7 @@ export default function ContractsPage() {
   function revisionLien(c: Contract) {
     if (c.status !== "ACTIVE") return null;
     return (
-      <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
+      <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="inline-block whitespace-nowrap text-left text-[11px] font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">
         {t("manager.contracts.reviseRent")}
       </button>
     );
@@ -244,7 +244,7 @@ export default function ContractsPage() {
       <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[11px] text-slate-600">
         {c.paymentDay === 31 ? t("manager.contracts.paymentDayRowLast") : t("manager.contracts.paymentDayRow", { day: jour })}
         {!c.signedByTenantAt && (
-          <button type="button" onClick={() => setEditingPaymentDay(c)} className="whitespace-nowrap text-left text-brand-600 font-semibold hover:underline">
+          <button type="button" onClick={() => setEditingPaymentDay(c)} className="whitespace-nowrap text-left font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">
             {t("manager.contracts.editPaymentDay")}
           </button>
         )}
@@ -465,10 +465,10 @@ export default function ContractsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">{t("manager.contracts.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.contractCreate")}>
-        <button onClick={() => { setEditingContract(null); setForm(formulaireVide()); setShowForm(true); }} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
+        <button onClick={() => { setEditingContract(null); setForm(formulaireVide()); setShowForm(true); }} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 shadow-sm transition-colors">
           {t("manager.contracts.addBtn")}
         </button>
         </Bulle>
@@ -484,7 +484,7 @@ export default function ContractsPage() {
       )}
 
       {bauxAReviser.length > 0 && (
-        <section aria-labelledby="baux-a-reviser" className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+        <section aria-labelledby="baux-a-reviser" className="bg-amber-50 border border-amber-300 border-l-[3px] border-l-orange-700 px-4 py-3">
           <h3 id="baux-a-reviser" className="text-sm font-semibold text-amber-900">
             {t("manager.contracts.revisionsDue.title", { count: bauxAReviser.length })}
           </h3>
@@ -504,7 +504,7 @@ export default function ContractsPage() {
                 <button
                   type="button"
                   onClick={() => setRevisingRent({ id: b.contractId, rent: b.rent, currency: b.currency, endDate: b.endDate, dateSuggeree: b.dateSuggeree })}
-                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg"
+                  className="inline-flex items-center px-3 py-1.5 text-xs font-semibold border border-orange-700 bg-orange-700 text-white hover:bg-orange-800 transition-colors cursor-pointer"
                 >
                   {t("manager.contracts.revisionsDue.action")}
                 </button>
@@ -707,10 +707,12 @@ export default function ContractsPage() {
                 </td>
                 <td className="px-4 py-3 text-slate-900 font-semibold">
                   <span className="whitespace-nowrap">{formatMoney(c.rent, c.currency)}</span>
-                  {revisionLien(c)}
-                  {garantsLien(c)}
-                  {colocatairesLien(c)}
-                  {modifierLien(c)}
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1.5 font-normal">
+                    {revisionLien(c)}
+                    {garantsLien(c)}
+                    {colocatairesLien(c)}
+                    {modifierLien(c)}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-slate-600 text-xs">
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
@@ -733,7 +735,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractSign")}>
                       <button
                         onClick={() => setSigningContract(c)}
-                        className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1"
+                        className="font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors inline-flex items-center gap-1"
                       >
                         <PenLine size={13} aria-hidden="true" /> {t("manager.contracts.sign")}
                       </button>
@@ -761,7 +763,7 @@ export default function ContractsPage() {
                   <Bulle texte={t("manager.tips.contractViewLease")}>
                   <button
                     onClick={() => setViewingLeaseContract(c)}
-                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100"
                   >
                     <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                   </button>
@@ -772,7 +774,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractViewScan")}>
                     <button
                       onClick={() => handleViewScannedContract(c)}
-                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
                     >
                       <FileCheck size={13} />
                       <span>{t("manager.contracts.scanContractShort")}</span>
@@ -784,7 +786,7 @@ export default function ContractsPage() {
                   <button
                     onClick={() => triggerScanUpload(c)}
                     disabled={uploadingScanContractId === c.id}
-                    className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50 disabled:opacity-50"
                   >
                     <Camera size={13} />
                     <span>
@@ -802,13 +804,13 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractRenew")}>
                       <button
                         onClick={() => handleRenew(c)}
-                        className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-800"
                       >
                         <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renew")}
                       </button>
                       </Bulle>
                       <Bulle texte={t("manager.tips.contractEnd")}>
-                      <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 hover:underline text-xs">
+                      <button onClick={() => changeStatus(c, "ENDED")} className="text-xs font-semibold text-slate-700 border-b border-slate-400/60 hover:border-ink-900 hover:text-ink-900 transition-colors">
                         {t("manager.contracts.doNotRenew")}
                       </button>
                       </Bulle>
@@ -816,7 +818,7 @@ export default function ContractsPage() {
                   )}
                   {c.status === "ACTIVE" && (
                     <Bulle texte={t("manager.tips.contractTerminate")}>
-                    <button onClick={() => handleTerminate(c)} className="text-amber-700 hover:underline text-xs">
+                    <button onClick={() => handleTerminate(c)} className="text-xs font-semibold text-amber-800 border-b border-amber-700/40 hover:border-amber-800 transition-colors">
                       {t("manager.contracts.terminate")}
                     </button>
                     </Bulle>
@@ -826,7 +828,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
                       <button
                         onClick={() => handleCancelDepositRefund(c)}
-                        className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
                       >
                         <Banknote size={13} aria-hidden="true" />
                         <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
@@ -836,7 +838,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractDepositRefund")}>
                       <button
                         onClick={() => setDepositRefundContract(c)}
-                        className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50"
                       >
                         <Banknote size={13} aria-hidden="true" />
                         <span>{t("manager.contracts.depositRefund")}</span>
@@ -845,7 +847,7 @@ export default function ContractsPage() {
                     )
                   )}
                   <Bulle texte={t("manager.tips.contractDelete")}>
-                  <button onClick={() => handleDelete(c)} className="text-red-600 hover:underline text-xs">
+                  <button onClick={() => handleDelete(c)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">
                     {t("common.actions.delete")}
                   </button>
                   </Bulle>
@@ -866,7 +868,7 @@ export default function ContractsPage() {
           return (
             <div
               key={c.id}
-              className={`bg-white rounded-xl border shadow-sm p-4 space-y-2.5 ${
+              className={`bg-white border p-4 space-y-2.5 ${
                 showRenewal ? "border-amber-300 bg-amber-50/50" : "border-contour-200"
               }`}
             >
@@ -881,12 +883,14 @@ export default function ContractsPage() {
                 <Badge status={c.status} />
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-900">{formatMoney(c.rent, c.currency)}</span>
-                {revisionLien(c)}
-                  {garantsLien(c)}
-                  {colocatairesLien(c)}
-                  {modifierLien(c)}
+                <span className="font-semibold tabular-nums text-slate-900">{formatMoney(c.rent, c.currency)}</span>
                 <span className="text-slate-600">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                {revisionLien(c)}
+                {garantsLien(c)}
+                {colocatairesLien(c)}
+                {modifierLien(c)}
               </div>
               {c.status === "ACTIVE" && echeanceLigne(c)}
               {showRenewal && (
@@ -903,7 +907,7 @@ export default function ContractsPage() {
                     </span>
                   ) : (
                     <Bulle texte={t("manager.tips.contractSign")}>
-                    <button onClick={() => setSigningContract(c)} className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1">
+                    <button onClick={() => setSigningContract(c)} className="font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors inline-flex items-center gap-1">
                       <PenLine size={13} aria-hidden="true" /> {t("manager.contracts.sign")}
                     </button>
                     </Bulle>
@@ -925,7 +929,7 @@ export default function ContractsPage() {
                 <Bulle texte={t("manager.tips.contractViewLease")}>
                 <button
                   onClick={() => setViewingLeaseContract(c)}
-                  className="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100"
                 >
                   <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                 </button>
@@ -935,7 +939,7 @@ export default function ContractsPage() {
                   <Bulle texte={t("manager.tips.contractViewScan")}>
                   <button
                     onClick={() => handleViewScannedContract(c)}
-                    className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
                   >
                     <FileCheck size={13} />
                     <span>{t("manager.contracts.scanContractShort")}</span>
@@ -947,7 +951,7 @@ export default function ContractsPage() {
                 <button
                   onClick={() => triggerScanUpload(c)}
                   disabled={uploadingScanContractId === c.id}
-                  className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50 disabled:opacity-50"
                 >
                   <Camera size={13} />
                   <span>
@@ -965,13 +969,13 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractRenew")}>
                     <button
                       onClick={() => handleRenew(c)}
-                      className="text-xs bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-800"
                     >
                       <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renewShort")}
                     </button>
                     </Bulle>
                     <Bulle texte={t("manager.tips.contractEnd")}>
-                    <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 hover:underline text-xs">
+                    <button onClick={() => changeStatus(c, "ENDED")} className="text-xs font-semibold text-slate-700 border-b border-slate-400/60 hover:border-ink-900 hover:text-ink-900 transition-colors">
                       {t("manager.contracts.doNotRenew")}
                     </button>
                     </Bulle>
@@ -979,7 +983,7 @@ export default function ContractsPage() {
                 )}
                 {c.status === "ACTIVE" && (
                   <Bulle texte={t("manager.tips.contractTerminate")}>
-                  <button onClick={() => handleTerminate(c)} className="text-amber-700 hover:underline text-xs">
+                  <button onClick={() => handleTerminate(c)} className="text-xs font-semibold text-amber-800 border-b border-amber-700/40 hover:border-amber-800 transition-colors">
                     {t("manager.contracts.terminate")}
                   </button>
                   </Bulle>
@@ -989,7 +993,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
                     <button
                       onClick={() => handleCancelDepositRefund(c)}
-                      className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
                     >
                       <Banknote size={13} aria-hidden="true" />
                       <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
@@ -999,7 +1003,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractDepositRefund")}>
                     <button
                       onClick={() => setDepositRefundContract(c)}
-                      className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50"
                     >
                       <Banknote size={13} aria-hidden="true" />
                       <span>{t("manager.contracts.depositRefund")}</span>
@@ -1008,7 +1012,7 @@ export default function ContractsPage() {
                   )
                 )}
                 <Bulle texte={t("manager.tips.contractDelete")}>
-                <button onClick={() => handleDelete(c)} className="text-red-600 hover:underline text-xs">
+                <button onClick={() => handleDelete(c)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">
                   {t("common.actions.delete")}
                 </button>
                 </Bulle>
