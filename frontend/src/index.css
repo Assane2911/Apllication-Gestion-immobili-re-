@@ -374,6 +374,65 @@ html
   }
 }
 
+/* Soulignement qui se trace de gauche à droite au survol, et qui reste tracé sur la page courante (en orange d'annotation). */
+@utility lien-plan {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.25rem;
+    height: 2px;
+    background: var(--color-ocre);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  &:hover::after,
+  &[aria-current]::after {
+    transform: scaleX(1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      transition: none;
+    }
+  }
+}
+
+/* Menu plein écran de l'accueil : s'ouvre en cercle depuis le bouton, puis les entrées montent l'une après l'autre. */
+@keyframes ouvrir-menu {
+  from {
+    clip-path: circle(0% at calc(100% - 2.5rem) 2.25rem);
+  }
+  to {
+    clip-path: circle(150% at calc(100% - 2.5rem) 2.25rem);
+  }
+}
+@keyframes monter {
+  from {
+    opacity: 0;
+    transform: translateY(1.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@utility menu-ouvert {
+  animation: ouvrir-menu 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+@utility menu-entree {
+  animation: monter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.1s + var(--i, 0) * 0.045s);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* En-têtes de tableaux : bandeau bleu de plan, libellés blancs, comme un tableau de légende. */
 html [data-surface="app"] thead {
   background-color: var(--color-ink-900);

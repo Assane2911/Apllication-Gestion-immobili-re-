@@ -143,7 +143,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
                   end={onglet.end}
                   aria-label={telephone && onglet.labelCourt ? onglet.label : undefined}
                   className={({ isActive }) =>
-                    `px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                    `lien-plan px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-colors duration-300 flex items-center gap-1.5 shrink-0 ${
                       isActive
                         ? "bg-ink-900 text-white font-semibold"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
