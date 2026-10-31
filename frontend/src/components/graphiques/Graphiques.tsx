@@ -21,6 +21,9 @@ const STYLE_INFOBULLE = {
   padding: "10px 14px",
 };
 
+/** Montants d'axe abrégés (1,6 M, 400 k) : « 1600000 » n'est pas lisible d'un coup d'œil. */
+const abreger = (valeur: number, langue: string) => new Intl.NumberFormat(langue, { notation: "compact", maximumFractionDigits: 1 }).format(valeur);
+
 /** Hachure diagonale d'une couleur : les dépenses se lisent « au trait », les revenus restent pleins, comme sur un plan. */
 function Hachure({ id, couleur }: { id: string; couleur: string }) {
   return (
@@ -33,7 +36,7 @@ function Hachure({ id, couleur }: { id: string; couleur: string }) {
 
 /** Revenus et dépenses par mois, dans une devise (tableau de bord). */
 export function GraphiqueRevenusDepenses({ data, currency }: { data: Array<{ month: string; revenue: number; expense: number }>; currency: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -43,7 +46,7 @@ export function GraphiqueRevenusDepenses({ data, currency }: { data: Array<{ mon
         </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100" />
         <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
-        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
+        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" tickFormatter={(v: number) => abreger(v, i18n.language)} width={52} />
         <Tooltip
           formatter={(value: any, name: any) => [
             formatMoney(Number(value), currency),
@@ -92,7 +95,7 @@ const COULEURS_DEPENSES_FISCAL = ["#f59e0b", "#ea580c", "#65a30d", "#a16207"];
 
 /** Revenus et dépenses de l'année par mois, une paire de barres par devise (bilan fiscal). */
 export function GraphiqueComparaisonFiscale({ data, devises }: { data: Array<Record<string, number | string>>; devises: string[] }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const plusieurs = devises.length > 1;
   return (
@@ -105,7 +108,7 @@ export function GraphiqueComparaisonFiscale({ data, devises }: { data: Array<Rec
         </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100" />
         <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
-        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
+        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" tickFormatter={(v: number) => abreger(v, i18n.language)} width={52} />
         <Tooltip
           formatter={(value: number | string, name: string) => {
             const [kind, currency] = String(name).split("_");

@@ -1172,6 +1172,7 @@ const en: TranslationSchema = {
       loadingHint: "Loading key metrics...",
       liveSystem: "Live system",
       overviewSubtitle: "Overview and performance of your property portfolio",
+      sections: { kpis: "Key indicators", analysis: "Analysis" },
       errorTitle: "Error loading the dashboard",
       stats: {
         properties: "Properties",
@@ -1205,6 +1206,7 @@ const en: TranslationSchema = {
         statusChart: "Portfolio status",
         noProperties: "No properties registered yet.",
         propertiesCount: "{{count}} propert(y/ies)",
+        centerLabel: "properties",
       },
     },
     properties: {

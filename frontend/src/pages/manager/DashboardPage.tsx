@@ -22,6 +22,17 @@ import type { DashboardStats, PropertyStatus } from "../../types";
 import { formatByCurrency } from "../../utils/currencyFormat";
 import { fenetreDesMois, libelleDuMois } from "../../utils/moisDuGraphique";
 
+/** Intitulé de section façon feuille de plan : numéro en police technique, libellé, puis un filet qui court jusqu'au bord. */
+function IntituleSection({ numero, libelle }: { numero: string; libelle: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span aria-hidden="true" className="font-mono text-[11px] text-orange-700">{numero}</span>
+      <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700">{libelle}</h3>
+      <div aria-hidden="true" className="h-px flex-1 bg-slate-300" />
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
@@ -121,6 +132,13 @@ export default function DashboardPage() {
     })),
   }));
 
+  // Part du loyer attendu déjà encaissée : seulement quand il n'y a qu'une devise, sinon la division n'a pas de sens.
+  const devisesAttendues = Object.keys(stats.monthlyExpectedByCurrency ?? {});
+  const partEncaissee =
+    devisesAttendues.length === 1 && Number(stats.monthlyExpectedByCurrency[devisesAttendues[0]]) > 0
+      ? Math.round((Number(stats.monthlyRevenueByCurrency?.[devisesAttendues[0]] ?? 0) / Number(stats.monthlyExpectedByCurrency[devisesAttendues[0]])) * 100)
+      : undefined;
+
   const donutData = (Object.keys(statusLabels) as PropertyStatus[])
     .map((status) => ({
       status,
@@ -147,10 +165,12 @@ export default function DashboardPage() {
       />
 
       {/* Grille des 8 indicateurs clés */}
+      <IntituleSection numero="01" libelle={t("manager.dashboard.sections.kpis")} />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Building2}
           label={t("manager.dashboard.stats.properties")}
+          to="/properties"
           value={stats.totalProperties ?? 0}
           hint={t("manager.dashboard.stats.propertiesHint", { count: propertiesByStatus.AVAILABLE ?? 0 })}
           accent="blue"
@@ -158,6 +178,8 @@ export default function DashboardPage() {
         <StatCard
           icon={Gauge}
           label={t("manager.dashboard.stats.occupancy")}
+          to="/properties"
+          progress={stats.occupancyRate ?? 0}
           value={`${stats.occupancyRate ?? 0}%`}
           hint={t("manager.dashboard.stats.occupancyHint", { count: propertiesByStatus.OCCUPIED ?? 0 })}
           accent="green"
@@ -165,6 +187,7 @@ export default function DashboardPage() {
         <StatCard
           icon={Users}
           label={t("manager.dashboard.stats.tenants")}
+          to="/tenants"
           value={stats.totalTenants ?? 0}
           hint={t("manager.dashboard.stats.tenantsHint")}
           accent="blue"
@@ -172,6 +195,7 @@ export default function DashboardPage() {
         <StatCard
           icon={FileText}
           label={t("manager.dashboard.stats.contracts")}
+          to="/contracts"
           value={stats.activeContracts ?? 0}
           hint={t("manager.dashboard.stats.contractsHint")}
           accent="blue"
@@ -179,13 +203,16 @@ export default function DashboardPage() {
         <StatCard
           icon={Wallet}
           label={t("manager.dashboard.stats.revenue")}
+          to="/invoices"
           value={formatByCurrency(stats.monthlyRevenueByCurrency, formatMoney)}
+          progress={partEncaissee}
           hint={t("manager.dashboard.stats.revenueHint", { amount: formatByCurrency(stats.monthlyExpectedByCurrency, formatMoney) })}
           accent="green"
         />
         <StatCard
           icon={AlertTriangle}
           label={t("manager.dashboard.stats.lateInvoices")}
+          to="/invoices"
           value={stats.lateInvoices ?? 0}
           hint={stats.lateInvoices > 0 ? t("manager.dashboard.stats.lateInvoicesHintYes") : t("manager.dashboard.stats.lateInvoicesHintNo")}
           accent={stats.lateInvoices > 0 ? "red" : "green"}
@@ -193,6 +220,7 @@ export default function DashboardPage() {
         <StatCard
           icon={Wrench}
           label={t("manager.dashboard.stats.openIssues")}
+          to="/issues"
           value={stats.openIssues ?? 0}
           hint={stats.openIssues > 0 ? t("manager.dashboard.stats.openIssuesHintYes") : t("manager.dashboard.stats.openIssuesHintNo")}
           accent={stats.openIssues > 0 ? "amber" : "green"}
@@ -200,6 +228,7 @@ export default function DashboardPage() {
         <StatCard
           icon={TrendingUp}
           label={t("manager.dashboard.stats.maintenance")}
+          to="/properties"
           value={propertiesByStatus.MAINTENANCE ?? 0}
           hint={t("manager.dashboard.stats.maintenanceHint")}
           accent="amber"
@@ -207,6 +236,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Graphiques */}
+      <IntituleSection numero="02" libelle={t("manager.dashboard.sections.analysis")} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Graphique Barres Comparatif Revenus vs Dépenses */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
@@ -246,10 +276,15 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-600 py-16 text-center">{t("manager.dashboard.charts.noProperties")}</p>
           ) : (
             <>
-              <div className="h-[200px] w-full">
+              <div className="relative h-[200px] w-full">
                 <Suspense fallback={<Skeleton className="h-full w-full rounded-full" />}>
                   <GraphiqueParc data={donutData} libelles={statusLabels} />
                 </Suspense>
+                {/* Total des biens au centre de l'anneau. */}
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold leading-none text-slate-900">{donutData.reduce((somme, d) => somme + d.value, 0)}</span>
+                  <span className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-slate-600">{t("manager.dashboard.charts.centerLabel")}</span>
+                </div>
               </div>
               <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-contour-100">
                 {donutData.map((entry) => (
