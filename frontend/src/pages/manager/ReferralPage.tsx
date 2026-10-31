@@ -2,6 +2,7 @@ import { Check, Copy, Gift, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import BoutonPartager from "../../components/BoutonPartager";
 import { Skeleton } from "../../components/Skeleton";
 import type { ReferralInfo } from "../../types";
 
@@ -87,6 +88,7 @@ export default function ReferralPage() {
               </p>
               <div className="flex items-center justify-between gap-3 bg-slate-50 border border-contour-200 rounded-xl px-4 py-3">
                 <span className="text-xs text-slate-700 truncate">{info.referralUrl}</span>
+                <BoutonPartager url={info.referralUrl} titre={t("common.appName")} texte={t("manager.referral.shareText")} />
                 <button
                   onClick={() => copier("link", info.referralUrl)}
                   className="shrink-0 text-xs font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-brand-50"

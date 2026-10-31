@@ -353,6 +353,8 @@ const es: TranslationSchema = {
       view: "Ver",
       copy: "Copiar",
       copied: "¡Copiado!",
+      share: "Compartir",
+      linkCopied: "¡Enlace copiado!",
     },
     status: {
       AVAILABLE: "Disponible",
@@ -2254,6 +2256,7 @@ const es: TranslationSchema = {
       subtitleGeneric: "Comparte tu código y amplía tu acceso con cada referido confirmado.",
       codeLabel: "Tu código de referido",
       linkLabel: "Tu enlace para compartir",
+      shareText: "Prueba ImmoPlatform Pro, la plataforma de gestión de alquileres: 15 días de prueba gratuita, sin tarjeta.",
       explanation: "En cuanto alguien se registre con tu código y confirme su correo, se añadirán automáticamente {{days}} días a tu prueba o a tu suscripción actual.",
       totalReferred: "Referido(s) inscrito(s)",
       rewardCap: "Límite: {{used}} de {{max}} referidos recompensados.",

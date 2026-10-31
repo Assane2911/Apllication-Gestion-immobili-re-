@@ -353,6 +353,8 @@ const pt: TranslationSchema = {
       view: "Ver",
       copy: "Copiar",
       copied: "Copiado!",
+      share: "Partilhar",
+      linkCopied: "Ligação copiada!",
     },
     status: {
       AVAILABLE: "Disponível",
@@ -2252,6 +2254,7 @@ const pt: TranslationSchema = {
       subtitleGeneric: "Partilhe o seu código e prolongue o seu acesso a cada indicação confirmada.",
       codeLabel: "O seu código de indicação",
       linkLabel: "O seu link a partilhar",
+      shareText: "Experimente o ImmoPlatform Pro, a plataforma de gestão de arrendamentos: 15 dias de teste gratuito, sem cartão.",
       explanation: "Assim que alguém se inscrever com o seu código e confirmar o email, {{days}} dias são automaticamente adicionados ao seu período de teste ou à sua assinatura atual.",
       totalReferred: "Indicação(ões) inscrita(s)",
       rewardCap: "Limite: {{used}} de {{max}} indicações recompensadas.",

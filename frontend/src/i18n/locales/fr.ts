@@ -351,6 +351,8 @@ const fr = {
       view: "Voir",
       copy: "Copier",
       copied: "Copié !",
+      share: "Partager",
+      linkCopied: "Lien copié !",
     },
     status: {
       AVAILABLE: "Disponible",
@@ -2253,6 +2255,7 @@ const fr = {
       subtitleGeneric: "Partagez votre code et prolongez votre accès à chaque filleul confirmé.",
       codeLabel: "Votre code de parrainage",
       linkLabel: "Votre lien à partager",
+      shareText: "Essayez ImmoPlatform Pro, la plateforme de gestion locative : 15 jours d'essai gratuit, sans carte bancaire.",
       explanation: "Dès qu'une personne s'inscrit avec votre code et confirme son adresse email, {{days}} jours sont automatiquement ajoutés à votre essai ou à votre abonnement en cours.",
       totalReferred: "Filleul(s) inscrit(s)",
       rewardCap: "Plafond : {{used}} filleul(s) récompensé(s) sur {{max}}.",
