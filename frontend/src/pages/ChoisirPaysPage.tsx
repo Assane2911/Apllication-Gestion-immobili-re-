@@ -53,7 +53,7 @@ export default function ChoisirPaysPage() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-slate-950 flex flex-col items-center justify-center px-6 py-12 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative">
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
         <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow" />
         <LanguageSwitcher variant={theme === "dark" ? "dark" : "light"} />

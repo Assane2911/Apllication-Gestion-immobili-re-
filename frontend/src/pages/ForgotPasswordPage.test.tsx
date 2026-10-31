@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { ThemeProvider } from "../context/ThemeContext";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import ForgotPasswordPage from "./ForgotPasswordPage";
@@ -14,9 +15,9 @@ const mockedApi = vi.mocked(api, { deep: true });
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={["/mot-de-passe-oublie"]}>
+    <ThemeProvider><MemoryRouter initialEntries={["/mot-de-passe-oublie"]}>
       <ForgotPasswordPage />
-    </MemoryRouter>
+    </MemoryRouter></ThemeProvider>
   );
 }
 

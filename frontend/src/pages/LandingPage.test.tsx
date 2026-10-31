@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
+import { ThemeProvider } from "../context/ThemeContext";
 import { AuthProvider } from "../context/AuthContext";
 import { changerLangue } from "../i18n";
 import en from "../i18n/locales/en";
@@ -20,9 +21,9 @@ const mockedApi = vi.mocked(api, { deep: true });
 function renderPage() {
   return render(
     <MemoryRouter>
-      <AuthProvider>
+      <ThemeProvider><AuthProvider>
         <LandingPage />
-      </AuthProvider>
+      </AuthProvider></ThemeProvider>
     </MemoryRouter>
   );
 }

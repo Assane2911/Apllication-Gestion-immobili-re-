@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "../api/client";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+import { LangueEtTheme } from "../components/BoutonTheme";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
 import { useAuth } from "../context/auth";
@@ -40,25 +40,25 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
+    <main className="relative isolate min-h-screen flex items-center justify-center px-6 py-12">
       <Seo title={`${t("seo.verifyEmail.title")} | ${t("common.appName")}`} noindex />
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-        <Link to="/login" className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors">
+        <Link to="/login" className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 transition-colors">
           {t("auth.verifyEmail.backToLogin")}
         </Link>
-        <LanguageSwitcher />
+        <LangueEtTheme />
       </div>
 
       <Reveal className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-8">
           <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow" />
-          <span className="font-bold text-lg tracking-tight text-white">{t("common.appName")}</span>
+          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">{t("common.appName")}</span>
         </div>
 
         {!token ? (
           <div className="text-center">
             <h1 className="sr-only">{t("auth.verifyEmail.errorTitle")}</h1>
-            <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-3">
+            <p className="text-sm text-red-700 dark:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-3">
               {t("auth.verifyEmail.missingToken")}
             </p>
             <Link
@@ -70,27 +70,27 @@ export default function VerifyEmailPage() {
           </div>
         ) : status === "verifying" ? (
           <div className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-brand-500/15 text-brand-400 flex items-center justify-center mb-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4">
               <span className="w-5 h-5 border-2 border-brand-400/40 border-t-brand-400 rounded-full animate-spin" />
             </div>
-            <h1 className="text-xl font-bold text-white">{t("auth.verifyEmail.verifying")}</h1>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.verifyingSubtitle")}</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t("auth.verifyEmail.verifying")}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.verifyingSubtitle")}</p>
           </div>
         ) : status === "success" ? (
           <div role="status" className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-4">
               <CheckCircle2 size={24} strokeWidth={1.8} />
             </div>
-            <h1 className="text-xl font-bold text-white">{t("auth.verifyEmail.successTitle")}</h1>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.successSubtitle")}</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t("auth.verifyEmail.successTitle")}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">{t("auth.verifyEmail.successSubtitle")}</p>
           </div>
         ) : (
           <div className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center mb-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center mb-4">
               <XCircle size={24} strokeWidth={1.8} />
             </div>
-            <h1 className="text-xl font-bold text-white">{t("auth.verifyEmail.errorTitle")}</h1>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed">{error ?? t("auth.verifyEmail.errorSubtitle")}</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t("auth.verifyEmail.errorTitle")}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">{error ?? t("auth.verifyEmail.errorSubtitle")}</p>
             <Link
               to="/login"
               className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"

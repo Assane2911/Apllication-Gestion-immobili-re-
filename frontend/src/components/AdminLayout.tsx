@@ -27,7 +27,7 @@ export default function AdminLayout() {
   const libellePage = entree ? t(`admin.nav.${entree.key}`) : null;
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-slate-950">
+    <div className="min-h-screen">
       {libellePage && <title>{`${libellePage} | ${t("common.appName")}`}</title>}
       <EnteteEspace
         largeur="5xl"

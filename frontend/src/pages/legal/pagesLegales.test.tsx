@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ThemeProvider } from "../../context/ThemeContext";
 import { describe, expect, it } from "vitest";
 import CGUPage from "./CGUPage";
 import MentionsLegalesPage from "./MentionsLegalesPage";
@@ -27,9 +28,9 @@ const PAGES = [
 describe("Pages légales", () => {
   it.each(PAGES)("%s n'affiche aucun marqueur de contenu à compléter", (_nom, Page) => {
     const { container } = render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <Page />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     const texte = container.textContent ?? "";
@@ -42,9 +43,9 @@ describe("Pages légales", () => {
     // L'obligation porte sur la possibilité de joindre l'éditeur : la ligne
     // doit toujours exister et dire quelque chose d'exploitable.
     const { container } = render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <MentionsLegalesPage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     const texte = container.textContent ?? "";
@@ -54,9 +55,9 @@ describe("Pages légales", () => {
 
   it("présente l'éditeur comme la LLC immatriculée, avec son EIN, son État et son adresse — plus comme une société « en cours de formation »", () => {
     const { container } = render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <MentionsLegalesPage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     const texte = container.textContent ?? "";
@@ -75,9 +76,9 @@ describe("Pages légales", () => {
 
   it.each(PAGES)("%s ne parle plus d'une société en cours de constitution", (_nom, Page) => {
     const { container } = render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <Page />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
     const texte = container.textContent ?? "";
     expect(texte).not.toMatch(/en cours (de formation|d'immatriculation|de constitution)/);

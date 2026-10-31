@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
+import { ThemeProvider } from "../context/ThemeContext";
 import { AuthProvider } from "../context/AuthContext";
 import { CurrencyProvider } from "../context/CurrencyContext";
 import LandingPage from "./LandingPage";
@@ -25,11 +26,11 @@ describe("Accès à la vitrine publique", () => {
   it("propose un lien vers la vitrine depuis la page d'accueil", () => {
     render(
       <MemoryRouter>
-        <AuthProvider>
+        <ThemeProvider><AuthProvider>
           <CurrencyProvider>
             <LandingPage />
           </CurrencyProvider>
-        </AuthProvider>
+        </AuthProvider></ThemeProvider>
       </MemoryRouter>
     );
 
