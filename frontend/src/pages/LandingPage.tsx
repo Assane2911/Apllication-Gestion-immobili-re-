@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Lock,
   Megaphone,
+  Menu,
   PenLine,
   Receipt,
   Scale,
@@ -360,7 +361,7 @@ const PORTEES_FONCTIONS = [
 ] as const;
 
 /** Entrées du menu : onglets numérotés, comme les feuilles d'un jeu de plans. */
-const LIEN_MENU = "flex items-center gap-1.5 px-3 xl:px-4 whitespace-nowrap border-l border-slate-300 last:border-r transition-colors";
+const LIEN_MENU = "lien-plan flex items-center gap-1.5 px-3 xl:px-4 whitespace-nowrap border-l border-slate-300 last:border-r transition-colors duration-300";
 const NUMERO_MENU = "font-mono text-[10px] text-orange-700";
 
 export default function LandingPage() {
@@ -371,6 +372,26 @@ export default function LandingPage() {
   // Entre 640 et 1279 px, la barre flottante garde le code court de la langue pour que tous les liens tiennent.
   const ecranMoyen = useMediaQuery("(max-width: 1279px)");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  // Barre qui se resserre et prend une ombre dès que la page défile ; menu plein écran sur téléphone et tablette.
+  const [defile, setDefile] = useState(false);
+  const [menuOuvert, setMenuOuvert] = useState(false);
+  useEffect(() => {
+    const surDefilement = () => setDefile(window.scrollY > 12);
+    surDefilement();
+    window.addEventListener("scroll", surDefilement, { passive: true });
+    return () => window.removeEventListener("scroll", surDefilement);
+  }, []);
+  useEffect(() => {
+    if (!menuOuvert) return;
+    const surTouche = (e: KeyboardEvent) => e.key === "Escape" && setMenuOuvert(false);
+    window.addEventListener("keydown", surTouche);
+    const debordement = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", surTouche);
+      document.body.style.overflow = debordement;
+    };
+  }, [menuOuvert]);
   const sectionsSuivies = [
     { id: "features", numero: "01", libelle: t("landing.nav.features") },
     { id: "pdf", numero: "02", libelle: t("landing.nav.receipts") },
@@ -405,11 +426,11 @@ export default function LandingPage() {
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
-      <nav className="fixed inset-x-0 top-0 z-50 bg-white border-b-[1.5px] border-ink-900">
+      <nav className={`fixed inset-x-0 top-0 z-50 bg-white border-b-[1.5px] border-ink-900 transition-shadow duration-500 ${defile || menuOuvert ? "shadow-md" : ""}`}>
         <div aria-hidden="true" className="bande-motif h-1.5" />
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-stretch justify-between gap-2">
+        <div className={`max-w-7xl mx-auto px-3 sm:px-4 flex items-stretch justify-between gap-2 transition-[height] duration-500 ease-out motion-reduce:transition-none ${defile ? "h-12" : "h-14"}`}>
           <div className="flex items-center gap-3 shrink-0">
-            <Logo taille={32} />
+            <Logo taille={defile ? 28 : 32} />
             <span className="sr-only sm:not-sr-only lg:sr-only xl:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight text-slate-900">
               {t("common.appName")}
             </span>
@@ -462,7 +483,7 @@ export default function LandingPage() {
               <>
                 <Link
                   to="/login"
-                  className="whitespace-nowrap text-xs font-medium text-slate-700 hover:text-slate-900 px-1.5 sm:px-3 py-2"
+                  className="hidden sm:inline-block whitespace-nowrap text-xs font-medium text-slate-700 hover:text-slate-900 px-1.5 sm:px-3 py-2"
                 >
                   {t("landing.nav.login")}
                 </Link>
@@ -474,9 +495,58 @@ export default function LandingPage() {
                 </Link>
               </>
             )}
+            <button
+              type="button"
+              onClick={() => setMenuOuvert((o) => !o)}
+              aria-expanded={menuOuvert}
+              aria-controls="menu-accueil"
+              aria-label={t("landing.nav.menu")}
+              className="lg:hidden self-center flex h-9 w-9 items-center justify-center border-[1.5px] border-ink-900 text-ink-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              {menuOuvert ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
+            </button>
           </div>
         </div>
       </nav>
+
+      {menuOuvert && (
+        <div id="menu-accueil" className="menu-ouvert fixed inset-0 z-40 lg:hidden overflow-y-auto bg-white px-6 pt-24 pb-10" onClick={() => setMenuOuvert(false)}>
+          <ul className="border-t-[1.5px] border-ink-900">
+            {[
+              { href: "/vitrine", label: t("landing.nav.vitrine"), numero: "" },
+              ...sectionsSuivies.map((section) => ({ href: `#${section.id}`, label: section.libelle, numero: section.numero })),
+            ].map((lien, i) => (
+              <li key={lien.href} className="menu-entree border-b border-slate-300" style={{ ["--i" as string]: i }}>
+                {lien.href.startsWith("/") ? (
+                  <Link to={lien.href} className="flex items-baseline gap-4 py-4 text-lg font-semibold text-slate-900">
+                    <span aria-hidden="true" className="w-6 shrink-0 font-mono text-xs text-orange-700">{lien.numero}</span>
+                    {lien.label}
+                  </Link>
+                ) : (
+                  <a
+                    href={lien.href}
+                    className={`flex items-baseline gap-4 py-4 text-lg font-semibold ${sectionActive === lien.href.slice(1) ? "text-orange-700" : "text-slate-900"}`}
+                    aria-current={sectionActive === lien.href.slice(1) ? "location" : undefined}
+                  >
+                    <span aria-hidden="true" className="w-6 shrink-0 font-mono text-xs text-orange-700">{lien.numero}</span>
+                    {lien.label}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+          {!user && (
+            <div className="menu-entree mt-8 flex flex-col gap-3" style={{ ["--i" as string]: 8 }}>
+              <Link to="/login" className="border-[1.5px] border-ink-900 py-3 text-center text-sm font-semibold text-ink-900">
+                {t("landing.nav.login")}
+              </Link>
+              <Link to="/inscription" className="bg-brand-600 py-3 text-center text-sm font-semibold text-white">
+                {t("landing.nav.trial")}
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       <main>
       {/* Hero Section : texte à gauche, plan coté à droite */}

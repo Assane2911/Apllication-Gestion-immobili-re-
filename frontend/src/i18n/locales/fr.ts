@@ -617,6 +617,7 @@ const fr = {
       trial: "Essai 15j gratuit →",
       trialShort: "Essai gratuit →",
       top: "Haut de page",
+      menu: "Menu",
     },
     badge: "Nouvelle Version 2.0 • 15 jours d'essai gratuit offert sans engagement",
     hero: {

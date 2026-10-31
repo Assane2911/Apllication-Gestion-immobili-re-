@@ -619,6 +619,7 @@ const en: TranslationSchema = {
       trial: "Free 15-day trial →",
       trialShort: "Free trial →",
       top: "Back to top",
+      menu: "Menu",
     },
     badge: "New Version 2.0 • 15-day free trial, no commitment",
     hero: {
