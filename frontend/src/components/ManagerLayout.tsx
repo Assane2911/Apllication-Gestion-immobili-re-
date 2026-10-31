@@ -90,7 +90,6 @@ export default function ManagerLayout() {
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
                 <Logo />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
