@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import Logo from "../components/Logo";
 import { api, apiErrorMessage } from "../api/client";
 import { LangueEtTheme } from "../components/BoutonTheme";
 import Reveal from "../components/Reveal";
@@ -82,7 +83,7 @@ export default function ResetPasswordPage() {
 
       <Reveal className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow" />
+          <Logo />
           <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">{t("common.appName")}</span>
         </div>
 

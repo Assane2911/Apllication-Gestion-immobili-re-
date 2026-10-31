@@ -22,6 +22,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import BoutonTheme from "../components/BoutonTheme";
+import Logo from "../components/Logo";
 import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -197,12 +198,76 @@ function TenantMockup() {
   );
 }
 
+/** En-tête de section : un numéro de feuille à la manière d'un plan, le titre à gauche, la phrase d'appui à droite. */
+function EnteteSection({ numero, titre, sous }: { numero: string; titre: string; sous?: string }) {
+  return (
+    <Reveal className="mb-12 grid md:grid-cols-12 gap-4 md:gap-8 items-end">
+      <div className="md:col-span-7">
+        <span aria-hidden="true" className="font-mono text-xs tracking-widest text-brand-700 dark:text-ocre">
+          {numero} ——
+        </span>
+        <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{titre}</h2>
+      </div>
+      {sous && <p className="md:col-span-5 text-sm text-slate-700 dark:text-slate-400 leading-relaxed">{sous}</p>}
+    </Reveal>
+  );
+}
+
+/**
+ * Illustration de l'accroche : le plan d'un logement coté comme sur une feuille d'architecte, avec deux petites
+ * maquettes posées dessus. Purement décorative (aucun texte de plus à traduire).
+ */
+function PlanAccroche() {
+  return (
+    <div aria-hidden="true" className="relative mx-auto w-full max-w-xl aspect-5/4 border-2 border-ink-900 dark:border-slate-300/70 bg-white/70 dark:bg-slate-900/60 rounded-md">
+      <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full text-ink-900 dark:text-slate-200">
+        <g fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round">
+          <path d="M60 60H440V340H60Z" />
+          <path d="M60 190H230M230 60V190M230 190V250M320 190H440M320 190V340M230 250H320" strokeWidth="3.5" />
+        </g>
+        <g fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M230 120a34 34 0 0 1 -34 -34" opacity=".6" />
+          <path d="M320 300a34 34 0 0 0 34 34" opacity=".6" />
+        </g>
+        <g className="text-brand-600 dark:text-ocre" stroke="currentColor" strokeWidth="1.5" fill="none">
+          <path d="M60 28H440M60 20V36M440 20V36M52 36L68 20M432 36L448 20" />
+          <path d="M470 60V340M462 60H478M462 340H478" />
+        </g>
+        <g className="text-brand-700 dark:text-ocre" fill="currentColor" fontFamily="DM Mono, monospace" fontSize="14">
+          <text x="250" y="20" textAnchor="middle">7,60 m</text>
+          <text x="490" y="205" textAnchor="middle" transform="rotate(90 490 205)">5,60 m</text>
+        </g>
+      </svg>
+      <div className="absolute -bottom-8 -left-4 sm:-left-8 w-48 sm:w-56 h-40 shadow-xl">
+        <DashboardMockup />
+      </div>
+      <div className="absolute -top-8 -right-4 sm:-right-8 w-44 sm:w-52 h-40 shadow-xl">
+        <ContractMockup />
+      </div>
+    </div>
+  );
+}
+
+const PORTEES_FONCTIONS = [
+  "md:col-span-4",
+  "md:col-span-2",
+  "md:col-span-2",
+  "md:col-span-2",
+  "md:col-span-2",
+  "md:col-span-3",
+  "md:col-span-3",
+  "md:col-span-3",
+  "md:col-span-3",
+] as const;
+
 export default function LandingPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { theme } = useTheme();
   // Sous 640 px, l'en-tête ne tient qu'en version resserrée (voir LandingPage.mobile.test.tsx).
   const telephone = useMediaQuery("(max-width: 639px)");
+  // Entre 640 et 1279 px, la barre flottante garde le code court de la langue pour que tous les liens tiennent.
+  const ecranMoyen = useMediaQuery("(max-width: 1279px)");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   // Mêmes lignes et mêmes descriptions que les cartes de la page Abonnement du gestionnaire (voir data/lignesFormules.ts).
@@ -225,16 +290,16 @@ export default function LandingPage() {
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-300/80 dark:border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+      <nav className="fixed top-3 inset-x-3 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl shadow-md flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 shrink-0">
-            <img src="/app-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow transition-transform duration-300 hover:rotate-6 hover:scale-105" />
-            <span className="sr-only sm:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-linear-to-r from-slate-900 dark:from-white via-slate-800 dark:via-slate-200 to-slate-600 dark:to-slate-400 bg-clip-text text-transparent">
+            <Logo taille={32} className="transition-transform duration-300 hover:rotate-6 hover:scale-105" />
+            <span className="sr-only sm:not-sr-only lg:sr-only xl:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-linear-to-r from-slate-900 dark:from-white via-slate-800 dark:via-slate-200 to-slate-600 dark:to-slate-400 bg-clip-text text-transparent">
               {t("common.appName")}
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-700 dark:text-slate-300">
+          <div className="hidden lg:flex items-center gap-3 xl:gap-6 whitespace-nowrap text-[11px] xl:text-xs font-medium text-slate-700 dark:text-slate-300">
             {/*
               La vitrine publique existait — route, page, API — mais AUCUN
               écran n'y menait : `/vitrine` n'apparaissait qu'une fois dans
@@ -267,7 +332,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
-            <LanguageSwitcher compact={telephone} variant={theme === "dark" ? "dark" : "light"} />
+            <LanguageSwitcher compact={telephone || ecranMoyen} variant={theme === "dark" ? "dark" : "light"} />
             <BoutonTheme />
             {user ? (
               <Link
@@ -297,99 +362,97 @@ export default function LandingPage() {
       </nav>
 
       <main>
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-44 md:pb-32 px-6 max-w-7xl mx-auto text-center overflow-hidden">
-        {/* Formes décoratives flottantes en arrière-plan */}
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-24 left-1/4 w-72 h-72 bg-brand-500/15 dark:bg-brand-600/20 rounded-full blur-3xl animate-float-slow" />
-          <div className="absolute top-10 right-1/4 w-72 h-72 bg-ocre/25 rounded-full blur-3xl animate-float-delay" />
-          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-ink-900/10 dark:bg-indigo-600/10 rounded-full blur-3xl animate-float" />
+      {/* Hero Section : texte à gauche, plan coté à droite */}
+      <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 px-6 max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-12 gap-14 lg:gap-8 items-center">
+          <div className="lg:col-span-6 text-center lg:text-left">
+            <Reveal>
+              <div className="inline-flex items-center gap-2 bg-ocre/20 border border-ocre/60 rounded-full px-4 py-1.5 text-xs text-slate-900 dark:text-slate-100 font-medium mb-7">
+                <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
+                {t("landing.badge")}
+              </div>
+            </Reveal>
+
+            <Reveal delay={80}>
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.05]">
+                {t("landing.hero.titleLine1")} <br />
+                <span className="text-brand-600 dark:text-ocre italic">
+                  {t("landing.hero.titleLine2")}
+                </span>
+              </h1>
+            </Reveal>
+
+            <Reveal delay={160}>
+              <p className="mt-6 text-base sm:text-lg text-slate-700 dark:text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed sm:leading-7">
+                {t("landing.hero.subtitle")}
+              </p>
+            </Reveal>
+
+            <Reveal delay={240}>
+              <div className="mt-9 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <Link
+                  to="/inscription"
+                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-8 py-3.5 rounded-md shadow-lg shadow-brand-600/25 transition-colors"
+                >
+                  {t("landing.hero.ctaTrial")}
+                </Link>
+                {/* Ce bouton annoncait « Tester en mode demo » et menait a /login,
+                    ou deux comptes de demonstration remplissaient le formulaire.
+                    Ces comptes ont ete retires : leur mot de passe etait ecrit en
+                    clair dans le code du frontend, donc servi au navigateur de
+                    chaque visiteur. Le bouton promettait donc une porte qui
+                    n'existe plus. Il mene desormais aux tarifs — ce que veut
+                    generalement voir un visiteur qui hesite a demarrer l'essai. */}
+                <a
+                  href="#pricing"
+                  className="w-full sm:w-auto text-center border-2 border-ink-900 dark:border-slate-300/70 text-slate-900 dark:text-slate-100 hover:bg-ink-900 hover:text-white dark:hover:bg-slate-100 dark:hover:text-ink-900 font-semibold text-sm px-6 py-3 rounded-md transition-colors"
+                >
+                  {t("landing.hero.ctaPricing")}
+                </a>
+              </div>
+            </Reveal>
+
+            <Reveal delay={320}>
+              <p className="mt-6 flex items-center justify-center lg:justify-start gap-2 text-xs text-slate-700 dark:text-slate-400">
+                <Apple className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <Smartphone className="w-4 h-4 shrink-0" aria-hidden="true" />
+                {t("landing.hero.mobileSoon")}
+              </p>
+            </Reveal>
+          </div>
+
+          <Reveal delay={200} className="lg:col-span-6 pb-6">
+            <PlanAccroche />
+          </Reveal>
         </div>
-
-        <Reveal>
-          <div className="inline-flex items-center gap-2 bg-brand-50 dark:bg-ink-800 border border-brand-500/30 rounded-full px-4 py-1.5 text-xs text-brand-700 dark:text-brand-300 font-medium mb-8 shadow-inner">
-            <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
-            {t("landing.badge")}
-          </div>
-        </Reveal>
-
-        <Reveal delay={80}>
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-4xl mx-auto leading-[1.1] sm:leading-none">
-            {t("landing.hero.titleLine1")} <br />
-            <span className="bg-size-[200%_auto] bg-linear-to-r from-ocre via-brand-300 to-brand-400 bg-clip-text text-transparent italic animate-gradient-x">
-              {t("landing.hero.titleLine2")}
-            </span>
-          </h1>
-        </Reveal>
-
-        <Reveal delay={160}>
-          <p className="mt-6 text-base sm:text-lg text-slate-700 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed sm:leading-7">
-            {t("landing.hero.subtitle")}
-          </p>
-        </Reveal>
-
-        <Reveal delay={240}>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/inscription"
-              className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-brand-600/30 transition-all hover:scale-105"
-            >
-              {t("landing.hero.ctaTrial")}
-            </Link>
-            {/* Ce bouton annoncait « Tester en mode demo » et menait a /login,
-                ou deux comptes de demonstration remplissaient le formulaire.
-                Ces comptes ont ete retires : leur mot de passe etait ecrit en
-                clair dans le code du frontend, donc servi au navigateur de
-                chaque visiteur. Le bouton promettait donc une porte qui
-                n'existe plus. Il mene desormais aux tarifs — ce que veut
-                generalement voir un visiteur qui hesite a demarrer l'essai. */}
-            <a
-              href="#pricing"
-              className="w-full sm:w-auto bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-all hover:scale-105"
-            >
-              {t("landing.hero.ctaPricing")}
-            </a>
-          </div>
-        </Reveal>
-
-        <Reveal delay={320}>
-          <p className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-700 dark:text-slate-400">
-            <Apple className="w-4 h-4 shrink-0" aria-hidden="true" />
-            <Smartphone className="w-4 h-4 shrink-0" aria-hidden="true" />
-            {t("landing.hero.mobileSoon")}
-          </p>
-        </Reveal>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-300/80 dark:border-slate-800/80">
-        <Reveal className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t("landing.featuresSection.title")}</h2>
-          <p className="text-sm text-slate-700 dark:text-slate-400 mt-3">{t("landing.featuresSection.subtitle")}</p>
-        </Reveal>
+      {/* Features Section : grille asymétrique */}
+      <section id="features" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
+        <EnteteSection numero="01" titre={t("landing.featuresSection.title")} sous={t("landing.featuresSection.subtitle")} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-left">
           {FEATURE_CARDS.map((card, i) => (
-            <Reveal key={card.key} delay={(i % 3) * 100} className="group">
-              <div className="h-full bg-white/60 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 p-6 rounded-3xl backdrop-blur-xs hover:border-slate-400 dark:hover:border-slate-700 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
-                <div
-                  className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
-                >
-                  <card.icon size={24} strokeWidth={1.75} aria-hidden="true" />
+            <Reveal key={card.key} delay={(i % 3) * 100} className={`group ${PORTEES_FONCTIONS[i]}`}>
+              <div className="relative h-full bg-white/70 dark:bg-slate-900/60 border border-slate-400/70 dark:border-slate-700 p-6 rounded-md hover:border-ink-900 dark:hover:border-slate-300 transition-colors">
+                <span aria-hidden="true" className="absolute top-4 right-5 font-mono text-[11px] text-slate-600 dark:text-slate-500">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className={`w-11 h-11 rounded-md ${card.color} flex items-center justify-center mb-4`}>
+                  <card.icon size={22} strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{t(`landing.features.${card.key}.title`)}</h3>
-                <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{t(`landing.features.${card.key}.desc`)}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed max-w-md">{t(`landing.features.${card.key}.desc`)}</p>
               </div>
             </Reveal>
           ))}
         </div>
 
-        <Reveal delay={200} className="mt-8 flex flex-wrap justify-center gap-2.5">
+        <Reveal delay={200} className="mt-8 flex flex-wrap gap-2.5">
           {extras.map((extra, i) => (
             <span
               key={i}
-              className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 px-3.5 py-2 rounded-full hover:border-brand-500/50 hover:text-slate-900 dark:hover:text-white transition-colors"
-              style={{ transitionDelay: `${i * 40}ms` }}
+              className="font-mono text-[11px] uppercase tracking-wide text-slate-800 dark:text-slate-300 border border-slate-400/70 dark:border-slate-700 px-3 py-1.5 rounded-sm hover:border-ink-900 dark:hover:border-slate-300 transition-colors"
             >
               {extra}
             </span>
@@ -397,67 +460,39 @@ export default function LandingPage() {
         </Reveal>
       </section>
 
-      {/* Product Tour Section */}
-      <section id="pdf" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-300/80 dark:border-slate-800/80">
-        <Reveal className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t("landing.productTour.title")}</h2>
-          <p className="text-sm text-slate-700 dark:text-slate-400 mt-3">{t("landing.productTour.subtitle")}</p>
-        </Reveal>
+      {/* Product Tour Section : quatre planches décalées */}
+      <section id="pdf" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
+        <EnteteSection numero="02" titre={t("landing.productTour.title")} sous={t("landing.productTour.subtitle")} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Reveal delay={0}>
-            <div className="bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-3xl p-6 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <div className="h-40 mb-5">
-                <DashboardMockup />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 xl:[&>*:nth-child(even)]:mt-10">
+          {[
+            { m: <DashboardMockup />, k: "dashboard" },
+            { m: <ContractMockup />, k: "contracts" },
+            { m: <ExpensesMockup />, k: "expenses" },
+            { m: <TenantMockup />, k: "tenant" },
+          ].map((item, i) => (
+            <Reveal key={item.k} delay={i * 100}>
+              <div className="h-full bg-white/50 dark:bg-slate-900/40 border border-slate-400/70 dark:border-slate-700 rounded-md p-5">
+                <div className="h-44 mb-5">{item.m}</div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">{t(`landing.productTour.${item.k}.title`)}</h3>
+                <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{t(`landing.productTour.${item.k}.desc`)}</p>
               </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">{t("landing.productTour.dashboard.title")}</h3>
-              <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{t("landing.productTour.dashboard.desc")}</p>
-            </div>
-          </Reveal>
-
-          <Reveal delay={100}>
-            <div className="bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-3xl p-6 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <div className="h-40 mb-5">
-                <ContractMockup />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">{t("landing.productTour.contracts.title")}</h3>
-              <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{t("landing.productTour.contracts.desc")}</p>
-            </div>
-          </Reveal>
-
-          <Reveal delay={0}>
-            <div className="bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-3xl p-6 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <div className="h-40 mb-5">
-                <ExpensesMockup />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">{t("landing.productTour.expenses.title")}</h3>
-              <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{t("landing.productTour.expenses.desc")}</p>
-            </div>
-          </Reveal>
-
-          <Reveal delay={100}>
-            <div className="bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-3xl p-6 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <div className="h-40 mb-5">
-                <TenantMockup />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">{t("landing.productTour.tenant.title")}</h3>
-              <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{t("landing.productTour.tenant.desc")}</p>
-            </div>
-          </Reveal>
+            </Reveal>
+          ))}
         </div>
       </section>
 
-      {/* For Who Section */}
-      <section className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-300/80 dark:border-slate-800/80">
-        <Reveal className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t("landing.forWho.title")}</h2>
-          <p className="text-sm text-slate-700 dark:text-slate-400 mt-3">{t("landing.forWho.subtitle")}</p>
-        </Reveal>
+      {/* For Who Section : trois colonnes séparées par des filets */}
+      <section className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
+        <EnteteSection numero="03" titre={t("landing.forWho.title")} sous={t("landing.forWho.subtitle")} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 border-y border-slate-400/70 dark:border-slate-700 divide-y md:divide-y-0 md:divide-x divide-slate-400/70 dark:divide-slate-700">
           {(["independent", "agency", "enterprise"] as const).map((key, i) => (
             <Reveal key={key} delay={i * 100}>
-              <div className="h-full bg-white/60 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 p-6 rounded-3xl hover:-translate-y-1.5 hover:border-slate-400 dark:hover:border-slate-700 transition-all duration-300">
+              <div className="h-full p-8">
+                <div aria-hidden="true" className="font-display text-5xl font-extrabold text-ocre mb-4">
+                  {String(i + 1).padStart(2, "0")}
+                </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">{t(`landing.forWho.${key}.title`)}</h3>
                 <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{t(`landing.forWho.${key}.desc`)}</p>
               </div>
@@ -573,83 +608,82 @@ export default function LandingPage() {
         </Reveal>
       </section>
 
-      {/* Trust / Security Section */}
-      <section id="trust" className="py-24 px-6 max-w-4xl mx-auto border-t border-slate-300/80 dark:border-slate-800/80">
-        <Reveal className="text-center mb-12">
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t("landing.trust.title")}</h2>
-          <p className="text-sm text-slate-700 dark:text-slate-400 mt-3">{t("landing.trust.subtitle")}</p>
-        </Reveal>
+      {/* Trust / Security Section : titre à gauche, engagements en liste à droite */}
+      <section id="trust" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
+        <div className="grid md:grid-cols-12 gap-10">
+          <Reveal className="md:col-span-5">
+            <span aria-hidden="true" className="font-mono text-xs tracking-widest text-brand-700 dark:text-ocre">05 ——</span>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{t("landing.trust.title")}</h2>
+            <p className="text-sm text-slate-700 dark:text-slate-400 mt-3 leading-relaxed">{t("landing.trust.subtitle")}</p>
+            <Link to="/confidentialite" className="mt-5 inline-block text-xs font-semibold text-brand-700 dark:text-brand-300 underline underline-offset-4 hover:text-brand-800 dark:hover:text-brand-200">
+              {t("landing.trust.linkLabel")}
+            </Link>
+          </Reveal>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {trustItems.map((item, i) => (
-            <Reveal key={i} delay={i * 80}>
-              <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 rounded-2xl p-4 text-xs text-slate-700 dark:text-slate-300 leading-relaxed hover:border-emerald-500/30 transition-colors">
-                <Check size={15} strokeWidth={2.5} className="text-emerald-800 dark:text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
-                <span>{item}</span>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-
-        <Reveal delay={200} className="text-center mt-8">
-          <Link to="/confidentialite" className="text-xs font-semibold text-brand-700 dark:text-brand-400 hover:text-brand-300">
-            {t("landing.trust.linkLabel")}
-          </Link>
-        </Reveal>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-24 px-6 max-w-3xl mx-auto border-t border-slate-300/80 dark:border-slate-800/80">
-        <Reveal className="text-center mb-12">
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t("landing.faq.title")}</h2>
-        </Reveal>
-
-        <div className="space-y-3">
-          {faqItems.map((item, i) => {
-            const isOpen = openFaq === i;
-            return (
-              <Reveal key={i} delay={i * 60}>
-                <div className="bg-white/60 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-                  <button
-                    onClick={() => setOpenFaq(isOpen ? null : i)}
-                    className="w-full flex items-center justify-between gap-4 text-left px-5 py-4"
-                  >
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.q}</span>
-                    <span
-                      className={`text-slate-600 dark:text-slate-500 transition-transform duration-300 shrink-0 ${isOpen ? "rotate-45" : ""}`}
-                    >
-                      +
-                    </span>
-                  </button>
-                  <div
-                    className={`grid transition-all duration-300 ease-in-out motion-reduce:transition-none ${
-                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                    }`}
-                  >
-                    <div className="overflow-hidden">
-                      <p className="px-5 pb-4 text-xs text-slate-700 dark:text-slate-400 leading-relaxed">{item.a}</p>
-                    </div>
-                  </div>
+          <div className="md:col-span-7 border-t border-slate-400/70 dark:border-slate-700">
+            {trustItems.map((item, i) => (
+              <Reveal key={i} delay={i * 80}>
+                <div className="flex items-start gap-4 border-b border-slate-400/70 dark:border-slate-700 py-5 text-sm text-slate-800 dark:text-slate-300 leading-relaxed">
+                  <span aria-hidden="true" className="font-mono text-[11px] text-slate-600 dark:text-slate-500 pt-0.5">{String(i + 1).padStart(2, "0")}</span>
+                  <Check size={15} strokeWidth={2.5} className="text-emerald-800 dark:text-emerald-400 shrink-0 mt-1" aria-hidden="true" />
+                  <span>{item}</span>
                 </div>
               </Reveal>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section : questions à droite, titre fixe à gauche */}
+      <section id="faq" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
+        <div className="grid md:grid-cols-12 gap-10">
+          <Reveal className="md:col-span-4">
+            <span aria-hidden="true" className="font-mono text-xs tracking-widest text-brand-700 dark:text-ocre">06 ——</span>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{t("landing.faq.title")}</h2>
+          </Reveal>
+
+          <div className="md:col-span-8 border-t border-slate-400/70 dark:border-slate-700">
+            {faqItems.map((item, i) => {
+              const isOpen = openFaq === i;
+              return (
+                <Reveal key={i} delay={i * 60}>
+                  <div className="border-b border-slate-400/70 dark:border-slate-700">
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : i)}
+                      className="w-full flex items-center justify-between gap-4 text-left py-5"
+                    >
+                      <span className="text-base font-semibold text-slate-900 dark:text-white">{item.q}</span>
+                      <span
+                        className={`text-xl leading-none text-brand-700 dark:text-ocre transition-transform duration-300 shrink-0 ${isOpen ? "rotate-45" : ""}`}
+                      >
+                        +
+                      </span>
+                    </button>
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out motion-reduce:transition-none ${
+                        isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <p className="pb-5 text-sm text-slate-700 dark:text-slate-400 leading-relaxed max-w-2xl">{item.a}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-300/80 dark:border-slate-800/80">
-        <Reveal className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t("landing.pricing.title")}</h2>
-          <p className="text-sm text-slate-700 dark:text-slate-400 mt-3">
-            {t("landing.pricing.subtitle")}
-          </p>
-        </Reveal>
+      <section id="pricing" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
+        <EnteteSection numero="07" titre={t("landing.pricing.title")} sous={t("landing.pricing.subtitle")} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Starter */}
           <Reveal delay={0}>
-            <div className="h-full bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-3xl p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-400 dark:hover:border-slate-700 transition-all duration-300">
+            <div className="h-full bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-lg p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-400 dark:hover:border-slate-700 transition-all duration-300">
               <div>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">{t("landing.pricing.starter.name")}</span>
                 <div className="mt-4 flex items-baseline gap-1">
@@ -677,7 +711,7 @@ export default function LandingPage() {
 
           {/* Pro */}
           <Reveal delay={100}>
-            <div className="h-full bg-linear-to-b from-brand-50 to-white dark:from-brand-900/60 dark:to-slate-900 border-2 border-brand-500 rounded-3xl p-8 flex flex-col justify-between relative shadow-2xl shadow-brand-900/40 hover:-translate-y-2 transition-all duration-300">
+            <div className="h-full bg-linear-to-b from-brand-50 to-white dark:from-brand-900/60 dark:to-slate-900 border-2 border-brand-500 rounded-lg p-8 flex flex-col justify-between relative shadow-2xl shadow-brand-900/40 hover:-translate-y-2 transition-all duration-300">
               <span className="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] uppercase font-extrabold px-3 py-0.5 rounded-full tracking-wider animate-pulse">
                 {t("landing.pricing.pro.badge")}
               </span>
@@ -708,7 +742,7 @@ export default function LandingPage() {
 
           {/* Enterprise */}
           <Reveal delay={200}>
-            <div className="h-full bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-3xl p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-400 dark:hover:border-slate-700 transition-all duration-300">
+            <div className="h-full bg-white/40 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 rounded-lg p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-400 dark:hover:border-slate-700 transition-all duration-300">
               <div>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">{t("landing.pricing.enterprise.name")}</span>
                 <div className="mt-4 flex items-baseline gap-1">
@@ -736,30 +770,34 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA Banner */}
+      {/* Final CTA Banner : cartouche de plan */}
       <section className="px-6 max-w-7xl mx-auto pb-24">
         <Reveal>
-          <div className="relative overflow-hidden bg-linear-to-br from-brand-600 to-ink-900 rounded-3xl px-8 py-16 text-center shadow-2xl shadow-brand-900/40">
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute inset-y-0 -left-1/2 w-1/3 bg-white/10 animate-shine" />
+          <div className="overflow-hidden border-2 border-ink-900 dark:border-slate-300/70 bg-white dark:bg-slate-900 rounded-md">
+            <div aria-hidden="true" className="bande-motif h-3" />
+            <div className="grid md:grid-cols-12 gap-8 items-center px-8 py-12 md:px-12">
+              <div className="md:col-span-8">
+                <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-2xl">
+                  {t("landing.finalCta.title")}
+                </h2>
+                <p className="text-sm text-slate-700 dark:text-slate-400 mt-4 max-w-lg leading-relaxed">{t("landing.finalCta.subtitle")}</p>
+              </div>
+              <div className="md:col-span-4 md:text-right">
+                <Link
+                  to="/inscription"
+                  className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm px-8 py-3.5 rounded-md shadow-lg shadow-brand-600/25 transition-colors"
+                >
+                  {t("landing.finalCta.cta")}
+                </Link>
+              </div>
             </div>
-            <h2 className="relative text-2xl sm:text-3xl font-extrabold text-white max-w-xl mx-auto">
-              {t("landing.finalCta.title")}
-            </h2>
-            <p className="relative text-sm text-brand-100 mt-4 max-w-lg mx-auto">{t("landing.finalCta.subtitle")}</p>
-            <Link
-              to="/inscription"
-              className="relative mt-8 inline-block bg-white hover:bg-slate-100 text-brand-700 font-bold text-sm px-8 py-3.5 rounded-xl shadow-xl transition-all hover:scale-105"
-            >
-              {t("landing.finalCta.cta")}
-            </Link>
           </div>
         </Reveal>
       </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-300/80 dark:border-slate-800/80 py-12 px-6 bg-slate-100 dark:bg-slate-950 text-center text-xs text-slate-700 dark:text-slate-400">
+      <footer className="border-t border-slate-300/80 dark:border-slate-800/80 py-12 px-6 bg-white/60 dark:bg-slate-950/60 backdrop-blur text-center text-xs text-slate-700 dark:text-slate-400">
         <p>{t("landing.footer.rights")}</p>
         <p className="mt-2">{t("landing.footer.tagline")}</p>
         <div className="mt-4 flex items-center justify-center gap-4">

@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import Logo from "./Logo";
 import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
@@ -90,7 +91,7 @@ export default function ManagerLayout() {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
-                <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow-md shadow-brand-900/30" />
+                <Logo sur="sombre" />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
               </div>
               <div className="min-w-0">

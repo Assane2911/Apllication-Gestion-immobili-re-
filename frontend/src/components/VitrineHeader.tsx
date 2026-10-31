@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import Logo from "./Logo";
 import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
 
@@ -13,7 +14,7 @@ export default function VitrineHeader() {
         <div className="flex items-center gap-3 min-w-0">
           <BoutonsHistorique />
           <Link to="/landing" className="flex items-center gap-2.5 min-w-0">
-            <img src="/app-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow shrink-0" />
+            <Logo taille={32} />
             <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{t("vitrine.brand")}</span>
           </Link>
         </div>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
+import Logo from "./Logo";
 import { COMPANY } from "../legal/companyInfo";
 import BoutonTheme from "./BoutonTheme";
 import Seo from "./Seo";
@@ -52,7 +53,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
       <nav className="border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <img src="/app-icon.png" alt="Logo" className="w-7 h-7 rounded-lg shadow" />
+            <Logo taille={28} />
             <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">{COMPANY.tradeName}</span>
           </Link>
           <div className="flex items-center gap-3">

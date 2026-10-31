@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
+import Logo from "./Logo";
 import { useTheme } from "../context/theme";
 import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -96,9 +97,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
       <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-contour-200/80 dark:border-slate-800/80 shadow-2xs">
         <div className={`${colonne} mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className="hidden min-[380px]:flex w-9 h-9 shrink-0 rounded-xl bg-linear-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold shadow-xs shadow-brand-500/20">
-              <img src="/app-icon.png" alt="Logo" className="w-full h-full object-cover rounded-xl" />
-            </div>
+            <Logo className="hidden min-[380px]:block" />
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 <h1 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight max-sm:line-clamp-2 sm:truncate">{titre}</h1>

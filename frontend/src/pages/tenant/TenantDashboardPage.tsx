@@ -136,15 +136,15 @@ export default function TenantDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="surface-sombre relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 via-brand-950 to-slate-900 text-white p-6 sm:p-7 shadow-md border border-slate-800">
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-brand-500/15 blur-2xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-7 border-2 border-ink-900 dark:border-slate-300/50">
+        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-ocre/30 blur-2xl pointer-events-none" />
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-500/20 border border-brand-400/30 text-[11px] font-semibold text-brand-300 mb-2.5">
-            <ShieldCheck size={13} className="text-emerald-400" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-ocre/25 border border-ocre/60 text-[11px] font-semibold text-slate-900 dark:text-brand-300 mb-2.5">
+            <ShieldCheck size={13} className="text-emerald-700 dark:text-emerald-400" />
             {t("tenant.dashboard.verified")}
           </div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("tenant.dashboard.title")}</h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-1 max-w-xl">
             {t("tenant.dashboard.intro")}
           </p>
         </div>
