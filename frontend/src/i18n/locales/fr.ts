@@ -316,6 +316,13 @@ const fr = {
     },
     appName: "ImmoPlatform Pro",
     sheet: "Feuille",
+    calendar: {
+      choose: "Choisir une date",
+      previous: "Mois précédent",
+      next: "Mois suivant",
+      clear: "Effacer",
+      today: "Aujourd'hui",
+    },
     civility: {
       label: "Civilité",
       none: "Non précisée",

@@ -433,6 +433,20 @@ html
   }
 }
 
+/* Champs date : clair, bleu de plan, icône de calendrier de la couleur de l'encre (le calendrier lui-même est ChampDate). */
+input[type="date"],
+input[type="datetime-local"] {
+  color-scheme: light;
+  accent-color: var(--color-ink-900);
+  font-variant-numeric: tabular-nums;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.85;
+  filter: invert(19%) sepia(37%) saturate(1500%) hue-rotate(176deg) brightness(92%);
+}
+
 /* En-têtes de tableaux : bandeau bleu de plan, libellés blancs, comme un tableau de légende. */
 html [data-surface="app"] thead {
   background-color: var(--color-ink-900);

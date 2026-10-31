@@ -31,6 +31,7 @@ import type { Contract, ContractStatus, PaginatedResponse, Property, Tenant } fr
 import Bulle from "../../components/Bulle";
 import { ecartEnJours, formaterJour } from "../../utils/jourCivil";
 import { NomDuBien } from "../../components/PlanLogement";
+import ChampDate from "../../components/ChampDate";
 
 /** Bail actif dont la date anniversaire approche sans révision prévue (GET /contracts/revisions-due). */
 interface BailAReviser {
@@ -557,17 +558,17 @@ export default function ContractsPage() {
             </div>
             <div>
               <label htmlFor="contract-startDate" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.startDate")}</label>
-              <input id="contract-startDate" required type="date" value={form.startDate} onChange={(e) => changerDebut(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <ChampDate id="contract-startDate" required value={form.startDate} onChange={(e) => changerDebut(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.endDate")}</label>
-              <input id="contract-endDate" required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <ChampDate id="contract-endDate" required value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             {!editingContract && form.startDate !== "" && form.startDate < premierDuMoisCourant && (
               <div>
                 <label htmlFor="contract-billingFrom" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.billingFrom")}</label>
                 <div className="flex gap-2">
-                  <input id="contract-billingFrom" type="date" min={form.startDate} max={form.endDate || undefined} value={form.billingFrom} onChange={(e) => setForm({ ...form, billingFrom: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  <ChampDate id="contract-billingFrom" min={form.startDate} max={form.endDate || undefined} value={form.billingFrom} onChange={(e) => setForm({ ...form, billingFrom: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                   <button type="button" onClick={() => setForm({ ...form, billingFrom: premierDuMoisCourant })} className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">{t("manager.contracts.fields.billingFromCurrentMonth")}</button>
                 </div>
                 <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.billingFromHint")}</p>

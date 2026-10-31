@@ -9,6 +9,7 @@ import VitrineHeader from "../components/VitrineHeader";
 import type { Listing, LeadRequestType } from "../types";
 import { countryLabel } from "../utils/countries";
 import { buildListingJsonLd } from "../utils/structuredData";
+import ChampDate from "../components/ChampDate";
 
 const emptyLeadForm = {
   prospectName: "",
@@ -190,7 +191,7 @@ export default function VitrineListingPage() {
                     {leadForm.requestType === "VISIT" && (
                       <div>
                         <label htmlFor="lead-date" className="block text-xs font-medium text-slate-700 mb-1">{t("vitrine.leadForm.preferredDate")}</label>
-                        <input id="lead-date" type="date" value={leadForm.preferredDate} onChange={(e) => setLeadForm({ ...leadForm, preferredDate: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
+                        <ChampDate id="lead-date" value={leadForm.preferredDate} onChange={(e) => setLeadForm({ ...leadForm, preferredDate: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
                       </div>
                     )}
                     <div className="sm:col-span-2">
