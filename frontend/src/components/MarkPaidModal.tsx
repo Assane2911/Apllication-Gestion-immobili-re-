@@ -5,6 +5,7 @@ import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
 import type { MoyenSaisiAlaMain } from "../types";
 import { useDialogue } from "../hooks/useDialogue";
+import ChampDate from "./ChampDate";
 
 const MOYENS: MoyenSaisiAlaMain[] = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"];
 
@@ -145,9 +146,8 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
             <label htmlFor="mark-paid-date" className={etiquette}>
               {t("components.markPaidModal.dateLabel")}
             </label>
-            <input
+            <ChampDate
               id="mark-paid-date"
-              type="date"
               required
               max={aujourdhui}
               value={paidAt}

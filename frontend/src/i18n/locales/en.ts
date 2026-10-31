@@ -318,6 +318,13 @@ const en: TranslationSchema = {
     },
     appName: "ImmoPlatform Pro",
     sheet: "Sheet",
+    calendar: {
+      choose: "Choose a date",
+      previous: "Previous month",
+      next: "Next month",
+      clear: "Clear",
+      today: "Today",
+    },
     civility: {
       label: "Title",
       none: "Not specified",

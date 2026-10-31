@@ -12,6 +12,7 @@ import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { formaterJour } from "../../utils/jourCivil";
 import { NomDuBien } from "../../components/PlanLogement";
+import ChampDate from "../../components/ChampDate";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
@@ -354,16 +355,14 @@ export default function ExpensesPage() {
       <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-semibold text-slate-700">{t("manager.expenses.fullReportLabel")}</span>
-          <input
-            type="date"
+          <ChampDate
             aria-label={t("manager.expenses.fields.reportDateFrom")}
             value={reportRange.from}
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
             className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           />
           <span className="text-xs text-slate-600">{t("manager.expenses.to")}</span>
-          <input
-            type="date"
+          <ChampDate
             aria-label={t("manager.expenses.fields.reportDateTo")}
             value={reportRange.to}
             onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })}
@@ -502,9 +501,8 @@ export default function ExpensesPage() {
                 </div>
                 <div>
                   <label htmlFor="expense-modal-date" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.invoiceDate")}</label>
-                  <input
+                  <ChampDate
                     id="expense-modal-date"
-                    type="date"
                     required
                     value={form.expenseDate}
                     onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
@@ -579,9 +577,8 @@ export default function ExpensesPage() {
                     <label htmlFor="expense-modal-recurrence-end" className="block text-xs font-semibold text-slate-700 mb-1">
                       {t("manager.expenses.fields.recurrenceEndDate")}
                     </label>
-                    <input
+                    <ChampDate
                       id="expense-modal-recurrence-end"
-                      type="date"
                       value={form.recurrenceEndDate}
                       onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
                       className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"

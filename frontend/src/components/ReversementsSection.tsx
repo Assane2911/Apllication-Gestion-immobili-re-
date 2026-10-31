@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
 import type { CrgSynthesis, PayoutMethod } from "../types";
+import ChampDate from "./ChampDate";
 
 const MOYENS: PayoutMethod[] = ["BANK_TRANSFER", "MOBILE_MONEY", "CASH", "CHEQUE", "OTHER"];
 
@@ -165,7 +166,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
             </div>
             <div>
               <label htmlFor="payout-date" className={etiquette}>{t("components.payouts.date")}</label>
-              <input id="payout-date" type="date" max={aujourdhui()} value={paidAt} onChange={(e) => setPaidAt(e.target.value)} className={champ} />
+              <ChampDate id="payout-date" max={aujourdhui()} value={paidAt} onChange={(e) => setPaidAt(e.target.value)} className={champ} />
             </div>
             <div>
               <label htmlFor="payout-method" className={etiquette}>{t("components.payouts.method")}</label>

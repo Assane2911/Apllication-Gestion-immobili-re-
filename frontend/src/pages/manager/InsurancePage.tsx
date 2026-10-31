@@ -9,6 +9,7 @@ import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { formaterJour } from "../../utils/jourCivil";
 import { NomDuBien } from "../../components/PlanLogement";
+import ChampDate from "../../components/ChampDate";
 
 const PAGE_SIZE = 20;
 // Pour le filtre "par bien" : on ne le pagine pas comme la liste principale,
@@ -364,9 +365,8 @@ export default function InsurancePage() {
                   <label htmlFor="insurance-modal-start" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.insurance.fields.startDate")}
                   </label>
-                  <input
+                  <ChampDate
                     id="insurance-modal-start"
-                    type="date"
                     value={form.startDate}
                     onChange={(e) => setForm({ ...form, startDate: e.target.value })}
                     className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
@@ -378,9 +378,8 @@ export default function InsurancePage() {
                 <label htmlFor="insurance-modal-expiry" className="block text-xs font-semibold text-slate-700 mb-1">
                   {t("manager.insurance.fields.expiryDate")}
                 </label>
-                <input
+                <ChampDate
                   id="insurance-modal-expiry"
-                  type="date"
                   required
                   value={form.expiryDate}
                   onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
