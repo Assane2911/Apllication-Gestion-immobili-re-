@@ -16,8 +16,9 @@ describe("polices de caractères", () => {
     expect(html).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
   });
 
-  it("les polices Manrope et Public Sans sont embarquées avec l'application", () => {
-    expect(main).toMatch(/@fontsource\/manrope/);
+  it("les polices Bricolage Grotesque, DM Mono et Public Sans sont embarquées avec l'application", () => {
+    expect(main).toMatch(/@fontsource\/bricolage-grotesque/);
+    expect(main).toMatch(/@fontsource\/dm-mono/);
     expect(main).toMatch(/@fontsource\/public-sans/);
   });
 });
@@ -25,10 +26,11 @@ describe("polices de caractères", () => {
 const css = readFileSync(resolve(__dirname, "../index.css"), "utf8");
 
 describe("police des titres", () => {
-  // `'"Manrope"'` (guillemets doubles DANS des guillemets simples) désigne une famille dont le nom contient des
-  // guillemets : elle n'existe pas, et tous les titres h1–h3 de la plateforme retombaient sur la police système.
-  it("les titres h1–h3 demandent bien la famille Manrope, et non un nom entouré de guillemets parasites", () => {
-    expect(css).not.toContain(`'"Manrope"'`);
-    expect(css).toMatch(/h1,\s*h2,\s*h3\s*\{[^}]*(font-display|font-family:\s*"Manrope")/);
+  // `'"Bricolage Grotesque"'` (guillemets doubles DANS des guillemets simples) désignerait une famille dont le nom
+  // contient des guillemets : elle n'existerait pas, et tous les titres h1–h3 retomberaient sur la police système.
+  it("les titres h1–h3 demandent bien la famille Bricolage Grotesque, sans guillemets parasites", () => {
+    expect(css).not.toContain(`'"Bricolage Grotesque"'`);
+    expect(css).toMatch(/--font-display:\s*'Bricolage Grotesque'/);
+    expect(css).toMatch(/h1,\s*h2,\s*h3\s*\{[^}]*font-display/);
   });
 });

@@ -312,7 +312,7 @@ export default function LandingPage() {
         <Reveal delay={80}>
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1] sm:leading-none">
             {t("landing.hero.titleLine1")} <br />
-            <span className="bg-size-[200%_auto] bg-linear-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent italic animate-gradient-x">
+            <span className="bg-size-[200%_auto] bg-linear-to-r from-ocre via-brand-300 to-brand-400 bg-clip-text text-transparent italic animate-gradient-x">
               {t("landing.hero.titleLine2")}
             </span>
           </h1>
@@ -470,7 +470,7 @@ export default function LandingPage() {
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
             {t("landing.compare.titlePrefix")}{" "}
-            <span className="bg-linear-to-r from-brand-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-ocre via-brand-300 to-brand-400 bg-clip-text text-transparent">
               ImmoPlatform Pro
             </span>
           </h2>

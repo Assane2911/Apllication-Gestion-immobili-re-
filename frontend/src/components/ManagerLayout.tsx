@@ -1,29 +1,9 @@
 import {
   BookOpen,
-  Briefcase,
-  Building2,
-  ClipboardCheck,
-  CreditCard,
-  FileText,
-  FileUp,
-  Gem,
-  Gift,
-  HardHat,
-  History,
-  Home,
-  LayoutDashboard,
   LogOut,
-  Megaphone,
   Menu,
-  MessageCircle,
   Moon,
-  PhoneCall,
-  Receipt,
-  ShieldCheck,
   Sun,
-  Users,
-  Wallet,
-  Wrench,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -48,26 +28,26 @@ import BoutonSuggestion from "./BoutonSuggestion";
 const pagesHorsMenu = [{ to: "/guide-demarrage", key: "guide" }];
 
 const navItems = [
-  { to: "/dashboard", key: "dashboard", icon: LayoutDashboard },
-  { to: "/properties", key: "properties", icon: Home },
-  { to: "/tenants", key: "tenants", icon: Users },
-  { to: "/proprietaires", key: "owners", icon: Briefcase },
-  { to: "/contracts", key: "contracts", icon: FileText },
-  { to: "/etats-des-lieux", key: "inspections", icon: ClipboardCheck },
-  { to: "/invoices", key: "invoices", icon: CreditCard },
-  { to: "/annonces", key: "listings", icon: Megaphone },
-  { to: "/leads", key: "leads", icon: PhoneCall },
-  { to: "/expenses", key: "expenses", icon: Wallet },
-  { to: "/assurances", key: "insurance", icon: ShieldCheck },
-  { to: "/bilan-fiscal", key: "fiscal", icon: Receipt },
-  { to: "/messages", key: "messages", icon: MessageCircle },
-  { to: "/issues", key: "issues", icon: Wrench },
-  { to: "/prestataires", key: "vendors", icon: HardHat },
-  { to: "/activity-log", key: "activityLog", icon: History },
-  { to: "/import", key: "import", icon: FileUp },
-  { to: "/agency", key: "agency", icon: Building2 },
-  { to: "/subscription", key: "subscription", icon: Gem },
-  { to: "/parrainage", key: "referral", icon: Gift },
+  { to: "/dashboard", key: "dashboard" },
+  { to: "/properties", key: "properties" },
+  { to: "/tenants", key: "tenants" },
+  { to: "/proprietaires", key: "owners" },
+  { to: "/contracts", key: "contracts" },
+  { to: "/etats-des-lieux", key: "inspections" },
+  { to: "/invoices", key: "invoices" },
+  { to: "/annonces", key: "listings" },
+  { to: "/leads", key: "leads" },
+  { to: "/expenses", key: "expenses" },
+  { to: "/assurances", key: "insurance" },
+  { to: "/bilan-fiscal", key: "fiscal" },
+  { to: "/messages", key: "messages" },
+  { to: "/issues", key: "issues" },
+  { to: "/prestataires", key: "vendors" },
+  { to: "/activity-log", key: "activityLog" },
+  { to: "/import", key: "import" },
+  { to: "/agency", key: "agency" },
+  { to: "/subscription", key: "subscription" },
+  { to: "/parrainage", key: "referral" },
 ] as const;
 
 export default function ManagerLayout() {
@@ -91,7 +71,7 @@ export default function ManagerLayout() {
   const libellePage = /^\/proprietaires\/[^/]+\/crg$/.test(chemin) ? t("nav.owner.crg") : entree ? t(`nav.manager.${entree.key}`) : null;
 
   return (
-    <div className="min-h-screen flex bg-canvas dark:bg-slate-950">
+    <div className="min-h-screen flex">
       {libellePage && <title>{`${libellePage} | ${t("common.appName")}`}</title>}
       {mobileNavOpen && (
         <div
@@ -101,10 +81,11 @@ export default function ManagerLayout() {
         />
       )}
       <aside
-        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-dvh sm:h-screen bg-linear-to-b from-ink-950 via-ink-900 to-ink-950 text-slate-100 border-r border-ink-700/80 flex flex-col shrink-0 shadow-xl transform transition-transform duration-200 ease-in-out ${
+        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 h-dvh sm:h-screen bg-ink-900 text-slate-100 border-r border-ink-700 flex flex-col shrink-0 shadow-xl transform transition-transform duration-200 ease-in-out ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         } sm:translate-x-0`}
       >
+        <div aria-hidden="true" className="bande-motif h-3.5 shrink-0" />
         <div className="shrink-0 px-5 py-5 border-b border-ink-700/80">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -114,7 +95,7 @@ export default function ManagerLayout() {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-bold leading-tight truncate">{t("common.appName")}</h1>
+                  <h1 className="text-sm font-extrabold leading-tight truncate">{t("common.appName")}</h1>
                 </div>
                 <p className="text-[11px] text-slate-400 truncate">{t("components.managerLayout.subtitle")}</p>
               </div>
@@ -139,15 +120,15 @@ export default function ManagerLayout() {
             </div>
           </div>
           {sub?.isTrialActive && (
-            <div className="mt-3 bg-linear-to-r from-brand-950/80 to-ink-900 border border-brand-500/30 rounded-lg px-3 py-1.5 text-[11px] text-brand-200 flex items-center justify-between shadow-2xs">
+            <div className="mt-3 bg-ink-800 border border-ocre/40 rounded-sm px-3 py-1.5 text-[11px] text-slate-200 flex items-center justify-between shadow-2xs">
               <div className="flex items-center gap-1.5">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ocre opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-ocre" />
                 </span>
                 <span>{t("components.managerLayout.trialFree")}</span>
               </div>
-              <span className="font-bold text-white bg-brand-600/40 px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
+              <span className="font-mono font-medium text-ink-900 bg-ocre px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
             </div>
           )}
           <div className="mt-3 pt-3 border-t border-ink-700/80">
@@ -163,8 +144,8 @@ export default function ManagerLayout() {
             <LanguageSwitcher className="w-full [&>select]:w-full" />
           </div>
         </div>
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1" onClick={() => setMobileNavOpen(false)}>
-          {navItems.map((item) => (
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-0.5" onClick={() => setMobileNavOpen(false)}>
+          {navItems.map((item, index) => (
             // La bulle s'ouvre à DROITE : dans une barre latérale, au-dessus
             // recouvrirait l'entrée précédente, c'est-à-dire une autre cible
             // cliquable.
@@ -173,14 +154,16 @@ export default function ManagerLayout() {
               to={item.to}
               end={item.to === "/dashboard"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 ${
+                `flex items-baseline gap-3 px-3 py-2 rounded-sm text-sm transition-colors duration-150 ${
                   isActive
-                    ? "bg-linear-to-r from-brand-600 to-brand-700 text-white font-medium shadow-xs shadow-brand-500/25"
-                    : "text-slate-300 hover:bg-ink-800/60 hover:text-white"
+                    ? "bg-ocre text-ink-900 font-semibold"
+                    : "text-slate-200 hover:bg-ink-800 hover:text-white"
                 }`
               }
             >
-              <item.icon size={17} strokeWidth={1.9} className="shrink-0" aria-hidden="true" />
+              <span aria-hidden="true" className="w-5 shrink-0 font-mono text-[11px] opacity-80">
+                {String(index + 1).padStart(2, "0")}
+              </span>
               <span className="truncate">{t(`nav.manager.${item.key}`)}</span>
             </NavLink>
             </Bulle>
@@ -188,7 +171,7 @@ export default function ManagerLayout() {
         </nav>
         <div className="shrink-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-ink-700/80 bg-ink-950/40">
           <div className="flex items-center gap-2.5 min-w-0 p-1.5 rounded-xl bg-ink-900/50 border border-ink-700/60">
-            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-brand-400 to-brand-700 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
+            <div className="w-8 h-8 rounded-sm bg-ocre flex items-center justify-center text-xs font-bold text-ink-900 shrink-0">
               {(user?.email?.[0] || "?").toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
