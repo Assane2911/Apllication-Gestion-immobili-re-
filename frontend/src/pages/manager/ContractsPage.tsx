@@ -202,7 +202,7 @@ export default function ContractsPage() {
   function modifierLien(c: Contract) {
     if (c.signedByTenantAt) return null;
     return (
-      <button type="button" onClick={() => ouvrirModification(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => ouvrirModification(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
         {t("manager.contracts.edit")}
       </button>
     );
@@ -211,7 +211,7 @@ export default function ContractsPage() {
   /** Lien « Colocataires (n) » : ouvre la gestion des colocataires du bail. */
   function colocatairesLien(c: Contract) {
     return (
-      <button type="button" onClick={() => setCotenantsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => setCotenantsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
         {t("manager.contracts.cotenantsLink", { count: c.cotenantNames?.length ?? 0 })}
       </button>
     );
@@ -220,7 +220,7 @@ export default function ContractsPage() {
   /** Lien « Garants (n) » : ouvre la gestion des garants du bail (consultation seule une fois signé). */
   function garantsLien(c: Contract) {
     return (
-      <button type="button" onClick={() => setGuarantorsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => setGuarantorsContract(c)} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
         {t("manager.contracts.guarantorsLink", { count: c.guarantorsCount ?? 0 })}
       </button>
     );
@@ -230,7 +230,7 @@ export default function ContractsPage() {
   function revisionLien(c: Contract) {
     if (c.status !== "ACTIVE") return null;
     return (
-      <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+      <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="mt-1 block whitespace-nowrap text-left text-[11px] text-brand-600 font-semibold hover:underline">
         {t("manager.contracts.reviseRent")}
       </button>
     );
@@ -239,10 +239,10 @@ export default function ContractsPage() {
   function echeanceLigne(c: Contract) {
     const jour = jourEcheance(c);
     return (
-      <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+      <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[11px] text-slate-600">
         {c.paymentDay === 31 ? t("manager.contracts.paymentDayRowLast") : t("manager.contracts.paymentDayRow", { day: jour })}
         {!c.signedByTenantAt && (
-          <button type="button" onClick={() => setEditingPaymentDay(c)} className="whitespace-nowrap text-left text-brand-600 dark:text-brand-400 font-semibold hover:underline">
+          <button type="button" onClick={() => setEditingPaymentDay(c)} className="whitespace-nowrap text-left text-brand-600 font-semibold hover:underline">
             {t("manager.contracts.editPaymentDay")}
           </button>
         )}
@@ -462,8 +462,8 @@ export default function ContractsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.contracts.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.contracts.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.contractCreate")}>
         <button onClick={() => { setEditingContract(null); setForm(formulaireVide()); setShowForm(true); }} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
@@ -473,7 +473,7 @@ export default function ContractsPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -482,17 +482,17 @@ export default function ContractsPage() {
       )}
 
       {bauxAReviser.length > 0 && (
-        <section aria-labelledby="baux-a-reviser" className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl px-4 py-3">
-          <h3 id="baux-a-reviser" className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+        <section aria-labelledby="baux-a-reviser" className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <h3 id="baux-a-reviser" className="text-sm font-semibold text-amber-900">
             {t("manager.contracts.revisionsDue.title", { count: bauxAReviser.length })}
           </h3>
-          <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">{t("manager.contracts.revisionsDue.hint")}</p>
-          <ul className="mt-2 divide-y divide-amber-200/70 dark:divide-amber-500/20">
+          <p className="text-xs text-amber-800 mt-0.5">{t("manager.contracts.revisionsDue.hint")}</p>
+          <ul className="mt-2 divide-y divide-amber-200/70">
             {bauxAReviser.map((b) => (
               <li key={b.contractId} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="text-slate-800 dark:text-slate-200">
+                <span className="text-slate-800">
                   <span className="font-medium">{b.propertyTitle}</span> — {b.tenantName}
-                  <span className="block text-xs text-slate-600 dark:text-slate-400">
+                  <span className="block text-xs text-slate-600">
                     {t("manager.contracts.revisionsDue.anniversary", {
                       date: formaterJour(b.anniversaire, i18n.language),
                       rent: formatMoney(b.rent, b.currency),
@@ -513,19 +513,19 @@ export default function ContractsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">{editingContract ? t("manager.contracts.editTitle") : t("manager.contracts.formTitle")}</h3>
-          {editingContract && <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">{t("manager.contracts.editHint")}</p>}
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 mb-1">{editingContract ? t("manager.contracts.editTitle") : t("manager.contracts.formTitle")}</h3>
+          {editingContract && <p className="text-xs text-slate-600 mb-4">{t("manager.contracts.editHint")}</p>}
           {!editingContract && <div className="mb-3" />}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="contract-property" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.property")}</label>
+              <label htmlFor="contract-property" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.property")}</label>
               <select id="contract-property" required value={form.propertyId} onChange={(e) => {
                 const prop = properties.find((p) => p.id === e.target.value);
                 // En modification, choisir un autre bien ne réécrit pas le loyer ni le dépôt déjà convenus.
                 if (editingContract) setForm({ ...form, propertyId: e.target.value });
                 else setForm({ ...form, propertyId: e.target.value, rent: prop ? String(prop.rent) : form.rent, deposit: prop ? String(prop.rent * 2) : form.deposit });
-              }} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              }} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">{t("manager.contracts.fields.selectProperty")}</option>
                 {availableProperties.map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
@@ -533,8 +533,8 @@ export default function ContractsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="contract-tenant" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.tenant")}</label>
-              <select id="contract-tenant" required value={form.tenantId} onChange={(e) => setForm({ ...form, tenantId: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="contract-tenant" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.tenant")}</label>
+              <select id="contract-tenant" required value={form.tenantId} onChange={(e) => setForm({ ...form, tenantId: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">{t("manager.contracts.fields.selectTenant")}</option>
                 {tenants.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>{tenant.firstName} {tenant.lastName}</option>
@@ -542,39 +542,39 @@ export default function ContractsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="contract-rent" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.rent")}</label>
-              <input id="contract-rent" required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-rent" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.rent")}</label>
+              <input id="contract-rent" required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="contract-deposit" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.deposit")}</label>
-              <input id="contract-deposit" required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-deposit" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.deposit")}</label>
+              <input id="contract-deposit" required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="contract-agencyFee" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.agencyFee")}</label>
-              <input id="contract-agencyFee" type="number" min="0" step="0.01" value={form.agencyFee} onChange={(e) => setForm({ ...form, agencyFee: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.agencyFeeHint")}</p>
+              <label htmlFor="contract-agencyFee" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.agencyFee")}</label>
+              <input id="contract-agencyFee" type="number" min="0" step="0.01" value={form.agencyFee} onChange={(e) => setForm({ ...form, agencyFee: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.agencyFeeHint")}</p>
             </div>
             <div>
-              <label htmlFor="contract-startDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.startDate")}</label>
-              <input id="contract-startDate" required type="date" value={form.startDate} onChange={(e) => changerDebut(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-startDate" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.startDate")}</label>
+              <input id="contract-startDate" required type="date" value={form.startDate} onChange={(e) => changerDebut(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.endDate")}</label>
-              <input id="contract-endDate" required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.endDate")}</label>
+              <input id="contract-endDate" required type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             {!editingContract && form.startDate !== "" && form.startDate < premierDuMoisCourant && (
               <div>
-                <label htmlFor="contract-billingFrom" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.billingFrom")}</label>
+                <label htmlFor="contract-billingFrom" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.billingFrom")}</label>
                 <div className="flex gap-2">
-                  <input id="contract-billingFrom" type="date" min={form.startDate} max={form.endDate || undefined} value={form.billingFrom} onChange={(e) => setForm({ ...form, billingFrom: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
-                  <button type="button" onClick={() => setForm({ ...form, billingFrom: premierDuMoisCourant })} className="shrink-0 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">{t("manager.contracts.fields.billingFromCurrentMonth")}</button>
+                  <input id="contract-billingFrom" type="date" min={form.startDate} max={form.endDate || undefined} value={form.billingFrom} onChange={(e) => setForm({ ...form, billingFrom: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  <button type="button" onClick={() => setForm({ ...form, billingFrom: premierDuMoisCourant })} className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">{t("manager.contracts.fields.billingFromCurrentMonth")}</button>
                 </div>
-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.billingFromHint")}</p>
+                <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.billingFromHint")}</p>
               </div>
             )}
             <div>
-              <label htmlFor="contract-paymentDay" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.paymentDay")}</label>
-              <select id="contract-paymentDay" value={form.paymentDay} onChange={(e) => setForm({ ...form, paymentDay: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="contract-paymentDay" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.paymentDay")}</label>
+              <select id="contract-paymentDay" value={form.paymentDay} onChange={(e) => setForm({ ...form, paymentDay: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">{t("manager.contracts.fields.paymentDayStart")}</option>
                 {JOURS_ECHEANCE.map((jour) => (
                   <option key={jour} value={jour}>
@@ -582,29 +582,29 @@ export default function ContractsPage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.paymentDayHint")}</p>
+              <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.paymentDayHint")}</p>
             </div>
             <div>
-              <label htmlFor="contract-leaseType" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.leaseType")}</label>
-              <select id="contract-leaseType" value={form.leaseType} onChange={(e) => changerTypeDeBail(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="contract-leaseType" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.leaseType")}</label>
+              <select id="contract-leaseType" value={form.leaseType} onChange={(e) => changerTypeDeBail(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 {(["HABITATION", "MEUBLE", "COMMERCIAL", "PROFESSIONNEL"] as const).map((type) => (
                   <option key={type} value={type}>{t(`manager.contracts.fields.leaseTypes.${type}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="contract-applicableLaw" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.applicableLaw")}</label>
-              <input id="contract-applicableLaw" type="text" maxLength={300} value={form.applicableLaw} onChange={(e) => setForm({ ...form, applicableLaw: e.target.value })} placeholder={t("manager.contracts.fields.applicableLawPlaceholder")} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.applicableLawHint")}</p>
+              <label htmlFor="contract-applicableLaw" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.applicableLaw")}</label>
+              <input id="contract-applicableLaw" type="text" maxLength={300} value={form.applicableLaw} onChange={(e) => setForm({ ...form, applicableLaw: e.target.value })} placeholder={t("manager.contracts.fields.applicableLawPlaceholder")} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.applicableLawHint")}</p>
             </div>
             {proposeMentionsLogement(pays, form.leaseType) && (
-              <fieldset className="md:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-3">
-                <legend className="px-1 text-sm font-medium text-slate-700 dark:text-slate-300">{t("manager.contracts.mentionsFr.titre")}</legend>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">{t("manager.contracts.mentionsFr.hint")}</p>
+              <fieldset className="md:col-span-2 rounded-lg border border-slate-200 px-4 py-3">
+                <legend className="px-1 text-sm font-medium text-slate-700">{t("manager.contracts.mentionsFr.titre")}</legend>
+                <p className="text-xs text-slate-600 mb-3">{t("manager.contracts.mentionsFr.hint")}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="contract-dpe" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.mentionsFr.dpe")}</label>
-                    <select id="contract-dpe" value={form.dpe} onChange={(e) => setForm({ ...form, dpe: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+                    <label htmlFor="contract-dpe" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.mentionsFr.dpe")}</label>
+                    <select id="contract-dpe" value={form.dpe} onChange={(e) => setForm({ ...form, dpe: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                       <option value="">{t("manager.contracts.mentionsFr.dpeNone")}</option>
                       {CLASSES_DPE.map((classe) => (
                         <option key={classe} value={classe}>{classe}</option>
@@ -613,27 +613,27 @@ export default function ContractsPage() {
                   </div>
                   {(["identifiantFiscal", "periodeConstruction", "chauffage"] as const).map((cle) => (
                     <div key={cle}>
-                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
-                      <input id={`contract-${cle}`} type="text" maxLength={cle === "identifiantFiscal" ? 40 : cle === "periodeConstruction" ? 60 : 100} value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
+                      <input id={`contract-${cle}`} type="text" maxLength={cle === "identifiantFiscal" ? 40 : cle === "periodeConstruction" ? 60 : 100} value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                     </div>
                   ))}
                   {MENTIONS_MONTANTS.map((cle) => (
                     <div key={cle}>
-                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
-                      <input id={`contract-${cle}`} type="number" min="0" step="0.01" value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
+                      <input id={`contract-${cle}`} type="number" min="0" step="0.01" value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                     </div>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.mentionsFr.montantsHint")}</p>
+                <p className="mt-2 text-xs text-slate-600">{t("manager.contracts.mentionsFr.montantsHint")}</p>
                 {mentionsAbsentes(form).length > 0 && (
-                  <p role="status" className="mt-2 rounded-lg border border-amber-300/70 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                  <p role="status" className="mt-2 rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                     {t("manager.contracts.mentionsFr.absentes", { liste: mentionsAbsentes(form).map((cle) => t(`manager.contracts.mentionsFr.${cle}`)).join(", ") })}
                   </p>
                 )}
               </fieldset>
             )}
             {rappels.length > 0 && pays && (
-              <div role="status" className="md:col-span-2 rounded-lg border border-amber-300/70 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
+              <div role="status" className="md:col-span-2 rounded-lg border border-amber-300/70 bg-amber-50 px-4 py-3 text-xs text-amber-900">
                 <p className="font-semibold">{t(`manager.contracts.regles.${pays}.titre`)}</p>
                 <ul className="mt-1 list-disc pl-4 space-y-1">
                   {rappels.map((r) => (
@@ -644,7 +644,7 @@ export default function ContractsPage() {
               </div>
             )}
             <div className="md:col-span-2">
-              <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.contracts.fields.terms")}</label>
+              <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.terms")}</label>
               <textarea
                 id="contract-terms"
                 rows={form.terms.length > 300 ? 14 : 4}
@@ -652,25 +652,25 @@ export default function ContractsPage() {
                 value={form.terms}
                 onChange={(e) => setForm({ ...form, terms: e.target.value })}
                 placeholder={t("manager.contracts.fields.termsPlaceholder")}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.termsHint")}</p>
+              <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.termsHint")}</p>
               <button
                 type="button"
                 onClick={() => setForm({ ...form, terms: insererClause(form.terms, CLAUSE_CAUTION) })}
                 aria-describedby="contract-terms-caution-hint"
-                className="mt-2 text-xs font-semibold text-brand-700 dark:text-brand-400 hover:underline"
+                className="mt-2 text-xs font-semibold text-brand-700 hover:underline"
               >
                 {t("manager.contracts.fields.insertGuarantee")}
               </button>
-              <p id="contract-terms-caution-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.contracts.fields.insertGuaranteeHint")}</p>
+              <p id="contract-terms-caution-hint" className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.insertGuaranteeHint")}</p>
             </div>
-            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : editingContract ? t("manager.contracts.saveChanges") : t("manager.contracts.create")}
               </button>
-              <button type="button" onClick={fermerFormulaire} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={fermerFormulaire} className="text-sm text-slate-600 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -679,9 +679,9 @@ export default function ContractsPage() {
       )}
 
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="hidden sm:block bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 text-slate-700 text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.property")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.tenant")}</th>
@@ -692,29 +692,29 @@ export default function ContractsPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.contracts.table.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {contracts.map((c) => {
               const daysLeft = daysUntil(c.endDate);
               const showRenewal = c.status === "ACTIVE" && daysLeft <= RENEWAL_WINDOW_DAYS;
               return (
-              <tr key={c.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 ${showRenewal ? "bg-amber-50/50 dark:bg-amber-500/10" : ""}`}>
-                <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium">{c.property?.title}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+              <tr key={c.id} className={`hover:bg-slate-50/50 ${showRenewal ? "bg-amber-50/50" : ""}`}>
+                <td className="px-4 py-3 text-slate-900 font-medium">{c.property?.title}</td>
+                <td className="px-4 py-3 text-slate-600">
                   {c.tenant?.firstName} {c.tenant?.lastName}
                   {(c.cotenantNames ?? []).length > 0 && <span className="block text-[11px]">+ {c.cotenantNames!.join(", ")}</span>}
                 </td>
-                <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">
+                <td className="px-4 py-3 text-slate-900 font-semibold">
                   <span className="whitespace-nowrap">{formatMoney(c.rent, c.currency)}</span>
                   {revisionLien(c)}
                   {garantsLien(c)}
                   {colocatairesLien(c)}
                   {modifierLien(c)}
                 </td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
+                <td className="px-4 py-3 text-slate-600 text-xs">
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
                   {c.status === "ACTIVE" && echeanceLigne(c)}
                   {showRenewal && (
-                    <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold">
+                    <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 font-semibold">
                       <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
                       {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                     </span>
@@ -722,16 +722,16 @@ export default function ContractsPage() {
                 </td>
                 <td className="px-4 py-3 text-xs space-y-1 whitespace-nowrap">
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400">{t("manager.contracts.agency")}</span>
+                    <span className="text-[10px] text-slate-600">{t("manager.contracts.agency")}</span>
                     {c.signedByManagerAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                      <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                       </span>
                     ) : (
                       <Bulle texte={t("manager.tips.contractSign")}>
                       <button
                         onClick={() => setSigningContract(c)}
-                        className="text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1"
+                        className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1"
                       >
                         <PenLine size={13} aria-hidden="true" /> {t("manager.contracts.sign")}
                       </button>
@@ -739,13 +739,13 @@ export default function ContractsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400">{t("manager.contracts.tenantLabel")}</span>
+                    <span className="text-[10px] text-slate-600">{t("manager.contracts.tenantLabel")}</span>
                     {c.signedByTenantAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                      <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                       </span>
                     ) : (
-                      <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
+                      <span className="text-amber-700 inline-flex items-center gap-1">
                         <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
                       </span>
                     )}
@@ -759,7 +759,7 @@ export default function ContractsPage() {
                   <Bulle texte={t("manager.tips.contractViewLease")}>
                   <button
                     onClick={() => setViewingLeaseContract(c)}
-                    className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                   >
                     <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                   </button>
@@ -770,7 +770,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractViewScan")}>
                     <button
                       onClick={() => handleViewScannedContract(c)}
-                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80"
                     >
                       <FileCheck size={13} />
                       <span>{t("manager.contracts.scanContractShort")}</span>
@@ -782,7 +782,7 @@ export default function ContractsPage() {
                   <button
                     onClick={() => triggerScanUpload(c)}
                     disabled={uploadingScanContractId === c.id}
-                    className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20 disabled:opacity-50"
+                    className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80 disabled:opacity-50"
                   >
                     <Camera size={13} />
                     <span>
@@ -806,7 +806,7 @@ export default function ContractsPage() {
                       </button>
                       </Bulle>
                       <Bulle texte={t("manager.tips.contractEnd")}>
-                      <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">
+                      <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 hover:underline text-xs">
                         {t("manager.contracts.doNotRenew")}
                       </button>
                       </Bulle>
@@ -814,7 +814,7 @@ export default function ContractsPage() {
                   )}
                   {c.status === "ACTIVE" && (
                     <Bulle texte={t("manager.tips.contractTerminate")}>
-                    <button onClick={() => handleTerminate(c)} className="text-amber-700 dark:text-amber-400 hover:underline text-xs">
+                    <button onClick={() => handleTerminate(c)} className="text-amber-700 hover:underline text-xs">
                       {t("manager.contracts.terminate")}
                     </button>
                     </Bulle>
@@ -824,7 +824,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
                       <button
                         onClick={() => handleCancelDepositRefund(c)}
-                        className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                        className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-200/80"
                       >
                         <Banknote size={13} aria-hidden="true" />
                         <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
@@ -834,7 +834,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractDepositRefund")}>
                       <button
                         onClick={() => setDepositRefundContract(c)}
-                        className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20"
+                        className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1 border border-brand-200/80"
                       >
                         <Banknote size={13} aria-hidden="true" />
                         <span>{t("manager.contracts.depositRefund")}</span>
@@ -843,7 +843,7 @@ export default function ContractsPage() {
                     )
                   )}
                   <Bulle texte={t("manager.tips.contractDelete")}>
-                  <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
+                  <button onClick={() => handleDelete(c)} className="text-red-600 hover:underline text-xs">
                     {t("common.actions.delete")}
                   </button>
                   </Bulle>
@@ -864,14 +864,14 @@ export default function ContractsPage() {
           return (
             <div
               key={c.id}
-              className={`bg-white dark:bg-slate-900 rounded-xl border shadow-sm p-4 space-y-2.5 ${
-                showRenewal ? "border-amber-300 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-500/10" : "border-contour-200 dark:border-slate-800"
+              className={`bg-white rounded-xl border shadow-sm p-4 space-y-2.5 ${
+                showRenewal ? "border-amber-300 bg-amber-50/50" : "border-contour-200"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">{c.property?.title}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                  <p className="font-medium text-slate-900">{c.property?.title}</p>
+                  <p className="text-xs text-slate-600">
                     {c.tenant?.firstName} {c.tenant?.lastName}
                     {(c.cotenantNames ?? []).length > 0 && ` + ${c.cotenantNames!.join(", ")}`}
                   </p>
@@ -879,29 +879,29 @@ export default function ContractsPage() {
                 <Badge status={c.status} />
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(c.rent, c.currency)}</span>
+                <span className="font-semibold text-slate-900">{formatMoney(c.rent, c.currency)}</span>
                 {revisionLien(c)}
                   {garantsLien(c)}
                   {colocatairesLien(c)}
                   {modifierLien(c)}
-                <span className="text-slate-600 dark:text-slate-400">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
+                <span className="text-slate-600">{formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}</span>
               </div>
               {c.status === "ACTIVE" && echeanceLigne(c)}
               {showRenewal && (
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                <p className="text-xs font-semibold text-amber-700">
                   <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
                   {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                 </p>
               )}
-              <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-3 text-[11px] text-slate-600">
                 <span>
                   {t("manager.contracts.agency")} {c.signedByManagerAt ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                    <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
                       <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                     </span>
                   ) : (
                     <Bulle texte={t("manager.tips.contractSign")}>
-                    <button onClick={() => setSigningContract(c)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1">
+                    <button onClick={() => setSigningContract(c)} className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1">
                       <PenLine size={13} aria-hidden="true" /> {t("manager.contracts.sign")}
                     </button>
                     </Bulle>
@@ -909,21 +909,21 @@ export default function ContractsPage() {
                 </span>
                 <span>
                   {t("manager.contracts.tenantLabel")} {c.signedByTenantAt ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                    <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
                       <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                     </span>
                   ) : (
-                    <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
+                    <span className="text-amber-700 inline-flex items-center gap-1">
                       <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
                     </span>
                   )}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100">
                 <Bulle texte={t("manager.tips.contractViewLease")}>
                 <button
                   onClick={() => setViewingLeaseContract(c)}
-                  className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
+                  className="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                 >
                   <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                 </button>
@@ -933,7 +933,7 @@ export default function ContractsPage() {
                   <Bulle texte={t("manager.tips.contractViewScan")}>
                   <button
                     onClick={() => handleViewScannedContract(c)}
-                    className="text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                    className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80"
                   >
                     <FileCheck size={13} />
                     <span>{t("manager.contracts.scanContractShort")}</span>
@@ -945,7 +945,7 @@ export default function ContractsPage() {
                 <button
                   onClick={() => triggerScanUpload(c)}
                   disabled={uploadingScanContractId === c.id}
-                  className="text-xs bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20 disabled:opacity-50"
+                  className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80 disabled:opacity-50"
                 >
                   <Camera size={13} />
                   <span>
@@ -969,7 +969,7 @@ export default function ContractsPage() {
                     </button>
                     </Bulle>
                     <Bulle texte={t("manager.tips.contractEnd")}>
-                    <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">
+                    <button onClick={() => changeStatus(c, "ENDED")} className="text-slate-600 hover:underline text-xs">
                       {t("manager.contracts.doNotRenew")}
                     </button>
                     </Bulle>
@@ -977,7 +977,7 @@ export default function ContractsPage() {
                 )}
                 {c.status === "ACTIVE" && (
                   <Bulle texte={t("manager.tips.contractTerminate")}>
-                  <button onClick={() => handleTerminate(c)} className="text-amber-700 dark:text-amber-400 hover:underline text-xs">
+                  <button onClick={() => handleTerminate(c)} className="text-amber-700 hover:underline text-xs">
                     {t("manager.contracts.terminate")}
                   </button>
                   </Bulle>
@@ -987,7 +987,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
                     <button
                       onClick={() => handleCancelDepositRefund(c)}
-                      className="text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80 dark:border-emerald-500/20"
+                      className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/80"
                     >
                       <Banknote size={13} aria-hidden="true" />
                       <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
@@ -997,7 +997,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractDepositRefund")}>
                     <button
                       onClick={() => setDepositRefundContract(c)}
-                      className="text-xs bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80 dark:border-brand-500/20"
+                      className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-brand-200/80"
                     >
                       <Banknote size={13} aria-hidden="true" />
                       <span>{t("manager.contracts.depositRefund")}</span>
@@ -1006,7 +1006,7 @@ export default function ContractsPage() {
                   )
                 )}
                 <Bulle texte={t("manager.tips.contractDelete")}>
-                <button onClick={() => handleDelete(c)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
+                <button onClick={() => handleDelete(c)} className="text-red-600 hover:underline text-xs">
                   {t("common.actions.delete")}
                 </button>
                 </Bulle>

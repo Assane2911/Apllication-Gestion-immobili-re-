@@ -54,14 +54,14 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div
         {...dialogue}
-        className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200 dark:border-slate-700"
+        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200"
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 id="formal-notice-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            <h3 id="formal-notice-title" className="text-lg font-bold text-slate-900">
               {t("components.formalNoticeModal.title")}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5">
               {t("components.formalNoticeModal.subtitle", {
                 property: bail.propertyTitle,
                 tenant: bail.tenantName,
@@ -69,14 +69,14 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
               })}
             </p>
           </div>
-          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600">
             <X size={18} />
           </button>
         </div>
 
         {emise ? (
           <div className="mt-4 space-y-3">
-            <p role="status" className="rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
+            <p role="status" className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">
               {t("components.formalNoticeModal.done", { reference: emise.reference })}{" "}
               {!sendEmail
                 ? t("components.formalNoticeModal.doneNoEmail")
@@ -92,9 +92,9 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
                 </>
               )}
             </p>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("components.formalNoticeModal.registeredMail")}</p>
+            <p className="text-xs text-slate-600">{t("components.formalNoticeModal.registeredMail")}</p>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={onClose} className="text-sm px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              <button type="button" onClick={onClose} className="text-sm px-3 py-2 rounded-lg border border-slate-300 text-slate-700">
                 {t("common.actions.close")}
               </button>
               <button type="button" onClick={() => onOpenDocument(emise.id)} className="text-sm px-3 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white font-semibold">
@@ -104,9 +104,9 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
           </div>
         ) : (
           <form onSubmit={emettre} className="mt-4 space-y-4">
-            <p className="text-sm text-slate-700 dark:text-slate-300">{t("components.formalNoticeModal.intro")}</p>
+            <p className="text-sm text-slate-700">{t("components.formalNoticeModal.intro")}</p>
             <div>
-              <label htmlFor="formal-notice-deadline" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="formal-notice-deadline" className="block text-sm font-medium text-slate-700 mb-1">
                 {t("components.formalNoticeModal.deadline")}
               </label>
               <input
@@ -118,15 +118,15 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
                 required
                 value={deadlineDays}
                 onChange={(e) => setDeadlineDays(e.target.value)}
-                className="w-28 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
+                className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t("components.formalNoticeModal.deadlineHint")}</p>
+              <p className="text-xs text-slate-500 mt-1">{t("components.formalNoticeModal.deadlineHint")}</p>
             </div>
-            <label className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <label className="flex items-start gap-2 text-sm text-slate-700">
               <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="mt-0.5" />
               {t("components.formalNoticeModal.sendEmail")}
             </label>
-            <label className={`flex items-start gap-2 text-sm ml-6 ${sendEmail ? "text-slate-700 dark:text-slate-300" : "text-slate-400 dark:text-slate-600"}`}>
+            <label className={`flex items-start gap-2 text-sm ml-6 ${sendEmail ? "text-slate-700" : "text-slate-400"}`}>
               <input
                 type="checkbox"
                 checked={sendEmail && notifyGuarantors}
@@ -136,14 +136,14 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
               />
               {t("components.formalNoticeModal.notifyGuarantors")}
             </label>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("components.formalNoticeModal.registeredMail")}</p>
+            <p className="text-xs text-slate-600">{t("components.formalNoticeModal.registeredMail")}</p>
             {bail.agencyReachable === false && (
-              <p role="note" className="text-xs rounded-lg border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-amber-900 dark:text-amber-200">
+              <p role="note" className="text-xs rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
                 {t("components.formalNoticeModal.agencyUnreachable")}
               </p>
             )}
             {error && (
-              <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+              <p role="alert" className="text-sm text-red-700">
                 {error}
               </p>
             )}

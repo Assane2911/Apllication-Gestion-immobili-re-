@@ -77,8 +77,8 @@ export default function VitrinePage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">{t("vitrine.title")}</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-2xl">{t("vitrine.subtitle")}</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">{t("vitrine.title")}</h1>
+          <p className="text-sm text-slate-600 mt-2 max-w-2xl">{t("vitrine.subtitle")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -86,7 +86,7 @@ export default function VitrinePage() {
             aria-label={t("vitrine.filterByCountry")}
             value={countryFilter}
             onChange={(e) => handleCountryChange(e.target.value)}
-            className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white text-slate-900 shadow-sm"
           >
             <option value="ALL">{t("vitrine.allCountries")}</option>
             {countries.map((code) => (
@@ -97,7 +97,7 @@ export default function VitrinePage() {
             aria-label={t("vitrine.filterByType")}
             value={typeFilter}
             onChange={(e) => handleTypeChange(e.target.value as ListingType | "ALL")}
-            className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white text-slate-900 shadow-sm"
           >
             <option value="ALL">{t("vitrine.allTypes")}</option>
             {LISTING_TYPES.map((type) => (
@@ -107,7 +107,7 @@ export default function VitrinePage() {
         </div>
 
         {loadError && (
-          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
             <span>{loadError}</span>
             <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
               {t("common.actions.retry")}
@@ -116,7 +116,7 @@ export default function VitrinePage() {
         )}
 
         {!loading && listings.length === 0 && !loadError && (
-          <p className="text-center py-16 text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+          <p className="text-center py-16 text-sm text-slate-600 bg-white rounded-2xl border border-dashed border-slate-300">
             {t("vitrine.empty")}
           </p>
         )}
@@ -126,13 +126,13 @@ export default function VitrinePage() {
             <Link
               key={listing.id}
               to={`/vitrine/annonces/${listing.id}`}
-              className="group text-left bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden cursor-pointer block"
+              className="group text-left bg-white rounded-2xl border border-contour-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 transition-all duration-200 overflow-hidden cursor-pointer block"
             >
-              <div className="relative h-40 bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div className="relative h-40 bg-slate-100 overflow-hidden">
                 {listing.imageUrl ? (
                   <img src={fileUrl(listing.imageUrl) ?? undefined} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
                     <Building2 size={40} strokeWidth={1.5} aria-hidden="true" />
                   </div>
                 )}
@@ -143,18 +143,18 @@ export default function VitrinePage() {
                 )}
               </div>
               <div className="p-4">
-                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-1">
+                <h3 className="font-bold text-slate-900 text-sm leading-snug group-hover:text-brand-600 transition-colors line-clamp-1">
                   {listing.title}
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1">
+                <p className="text-xs text-slate-600 mt-1 line-clamp-1">
                   {listing.location}
                   {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
                 </p>
-                <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-contour-100 dark:border-slate-800">
-                  <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
+                <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-contour-100">
+                  <span className="font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
                     {t(`manager.listings.types.${listing.type}`)}
                   </span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                  <span className="font-bold text-slate-900">
                     {new Intl.NumberFormat(i18n.language).format(listing.price)} {listing.currency}
                   </span>
                 </div>
@@ -169,16 +169,16 @@ export default function VitrinePage() {
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 disabled:opacity-40"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 bg-white disabled:opacity-40"
             >
               {t("common.pagination.previous")}
             </button>
-            <span className="text-xs text-slate-600 dark:text-slate-400 px-1">{t("common.pagination.pageOf", { page, totalPages })}</span>
+            <span className="text-xs text-slate-600 px-1">{t("common.pagination.pageOf", { page, totalPages })}</span>
             <button
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 disabled:opacity-40"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 bg-white disabled:opacity-40"
             >
               {t("common.pagination.next")}
             </button>

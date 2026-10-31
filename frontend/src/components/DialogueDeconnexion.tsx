@@ -16,18 +16,18 @@ export default function DialogueDeconnexion({ onAnnuler, onConfirmer }: { onAnnu
       <Dialogue
         onClose={onAnnuler}
         titreId="deconnexion-titre"
-        className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700"
+        className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200"
       >
-        <h2 id="deconnexion-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
+        <h2 id="deconnexion-titre" className="text-base font-bold text-slate-900">
           {t("components.deconnexion.title")}
         </h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{t("components.deconnexion.message")}</p>
+        <p className="mt-2 text-sm text-slate-600">{t("components.deconnexion.message")}</p>
         <div className="mt-5 flex flex-wrap gap-2 justify-end">
           <button
             type="button"
             onClick={onAnnuler}
             data-autofocus
-            className="text-sm font-semibold px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="text-sm font-semibold px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
           >
             {t("components.deconnexion.cancel")}
           </button>

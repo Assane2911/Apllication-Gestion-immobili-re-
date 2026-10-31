@@ -71,7 +71,7 @@ export default function ChampTelephone({ id, value, onChange, required, disabled
           value={pays?.code ?? ""}
           disabled={disabled}
           onChange={(e) => emettre(PAYS_TELEPHONE.find((p) => p.code === e.target.value) ?? null, national)}
-          className="w-40 shrink-0 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2 py-2 text-sm"
+          className="w-40 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-900 px-2 py-2 text-sm"
         >
           {!pays && <option value="">{t("common.phoneField.chooseCountry")}</option>}
           {PAYS_TELEPHONE.map((p) => (
@@ -89,15 +89,15 @@ export default function ChampTelephone({ id, value, onChange, required, disabled
           value={national}
           placeholder={pays?.exempleTelephone}
           onChange={(e) => emettre(pays, e.target.value)}
-          className="flex-1 min-w-0 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
+          className="flex-1 min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </div>
 
       {!pays && national ? (
-        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{t("common.phoneField.missingCountry")}</p>
+        <p className="mt-1 text-xs text-amber-700">{t("common.phoneField.missingCountry")}</p>
       ) : compose ? (
         <p
-          className={`mt-1 text-xs ${valide ? "text-slate-600 dark:text-slate-400" : "text-amber-700 dark:text-amber-400"}`}
+          className={`mt-1 text-xs ${valide ? "text-slate-600" : "text-amber-700"}`}
         >
           {valide
             ? t("common.phoneField.willBeSaved", { numero: compose })

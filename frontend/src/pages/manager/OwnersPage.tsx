@@ -208,8 +208,8 @@ export default function OwnersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.owners.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.owners.count", { count: owners.length })}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.owners.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.owners.count", { count: owners.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.ownerCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
@@ -219,7 +219,7 @@ export default function OwnersPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -228,19 +228,19 @@ export default function OwnersPage() {
       )}
 
       {synthese && aReverser(synthese).length > 0 && (
-        <section aria-labelledby="reversements-du-mois" className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl px-4 py-3">
-          <h3 id="reversements-du-mois" className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+        <section aria-labelledby="reversements-du-mois" className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <h3 id="reversements-du-mois" className="text-sm font-semibold text-amber-900">
             {t("manager.owners.payoutsDue.title", {
               period: new Date(synthese.year, synthese.month - 1, 1).toLocaleDateString(i18n.language, { month: "long", year: "numeric" }),
               count: aReverser(synthese).length,
             })}
           </h3>
-          <ul className="mt-2 divide-y divide-amber-200/70 dark:divide-amber-500/20">
+          <ul className="mt-2 divide-y divide-amber-200/70">
             {aReverser(synthese).map((o) => (
               <li key={o.ownerId} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="text-slate-800 dark:text-slate-200">
+                <span className="text-slate-800">
                   <span className="font-medium">{o.ownerName}</span>
-                  {!o.hasIban && <span className="ml-2 text-xs text-amber-800 dark:text-amber-300">{t("manager.owners.payoutsDue.noIban")}</span>}
+                  {!o.hasIban && <span className="ml-2 text-xs text-amber-800">{t("manager.owners.payoutsDue.noIban")}</span>}
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="font-semibold tabular-nums">
@@ -249,7 +249,7 @@ export default function OwnersPage() {
                       .map(([devise, montant]) => formatMoney(montant, devise))
                       .join(" · ")}
                   </span>
-                  <Link to={`/proprietaires/${o.ownerId}/crg?month=${synthese.month}&year=${synthese.year}`} className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                  <Link to={`/proprietaires/${o.ownerId}/crg?month=${synthese.month}&year=${synthese.year}`} className="text-xs font-semibold text-brand-600 hover:underline">
                     {t("manager.owners.payoutsDue.action")}
                   </Link>
                 </span>
@@ -260,73 +260,73 @@ export default function OwnersPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.owners.formTitleEdit") : t("manager.owners.formTitleNew")}</h3>
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 mb-4">{editing ? t("manager.owners.formTitleEdit") : t("manager.owners.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label htmlFor="owner-civility" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("common.civility.label")}</label>
-              <select id="owner-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className="w-full md:w-56 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="owner-civility" className="block text-sm font-medium text-slate-700 mb-1">{t("common.civility.label")}</label>
+              <select id="owner-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className="w-full md:w-56 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 <option value="">{t("common.civility.none")}</option>
                 <option value="M">{t("common.civility.M")}</option>
                 <option value="MME">{t("common.civility.MME")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="owner-firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.firstName")}</label>
-              <input id="owner-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-firstName" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.firstName")}</label>
+              <input id="owner-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="owner-lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.lastName")}</label>
-              <input id="owner-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-lastName" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.lastName")}</label>
+              <input id="owner-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="owner-companyName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.companyName")}</label>
-              <input id="owner-companyName" maxLength={200} value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-companyName" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.companyName")}</label>
+              <input id="owner-companyName" maxLength={200} value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="owner-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.phone")}</label>
+              <label htmlFor="owner-phone" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.phone")}</label>
               <ChampTelephone id="owner-phone" required value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
             <div>
-              <label htmlFor="owner-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.email")}</label>
-              <input id="owner-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-email" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.email")}</label>
+              <input id="owner-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="owner-address" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.address")}</label>
-              <input id="owner-address" maxLength={300} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-address" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.address")}</label>
+              <input id="owner-address" maxLength={300} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="owner-iban" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.iban")}</label>
-              <input id="owner-iban" value={form.iban} onChange={(e) => setForm({ ...form, iban: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-iban" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.iban")}</label>
+              <input id="owner-iban" value={form.iban} onChange={(e) => setForm({ ...form, iban: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="owner-bic" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.bic")}</label>
-              <input id="owner-bic" value={form.bic} onChange={(e) => setForm({ ...form, bic: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-bic" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.bic")}</label>
+              <input id="owner-bic" value={form.bic} onChange={(e) => setForm({ ...form, bic: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="owner-managementFeeRate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.managementFeeRate")}</label>
-              <input id="owner-managementFeeRate" required type="number" step="0.1" min="0" max="100" value={form.managementFeeRate} onChange={(e) => setForm({ ...form, managementFeeRate: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
-              {editing && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("manager.owners.fields.managementFeeRateHint")}</p>}
+              <label htmlFor="owner-managementFeeRate" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.managementFeeRate")}</label>
+              <input id="owner-managementFeeRate" required type="number" step="0.1" min="0" max="100" value={form.managementFeeRate} onChange={(e) => setForm({ ...form, managementFeeRate: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              {editing && <p className="mt-1 text-xs text-slate-500">{t("manager.owners.fields.managementFeeRateHint")}</p>}
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="owner-language" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.language")}</label>
-              <select id="owner-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} aria-describedby="owner-language-hint" className="w-full md:w-56 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="owner-language" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.language")}</label>
+              <select id="owner-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} aria-describedby="owner-language-hint" className="w-full md:w-56 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 {SUPPORTED_LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>{l.label}</option>
                 ))}
               </select>
-              <p id="owner-language-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.owners.fields.languageHint")}</p>
+              <p id="owner-language-hint" className="mt-1 text-xs text-slate-600">{t("manager.owners.fields.languageHint")}</p>
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="owner-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.owners.fields.notes")}</label>
-              <textarea id="owner-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="owner-notes" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.owners.fields.notes")}</label>
+              <textarea id="owner-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -344,9 +344,9 @@ export default function OwnersPage() {
       ) : (
       <>
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="hidden sm:block bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 text-slate-700 text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.owners.table.name")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.owners.table.phone")}</th>
@@ -356,28 +356,28 @@ export default function OwnersPage() {
               <th className="relative px-4 py-3 font-semibold"><span className="sr-only">{t("common.actions.column")}</span></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={6} />)
             ) : (
             owners.map((owner) => (
               <tr key={owner.id}>
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                <td className="px-4 py-3 font-medium text-slate-900">
                   {owner.firstName} {owner.lastName}
-                  {owner.companyName && <span className="block text-xs font-normal text-slate-600 dark:text-slate-400">{owner.companyName}</span>}
+                  {owner.companyName && <span className="block text-xs font-normal text-slate-600">{owner.companyName}</span>}
                 </td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{owner.phone}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{owner.email}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{owner.managementFeeRate}%</td>
+                <td className="px-4 py-3 text-slate-600">{owner.phone}</td>
+                <td className="px-4 py-3 text-slate-600">{owner.email}</td>
+                <td className="px-4 py-3 text-slate-600">{owner.managementFeeRate}%</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-1">
                     <span
                       className={`text-xs ${
                         owner.portalStatus === "ACTIVE"
-                          ? "text-emerald-700 dark:text-emerald-400"
+                          ? "text-emerald-700"
                           : owner.portalStatus === "PENDING"
-                            ? "text-amber-700 dark:text-amber-400"
-                            : "text-slate-600 dark:text-slate-400"
+                            ? "text-amber-700"
+                            : "text-slate-600"
                       }`}
                     >
                       {portalStatusLabel(owner)}
@@ -387,26 +387,26 @@ export default function OwnersPage() {
                       <button
                         onClick={() => handleInvite(owner)}
                         disabled={inviting === owner.id}
-                        className="text-brand-600 dark:text-brand-400 hover:underline text-xs text-left disabled:opacity-60"
+                        className="text-brand-600 hover:underline text-xs text-left disabled:opacity-60"
                       >
                         {owner.portalStatus === "PENDING" ? t("manager.owners.resendInvite") : t("manager.owners.invite")}
                       </button>
                       </Bulle>
                     )}
                     {inviteMsg?.ownerId === owner.id && (
-                      <span className="text-[11px] text-slate-600 dark:text-slate-400">{inviteMsg.text}</span>
+                      <span className="text-[11px] text-slate-600">{inviteMsg.text}</span>
                     )}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
-                  <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("manager.owners.viewCrg")}</Link>
-                  <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
+                  <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 hover:underline text-xs">{t("manager.owners.viewCrg")}</Link>
+                  <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
                   {owner.anonymizedAt ? (
-                    <span className="text-slate-600 dark:text-slate-400 text-xs">{t("manager.owners.anonymized")}</span>
+                    <span className="text-slate-600 text-xs">{t("manager.owners.anonymized")}</span>
                   ) : (
-                    <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-amber-700 dark:text-amber-500 hover:underline text-xs">{t("manager.owners.anonymize")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-amber-700 hover:underline text-xs">{t("manager.owners.anonymize")}</button></Bulle>
                   )}
-                  <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
                 </td>
               </tr>
             ))
@@ -419,55 +419,55 @@ export default function OwnersPage() {
       <div className="sm:hidden space-y-3">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 space-y-2">
+              <div key={i} className="bg-white rounded-xl border border-contour-200 p-4 space-y-2">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-40" />
               </div>
             ))
           : owners.map((owner) => (
-              <div key={owner.id} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+              <div key={owner.id} className="bg-white rounded-xl border border-contour-200 shadow-sm p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-slate-900 dark:text-slate-100">{owner.firstName} {owner.lastName}</p>
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400 shrink-0">{owner.managementFeeRate}%</span>
+                  <p className="font-medium text-slate-900">{owner.firstName} {owner.lastName}</p>
+                  <span className="text-xs font-medium text-slate-600 shrink-0">{owner.managementFeeRate}%</span>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                <div className="text-xs text-slate-600 space-y-0.5">
                   <p>{owner.phone}</p>
                   <p>{owner.email}</p>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-contour-100 dark:border-slate-800 text-xs">
+                <div className="flex items-center justify-between pt-2 border-t border-contour-100 text-xs">
                   <div className="flex flex-col gap-0.5">
                     <span
                       className={
                         owner.portalStatus === "ACTIVE"
-                          ? "text-emerald-700 dark:text-emerald-400"
+                          ? "text-emerald-700"
                           : owner.portalStatus === "PENDING"
-                            ? "text-amber-700 dark:text-amber-400"
-                            : "text-slate-600 dark:text-slate-400"
+                            ? "text-amber-700"
+                            : "text-slate-600"
                       }
                     >
                       {portalStatusLabel(owner)}
                     </span>
                     {owner.portalStatus !== "ACTIVE" && (
                       <Bulle texte={t("manager.tips.ownerInvite")}>
-                      <button onClick={() => handleInvite(owner)} disabled={inviting === owner.id} className="text-brand-600 dark:text-brand-400 hover:underline text-left disabled:opacity-60">
+                      <button onClick={() => handleInvite(owner)} disabled={inviting === owner.id} className="text-brand-600 hover:underline text-left disabled:opacity-60">
                         {owner.portalStatus === "PENDING" ? t("manager.owners.resendInvite") : t("manager.owners.invite")}
                       </button>
                       </Bulle>
                     )}
                   </div>
                   <div className="space-x-3">
-                    <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 dark:text-brand-400 hover:underline">{t("manager.owners.viewCrg")}</Link>
-                    <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 dark:text-brand-400 hover:underline">{t("common.actions.edit")}</button></Bulle>
+                    <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 hover:underline">{t("manager.owners.viewCrg")}</Link>
+                    <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 hover:underline">{t("common.actions.edit")}</button></Bulle>
                     {owner.anonymizedAt ? (
-                      <span className="text-slate-600 dark:text-slate-400">{t("manager.owners.anonymized")}</span>
+                      <span className="text-slate-600">{t("manager.owners.anonymized")}</span>
                     ) : (
-                      <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-amber-700 dark:text-amber-500 hover:underline">{t("manager.owners.anonymize")}</button></Bulle>
+                      <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-amber-700 hover:underline">{t("manager.owners.anonymize")}</button></Bulle>
                     )}
-                    <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 dark:text-red-400 hover:underline">{t("common.actions.delete")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 hover:underline">{t("common.actions.delete")}</button></Bulle>
                   </div>
                 </div>
                 {inviteMsg?.ownerId === owner.id && (
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400">{inviteMsg.text}</p>
+                  <p className="text-[11px] text-slate-600">{inviteMsg.text}</p>
                 )}
               </div>
             ))}

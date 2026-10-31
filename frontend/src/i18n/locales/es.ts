@@ -379,12 +379,6 @@ const es: TranslationSchema = {
       CHEQUE: "Cheque",
       MOBILE_MONEY: "Mobile Money",
     },
-    theme: {
-      tip: "Alterna entre la visualización clara y la oscura.",
-      toLight: "Cambiar a modo claro",
-      toDark: "Cambiar a modo oscuro",
-      toggleAria: "Alternar tema claro/oscuro",
-    },
     language: {
       label: "Idioma",
       selectAria: "Cambiar de idioma",
@@ -683,7 +677,6 @@ const es: TranslationSchema = {
       "Registro de actividad completo",
       "Exportación contable CSV",
       "Marca blanca para tu agencia",
-      "Modo oscuro",
     ],
     productTour: {
       title: "Descubre la plataforma en imágenes",

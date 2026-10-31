@@ -87,8 +87,8 @@ export default function AdminAuditPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t("admin.audit.title")}</h2>
-        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.audit.subtitle")}</p>
+        <h2 className="text-xl font-bold text-slate-900">{t("admin.audit.title")}</h2>
+        <p className="text-xs text-slate-600 mt-1">{t("admin.audit.subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -99,7 +99,7 @@ export default function AdminAuditPage() {
             setPage(1);
           }}
           aria-label={t("admin.audit.filterLabel")}
-          className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         >
           <option value="">{t("admin.audit.allActions")}</option>
           {ACTIONS.map((a) => (
@@ -112,13 +112,13 @@ export default function AdminAuditPage() {
       </div>
 
       {erreur && (
-        <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("admin.audit.errorTitle")}</p>
-          <p role="alert" className="text-xs text-red-700 dark:text-red-400 mt-0.5">{erreur}</p>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-800">{t("admin.audit.errorTitle")}</p>
+          <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
         </div>
       )}
 
-      {chargement && !donnees && <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.audit.loading")}</p>}
+      {chargement && !donnees && <p className="text-xs text-slate-600">{t("admin.audit.loading")}</p>}
 
       {donnees && donnees.items.length === 0 && !erreur && (
         <EmptyState icon={ScrollText} title={t("admin.audit.emptyTitle")} description={t("admin.audit.emptyDescription")} />
@@ -126,10 +126,10 @@ export default function AdminAuditPage() {
 
       {donnees && donnees.items.length > 0 && (
         <>
-          <div className="rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto">
+          <div className="rounded-2xl border border-contour-200 bg-white overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-contour-200 dark:border-slate-800">
+                <tr className="text-left text-slate-600 border-b border-contour-200">
                   <th className="px-4 py-3 font-semibold">{t("admin.audit.table.date")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.audit.table.admin")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.audit.table.action")}</th>
@@ -137,9 +137,9 @@ export default function AdminAuditPage() {
                   <th className="px-4 py-3 font-semibold">{t("admin.audit.table.details")}</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-800 dark:text-slate-200">
+              <tbody className="text-slate-800">
                 {donnees.items.map((e) => (
-                  <tr key={e.id} className="border-b last:border-b-0 border-contour-100 dark:border-slate-800/60 align-top">
+                  <tr key={e.id} className="border-b last:border-b-0 border-contour-100 align-top">
                     <td className="px-4 py-3 whitespace-nowrap">{new Date(e.createdAt).toLocaleString(i18n.language)}</td>
                     <td className="px-4 py-3">{e.adminEmail}</td>
                     <td className="px-4 py-3 font-semibold">{libelleAction(e.action)}</td>
@@ -147,7 +147,7 @@ export default function AdminAuditPage() {
                       {e.targetUserId ? (
                         <Link
                           to={`/admin/gestionnaires/${e.targetUserId}`}
-                          className="text-brand-700 dark:text-brand-400 hover:underline"
+                          className="text-brand-700 hover:underline"
                         >
                           {e.targetLabel ?? e.targetUserId}
                         </Link>

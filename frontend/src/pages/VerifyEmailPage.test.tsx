@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { ThemeProvider } from "../context/ThemeContext";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
@@ -15,14 +14,14 @@ const mockedApi = vi.mocked(api, { deep: true });
 
 function renderPage(path = "/verifier-email?token=abc123") {
   return render(
-    <ThemeProvider><MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={[path]}>
       <AuthProvider>
         <Routes>
           <Route path="/verifier-email" element={<VerifyEmailPage />} />
           <Route path="/" element={<p>Accueil</p>} />
         </Routes>
       </AuthProvider>
-    </MemoryRouter></ThemeProvider>
+    </MemoryRouter>
   );
 }
 

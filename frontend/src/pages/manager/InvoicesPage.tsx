@@ -30,7 +30,7 @@ export default function InvoicesPage() {
   function niveauRelance(inv: Invoice) {
     if (!inv.overdueReminderLevel || inv.status === "PAID" || inv.status === "CANCELLED") return null;
     return (
-      <span className="block mt-1 text-[11px] text-red-700 dark:text-red-400">
+      <span className="block mt-1 text-[11px] text-red-700">
         {t("manager.invoices.overdueLevel", {
           level: inv.overdueReminderLevel,
           date: inv.overdueReminderSentAt ? new Date(inv.overdueReminderSentAt).toLocaleDateString(i18n.language) : "",
@@ -162,15 +162,15 @@ export default function InvoicesPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.invoices.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.invoices.subtitle")}</p>
+          <h2 className="text-2xl font-bold text-slate-900">{t("manager.invoices.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.invoices.subtitle")}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <select
             aria-label={t("manager.invoices.filterByStatus")}
             value={filter}
             onChange={(e) => handleFilterChange(e.target.value as InvoiceStatus | "ALL")}
-            className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 dark:text-slate-100 shadow-sm"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white shadow-sm"
           >
             <option value="ALL">{t("manager.invoices.filterAll")}</option>
             <option value="PENDING">{t("common.status.PENDING")}</option>
@@ -193,41 +193,41 @@ export default function InvoicesPage() {
       </div>
 
       {/* Bannière informationnelle sur le rappel automatique du 1er */}
-      <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-200">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900">
         <Clock size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
         <div className="space-y-0.5">
           <p className="font-semibold">{t("manager.invoices.infoBannerTitle")}</p>
-          <p className="text-blue-700 dark:text-blue-300">
+          <p className="text-blue-700">
             <Trans i18nKey="manager.invoices.infoBannerBody" components={{ 1: <strong /> }} />
           </p>
         </div>
       </div>
 
       {feedback && (
-        <div role="status" className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2">
+        <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2">
           <CheckCircle2 size={15} className="shrink-0" aria-hidden="true" />
           {feedback}
         </div>
       )}
 
       {error && (
-        <div role="alert" className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs">
           {error}
         </div>
       )}
 
       {aMettreEnDemeure.length > 0 && (
-        <section aria-labelledby="mises-en-demeure" className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-3">
-          <h3 id="mises-en-demeure" className="text-sm font-semibold text-red-900 dark:text-red-200">
+        <section aria-labelledby="mises-en-demeure" className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <h3 id="mises-en-demeure" className="text-sm font-semibold text-red-900">
             {t("manager.invoices.formalNotices.title", { count: aMettreEnDemeure.length })}
           </h3>
-          <p className="text-xs text-red-800 dark:text-red-300 mt-0.5">{t("manager.invoices.formalNotices.hint")}</p>
-          <ul className="mt-2 divide-y divide-red-200/70 dark:divide-red-500/20">
+          <p className="text-xs text-red-800 mt-0.5">{t("manager.invoices.formalNotices.hint")}</p>
+          <ul className="mt-2 divide-y divide-red-200/70">
             {aMettreEnDemeure.map((b) => (
               <li key={b.contractId} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="text-slate-800 dark:text-slate-200">
+                <span className="text-slate-800">
                   <span className="font-medium">{b.propertyTitle}</span> — {b.tenantName}
-                  <span className="block text-xs text-slate-600 dark:text-slate-400">
+                  <span className="block text-xs text-slate-600">
                     {t("manager.invoices.formalNotices.line", { count: b.unpaidCount, total: formatMoney(b.totalDue, b.currency), days: b.daysLate })}
                     {b.alreadyClaimedCount > 0 && <> · {t("manager.invoices.formalNotices.alreadyClaimed", { count: b.alreadyClaimedCount })}</>}
                   </span>
@@ -246,9 +246,9 @@ export default function InvoicesPage() {
       )}
 
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="hidden sm:block bg-white rounded-2xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left border-b border-contour-200 dark:border-slate-800">
+          <thead className="bg-slate-200/70 text-slate-700 text-left border-b border-contour-200">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.period")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.tenant")}</th>
@@ -260,21 +260,21 @@ export default function InvoicesPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.invoices.table.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {invoices.map((inv) => (
-              <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                <td className="px-4 py-3.5 text-slate-900 dark:text-slate-100 font-medium">
+              <tr key={inv.id} className="hover:bg-slate-50/50">
+                <td className="px-4 py-3.5 text-slate-900 font-medium">
                   {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
                 </td>
-                <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
+                <td className="px-4 py-3.5 text-slate-700">
                   <p className="font-medium">{inv.contract?.tenant?.firstName} {inv.contract?.tenant?.lastName}</p>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400">{inv.contract?.tenant?.email}</p>
+                  <p className="text-[11px] text-slate-600">{inv.contract?.tenant?.email}</p>
                 </td>
-                <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">{inv.contract?.property?.title}</td>
-                <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">
+                <td className="px-4 py-3.5 text-slate-600">{inv.contract?.property?.title}</td>
+                <td className="px-4 py-3.5 font-bold text-slate-900">
                   {formatMoney(inv.amount, inv.currency)}
                   {aUnAcompte(inv) && (
-                    <span className="block text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                    <span className="block text-[10px] font-medium text-amber-700">
                       {t("manager.invoices.partiallyPaid", {
                         paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
                         remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
@@ -282,10 +282,10 @@ export default function InvoicesPage() {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
+                <td className="px-4 py-3.5 text-slate-600">
                   <span className="text-xs">{formaterJour(inv.dueDate, i18n.language)}</span>
                 </td>
-                <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400 text-xs">
+                <td className="px-4 py-3.5 text-slate-600 text-xs">
                   {inv.paymentMethod ? methodLabels[inv.paymentMethod] : "—"}
                 </td>
                 <td className="px-4 py-3.5">
@@ -298,7 +298,7 @@ export default function InvoicesPage() {
                   {inv.status === "PAID" && (
                     <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                       onClick={() => setActiveReceiptInvoice(inv)}
-                      className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 transition-colors inline-flex items-center gap-1"
+                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors inline-flex items-center gap-1"
                     >
                       <Download size={12} aria-hidden="true" /> {t("manager.invoices.receiptPdf")}
                     </button></Bulle>
@@ -308,7 +308,7 @@ export default function InvoicesPage() {
                       <Bulle texte={t("manager.tips.invoiceRemind")}><button
                         onClick={() => handleSendSingleReminder(inv)}
                         disabled={sendingSingleId === inv.id}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-1"
                       >
                         {sendingSingleId === inv.id ? (
                           t("manager.invoices.sendingReminder")
@@ -320,7 +320,7 @@ export default function InvoicesPage() {
                       </button></Bulle>
                       <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                         onClick={() => setFactureAMarquer(inv)}
-                        className="text-xs bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 disabled:opacity-60 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium transition-colors"
+                        className="text-xs bg-brand-50 hover:bg-brand-100 disabled:opacity-60 text-brand-700 px-2.5 py-1 rounded-lg font-medium transition-colors"
                       >
                         {t("manager.invoices.markPaid")}
                       </button></Bulle>
@@ -328,7 +328,7 @@ export default function InvoicesPage() {
                         <Bulle texte={t("manager.tips.invoiceCancel")}><button
                           onClick={() => handleCancelInvoice(inv)}
                           disabled={cancellingId === inv.id}
-                          className="text-xs bg-white hover:bg-rose-50 dark:bg-transparent dark:hover:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
+                          className="text-xs bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
                         >
                           {cancellingId === inv.id ? t("manager.invoices.cancelling") : t("manager.invoices.cancelInvoice")}
                         </button></Bulle>
@@ -341,7 +341,7 @@ export default function InvoicesPage() {
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-600 dark:text-slate-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-slate-600">
                   {t("manager.invoices.noInvoicesForFilter")}
                 </td>
               </tr>
@@ -353,35 +353,35 @@ export default function InvoicesPage() {
       {/* Vue cartes empilées (mobile, < sm) */}
       <div className="sm:hidden space-y-3">
         {invoices.length === 0 ? (
-          <p className="text-center text-slate-600 dark:text-slate-400 text-sm py-8 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800">
+          <p className="text-center text-slate-600 text-sm py-8 bg-white rounded-2xl border border-contour-200">
             {t("manager.invoices.noInvoicesForFilter")}
           </p>
         ) : (
           invoices.map((inv) => (
-            <div key={inv.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+            <div key={inv.id} className="bg-white rounded-2xl border border-contour-200 shadow-sm p-4 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                  <p className="font-medium text-slate-900">
                     {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
                   </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">{inv.contract?.property?.title}</p>
+                  <p className="text-xs text-slate-600">{inv.contract?.property?.title}</p>
                 </div>
                 <div className="text-right">
                   <Badge status={inv.status} />
                   {niveauRelance(inv)}
                 </div>
               </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400">
-                <p className="font-medium text-slate-700 dark:text-slate-300">
+              <div className="text-xs text-slate-600">
+                <p className="font-medium text-slate-700">
                   {inv.contract?.tenant?.firstName} {inv.contract?.tenant?.lastName}
                 </p>
                 <p>{inv.contract?.tenant?.email}</p>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-900 dark:text-slate-100">
+                <span className="font-bold text-slate-900">
                   {formatMoney(inv.amount, inv.currency)}
                   {aUnAcompte(inv) && (
-                    <span className="block text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                    <span className="block text-[10px] font-medium text-amber-700">
                       {t("manager.invoices.partiallyPaid", {
                         paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
                         remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
@@ -389,15 +389,15 @@ export default function InvoicesPage() {
                     </span>
                   )}
                 </span>
-                <span className="text-slate-600 dark:text-slate-400">
+                <span className="text-slate-600">
                   {t("manager.invoices.dueDatePrefix", { date: formaterJour(inv.dueDate, i18n.language) })}
                 </span>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-contour-100 dark:border-slate-800 gap-2">
+              <div className="flex items-center justify-between pt-2 border-t border-contour-100 gap-2">
                 {inv.status === "PAID" && (
                   <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                     onClick={() => setActiveReceiptInvoice(inv)}
-                    className="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 inline-flex items-center gap-1"
+                    className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1"
                   >
                     <Download size={12} aria-hidden="true" /> {t("manager.invoices.receiptPdf")}
                   </button></Bulle>
@@ -407,7 +407,7 @@ export default function InvoicesPage() {
                     <Bulle texte={t("manager.tips.invoiceRemind")}><button
                       onClick={() => handleSendSingleReminder(inv)}
                       disabled={sendingSingleId === inv.id}
-                      className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50 inline-flex items-center gap-1"
+                      className="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50 inline-flex items-center gap-1"
                     >
                       {sendingSingleId === inv.id ? (
                         t("manager.invoices.sendingReminder")
@@ -419,7 +419,7 @@ export default function InvoicesPage() {
                     </button></Bulle>
                     <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                       onClick={() => setFactureAMarquer(inv)}
-                      className="text-xs bg-brand-50 dark:bg-brand-500/10 disabled:opacity-60 text-brand-700 dark:text-brand-400 px-2.5 py-1 rounded-lg font-medium"
+                      className="text-xs bg-brand-50 disabled:opacity-60 text-brand-700 px-2.5 py-1 rounded-lg font-medium"
                     >
                       {t("manager.invoices.markPaid")}
                     </button></Bulle>
@@ -427,7 +427,7 @@ export default function InvoicesPage() {
                       <Bulle texte={t("manager.tips.invoiceCancel")}><button
                         onClick={() => handleCancelInvoice(inv)}
                         disabled={cancellingId === inv.id}
-                        className="text-xs bg-white dark:bg-transparent text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
+                        className="text-xs bg-white text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
                       >
                         {cancellingId === inv.id ? t("manager.invoices.cancelling") : t("manager.invoices.cancelInvoice")}
                       </button></Bulle>

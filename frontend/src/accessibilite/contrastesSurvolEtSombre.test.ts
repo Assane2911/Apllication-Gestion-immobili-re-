@@ -79,23 +79,3 @@ describe("boutons pleins — le texte blanc reste lisible au survol", () => {
     expect(trop_clairs).toEqual([]);
   });
 });
-
-describe("bouton « Annuler » des fenêtres — lisible en thème sombre", () => {
-  const annuler = chaines().filter((c) => /(^|\s)text-slate-500(\s|$)/.test(c.texte) && /(^|\s)hover:text-slate-700(\s|$)/.test(c.texte));
-
-  it("il existe des boutons concernés", () => {
-    expect(annuler.length).toBeGreaterThanOrEqual(10);
-  });
-
-  it("chacun a une couleur de texte propre au thème sombre, claire sur le fond slate-900", () => {
-    const sans_variante = annuler.filter((c) => !/(^|\s)dark:text-slate-(300|400)(\s|$)/.test(c.texte)).map((c) => c.fichier);
-    expect(sans_variante).toEqual([]);
-    // slate-400 (#94a3b8) sur le fond sombre des fenêtres (slate-900, #0f172a) : au-dessus de 4,5:1.
-    expect(contraste("#94a3b8", "#0f172a")).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it("le survol reste lisible en thème sombre (plus clair, pas plus foncé)", () => {
-    const survol_sombre = annuler.filter((c) => !/(^|\s)dark:hover:text-slate-(100|200)(\s|$)/.test(c.texte)).map((c) => c.fichier);
-    expect(survol_sombre).toEqual([]);
-  });
-});

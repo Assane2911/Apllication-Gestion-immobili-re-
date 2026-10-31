@@ -4,7 +4,6 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthContext } from "../context/auth";
-import { ThemeContext } from "../context/theme";
 import type { AuthContextValue } from "../context/auth";
 import type { AuthUser } from "../types";
 import ChoisirPaysPage from "./ChoisirPaysPage";
@@ -34,14 +33,12 @@ function rendre(user: AuthUser, refreshUser = vi.fn(async () => ({ ...user, coun
   };
   render(
     <AuthContext.Provider value={auth}>
-      <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
         <MemoryRouter initialEntries={["/pays"]}>
           <Routes>
             <Route path="/pays" element={<ChoisirPaysPage />} />
             <Route path="/dashboard" element={<p>Espace gestionnaire</p>} />
           </Routes>
         </MemoryRouter>
-      </ThemeContext.Provider>
     </AuthContext.Provider>
   );
   return { refreshUser };

@@ -194,8 +194,8 @@ export default function ListingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.listings.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.listings.count", { count: listings.length })}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.listings.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.listings.count", { count: listings.length })}</p>
         </div>
         <div className="flex items-center gap-3">
           {/*
@@ -204,10 +204,10 @@ export default function ListingsPage() {
             à rien. Publier sans pouvoir regarder le résultat, c'est publier à
             l'aveugle.
           */}
-          <Link to="/vitrine" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">
+          <Link to="/vitrine" className="text-sm font-medium text-brand-600 hover:underline">
             {t("manager.listings.viewVitrine")}
           </Link>
-          <Link to="/leads" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">
+          <Link to="/leads" className="text-sm font-medium text-brand-600 hover:underline">
             {t("manager.listings.viewLeads")}
           </Link>
           <Bulle texte={t("manager.tips.listingCreate")}>
@@ -219,7 +219,7 @@ export default function ListingsPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -228,36 +228,36 @@ export default function ListingsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 mb-4">
             {editing ? t("manager.listings.formTitleEdit") : t("manager.listings.formTitleNew")}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="listing-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.title")}</label>
-              <input id="listing-title" required maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="listing-title" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.title")}</label>
+              <input id="listing-title" required maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="listing-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.type")}</label>
-              <select id="listing-type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ListingType })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="listing-type" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.type")}</label>
+              <select id="listing-type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ListingType })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 {LISTING_TYPES.map((type) => (
                   <option key={type} value={type}>{t(`manager.listings.types.${type}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="listing-price" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.price")}</label>
-              <input id="listing-price" required type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="listing-price" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.price")}</label>
+              <input id="listing-price" required type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="listing-currency" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.currency")}</label>
+              <label htmlFor="listing-currency" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.currency")}</label>
               {/*
                 C'était un champ texte libre pré-rempli à « EUR ». Depuis que
                 le serveur valide la devise, y taper « FCFA » au lieu de
                 « XOF » faisait échouer la création avec une erreur 400 : le
                 champ tendait un piège au lieu de proposer un choix.
               */}
-              <select id="listing-currency" required value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <select id="listing-currency" required value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 {availableCurrencies.map((devise) => (
                   <option key={devise.code} value={devise.code}>
                     {nomDevise(devise.code, i18n.language, devise.name)} ({devise.symbol})
@@ -266,28 +266,28 @@ export default function ListingsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="listing-pricePeriod" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.pricePeriod")}</label>
-              <select id="listing-pricePeriod" value={form.pricePeriod} onChange={(e) => setForm({ ...form, pricePeriod: e.target.value as PricePeriod })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="listing-pricePeriod" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.pricePeriod")}</label>
+              <select id="listing-pricePeriod" value={form.pricePeriod} onChange={(e) => setForm({ ...form, pricePeriod: e.target.value as PricePeriod })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 {PRICE_PERIODS.map((period) => (
                   <option key={period} value={period}>{t(`manager.listings.pricePeriods.${period}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="listing-surface" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.surface")}</label>
-              <input id="listing-surface" type="number" step="0.1" value={form.surface} onChange={(e) => setForm({ ...form, surface: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="listing-surface" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.surface")}</label>
+              <input id="listing-surface" type="number" step="0.1" value={form.surface} onChange={(e) => setForm({ ...form, surface: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="listing-rooms" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.rooms")}</label>
-              <input id="listing-rooms" type="number" step="1" min="1" max="1000" value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="listing-rooms" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.rooms")}</label>
+              <input id="listing-rooms" type="number" step="1" min="1" max="1000" value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="listing-location" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.location")}</label>
-              <input id="listing-location" required maxLength={200} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="listing-location" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.location")}</label>
+              <input id="listing-location" required maxLength={200} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="listing-country" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.country")}</label>
-              <select id="listing-country" value={form.country} onChange={(e) => choisirPays(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="listing-country" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.country")}</label>
+              <select id="listing-country" value={form.country} onChange={(e) => choisirPays(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 <option value="">{t("manager.listings.fields.noCountry")}</option>
                 {SUPPORTED_COUNTRY_CODES.map((code) => (
                   <option key={code} value={code}>{countryLabel(code, i18n.language)}</option>
@@ -295,19 +295,19 @@ export default function ListingsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="listing-status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.status")}</label>
-              <select id="listing-status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ListingStatus })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="listing-status" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.status")}</label>
+              <select id="listing-status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ListingStatus })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 {LISTING_STATUSES.map((status) => (
                   <option key={status} value={status}>{t(`common.status.${status}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="listing-contactPhone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.contactPhone")}</label>
+              <label htmlFor="listing-contactPhone" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.contactPhone")}</label>
               <ChampTelephone id="listing-contactPhone" value={form.contactPhone} onChange={(contactPhone) => setForm({ ...form, contactPhone })} />
             </div>
             <div>
-              <label htmlFor="listing-contactWhatsapp" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.contactWhatsapp")}</label>
+              <label htmlFor="listing-contactWhatsapp" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.contactWhatsapp")}</label>
               {/*
                 Celui-ci surtout : WhatsApp n'accepte QUE le format
                 international, et un numéro local sans indicatif était
@@ -316,27 +316,27 @@ export default function ListingsPage() {
               <ChampTelephone id="listing-contactWhatsapp" value={form.contactWhatsapp} onChange={(contactWhatsapp) => setForm({ ...form, contactWhatsapp })} />
             </div>
             <div>
-              <label htmlFor="listing-contactEmail" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.contactEmail")}</label>
-              <input id="listing-contactEmail" type="email" maxLength={254} value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="listing-contactEmail" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.contactEmail")}</label>
+              <input id="listing-contactEmail" type="email" maxLength={254} value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="listing-image" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.image")}</label>
-              <input id="listing-image" type="file" accept="image/*" onChange={(e) => void choisirImage(e)} className="w-full text-sm text-slate-700 dark:text-slate-300" />
+              <label htmlFor="listing-image" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.image")}</label>
+              <input id="listing-image" type="file" accept="image/*" onChange={(e) => void choisirImage(e)} className="w-full text-sm text-slate-700" />
             </div>
             <div className="flex items-center gap-2 pt-6">
-              <input id="listing-featured" type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="rounded-sm border-slate-300 dark:border-slate-700" />
-              <label htmlFor="listing-featured" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("manager.listings.fields.featured")}</label>
+              <input id="listing-featured" type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="rounded-sm border-slate-300" />
+              <label htmlFor="listing-featured" className="text-sm font-medium text-slate-700">{t("manager.listings.fields.featured")}</label>
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="listing-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.listings.fields.description")}</label>
-              <textarea id="listing-description" required maxLength={5000} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm" rows={3} />
+              <label htmlFor="listing-description" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.listings.fields.description")}</label>
+              <textarea id="listing-description" required maxLength={5000} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm" rows={3} />
             </div>
-            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -362,10 +362,10 @@ export default function ListingsPage() {
         {listings.map((listing) => (
           <div
             key={listing.id}
-            className="group bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md dark:hover:shadow-slate-950/50 hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden flex flex-col justify-between"
+            className="group bg-white rounded-2xl border border-contour-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 transition-all duration-200 overflow-hidden flex flex-col justify-between"
           >
             <div>
-              <div className="relative h-40 bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div className="relative h-40 bg-slate-100 overflow-hidden">
                 {listing.imageUrl ? (
                   <img
                     src={fileUrl(listing.imageUrl) ?? undefined}
@@ -373,7 +373,7 @@ export default function ListingsPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
                     <Building2 size={40} strokeWidth={1.5} aria-hidden="true" />
                   </div>
                 )}
@@ -387,42 +387,42 @@ export default function ListingsPage() {
                 </div>
               </div>
               {listing.hiddenByAdminAt && (
-                <div role="note" className="bg-red-50 dark:bg-red-950/40 border-y border-red-200 dark:border-red-900 px-4 py-3">
-                  <p className="text-xs font-semibold text-red-800 dark:text-red-300">{t("manager.listings.moderation.title")}</p>
+                <div role="note" className="bg-red-50 border-y border-red-200 px-4 py-3">
+                  <p className="text-xs font-semibold text-red-800">{t("manager.listings.moderation.title")}</p>
                   {listing.moderationReason && (
-                    <p className="text-xs text-red-700 dark:text-red-400 mt-0.5 wrap-break-word">
+                    <p className="text-xs text-red-700 mt-0.5 wrap-break-word">
                       {t("manager.listings.moderation.reason", { reason: listing.moderationReason })}
                     </p>
                   )}
-                  <p className="text-xs text-red-700 dark:text-red-400 mt-1">{t("manager.listings.moderation.help")}</p>
+                  <p className="text-xs text-red-700 mt-1">{t("manager.listings.moderation.help")}</p>
                 </div>
               )}
               <div className="p-4 sm:p-5">
-                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-brand-600 transition-colors">
                   {listing.title}
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1">
+                <p className="text-xs text-slate-600 mt-1 line-clamp-1">
                   {listing.location}
                   {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
                 </p>
-                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-contour-100 dark:border-slate-800">
-                  <span className="font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 rounded-md">
+                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-contour-100">
+                  <span className="font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
                     {t(`manager.listings.types.${listing.type}`)}
                   </span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                  <span className="font-bold text-slate-900">
                     {formatMoney(listing.price, listing.currency)}{" "}
                     {listing.pricePeriod === "MONTH" && (
-                      <span className="text-xs font-normal text-slate-600 dark:text-slate-400">{t("manager.listings.perMonth")}</span>
+                      <span className="text-xs font-normal text-slate-600">{t("manager.listings.perMonth")}</span>
                     )}
                   </span>
                 </div>
               </div>
             </div>
-            <div className="px-4 sm:px-5 pb-4 pt-1 flex items-center justify-end gap-2 border-t border-slate-50 dark:border-slate-800/40">
+            <div className="px-4 sm:px-5 pb-4 pt-1 flex items-center justify-end gap-2 border-t border-slate-50">
               <Bulle texte={t("manager.tips.listingEdit")}>
               <button
                 onClick={() => openEdit(listing)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 {t("common.actions.edit")}
               </button>
@@ -430,7 +430,7 @@ export default function ListingsPage() {
               <Bulle texte={t("manager.tips.listingDelete")}>
               <button
                 onClick={() => handleDelete(listing)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
               >
                 {t("common.actions.delete")}
               </button>

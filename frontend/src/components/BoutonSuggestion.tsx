@@ -63,7 +63,7 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
         <button
           type="button"
           onClick={() => setOuvert(true)}
-          className="flex items-center gap-2 rounded-full bg-slate-900/90 dark:bg-slate-700/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur-sm transition-colors"
+          className="flex items-center gap-2 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 shadow-lg backdrop-blur-sm transition-colors"
         >
           <Lightbulb size={14} aria-hidden="true" /> {t("suggestions.button")}
         </button>
@@ -74,28 +74,28 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
           <Dialogue
             onClose={fermer}
             titreId="suggestion-titre"
-            className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-contour-200 dark:border-slate-700 shadow-xl p-5"
+            className="w-full max-w-lg rounded-2xl bg-white border border-contour-200 shadow-xl p-5"
           >
-            <h3 id="suggestion-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <h3 id="suggestion-titre" className="text-base font-bold text-slate-900">
               {t("suggestions.title")}
             </h3>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("suggestions.subtitle")}</p>
+            <p className="mt-1 text-xs text-slate-600">{t("suggestions.subtitle")}</p>
 
             {envoye ? (
               <div className="mt-4">
-                <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("suggestions.thanks")}</p>
+                <p className="text-sm text-emerald-700">{t("suggestions.thanks")}</p>
                 <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setEnvoye(false)}
-                    className="text-xs font-semibold text-slate-600 dark:text-slate-300 px-3 py-2"
+                    className="text-xs font-semibold text-slate-600 px-3 py-2"
                   >
                     {t("suggestions.another")}
                   </button>
                   <button
                     type="button"
                     onClick={fermer}
-                    className="text-xs font-semibold bg-slate-900 dark:bg-slate-700 text-white px-3.5 py-2 rounded-lg"
+                    className="text-xs font-semibold bg-slate-900 text-white px-3.5 py-2 rounded-lg"
                   >
                     {t("common.actions.close")}
                   </button>
@@ -115,16 +115,16 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={t("suggestions.placeholder")}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                 />
 
-                {erreur && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{erreur}</p>}
+                {erreur && <p role="alert" className="text-xs text-red-600">{erreur}</p>}
 
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={fermer}
-                    className="text-xs font-semibold text-slate-600 dark:text-slate-300 px-3 py-2"
+                    className="text-xs font-semibold text-slate-600 px-3 py-2"
                   >
                     {t("common.actions.cancel")}
                   </button>

@@ -20,12 +20,12 @@ export default function TenantMessagesPage() {
   } = useConversationThread("TENANT");
 
   if (loading) {
-    return <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.messages.loading")}</p>;
+    return <p className="text-slate-600 text-sm">{t("tenant.messages.loading")}</p>;
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
+      <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
         <p className="text-sm">{error}</p>
         <button
           onClick={() => loadConversations()}
@@ -39,8 +39,8 @@ export default function TenantMessagesPage() {
 
   if (conversations.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-8 text-center">
-        <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.messages.noActiveContract")}</p>
+      <div className="bg-white rounded-xl border border-contour-200 p-8 text-center">
+        <p className="text-slate-600 text-sm">{t("tenant.messages.noActiveContract")}</p>
       </div>
     );
   }
@@ -48,16 +48,16 @@ export default function TenantMessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("tenant.messages.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("tenant.messages.subtitle")}</p>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("tenant.messages.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">{t("tenant.messages.subtitle")}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden h-[600px] flex flex-col">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm overflow-hidden h-[600px] flex flex-col">
         {/* En-tête du chat */}
-        <div className="px-6 py-4 border-b border-contour-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-contour-200 bg-slate-50 flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("tenant.messages.headerTitle")}</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <h3 className="font-bold text-slate-900 text-sm">{t("tenant.messages.headerTitle")}</h3>
+            <p className="text-xs text-slate-600">
               {t("tenant.messages.housing", { property: activeContract?.property?.title || t("tenant.messages.yourApartment") })}
             </p>
           </div>
@@ -67,7 +67,7 @@ export default function TenantMessagesPage() {
               aria-label={t("tenant.messages.chooseHousing")}
               value={selectedThreadId ?? ""}
               onChange={(e) => setSelectedThreadId(e.target.value)}
-              className="text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2.5 py-1.5 mx-3 min-w-0"
+              className="text-xs rounded-lg border border-slate-300 bg-white text-slate-900 px-2.5 py-1.5 mx-3 min-w-0"
             >
               {conversations.map((c) => (
                 <option key={cleDuFil(c)} value={cleDuFil(c)}>
@@ -77,22 +77,22 @@ export default function TenantMessagesPage() {
               ))}
             </select>
           )}
-          <span className="text-xs bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+          <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             {t("tenant.messages.online")}
           </span>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30 dark:bg-slate-950/20">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30">
           {loadingMessages && (
-            <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-4">{t("tenant.messages.loadingMessages")}</p>
+            <p className="text-xs text-slate-600 text-center py-4">{t("tenant.messages.loadingMessages")}</p>
           )}
           {messages.map((m) => {
             const isMe = m.senderRole === "TENANT";
             return (
               <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                <span className="text-[10px] text-slate-600 dark:text-slate-400 mb-1">
+                <span className="text-[10px] text-slate-600 mb-1">
                   {isMe ? t("tenant.messages.you") : t("tenant.messages.manager")} •{" "}
                   {new Date(m.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}
                 </span>
@@ -100,7 +100,7 @@ export default function TenantMessagesPage() {
                   className={`max-w-md px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
                     isMe
                       ? "bg-brand-600 text-white rounded-br-none"
-                      : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-contour-200 dark:border-slate-700 rounded-bl-none"
+                      : "bg-white text-slate-800 border border-contour-200 rounded-bl-none"
                   }`}
                 >
                   {m.content}
@@ -109,14 +109,14 @@ export default function TenantMessagesPage() {
             );
           })}
           {!loadingMessages && messages.length === 0 && (
-            <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-12">
+            <p className="text-xs text-slate-600 text-center py-12">
               {t("tenant.messages.noMessagesYet")}
             </p>
           )}
         </div>
 
         {/* Formulaire d'envoi */}
-        <form onSubmit={handleSend} className="p-4 border-t border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
+        <form onSubmit={handleSend} className="p-4 border-t border-contour-200 bg-white flex gap-2">
           <input
             type="text"
             aria-label={t("tenant.messages.writeMessage")}
@@ -124,7 +124,7 @@ export default function TenantMessagesPage() {
             value={newText}
             maxLength={5000}
             onChange={(e) => setNewText(e.target.value)}
-            className="flex-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className="flex-1 text-xs border border-slate-300 bg-white text-slate-900 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           />
           <button
             type="submit"

@@ -5,7 +5,6 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../context/auth";
 import type { AuthContextValue } from "../context/auth";
-import { ThemeContext } from "../context/theme";
 import EnteteEspace from "./EnteteEspace";
 
 /**
@@ -42,12 +41,10 @@ function rendre(logout = async () => {}) {
   const auth = { user: { id: "u", email: "u@test.local", role: "ADMIN" }, loading: false, logout } as unknown as AuthContextValue;
   return render(
     <AuthContext.Provider value={auth}>
-      <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
         <MemoryRouter initialEntries={["/espace"]}>
           <EnteteEspace largeur="4xl" titre="Mon espace" sousTitre="u@test.local" onglets={onglets} />
           <Emplacement />
         </MemoryRouter>
-      </ThemeContext.Provider>
     </AuthContext.Provider>
   );
 }
@@ -173,7 +170,6 @@ describe("EnteteEspace — téléphone", () => {
       const auth = { user: { id: "u", email: "u@test.local", role: "OWNER" }, loading: false, logout: async () => {} } as unknown as AuthContextValue;
       return render(
         <AuthContext.Provider value={auth}>
-          <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
             <MemoryRouter initialEntries={["/espace/crg"]}>
               <EnteteEspace
                 largeur="4xl"
@@ -181,7 +177,6 @@ describe("EnteteEspace — téléphone", () => {
                 onglets={[...onglets, { to: "/espace/crg", label: "Compte-rendu de gestion", labelCourt: "Compte-rendu", tip: "Le détail", icon: Home, end: true }]}
               />
             </MemoryRouter>
-          </ThemeContext.Provider>
         </AuthContext.Provider>
       );
     }

@@ -14,7 +14,7 @@ export default function PlanLogement({ id, className = "" }: { id: string; class
   return (
     <div
       aria-hidden="true"
-      className={`flex items-center justify-center text-ink-900 dark:text-slate-300 ${className}`}
+      className={`flex items-center justify-center text-ink-900 ${className}`}
       style={{
         backgroundImage: "linear-gradient(rgb(15 61 94 / 0.08) 1px, transparent 1px), linear-gradient(90deg, rgb(15 61 94 / 0.08) 1px, transparent 1px)",
         backgroundSize: "12px 12px",

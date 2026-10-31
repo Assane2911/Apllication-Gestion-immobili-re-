@@ -107,7 +107,7 @@ export function CurrencySelector({ className = "" }: { className?: string }) {
       <select
         value={currency}
         onChange={(e) => setCurrency(e.target.value)}
-        className="w-full min-w-0 max-w-full truncate bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-brand-500 cursor-pointer shadow-sm transition-all"
+        className="w-full min-w-0 max-w-full truncate bg-white hover:bg-slate-50 text-slate-900 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500 cursor-pointer shadow-sm transition-all"
         aria-label={t("nav.currencyLabel")}
       >
         {availableCurrencies.map((c) => (

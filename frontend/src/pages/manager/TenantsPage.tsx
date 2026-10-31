@@ -15,18 +15,18 @@ const emptyForm = { civility: "", firstName: "", lastName: "", phone: "", email:
 const PAGE_SIZE = 20;
 
 const CLASSES_PAR_NIVEAU: Record<ReliabilityLevel, string> = {
-  excellent: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-  bon: "bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400",
-  moyen: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-  risque: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
-  insuffisant: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  excellent: "bg-emerald-50 text-emerald-700",
+  bon: "bg-teal-50 text-teal-700",
+  moyen: "bg-amber-50 text-amber-700",
+  risque: "bg-red-50 text-red-700",
+  insuffisant: "bg-slate-100 text-slate-600",
 };
 
 /** Badge du score interne de ponctualité de paiement — voir reliability.service.ts côté API. */
 function BadgeFiabilite({ tenant }: { tenant: Tenant }) {
   const { t } = useTranslation();
   const f = tenant.fiabilite;
-  if (!f) return <span className="text-slate-500 dark:text-slate-400">—</span>;
+  if (!f) return <span className="text-slate-500">—</span>;
 
   const libelle = t(`manager.tenants.reliability.${f.niveau}`);
   const texteBulle = t("manager.tips.tenantReliability", {
@@ -226,8 +226,8 @@ export default function TenantsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.tenants.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.tenants.count", { count: tenants.length })}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.tenants.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.tenants.count", { count: tenants.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.tenantCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
@@ -237,7 +237,7 @@ export default function TenantsPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -246,44 +246,44 @@ export default function TenantsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.tenants.formTitleEdit") : t("manager.tenants.formTitleNew")}</h3>
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 mb-4">{editing ? t("manager.tenants.formTitleEdit") : t("manager.tenants.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label htmlFor="tenant-civility" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("common.civility.label")}</label>
-              <select id="tenant-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className="w-full md:w-56 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="tenant-civility" className="block text-sm font-medium text-slate-700 mb-1">{t("common.civility.label")}</label>
+              <select id="tenant-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className="w-full md:w-56 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 <option value="">{t("common.civility.none")}</option>
                 <option value="M">{t("common.civility.M")}</option>
                 <option value="MME">{t("common.civility.MME")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="tenant-firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.firstName")}</label>
-              <input id="tenant-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-firstName" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.firstName")}</label>
+              <input id="tenant-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="tenant-lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.lastName")}</label>
-              <input id="tenant-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-lastName" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.lastName")}</label>
+              <input id="tenant-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="tenant-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.phone")}</label>
+              <label htmlFor="tenant-phone" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.phone")}</label>
               <ChampTelephone id="tenant-phone" required value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
             <div>
-              <label htmlFor="tenant-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.email")}</label>
-              <input id="tenant-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-email" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.email")}</label>
+              <input id="tenant-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="tenant-language" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.language")}</label>
-              <select id="tenant-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} aria-describedby="tenant-language-hint" className="w-full md:w-56 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="tenant-language" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.language")}</label>
+              <select id="tenant-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} aria-describedby="tenant-language-hint" className="w-full md:w-56 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
                 {SUPPORTED_LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>{l.label}</option>
                 ))}
               </select>
-              <p id="tenant-language-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("manager.tenants.fields.languageHint")}</p>
+              <p id="tenant-language-hint" className="mt-1 text-xs text-slate-600">{t("manager.tenants.fields.languageHint")}</p>
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="tenant-idDocument" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.fields.idDocument")}</label>
+              <label htmlFor="tenant-idDocument" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.idDocument")}</label>
               <input id="tenant-idDocument" type="file" accept="image/*,application/pdf" onChange={(e) => void choisirPiece(e)} className="w-full text-sm" />
             </div>
             {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
@@ -291,7 +291,7 @@ export default function TenantsPage() {
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -300,15 +300,15 @@ export default function TenantsPage() {
       )}
 
       {portalTenant && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 mb-1">
             {t("manager.tenants.createPortalTitle", { name: `${portalTenant.firstName} ${portalTenant.lastName}` })}
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">{t("manager.tenants.loginId", { email: portalTenant.email })}</p>
+          <p className="text-xs text-slate-600 mb-4">{t("manager.tenants.loginId", { email: portalTenant.email })}</p>
           <form onSubmit={handleCreatePortal} className="flex flex-wrap items-end gap-3">
             <div>
-              <label htmlFor="tenant-tempPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.tenants.tempPassword")}</label>
-              <input id="tenant-tempPassword" required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-tempPassword" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.tempPassword")}</label>
+              <input id="tenant-tempPassword" required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <button
               type="submit"
@@ -321,7 +321,7 @@ export default function TenantsPage() {
               {t("common.actions.close")}
             </button>
           </form>
-          {portalMsg && <p className="text-sm mt-2 text-slate-600 dark:text-slate-400">{portalMsg}</p>}
+          {portalMsg && <p className="text-sm mt-2 text-slate-600">{portalMsg}</p>}
         </div>
       )}
 
@@ -335,9 +335,9 @@ export default function TenantsPage() {
       ) : (
       <>
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="hidden sm:block bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 text-slate-700 text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.name")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.phone")}</th>
@@ -350,22 +350,22 @@ export default function TenantsPage() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={7} />)
             ) : (
             tenants.map((tenant) => (
               <tr key={tenant.id}>
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{tenant.firstName} {tenant.lastName}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{tenant.phone}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{tenant.email}</td>
+                <td className="px-4 py-3 font-medium text-slate-900">{tenant.firstName} {tenant.lastName}</td>
+                <td className="px-4 py-3 text-slate-600">{tenant.phone}</td>
+                <td className="px-4 py-3 text-slate-600">{tenant.email}</td>
                 <td className="px-4 py-3">
                   {tenant.idDocument ? (
-                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline">
+                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 hover:underline">
                       {t("manager.tenants.viewIdDocument")}
                     </button></Bulle>
                   ) : (
-                    <span className="text-slate-500 dark:text-slate-400">—</span>
+                    <span className="text-slate-500">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -373,24 +373,24 @@ export default function TenantsPage() {
                 </td>
                 <td className="px-4 py-3">
                   {tenant.userId ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 text-xs">{t("manager.tenants.portalActive")}</span>
+                    <span className="text-emerald-700 text-xs">{t("manager.tenants.portalActive")}</span>
                   ) : (
                     <Bulle texte={t("manager.tips.tenantPortal")}>
-                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">
+                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 hover:underline text-xs">
                       {t("manager.tenants.createAccess")}
                     </button>
                     </Bulle>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
-                  <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
-                  <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline text-xs">{t("manager.tenants.exportData")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 hover:underline text-xs">{t("manager.tenants.exportData")}</button></Bulle>
                   {tenant.anonymizedAt ? (
-                    <span className="text-slate-600 dark:text-slate-400 text-xs">{t("manager.tenants.anonymized")}</span>
+                    <span className="text-slate-600 text-xs">{t("manager.tenants.anonymized")}</span>
                   ) : (
-                    <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline text-xs">{t("manager.tenants.anonymize")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 hover:underline text-xs">{t("manager.tenants.anonymize")}</button></Bulle>
                   )}
-                  <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
                 </td>
               </tr>
             ))
@@ -403,49 +403,49 @@ export default function TenantsPage() {
       <div className="sm:hidden space-y-3">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 space-y-2">
+              <div key={i} className="bg-white rounded-xl border border-contour-200 p-4 space-y-2">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-40" />
               </div>
             ))
           : tenants.map((tenant) => (
-              <div key={tenant.id} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+              <div key={tenant.id} className="bg-white rounded-xl border border-contour-200 shadow-sm p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-slate-900 dark:text-slate-100">{tenant.firstName} {tenant.lastName}</p>
+                  <p className="font-medium text-slate-900">{tenant.firstName} {tenant.lastName}</p>
                   {tenant.userId ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 text-[11px] font-medium shrink-0">{t("manager.tenants.portalActiveMobile")}</span>
+                    <span className="text-emerald-700 text-[11px] font-medium shrink-0">{t("manager.tenants.portalActiveMobile")}</span>
                   ) : (
                     <Bulle texte={t("manager.tips.tenantPortal")}>
-                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 dark:text-brand-400 hover:underline text-[11px] font-medium shrink-0 py-1 -my-1">
+                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 hover:underline text-[11px] font-medium shrink-0 py-1 -my-1">
                       {t("manager.tenants.createAccess")}
                     </button>
                     </Bulle>
                   )}
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                <div className="text-xs text-slate-600 space-y-0.5">
                   <p>{tenant.phone}</p>
                   <p>{tenant.email}</p>
                 </div>
                 <div>
                   <BadgeFiabilite tenant={tenant} />
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-contour-100 dark:border-slate-800 text-xs">
+                <div className="flex items-center justify-between pt-2 border-t border-contour-100 text-xs">
                   {tenant.idDocument ? (
-                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline py-1 -my-1">
+                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 hover:underline py-1 -my-1">
                       {t("manager.tenants.viewIdDocumentMobile")}
                     </button></Bulle>
                   ) : (
-                    <span className="text-slate-500 dark:text-slate-400">{t("manager.tenants.noIdDocument")}</span>
+                    <span className="text-slate-500">{t("manager.tenants.noIdDocument")}</span>
                   )}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 dark:text-brand-400 hover:underline py-1 -my-1">{t("common.actions.edit")}</button></Bulle>
-                    <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 dark:text-slate-400 hover:underline py-1 -my-1">{t("manager.tenants.exportData")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 hover:underline py-1 -my-1">{t("common.actions.edit")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 hover:underline py-1 -my-1">{t("manager.tenants.exportData")}</button></Bulle>
                     {tenant.anonymizedAt ? (
-                      <span className="text-slate-600 dark:text-slate-400">{t("manager.tenants.anonymized")}</span>
+                      <span className="text-slate-600">{t("manager.tenants.anonymized")}</span>
                     ) : (
-                      <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 dark:text-amber-500 hover:underline py-1 -my-1">{t("manager.tenants.anonymize")}</button></Bulle>
+                      <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 hover:underline py-1 -my-1">{t("manager.tenants.anonymize")}</button></Bulle>
                     )}
-                    <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 dark:text-red-400 hover:underline py-1 -my-1">{t("common.actions.delete")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 hover:underline py-1 -my-1">{t("common.actions.delete")}</button></Bulle>
                   </div>
                 </div>
               </div>

@@ -1,11 +1,13 @@
 @import 'tailwindcss';
 @import './couleurs-tailwind3.css';
 
-@custom-variant dark (&:is(.dark *));
-
 @theme {
   --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+
+  /* Titres posés, pas criards : le plus gras de la plateforme est le 700 (gras), pas le 800 ou le 900. */
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
   --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Interlignes des tailles de texte en longueurs fixes, comme dans Tailwind 3.
@@ -177,16 +179,16 @@
 
 @utility glass-card {
   /* Subtle glassmorphism */
-  @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-contour-200/80 dark:border-slate-800/80 shadow-xs;
+  @apply bg-white/80 backdrop-blur-md border border-contour-200/80 shadow-xs;
 }
 
 @utility glass-panel {
-  @apply bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border border-contour-200 dark:border-slate-800;
+  @apply bg-white/90 backdrop-blur-lg border border-contour-200;
 }
 
 @utility card-hover {
   /* Interactive smooth card lift */
-  @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-950/50 hover:border-brand-700 dark:hover:border-slate-300/60;
+  @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-brand-700;
   /* Reflet jaune sous la carte soulevée (accent du thème, voir « Accent jaune » plus bas). */
   &:hover {
     box-shadow: 0 10px 24px -10px var(--jaune-lueur);
@@ -215,7 +217,7 @@
   }
 
   body {
-    @apply bg-canvas text-slate-900 dark:bg-slate-950 dark:text-slate-100 m-0 antialiased font-sans;
+    @apply bg-canvas text-slate-900 m-0 antialiased font-sans;
     background-image: var(--trame);
     background-size: var(--trame-taille, 24px 24px);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -238,7 +240,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 dark:bg-slate-700/60 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600;
+    @apply bg-slate-300 rounded-full hover:bg-slate-400;
   }
 }
 
@@ -251,37 +253,37 @@
    des pages, slate-500 à 4,2:1) sont sous le seuil WCAG AA de 4,5:1. On les
    fonce ici plutôt que de réécrire ~800 occurrences dans les pages. Valeurs
    vérifiées par `couleursThemeClair.test.ts`. */
-html:not(.dark) {
+html {
   --texte-300: #7f929b; /* icônes et éléments décoratifs : 3,1:1 minimum */
   --texte-400: #55697a; /* texte tertiaire : 5,3:1 sur le papier */
   --texte-500: #46596a; /* texte secondaire : 6,8:1 */
   --texte-600: #34495a; /* texte courant atténué : 8,5:1 */
 }
 
-html:not(.dark) [data-surface="app"] .text-slate-300:not(.surface-sombre *) {
+html [data-surface="app"] .text-slate-300:not(.surface-sombre *) {
   color: var(--texte-300);
 }
 
-html:not(.dark) [data-surface="app"] .text-slate-400:not(.surface-sombre *),
-html:not(.dark) [data-surface="app"] :is(input, textarea)::placeholder {
+html [data-surface="app"] .text-slate-400:not(.surface-sombre *),
+html [data-surface="app"] :is(input, textarea)::placeholder {
   color: var(--texte-400);
 }
 
-html:not(.dark) [data-surface="app"] .text-slate-500:not(.surface-sombre *) {
+html [data-surface="app"] .text-slate-500:not(.surface-sombre *) {
   color: var(--texte-500);
 }
 
-html:not(.dark) [data-surface="app"] .text-slate-600:not(.surface-sombre *) {
+html [data-surface="app"] .text-slate-600:not(.surface-sombre *) {
   color: var(--texte-600);
 }
 
 /* Relief : fond de page en léger dégradé (la lumière vient du haut), cartes
    blanches à contour sans ombre → ombre de base, champs légèrement creusés. */
-html:not(.dark) body {
+html body {
   background-attachment: fixed;
 }
 
-html:not(.dark)
+html
   [data-surface="app"]
   :is(div, section, article, li, aside).bg-white.border:not([class*="shadow"]) {
   box-shadow:
@@ -289,7 +291,7 @@ html:not(.dark)
     0 2px 6px -2px rgb(15 23 42 / 0.08);
 }
 
-html:not(.dark)
+html
   [data-surface="app"]
   :is(input, select, textarea):not(
     [type="checkbox"],
@@ -318,18 +320,11 @@ html:not(.dark)
   --trame-taille: 24px 24px;
 }
 
-html.dark {
-  --jaune-trait: rgb(231 237 242 / 0.55);
-  --jaune-lueur: rgb(231 237 242 / 0);
-  --trame:
-    linear-gradient(rgb(231 237 242 / 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(231 237 242 / 0.045) 1px, transparent 1px);
-}
 
 /* Cartes de premier niveau, thème clair. Le liseré passe par les variables d'ombre de Tailwind (--tw-inset-shadow,
    --tw-ring-offset-shadow) : il S'AJOUTE à l'ombre d'une carte qui déclare `shadow-*` (et à son survol) au lieu de la
    remplacer. Celles qui n'ont aucune ombre (voir la règle de relief plus haut) la reçoivent par la seconde règle. */
-html:not(.dark)
+html
   [data-surface="app"]
   :is(div, section, article, aside).bg-white.border:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
     .surface-sombre *,
@@ -339,7 +334,7 @@ html:not(.dark)
   --tw-ring-offset-shadow: 0 6px 16px -8px var(--jaune-lueur);
 }
 
-html:not(.dark)
+html
   [data-surface="app"]
   :is(div, section, article, aside).bg-white.border:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
     [class*="shadow"],
@@ -350,27 +345,6 @@ html:not(.dark)
     var(--tw-inset-shadow),
     0 1px 2px 0 rgb(15 23 42 / 0.08),
     var(--tw-ring-offset-shadow);
-}
-
-/* Thème sombre : mêmes cartes (`dark:bg-slate-900`, `/90`, `/80`…). */
-html.dark
-  [data-surface="app"]
-  :is(div, section, article, aside).border[class*="dark:bg-slate-900"]:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
-    .surface-sombre *,
-    .border[class*="dark:bg-slate-900"] *
-  ) {
-  --tw-inset-shadow: inset 0 2px 0 0 var(--jaune-trait);
-  --tw-ring-offset-shadow: 0 8px 24px -12px var(--jaune-lueur);
-}
-
-html.dark
-  [data-surface="app"]
-  :is(div, section, article, aside).border[class*="dark:bg-slate-900"]:is([class*="rounded-xl"], [class*="rounded-2xl"]):not(
-    [class*="shadow"],
-    .surface-sombre *,
-    .border[class*="dark:bg-slate-900"] *
-  ) {
-  box-shadow: var(--tw-inset-shadow), var(--tw-ring-offset-shadow);
 }
 
 /* Hachures de plan (bleu de plan et orange) : en tête du menu, sur les cartouches. */
@@ -397,7 +371,7 @@ html.dark
   h1,
   h2,
   h3 {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
   }
 }
 

@@ -118,7 +118,7 @@ describe("Bulle d'information", () => {
     expect(screen.getByRole("tooltip").className).toContain("pointer-events-none");
   });
 
-  it("se lit sans effort : texte de 14 px, et claire en thème sombre où une bulle sombre se fondrait", () => {
+  it("se lit sans effort : texte de 14 px", () => {
     render(
       <Bulle texte="Exporte les données">
         <button type="button">Exporter</button>
@@ -129,8 +129,6 @@ describe("Bulle d'information", () => {
     const classes = screen.getByRole("tooltip").className;
     expect(classes).toContain("text-sm");
     expect(classes).not.toContain("text-xs");
-    expect(classes).toContain("dark:bg-slate-100");
-    expect(classes).toContain("dark:text-slate-900");
   });
 
   it("se ferme avec Échap même quand elle est ouverte à la souris (le focus est ailleurs)", () => {

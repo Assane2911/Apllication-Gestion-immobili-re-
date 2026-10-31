@@ -13,7 +13,6 @@ import HistoriqueProvider from "./context/HistoriqueContext";
 import { useBoutonRetourAndroid } from "./hooks/useBoutonRetourAndroid";
 import { useAuth } from "./context/auth";
 import { CurrencyProvider } from "./context/CurrencyContext";
-import { ThemeProvider } from "./context/ThemeContext";
 import { lazyWithReload } from "./utils/lazyWithReload";
 import { homePathForRole } from "./utils/roleHome";
 
@@ -70,7 +69,7 @@ const VitrineListingPage = lazyWithReload(() => import("./pages/VitrineListingPa
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <span className="w-8 h-8 border-[3px] border-contour-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
+      <span className="w-8 h-8 border-[3px] border-contour-200 border-t-brand-500 rounded-full animate-spin" />
     </div>
   );
 }
@@ -201,16 +200,14 @@ export default function App() {
     <ErrorBoundary>
       <Router>
         <HistoriqueProvider>
-          <ThemeProvider>
-            <AuthProvider>
-              <CurrencyProvider>
-                <AppRoutes />
-                <RetourAndroid />
-                <InactiviteSession />
-                <CookieConsentBanner />
-              </CurrencyProvider>
-            </AuthProvider>
-          </ThemeProvider>
+          <AuthProvider>
+            <CurrencyProvider>
+              <AppRoutes />
+              <RetourAndroid />
+              <InactiviteSession />
+              <CookieConsentBanner />
+            </CurrencyProvider>
+          </AuthProvider>
         </HistoriqueProvider>
       </Router>
     </ErrorBoundary>

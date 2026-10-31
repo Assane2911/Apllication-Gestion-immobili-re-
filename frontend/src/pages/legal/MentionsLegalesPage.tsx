@@ -13,7 +13,7 @@ export default function MentionsLegalesPage() {
         </p>
         <LegalList
           items={[
-            <>Nom : <strong className="text-slate-900 dark:text-slate-100">{COMPANY.fullName}</strong></>,
+            <>Nom : <strong className="text-slate-900">{COMPANY.fullName}</strong></>,
             <>Statut juridique : {COMPANY.legalStatus}</>,
             <>Représentant légal : {COMPANY.representative} (membre unique)</>,
             <>Numéro SIRET : {COMPANY.siret}</>,
@@ -33,12 +33,12 @@ export default function MentionsLegalesPage() {
         <LegalList
           items={[
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.hostingFrontendBackend.name}</strong> —{" "}
+              <strong className="text-slate-900">{SUBPROCESSORS.hostingFrontendBackend.name}</strong> —{" "}
               {SUBPROCESSORS.hostingFrontendBackend.address} — hébergement de l'application web et des
               fonctions serveur.
             </>,
             <>
-              <strong className="text-slate-900 dark:text-slate-100">{SUBPROCESSORS.database.name}</strong> —{" "}
+              <strong className="text-slate-900">{SUBPROCESSORS.database.name}</strong> —{" "}
               {SUBPROCESSORS.database.address} — hébergement de la base de données et des fichiers
               (photos, pièces d'identité, documents).
             </>,
@@ -70,7 +70,7 @@ export default function MentionsLegalesPage() {
       <LegalSection title="5. Données personnelles">
         <p>
           Le traitement des données personnelles collectées via le Service est décrit dans la{" "}
-          <a href="/confidentialite" className="text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 underline">
+          <a href="/confidentialite" className="text-brand-600 hover:text-brand-700 underline">
             Politique de confidentialité
           </a>
           .

@@ -80,8 +80,8 @@ export default function ActivityLogPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.activityLog.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.activityLog.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">
             {t("manager.activityLog.subtitle")}
           </p>
         </div>
@@ -92,7 +92,7 @@ export default function ActivityLogPage() {
             setEntityType(e.target.value);
             setPage(1);
           }}
-          className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
+          className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white text-slate-900 shadow-sm"
         >
           {entityTypes.map((opt) => (
             <option key={opt} value={opt}>
@@ -103,7 +103,7 @@ export default function ActivityLogPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load(entityType, page)} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -111,9 +111,9 @@ export default function ActivityLogPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 text-slate-700 text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.when")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.who")}</th>
@@ -121,25 +121,25 @@ export default function ActivityLogPage() {
               <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.detail")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => <TableRowSkeleton key={i} columns={4} />)
             ) : (
               logs.map((log) => {
                 const Icon = iconByEntityType[log.entityType] ?? Clock;
                 return (
-                  <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap">
                       {formatDateTime(log.createdAt)}
                     </td>
-                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300 text-xs">{log.actorLabel}</td>
+                    <td className="px-4 py-3 text-slate-700 text-xs">{log.actorLabel}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
                         <Icon size={12} />
                         {log.entityLabel}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{log.details}</td>
+                    <td className="px-4 py-3 text-slate-600 text-xs">{log.details}</td>
                   </tr>
                 );
               })

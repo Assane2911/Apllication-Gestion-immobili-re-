@@ -67,13 +67,13 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700">
+      <div {...dialogue} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
         <div className="flex items-start justify-between">
           <div>
-            <h3 id="two-factor-setup-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            <h3 id="two-factor-setup-title" className="text-lg font-bold text-slate-900">
               {t("components.twoFactorSetup.title")}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5">
               {step === "backupCodes" ? t("components.twoFactorSetup.subtitleBackupCodes") : t("components.twoFactorSetup.subtitle")}
             </p>
           </div>
@@ -81,7 +81,7 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
             <button
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="text-slate-400 hover:text-slate-600"
               aria-label={t("common.actions.close")}
             >
               <X size={18} />
@@ -90,14 +90,14 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
         </div>
 
         {step === "loading" && (
-          <p className="mt-6 text-sm text-slate-600 dark:text-slate-400">{t("components.twoFactorSetup.loading")}</p>
+          <p className="mt-6 text-sm text-slate-600">{t("components.twoFactorSetup.loading")}</p>
         )}
 
         {step === "error" && (
           <div className="mt-4 space-y-4">
-            <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p role="alert" className="text-sm text-red-600">{error}</p>
             <div className="flex justify-end">
-              <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
+              <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
                 {t("common.actions.close")}
               </button>
             </div>
@@ -111,24 +111,24 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
                 <img
                   src={qrCodeDataUrl}
                   alt={t("components.twoFactorSetup.qrAlt")}
-                  className="w-44 h-44 rounded-lg border border-contour-200 dark:border-slate-700 bg-white p-2"
+                  className="w-44 h-44 rounded-lg border border-contour-200 bg-white p-2"
                 />
               </div>
             )}
 
             {secret && (
               <div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 text-center">
+                <p className="text-xs text-slate-600 text-center">
                   {t("components.twoFactorSetup.manualEntryHint")}
                 </p>
-                <p className="mt-1 text-center font-mono text-sm tracking-wider text-slate-900 dark:text-slate-100 break-all">
+                <p className="mt-1 text-center font-mono text-sm tracking-wider text-slate-900 break-all">
                   {secret}
                 </p>
               </div>
             )}
 
             <div>
-              <label htmlFor="two-factor-setup-code" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="two-factor-setup-code" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("components.twoFactorSetup.codeLabel")}
               </label>
               <input
@@ -139,15 +139,15 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full text-sm text-center tracking-[0.3em] border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm text-center tracking-[0.3em] border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
                 placeholder={t("components.twoFactorSetup.codePlaceholder")}
               />
             </div>
 
-            {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={onClose} disabled={confirming} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
+              <button type="button" onClick={onClose} disabled={confirming} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
                 {t("common.actions.cancel")}
               </button>
               <button
@@ -163,8 +163,8 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
 
         {step === "backupCodes" && (
           <div className="mt-4 space-y-4">
-            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4">
-              <p className="text-sm text-amber-800 dark:text-amber-300 font-semibold">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <p className="text-sm text-amber-800 font-semibold">
                 {t("components.twoFactorSetup.backupCodesWarning")}
               </p>
             </div>
@@ -173,7 +173,7 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
               {backupCodes.map((backupCode) => (
                 <div
                   key={backupCode}
-                  className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 text-center tracking-wider"
+                  className="bg-slate-100 text-slate-900 rounded-lg px-3 py-2 text-center tracking-wider"
                 >
                   {backupCode}
                 </div>

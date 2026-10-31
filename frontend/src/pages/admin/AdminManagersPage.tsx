@@ -79,7 +79,7 @@ export default function AdminManagersPage() {
   }, [page, recherche, plan, statut]);
 
   const champ =
-    "rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100";
+    "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900";
 
   function echeance(m: ManagerRow) {
     const date = m.status === "TRIAL" ? m.trialEndsAt : m.subscriptionEndsAt ?? m.trialEndsAt;
@@ -89,8 +89,8 @@ export default function AdminManagersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t("admin.managers.title")}</h2>
-        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.managers.subtitle")}</p>
+        <h2 className="text-xl font-bold text-slate-900">{t("admin.managers.title")}</h2>
+        <p className="text-xs text-slate-600 mt-1">{t("admin.managers.subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -143,13 +143,13 @@ export default function AdminManagersPage() {
       </div>
 
       {erreur && (
-        <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("admin.managers.errorTitle")}</p>
-          <p role="alert" className="text-xs text-red-700 dark:text-red-400 mt-0.5">{erreur}</p>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-800">{t("admin.managers.errorTitle")}</p>
+          <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
         </div>
       )}
 
-      {chargement && !donnees && <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managers.loading")}</p>}
+      {chargement && !donnees && <p className="text-xs text-slate-600">{t("admin.managers.loading")}</p>}
 
       {donnees && donnees.items.length === 0 && !erreur && (
         <EmptyState icon={Users} title={t("admin.managers.emptyTitle")} description={t("admin.managers.emptyDescription")} />
@@ -157,10 +157,10 @@ export default function AdminManagersPage() {
 
       {donnees && donnees.items.length > 0 && (
         <>
-          <div className="rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto">
+          <div className="rounded-2xl border border-contour-200 bg-white overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-contour-200 dark:border-slate-800">
+                <tr className="text-left text-slate-600 border-b border-contour-200">
                   <th className="px-4 py-3 font-semibold">{t("admin.managers.table.manager")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.managers.table.plan")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin.managers.table.status")}</th>
@@ -169,17 +169,17 @@ export default function AdminManagersPage() {
                   <th className="px-4 py-3 font-semibold">{t("admin.managers.table.signup")}</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-800 dark:text-slate-200">
+              <tbody className="text-slate-800">
                 {donnees.items.map((m) => (
-                  <tr key={m.id} className="border-b last:border-b-0 border-contour-100 dark:border-slate-800/60">
+                  <tr key={m.id} className="border-b last:border-b-0 border-contour-100">
                     <td className="px-4 py-3">
                       <Link
                         to={`/admin/gestionnaires/${m.id}`}
-                        className="font-semibold text-brand-700 dark:text-brand-400 hover:underline"
+                        className="font-semibold text-brand-700 hover:underline"
                       >
                         {m.agencyName ?? t("admin.managers.noAgencyName")}
                       </Link>
-                      <p className="text-slate-600 dark:text-slate-400">{m.email}</p>
+                      <p className="text-slate-600">{m.email}</p>
                     </td>
                     <td className="px-4 py-3">{t(`admin.managers.plans.${m.plan}`)}</td>
                     <td className="px-4 py-3">

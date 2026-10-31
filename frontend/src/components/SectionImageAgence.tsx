@@ -65,23 +65,23 @@ export default function SectionImageAgence({
   return (
     <section
       aria-labelledby={`agency-${ressource}-title`}
-      className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6"
+      className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6"
     >
-      <h3 id={`agency-${ressource}-title`} className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+      <h3 id={`agency-${ressource}-title`} className="text-sm font-bold text-slate-800 uppercase tracking-wider">
         {t(`${cle}.title`)}
       </h3>
-      <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{t(`${cle}.description`)}</p>
+      <p className="text-sm text-slate-600 mt-2">{t(`${cle}.description`)}</p>
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {url && (
           <img
             src={url}
             alt={t(`${cle}.previewAlt`)}
-            className="h-14 max-w-[200px] object-contain rounded-lg border border-contour-200 dark:border-slate-700 bg-white p-1"
+            className="h-14 max-w-[200px] object-contain rounded-lg border border-contour-200 bg-white p-1"
           />
         )}
         <label
-          className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm focus-within:ring-2 focus-within:ring-brand-500 ${
-            busy ? "opacity-60 cursor-wait" : "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
+          className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold border border-slate-300 bg-white text-slate-800 shadow-sm focus-within:ring-2 focus-within:ring-brand-500 ${
+            busy ? "opacity-60 cursor-wait" : "cursor-pointer hover:bg-slate-50"
           }`}
         >
           {busy ? t(`${cle}.uploading`) : url ? t(`${cle}.replace`) : t(`${cle}.choose`)}
@@ -92,19 +92,19 @@ export default function SectionImageAgence({
             type="button"
             onClick={handleRemove}
             disabled={busy}
-            className="text-sm font-semibold text-red-700 dark:text-red-400 hover:underline disabled:opacity-60"
+            className="text-sm font-semibold text-red-700 hover:underline disabled:opacity-60"
           >
             {t(`${cle}.remove`)}
           </button>
         )}
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-400">
+        <p role="alert" className="mt-3 text-sm text-red-700">
           {error}
         </p>
       )}
       {saved && (
-        <p role="status" className="mt-3 text-sm text-emerald-700 dark:text-emerald-400">
+        <p role="status" className="mt-3 text-sm text-emerald-700">
           {t(`${cle}.saved`)}
         </p>
       )}

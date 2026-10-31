@@ -96,8 +96,8 @@ export default function VendorsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.vendors.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.vendors.count", { count: vendors.length })}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.vendors.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.vendors.count", { count: vendors.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.vendorCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
@@ -107,7 +107,7 @@ export default function VendorsPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -116,35 +116,35 @@ export default function VendorsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{editing ? t("manager.vendors.formTitleEdit") : t("manager.vendors.formTitleNew")}</h3>
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 mb-4">{editing ? t("manager.vendors.formTitleEdit") : t("manager.vendors.formTitleNew")}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="vendor-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.vendors.fields.name")}</label>
-              <input id="vendor-name" required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-name" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.name")}</label>
+              <input id="vendor-name" required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="vendor-trade" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.vendors.fields.trade")}</label>
-              <input id="vendor-trade" maxLength={100} value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} placeholder={t("manager.vendors.fields.tradePlaceholder")} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-trade" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.trade")}</label>
+              <input id="vendor-trade" maxLength={100} value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} placeholder={t("manager.vendors.fields.tradePlaceholder")} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label htmlFor="vendor-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.vendors.fields.phone")}</label>
+              <label htmlFor="vendor-phone" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.phone")}</label>
               <ChampTelephone id="vendor-phone" required value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
             <div>
-              <label htmlFor="vendor-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.vendors.fields.email")}</label>
-              <input id="vendor-email" type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-email" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.email")}</label>
+              <input id="vendor-email" type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="vendor-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.vendors.fields.notes")}</label>
-              <textarea id="vendor-notes" maxLength={5000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-notes" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.notes")}</label>
+              <textarea id="vendor-notes" maxLength={5000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
             </div>
             {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -155,7 +155,7 @@ export default function VendorsPage() {
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 space-y-2">
+            <div key={i} className="bg-white rounded-xl border border-contour-200 p-4 space-y-2">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-40" />
             </div>
@@ -169,9 +169,9 @@ export default function VendorsPage() {
           action={{ label: t("manager.vendors.addBtn"), onClick: openCreate }}
         />
       ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
+            <thead className="bg-slate-200/70 text-slate-700 text-left">
               <tr>
                 <th className="px-4 py-3 font-semibold">{t("manager.vendors.table.name")}</th>
                 <th className="px-4 py-3 font-semibold">{t("manager.vendors.table.trade")}</th>
@@ -180,16 +180,16 @@ export default function VendorsPage() {
                 <th className="relative px-4 py-3 font-semibold"><span className="sr-only">{t("common.actions.column")}</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-contour-100">
               {vendors.map((vendor) => (
                 <tr key={vendor.id}>
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{vendor.name}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{vendor.trade || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{vendor.phone}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{vendor.email || "—"}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900">{vendor.name}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.trade || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.phone}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.email || "—"}</td>
                   <td className="px-4 py-3 text-right space-x-3">
-                    <Bulle texte={t("manager.tips.vendorEdit")}><button onClick={() => openEdit(vendor)} className="text-brand-600 dark:text-brand-400 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
-                    <Bulle texte={t("manager.tips.vendorDelete")}><button onClick={() => handleDelete(vendor)} className="text-red-600 dark:text-red-400 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.vendorEdit")}><button onClick={() => openEdit(vendor)} className="text-brand-600 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.vendorDelete")}><button onClick={() => handleDelete(vendor)} className="text-red-600 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
                   </td>
                 </tr>
               ))}

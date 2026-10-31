@@ -1,11 +1,9 @@
 /**
- * Marque d'ImmoPlatform Pro (une maison qui abrite un P), dessinée en SVG : elle prend la couleur du thème au lieu de
- * rester une pastille sombre sur un fond clair. Trait indigo et cheminée terre cuite en clair ; trait sable et cheminée
- * ocre en sombre. `sur="sombre"` force la version claire, pour les surfaces toujours sombres (menu latéral, bandeaux).
- * Le fichier `app-icon.png` reste, lui, l'icône de l'application (favicon, écran d'accueil du téléphone).
+ * Marque d'ImmoPlatform Pro (une maison qui abrite un P), dessinée en SVG : trait bleu de plan et cheminée orange, sans
+ * pastille de fond. Le fichier `app-icon.png` reste, lui, l'icône de l'application (favicon, écran d'accueil du téléphone).
  */
-export default function Logo({ taille = 36, sur = "auto", className = "" }: { taille?: number; sur?: "auto" | "sombre"; className?: string }) {
-  const trait = sur === "sombre" ? "stroke-slate-100" : "stroke-ink-900 dark:stroke-slate-100";
+export default function Logo({ taille = 36, className = "" }: { taille?: number; className?: string }) {
+  const trait = "stroke-ink-900";
   const cheminee = "fill-ocre";
   return (
     <svg

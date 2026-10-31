@@ -127,29 +127,29 @@ export default function SignatureModal({ signUrl, title, onSuccess, onClose }: S
     >
       <div
         {...dialogue}
-        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700 transition-all duration-200 ${
+        className={`bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 transition-all duration-200 ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 id="signature-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.signatureModal.title")}</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{title}</p>
+            <h3 id="signature-title" className="text-lg font-bold text-slate-900">{t("components.signatureModal.title")}</h3>
+            <p className="text-xs text-slate-600 mt-0.5">{title}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="text-slate-400 hover:text-slate-600"
             aria-label={t("common.actions.close")}
           >
             <X size={18} />
           </button>
         </div>
 
-        <p className="text-xs text-slate-600 dark:text-slate-400 mt-4">
+        <p className="text-xs text-slate-600 mt-4">
           {t("components.signatureModal.instructions")}
         </p>
 
-        <div className="mt-3 relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden touch-none flex items-center justify-center">
+        <div className="mt-3 relative border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 overflow-hidden touch-none flex items-center justify-center">
           <canvas
             ref={canvasRef}
             width={460}
@@ -185,7 +185,7 @@ export default function SignatureModal({ signUrl, title, onSuccess, onClose }: S
             <button
               type="button"
               onClick={onClose}
-              className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2"
+              className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2"
             >
               {t("common.actions.cancel")}
             </button>

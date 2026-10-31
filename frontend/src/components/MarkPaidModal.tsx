@@ -72,8 +72,8 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
   }
 
   const champ =
-    "w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500";
-  const etiquette = "block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1";
+    "w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500";
+  const etiquette = "block text-xs font-semibold text-slate-700 mb-1";
 
   const dialogue = useDialogue({ onClose, titreId: "mark-paid-title", fermable: !saving });
 
@@ -81,14 +81,14 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div
         {...dialogue}
-        className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700"
+        className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-contour-200"
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 id="mark-paid-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            <h3 id="mark-paid-title" className="text-lg font-bold text-slate-900">
               {t("components.markPaidModal.title")}
             </h3>
-            <p className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">
+            <p className="text-sm text-slate-700 mt-0.5">
               {t("components.markPaidModal.intro", { name: tenantName, amount: amountLabel })}
             </p>
           </div>
@@ -96,7 +96,7 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="text-slate-400 hover:text-slate-600"
             aria-label={t("common.actions.close")}
           >
             <X size={18} />
@@ -104,7 +104,7 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <p className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             {partiel ? t("components.markPaidModal.warningPartial") : t("components.markPaidModal.warning")}
           </p>
 
@@ -123,7 +123,7 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
               onChange={(e) => setMontant(e.target.value)}
               className={champ}
             />
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               {t("components.markPaidModal.amountHint", { remaining: formatMoney(remaining, currency) })}
             </p>
           </div>
@@ -154,7 +154,7 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
               onChange={(e) => setPaidAt(e.target.value)}
               className={champ}
             />
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("components.markPaidModal.dateHint")}</p>
+            <p className="text-xs text-slate-600 mt-1">{t("components.markPaidModal.dateHint")}</p>
           </div>
 
           <div>
@@ -173,13 +173,13 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
           </div>
 
           {error && (
-            <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+            <p role="alert" className="text-xs text-red-600">
               {error}
             </p>
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
+            <button type="button" onClick={onClose} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
               {t("common.actions.cancel")}
             </button>
             <button

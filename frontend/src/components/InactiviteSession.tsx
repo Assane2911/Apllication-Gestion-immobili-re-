@@ -103,19 +103,19 @@ export default function InactiviteSession() {
       <Dialogue
         onClose={resterConnecte}
         titreId="inactivite-titre"
-        className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700"
+        className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200"
       >
-        <h2 id="inactivite-titre" className="text-base font-bold text-slate-900 dark:text-slate-100">
+        <h2 id="inactivite-titre" className="text-base font-bold text-slate-900">
           {t("components.inactivite.title")}
         </h2>
-        <p role="status" className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        <p role="status" className="mt-2 text-sm text-slate-600">
           {t("components.inactivite.message", { count: secondesRestantes })}
         </p>
         <div className="mt-5 flex flex-wrap gap-2 justify-end">
           <button
             type="button"
             onClick={() => deconnexionRef.current()}
-            className="text-sm font-semibold px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+            className="text-sm font-semibold px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700"
           >
             {t("components.inactivite.logout")}
           </button>
