@@ -18,7 +18,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import BoutonTheme from "../components/BoutonTheme";
@@ -222,8 +222,8 @@ function PlanAccroche() {
     <div aria-hidden="true" className="relative mx-auto w-full max-w-xl aspect-5/4 border-2 border-ink-900 dark:border-slate-300/70 bg-white/70 dark:bg-slate-900/60 rounded-md">
       <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full text-ink-900 dark:text-slate-200">
         <g fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round">
-          <path d="M60 60H440V340H60Z" />
-          <path d="M60 190H230M230 60V190M230 190V250M320 190H440M320 190V340M230 250H320" strokeWidth="3.5" />
+          <path d="M60 60H440V340H60Z" pathLength="1" className="plan-trace" />
+          <path d="M60 190H230M230 60V190M230 190V250M320 190H440M320 190V340M230 250H320" strokeWidth="3.5" pathLength="1" className="plan-trace" />
         </g>
         <g fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M230 120a34 34 0 0 1 -34 -34" opacity=".6" />
@@ -244,6 +244,107 @@ function PlanAccroche() {
       <div className="absolute -top-8 -right-4 sm:-right-8 w-44 sm:w-52 h-40 shadow-xl">
         <ContractMockup />
       </div>
+    </div>
+  );
+}
+
+/** Section affichée au centre de l'écran : sert à souligner le lien du menu et le repère de l'index latéral. */
+function useSectionActive(ids: readonly string[]) {
+  const [actif, setActif] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const observateur = new IntersectionObserver(
+      (entrees) => {
+        for (const entree of entrees) if (entree.isIntersecting) setActif(entree.target.id);
+      },
+      { rootMargin: "-40% 0px -55% 0px" },
+    );
+    for (const id of ids) {
+      const element = document.getElementById(id);
+      if (element) observateur.observe(element);
+    }
+    return () => observateur.disconnect();
+  }, [ids]);
+  return actif;
+}
+
+/** Filet de progression en haut de l'écran : la part de la page déjà parcourue, sans rendre la page à chaque pixel. */
+function BarreProgression() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let image = 0;
+    const mettreAJour = () => {
+      image = 0;
+      const barre = ref.current;
+      if (!barre) return;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      barre.style.transform = `scaleX(${total > 0 ? Math.min(1, window.scrollY / total) : 0})`;
+    };
+    const auDefilement = () => {
+      if (!image) image = requestAnimationFrame(mettreAJour);
+    };
+    window.addEventListener("scroll", auDefilement, { passive: true });
+    mettreAJour();
+    return () => {
+      window.removeEventListener("scroll", auDefilement);
+      if (image) cancelAnimationFrame(image);
+    };
+  }, []);
+  return (
+    <div aria-hidden="true" className="fixed inset-x-0 top-0 z-[60] h-[3px] bg-slate-300/40 dark:bg-slate-700/40">
+      <div ref={ref} className="h-full origin-left bg-ocre" style={{ transform: "scaleX(0)" }} />
+    </div>
+  );
+}
+
+/** Bouton « haut de page », qui n'apparaît qu'une fois l'accroche dépassée. */
+function BoutonHautDePage({ libelle }: { libelle: string }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const auDefilement = () => setVisible(window.scrollY > 900);
+    window.addEventListener("scroll", auDefilement, { passive: true });
+    auDefilement();
+    return () => window.removeEventListener("scroll", auDefilement);
+  }, []);
+  return (
+    <a
+      href="#top"
+      aria-label={libelle}
+      title={libelle}
+      className={`fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center border-2 border-ink-900 bg-white text-ink-900 shadow-md transition-all duration-300 hover:bg-ink-900 hover:text-white dark:border-slate-300/70 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-100 dark:hover:text-slate-900 motion-reduce:transition-none ${
+        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+      }`}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 13V3M3 7.5 8 3l5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
+      </svg>
+    </a>
+  );
+}
+
+/** Index latéral des feuilles (écrans larges) : un repère numéroté par section, celle en cours est pleine. */
+function IndexFeuilles({ sections, actif }: { sections: ReadonlyArray<{ id: string; numero: string; libelle: string }>; actif: string | null }) {
+  return (
+    <div className="fixed right-2.5 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-1.5 min-[1360px]:flex">
+      {sections.map((section) => {
+        const courant = actif === section.id;
+        return (
+          <a
+            key={section.id}
+            href={`#${section.id}`}
+            aria-label={section.libelle}
+            title={section.libelle}
+            aria-current={courant ? "location" : undefined}
+            className={`flex h-6 w-7 items-center justify-center border font-mono text-[10px] transition-colors motion-reduce:transition-none ${
+              courant
+                ? "border-ink-900 bg-ink-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
+                : "border-slate-400/70 bg-white/80 text-slate-700 hover:border-ink-900 hover:text-ink-900 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:border-slate-200"
+            }`}
+          >
+            {section.numero}
+          </a>
+        );
+      })}
     </div>
   );
 }
@@ -269,6 +370,16 @@ export default function LandingPage() {
   // Entre 640 et 1279 px, la barre flottante garde le code court de la langue pour que tous les liens tiennent.
   const ecranMoyen = useMediaQuery("(max-width: 1279px)");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const sectionsSuivies = [
+    { id: "features", numero: "01", libelle: t("landing.nav.features") },
+    { id: "pdf", numero: "02", libelle: t("landing.nav.receipts") },
+    { id: "profils", numero: "03", libelle: t("landing.forWho.title") },
+    { id: "compare", numero: "04", libelle: t("landing.nav.compare") },
+    { id: "trust", numero: "05", libelle: t("landing.nav.security") },
+    { id: "faq", numero: "06", libelle: t("landing.nav.faq") },
+    { id: "pricing", numero: "07", libelle: t("landing.nav.pricing") },
+  ] as const;
+  const sectionActive = useSectionActive(sectionsSuivies.map((section) => section.id));
 
   // Mêmes lignes et mêmes descriptions que les cartes de la page Abonnement du gestionnaire (voir data/lignesFormules.ts).
   const lignesFormule = (id: IdFormule) =>
@@ -285,13 +396,16 @@ export default function LandingPage() {
   const faqItems = t("landing.faq.items", { returnObjects: true }) as { q: string; a: string }[];
 
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-100 selection:bg-brand-500 selection:text-white">
+    <div id="top" className="min-h-screen text-slate-900 dark:text-slate-100 selection:bg-brand-500 selection:text-white">
+      <BarreProgression />
+      <IndexFeuilles sections={sectionsSuivies} actif={sectionActive} />
+      <BoutonHautDePage libelle={t("landing.nav.top")} />
       <Seo title={t("seo.landing.title")} description={t("seo.landing.description")} canonical="/" />
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
       <nav className="fixed top-3 inset-x-3 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl shadow-md flex items-center justify-between gap-2">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white/97 dark:bg-slate-900/97 backdrop-blur-xl shadow-md flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 shrink-0">
             <Logo taille={32} className="transition-transform duration-300 hover:rotate-6 hover:scale-105" />
             <span className="sr-only sm:not-sr-only lg:sr-only xl:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight bg-linear-to-r from-slate-900 dark:from-white via-slate-800 dark:via-slate-200 to-slate-600 dark:to-slate-400 bg-clip-text text-transparent">
@@ -324,7 +438,8 @@ export default function LandingPage() {
               <a
                 key={link.href}
                 href={link.href}
-                className="relative hover:text-slate-900 dark:hover:text-white transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-brand-400 after:transition-all after:duration-300 hover:after:w-full"
+                className={`${"relative hover:text-slate-900 dark:hover:text-white transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-brand-400 after:transition-all after:duration-300 hover:after:w-full"} ${sectionActive === link.href.slice(1) ? "text-slate-900 dark:text-white after:w-full after:bg-ocre!" : ""}`}
+                aria-current={sectionActive === link.href.slice(1) ? "location" : undefined}
               >
                 {link.label}
               </a>
@@ -483,7 +598,7 @@ export default function LandingPage() {
       </section>
 
       {/* For Who Section : trois colonnes séparées par des filets */}
-      <section className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
+      <section id="profils" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
         <EnteteSection numero="03" titre={t("landing.forWho.title")} sous={t("landing.forWho.subtitle")} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 border-y border-slate-400/70 dark:border-slate-700 divide-y md:divide-y-0 md:divide-x divide-slate-400/70 dark:divide-slate-700">

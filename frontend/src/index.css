@@ -204,8 +204,14 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem; /* les ancres de l'accueil ne passent plus sous la barre fixe */
     -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 
   body {
@@ -392,5 +398,21 @@ html.dark
   h2,
   h3 {
     letter-spacing: -0.02em;
+  }
+}
+
+/* Les murs du plan de l'accueil se tracent au chargement (sans mouvement si la personne l'a demandé). */
+@keyframes tracer {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@utility plan-trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tracer 1.8s ease-out 0.3s forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }

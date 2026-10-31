@@ -623,6 +623,7 @@ const en: TranslationSchema = {
       login: "Sign in",
       trial: "Free 15-day trial →",
       trialShort: "Free trial →",
+      top: "Back to top",
     },
     badge: "New Version 2.0 • 15-day free trial, no commitment",
     hero: {
