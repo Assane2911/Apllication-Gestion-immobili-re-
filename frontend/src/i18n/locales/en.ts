@@ -2457,6 +2457,7 @@ const en: TranslationSchema = {
     },
   },
   admin: {
+    groups: { overview: "Overview", platform: "Platform", supervision: "Supervision", configuration: "Configuration" },
     nav: {
       tips: {
         audit: "Who confirmed a transfer or changed platform settings, and when.",

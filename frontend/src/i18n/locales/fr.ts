@@ -2458,6 +2458,7 @@ const fr = {
     },
   },
   admin: {
+    groups: { overview: "Pilotage", platform: "Plateforme", supervision: "Supervision", configuration: "Configuration" },
     nav: {
       tips: {
         audit: "Qui a confirmé un virement ou modifié les réglages de la plateforme, et quand.",

@@ -61,9 +61,9 @@ describe("AdminLayout", () => {
 
     expect(screen.getByText("Paramètres admin")).toBeInTheDocument();
     const lienParametres = screen.getByRole("link", { name: /Paramètres/ });
-    // Même onglet actif que dans les espaces locataire et propriétaire (voir EnteteEspace).
-    expect(lienParametres.className).toMatch(/bg-ink-900/);
-    expect(lienParametres.className).toMatch(/text-white/);
+    // Même page active que dans le menu latéral du gestionnaire : pastille grise, texte en gras.
+    expect(lienParametres.className).toMatch(/bg-slate-100/);
+    expect(lienParametres.className).toMatch(/font-semibold/);
     expect(lienParametres).toHaveAttribute("aria-current", "page");
   });
 

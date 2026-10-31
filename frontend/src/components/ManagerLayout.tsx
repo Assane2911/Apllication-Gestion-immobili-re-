@@ -3,8 +3,6 @@ import {
   Briefcase,
   Building2,
   Calculator,
-  ChevronsLeft,
-  ChevronsRight,
   ClipboardCheck,
   CreditCard,
   FileText,
@@ -13,7 +11,6 @@ import {
   History,
   Inbox,
   LayoutDashboard,
-  LogOut,
   Megaphone,
   Menu,
   MessageSquare,
@@ -24,16 +21,13 @@ import {
   Users,
   Wallet,
   Wrench,
-  X,
-  type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import Logo from "./Logo";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
-import { enregistrerCoucheRetour } from "../utils/couchesRetour";
 import { CurrencySelector } from "../context/CurrencyContext";
 import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
 import GlobalSearch from "./GlobalSearch";
@@ -49,7 +43,7 @@ const pagesHorsMenu = [{ to: "/guide-demarrage", key: "guide" }];
 
 // Le menu est rangé par rubriques, comme le tableau de bord de Supabase : une icône par page, des intitulés de rubrique
 // discrets, et la possibilité de le replier en une colonne d'icônes pour laisser la place au travail.
-const groupes: ReadonlyArray<{ cle: string; items: ReadonlyArray<{ to: string; key: string; icone: LucideIcon }> }> = [
+const groupes: ReadonlyArray<GroupeMenu> = [
   { cle: "overview", items: [{ to: "/dashboard", key: "dashboard", icone: LayoutDashboard }] },
   {
     cle: "portfolio",
@@ -98,14 +92,6 @@ const groupes: ReadonlyArray<{ cle: string; items: ReadonlyArray<{ to: string; k
 ];
 const navItems = groupes.flatMap((groupe) => groupe.items);
 
-const CLE_EPINGLE = "menu-gestionnaire-epingle";
-const lireEpingle = () => {
-  try {
-    return localStorage.getItem(CLE_EPINGLE) === "1";
-  } catch {
-    return false;
-  }
-};
 
 export default function ManagerLayout() {
   const { t, i18n } = useTranslation();
@@ -113,29 +99,7 @@ export default function ManagerLayout() {
   const { demanderDeconnexion, dialogue: dialogueDeconnexion } = useConfirmationDeconnexion();
   const sub = user?.subscription;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  // Comme le menu de Supabase : une colonne d'icônes qui s'ouvre quand la souris la survole (ou qu'un élément du menu a
-  // le focus) et se referme quand elle la quitte. « Garder le menu déployé » l'épingle ouvert. Le tiroir du téléphone
-  // reste toujours déployé.
-  const [epingle, setEpingle] = useState(lireEpingle);
-  const [survol, setSurvol] = useState(false);
-  const ouvert = epingle || survol;
-  const basculerEpingle = () =>
-    setEpingle((actuel) => {
-      try {
-        localStorage.setItem(CLE_EPINGLE, actuel ? "0" : "1");
-      } catch {
-        /* le réglage n'est alors pas retenu, sans gravité */
-      }
-      return !actuel;
-    });
-  // Texte et blocs qui n'ont leur place que menu ouvert : ils s'effacent en colonne d'icônes.
-  const etiquette = ouvert ? "" : "sm:opacity-0 sm:pointer-events-none";
-  const seulementOuvert = ouvert ? "" : "sm:hidden";
-  // Le bouton retour d'Android referme le menu ouvert avant de changer de page (voir useBoutonRetourAndroid).
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    return enregistrerCoucheRetour(() => setMobileNavOpen(false));
-  }, [mobileNavOpen]);
+  const fermerMenuMobile = useCallback(() => setMobileNavOpen(false), []);
   // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>) : sans lui, les vingt pages de
   // l'espace s'appelaient pareil, et un lecteur d'écran n'annonçait aucun changement de page. L'entrée de
   // navigation la plus précise gagne ; le compte-rendu de gestion d'un propriétaire a son propre libellé.
@@ -150,121 +114,38 @@ export default function ManagerLayout() {
   return (
     <div className="min-h-screen flex">
       {libellePage && <title>{`${libellePage} | ${t("common.appName")}`}</title>}
-      {mobileNavOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/60 z-30 sm:hidden transition-opacity"
-          onClick={() => setMobileNavOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      {/* Réserve la place de la colonne ; le menu, lui, se déploie par-dessus le contenu. */}
-      <div aria-hidden="true" className={`hidden sm:block shrink-0 transition-[width] duration-200 ${epingle ? "w-64" : "w-16"}`} />
-      <aside
-        onMouseEnter={() => setSurvol(true)}
-        onMouseLeave={(e) => {
-          // Une liste déroulante ouverte (monnaie, langue) sort du menu : on ne referme pas sous le choix de la personne.
-          if (document.activeElement instanceof HTMLSelectElement && e.currentTarget.contains(document.activeElement)) return;
-          setSurvol(false);
-        }}
-        onFocus={() => setSurvol(true)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false);
-        }}
-        className={`fixed inset-y-0 left-0 z-40 w-64 ${ouvert ? "sm:w-64" : "sm:w-16"} h-dvh bg-white text-slate-900 border-r border-slate-300 flex flex-col overflow-hidden transform transition-[transform,width,box-shadow] duration-200 ease-in-out ${
-          ouvert && !epingle ? "sm:shadow-xl" : "shadow-xl sm:shadow-none"
-        } ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0`}
-      >
-        <div className="shrink-0 h-16 px-3.5 flex items-center justify-between gap-3 border-b border-slate-300">
-          <div className="flex items-center gap-3 min-w-0">
-            <Logo />
-            <div className={`min-w-0 whitespace-nowrap transition-opacity duration-150 ${etiquette}`}>
-              <h1 className="text-sm font-extrabold leading-tight truncate">{t("common.appName")}</h1>
-              <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600 truncate">{t("components.managerLayout.subtitle")}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setMobileNavOpen(false)}
-            className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors"
-            aria-label={t("components.managerLayout.closeMenuAria")}
-          >
-            <X size={15} />
-          </button>
-        </div>
-        <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-2" onClick={() => setMobileNavOpen(false)}>
-          {groupes.map((groupe, rang) => (
-            // Des filets séparent les rubriques, sans intitulé, comme dans Supabase ; le nom reste lu par les lecteurs d'écran.
-            <div key={groupe.cle} role="group" aria-label={t(`nav.groups.${groupe.cle}`)} className={rang > 0 ? "mt-2 pt-2 border-t border-slate-300" : ""}>
-              <div className="space-y-0.5">
-                {groupe.items.map((item) => (
-                  // Pas de bulle d'aide ici : le menu se déploie au survol et donne déjà le nom de la page.
-                  <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.to === "/dashboard"}
-                      className={({ isActive }) =>
-                        `group flex items-center gap-3.5 h-11 px-3.5 text-sm whitespace-nowrap rounded-md transition-colors duration-150 ${
-                          isActive ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <item.icone size={20} strokeWidth={isActive ? 1.9 : 1.6} aria-hidden="true" className={`shrink-0 ${isActive ? "text-ink-900" : "text-slate-600 group-hover:text-ink-900"}`} />
-                          <span className={`truncate transition-opacity duration-150 ${etiquette}`}>{t(`nav.manager.${item.key}`)}</span>
-                        </>
-                      )}
-                  </NavLink>
-                ))}
+      <MenuLateral
+        groupes={groupes}
+        prefixeLibelles="nav.manager"
+        prefixeRubriques="nav.groups"
+        racine="/dashboard"
+        sousTitre={t("components.managerLayout.subtitle")}
+        cleStockage="menu-gestionnaire-epingle"
+        email={user?.email}
+        ouvertMobile={mobileNavOpen}
+        onFermerMobile={fermerMenuMobile}
+        onDeconnexion={demanderDeconnexion}
+        enPied={
+          <>
+            {sub?.isTrialActive && (
+              <div className="mb-2 mx-1 bg-brand-50 border border-ocre/60 rounded-sm px-3 py-1.5 text-[11px] text-slate-800 flex items-center justify-between">
+                <span>{t("components.managerLayout.trialFree")}</span>
+                <span className="font-mono font-medium text-white bg-ocre px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
+              </div>
+            )}
+            <div className="mb-2 mx-1 flex w-full flex-col gap-2">
+              <div className="min-w-0 w-full">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("nav.currencyLabel")}</span>
+                <CurrencySelector className="w-full [&>select]:w-full" />
+              </div>
+              <div className="min-w-0 w-full">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("common.language.label")}</span>
+                <LanguageSwitcher className="w-full [&>select]:w-full" />
               </div>
             </div>
-          ))}
-        </nav>
-        <div className="shrink-0 border-t border-slate-300 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-white">
-          {sub?.isTrialActive && (
-            <div className={`mb-2 mx-1 bg-brand-50 border border-ocre/60 rounded-sm px-3 py-1.5 text-[11px] text-slate-800 flex items-center justify-between ${seulementOuvert}`}>
-              <span>{t("components.managerLayout.trialFree")}</span>
-              <span className="font-mono font-medium text-white bg-ocre px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
-            </div>
-          )}
-          <div className={`mb-2 mx-1 flex w-full flex-col gap-2 ${seulementOuvert}`}>
-            <div className="min-w-0 w-full">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("nav.currencyLabel")}</span>
-              <CurrencySelector className="w-full [&>select]:w-full" />
-            </div>
-            <div className="min-w-0 w-full">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("common.language.label")}</span>
-              <LanguageSwitcher className="w-full [&>select]:w-full" />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={basculerEpingle}
-            aria-pressed={epingle}
-            aria-label={epingle ? t("nav.collapse") : t("nav.expand")}
-            className="hidden sm:flex w-full h-11 items-center gap-3.5 px-3.5 rounded-md text-sm text-slate-700 whitespace-nowrap hover:bg-slate-100 hover:text-ink-900 transition-colors cursor-pointer"
-          >
-            {epingle ? <ChevronsLeft size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" /> : <ChevronsRight size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />}
-            <span className={`transition-opacity duration-150 ${etiquette}`}>{epingle ? t("nav.collapse") : t("nav.expand")}</span>
-          </button>
-          <div className="flex items-center gap-1">
-            <div className="flex flex-1 min-w-0 items-center gap-3.5 h-11 px-2 whitespace-nowrap" title={user?.email}>
-              <div className="w-8 h-8 bg-ink-900 flex items-center justify-center text-xs font-bold text-white shrink-0">
-                {(user?.email?.[0] || "?").toUpperCase()}
-              </div>
-              <div className={`min-w-0 transition-opacity duration-150 ${etiquette}`}>
-                <p className="text-xs text-slate-900 font-medium truncate">{user?.email}</p>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={demanderDeconnexion}
-            className="w-full h-11 flex items-center gap-3.5 px-3.5 rounded-md text-sm text-slate-700 whitespace-nowrap hover:bg-rose-500/10 hover:text-rose-700 transition-colors cursor-pointer"
-          >
-            <LogOut size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
-            <span className={`transition-opacity duration-150 ${etiquette}`}>{t("nav.logout")}</span>
-          </button>
-        </div>
-      </aside>
+          </>
+        }
+      />
       {/* Hors de la barre latérale : sa transformation ferait d'elle le repère d'un élément en `fixed`. */}
       {dialogueDeconnexion}
       <main data-surface="app" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
