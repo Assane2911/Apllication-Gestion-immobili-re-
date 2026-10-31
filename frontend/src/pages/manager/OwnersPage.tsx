@@ -6,6 +6,7 @@ import { useCurrency } from "../../context/currency";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import { SUPPORTED_LANGUAGES } from "../../i18n";
 import ChampTelephone from "../../components/ChampTelephone";
+import Initiales from "../../components/Initiales";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
@@ -209,10 +210,10 @@ export default function OwnersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">{t("manager.owners.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">{t("manager.owners.count", { count: owners.length })}</p>
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.owners.count", { count: owners.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.ownerCreate")}>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
+        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 shadow-sm transition-colors">
           {t("manager.owners.addBtn")}
         </button>
         </Bulle>
@@ -363,8 +364,13 @@ export default function OwnersPage() {
             owners.map((owner) => (
               <tr key={owner.id}>
                 <td className="px-4 py-3 font-medium text-slate-900">
-                  {owner.firstName} {owner.lastName}
-                  {owner.companyName && <span className="block text-xs font-normal text-slate-600">{owner.companyName}</span>}
+                  <div className="flex items-center gap-3">
+                    <Initiales prenom={owner.firstName} nom={owner.lastName} />
+                    <div>
+                      {owner.firstName} {owner.lastName}
+                      {owner.companyName && <span className="block text-xs font-normal text-slate-600">{owner.companyName}</span>}
+                    </div>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-slate-600">{owner.phone}</td>
                 <td className="px-4 py-3 text-slate-600">{owner.email}</td>
@@ -387,7 +393,7 @@ export default function OwnersPage() {
                       <button
                         onClick={() => handleInvite(owner)}
                         disabled={inviting === owner.id}
-                        className="text-brand-600 hover:underline text-xs text-left disabled:opacity-60"
+                        className="text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors text-left disabled:opacity-60"
                       >
                         {owner.portalStatus === "PENDING" ? t("manager.owners.resendInvite") : t("manager.owners.invite")}
                       </button>
@@ -398,16 +404,16 @@ export default function OwnersPage() {
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right space-x-3">
-                  <Link to={`/proprietaires/${owner.id}/crg`} className="text-brand-600 hover:underline text-xs">{t("manager.owners.viewCrg")}</Link>
-                  <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-brand-600 hover:underline text-xs">{t("common.actions.edit")}</button></Bulle>
+                <td className="px-4 py-3 text-right"><div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5">
+                  <Link to={`/proprietaires/${owner.id}/crg`} className="text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">{t("manager.owners.viewCrg")}</Link>
+                  <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">{t("common.actions.edit")}</button></Bulle>
                   {owner.anonymizedAt ? (
                     <span className="text-slate-600 text-xs">{t("manager.owners.anonymized")}</span>
                   ) : (
-                    <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-amber-700 hover:underline text-xs">{t("manager.owners.anonymize")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="text-xs font-semibold text-amber-800 border-b border-amber-700/40 hover:border-amber-800 transition-colors">{t("manager.owners.anonymize")}</button></Bulle>
                   )}
-                  <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-red-600 hover:underline text-xs">{t("common.actions.delete")}</button></Bulle>
-                </td>
+                  <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">{t("common.actions.delete")}</button></Bulle>
+                </div></td>
               </tr>
             ))
             )}
@@ -427,7 +433,10 @@ export default function OwnersPage() {
           : owners.map((owner) => (
               <div key={owner.id} className="bg-white rounded-xl border border-contour-200 shadow-sm p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-slate-900">{owner.firstName} {owner.lastName}</p>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Initiales prenom={owner.firstName} nom={owner.lastName} />
+                    <p className="font-medium text-slate-900">{owner.firstName} {owner.lastName}</p>
+                  </div>
                   <span className="text-xs font-medium text-slate-600 shrink-0">{owner.managementFeeRate}%</span>
                 </div>
                 <div className="text-xs text-slate-600 space-y-0.5">
