@@ -194,11 +194,11 @@ export default function InvoicesPage() {
       </div>
 
       {/* Bannière informationnelle sur le rappel automatique du 1er */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900">
-        <Clock size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
+      <div className="bg-brand-50 border border-slate-300 border-l-[3px] border-l-ink-900 p-4 flex items-start gap-3 text-xs text-slate-800">
+        <Clock size={16} className="shrink-0 mt-0.5 text-ink-900" aria-hidden="true" />
         <div className="space-y-0.5">
           <p className="font-semibold">{t("manager.invoices.infoBannerTitle")}</p>
-          <p className="text-blue-700">
+          <p className="text-slate-700">
             <Trans i18nKey="manager.invoices.infoBannerBody" components={{ 1: <strong /> }} />
           </p>
         </div>
@@ -264,7 +264,7 @@ export default function InvoicesPage() {
           <tbody className="divide-y divide-contour-100">
             {invoices.map((inv) => (
               <tr key={inv.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3.5 text-slate-900 font-medium">
+                <td className={`px-4 py-3.5 text-slate-900 font-medium whitespace-nowrap ${inv.status === "LATE" ? "shadow-[inset_3px_0_0_var(--color-rose-600)]" : ""}`}>
                   {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
                 </td>
                 <td className="px-4 py-3.5 text-slate-700">
@@ -272,7 +272,7 @@ export default function InvoicesPage() {
                   <p className="text-[11px] text-slate-600">{inv.contract?.tenant?.email}</p>
                 </td>
                 <td className="px-4 py-3.5 text-slate-600"><NomDuBien titre={inv.contract?.property?.title} id={inv.contract?.property?.id} /></td>
-                <td className="px-4 py-3.5 font-bold text-slate-900">
+                <td className="px-4 py-3.5 font-bold tabular-nums text-slate-900">
                   {formatMoney(inv.amount, inv.currency)}
                   {aUnAcompte(inv) && (
                     <span className="block text-[10px] font-medium text-amber-700">
@@ -289,7 +289,7 @@ export default function InvoicesPage() {
                 <td className="px-4 py-3.5 text-slate-600 text-xs">
                   {inv.paymentMethod ? methodLabels[inv.paymentMethod] : "—"}
                 </td>
-                <td className="px-4 py-3.5">
+                <td className="px-4 py-3.5 whitespace-nowrap">
                   <Badge status={inv.status} />
                   {niveauRelance(inv)}
                 </td>
@@ -299,7 +299,7 @@ export default function InvoicesPage() {
                   {inv.status === "PAID" && (
                     <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                       onClick={() => setActiveReceiptInvoice(inv)}
-                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors inline-flex items-center gap-1"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
                     >
                       <Download size={12} aria-hidden="true" /> {t("manager.invoices.receiptPdf")}
                     </button></Bulle>
@@ -309,7 +309,7 @@ export default function InvoicesPage() {
                       <Bulle texte={t("manager.tips.invoiceRemind")}><button
                         onClick={() => handleSendSingleReminder(inv)}
                         disabled={sendingSingleId === inv.id}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100"
                       >
                         {sendingSingleId === inv.id ? (
                           t("manager.invoices.sendingReminder")
@@ -321,7 +321,7 @@ export default function InvoicesPage() {
                       </button></Bulle>
                       <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                         onClick={() => setFactureAMarquer(inv)}
-                        className="text-xs bg-brand-50 hover:bg-brand-100 disabled:opacity-60 text-brand-700 px-2.5 py-1 rounded-lg font-medium transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-ink-900 text-white border-ink-900 hover:bg-brand-600"
                       >
                         {t("manager.invoices.markPaid")}
                       </button></Bulle>
@@ -329,7 +329,7 @@ export default function InvoicesPage() {
                         <Bulle texte={t("manager.tips.invoiceCancel")}><button
                           onClick={() => handleCancelInvoice(inv)}
                           disabled={cancellingId === inv.id}
-                          className="text-xs bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-white text-rose-700 border-rose-300 hover:bg-rose-50"
                         >
                           {cancellingId === inv.id ? t("manager.invoices.cancelling") : t("manager.invoices.cancelInvoice")}
                         </button></Bulle>
@@ -359,7 +359,7 @@ export default function InvoicesPage() {
           </p>
         ) : (
           invoices.map((inv) => (
-            <div key={inv.id} className="bg-white rounded-2xl border border-contour-200 shadow-sm p-4 space-y-2.5">
+            <div key={inv.id} className={`bg-white border border-contour-200 p-4 space-y-2.5 ${inv.status === "LATE" ? "border-l-[3px] border-l-rose-600" : ""}`}>
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium text-slate-900">
@@ -398,7 +398,7 @@ export default function InvoicesPage() {
                 {inv.status === "PAID" && (
                   <Bulle texte={t("manager.tips.invoiceReceipt")}><button
                     onClick={() => setActiveReceiptInvoice(inv)}
-                    className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
                   >
                     <Download size={12} aria-hidden="true" /> {t("manager.invoices.receiptPdf")}
                   </button></Bulle>
@@ -408,7 +408,7 @@ export default function InvoicesPage() {
                     <Bulle texte={t("manager.tips.invoiceRemind")}><button
                       onClick={() => handleSendSingleReminder(inv)}
                       disabled={sendingSingleId === inv.id}
-                      className="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50 inline-flex items-center gap-1"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100"
                     >
                       {sendingSingleId === inv.id ? (
                         t("manager.invoices.sendingReminder")
@@ -420,7 +420,7 @@ export default function InvoicesPage() {
                     </button></Bulle>
                     <Bulle texte={t("manager.tips.invoiceMarkPaid")}><button
                       onClick={() => setFactureAMarquer(inv)}
-                      className="text-xs bg-brand-50 disabled:opacity-60 text-brand-700 px-2.5 py-1 rounded-lg font-medium"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-ink-900 text-white border-ink-900 hover:bg-brand-600"
                     >
                       {t("manager.invoices.markPaid")}
                     </button></Bulle>
@@ -428,7 +428,7 @@ export default function InvoicesPage() {
                       <Bulle texte={t("manager.tips.invoiceCancel")}><button
                         onClick={() => handleCancelInvoice(inv)}
                         disabled={cancellingId === inv.id}
-                        className="text-xs bg-white text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors disabled:opacity-50 cursor-pointer bg-white text-rose-700 border-rose-300 hover:bg-rose-50"
                       >
                         {cancellingId === inv.id ? t("manager.invoices.cancelling") : t("manager.invoices.cancelInvoice")}
                       </button></Bulle>
