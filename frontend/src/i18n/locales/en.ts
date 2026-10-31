@@ -353,6 +353,8 @@ const en: TranslationSchema = {
       view: "View",
       copy: "Copy",
       copied: "Copied!",
+      share: "Share",
+      linkCopied: "Link copied!",
     },
     status: {
       AVAILABLE: "Available",
@@ -2252,6 +2254,7 @@ const en: TranslationSchema = {
       subtitleGeneric: "Share your code and extend your access with every confirmed referral.",
       codeLabel: "Your referral code",
       linkLabel: "Your link to share",
+      shareText: "Try ImmoPlatform Pro, the rental management platform: 15-day free trial, no credit card needed.",
       explanation: "As soon as someone signs up with your code and confirms their email, {{days}} days are automatically added to your trial or current subscription.",
       totalReferred: "Referred signup(s)",
       rewardCap: "Limit: {{used}} of {{max}} rewarded referrals used.",

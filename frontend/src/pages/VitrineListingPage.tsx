@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { api, apiErrorMessage, fileUrl, isRequestCancelled } from "../api/client";
 import JsonLd from "../components/JsonLd";
+import BoutonPartager from "../components/BoutonPartager";
 import Seo from "../components/Seo";
 import VitrineHeader from "../components/VitrineHeader";
 import type { Listing, LeadRequestType } from "../types";
@@ -126,12 +127,15 @@ export default function VitrineListingPage() {
             )}
           </div>
           <div className="p-6 space-y-4">
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">{listing.title}</h1>
-              <p className="text-sm text-slate-600 mt-1">
-                {listing.location}
-                {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
-              </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold text-slate-900">{listing.title}</h1>
+                <p className="text-sm text-slate-600 mt-1">
+                  {listing.location}
+                  {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
+                </p>
+              </div>
+              <BoutonPartager url={`${window.location.origin}/vitrine/annonces/${listing.id}`} titre={listing.title} texte={`${listing.title} — ${listing.location}`} />
             </div>
             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{listing.description}</p>
             <div className="flex flex-wrap items-center gap-2 text-xs">
