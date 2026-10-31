@@ -79,28 +79,28 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
     >
       <div
         {...dialogue}
-        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700 transition-all duration-200 max-h-[90vh] overflow-y-auto ${
+        className={`bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 transition-all duration-200 max-h-[90vh] overflow-y-auto ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 id="deposit-refund-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.depositRefundModal.title")}</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{contract.property?.title}</p>
+            <h3 id="deposit-refund-title" className="text-lg font-bold text-slate-900">{t("components.depositRefundModal.title")}</h3>
+            <p className="text-xs text-slate-600 mt-0.5">{contract.property?.title}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" aria-label={t("common.actions.close")}>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label={t("common.actions.close")}>
             <X size={18} />
           </button>
         </div>
 
-        <p className="text-xs text-slate-600 dark:text-slate-400 mt-4">
+        <p className="text-xs text-slate-600 mt-4">
           {t("components.depositRefundModal.depositAmount", { amount: formatMoney(contract.deposit, contract.currency) })}
         </p>
 
         <div className="mt-3 space-y-2">
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("components.depositRefundModal.deductionsTitle")}</p>
+          <p className="text-xs font-semibold text-slate-700">{t("components.depositRefundModal.deductionsTitle")}</p>
           {rows.length === 0 && (
-            <p className="text-xs text-emerald-700 dark:text-emerald-400">{t("components.depositRefundModal.noDeductions")}</p>
+            <p className="text-xs text-emerald-700">{t("components.depositRefundModal.noDeductions")}</p>
           )}
           {rows.map((row, index) => (
             <div key={index} className="flex items-center gap-2">
@@ -110,7 +110,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
                 value={row.label}
                 onChange={(e) => updateRow(index, "label", e.target.value)}
                 placeholder={t("components.depositRefundModal.deductionLabel")}
-                className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs"
+                className="flex-1 rounded-lg border border-slate-300 bg-white text-slate-900 px-2.5 py-1.5 text-xs"
               />
               <input
                 aria-label={t("components.depositRefundModal.deductionAmount")}
@@ -120,13 +120,13 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
                 value={row.amount}
                 onChange={(e) => updateRow(index, "amount", e.target.value)}
                 placeholder={t("components.depositRefundModal.deductionAmount")}
-                className="w-28 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs"
+                className="w-28 rounded-lg border border-slate-300 bg-white text-slate-900 px-2.5 py-1.5 text-xs"
               />
               <button
                 type="button"
                 onClick={() => removeRow(index)}
                 aria-label={t("components.depositRefundModal.removeDeduction")}
-                className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1"
+                className="text-red-500 hover:text-red-700 p-1"
               >
                 <Trash2 size={14} />
               </button>
@@ -135,17 +135,17 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
           <button
             type="button"
             onClick={addRow}
-            className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1"
+            className="text-xs text-brand-600 font-semibold hover:underline inline-flex items-center gap-1"
           >
             <Plus size={13} aria-hidden="true" /> {t("components.depositRefundModal.addDeduction")}
           </button>
         </div>
 
-        <div className={`mt-4 rounded-xl border p-3 text-center ${depasseLeDepot ? "border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-500/10" : "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10"}`}>
-          <span className="text-[11px] uppercase tracking-wide font-semibold text-slate-600 dark:text-slate-400">
+        <div className={`mt-4 rounded-xl border p-3 text-center ${depasseLeDepot ? "border-red-300 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
+          <span className="text-[11px] uppercase tracking-wide font-semibold text-slate-600">
             {t("components.depositRefundModal.refundedAmount")}
           </span>
-          <div className={`text-xl font-bold ${depasseLeDepot ? "text-red-700 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}>
+          <div className={`text-xl font-bold ${depasseLeDepot ? "text-red-700" : "text-emerald-700"}`}>
             {formatMoney(Math.max(0, refundedAmount), contract.currency)}
           </div>
         </div>
@@ -153,7 +153,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
         {error && <p role="alert" className="text-xs text-red-600 mt-2">{error}</p>}
 
         <div className="flex justify-end gap-2 mt-5">
-          <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
+          <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
             {t("common.actions.cancel")}
           </button>
           <button

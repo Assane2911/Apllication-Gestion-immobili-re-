@@ -45,18 +45,18 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
     >
       <div
         {...dialogue}
-        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-contour-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ${
+        className={`bg-white rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-contour-200 overflow-hidden transition-all duration-200 ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
-        <div className="px-6 py-4 border-b border-contour-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
+        <div className="px-6 py-4 border-b border-contour-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
               {isPdf ? <FileText size={18} /> : <ImageIcon size={18} />}
             </div>
             <div>
-              <h3 id="scanned-contract-title" className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <h3 id="scanned-contract-title" className="font-bold text-slate-900 text-base">{title}</h3>
+              <p className="text-xs text-slate-600">
                 {isPdf ? t("components.scannedContractModal.pdfSubtitle") : t("components.scannedContractModal.imageSubtitle")}
               </p>
             </div>
@@ -64,7 +64,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Printer size={14} />
               <span>{t("components.scannedContractModal.print")}</span>
@@ -74,7 +74,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
               target="_blank"
               rel="noopener noreferrer"
               download
-              className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
             >
               <Download size={14} />
               <span>{t("components.scannedContractModal.download")}</span>
@@ -90,7 +90,7 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
             </a>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 text-lg font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="text-slate-400 hover:text-slate-700 p-2 text-lg font-bold rounded-lg hover:bg-slate-100 transition-colors"
               aria-label={t("common.actions.close")}
             >
               <X size={20} />
@@ -98,19 +98,19 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-100 dark:bg-slate-950 p-4 relative overflow-hidden flex items-center justify-center">
+        <div className="flex-1 bg-slate-100 p-4 relative overflow-hidden flex items-center justify-center">
           {isPdf ? (
             <iframe
               src={fileUrl}
               title={title}
-              className="w-full h-full bg-white rounded-xl shadow border border-contour-200 dark:border-slate-700"
+              className="w-full h-full bg-white rounded-xl shadow border border-contour-200"
             />
           ) : (
             <div className="w-full h-full overflow-auto flex items-center justify-center p-2">
               <img
                 src={fileUrl}
                 alt={title}
-                className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-contour-200 dark:border-slate-800 bg-white"
+                className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-contour-200 bg-white"
               />
             </div>
           )}

@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
-import { ThemeProvider } from "../context/ThemeContext";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
@@ -39,7 +38,7 @@ const mockedApi = vi.mocked(api, { deep: true });
 
 function renderPage(entree = "/login") {
   return render(
-    <ThemeProvider><MemoryRouter initialEntries={[entree]}>
+    <MemoryRouter initialEntries={[entree]}>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -47,7 +46,7 @@ function renderPage(entree = "/login") {
           <Route path="/portail" element={<p>Espace locataire</p>} />
         </Routes>
       </AuthProvider>
-    </MemoryRouter></ThemeProvider>
+    </MemoryRouter>
   );
 }
 
@@ -67,7 +66,7 @@ function PageAvecRetour({ titre }: { titre: string }) {
 
 function renderDepuisLaLanding() {
   return render(
-    <ThemeProvider><MemoryRouter initialEntries={["/landing", "/login"]} initialIndex={1}>
+    <MemoryRouter initialEntries={["/landing", "/login"]} initialIndex={1}>
       <AuthProvider>
         <Routes>
           <Route path="/landing" element={<p>Page d'accueil</p>} />
@@ -75,7 +74,7 @@ function renderDepuisLaLanding() {
           <Route path="/dashboard" element={<PageAvecRetour titre="Espace gestionnaire" />} />
         </Routes>
       </AuthProvider>
-    </MemoryRouter></ThemeProvider>
+    </MemoryRouter>
   );
 }
 

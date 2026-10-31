@@ -28,9 +28,9 @@ export function GraphiqueRevenusDepenses({ data, currency }: { data: Array<{ mon
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
-        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
+        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100" />
+        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
+        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
         <Tooltip
           formatter={(value: any, name: any) => [
             formatMoney(Number(value), currency),
@@ -85,9 +85,9 @@ export function GraphiqueComparaisonFiscale({ data, devises }: { data: Array<Rec
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
-        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
-        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600 dark:text-slate-400" />
+        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100" />
+        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
+        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
         <Tooltip
           formatter={(value: number | string, name: string) => {
             const [kind, currency] = String(name).split("_");

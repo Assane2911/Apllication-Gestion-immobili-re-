@@ -4,7 +4,6 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../context/auth";
 import type { AuthContextValue } from "../context/auth";
-import { ThemeContext } from "../context/theme";
 import type { AuthUser } from "../types";
 import AdminLayout from "./AdminLayout";
 
@@ -35,7 +34,6 @@ function authValue(user: AuthUser | null): AuthContextValue {
 function renderAdminLayout(initialEntry = "/admin", logout = async () => {}) {
   return render(
     <AuthContext.Provider value={{ ...authValue(admin), logout }}>
-      <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
         <MemoryRouter initialEntries={[initialEntry]}>
           <Routes>
             <Route path="/admin" element={<AdminLayout />}>
@@ -46,7 +44,6 @@ function renderAdminLayout(initialEntry = "/admin", logout = async () => {}) {
             </Route>
           </Routes>
         </MemoryRouter>
-      </ThemeContext.Provider>
     </AuthContext.Provider>
   );
 }
@@ -90,25 +87,20 @@ describe("AdminLayout", () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
-  it("bascule le thème au clic sur le bouton clair/sombre", async () => {
-    const user = userEvent.setup();
-    const toggleTheme = vi.fn();
+  it("n'a plus de bouton clair/sombre : seul le thème clair existe", () => {
     render(
       <AuthContext.Provider value={authValue(admin)}>
-        <ThemeContext.Provider value={{ theme: "light", toggleTheme }}>
-          <MemoryRouter initialEntries={["/admin"]}>
-            <Routes>
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<div>Tableau de bord admin</div>} />
-              </Route>
-            </Routes>
-          </MemoryRouter>
-        </ThemeContext.Provider>
+        <MemoryRouter initialEntries={["/admin"]}>
+          <Routes>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<div>Tableau de bord admin</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
       </AuthContext.Provider>
     );
 
-    await user.click(screen.getByRole("button", { name: /Basculer le thème/i }));
-    expect(toggleTheme).toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /thème|theme|sombre|dark/i })).not.toBeInTheDocument();
   });
 });
 

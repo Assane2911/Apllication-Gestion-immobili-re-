@@ -31,15 +31,15 @@ export default function GuidePage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.guide.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.guide.subtitle")}</p>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.guide.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">{t("manager.guide.subtitle")}</p>
       </div>
 
       <ol className="space-y-3">
         {ETAPES.map((etape, i) => (
           <li
             key={etape.cle}
-            className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 flex gap-4"
+            className="bg-white rounded-xl border border-contour-200 shadow-sm p-4 flex gap-4"
           >
             <span
               aria-hidden="true"
@@ -48,11 +48,11 @@ export default function GuidePage() {
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t(`manager.guide.steps.${etape.cle}.title`)}</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t(`manager.guide.steps.${etape.cle}.desc`)}</p>
+              <h3 className="font-semibold text-slate-900">{t(`manager.guide.steps.${etape.cle}.title`)}</h3>
+              <p className="text-sm text-slate-600 mt-1">{t(`manager.guide.steps.${etape.cle}.desc`)}</p>
               <Link
                 to={etape.vers}
-                className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-brand-700 dark:text-brand-300 hover:underline"
+                className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-brand-700 hover:underline"
               >
                 {t("manager.guide.open")}
                 <span className="sr-only"> : {t(`manager.guide.steps.${etape.cle}.title`)}</span>

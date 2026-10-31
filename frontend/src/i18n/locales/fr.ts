@@ -377,12 +377,6 @@ const fr = {
       CHEQUE: "Chèque",
       MOBILE_MONEY: "Mobile Money",
     },
-    theme: {
-      tip: "Bascule entre l'affichage clair et l'affichage sombre.",
-      toLight: "Passer en mode clair",
-      toDark: "Passer en mode sombre",
-      toggleAria: "Basculer le thème clair/sombre",
-    },
     language: {
       label: "Langue",
       selectAria: "Changer de langue",
@@ -681,7 +675,6 @@ const fr = {
       "Journal d'activité complet",
       "Export comptable CSV",
       "Marque blanche pour votre agence",
-      "Mode sombre",
     ],
     productTour: {
       title: "Découvrez la plateforme en images",

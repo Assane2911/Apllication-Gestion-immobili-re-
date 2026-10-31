@@ -150,14 +150,14 @@ export default function InsurancePage() {
     const jours = joursAvantEcheance(policy.expiryDate);
     if (jours < 0) {
       return (
-        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300">
+        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-red-100 text-red-800">
           {t("manager.insurance.expired")}
         </span>
       );
     }
     if (jours <= JOURS_ALERTE_ECHEANCE) {
       return (
-        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300">
+        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-amber-100 text-amber-800">
           {t("manager.insurance.expiringSoon", { count: jours })}
         </span>
       );
@@ -169,8 +169,8 @@ export default function InsurancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.insurance.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.insurance.subtitle")}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.insurance.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.insurance.subtitle")}</p>
         </div>
         <Bulle texte={t("manager.tips.insuranceCreate")}>
           <button
@@ -183,7 +183,7 @@ export default function InsurancePage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => loadData()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -191,16 +191,16 @@ export default function InsurancePage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <label htmlFor="insurance-property-filter" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label htmlFor="insurance-property-filter" className="text-xs font-semibold text-slate-700">
             {t("manager.insurance.filterByProperty")}
           </label>
           <select
             id="insurance-property-filter"
             value={selectedPropertyId}
             onChange={(e) => handlePropertyFilterChange(e.target.value)}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           >
             <option value="">{t("manager.insurance.allProperties")}</option>
             {properties.map((p) => (
@@ -210,16 +210,16 @@ export default function InsurancePage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.insurance.policyLines", { count: total })}</p>
+        <p className="text-xs text-slate-600">{t("manager.insurance.policyLines", { count: total })}</p>
       </div>
 
       {/* Vide, le tableau ne contient plus rien que le clavier atteigne : le cadre défilant le devient (voir structureEtCibles). */}
       <div
         {...(policies.length === 0 ? { role: "region", tabIndex: 0, "aria-label": t("manager.insurance.title") } : {})}
-        className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto focus-visible:ring-2 focus-visible:ring-brand-500"
+        className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 text-slate-700 text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.property")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.insurer")}</th>
@@ -229,16 +229,16 @@ export default function InsurancePage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.insurance.table.action")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {policies.map((policy) => (
-              <tr key={policy.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{policy.property?.title}</td>
-                <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{policy.insurerName}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{policy.policyNumber}</td>
-                <td className="px-4 py-3 text-slate-800 dark:text-slate-200">
+              <tr key={policy.id} className="hover:bg-slate-50/50">
+                <td className="px-4 py-3 font-medium text-slate-900">{policy.property?.title}</td>
+                <td className="px-4 py-3 text-slate-800">{policy.insurerName}</td>
+                <td className="px-4 py-3 text-slate-600 text-xs">{policy.policyNumber}</td>
+                <td className="px-4 py-3 text-slate-800">
                   {policy.premiumAmount != null ? formatMoney(policy.premiumAmount, policy.currency) : "—"}
                 </td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
+                <td className="px-4 py-3 text-slate-600 text-xs">
                   <span className="inline-flex items-center gap-1.5">
                     {formaterJour(policy.expiryDate, i18n.language)}
                     {echeanceBadge(policy)}
@@ -247,13 +247,13 @@ export default function InsurancePage() {
                 <td className="px-4 py-3 text-right whitespace-nowrap">
                   <button
                     onClick={() => openEditModal(policy)}
-                    className="text-xs text-brand-600 dark:text-brand-400 hover:underline mr-3"
+                    className="text-xs text-brand-600 hover:underline mr-3"
                   >
                     {t("common.actions.edit")}
                   </button>
                   <button
                     onClick={() => handleDelete(policy)}
-                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline"
+                    className="text-xs text-red-600 hover:text-red-800 hover:underline"
                   >
                     {t("common.actions.delete")}
                   </button>
@@ -262,7 +262,7 @@ export default function InsurancePage() {
             ))}
             {policies.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center text-slate-600 dark:text-slate-400 py-8 text-sm">
+                <td colSpan={6} className="text-center text-slate-600 py-8 text-sm">
                   <span className="inline-flex items-center gap-2">
                     <ShieldAlert size={14} aria-hidden="true" />
                     {t("manager.insurance.noPolicies")}
@@ -278,14 +278,14 @@ export default function InsurancePage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <Dialogue onClose={() => setShowModal(false)} titreId="insurance-modal-title" fermable={!saving} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-800">
+          <Dialogue onClose={() => setShowModal(false)} titreId="insurance-modal-title" fermable={!saving} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 id="insurance-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">
+              <h3 id="insurance-modal-title" className="font-bold text-slate-900 text-lg">
                 {editingId ? t("manager.insurance.editModalTitle") : t("manager.insurance.createModalTitle")}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-slate-600 hover:text-slate-600"
                 aria-label={t("common.actions.close")}
               >
                 <X size={18} />
@@ -294,7 +294,7 @@ export default function InsurancePage() {
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label htmlFor="insurance-modal-property" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="insurance-modal-property" className="block text-xs font-semibold text-slate-700 mb-1">
                   {t("manager.insurance.fields.property")}
                 </label>
                 <select
@@ -302,7 +302,7 @@ export default function InsurancePage() {
                   required
                   value={form.propertyId}
                   onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                 >
                   <option value="">{t("manager.insurance.fields.selectProperty")}</option>
                   {properties.map((p) => (
@@ -315,7 +315,7 @@ export default function InsurancePage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="insurance-modal-insurer" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="insurance-modal-insurer" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.insurance.fields.insurerName")}
                   </label>
                   <input
@@ -324,11 +324,11 @@ export default function InsurancePage() {
                     maxLength={200}
                     value={form.insurerName}
                     onChange={(e) => setForm({ ...form, insurerName: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label htmlFor="insurance-modal-policy-number" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="insurance-modal-policy-number" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.insurance.fields.policyNumber")}
                   </label>
                   <input
@@ -337,14 +337,14 @@ export default function InsurancePage() {
                     maxLength={100}
                     value={form.policyNumber}
                     onChange={(e) => setForm({ ...form, policyNumber: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="insurance-modal-premium" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="insurance-modal-premium" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.insurance.fields.premiumAmount")}
                   </label>
                   <input
@@ -356,11 +356,11 @@ export default function InsurancePage() {
                     placeholder="0.00"
                     value={form.premiumAmount}
                     onChange={(e) => setForm({ ...form, premiumAmount: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label htmlFor="insurance-modal-start" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="insurance-modal-start" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.insurance.fields.startDate")}
                   </label>
                   <input
@@ -368,13 +368,13 @@ export default function InsurancePage() {
                     type="date"
                     value={form.startDate}
                     onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="insurance-modal-expiry" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="insurance-modal-expiry" className="block text-xs font-semibold text-slate-700 mb-1">
                   {t("manager.insurance.fields.expiryDate")}
                 </label>
                 <input
@@ -383,12 +383,12 @@ export default function InsurancePage() {
                   required
                   value={form.expiryDate}
                   onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label htmlFor="insurance-modal-notes" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="insurance-modal-notes" className="block text-xs font-semibold text-slate-700 mb-1">
                   {t("manager.insurance.fields.notes")}
                 </label>
                 <textarea
@@ -397,17 +397,17 @@ export default function InsurancePage() {
                   maxLength={5000}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                 />
               </div>
 
-              {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+              {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-2"
+                  className="text-xs text-slate-600 hover:text-slate-700 px-3 py-2"
                 >
                   {t("common.actions.cancel")}
                 </button>

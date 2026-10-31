@@ -26,7 +26,7 @@ export default function BankDetails({ info, title, ibanLabel, bicLabel, missingM
 
   if (!info || (!info.iban && !info.bic)) {
     return (
-      <p className="mt-3 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg px-3 py-2">
+      <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
         {missingMessage}
       </p>
     );
@@ -48,13 +48,13 @@ export default function BankDetails({ info, title, ibanLabel, bicLabel, missingM
     return (
       <div className="flex items-center justify-between gap-2 mt-1.5 first:mt-0">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">{label}</p>
-          <p className="text-xs font-mono text-slate-800 dark:text-slate-200 truncate">{valeur}</p>
+          <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">{label}</p>
+          <p className="text-xs font-mono text-slate-800 truncate">{valeur}</p>
         </div>
         <button
           type="button"
           onClick={() => copier(champ, valeur)}
-          className="shrink-0 text-[10px] font-semibold text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer"
+          className="shrink-0 text-[10px] font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50 cursor-pointer"
         >
           <Copy size={11} />
           {copied === champ ? copiedLabel : copyLabel}
@@ -64,8 +64,8 @@ export default function BankDetails({ info, title, ibanLabel, bicLabel, missingM
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-contour-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5">
-      <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">{title}</p>
+    <div className="mt-3 rounded-lg border border-contour-200 bg-white px-3 py-2.5">
+      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">{title}</p>
       {info.iban && ligne("iban", ibanLabel, info.iban)}
       {info.bic && ligne("bic", bicLabel, info.bic)}
     </div>

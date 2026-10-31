@@ -185,7 +185,7 @@ export default function NotificationBell({
       <Bulle texte={t(`${i18nPrefix}.tip`)}>
       <button
         onClick={basculer}
-        className="relative w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-contour-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+        className="relative w-9 h-9 rounded-lg bg-white border border-contour-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
         aria-label={t(`${i18nPrefix}.ariaLabel`)}
       >
         <Bell size={18} />
@@ -198,29 +198,29 @@ export default function NotificationBell({
       </Bulle>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-700 shadow-lg z-50">
-          <div className="px-4 py-3 border-b border-contour-100 dark:border-slate-800 flex items-start justify-between gap-3">
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl border border-contour-200 shadow-lg z-50">
+          <div className="px-4 py-3 border-b border-contour-100 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t(`${i18nPrefix}.title`)}</h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length })}</p>
+              <h4 className="font-semibold text-sm text-slate-900">{t(`${i18nPrefix}.title`)}</h4>
+              <p className="text-xs text-slate-600">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length })}</p>
             </div>
             {aTraiter.length > 0 && (
               <button
                 type="button"
                 onClick={toutMarquerLu}
-                className="shrink-0 text-xs font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 hover:underline"
+                className="shrink-0 text-xs font-medium text-brand-700 hover:text-brand-800 hover:underline"
               >
                 {t(`${i18nPrefix}.markAllRead`)}
               </button>
             )}
           </div>
           {affichees.length === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">{t(`${i18nPrefix}.allCaughtUp`)}</p>
+            <p className="text-sm text-slate-600 text-center py-8">{t(`${i18nPrefix}.allCaughtUp`)}</p>
           ) : (
-            <ul className="divide-y divide-contour-100 dark:divide-slate-800">
+            <ul className="divide-y divide-contour-100">
               {affichees.map((n) => {
                 const Icon = iconByType[n.type];
-                const classes = [nouvelles.has(cleDe(n)) ? "bg-brand-50/70 dark:bg-brand-500/10" : "", n.read ? "opacity-60" : ""]
+                const classes = [nouvelles.has(cleDe(n)) ? "bg-brand-50/70" : "", n.read ? "opacity-60" : ""]
                   .filter(Boolean)
                   .join(" ");
                 return (
@@ -228,13 +228,13 @@ export default function NotificationBell({
                     <Link
                       to={n.link}
                       onClick={fermer}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
                     >
                       <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${severityDot[n.severity]}`} />
-                      <Icon size={16} className="mt-0.5 text-slate-600 dark:text-slate-400 shrink-0" />
+                      <Icon size={16} className="mt-0.5 text-slate-600 shrink-0" />
                       <span className="min-w-0">
-                        <span className="block text-sm text-slate-900 dark:text-slate-100 font-medium truncate">{n.title}</span>
-                        <span className="block text-xs text-slate-600 dark:text-slate-400 truncate">{n.description}</span>
+                        <span className="block text-sm text-slate-900 font-medium truncate">{n.title}</span>
+                        <span className="block text-xs text-slate-600 truncate">{n.description}</span>
                       </span>
                     </Link>
                   </li>
@@ -246,7 +246,7 @@ export default function NotificationBell({
             <button
               type="button"
               onClick={() => setAfficherLues((a) => !a)}
-              className="w-full px-4 py-2.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-contour-100 dark:border-slate-800 transition-colors"
+              className="w-full px-4 py-2.5 text-xs text-slate-600 hover:bg-slate-50 border-t border-contour-100 transition-colors"
             >
               {afficherLues ? t(`${i18nPrefix}.hideRead`) : t(`${i18nPrefix}.showRead`, { count: lues.length })}
             </button>

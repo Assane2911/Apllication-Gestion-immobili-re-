@@ -16,6 +16,13 @@ import { i18nPret } from './i18n'
 import App from './App.tsx'
 import { installerRechargementAutomatique } from './utils/rechargementApresDeploiement'
 
+// Le thème sombre n'existe plus : on oublie le réglage mémorisé par les anciennes versions.
+try {
+  localStorage.removeItem('theme')
+} catch {
+  // stockage indisponible : sans importance
+}
+
 // Onglet resté ouvert pendant un déploiement : les fichiers qu'il réclame n'existent plus, on recharge (une fois).
 installerRechargementAutomatique()
 

@@ -183,26 +183,26 @@ export default function AdminManagerDetailPage() {
   const date = (valeur: string | null) => (valeur ? new Date(valeur).toLocaleDateString(i18n.language) : "—");
   // Début et fin de période : un instant précis (l'accès s'arrête à cette heure-là), pas seulement un jour.
   const dateHeure = (valeur: string | null) => (valeur ? formaterDateHeure(valeur, i18n.language) : "—");
-  const carte = "rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
+  const carte = "rounded-2xl border border-contour-200 bg-white p-5";
   const ligne = (libelle: string, valeur: string) => (
     <div className="flex justify-between gap-4 py-1.5 text-xs">
-      <dt className="text-slate-600 dark:text-slate-400">{libelle}</dt>
-      <dd className="text-slate-900 dark:text-slate-100 text-right wrap-break-word min-w-0">{valeur}</dd>
+      <dt className="text-slate-600">{libelle}</dt>
+      <dd className="text-slate-900 text-right wrap-break-word min-w-0">{valeur}</dd>
     </div>
   );
 
   return (
     <div className="space-y-6">
-      <Link to="/admin/gestionnaires" className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
+      <Link to="/admin/gestionnaires" className="text-xs text-brand-700 hover:underline">
         ← {t("admin.managerDetail.back")}
       </Link>
 
-      {chargement && <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.loading")}</p>}
+      {chargement && <p className="text-xs text-slate-600">{t("admin.managerDetail.loading")}</p>}
 
       {erreur && (
-        <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("admin.managerDetail.errorTitle")}</p>
-          <p role="alert" className="text-xs text-red-700 dark:text-red-400 mt-0.5">{erreur}</p>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-800">{t("admin.managerDetail.errorTitle")}</p>
+          <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
         </div>
       )}
 
@@ -210,10 +210,10 @@ export default function AdminManagerDetailPage() {
         <>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              <h2 className="text-xl font-bold text-slate-900">
                 {manager.agency?.agencyName ?? t("admin.managers.noAgencyName")}
               </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{manager.email}</p>
+              <p className="text-xs text-slate-600 mt-1">{manager.email}</p>
             </div>
             <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${STATUS_CLASSES[manager.subscription.status]}`}>
               {t(`admin.managers.statuses.${manager.subscription.status}`)}
@@ -221,21 +221,21 @@ export default function AdminManagerDetailPage() {
           </div>
 
           <section
-            className={`${carte} ${manager.suspendedAt ? "border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/30" : ""}`}
+            className={`${carte} ${manager.suspendedAt ? "border-red-300 bg-red-50" : ""}`}
           >
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">
               {manager.suspendedAt ? t("admin.managerDetail.suspension.suspendedTitle") : t("admin.managerDetail.suspension.title")}
             </h3>
             {manager.suspendedAt ? (
               <>
-                <p className="text-xs text-slate-700 dark:text-slate-300">
+                <p className="text-xs text-slate-700">
                   {t("admin.managerDetail.suspension.since", { date: date(manager.suspendedAt) })}
                 </p>
-                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 wrap-break-word">
+                <p className="text-xs text-slate-700 mt-1 wrap-break-word">
                   <span className="font-semibold">{t("admin.managerDetail.suspension.reasonLabel")}</span>{" "}
                   {manager.suspensionReason ?? "—"}
                 </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.managerDetail.suspension.reasonHidden")}</p>
+                <p className="text-xs text-slate-600 mt-1">{t("admin.managerDetail.suspension.reasonHidden")}</p>
                 <button
                   type="button"
                   onClick={reactiver}
@@ -247,8 +247,8 @@ export default function AdminManagerDetailPage() {
               </>
             ) : formulaireOuvert ? (
               <form onSubmit={suspendre} className="space-y-3">
-                <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.suspension.warning")}</p>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <p className="text-xs text-slate-600">{t("admin.managerDetail.suspension.warning")}</p>
+                <label className="block text-xs font-semibold text-slate-700">
                   {t("admin.managerDetail.suspension.reasonField")}
                   <textarea
                     value={motif}
@@ -256,7 +256,7 @@ export default function AdminManagerDetailPage() {
                     maxLength={500}
                     rows={3}
                     required
-                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                   />
                 </label>
                 <div className="flex gap-2">
@@ -273,7 +273,7 @@ export default function AdminManagerDetailPage() {
                       setFormulaireOuvert(false);
                       setMotif("");
                     }}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700"
                   >
                     {t("admin.managerDetail.suspension.cancel")}
                   </button>
@@ -281,53 +281,53 @@ export default function AdminManagerDetailPage() {
               </form>
             ) : (
               <>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.suspension.description")}</p>
+                <p className="text-xs text-slate-600">{t("admin.managerDetail.suspension.description")}</p>
                 <button
                   type="button"
                   onClick={() => setFormulaireOuvert(true)}
-                  className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+                  className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"
                 >
                   {t("admin.managerDetail.suspension.suspend")}
                 </button>
               </>
             )}
             {infoFacturation && (
-              <p role="status" className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
+              <p role="status" className="mt-2 text-xs text-emerald-700">
                 {infoFacturation}
               </p>
             )}
             {erreurAction && (
-              <p role="alert" className="mt-2 text-xs text-red-700 dark:text-red-400">
+              <p role="alert" className="mt-2 text-xs text-red-700">
                 {erreurAction}
               </p>
             )}
           </section>
 
           {manager.suspendedAt && (
-            <section className={`${carte} border-red-300 dark:border-red-900`}>
-              <h3 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">{t("admin.managerDetail.deletion.title")}</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.deletion.description")}</p>
+            <section className={`${carte} border-red-300`}>
+              <h3 className="text-sm font-semibold text-red-800 mb-1">{t("admin.managerDetail.deletion.title")}</h3>
+              <p className="text-xs text-slate-600">{t("admin.managerDetail.deletion.description")}</p>
               {suppressionOuverte ? (
                 <form onSubmit={supprimerDefinitivement} className="mt-3 space-y-3">
-                  <p className="text-xs font-semibold text-red-700 dark:text-red-400">{t("admin.managerDetail.deletion.warning")}</p>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <p className="text-xs font-semibold text-red-700">{t("admin.managerDetail.deletion.warning")}</p>
+                  <label className="block text-xs font-semibold text-slate-700">
                     {t("admin.managerDetail.deletion.emailField", { email: manager.email })}
                     <input
                       type="text"
                       value={emailSaisi}
                       onChange={(e) => setEmailSaisi(e.target.value)}
                       autoComplete="off"
-                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                     />
                   </label>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="block text-xs font-semibold text-slate-700">
                     {t("admin.managerDetail.deletion.reasonField")}
                     <textarea
                       value={motifSuppression}
                       onChange={(e) => setMotifSuppression(e.target.value)}
                       maxLength={500}
                       rows={3}
-                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                     />
                   </label>
                   <div className="flex gap-2">
@@ -350,7 +350,7 @@ export default function AdminManagerDetailPage() {
                         setMotifSuppression("");
                         setErreurSuppression(null);
                       }}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700"
                     >
                       {t("admin.managerDetail.deletion.cancel")}
                     </button>
@@ -360,13 +360,13 @@ export default function AdminManagerDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSuppressionOuverte(true)}
-                  className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+                  className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"
                 >
                   {t("admin.managerDetail.deletion.button")}
                 </button>
               )}
               {erreurSuppression && (
-                <p role="alert" className="mt-2 text-xs text-red-700 dark:text-red-400">
+                <p role="alert" className="mt-2 text-xs text-red-700">
                   {erreurSuppression}
                 </p>
               )}
@@ -374,12 +374,12 @@ export default function AdminManagerDetailPage() {
           )}
 
           <section className={carte}>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">{t("admin.managerDetail.adjust.title")}</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">{t("admin.managerDetail.adjust.title")}</h3>
             {manager.subscription.autoRenew ? (
-              <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.adjust.stripe")}</p>
+              <p className="text-xs text-slate-600">{t("admin.managerDetail.adjust.stripe")}</p>
             ) : (
               <>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">{t("admin.managerDetail.adjust.description")}</p>
+                <p className="text-xs text-slate-600 mb-3">{t("admin.managerDetail.adjust.description")}</p>
                 <div className="grid gap-4 md:grid-cols-2">
                   {!illimite && (
                     <form
@@ -389,8 +389,8 @@ export default function AdminManagerDetailPage() {
                       }}
                       className="space-y-2"
                     >
-                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.daysTitle")}</p>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      <p className="text-xs font-semibold text-slate-900">{t("admin.managerDetail.adjust.daysTitle")}</p>
+                      <label className="block text-xs font-semibold text-slate-700">
                         {t("admin.managerDetail.adjust.daysField")}
                         <input
                           type="number"
@@ -400,10 +400,10 @@ export default function AdminManagerDetailPage() {
                           required
                           value={jours}
                           onChange={(e) => setJours(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                         />
                       </label>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      <label className="block text-xs font-semibold text-slate-700">
                         {t("admin.managerDetail.adjust.daysReason")}
                         <input
                           type="text"
@@ -411,7 +411,7 @@ export default function AdminManagerDetailPage() {
                           maxLength={500}
                           value={motifJours}
                           onChange={(e) => setMotifJours(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                         />
                       </label>
                       <button
@@ -431,14 +431,14 @@ export default function AdminManagerDetailPage() {
                     }}
                     className="space-y-2"
                   >
-                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.planTitle")}</p>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <p className="text-xs font-semibold text-slate-900">{t("admin.managerDetail.adjust.planTitle")}</p>
+                    <label className="block text-xs font-semibold text-slate-700">
                       {t("admin.managerDetail.adjust.planField")}
                       <select
                         required
                         value={nouvellePlan}
                         onChange={(e) => setNouvellePlan(e.target.value as ManagerPlan | "")}
-                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                       >
                         <option value="">{t("admin.managerDetail.adjust.planChoose")}</option>
                         {(["STARTER", "PRO", "ENTERPRISE"] as const)
@@ -450,7 +450,7 @@ export default function AdminManagerDetailPage() {
                           ))}
                       </select>
                     </label>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label className="block text-xs font-semibold text-slate-700">
                       {t("admin.managerDetail.adjust.planReason")}
                       <input
                         type="text"
@@ -458,7 +458,7 @@ export default function AdminManagerDetailPage() {
                         maxLength={500}
                         value={motifPlan}
                         onChange={(e) => setMotifPlan(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                       />
                     </label>
                     <button
@@ -476,13 +476,13 @@ export default function AdminManagerDetailPage() {
                     e.preventDefault();
                     void ajuster("unlimited");
                   }}
-                  className="mt-4 pt-4 border-t border-contour-200 dark:border-slate-800 space-y-2"
+                  className="mt-4 pt-4 border-t border-contour-200 space-y-2"
                 >
-                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.managerDetail.adjust.unlimitedTitle")}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                  <p className="text-xs font-semibold text-slate-900">{t("admin.managerDetail.adjust.unlimitedTitle")}</p>
+                  <p className="text-xs text-slate-600">
                     {illimite ? t("admin.managerDetail.adjust.unlimitedCurrent") : t("admin.managerDetail.adjust.unlimitedHelp")}
                   </p>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="block text-xs font-semibold text-slate-700">
                     {t("admin.managerDetail.adjust.daysReason")}
                     <input
                       type="text"
@@ -490,7 +490,7 @@ export default function AdminManagerDetailPage() {
                       maxLength={500}
                       value={motifIllimite}
                       onChange={(e) => setMotifIllimite(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-normal text-slate-900 dark:text-slate-100"
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
                     />
                   </label>
                   <button
@@ -511,7 +511,7 @@ export default function AdminManagerDetailPage() {
               <p
                 role={ajustementMessage.type === "erreur" ? "alert" : "status"}
                 className={`mt-3 text-xs ${
-                  ajustementMessage.type === "erreur" ? "text-red-700 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"
+                  ajustementMessage.type === "erreur" ? "text-red-700" : "text-emerald-700"
                 }`}
               >
                 {ajustementMessage.texte}
@@ -534,7 +534,7 @@ export default function AdminManagerDetailPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <section className={carte}>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">{t("admin.managerDetail.subscription.title")}</h3>
+              <h3 className="text-sm font-semibold text-slate-900 mb-2">{t("admin.managerDetail.subscription.title")}</h3>
               <dl>
                 {ligne(t("admin.managers.table.plan"), t(`admin.managers.plans.${manager.subscription.plan}`))}
                 {manager.subscription.status === "TRIAL" &&
@@ -559,7 +559,7 @@ export default function AdminManagerDetailPage() {
             </section>
 
             <section className={carte}>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">{t("admin.managerDetail.account.title")}</h3>
+              <h3 className="text-sm font-semibold text-slate-900 mb-2">{t("admin.managerDetail.account.title")}</h3>
               <dl>
                 {ligne(t("admin.managerDetail.account.signup"), formaterDateHeure(manager.createdAt, i18n.language))}
                 {ligne(t("admin.managerDetail.account.emailVerified"), manager.emailVerifiedAt ? t("admin.managerDetail.yes") : t("admin.managerDetail.no"))}
@@ -570,7 +570,7 @@ export default function AdminManagerDetailPage() {
             </section>
 
             <section className={`${carte} md:col-span-2`}>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">{t("admin.managerDetail.agency.title")}</h3>
+              <h3 className="text-sm font-semibold text-slate-900 mb-2">{t("admin.managerDetail.agency.title")}</h3>
               {manager.agency ? (
                 <dl>
                   {ligne(t("admin.managerDetail.agency.name"), manager.agency.agencyName)}
@@ -580,20 +580,20 @@ export default function AdminManagerDetailPage() {
                   {ligne(t("admin.managerDetail.agency.registration"), manager.agency.siretOrId ?? "—")}
                 </dl>
               ) : (
-                <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.agency.none")}</p>
+                <p className="text-xs text-slate-600">{t("admin.managerDetail.agency.none")}</p>
               )}
             </section>
           </div>
 
           <section className={carte}>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">{t("admin.managerDetail.billing.title")}</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">{t("admin.managerDetail.billing.title")}</h3>
             {manager.billingHistory.length === 0 ? (
-              <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.managerDetail.billing.empty")}</p>
+              <p className="text-xs text-slate-600">{t("admin.managerDetail.billing.empty")}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-left text-slate-600 dark:text-slate-400 border-b border-contour-200 dark:border-slate-800">
+                    <tr className="text-left text-slate-600 border-b border-contour-200">
                       <th className="py-2 pr-4 font-semibold">{t("admin.managerDetail.billing.date")}</th>
                       <th className="py-2 pr-4 font-semibold">{t("admin.managers.table.plan")}</th>
                       <th className="py-2 pr-4 font-semibold">{t("admin.subscriptions.table.amount")}</th>
@@ -602,9 +602,9 @@ export default function AdminManagerDetailPage() {
                       <th className="py-2 font-semibold">{t("admin.subscriptions.table.reference")}</th>
                     </tr>
                   </thead>
-                  <tbody className="text-slate-800 dark:text-slate-200">
+                  <tbody className="text-slate-800">
                     {manager.billingHistory.map((b) => (
-                      <tr key={b.id} className="border-b last:border-b-0 border-contour-100 dark:border-slate-800/60">
+                      <tr key={b.id} className="border-b last:border-b-0 border-contour-100">
                         <td className="py-2 pr-4">{date(b.createdAt)}</td>
                         <td className="py-2 pr-4">{t(`admin.managers.plans.${b.plan}`)}</td>
                         <td className="py-2 pr-4 font-semibold">{formatMoney(b.amount, b.currency)}</td>

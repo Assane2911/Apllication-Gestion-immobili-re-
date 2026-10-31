@@ -213,8 +213,8 @@ export default function SubscriptionPage() {
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.subscription.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        <h2 className="text-2xl font-bold text-slate-900">{t("manager.subscription.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">
           {t("manager.subscription.subtitle")}
         </p>
       </div>
@@ -224,25 +224,25 @@ export default function SubscriptionPage() {
           confirmation arrive par webhook, donc parfois après le retour du
           navigateur — d'où un message distinct du succès immédiat. */}
       {retourPaiement === "succes" && (
-        <div className="bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-sky-800 dark:text-sky-300 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div className="bg-sky-50 border border-sky-200 text-sky-800 px-4 py-3 rounded-xl flex items-center gap-2">
           <Clock size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{t("common.payment.returned")}</span>
         </div>
       )}
       {retourPaiement === "annule" && (
-        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl flex items-center gap-2">
           <Undo2 size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{t("common.payment.cancelled")}</span>
         </div>
       )}
       {successMessage && (
-        <div role="status" className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center gap-2">
           <CheckCircle2 size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{successMessage}</span>
         </div>
       )}
       {error && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
           <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm">{error}</span>
         </div>
@@ -254,7 +254,7 @@ export default function SubscriptionPage() {
           retire rien — ses locataires sont réels — mais il doit savoir où il
           en est, et depuis quel écran corriger. */}
       {propertyUsage?.exceeded && propertyUsage.max !== null && (
-        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl flex items-start gap-2">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl flex items-start gap-2">
           <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm">
             {t("manager.subscription.propertyCapExceeded", {
@@ -266,13 +266,13 @@ export default function SubscriptionPage() {
       )}
 
       {/* État actuel de l'abonnement */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <span className="text-xs uppercase font-semibold text-slate-600 dark:text-slate-400 tracking-wider">
+          <span className="text-xs uppercase font-semibold text-slate-600 tracking-wider">
             {t("manager.subscription.currentStatus")}
           </span>
           <div className="flex items-center gap-3 mt-1">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-xl font-bold text-slate-900">
               {sub?.status === "ACTIVE"
                 ? t("manager.subscription.planActive", { plan: t(`common.plans.${sub.plan}`, { defaultValue: sub.plan }) })
                 : sub?.status === "TRIAL"
@@ -282,10 +282,10 @@ export default function SubscriptionPage() {
             <span
               className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                 sub?.status === "ACTIVE"
-                  ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300"
+                  ? "bg-emerald-100 text-emerald-800"
                   : sub?.isTrialActive
-                  ? "bg-brand-100 dark:bg-brand-500/20 text-brand-800 dark:text-brand-300"
-                  : "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300"
+                  ? "bg-brand-100 text-brand-800"
+                  : "bg-red-100 text-red-800"
               }`}
             >
               {illimite
@@ -297,7 +297,7 @@ export default function SubscriptionPage() {
                 : t("manager.subscription.expired")}
             </span>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             {illimite
               ? t("manager.subscription.unlimitedHelp")
               : sub?.isTrialActive && sub.trialEndsAt
@@ -313,10 +313,10 @@ export default function SubscriptionPage() {
         </div>
 
         {sub?.status === "TRIAL" && (
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-contour-200 dark:border-slate-700 rounded-xl p-4 text-center md:text-right">
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.subscription.evaluationTime")}</p>
-            <p className="text-2xl font-black text-brand-600 dark:text-brand-400">
-              {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{t("manager.subscription.days")}</span>
+          <div className="bg-slate-50 border border-contour-200 rounded-xl p-4 text-center md:text-right">
+            <p className="text-xs text-slate-600">{t("manager.subscription.evaluationTime")}</p>
+            <p className="text-2xl font-black text-brand-600">
+              {sub.trialDaysRemaining} <span className="text-sm font-medium text-slate-600">{t("manager.subscription.days")}</span>
             </p>
           </div>
         )}
@@ -329,7 +329,7 @@ export default function SubscriptionPage() {
             type="button"
             onClick={handleCancelSubscription}
             disabled={cancelling}
-            className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline disabled:opacity-60 whitespace-nowrap"
+            className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-60 whitespace-nowrap"
           >
             {cancelling ? t("manager.subscription.cancelling") : t("manager.subscription.cancelButton")}
           </button>
@@ -338,13 +338,13 @@ export default function SubscriptionPage() {
 
       {/* Switch Mensuel / Annuel */}
       <div className="flex flex-col items-center gap-3">
-        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center border border-contour-200 dark:border-slate-700">
+        <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-contour-200">
           <button
             onClick={() => setBillingCycle("MONTHLY")}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               billingCycle === "MONTHLY"
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             {t("manager.subscription.monthlyBilling")}
@@ -353,13 +353,13 @@ export default function SubscriptionPage() {
             onClick={() => setBillingCycle("ANNUAL")}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               billingCycle === "ANNUAL"
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <span>{t("manager.subscription.annualBilling")}</span>
             {remiseAnnuelle !== null && remiseAnnuelle > 0 && (
-              <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+              <span className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
                 -{remiseAnnuelle}%
               </span>
             )}
@@ -375,7 +375,7 @@ export default function SubscriptionPage() {
             retombe alors silencieusement sur l'euro : ce message évite que ça
             passe pour une erreur d'affichage plutôt qu'un repli de sécurité. */}
         {planReference && planReference.currency !== currency && (
-          <p className="text-center text-xs text-slate-600 dark:text-slate-400 max-w-md">
+          <p className="text-center text-xs text-slate-600 max-w-md">
             {t("manager.subscription.unsupportedCurrencyNotice", { currency: planReference.currency })}
           </p>
         )}
@@ -391,10 +391,10 @@ export default function SubscriptionPage() {
           return (
             <div
               key={plan.id}
-              className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all relative flex flex-col p-6 shadow-sm ${
+              className={`bg-white rounded-2xl border transition-all relative flex flex-col p-6 shadow-sm ${
                 plan.popular
-                  ? "border-brand-500 dark:border-brand-400 ring-2 ring-brand-500/20"
-                  : "border-contour-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                  ? "border-brand-500 ring-2 ring-brand-500/20"
+                  : "border-contour-200 hover:border-slate-300"
               }`}
             >
               {plan.popular && (
@@ -404,25 +404,25 @@ export default function SubscriptionPage() {
               )}
 
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t(`common.plans.${plan.id}`, { defaultValue: plan.name })}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 min-h-[32px]">{t(`manager.subscription.planDescriptions.${plan.id}`, { defaultValue: plan.description })}</p>
+                <h3 className="text-lg font-bold text-slate-900">{t(`common.plans.${plan.id}`, { defaultValue: plan.name })}</h3>
+                <p className="text-xs text-slate-600 mt-1 min-h-[32px]">{t(`manager.subscription.planDescriptions.${plan.id}`, { defaultValue: plan.description })}</p>
               </div>
 
               <div className="mb-6 flex items-baseline gap-1">
-                <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{formatMoney(price, plan.currency)}</span>
-                <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("manager.subscription.perMonth")}</span>
+                <span className="text-3xl font-black text-slate-900">{formatMoney(price, plan.currency)}</span>
+                <span className="text-xs text-slate-600 font-medium">{t("manager.subscription.perMonth")}</span>
                 {billingCycle === "ANNUAL" && (
-                  <span className="text-[11px] text-slate-600 dark:text-slate-400 ml-1">
+                  <span className="text-[11px] text-slate-600 ml-1">
                     {t("manager.subscription.billedAnnually", { amount: formatMoney(plan.annualPrice, plan.currency) })}
                   </span>
                 )}
               </div>
 
-              <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 dark:text-slate-300 border-t border-contour-100 dark:border-slate-800 pt-4">
-                <p className="font-semibold text-slate-900 dark:text-slate-100">{t("manager.subscription.includedInPlan")}</p>
+              <div className="flex-1 space-y-2.5 mb-6 text-xs text-slate-700 border-t border-contour-100 pt-4">
+                <p className="font-semibold text-slate-900">{t("manager.subscription.includedInPlan")}</p>
                 {plan.features.map((_feat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <Check size={14} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
+                    <Check size={14} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-500" aria-hidden="true" />
                     <span>{libelleLigne(plan, idx)}</span>
                   </div>
                 ))}
@@ -436,10 +436,10 @@ export default function SubscriptionPage() {
                 disabled={isCurrentPlan}
                 className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm ${
                   isCurrentPlan
-                    ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
+                    ? "bg-slate-100 text-slate-600 cursor-not-allowed"
                     : plan.popular
                     ? "bg-brand-600 hover:bg-brand-700 text-white hover:shadow"
-                    : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white hover:shadow"
+                    : "bg-slate-900 hover:bg-slate-800 text-white hover:shadow"
                 }`}
               >
                 {isCurrentPlan ? t("manager.subscription.currentPlanBtn") : t("manager.subscription.choosePlanBtn", { plan: t(`common.plans.${plan.id}`, { defaultValue: plan.name }) })}
@@ -451,7 +451,7 @@ export default function SubscriptionPage() {
       )}
 
       {isNativeApp && sub?.status !== "ACTIVE" && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 text-center text-sm text-slate-600">
           {t("manager.subscription.nativeFallback")}
         </div>
       )}
@@ -459,11 +459,11 @@ export default function SubscriptionPage() {
       {/* Modal de Souscription / Paiement */}
       {!isNativeApp && selectedPlan && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <Dialogue onClose={() => setSelectedPlan(null)} titreId="subscription-modal-title" fermable={!subscribing} className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-contour-100 dark:border-slate-800">
-            <div className="flex items-center justify-between border-b border-contour-100 dark:border-slate-800 pb-4">
+          <Dialogue onClose={() => setSelectedPlan(null)} titreId="subscription-modal-title" fermable={!subscribing} className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-contour-100">
+            <div className="flex items-center justify-between border-b border-contour-100 pb-4">
               <div>
-                <h3 id="subscription-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.subscription.subscribeTo", { plan: t(`common.plans.${selectedPlan.id}`, { defaultValue: selectedPlan.name }) })}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                <h3 id="subscription-modal-title" className="font-bold text-slate-900 text-lg">{t("manager.subscription.subscribeTo", { plan: t(`common.plans.${selectedPlan.id}`, { defaultValue: selectedPlan.name }) })}</h3>
+                <p className="text-xs text-slate-600 mt-0.5">
                   {t("manager.subscription.amountToPay")}{" "}
                   <strong>
                     {billingCycle === "ANNUAL"
@@ -474,7 +474,7 @@ export default function SubscriptionPage() {
               </div>
               <button
                 onClick={() => setSelectedPlan(null)}
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-slate-600 hover:text-slate-600"
                 aria-label={t("common.actions.close")}
               >
                 <X size={18} />
@@ -483,15 +483,15 @@ export default function SubscriptionPage() {
 
             {/* Choix du moyen de paiement */}
             <div className="space-y-3">
-              <span id="subscription-payment-method" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.subscription.paymentMethodLabel")}</span>
+              <span id="subscription-payment-method" className="block text-xs font-semibold text-slate-700">{t("manager.subscription.paymentMethodLabel")}</span>
               <div role="radiogroup" aria-labelledby="subscription-payment-method" className="grid grid-cols-1 gap-2.5">
                 {paymentMethods.map((m) => (
                   <label
                     key={m.key}
                     className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedMethod === m.key
-                        ? "border-brand-500 dark:border-brand-400 bg-brand-50/50 dark:bg-brand-500/10"
-                        : "border-contour-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                        ? "border-brand-500 bg-brand-50/50"
+                        : "border-contour-200 hover:border-slate-300"
                     }`}
                   >
                     <input
@@ -503,8 +503,8 @@ export default function SubscriptionPage() {
                       className="mt-0.5"
                     />
                     <div>
-                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{m.label}</p>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">{m.hint}</p>
+                      <p className="text-xs font-semibold text-slate-900">{m.label}</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5">{m.hint}</p>
                     </div>
                   </label>
                 ))}
@@ -516,7 +516,7 @@ export default function SubscriptionPage() {
                   virement restent des paiements ponctuels, à renouveler soi-même
                   à chaque échéance. */}
               {selectedMethod === "STRIPE" && (
-                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-contour-200 dark:border-slate-700 cursor-pointer">
+                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-contour-200 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={autoRenew}
@@ -524,10 +524,10 @@ export default function SubscriptionPage() {
                     className="mt-0.5"
                   />
                   <div>
-                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                    <p className="text-xs font-semibold text-slate-900">
                       {t("manager.subscription.autoRenewLabel")}
                     </p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-slate-600 mt-0.5">
                       {t("manager.subscription.autoRenewHint")}
                     </p>
                   </div>
@@ -545,14 +545,14 @@ export default function SubscriptionPage() {
                     copyLabel={t("manager.subscription.bankDetails.copy")}
                     copiedLabel={t("manager.subscription.bankDetails.copied")}
                   />
-                  <label htmlFor="subscription-bank-ref" className="text-xs text-slate-600 dark:text-slate-400 block mb-1 mt-3">{t("manager.subscription.bankRefLabel")}</label>
+                  <label htmlFor="subscription-bank-ref" className="text-xs text-slate-600 block mb-1 mt-3">{t("manager.subscription.bankRefLabel")}</label>
                   <input
                     id="subscription-bank-ref"
                     type="text"
                     value={bankRef}
                     onChange={(e) => setBankRef(e.target.value)}
                     placeholder={t("manager.subscription.bankRefPlaceholder")}
-                    className="w-full text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2"
+                    className="w-full text-xs rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2"
                   />
                 </div>
               )}
@@ -563,7 +563,7 @@ export default function SubscriptionPage() {
               <button
                 type="button"
                 onClick={() => setSelectedPlan(null)}
-                className="px-4 py-2 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                className="px-4 py-2 text-xs text-slate-600 hover:text-slate-900"
               >
                 {t("common.actions.cancel")}
               </button>
@@ -584,12 +584,12 @@ export default function SubscriptionPage() {
 
       {/* Historique des paiements de la plateforme */}
       {history.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("manager.subscription.historyTitle")}</h3>
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm space-y-4">
+          <h3 className="font-bold text-slate-900 text-sm">{t("manager.subscription.historyTitle")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-contour-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
+                <tr className="border-b border-contour-200 text-slate-600 uppercase text-[10px]">
                   <th className="py-2.5">{t("manager.subscription.historyTable.date")}</th>
                   <th className="py-2.5">{t("manager.subscription.historyTable.plan")}</th>
                   <th className="py-2.5">{t("manager.subscription.historyTable.cycle")}</th>
@@ -598,9 +598,9 @@ export default function SubscriptionPage() {
                   <th className="py-2.5">{t("manager.subscription.historyTable.status")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-contour-100">
                 {history.map((h) => (
-                  <tr key={h.id} className="text-slate-700 dark:text-slate-300">
+                  <tr key={h.id} className="text-slate-700">
                     <td className="py-3">{new Date(h.createdAt).toLocaleDateString(i18n.language)}</td>
                     <td className="py-3 font-semibold">{t(`common.plans.${h.plan}`, { defaultValue: h.plan })}</td>
                     <td className="py-3">{h.billingCycle === "ANNUAL" ? t("manager.subscription.annual") : t("manager.subscription.monthly")}</td>
@@ -610,7 +610,7 @@ export default function SubscriptionPage() {
                     <td className="py-3 font-bold">{formatMoney(h.amount, h.currency)}</td>
                     <td className="py-3">{h.paymentMethod}</td>
                     <td className="py-3">
-                      <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                      <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
                         {h.status}
                       </span>
                     </td>

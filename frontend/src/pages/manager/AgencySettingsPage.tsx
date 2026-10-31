@@ -237,8 +237,8 @@ export default function AgencySettingsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.agencySettings.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.agencySettings.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">
           {t("manager.agencySettings.subtitle")}
         </p>
       </div>
@@ -247,7 +247,7 @@ export default function AgencySettingsPage() {
         // Le formulaire n'est PAS rendu tant que l'état initial est inconnu :
         // c'est ce qui empêche d'enregistrer du vide par-dessus des données
         // qu'on n'a simplement pas réussi à lire.
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-300 text-sm px-4 py-3 rounded-xl">
+        <div className="bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 rounded-xl">
           <p>{loadError}</p>
           <button
             type="button"
@@ -260,13 +260,13 @@ export default function AgencySettingsPage() {
       ) : (
       <>
       {success && (
-        <div role="status" className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+        <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
           <CheckCircle2 size={15} aria-hidden="true" /> {t("manager.agencySettings.success")}
         </div>
       )}
 
       {error && (
-        <div role="alert" className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-300 text-sm px-4 py-3 rounded-xl">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 rounded-xl">
           {error}
         </div>
       )}
@@ -274,11 +274,11 @@ export default function AgencySettingsPage() {
       <SectionImageAgence ressource="logo" url={logoUrl} onChange={setLogoUrl} />
       <SectionImageAgence ressource="stamp" url={stampUrl} onChange={setStampUrl} />
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="agency-agencyName" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-agencyName" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("manager.agencySettings.fields.agencyName")}
               </label>
               <input
@@ -287,12 +287,12 @@ export default function AgencySettingsPage() {
                 value={form.agencyName}
                 onChange={(e) => setForm({ ...form, agencyName: e.target.value })}
                 placeholder={t("manager.agencySettings.fields.agencyNamePlaceholder")}
-                className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
             <div>
-              <label htmlFor="agency-siretOrId" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-siretOrId" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("manager.agencySettings.fields.siretOrId")}
               </label>
               <input
@@ -300,14 +300,14 @@ export default function AgencySettingsPage() {
                 value={form.siretOrId}
                 onChange={(e) => setForm({ ...form, siretOrId: e.target.value })}
                 placeholder={t("manager.agencySettings.fields.siretOrIdPlaceholder")}
-                className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="agency-email" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-email" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("manager.agencySettings.fields.email")}
               </label>
               <input
@@ -317,12 +317,12 @@ export default function AgencySettingsPage() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder={t("manager.agencySettings.fields.emailPlaceholder")}
-                className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
             <div>
-              <label htmlFor="agency-phone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-phone" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("manager.agencySettings.fields.phone")}
               </label>
               <ChampTelephone id="agency-phone" value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
@@ -330,7 +330,7 @@ export default function AgencySettingsPage() {
           </div>
 
           <div>
-            <label htmlFor="agency-address" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="agency-address" className="block text-xs font-semibold text-slate-700 mb-1">
               {t("manager.agencySettings.fields.address")}
             </label>
             <input
@@ -338,21 +338,21 @@ export default function AgencySettingsPage() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder={t("manager.agencySettings.fields.addressPlaceholder")}
-              className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+              className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-contour-100 dark:border-slate-800">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-contour-100">
             <div className="md:col-span-2">
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 {t("manager.agencySettings.fields.bankSectionTitle")}
               </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 {t("manager.agencySettings.fields.bankSectionHint")}
               </p>
             </div>
             <div>
-              <label htmlFor="agency-iban" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-iban" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("manager.agencySettings.fields.iban")}
               </label>
               <input
@@ -360,11 +360,11 @@ export default function AgencySettingsPage() {
                 value={form.iban}
                 onChange={(e) => setForm({ ...form, iban: e.target.value })}
                 placeholder={t("manager.agencySettings.fields.ibanPlaceholder")}
-                className="w-full text-sm font-mono border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm font-mono border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
-              <label htmlFor="agency-bic" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="agency-bic" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("manager.agencySettings.fields.bic")}
               </label>
               <input
@@ -372,13 +372,13 @@ export default function AgencySettingsPage() {
                 value={form.bic}
                 onChange={(e) => setForm({ ...form, bic: e.target.value })}
                 placeholder={t("manager.agencySettings.fields.bicPlaceholder")}
-                className="w-full text-sm font-mono border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm font-mono border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="agency-legalNotice" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="agency-legalNotice" className="block text-xs font-semibold text-slate-700 mb-1">
               {t("manager.agencySettings.fields.legalNotice")}
             </label>
             <textarea
@@ -387,14 +387,14 @@ export default function AgencySettingsPage() {
               value={form.legalNotice}
               onChange={(e) => setForm({ ...form, legalNotice: e.target.value })}
               placeholder={t("manager.agencySettings.fields.legalNoticePlaceholder")}
-              className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+              className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
-          <fieldset className="pt-4 border-t border-contour-200 dark:border-slate-800 space-y-3">
-            <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t("manager.agencySettings.overdue.title")}</legend>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.agencySettings.overdue.hint")}</p>
-            <label className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-200">
+          <fieldset className="pt-4 border-t border-contour-200 space-y-3">
+            <legend className="text-sm font-semibold text-slate-900">{t("manager.agencySettings.overdue.title")}</legend>
+            <p className="text-xs text-slate-600">{t("manager.agencySettings.overdue.hint")}</p>
+            <label className="flex items-center gap-2 text-sm text-slate-800">
               <input
                 type="checkbox"
                 checked={form.overdueRemindersEnabled}
@@ -406,7 +406,7 @@ export default function AgencySettingsPage() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="agency-grace" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label htmlFor="agency-grace" className="block text-xs font-semibold text-slate-700 mb-1">
                       {t("manager.agencySettings.overdue.grace")}
                     </label>
                     <input
@@ -416,11 +416,11 @@ export default function AgencySettingsPage() {
                       max={30}
                       value={form.overdueGraceDays}
                       onChange={(e) => setForm({ ...form, overdueGraceDays: e.target.value })}
-                      className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2"
+                      className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2"
                     />
                   </div>
                   <div>
-                    <label htmlFor="agency-interval" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label htmlFor="agency-interval" className="block text-xs font-semibold text-slate-700 mb-1">
                       {t("manager.agencySettings.overdue.interval")}
                     </label>
                     <input
@@ -430,11 +430,11 @@ export default function AgencySettingsPage() {
                       max={30}
                       value={form.overdueIntervalDays}
                       onChange={(e) => setForm({ ...form, overdueIntervalDays: e.target.value })}
-                      className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2"
+                      className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2"
                     />
                   </div>
                 </div>
-                <label className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-200">
+                <label className="flex items-center gap-2 text-sm text-slate-800">
                   <input
                     type="checkbox"
                     checked={form.overdueNotifyGuarantors}
@@ -442,14 +442,14 @@ export default function AgencySettingsPage() {
                   />
                   {t("manager.agencySettings.overdue.guarantors")}
                 </label>
-                <p role="status" className="text-xs rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-300">
+                <p role="status" className="text-xs rounded-lg bg-slate-50 px-3 py-2 text-slate-700">
                   {t("manager.agencySettings.overdue.schedule", calendrierRelances(form.overdueGraceDays, form.overdueIntervalDays))}
                 </p>
               </>
             )}
           </fieldset>
 
-          <div className="pt-4 border-t border-contour-200 dark:border-slate-800 flex justify-end">
+          <div className="pt-4 border-t border-contour-200 flex justify-end">
             <button
               type="submit"
               disabled={saving}
@@ -461,20 +461,20 @@ export default function AgencySettingsPage() {
         </form>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
           {t("manager.agencySettings.retention.title")}
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+        <p className="text-sm text-slate-600 mt-2">
           {t("manager.agencySettings.retention.description")}
         </p>
         {echeancesError && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-3" role="alert">
+          <p className="text-sm text-red-600 mt-3" role="alert">
             {echeancesError}
           </p>
         )}
         {echeances && echeances.total === 0 && (
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-3">
+          <p className="text-sm text-slate-600 mt-3">
             {t("manager.agencySettings.retention.none")}
           </p>
         )}
@@ -482,7 +482,7 @@ export default function AgencySettingsPage() {
           <>
             <ul className="mt-4 space-y-2">
               {echeances.fichesSansBail.map((fiche) => (
-                <li key={fiche.id} className="text-sm text-slate-700 dark:text-slate-300">
+                <li key={fiche.id} className="text-sm text-slate-700">
                   <span className="font-semibold">
                     {fiche.firstName} {fiche.lastName}
                   </span>{" "}
@@ -490,7 +490,7 @@ export default function AgencySettingsPage() {
                 </li>
               ))}
               {echeances.bauxClosDepuisLongtemps.map((fiche) => (
-                <li key={fiche.id} className="text-sm text-slate-700 dark:text-slate-300">
+                <li key={fiche.id} className="text-sm text-slate-700">
                   <span className="font-semibold">
                     {fiche.firstName} {fiche.lastName}
                   </span>{" "}
@@ -501,7 +501,7 @@ export default function AgencySettingsPage() {
                 </li>
               ))}
               {echeances.leadsAnciens.map((lead) => (
-                <li key={lead.id} className="text-sm text-slate-700 dark:text-slate-300">
+                <li key={lead.id} className="text-sm text-slate-700">
                   <span className="font-semibold">{lead.prospectName}</span>{" "}
                   —{" "}
                   {t("manager.agencySettings.retention.oldLead", {
@@ -515,7 +515,7 @@ export default function AgencySettingsPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/tenants")}
-                  className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                  className="border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
                 >
                   {t("manager.agencySettings.retention.seeTenants")}
                 </button>
@@ -524,7 +524,7 @@ export default function AgencySettingsPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/leads")}
-                  className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                  className="border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
                 >
                   {t("manager.agencySettings.retention.seeLeads")}
                 </button>
@@ -540,15 +540,15 @@ export default function AgencySettingsPage() {
         invalide aussi la session courante (voir logoutAllDevices côté
         backend), d'où la déconnexion locale immédiate qui suit.
       */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
           {t("manager.agencySettings.security.title")}
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+        <p className="text-sm text-slate-600 mt-2">
           {t("manager.agencySettings.security.description")}
         </p>
         {logoutAllError && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-3" role="alert">
+          <p className="text-sm text-red-600 mt-3" role="alert">
             {logoutAllError}
           </p>
         )}
@@ -557,7 +557,7 @@ export default function AgencySettingsPage() {
           type="button"
           onClick={handleLogoutAll}
           disabled={loggingOutAll}
-          className="mt-4 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+          className="mt-4 border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-60 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
         >
           {loggingOutAll
             ? t("manager.agencySettings.security.logoutAllPending")
@@ -572,24 +572,24 @@ export default function AgencySettingsPage() {
         celle du propriétaire — c'est pourquoi cette carte n'est pas réservée
         à `estProprietaire`, contrairement à la gestion de l'équipe ci-dessous.
       */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
           {t("manager.agencySettings.twoFactor.title")}
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+        <p className="text-sm text-slate-600 mt-2">
           {t("manager.agencySettings.twoFactor.description")}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {user?.twoFactorEnabled ? (
             <>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 rounded-full px-3 py-1.5">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full px-3 py-1.5">
                 <CheckCircle2 size={14} /> {t("manager.agencySettings.twoFactor.enabled")}
               </span>
               <Bulle texte={t("manager.tips.agencyTwoFactorDisable")}>
               <button
                 type="button"
                 onClick={() => setShowTwoFactorDisable(true)}
-                className="border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 {t("manager.agencySettings.twoFactor.disableButton")}
               </button>
@@ -600,7 +600,7 @@ export default function AgencySettingsPage() {
             <button
               type="button"
               onClick={() => setShowTwoFactorSetup(true)}
-              className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              className="border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
             >
               {t("manager.agencySettings.twoFactor.enableButton")}
             </button>
@@ -617,25 +617,25 @@ export default function AgencySettingsPage() {
       )}
 
       {estProprietaire && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+        <div className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
             {t("manager.agencySettings.team.title")}
           </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+          <p className="text-sm text-slate-600 mt-2">
             {t("manager.agencySettings.team.description")}
           </p>
 
           {!formuleEntreprise ? (
-            <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-sm text-slate-600 dark:text-slate-400">
+            <div className="mt-4 bg-slate-50 rounded-xl p-4 text-sm text-slate-600">
               <p>{t("manager.agencySettings.team.upsell")}</p>
-              <Link to="/subscription" className="text-brand-600 dark:text-brand-400 hover:underline font-semibold text-xs">
+              <Link to="/subscription" className="text-brand-600 hover:underline font-semibold text-xs">
                 {t("manager.agencySettings.team.upsellCta")}
               </Link>
             </div>
           ) : (
             <>
               {teamError && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-3" role="alert">
+                <p className="text-sm text-red-600 mt-3" role="alert">
                   {teamError}
                 </p>
               )}
@@ -643,7 +643,7 @@ export default function AgencySettingsPage() {
               <Bulle texte={t("manager.tips.agencyTeamInvite")}>
               <form onSubmit={handleInvite} className="mt-4 flex flex-wrap items-end gap-2">
                 <div className="flex-1 min-w-[220px]">
-                  <label htmlFor="team-invite-email" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="team-invite-email" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.agencySettings.team.emailLabel")}
                   </label>
                   <input
@@ -654,18 +654,18 @@ export default function AgencySettingsPage() {
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder={t("manager.agencySettings.team.emailPlaceholder")}
-                    className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                    className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
                 <div className="min-w-[180px]">
-                  <label htmlFor="team-invite-role" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="team-invite-role" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.agencySettings.team.roleLabel")}
                   </label>
                   <select
                     id="team-invite-role"
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as TeamRole)}
-                    className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500"
+                    className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500"
                   >
                     {ROLES_EQUIPE.map((r) => (
                       <option key={r} value={r}>
@@ -683,22 +683,22 @@ export default function AgencySettingsPage() {
                 </button>
               </form>
               </Bulle>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+              <p className="text-xs text-slate-600 mt-2">
                 {t(`manager.agencySettings.team.roles.${inviteRole}.description`)}
               </p>
               {inviteError && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-2" role="alert">
+                <p className="text-sm text-red-600 mt-2" role="alert">
                   {inviteError}
                 </p>
               )}
               {inviteSuccess && (
-                <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400 mt-2">{inviteSuccess}</p>
+                <p role="status" className="text-sm text-emerald-700 mt-2">{inviteSuccess}</p>
               )}
 
               {teamMembers.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-4">{t("manager.agencySettings.team.empty")}</p>
+                <p className="text-sm text-slate-600 mt-4">{t("manager.agencySettings.team.empty")}</p>
               ) : (
-                <ul className="mt-4 divide-y divide-contour-100 dark:divide-slate-800">
+                <ul className="mt-4 divide-y divide-contour-100">
                   {teamMembers.map((member) => (
                     <MembreEquipe
                       key={member.id}
@@ -715,18 +715,18 @@ export default function AgencySettingsPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm p-6">
-        <h3 className="text-sm font-bold text-red-700 dark:text-red-400 uppercase tracking-wider">
+      <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider">
           {t("manager.agencySettings.dangerZone.title")}
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+        <p className="text-sm text-slate-600 mt-2">
           {t("manager.agencySettings.dangerZone.description")}
         </p>
         <Bulle texte={t("manager.tips.agencyDeleteAccount")}>
         <button
           type="button"
           onClick={() => setShowDeleteModal(true)}
-          className="mt-4 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+          className="mt-4 border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
         >
           {t("manager.agencySettings.dangerZone.deleteButton")}
         </button>

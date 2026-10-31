@@ -1,11 +1,10 @@
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LogOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
 import Logo from "./Logo";
-import { useTheme } from "../context/theme";
 import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import Bulle from "./Bulle";
@@ -57,7 +56,6 @@ const FONDUS = {
 export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets, actionsAvant }: EnteteEspaceProps) {
   const { t } = useTranslation();
   const { demanderDeconnexion, dialogue } = useConfirmationDeconnexion();
-  const { theme, toggleTheme } = useTheme();
   const telephone = useMediaQuery("(max-width: 639px)");
   const { pathname } = useLocation();
   const barre = useRef<HTMLElement>(null);
@@ -94,42 +92,33 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-contour-200/80 dark:border-slate-800/80 shadow-2xs">
+      <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-contour-200/80 shadow-2xs">
         <div className={`${colonne} mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-3 min-w-0">
             <Logo className="hidden min-[380px]:block" />
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
-                <h1 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight max-sm:line-clamp-2 sm:truncate">{titre}</h1>
+                <h1 className="font-bold text-slate-900 text-sm leading-tight max-sm:line-clamp-2 sm:truncate">{titre}</h1>
                 {badge && (
-                  <span className="hidden sm:inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-200/60 dark:border-brand-500/20">
+                  <span className="hidden sm:inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-200/60">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     {badge}
                   </span>
                 )}
               </div>
-              {sousTitre && <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">{sousTitre}</p>}
+              {sousTitre && <p className="text-xs text-slate-600 font-medium truncate">{sousTitre}</p>}
             </div>
           </div>
           <div className="shrink-0 flex items-center gap-1.5 sm:gap-2.5 flex-wrap justify-end">
-            <LanguageSwitcher compact={telephone} variant={theme === "dark" ? "dark" : "light"} />
+            <LanguageSwitcher compact={telephone} />
             {actionsAvant}
-            <Bulle texte={t("common.theme.tip")} className="contents">
-              <button
-                onClick={toggleTheme}
-                className="shrink-0 w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-contour-200/80 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                aria-label={t("common.theme.toggleAria")}
-              >
-                {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-            </Bulle>
             {/* Rose au repos (pas seulement au survol, inutilisable au doigt) : un bouton qui se fondait parmi les
                 icônes voisines pouvait passer inaperçu. Icône seule sur téléphone, avec le libellé pour les lecteurs
                 d'écran ; texte visible dès 640 px. */}
             <Bulle texte={t("common.tips.logout")} className="contents">
               <button
                 onClick={demanderDeconnexion}
-                className="shrink-0 inline-flex items-center justify-center gap-1.5 min-w-8 h-8 px-2 sm:px-2.5 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200/70 dark:border-rose-500/20 hover:bg-rose-100 dark:hover:bg-rose-500/20 hover:border-rose-300 dark:hover:border-rose-500/40 transition-all cursor-pointer"
+                className="shrink-0 inline-flex items-center justify-center gap-1.5 min-w-8 h-8 px-2 sm:px-2.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50/80 border border-rose-200/70 hover:bg-rose-100 hover:border-rose-300 transition-all cursor-pointer"
               >
                 <LogOut size={14} aria-hidden="true" />
                 <span className="sr-only sm:not-sr-only">{t("nav.logout")}</span>
@@ -157,7 +146,7 @@ export default function EnteteEspace({ largeur, titre, badge, sousTitre, onglets
                     `px-3 py-2 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
                       isActive
                         ? "bg-linear-to-r from-brand-600 to-brand-700 text-white shadow-xs shadow-brand-500/25 font-semibold"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     }`
                   }
                 >

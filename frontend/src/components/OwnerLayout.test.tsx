@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../context/auth";
 import type { AuthContextValue } from "../context/auth";
 import { CurrencyProvider } from "../context/CurrencyContext";
-import { ThemeContext } from "../context/theme";
 import type { AuthUser } from "../types";
 import OwnerLayout from "./OwnerLayout";
 
@@ -38,7 +37,6 @@ function renderOwnerLayout(initialEntry = "/proprietaire") {
   return render(
     <AuthContext.Provider value={authValue(proprietaire)}>
       <CurrencyProvider>
-        <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
           <MemoryRouter initialEntries={[initialEntry]}>
             <Routes>
               <Route path="/proprietaire" element={<OwnerLayout />}>
@@ -47,7 +45,6 @@ function renderOwnerLayout(initialEntry = "/proprietaire") {
               </Route>
             </Routes>
           </MemoryRouter>
-        </ThemeContext.Provider>
       </CurrencyProvider>
     </AuthContext.Provider>
   );
@@ -96,7 +93,6 @@ describe("OwnerLayout", () => {
     render(
       <AuthContext.Provider value={{ ...authValue(proprietaire), logout }}>
         <CurrencyProvider>
-          <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
             <MemoryRouter initialEntries={["/proprietaire"]}>
               <Routes>
                 <Route path="/proprietaire" element={<OwnerLayout />}>
@@ -104,7 +100,6 @@ describe("OwnerLayout", () => {
                 </Route>
               </Routes>
             </MemoryRouter>
-          </ThemeContext.Provider>
         </CurrencyProvider>
       </AuthContext.Provider>
     );
@@ -124,27 +119,22 @@ describe("OwnerLayout", () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
-  it("bascule le thème au clic sur le bouton clair/sombre", async () => {
-    const user = userEvent.setup();
-    const toggleTheme = vi.fn();
+  it("n'a plus de bouton clair/sombre : seul le thème clair existe", () => {
     render(
       <AuthContext.Provider value={authValue(proprietaire)}>
         <CurrencyProvider>
-          <ThemeContext.Provider value={{ theme: "light", toggleTheme }}>
-            <MemoryRouter initialEntries={["/proprietaire"]}>
-              <Routes>
-                <Route path="/proprietaire" element={<OwnerLayout />}>
-                  <Route index element={<div>Résumé financier</div>} />
-                </Route>
-              </Routes>
-            </MemoryRouter>
-          </ThemeContext.Provider>
+          <MemoryRouter initialEntries={["/proprietaire"]}>
+            <Routes>
+              <Route path="/proprietaire" element={<OwnerLayout />}>
+                <Route index element={<div>Résumé financier</div>} />
+              </Route>
+            </Routes>
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthContext.Provider>
     );
 
-    await user.click(screen.getByRole("button", { name: /Basculer le thème/i }));
-    expect(toggleTheme).toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /thème|theme|sombre|dark/i })).not.toBeInTheDocument();
   });
 });
 

@@ -65,14 +65,14 @@ export default function BoutonExportCsv({ chemin, params, prefixeFichier }: Bout
         type="button"
         onClick={() => void exporter()}
         disabled={enCours}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
       >
         <Download size={14} aria-hidden="true" />
         {enCours ? t("components.exportCsv.exporting") : t("components.exportCsv.button")}
       </button>
-      <p className="text-xs text-slate-600 dark:text-slate-400">{t("components.exportCsv.hint")}</p>
+      <p className="text-xs text-slate-600">{t("components.exportCsv.hint")}</p>
       {erreur && (
-        <p role="alert" className="text-xs text-red-700 dark:text-red-400">
+        <p role="alert" className="text-xs text-red-700">
           {erreur}
         </p>
       )}

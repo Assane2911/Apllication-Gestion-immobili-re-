@@ -33,7 +33,7 @@ export default function OwnerDashboardPage() {
 
   if (error) {
     return (
-      <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 p-6 rounded-2xl shadow-xs">
+      <div className="bg-rose-50 border border-rose-200 text-rose-700 p-6 rounded-2xl shadow-xs">
         <p className="text-sm">{error}</p>
         <button
           onClick={load}
@@ -48,7 +48,7 @@ export default function OwnerDashboardPage() {
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <span className="w-8 h-8 border-[3px] border-contour-200 dark:border-slate-700 border-t-brand-500 rounded-full animate-spin" />
+        <span className="w-8 h-8 border-[3px] border-contour-200 border-t-brand-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -60,38 +60,38 @@ export default function OwnerDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Bandeau d'accueil */}
-      <div className="relative overflow-hidden rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-7 border-2 border-ink-900 dark:border-slate-300/50">
+      <div className="relative overflow-hidden rounded-md bg-white text-slate-900 p-6 sm:p-7 border-2 border-ink-900">
         <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-ocre/30 blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("owner.dashboard.title")}</h2>
-          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-1 max-w-xl">{t("owner.dashboard.subtitle")}</p>
+          <p className="text-xs sm:text-sm text-slate-700 mt-1 max-w-xl">{t("owner.dashboard.subtitle")}</p>
         </div>
       </div>
 
       {/* Totaux du mois */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-5 shadow-xs">
-          <p className="text-xs text-slate-600 dark:text-slate-400 mb-1.5">{t("owner.dashboard.collectedThisMonth")}</p>
+        <div className="bg-white rounded-2xl border border-contour-200/90 p-5 shadow-xs">
+          <p className="text-xs text-slate-600 mb-1.5">{t("owner.dashboard.collectedThisMonth")}</p>
           {collectedCurrencies.length === 0 ? (
-            <p className="text-lg font-bold text-slate-500 dark:text-slate-400">{formatMoney(0)}</p>
+            <p className="text-lg font-bold text-slate-500">{formatMoney(0)}</p>
           ) : (
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               {collectedCurrencies.map((currency) => (
-                <p key={currency} className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                <p key={currency} className="text-lg font-bold text-emerald-700">
                   {formatMoney(data.collectedThisMonthByCurrency[currency], currency)}
                 </p>
               ))}
             </div>
           )}
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-5 shadow-xs">
-          <p className="text-xs text-slate-600 dark:text-slate-400 mb-1.5">{t("owner.dashboard.pendingThisMonth")}</p>
+        <div className="bg-white rounded-2xl border border-contour-200/90 p-5 shadow-xs">
+          <p className="text-xs text-slate-600 mb-1.5">{t("owner.dashboard.pendingThisMonth")}</p>
           {pendingCurrencies.length === 0 ? (
-            <p className="text-lg font-bold text-slate-500 dark:text-slate-400">{formatMoney(0)}</p>
+            <p className="text-lg font-bold text-slate-500">{formatMoney(0)}</p>
           ) : (
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               {pendingCurrencies.map((currency) => (
-                <p key={currency} className="text-lg font-bold text-amber-700 dark:text-amber-400">
+                <p key={currency} className="text-lg font-bold text-amber-700">
                   {formatMoney(data.pendingThisMonthByCurrency[currency], currency)}
                 </p>
               ))}
@@ -100,34 +100,34 @@ export default function OwnerDashboardPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-4 sm:p-5 shadow-xs flex items-center justify-between gap-3 flex-wrap">
-        <span className="text-xs text-slate-600 dark:text-slate-400">{t("owner.dashboard.managementFeeRate")}</span>
-        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{data.managementFeeRate}%</span>
+      <div className="bg-white rounded-2xl border border-contour-200/90 p-4 sm:p-5 shadow-xs flex items-center justify-between gap-3 flex-wrap">
+        <span className="text-xs text-slate-600">{t("owner.dashboard.managementFeeRate")}</span>
+        <span className="text-sm font-bold text-slate-900">{data.managementFeeRate}%</span>
       </div>
 
       {/* Détail par bien */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-contour-100 dark:border-slate-800">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t("owner.dashboard.propertiesTitle")}</h3>
+      <div className="bg-white rounded-2xl border border-contour-200/90 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-contour-100">
+          <h3 className="text-sm font-bold text-slate-900">{t("owner.dashboard.propertiesTitle")}</h3>
         </div>
         {data.properties.length === 0 ? (
-          <p className="p-4 sm:p-5 text-xs text-slate-600 dark:text-slate-400">{t("owner.dashboard.noProperties")}</p>
+          <p className="p-4 sm:p-5 text-xs text-slate-600">{t("owner.dashboard.noProperties")}</p>
         ) : (
-          <div className="divide-y divide-contour-100 dark:divide-slate-800">
+          <div className="divide-y divide-contour-100">
             {data.properties.map((p) => (
               <div key={`${p.propertyId}-${p.currency}`} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{p.title}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">{p.address}</p>
+                  <p className="text-sm font-semibold text-slate-900">{p.title}</p>
+                  <p className="text-xs text-slate-600">{p.address}</p>
                 </div>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="text-right">
-                    <p className="text-slate-600 dark:text-slate-400">{t("owner.dashboard.collected")}</p>
-                    <p className="font-bold text-emerald-700 dark:text-emerald-400">{formatMoney(p.collected, p.currency)}</p>
+                    <p className="text-slate-600">{t("owner.dashboard.collected")}</p>
+                    <p className="font-bold text-emerald-700">{formatMoney(p.collected, p.currency)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-slate-600 dark:text-slate-400">{t("owner.dashboard.pending")}</p>
-                    <p className="font-bold text-amber-700 dark:text-amber-400">{formatMoney(p.pending, p.currency)}</p>
+                    <p className="text-slate-600">{t("owner.dashboard.pending")}</p>
+                    <p className="font-bold text-amber-700">{formatMoney(p.pending, p.currency)}</p>
                   </div>
                 </div>
               </div>
@@ -137,18 +137,18 @@ export default function OwnerDashboardPage() {
       </div>
 
       {/* Historique 6 mois */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-contour-100 dark:border-slate-800">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t("owner.dashboard.historyTitle")}</h3>
+      <div className="bg-white rounded-2xl border border-contour-200/90 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-contour-100">
+          <h3 className="text-sm font-bold text-slate-900">{t("owner.dashboard.historyTitle")}</h3>
         </div>
         {historyMonths.length === 0 ? (
-          <p className="p-4 sm:p-5 text-xs text-slate-600 dark:text-slate-400">{t("owner.dashboard.noHistory")}</p>
+          <p className="p-4 sm:p-5 text-xs text-slate-600">{t("owner.dashboard.noHistory")}</p>
         ) : (
-          <div className="divide-y divide-contour-100 dark:divide-slate-800">
+          <div className="divide-y divide-contour-100">
             {historyMonths.map((month) => (
               <div key={month} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400 capitalize">{libelleDuMois(month, i18n.language)}</span>
-                <div className="flex items-center gap-3 text-xs font-bold text-slate-900 dark:text-slate-100">
+                <span className="text-xs font-medium text-slate-600 capitalize">{libelleDuMois(month, i18n.language)}</span>
+                <div className="flex items-center gap-3 text-xs font-bold text-slate-900">
                   {Object.entries(data.revenueByMonth[month]).map(([currency, amount]) => (
                     <span key={currency}>{formatMoney(amount, currency)}</span>
                   ))}

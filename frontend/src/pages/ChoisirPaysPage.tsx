@@ -6,7 +6,6 @@ import { api, apiErrorMessage } from "../api/client";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import SelecteurPays from "../components/SelecteurPays";
 import { useAuth } from "../context/auth";
-import { useTheme } from "../context/theme";
 import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
 import { homePathForRole } from "../utils/roleHome";
 
@@ -19,7 +18,6 @@ import { homePathForRole } from "../utils/roleHome";
 export default function ChoisirPaysPage() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const { demanderDeconnexion, dialogue } = useConfirmationDeconnexion();
   const [country, setCountry] = useState("");
@@ -57,16 +55,16 @@ export default function ChoisirPaysPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative">
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
         <Logo />
-        <LanguageSwitcher variant={theme === "dark" ? "dark" : "light"} />
+        <LanguageSwitcher />
       </div>
 
       <main className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white text-center">{t("auth.countryChoice.title")}</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-1.5">{t("auth.countryChoice.subtitle")}</p>
+        <h1 className="text-2xl font-bold text-slate-900 text-center">{t("auth.countryChoice.title")}</h1>
+        <p className="text-sm text-slate-600 text-center mt-1.5">{t("auth.countryChoice.subtitle")}</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
-            <label htmlFor="choix-pays" className="block text-xs font-medium text-slate-700 dark:text-slate-400 mb-1.5">
+            <label htmlFor="choix-pays" className="block text-xs font-medium text-slate-700 mb-1.5">
               {t("auth.countryChoice.label")}
             </label>
             <SelecteurPays
@@ -74,13 +72,13 @@ export default function ChoisirPaysPage() {
               value={country}
               onChange={setCountry}
               placeholder={t("auth.countryChoice.placeholder")}
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+              className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
             />
-            <p className="mt-1.5 text-[11px] text-slate-600 dark:text-slate-400">{t("auth.countryChoice.warning")}</p>
+            <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.countryChoice.warning")}</p>
           </div>
 
           {error && (
-            <p role="alert" className="text-xs text-red-700 dark:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+            <p role="alert" className="text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -98,7 +96,7 @@ export default function ChoisirPaysPage() {
         <button
           type="button"
           onClick={demanderDeconnexion}
-          className="mt-6 w-full text-center text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          className="mt-6 w-full text-center text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
         >
           {t("nav.logout")}
         </button>

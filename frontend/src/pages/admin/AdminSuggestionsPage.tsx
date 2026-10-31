@@ -9,10 +9,10 @@ const STATUTS = ["NEW", "PLANNED", "DONE", "DECLINED"] as const;
 type Statut = (typeof STATUTS)[number];
 
 const CLASSES_STATUT: Record<Statut, string> = {
-  NEW: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300",
-  PLANNED: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-  DONE: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
-  DECLINED: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  NEW: "bg-sky-50 text-sky-700",
+  PLANNED: "bg-amber-50 text-amber-700",
+  DONE: "bg-emerald-50 text-emerald-700",
+  DECLINED: "bg-slate-100 text-slate-600",
 };
 
 /** Statut lu avec repli : une réponse sans `status` (serveur plus ancien) vaut « Nouvelle ». */
@@ -110,8 +110,8 @@ export default function AdminSuggestionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t("admin.suggestions.title")}</h2>
-        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.suggestions.subtitle")}</p>
+        <h2 className="text-xl font-bold text-slate-900">{t("admin.suggestions.title")}</h2>
+        <p className="text-xs text-slate-600 mt-1">{t("admin.suggestions.subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap gap-2" role="group" aria-label={t("admin.suggestions.tabsLabel")}>
@@ -130,7 +130,7 @@ export default function AdminSuggestionsPage() {
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
                 actif
                   ? "bg-brand-600 text-white border-brand-600"
-                  : "border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
               }`}
             >
               {t(`admin.suggestions.tabs.${onglet || "ALL"}`)}
@@ -141,21 +141,21 @@ export default function AdminSuggestionsPage() {
       </div>
 
       {erreurSuivi && (
-        <p role="alert" className="text-xs text-red-700 dark:text-red-400">
+        <p role="alert" className="text-xs text-red-700">
           {erreurSuivi}
         </p>
       )}
 
       {erreur && (
-        <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("admin.suggestions.errorTitle")}</p>
-          <p role="alert" className="text-xs text-red-700 dark:text-red-400 mt-0.5">{erreur}</p>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-800">{t("admin.suggestions.errorTitle")}</p>
+          <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
         </div>
       )}
 
       {/* « Aucune suggestion » ne s'affiche qu'une fois la réponse reçue :
           l'annoncer pendant le chargement donnerait une réponse fausse. */}
-      {chargement && !donnees && <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.suggestions.loading")}</p>}
+      {chargement && !donnees && <p className="text-xs text-slate-600">{t("admin.suggestions.loading")}</p>}
 
       {donnees && donnees.items.length === 0 && !erreur && (
         <EmptyState
@@ -171,24 +171,24 @@ export default function AdminSuggestionsPage() {
             {donnees.items.map((s) => (
               <li
                 key={s.id}
-                className="rounded-2xl border border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4"
+                className="rounded-2xl border border-contour-200 bg-white p-4"
               >
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <p className="text-sm font-semibold text-slate-900">
                     {s.authorLabel}
-                    <span className="ml-2 text-xs font-normal text-slate-600 dark:text-slate-400">{role(s.authorRole)}</span>
+                    <span className="ml-2 text-xs font-normal text-slate-600">{role(s.authorRole)}</span>
                     {s.authorId === null && (
-                      <span className="ml-2 text-xs font-normal text-amber-700 dark:text-amber-400">
+                      <span className="ml-2 text-xs font-normal text-amber-700">
                         {t("admin.suggestions.deletedAuthor")}
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                  <p className="text-xs text-slate-600">
                     {new Date(s.createdAt).toLocaleString(i18n.language)}
                   </p>
                 </div>
-                <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap wrap-break-word">{s.message}</p>
-                <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap wrap-break-word">{s.message}</p>
+                <p className="mt-2 text-xs text-slate-600">
                   {s.page ? t("admin.suggestions.fromPage", { page: s.page }) : t("admin.suggestions.noPage")}
                 </p>
 
@@ -201,7 +201,7 @@ export default function AdminSuggestionsPage() {
                     onChange={(e) => void modifier(s.id, { status: e.target.value as Statut })}
                     disabled={enregistrement === s.id}
                     aria-label={t("admin.suggestions.statusLabel")}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-xs text-slate-900 dark:text-slate-100"
+                    className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900"
                   >
                     {STATUTS.map((st) => (
                       <option key={st} value={st}>
@@ -212,7 +212,7 @@ export default function AdminSuggestionsPage() {
                 </div>
 
                 <details className="mt-3">
-                  <summary className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  <summary className="text-xs font-semibold text-slate-700 cursor-pointer">
                     {s.adminNote ? t("admin.suggestions.noteSummaryFilled") : t("admin.suggestions.noteSummary")}
                   </summary>
                   <div className="mt-2 space-y-2">
@@ -222,9 +222,9 @@ export default function AdminSuggestionsPage() {
                       maxLength={2000}
                       rows={3}
                       aria-label={t("admin.suggestions.noteLabel")}
-                      className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
                     />
-                    <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.suggestions.noteHelp")}</p>
+                    <p className="text-xs text-slate-600">{t("admin.suggestions.noteHelp")}</p>
                     <button
                       type="button"
                       disabled={enregistrement === s.id || (notes[s.id] ?? s.adminNote ?? "") === (s.adminNote ?? "")}

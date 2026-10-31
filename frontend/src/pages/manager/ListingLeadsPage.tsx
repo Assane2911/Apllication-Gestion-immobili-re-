@@ -104,18 +104,18 @@ export default function ListingLeadsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.listingLeads.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.listingLeads.subtitle")}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.listingLeads.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.listingLeads.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Link to="/annonces" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline mr-2">
+          <Link to="/annonces" className="text-sm font-medium text-brand-600 hover:underline mr-2">
             {t("manager.listingLeads.backToListings")}
           </Link>
           <select
             aria-label={t("manager.listingLeads.filterByListing")}
             value={listingFilter}
             onChange={(e) => handleListingFilterChange(e.target.value)}
-            className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white text-slate-900 shadow-sm"
           >
             <option value="ALL">{t("manager.listingLeads.allListings")}</option>
             {listings.map((listing) => (
@@ -126,7 +126,7 @@ export default function ListingLeadsPage() {
             aria-label={t("manager.listingLeads.filterByStatus")}
             value={statusFilter}
             onChange={(e) => handleStatusFilterChange(e.target.value as LeadStatus | "ALL")}
-            className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white text-slate-900 shadow-sm"
           >
             <option value="ALL">{t("manager.listingLeads.allStatuses")}</option>
             {STATUS_OPTIONS.map((s) => (
@@ -137,7 +137,7 @@ export default function ListingLeadsPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -154,44 +154,44 @@ export default function ListingLeadsPage() {
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {leads.map((lead) => (
-          <div key={lead.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
+          <div key={lead.id} className="bg-white rounded-2xl border border-contour-200 shadow-sm overflow-hidden flex flex-col justify-between">
             <div className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{lead.prospectName}</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{lead.listingTitle}</p>
+                  <h3 className="font-bold text-slate-900 text-base">{lead.prospectName}</h3>
+                  <p className="text-xs text-slate-600 mt-0.5">{lead.listingTitle}</p>
                 </div>
                 <Badge status={lead.status} />
               </div>
 
-              <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+              <div className="text-xs text-slate-600 space-y-0.5">
                 <p>{lead.prospectEmail}</p>
                 <p>{lead.prospectPhone}</p>
               </div>
 
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                <span className="font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                   {t(`manager.listingLeads.requestTypes.${lead.requestType}`)}
                 </span>
                 {lead.preferredDate && (
-                  <span className="text-slate-600 dark:text-slate-400">
+                  <span className="text-slate-600">
                     {t("manager.listingLeads.preferredDate")} {formaterJour(lead.preferredDate, i18n.language)}
                   </span>
                 )}
               </div>
 
               {lead.message && (
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2.5">
+                <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-2.5">
                   {lead.message}
                 </p>
               )}
 
-              <p className="text-[11px] text-slate-600 dark:text-slate-400">
+              <p className="text-[11px] text-slate-600">
                 {new Date(lead.createdAt).toLocaleDateString(i18n.language)}
               </p>
 
               <div>
-                <label htmlFor={`lead-notes-${lead.id}`} className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                <label htmlFor={`lead-notes-${lead.id}`} className="block text-[11px] font-semibold text-slate-600 mb-1">
                   {t("manager.listingLeads.notesLabel")}
                 </label>
                 <textarea
@@ -199,14 +199,14 @@ export default function ListingLeadsPage() {
                   placeholder={t("manager.listingLeads.notesPlaceholder")}
                   defaultValue={lead.notes ?? ""}
                   onChange={(e) => setNotes((n) => ({ ...n, [lead.id]: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500"
+                  className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500"
                   rows={2}
                 />
               </div>
             </div>
 
-            <div className="p-4 border-t border-contour-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t("manager.listingLeads.changeStatus")}</span>
+            <div className="p-4 border-t border-contour-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-600">{t("manager.listingLeads.changeStatus")}</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {STATUS_OPTIONS.map((s) => (
                   <Bulle key={s} texte={t("manager.tips.leadStatus")}>
@@ -215,8 +215,8 @@ export default function ListingLeadsPage() {
                     disabled={lead.status === s}
                     className={`text-xs px-3 py-1 rounded-full border font-medium transition-all ${
                       lead.status === s
-                        ? "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600 cursor-default"
-                        : "border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-600 cursor-pointer"
+                        ? "bg-slate-200 text-slate-600 border-slate-300 cursor-default"
+                        : "border-slate-300 text-slate-700 hover:bg-white hover:border-slate-400 cursor-pointer"
                     }`}
                   >
                     <Badge status={s} />
@@ -225,7 +225,7 @@ export default function ListingLeadsPage() {
                 ))}
                 <button
                   onClick={() => handleDelete(lead)}
-                  className="text-xs px-3 py-1 rounded-full border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 font-medium transition-all cursor-pointer"
+                  className="text-xs px-3 py-1 rounded-full border border-red-300 text-red-700 hover:bg-red-50 font-medium transition-all cursor-pointer"
                 >
                   {t("common.actions.delete")}
                 </button>

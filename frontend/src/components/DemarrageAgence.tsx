@@ -74,19 +74,19 @@ export default function DemarrageAgence({ stats }: { stats: Pick<DashboardStats,
   }
 
   return (
-    <section aria-labelledby="demarrage-titre" className="rounded-2xl border border-brand-200 dark:border-brand-500/30 bg-brand-50/60 dark:bg-brand-500/10 p-5">
+    <section aria-labelledby="demarrage-titre" className="rounded-2xl border border-brand-200 bg-brand-50/60 p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 id="demarrage-titre" className="font-bold text-slate-900 dark:text-slate-100 text-base">
+          <h3 id="demarrage-titre" className="font-bold text-slate-900 text-base">
             {t("manager.demarrage.titre")}
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             {pays
               ? t("manager.demarrage.sousTitre", { pays: countryLabel(pays.code, i18n.language), devise: pays.devise })
               : t("manager.demarrage.sousTitreSansPays")}
           </p>
         </div>
-        <button type="button" onClick={masquer} className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:underline shrink-0">
+        <button type="button" onClick={masquer} className="text-xs font-semibold text-slate-600 hover:underline shrink-0">
           {t("manager.demarrage.masquer")}
         </button>
       </div>
@@ -94,22 +94,22 @@ export default function DemarrageAgence({ stats }: { stats: Pick<DashboardStats,
         {etapes.map((e) => (
           <li key={e.cle} className="flex items-start gap-3">
             {e.faite ? (
-              <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" aria-label={t("manager.demarrage.faite")} />
+              <CheckCircle2 size={18} className="text-emerald-600 mt-0.5 shrink-0" aria-label={t("manager.demarrage.faite")} />
             ) : (
               <Circle size={18} className="text-slate-400 mt-0.5 shrink-0" aria-label={t("manager.demarrage.afaire")} />
             )}
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-semibold ${e.faite ? "text-slate-500 dark:text-slate-400 line-through" : "text-slate-900 dark:text-slate-100"}`}>
+              <p className={`text-sm font-semibold ${e.faite ? "text-slate-500 line-through" : "text-slate-900"}`}>
                 {t(`manager.demarrage.etapes.${e.cle}.titre`)}
               </p>
               {!e.faite && (
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-600 mt-0.5">
                   {e.cle === "ids" ? t(`manager.demarrage.identifiants.${typeIdentifiants}`) : t(`manager.demarrage.etapes.${e.cle}.detail`)}
                 </p>
               )}
             </div>
             {!e.faite && (
-              <Link to={e.lien} className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline shrink-0">
+              <Link to={e.lien} className="text-xs font-semibold text-brand-700 hover:underline shrink-0">
                 {t("manager.demarrage.ouvrir")}
               </Link>
             )}

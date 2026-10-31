@@ -118,7 +118,7 @@ export default function FiscalPage() {
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
+      <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
         <h3 className="font-bold text-base mb-1">{t("manager.fiscal.errorTitle")}</h3>
         <p className="text-sm">{error}</p>
         <button
@@ -135,15 +135,15 @@ export default function FiscalPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.fiscal.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.fiscal.subtitle")}</p>
+          <h2 className="text-2xl font-bold text-slate-900">{t("manager.fiscal.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.fiscal.subtitle")}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
           <Skeleton className="h-5 w-56 mb-4" />
           <Skeleton className="h-[260px] w-full rounded-xl" />
         </div>
@@ -188,18 +188,18 @@ export default function FiscalPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.fiscal.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.fiscal.subtitle")}</p>
+          <h2 className="text-2xl font-bold text-slate-900">{t("manager.fiscal.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.fiscal.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <label htmlFor="fiscal-year-select" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label htmlFor="fiscal-year-select" className="text-xs font-semibold text-slate-700">
             {t("manager.fiscal.yearLabel")}
           </label>
           <select
             id="fiscal-year-select"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           >
             {synthesis.availableYears.map((y) => (
               <option key={y} value={y}>
@@ -220,7 +220,7 @@ export default function FiscalPage() {
           <button
             onClick={downloadFEC}
             disabled={downloadingFEC}
-            className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
           >
             <FileSpreadsheet size={13} aria-hidden="true" /> {downloadingFEC ? t("manager.fiscal.downloadingFEC") : t("manager.fiscal.downloadFEC")}
           </button>
@@ -229,7 +229,7 @@ export default function FiscalPage() {
           <button
             onClick={downloadSyscohada}
             disabled={downloadingSyscohada}
-            className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
           >
             <Scale size={13} aria-hidden="true" /> {downloadingSyscohada ? t("manager.fiscal.downloadingSyscohada") : t("manager.fiscal.downloadSyscohada")}
           </button>
@@ -262,12 +262,12 @@ export default function FiscalPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
+          <h3 className="font-bold text-slate-900 text-base mb-4">
             {t("manager.fiscal.charts.revenueVsExpenses", { year })}
           </h3>
           {!hasMonthlyData ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.fiscal.charts.noData")}</p>
+            <p className="text-sm text-slate-600 py-16 text-center">{t("manager.fiscal.charts.noData")}</p>
           ) : (
             <div className="h-[280px] w-full">
               <Suspense fallback={<Skeleton className="h-full w-full" />}>
@@ -277,19 +277,19 @@ export default function FiscalPage() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("manager.fiscal.charts.categoryBreakdown")}</h3>
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
+          <h3 className="font-bold text-slate-900 text-base mb-4">{t("manager.fiscal.charts.categoryBreakdown")}</h3>
           {categoryEntries.length === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.fiscal.charts.noCategoryData")}</p>
+            <p className="text-sm text-slate-600 py-16 text-center">{t("manager.fiscal.charts.noCategoryData")}</p>
           ) : (
             <ul className="space-y-3">
               {categoryEntries.map(([category, byCurrency]) => (
                 <li key={category} className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <span className="flex items-center gap-2 text-sm text-slate-700">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: categoryDotColors[category] }} />
                     {categoryLabels[category] ?? category}
                   </span>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+                  <span className="text-sm font-semibold text-slate-900 tabular-nums">
                     {formatByCurrency(byCurrency, formatMoney)}
                   </span>
                 </li>
@@ -299,18 +299,18 @@ export default function FiscalPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-contour-100 dark:border-slate-800 flex items-center gap-2">
-          <Landmark size={16} className="text-slate-600 dark:text-slate-400" />
+      <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-contour-100 flex items-center gap-2">
+          <Landmark size={16} className="text-slate-600" />
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("manager.fiscal.bilanParBien.title")}</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.fiscal.bilanParBien.subtitle")}</p>
+            <h3 className="font-bold text-slate-900 text-sm">{t("manager.fiscal.bilanParBien.title")}</h3>
+            <p className="text-xs text-slate-600">{t("manager.fiscal.bilanParBien.subtitle")}</p>
           </div>
         </div>
         {/* Zone défilante : focalisable au clavier pour qu'on puisse la faire défiler sans souris. */}
         <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={t("manager.fiscal.bilanParBien.title")}>
           <table className="w-full text-sm">
-            <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
+            <thead className="bg-slate-200/70 text-slate-700 text-left">
               <tr>
                 <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.property")}</th>
                 <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.currency")}</th>
@@ -319,19 +319,19 @@ export default function FiscalPage() {
                 <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.net")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-contour-100">
               {synthesis.bilanParBien.map((row) => (
-                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{row.propertyTitle}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{row.currency}</td>
-                  <td className="px-4 py-3 text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
+                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50">
+                  <td className="px-4 py-3 font-medium text-slate-900">{row.propertyTitle}</td>
+                  <td className="px-4 py-3 text-slate-600 text-xs">{row.currency}</td>
+                  <td className="px-4 py-3 text-emerald-700 font-semibold tabular-nums">
                     {formatMoney(row.revenue, row.currency)}
                   </td>
-                  <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold tabular-nums">
+                  <td className="px-4 py-3 text-red-600 font-semibold tabular-nums">
                     {formatDeduction(row.expense, row.currency, formatMoney)}
                   </td>
                   <td
-                    className={`px-4 py-3 font-bold tabular-nums ${row.net >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}
+                    className={`px-4 py-3 font-bold tabular-nums ${row.net >= 0 ? "text-emerald-700" : "text-red-700"}`}
                   >
                     {formatMoney(row.net, row.currency)}
                   </td>
@@ -339,7 +339,7 @@ export default function FiscalPage() {
               ))}
               {synthesis.bilanParBien.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-slate-600 dark:text-slate-400 py-8 text-sm">
+                  <td colSpan={5} className="text-center text-slate-600 py-8 text-sm">
                     {t("manager.fiscal.bilanParBien.empty")}
                   </td>
                 </tr>

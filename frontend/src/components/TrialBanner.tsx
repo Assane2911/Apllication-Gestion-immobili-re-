@@ -50,7 +50,7 @@ export default function TrialBanner() {
         className={`${
           bgGradient
             ? `surface-sombre bg-linear-to-r ${bgGradient} text-white border border-white/10`
-            : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-ink-900 dark:border-slate-300/50"
+            : "bg-white text-slate-900 border-2 border-ink-900"
         } px-4 py-3 rounded-md shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3`}
       >
         <div className="flex items-center gap-3">
@@ -59,10 +59,10 @@ export default function TrialBanner() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className={`${bgGradient ? "bg-white/20 text-white" : "bg-ocre/30 text-slate-900 dark:text-white"} text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+              <span className={`${bgGradient ? "bg-white/20 text-white" : "bg-ocre/30 text-slate-900"} text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
                 {t("components.trialBanner.trialBadge")}
               </span>
-              <span className={`text-xs font-medium ${bgGradient ? "text-white/90" : "text-slate-800 dark:text-white/90"}`}>
+              <span className={`text-xs font-medium ${bgGradient ? "text-white/90" : "text-slate-800"}`}>
                 {trialDaysRemaining === 0
                   ? t("components.trialBanner.lastDay")
                   : trialDaysRemaining === 1
@@ -70,7 +70,7 @@ export default function TrialBanner() {
                   : t("components.trialBanner.daysLeft", { count: trialDaysRemaining })}
               </span>
             </div>
-            <p className={`text-xs ${bgGradient ? "text-white/80" : "text-slate-700 dark:text-white/80"} mt-0.5`}>
+            <p className={`text-xs ${bgGradient ? "text-white/80" : "text-slate-700"} mt-0.5`}>
               {t("components.trialBanner.trialDesc")}
             </p>
           </div>
@@ -87,14 +87,14 @@ export default function TrialBanner() {
 
   if (status === "ACTIVE") {
     return (
-      <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-2 rounded-xl mb-6 flex items-center justify-between text-xs">
+      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl mb-6 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>
             <Trans i18nKey="components.trialBanner.activePlan" values={{ plan: t(`common.plans.${plan}`, { defaultValue: plan }) }} components={{ 1: <strong /> }} />
           </span>
         </div>
-        <Link to="/subscription" className="text-emerald-700 dark:text-emerald-400 hover:underline font-medium">
+        <Link to="/subscription" className="text-emerald-700 hover:underline font-medium">
           {t("components.trialBanner.manageSubscription")}
         </Link>
       </div>

@@ -51,12 +51,12 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-sm w-full text-center bg-white dark:bg-slate-900 border border-contour-200 dark:border-slate-800 rounded-2xl shadow-sm p-8">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-4">
+        <div className="max-w-sm w-full text-center bg-white border border-contour-200 rounded-2xl shadow-sm p-8">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={26} strokeWidth={1.75} />
           </div>
-          <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1.5">{i18n.t("components.errorBoundary.title")}</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
+          <h1 className="text-base font-bold text-slate-900 mb-1.5">{i18n.t("components.errorBoundary.title")}</h1>
+          <p className="text-sm text-slate-600 leading-relaxed mb-5">
             {i18n.t("components.errorBoundary.body")}
           </p>
           <button

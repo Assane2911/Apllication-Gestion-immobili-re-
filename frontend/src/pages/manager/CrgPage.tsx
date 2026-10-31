@@ -71,10 +71,10 @@ export default function CrgPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <Link to="/proprietaires" className="text-xs text-brand-600 dark:text-brand-400 hover:underline">
+        <Link to="/proprietaires" className="text-xs text-brand-600 hover:underline">
           {t("manager.crg.backToOwners")}
         </Link>
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
           <h3 className="font-bold text-base mb-1">{t("manager.crg.errorTitle")}</h3>
           <p className="text-sm">{error}</p>
           <button
@@ -92,7 +92,7 @@ export default function CrgPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.crg.title")}</h2>
+          <h2 className="text-2xl font-bold text-slate-900">{t("manager.crg.title")}</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -107,27 +107,27 @@ export default function CrgPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/proprietaires" className="text-xs text-brand-600 dark:text-brand-400 hover:underline">
+        <Link to="/proprietaires" className="text-xs text-brand-600 hover:underline">
           {t("manager.crg.backToOwners")}
         </Link>
       </div>
 
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.crg.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <h2 className="text-2xl font-bold text-slate-900">{t("manager.crg.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">
             {t("manager.crg.subtitle", { ownerName: crg.ownerName })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <label htmlFor="crg-month-select" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label htmlFor="crg-month-select" className="text-xs font-semibold text-slate-700">
             {t("manager.crg.monthLabel")}
           </label>
           <select
             id="crg-month-select"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500 capitalize"
+            className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500 capitalize"
           >
             {monthOptions.map((m) => (
               <option key={m.value} value={m.value} className="capitalize">
@@ -135,14 +135,14 @@ export default function CrgPage() {
               </option>
             ))}
           </select>
-          <label htmlFor="crg-year-select" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label htmlFor="crg-year-select" className="text-xs font-semibold text-slate-700">
             {t("manager.crg.yearLabel")}
           </label>
           <select
             id="crg-year-select"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           >
             {yearOptions.map((y) => (
               <option key={y} value={y}>
@@ -160,7 +160,7 @@ export default function CrgPage() {
           </Bulle>
           <button
             onClick={() => setShowAnnual(true)}
-            className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+            className="border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
           >
             <FileText size={13} aria-hidden="true" /> {t("manager.crg.exportAnnual", { year })}
           </button>
@@ -195,13 +195,13 @@ export default function CrgPage() {
         />
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-contour-100 dark:border-slate-800">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t("manager.crg.table.title")}</h3>
+      <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-contour-100">
+          <h3 className="font-bold text-slate-900 text-sm">{t("manager.crg.table.title")}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
+            <thead className="bg-slate-200/70 text-slate-700 text-left">
               <tr>
                 <th className="px-4 py-3 font-semibold">{t("manager.crg.table.property")}</th>
                 <th className="px-4 py-3 font-semibold">{t("manager.crg.table.currency")}</th>
@@ -211,22 +211,22 @@ export default function CrgPage() {
                 <th className="px-4 py-3 font-semibold">{t("manager.crg.table.net")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-contour-100">
               {crg.properties.map((row) => (
-                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{row.propertyTitle}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{row.currency}</td>
-                  <td className="px-4 py-3 text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
+                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50">
+                  <td className="px-4 py-3 font-medium text-slate-900">{row.propertyTitle}</td>
+                  <td className="px-4 py-3 text-slate-600 text-xs">{row.currency}</td>
+                  <td className="px-4 py-3 text-emerald-700 font-semibold tabular-nums">
                     {formatMoney(row.loyersEncaisses, row.currency)}
                   </td>
-                  <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold tabular-nums">
+                  <td className="px-4 py-3 text-red-600 font-semibold tabular-nums">
                     {formatDeduction(row.chargesDeduites, row.currency, formatMoney)}
                   </td>
-                  <td className="px-4 py-3 text-amber-700 dark:text-amber-400 font-semibold tabular-nums">
+                  <td className="px-4 py-3 text-amber-700 font-semibold tabular-nums">
                     {formatDeduction(row.commission, row.currency, formatMoney)}
                   </td>
                   <td
-                    className={`px-4 py-3 font-bold tabular-nums ${row.netAReverser >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}
+                    className={`px-4 py-3 font-bold tabular-nums ${row.netAReverser >= 0 ? "text-emerald-700" : "text-red-700"}`}
                   >
                     {formatMoney(row.netAReverser, row.currency)}
                   </td>
@@ -234,7 +234,7 @@ export default function CrgPage() {
               ))}
               {crg.properties.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center text-slate-600 dark:text-slate-400 py-8 text-sm">
+                  <td colSpan={6} className="text-center text-slate-600 py-8 text-sm">
                     {t("manager.crg.empty")}
                   </td>
                 </tr>

@@ -54,15 +54,15 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("admin.settings.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("admin.settings.subtitle")}</p>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("admin.settings.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">{t("admin.settings.subtitle")}</p>
       </div>
 
       {loadError ? (
         // Le formulaire n'est PAS rendu tant que l'état initial est inconnu :
         // c'est ce qui empêche d'enregistrer du vide par-dessus des données
         // qu'on n'a simplement pas réussi à lire.
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-300 text-sm px-4 py-3 rounded-xl">
+        <div className="bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 rounded-xl">
           <p>{loadError}</p>
           <button
             type="button"
@@ -75,22 +75,22 @@ export default function AdminSettingsPage() {
       ) : (
       <>
       {success && (
-        <div role="status" className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+        <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
           <CheckCircle2 size={15} aria-hidden="true" /> {t("admin.settings.success")}
         </div>
       )}
 
       {error && (
-        <div role="alert" className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-300 text-sm px-4 py-3 rounded-xl">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 rounded-xl">
           {error}
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="platform-iban" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="platform-iban" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("admin.settings.fields.iban")}
               </label>
               <input
@@ -98,12 +98,12 @@ export default function AdminSettingsPage() {
                 value={form.iban}
                 onChange={(e) => setForm({ ...form, iban: e.target.value })}
                 placeholder={t("admin.settings.fields.ibanPlaceholder")}
-                className="w-full text-sm font-mono border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm font-mono border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
             <div>
-              <label htmlFor="platform-bic" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="platform-bic" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("admin.settings.fields.bic")}
               </label>
               <input
@@ -111,12 +111,12 @@ export default function AdminSettingsPage() {
                 value={form.bic}
                 onChange={(e) => setForm({ ...form, bic: e.target.value })}
                 placeholder={t("admin.settings.fields.bicPlaceholder")}
-                className="w-full text-sm font-mono border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm font-mono border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
               />
             </div>
           </div>
 
-          <div className="pt-4 border-t border-contour-200 dark:border-slate-800 flex justify-end">
+          <div className="pt-4 border-t border-contour-200 flex justify-end">
             <button
               type="submit"
               disabled={saving}
@@ -136,21 +136,21 @@ export default function AdminSettingsPage() {
         gestionnaire. Hors du bloc ci-dessus : l'échec du chargement des coordonnées bancaires ne doit pas
         priver l'administrateur de cette protection.
       */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm p-6">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6">
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
           {t("admin.settings.twoFactor.title")}
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{t("admin.settings.twoFactor.description")}</p>
+        <p className="text-sm text-slate-600 mt-2">{t("admin.settings.twoFactor.description")}</p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {user?.twoFactorEnabled ? (
             <>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 rounded-full px-3 py-1.5">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full px-3 py-1.5">
                 <CheckCircle2 size={14} aria-hidden="true" /> {t("admin.settings.twoFactor.enabled")}
               </span>
               <button
                 type="button"
                 onClick={() => setShowTwoFactorDisable(true)}
-                className="border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 {t("admin.settings.twoFactor.disableButton")}
               </button>
@@ -159,7 +159,7 @@ export default function AdminSettingsPage() {
             <button
               type="button"
               onClick={() => setShowTwoFactorSetup(true)}
-              className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              className="border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
             >
               {t("admin.settings.twoFactor.enableButton")}
             </button>

@@ -53,7 +53,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
+      <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
         <h3 className="font-bold text-base mb-1">{t("manager.dashboard.errorTitle")}</h3>
         <p className="text-sm">{error}</p>
         <button
@@ -70,15 +70,15 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t("manager.dashboard.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.dashboard.loadingHint")}</p>
+          <h2 className="text-2xl font-bold text-slate-900">{t("manager.dashboard.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.dashboard.loadingHint")}</p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
           <Skeleton className="h-5 w-56 mb-4" />
           <Skeleton className="h-[260px] w-full rounded-xl" />
         </div>
@@ -132,13 +132,13 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <span>{t("manager.dashboard.title")}</span>
-            <span className="text-xs bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
               <CheckCircle2 size={12} /> {t("manager.dashboard.liveSystem")}
             </span>
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.dashboard.overviewSubtitle")}</p>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.dashboard.overviewSubtitle")}</p>
         </div>
       </div>
 
@@ -209,12 +209,12 @@ export default function DashboardPage() {
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Graphique Barres Comparatif Revenus vs Dépenses */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("manager.dashboard.charts.revenueVsExpenses")}</h3>
+            <h3 className="font-bold text-slate-900 text-base">{t("manager.dashboard.charts.revenueVsExpenses")}</h3>
           </div>
           {chartsByCurrency.length === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">
+            <p className="text-sm text-slate-600 py-16 text-center">
               {t("manager.dashboard.charts.noRevenueData")}
             </p>
           ) : (
@@ -226,7 +226,7 @@ export default function DashboardPage() {
                   aria-label={chartsByCurrency.length > 1 ? t("manager.dashboard.charts.chartForCurrency", { currency }) : undefined}
                 >
                   {chartsByCurrency.length > 1 && (
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">{currency}</p>
+                    <p className="text-xs font-semibold text-slate-600 mb-2">{currency}</p>
                   )}
                   <div className={chartsByCurrency.length > 1 ? "h-[220px] w-full" : "h-[280px] w-full"}>
                     <Suspense fallback={<Skeleton className="h-full w-full" />}>
@@ -240,10 +240,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Camembert Statut du parc immobilier */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("manager.dashboard.charts.statusChart")}</h3>
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm flex flex-col justify-between">
+          <h3 className="font-bold text-slate-900 text-base mb-4">{t("manager.dashboard.charts.statusChart")}</h3>
           {donutData.length === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400 py-16 text-center">{t("manager.dashboard.charts.noProperties")}</p>
+            <p className="text-sm text-slate-600 py-16 text-center">{t("manager.dashboard.charts.noProperties")}</p>
           ) : (
             <>
               <div className="h-[200px] w-full">
@@ -251,9 +251,9 @@ export default function DashboardPage() {
                   <GraphiqueParc data={donutData} libelles={statusLabels} />
                 </Suspense>
               </div>
-              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-contour-100 dark:border-slate-800">
+              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-contour-100">
                 {donutData.map((entry) => (
-                  <div key={entry.status} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                  <div key={entry.status} className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: COULEURS_STATUT[entry.status] }}

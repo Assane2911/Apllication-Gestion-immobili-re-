@@ -379,12 +379,6 @@ const en: TranslationSchema = {
       CHEQUE: "Cheque",
       MOBILE_MONEY: "Mobile Money",
     },
-    theme: {
-      tip: "Switches between the light and dark display.",
-      toLight: "Switch to light mode",
-      toDark: "Switch to dark mode",
-      toggleAria: "Toggle light/dark theme",
-    },
     language: {
       label: "Language",
       selectAria: "Change language",
@@ -683,7 +677,6 @@ const en: TranslationSchema = {
       "Full activity log",
       "CSV accounting export",
       "White label for your agency",
-      "Dark mode",
     ],
     productTour: {
       title: "See the platform in action",

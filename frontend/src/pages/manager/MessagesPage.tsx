@@ -26,12 +26,12 @@ export default function MessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.messages.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.messages.subtitle")}</p>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.messages.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">{t("manager.messages.subtitle")}</p>
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{error}</span>
           <button onClick={() => loadConversations()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -39,53 +39,53 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden h-[70vh] md:h-[680px] flex flex-col md:flex-row">
+      <div className="bg-white rounded-2xl border border-contour-200 shadow-sm overflow-hidden h-[70vh] md:h-[680px] flex flex-col md:flex-row">
         {/* Liste des conversations */}
         <div
           className={`${
             selectedThreadId ? "hidden md:flex" : "flex"
-          } w-full md:w-80 border-r border-contour-200 dark:border-slate-800 flex-col bg-slate-50/50 dark:bg-slate-950/40`}
+          } w-full md:w-80 border-r border-contour-200 flex-col bg-slate-50/50`}
         >
-          <div className="p-4 border-b border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200">{t("manager.messages.ongoingDiscussions")}</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.messages.conversationCount", { count: total })}</p>
+          <div className="p-4 border-b border-contour-200 bg-white">
+            <h3 className="font-semibold text-sm text-slate-800">{t("manager.messages.ongoingDiscussions")}</h3>
+            <p className="text-xs text-slate-600">{t("manager.messages.conversationCount", { count: total })}</p>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-contour-100 dark:divide-slate-800">
+          <div className="flex-1 overflow-y-auto divide-y divide-contour-100">
             {conversations.map((c) => (
               <button
                 key={cleDuFil(c)}
                 onClick={() => setSelectedThreadId(cleDuFil(c))}
                 className={`w-full text-left p-4 transition-colors flex items-start gap-3 ${
                   selectedThreadId === cleDuFil(c)
-                    ? "bg-brand-50 dark:bg-brand-500/10 border-l-4 border-brand-600 dark:border-brand-400"
-                    : "hover:bg-slate-100/70 dark:hover:bg-slate-800/50"
+                    ? "bg-brand-50 border-l-4 border-brand-600"
+                    : "hover:bg-slate-100/70"
                 }`}
               >
-                <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 font-bold text-xs shrink-0">
+                <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs shrink-0">
                   {c.tenant?.firstName?.[0] || "L"}
                   {c.tenant?.lastName?.[0] || ""}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate">
+                  <p className="font-semibold text-xs text-slate-900 truncate">
                     {c.tenant?.firstName} {c.tenant?.lastName}
                     {c.qualite === "COLOCATAIRE" && (
-                      <span className="ml-1.5 align-middle text-[10px] font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-1.5 py-0.5 rounded-sm">
+                      <span className="ml-1.5 align-middle text-[10px] font-medium bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-sm">
                         {t("manager.messages.cotenant")}
                       </span>
                     )}
                   </p>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{c.property?.title}</p>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-1">
+                  <p className="text-[11px] text-slate-600 truncate">{c.property?.title}</p>
+                  <p className="text-[11px] text-slate-600 truncate mt-1">
                     {c.lastMessage ? c.lastMessage.content : t("manager.messages.noMessageYet")}
                   </p>
                 </div>
               </button>
             ))}
             {conversations.length === 0 && (
-              <p className="text-xs text-slate-600 dark:text-slate-400 p-6 text-center">{t("manager.messages.noActiveContracts")}</p>
+              <p className="text-xs text-slate-600 p-6 text-center">{t("manager.messages.noActiveContracts")}</p>
             )}
           </div>
-          <div className="p-3 border-t border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="p-3 border-t border-contour-200 bg-white">
             <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
           </div>
         </div>
@@ -94,46 +94,46 @@ export default function MessagesPage() {
         <div
           className={`${
             selectedThreadId ? "flex" : "hidden md:flex"
-          } flex-1 flex-col bg-white dark:bg-slate-900`}
+          } flex-1 flex-col bg-white`}
         >
           {selectedThreadId && activeDetails ? (
             <>
               {/* En-tête de conversation */}
-              <div className="px-4 md:px-6 py-4 border-b border-contour-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40">
+              <div className="px-4 md:px-6 py-4 border-b border-contour-200 flex items-center justify-between gap-3 bg-slate-50">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     type="button"
                     onClick={() => setSelectedThreadId(null)}
                     aria-label={t("common.actions.back")}
-                    className="md:hidden shrink-0 -ml-1 p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-800"
+                    className="md:hidden shrink-0 -ml-1 p-1.5 rounded-lg text-slate-600 hover:bg-slate-200/70"
                   >
                     ←
                   </button>
                   <div className="min-w-0">
-                    <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
+                    <h3 className="font-bold text-slate-900 text-sm truncate">
                       {activeDetails.tenant?.firstName} {activeDetails.tenant?.lastName}
                     </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                    <p className="text-xs text-slate-600 truncate">
                       {activeDetails.property?.title} — {activeDetails.property?.address}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full font-medium shrink-0">
+                <span className="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-medium shrink-0">
                   {activeDetails.tenant?.phone}
                 </span>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30 dark:bg-slate-950/20">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30">
                 {loadingMessages && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-4">{t("manager.messages.loadingMessages")}</p>
+                  <p className="text-xs text-slate-600 text-center py-4">{t("manager.messages.loadingMessages")}</p>
                 )}
                 {messages.map((m) => {
                   const isMe = m.senderRole === "MANAGER";
                   return (
                     <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] text-slate-600 dark:text-slate-400">
+                        <span className="text-[10px] text-slate-600">
                           {isMe ? t("manager.messages.you") : t("manager.messages.tenantParen", { name: activeDetails.tenant?.firstName })} •{" "}
                           {new Date(m.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}
                         </span>
@@ -142,7 +142,7 @@ export default function MessagesPage() {
                         className={`max-w-md px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
                           isMe
                             ? "bg-brand-600 text-white rounded-br-none"
-                            : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-contour-200 dark:border-slate-700 rounded-bl-none"
+                            : "bg-white text-slate-800 border border-contour-200 rounded-bl-none"
                         }`}
                       >
                         {m.content}
@@ -151,14 +151,14 @@ export default function MessagesPage() {
                   );
                 })}
                 {!loadingMessages && messages.length === 0 && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-12">
+                  <p className="text-xs text-slate-600 text-center py-12">
                     {t("manager.messages.noMessagesInThread")}
                   </p>
                 )}
               </div>
 
               {/* Formulaire d'envoi */}
-              <form onSubmit={handleSend} className="p-4 border-t border-contour-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
+              <form onSubmit={handleSend} className="p-4 border-t border-contour-200 bg-white flex gap-2">
                 <input
                   type="text"
                   aria-label={t("manager.messages.writeMessage")}
@@ -166,7 +166,7 @@ export default function MessagesPage() {
                   value={newText}
                   maxLength={5000}
                   onChange={(e) => setNewText(e.target.value)}
-                  className="flex-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+                  className="flex-1 text-xs border border-slate-300 bg-white text-slate-900 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
                 />
                 <button
                   type="submit"
@@ -178,7 +178,7 @@ export default function MessagesPage() {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400 text-sm">
+            <div className="flex-1 flex items-center justify-center text-slate-600 text-sm">
               {t("manager.messages.selectDiscussion")}
             </div>
           )}

@@ -24,10 +24,10 @@ export default function MembreEquipe({
   return (
     <li className="py-2.5 flex items-center justify-between gap-3 flex-wrap">
       <div>
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{member.email}</p>
+        <p className="text-sm font-medium text-slate-900">{member.email}</p>
         <p
           className={`text-xs ${
-            member.expired ? "text-amber-700 dark:text-amber-400 font-semibold" : "text-slate-600 dark:text-slate-400"
+            member.expired ? "text-amber-700 font-semibold" : "text-slate-600"
           }`}
         >
           {!enAttente
@@ -41,7 +41,7 @@ export default function MembreEquipe({
         aria-label={t("manager.agencySettings.team.roleAria", { email: member.email })}
         value={member.role}
         onChange={(e) => onChangeRole(member, e.target.value as TeamRole)}
-        className="text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5"
+        className="text-xs border border-slate-300 bg-white text-slate-900 rounded-lg px-2 py-1.5"
       >
         {ROLES_EQUIPE.map((r) => (
           <option key={r} value={r}>
@@ -54,7 +54,7 @@ export default function MembreEquipe({
           type="button"
           onClick={() => onResend(member)}
           aria-label={t("manager.agencySettings.team.resendAria", { email: member.email })}
-          className="text-brand-700 dark:text-brand-400 hover:underline text-xs font-semibold"
+          className="text-brand-700 hover:underline text-xs font-semibold"
         >
           {t("manager.agencySettings.team.resendButton")}
         </button>
@@ -62,7 +62,7 @@ export default function MembreEquipe({
       <button
         type="button"
         onClick={() => onRemove(member)}
-        className="text-red-600 dark:text-red-400 hover:underline text-xs font-semibold"
+        className="text-red-600 hover:underline text-xs font-semibold"
       >
         {t("manager.agencySettings.team.removeButton")}
       </button>

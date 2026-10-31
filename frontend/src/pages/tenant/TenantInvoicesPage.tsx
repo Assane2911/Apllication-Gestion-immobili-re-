@@ -103,15 +103,15 @@ export default function TenantInvoicesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
             {t("tenant.invoices.title")}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
             {t("tenant.invoices.subtitle")}
           </p>
         </div>
         {unpaidInvoices.length === 0 && invoices.length > 0 && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700">
             <CheckCircle2 size={14} />
             {t("tenant.invoices.allUpToDate")}
           </div>
@@ -120,54 +120,54 @@ export default function TenantInvoicesPage() {
 
       {/* Retour d'un prestataire de paiement : voir useRetourDePaiement. */}
       {retourPaiement === "succes" && (
-        <div className="text-sm bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-sky-800 dark:text-sky-300 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
+        <div className="text-sm bg-sky-50 border border-sky-200 text-sky-800 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
           <Clock size={16} />
           <span>{t("common.payment.returned")}</span>
         </div>
       )}
       {retourPaiement === "annule" && (
-        <div className="text-sm bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 rounded-xl px-4 py-3 shadow-2xs">
+        <div className="text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 shadow-2xs">
           {t("common.payment.cancelled")}
         </div>
       )}
 
       {message && (
-        <div role="status" className="text-sm bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
+        <div role="status" className="text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
           <CheckCircle2 size={16} />
           <span>{message}</span>
         </div>
       )}
       {error && (
-        <div className="text-sm bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 rounded-xl px-4 py-3 shadow-2xs">
+        <div className="text-sm bg-rose-50 border border-rose-200 text-rose-800 rounded-xl px-4 py-3 shadow-2xs">
           {error}
         </div>
       )}
 
       {/* Quick Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-4 shadow-xs">
+        <div className="bg-white rounded-2xl border border-contour-200/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
               {t("tenant.invoices.pendingTitle")}
             </p>
-            <span className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
+            <span className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
               <Clock size={15} aria-hidden="true" />
             </span>
           </div>
-          <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
+          <p className="text-2xl font-bold mt-2 text-slate-900">
             {t(unpaidInvoices.length > 1 ? "tenant.invoices.pendingMany" : "tenant.invoices.pendingOne", { count: unpaidInvoices.length })}
           </p>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200/90 dark:border-slate-800/90 p-4 shadow-xs">
+        <div className="bg-white rounded-2xl border border-contour-200/90 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
               {t("tenant.invoices.receiptsTitle")}
             </p>
-            <span className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <Download size={15} aria-hidden="true" />
             </span>
           </div>
-          <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
+          <p className="text-2xl font-bold mt-2 text-slate-900">
             {t(paidInvoices.length > 1 ? "tenant.invoices.receiptMany" : "tenant.invoices.receiptOne", { count: paidInvoices.length })}
           </p>
         </div>
@@ -180,26 +180,26 @@ export default function TenantInvoicesPage() {
           return (
             <div
               key={inv.id}
-              className={`bg-white dark:bg-slate-900 rounded-2xl border shadow-xs transition-all duration-200 p-5 ${
+              className={`bg-white rounded-2xl border shadow-xs transition-all duration-200 p-5 ${
                 isLate
-                  ? "border-rose-300 dark:border-rose-500/40 bg-rose-50/10"
+                  ? "border-rose-300 bg-rose-50/10"
                   : isPaid
-                  ? "border-contour-200/90 dark:border-slate-800/90"
-                  : "border-amber-200 dark:border-amber-500/30"
+                  ? "border-contour-200/90"
+                  : "border-amber-200"
               }`}
             >
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-slate-900 dark:text-slate-100 capitalize text-base">
+                    <p className="font-bold text-slate-900 capitalize text-base">
                       {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
                     </p>
-                    <span className="text-slate-300 dark:text-slate-700">•</span>
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    <span className="text-slate-300">•</span>
+                    <span className="text-xs font-medium text-slate-600">
                       {inv.contract?.property?.title}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                  <p className="text-xs text-slate-600 mt-1">
                     {t("tenant.invoices.dueDate", {
                       date: formaterJour(inv.dueDate, i18n.language),
                     })}
@@ -207,12 +207,12 @@ export default function TenantInvoicesPage() {
                 </div>
 
                 <div className="flex items-center gap-3.5 flex-wrap">
-                  <span className="font-bold text-lg sm:text-xl text-slate-900 dark:text-slate-100">
+                  <span className="font-bold text-lg sm:text-xl text-slate-900">
                     {formatMoney(inv.amount, inv.currency)}
                   </span>
                   <Badge status={inv.status} />
                   {!isPaid && inv.status !== "CANCELLED" && (inv.montantRegle ?? 0) > 0 && (inv.resteDu ?? 0) > 0 && (
-                    <span className="basis-full text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                    <span className="basis-full text-[11px] font-medium text-amber-700">
                       {t("tenant.invoices.partiallyPaid", {
                         paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
                         remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
@@ -223,7 +223,7 @@ export default function TenantInvoicesPage() {
                     <Bulle texte={t("tenant.tips.viewReceipt")}>
                     <button
                       onClick={() => setActiveReceiptInvoice(inv)}
-                      className="bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                     >
                       <Download size={13} />
                       <span>{t("tenant.invoices.receiptPdf")}</span>
@@ -244,18 +244,18 @@ export default function TenantInvoicesPage() {
               </div>
 
               {payingId === inv.id && (
-                <div className="mt-5 pt-4 border-t border-contour-100 dark:border-slate-800 animate-in fade-in duration-200">
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+                <div className="mt-5 pt-4 border-t border-contour-100 animate-in fade-in duration-200">
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
                     {t("tenant.invoices.choosePaymentTitle")}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {methods.map((m) => (
                       <div
                         key={m.key}
-                        className="border border-contour-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/40 hover:border-brand-400 dark:hover:border-brand-500 transition-colors"
+                        className="border border-contour-200 rounded-xl p-4 bg-slate-50/50 hover:border-brand-400 transition-colors"
                       >
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{m.label}</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{m.hint}</p>
+                        <p className="text-sm font-bold text-slate-800">{m.label}</p>
+                        <p className="text-xs text-slate-600 mt-1">{m.hint}</p>
                         {m.key === "BANK_TRANSFER" && (
                           <>
                             <BankDetails
@@ -273,7 +273,7 @@ export default function TenantInvoicesPage() {
                               value={bankRef}
                               maxLength={200}
                               onChange={(e) => setBankRef(e.target.value)}
-                              className="w-full mt-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-hidden"
+                              className="w-full mt-3 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-hidden"
                             />
                           </>
                         )}
@@ -295,8 +295,8 @@ export default function TenantInvoicesPage() {
           );
         })}
         {invoices.length === 0 && (
-          <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6">
-            <p className="text-slate-600 dark:text-slate-400 text-sm">{t("tenant.invoices.noInvoices")}</p>
+          <div className="text-center py-12 bg-white rounded-2xl border border-contour-200 p-6">
+            <p className="text-slate-600 text-sm">{t("tenant.invoices.noInvoices")}</p>
           </div>
         )}
       </div>

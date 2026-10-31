@@ -103,37 +103,37 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
     }
   }
 
-  const champ = "w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm";
-  const etiquette = "block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1";
+  const champ = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
+  const etiquette = "block text-xs font-semibold text-slate-700 mb-1";
 
   const dialogue = useDialogue({ onClose, titreId: "guarantors-title", fermable: !saving });
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200 dark:border-slate-700">
+      <div {...dialogue} className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200">
         <div className="flex items-start justify-between">
-          <h3 id="guarantors-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("components.guarantors.title")}</h3>
-          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <h3 id="guarantors-title" className="text-lg font-bold text-slate-900">{t("components.guarantors.title")}</h3>
+          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600">
             <X size={18} />
           </button>
         </div>
 
-        {verrouille && <p className="mt-3 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-300">{t("components.guarantors.locked")}</p>}
+        {verrouille && <p className="mt-3 text-xs rounded-lg bg-slate-50 px-3 py-2 text-slate-700">{t("components.guarantors.locked")}</p>}
 
         {garants.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{t("components.guarantors.none")}</p>
+          <p className="mt-4 text-sm text-slate-600">{t("components.guarantors.none")}</p>
         ) : (
-          <ul className="mt-4 divide-y divide-contour-100 dark:divide-slate-800">
+          <ul className="mt-4 divide-y divide-contour-100">
             {garants.map((g) => (
               <li key={g.id} className="py-2 flex items-start justify-between gap-3 text-sm">
-                <span className="text-slate-800 dark:text-slate-200">
+                <span className="text-slate-800">
                   <span className="font-medium">
                     {g.civility ? `${t(`common.civility.${g.civility}`)} ` : ""}
                     {g.firstName} {g.lastName}
                   </span>
-                  <span className="block text-xs text-slate-600 dark:text-slate-400">{[g.phone, g.email, g.address].filter(Boolean).join(" · ")}</span>
+                  <span className="block text-xs text-slate-600">{[g.phone, g.email, g.address].filter(Boolean).join(" · ")}</span>
                   {g.maxAmount !== null && (
-                    <span className="block text-xs text-slate-600 dark:text-slate-400">{t("components.guarantors.maxAmountRow", { amount: formatMoney(g.maxAmount, currency) })}</span>
+                    <span className="block text-xs text-slate-600">{t("components.guarantors.maxAmountRow", { amount: formatMoney(g.maxAmount, currency) })}</span>
                   )}
                 </span>
                 {!verrouille && (
@@ -152,13 +152,13 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
         )}
 
         {!verrouille && !formOuvert && garants.length < 5 && (
-          <button type="button" onClick={() => ouvrir()} className="mt-4 text-sm font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+          <button type="button" onClick={() => ouvrir()} className="mt-4 text-sm font-semibold text-brand-600 hover:underline">
             {t("components.guarantors.add")}
           </button>
         )}
 
         {!verrouille && formOuvert && (
-          <form onSubmit={enregistrer} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 dark:border-slate-800 pt-4">
+          <form onSubmit={enregistrer} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 pt-4">
             <div className="sm:col-span-2">
               <label htmlFor="g-civility" className={etiquette}>{t("common.civility.label")}</label>
               <select id="g-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className={champ}>
@@ -182,7 +182,7 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
             <div>
               <label htmlFor="g-email" className={etiquette}>{t("components.guarantors.email")}</label>
               <input id="g-email" type="email" aria-describedby="g-email-hint" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={champ} />
-              <p id="g-email-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t("components.guarantors.emailHint")}</p>
+              <p id="g-email-hint" className="mt-1 text-xs text-slate-600">{t("components.guarantors.emailHint")}</p>
             </div>
             <div>
               <label htmlFor="g-maxAmount" className={etiquette}>{t("components.guarantors.maxAmount")}</label>
@@ -197,7 +197,7 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
               <textarea id="g-notes" rows={2} maxLength={1000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={champ} />
             </div>
             <div className="sm:col-span-2 flex justify-end gap-2">
-              <button type="button" onClick={() => setFormOuvert(false)} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2">
+              <button type="button" onClick={() => setFormOuvert(false)} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
                 {t("common.actions.cancel")}
               </button>
               <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg">
@@ -207,7 +207,7 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
           </form>
         )}
 
-        {error && <p role="alert" className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p role="alert" className="mt-3 text-xs text-red-600">{error}</p>}
       </div>
     </div>
   );

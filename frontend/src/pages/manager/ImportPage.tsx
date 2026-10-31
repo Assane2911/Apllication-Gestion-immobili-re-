@@ -25,9 +25,9 @@ interface Analyse {
 }
 
 const STYLES_STATUT: Record<StatutLigne, string> = {
-  OK: "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300",
-  DOUBLON: "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300",
-  ERREUR: "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300",
+  OK: "bg-emerald-100 text-emerald-800",
+  DOUBLON: "bg-amber-100 text-amber-800",
+  ERREUR: "bg-red-100 text-red-800",
 };
 
 /** Lecture du fichier en UTF-8 (FileReader : valable sur tous les navigateurs, y compris anciens). */
@@ -143,11 +143,11 @@ export default function ImportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.import.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.import.subtitle")}</p>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.import.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">{t("manager.import.subtitle")}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+      <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm space-y-4">
         <div role="radiogroup" aria-label={t("manager.import.typeLabel")} className="flex flex-wrap gap-2">
           {(["properties", "tenants", "contracts"] as const).map((valeur) => (
             <button
@@ -159,7 +159,7 @@ export default function ImportPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                 type === valeur
                   ? "bg-brand-600 text-white border-brand-600"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
               }`}
             >
               {t(`manager.import.types.${valeur}`)}
@@ -167,44 +167,44 @@ export default function ImportPage() {
           ))}
         </div>
 
-        <ol className="text-sm text-slate-700 dark:text-slate-300 list-decimal pl-5 space-y-1">
+        <ol className="text-sm text-slate-700 list-decimal pl-5 space-y-1">
           <li>
             {t("manager.import.step1")}{" "}
-            <button type="button" onClick={telechargerModele} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1">
+            <button type="button" onClick={telechargerModele} className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1">
               <Download size={13} aria-hidden="true" /> {t("manager.import.downloadTemplate")}
             </button>
           </li>
           <li>{t("manager.import.step2")}</li>
           <li>{t("manager.import.step3")}</li>
         </ol>
-        <p className="text-xs text-slate-600 dark:text-slate-400">{t(`manager.import.columns.${type}`)}</p>
-        {type === "contracts" && <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.import.contractsNote")}</p>}
+        <p className="text-xs text-slate-600">{t(`manager.import.columns.${type}`)}</p>
+        {type === "contracts" && <p className="text-xs text-slate-600">{t("manager.import.contractsNote")}</p>}
 
         <div>
           <label htmlFor="import-fichier" className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg cursor-pointer">
             <FileUp size={15} aria-hidden="true" /> {t("manager.import.chooseFile")}
           </label>
           <input id="import-fichier" ref={champFichier} type="file" accept=".csv,.txt,text/csv" onChange={choisirFichier} className="sr-only" />
-          {nomFichier && <span className="ml-3 text-sm text-slate-600 dark:text-slate-400">{nomFichier}</span>}
+          {nomFichier && <span className="ml-3 text-sm text-slate-600">{nomFichier}</span>}
         </div>
       </div>
 
-      {chargement && <p role="status" className="text-sm text-slate-600 dark:text-slate-400">{t("manager.import.analysing")}</p>}
+      {chargement && <p role="status" className="text-sm text-slate-600">{t("manager.import.analysing")}</p>}
 
       {error && (
-        <div role="alert" className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
           {error}
         </div>
       )}
 
       {encodageSuspect && (
-        <div role="alert" className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl text-sm">
+        <div role="alert" className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
           {t("manager.import.encodingWarning")}
         </div>
       )}
 
       {resultat && (
-        <div role="status" className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-4 rounded-xl text-sm space-y-2">
+        <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-4 rounded-xl text-sm space-y-2">
           <p className="font-semibold">{t("manager.import.done", { count: resultat.importees ?? 0, type: libelleType })}</p>
           {(resultat.resume.doublons > 0 || resultat.resume.erreurs > 0) && (
             <p>{t("manager.import.skipped", { duplicates: resultat.resume.doublons, errors: resultat.resume.erreurs })}</p>
@@ -229,41 +229,41 @@ export default function ImportPage() {
               { cle: "duplicates", valeur: analyse.resume.doublons },
               { cle: "errors", valeur: analyse.resume.erreurs },
             ].map((carte) => (
-              <div key={carte.cle} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 px-4 py-3 shadow-sm">
-                <p className="text-xs text-slate-600 dark:text-slate-400">{t(`manager.import.summary.${carte.cle}`)}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{carte.valeur}</p>
+              <div key={carte.cle} className="bg-white rounded-xl border border-contour-200 px-4 py-3 shadow-sm">
+                <p className="text-xs text-slate-600">{t(`manager.import.summary.${carte.cle}`)}</p>
+                <p className="text-2xl font-bold text-slate-900">{carte.valeur}</p>
               </div>
             ))}
           </div>
 
           {analyse.capacite && analyse.capacite.maximum !== null && (
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <p className="text-xs text-slate-600">
               {t("manager.import.capacity", { existing: analyse.capacite.existants, max: analyse.capacite.maximum, remaining: analyse.capacite.restant ?? 0 })}
             </p>
           )}
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto max-h-112 overflow-y-auto">
+          <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto max-h-112 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left sticky top-0">
+              <thead className="bg-slate-200/70 text-slate-700 text-left sticky top-0">
                 <tr>
                   <th className="px-4 py-2 font-semibold">{t("manager.import.table.line")}</th>
                   <th className="px-4 py-2 font-semibold">{t("manager.import.table.data")}</th>
                   <th className="px-4 py-2 font-semibold">{t("manager.import.table.status")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-contour-100">
                 {analyse.lignes.map((l) => (
                   <tr key={l.ligne}>
-                    <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{l.ligne}</td>
-                    <td className="px-4 py-2 text-slate-900 dark:text-slate-100">
+                    <td className="px-4 py-2 text-slate-600">{l.ligne}</td>
+                    <td className="px-4 py-2 text-slate-900">
                       {libelleLigne(analyse.type, l.donnees)}
                       {analyse.type === "contracts" && l.statut === "OK" && (
-                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                        <p className="text-xs text-slate-600">
                           {l.donnees.premiereFacture ? t("manager.import.firstInvoice", { month: l.donnees.premiereFacture }) : t("manager.import.noInvoice")}
                         </p>
                       )}
                       {l.messages.map((m, i) => (
-                        <p key={m} className="text-xs text-red-700 dark:text-red-400">
+                        <p key={m} className="text-xs text-red-700">
                           {messageDuServeur(l.details?.[i]?.code, l.details?.[i]?.params, m)}
                         </p>
                       ))}
@@ -286,7 +286,7 @@ export default function ImportPage() {
             >
               {import_ ? t("manager.import.importing") : t("manager.import.importButton", { count: analyse.resume.valides })}
             </button>
-            <button type="button" onClick={reinitialiser} className="text-sm text-slate-600 dark:text-slate-400 hover:underline">
+            <button type="button" onClick={reinitialiser} className="text-sm text-slate-600 hover:underline">
               {t("common.actions.cancel")}
             </button>
           </div>

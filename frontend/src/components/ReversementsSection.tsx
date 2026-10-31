@@ -84,14 +84,14 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
     }
   }
 
-  const champ = "w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm";
-  const etiquette = "block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1";
+  const champ = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
+  const etiquette = "block text-xs font-semibold text-slate-700 mb-1";
   const resteDevise = reste[currency] ?? 0;
 
   return (
-    <section aria-labelledby="reversements-titre" className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm">
-      <div className="p-4 border-b border-contour-100 dark:border-slate-800">
-        <h3 id="reversements-titre" className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+    <section aria-labelledby="reversements-titre" className="bg-white rounded-xl border border-contour-200 shadow-sm">
+      <div className="p-4 border-b border-contour-100">
+        <h3 id="reversements-titre" className="font-bold text-slate-900 text-sm">
           {t("components.payouts.title")}
         </h3>
       </div>
@@ -102,11 +102,11 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
             {devises.map((d) => {
               const r = reste[d] ?? 0;
               return (
-                <li key={d} className="rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                <li key={d} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                  <p className="text-xs text-slate-600">
                     {t("components.payouts.summary", { net: formatMoney(crg.totalNetByCurrency[d] ?? 0, d), paid: formatMoney(reverse[d] ?? 0, d) })}
                   </p>
-                  <p className={`font-bold ${r < 0 ? "text-red-700 dark:text-red-300" : r === 0 ? "text-emerald-700 dark:text-emerald-300" : "text-slate-900 dark:text-slate-100"}`}>
+                  <p className={`font-bold ${r < 0 ? "text-red-700" : r === 0 ? "text-emerald-700" : "text-slate-900"}`}>
                     {r < 0
                       ? // Rien n'a été versé : le net est négatif (charges supérieures aux loyers), ce n'est pas un « trop-versé ».
                         (reverse[d] ?? 0) === 0
@@ -126,14 +126,14 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
         )}
 
         {reversements.length === 0 ? (
-          <p className="text-sm text-slate-600 dark:text-slate-400">{t("components.payouts.none")}</p>
+          <p className="text-sm text-slate-600">{t("components.payouts.none")}</p>
         ) : (
-          <ul className="divide-y divide-contour-100 dark:divide-slate-800">
+          <ul className="divide-y divide-contour-100">
             {reversements.map((r) => (
               <li key={r.id} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="text-slate-800 dark:text-slate-200">
+                <span className="text-slate-800">
                   {new Date(r.paidAt).toLocaleDateString(i18n.language)} · {t(`components.payouts.methods.${r.method}`)}
-                  {r.reference && <span className="text-slate-500 dark:text-slate-400"> · {r.reference}</span>}
+                  {r.reference && <span className="text-slate-500"> · {r.reference}</span>}
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="font-semibold tabular-nums">{formatMoney(r.amount, r.currency)}</span>
@@ -149,8 +149,8 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
         )}
 
         {edition && devises.length > 0 && (
-          <form onSubmit={enregistrer} className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 dark:border-slate-800 pt-4">
-            <h4 className="sm:col-span-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{t("components.payouts.formTitle")}</h4>
+          <form onSubmit={enregistrer} className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 pt-4">
+            <h4 className="sm:col-span-2 text-xs font-semibold text-slate-700">{t("components.payouts.formTitle")}</h4>
             {devises.length > 1 && (
               <div>
                 <label htmlFor="payout-currency" className={etiquette}>{t("components.payouts.currency")}</label>
@@ -177,11 +177,11 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
               <label htmlFor="payout-reference" className={etiquette}>{t("components.payouts.reference")}</label>
               <input id="payout-reference" value={reference} onChange={(e) => setReference(e.target.value)} maxLength={120} className={champ} />
             </div>
-            <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">
               <input type="checkbox" checked={notifyOwner} onChange={(e) => setNotifyOwner(e.target.checked)} />
               {t("components.payouts.notify")}
             </label>
-            {error && <p role="alert" className="sm:col-span-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p role="alert" className="sm:col-span-2 text-xs text-red-600">{error}</p>}
             <div className="sm:col-span-2">
               <button
                 type="submit"

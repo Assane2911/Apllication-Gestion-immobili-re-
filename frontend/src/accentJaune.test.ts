@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 // Le jaune d'accent (cartes, lignes, ombres) est posé UNE fois, dans index.css, par des règles globales sur la zone
 // applicative : les cartes sont écrites en ligne dans ~100 endroits des pages (`bg-white … border`), les réécrire une
 // à une serait ingérable. Ce test tient les garde-fous : le jaune reste dans la zone applicative, hors surfaces
-// toujours sombres, et existe dans les DEUX thèmes.
+// toujours sombres.
 const css = readFileSync(resolve(__dirname, "index.css"), "utf8");
 
 /** Les règles dont le sélecteur contient `motif`, avec leur corps. */
@@ -19,18 +19,13 @@ function regles(motif: RegExp): Array<{ selecteur: string; corps: string }> {
 
 describe("accent jaune — cartes", () => {
   it("pose un liseré jaune en haut des cartes du thème clair", () => {
-    const r = regles(/html:not\(\.dark\)[^{]*\.bg-white\.border/).filter((x) => /inset 0 2px 0 0 var\(--jaune-trait\)/.test(x.corps));
-    expect(r.length).toBeGreaterThan(0);
-  });
-
-  it("pose le même accent sur les cartes du thème sombre", () => {
-    const r = regles(/html\.dark[^{]*dark:bg-slate-900/).filter((x) => /var\(--jaune-trait\)/.test(x.corps));
+    const r = regles(/html[^{]*\.bg-white\.border/).filter((x) => /inset 0 2px 0 0 var\(--jaune-trait\)/.test(x.corps));
     expect(r.length).toBeGreaterThan(0);
   });
 
   it("reste dans la zone applicative et hors des surfaces toujours sombres", () => {
     const r = regles(/\.border/).filter((x) => /var\(--jaune-trait\)/.test(x.corps));
-    expect(r.length).toBeGreaterThan(1);
+    expect(r.length).toBeGreaterThan(0);
     for (const regle of r) {
       expect(regle.selecteur).toContain('[data-surface="app"]');
       expect(regle.selecteur).toContain(".surface-sombre *");
@@ -41,25 +36,24 @@ describe("accent jaune — cartes", () => {
     // Les règles qui posent `box-shadow` d'office ne visent que les cartes SANS aucune ombre ; les autres reçoivent le
     // liseré par les variables d'ombre de Tailwind, qui s'ajoutent à leur ombre.
     const r = regles(/\.border/).filter((x) => /(^|[\s;])box-shadow:/.test(x.corps) && /jaune|--tw-inset-shadow/.test(x.corps));
-    expect(r.length).toBeGreaterThan(1);
+    expect(r.length).toBeGreaterThan(0);
     for (const regle of r) expect(regle.selecteur).toMatch(/\[class\*="shadow"\]/);
     const variables = regles(/\.border/).filter((x) => /--tw-inset-shadow:\s*inset 0 2px 0 0 var\(--jaune-trait\)/.test(x.corps));
-    expect(variables.length).toBeGreaterThan(1);
+    expect(variables.length).toBeGreaterThan(0);
     for (const regle of variables) expect(regle.selecteur).not.toMatch(/\[class\*="shadow"\]/);
   });
 
   it("n'empile pas le liseré sur les cartes imbriquées", () => {
     const r = regles(/\.border/).filter((x) => /var\(--jaune-trait\)/.test(x.corps));
-    expect(r.length).toBeGreaterThan(1);
+    expect(r.length).toBeGreaterThan(0);
     for (const regle of r) expect(regle.selecteur).toMatch(/\.border(\[[^\]]*\])? \*/);
   });
 });
 
 describe("accent jaune — variables et survol", () => {
-  it("définit trait et lueur dans les deux thèmes", () => {
+  it("définit trait et lueur", () => {
     expect(css).toMatch(/--jaune-trait:\s*rgb\(/);
     expect(css).toMatch(/--jaune-lueur:\s*rgb\(/);
-    expect(css).toMatch(/html\.dark\s*\{[^}]*--jaune-trait:/);
   });
 
   it("teinte de jaune la bordure et l'ombre des cartes qui se soulèvent au survol", () => {

@@ -61,13 +61,13 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-700">
+      <div {...dialogue} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
         <div className="flex items-start justify-between">
           <div>
-            <h3 id="delete-account-title" className="text-lg font-bold text-red-700 dark:text-red-400">
+            <h3 id="delete-account-title" className="text-lg font-bold text-red-700">
               {t("components.deleteAccountModal.title")}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5">
               {t("components.deleteAccountModal.subtitle")}
             </p>
           </div>
@@ -75,18 +75,18 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
             type="button"
             onClick={onClose}
             disabled={deleting}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="text-slate-400 hover:text-slate-600"
             aria-label={t("common.actions.close")}
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="mt-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-4">
-          <p className="text-sm text-red-800 dark:text-red-300 font-semibold">
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-sm text-red-800 font-semibold">
             {t("components.deleteAccountModal.warningTitle")}
           </p>
-          <ul className="text-xs text-red-700 dark:text-red-300 mt-2 space-y-1 list-disc list-inside">
+          <ul className="text-xs text-red-700 mt-2 space-y-1 list-disc list-inside">
             <li>{t("components.deleteAccountModal.warningProperties")}</li>
             <li>{t("components.deleteAccountModal.warningTenants")}</li>
             <li>{t("components.deleteAccountModal.warningContracts")}</li>
@@ -96,7 +96,7 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
 
         <form onSubmit={handleDelete} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="delete-account-confirm" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="delete-account-confirm" className="block text-xs font-semibold text-slate-700 mb-1">
               {t("components.deleteAccountModal.confirmLabel", { word: confirmationAttendue })}
             </label>
             <input
@@ -105,16 +105,16 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder={confirmationAttendue}
               autoComplete="off"
-              className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
+              className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
             />
           </div>
 
           {isGoogleOnly ? (
             <div>
-              <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <span className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("components.deleteAccountModal.googleLabel")}
               </span>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+              <p className="text-xs text-slate-600 mb-2">
                 {t("components.deleteAccountModal.googleHint")}
               </p>
               <GoogleSignInButton
@@ -126,14 +126,14 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
                 locale={i18n.language}
               />
               {googleCredential && (
-                <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
+                <p className="text-xs text-emerald-700 mt-2">
                   {t("components.deleteAccountModal.googleConfirmed")}
                 </p>
               )}
             </div>
           ) : (
             <div>
-              <label htmlFor="delete-account-password" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="delete-account-password" className="block text-xs font-semibold text-slate-700 mb-1">
                 {t("components.deleteAccountModal.passwordLabel")}
               </label>
               <input
@@ -143,19 +143,19 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="w-full text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
+                className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
               />
             </div>
           )}
 
-          {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
               disabled={deleting}
-              className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-2"
+              className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2"
             >
               {t("common.actions.cancel")}
             </button>

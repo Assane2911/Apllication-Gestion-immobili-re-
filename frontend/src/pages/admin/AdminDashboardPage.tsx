@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-6 rounded-2xl">
+      <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
         <h3 className="font-bold text-base mb-1">{t("admin.dashboard.errorTitle")}</h3>
         <p className="text-sm">{error}</p>
         <button
@@ -78,8 +78,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("admin.dashboard.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("admin.dashboard.subtitle")}</p>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("admin.dashboard.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">{t("admin.dashboard.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -140,10 +140,10 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4">{t("admin.dashboard.mrrByPlan.title")}</h3>
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
+          <h3 className="font-bold text-slate-900 text-base mb-4">{t("admin.dashboard.mrrByPlan.title")}</h3>
           {mrr.contributors === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400 py-10 text-center">{t("admin.dashboard.mrrByPlan.empty")}</p>
+            <p className="text-sm text-slate-600 py-10 text-center">{t("admin.dashboard.mrrByPlan.empty")}</p>
           ) : (
             <div className="space-y-6">
               {blocsDevises.map((bloc) => {
@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
                 return (
                   <div key={bloc.currency} className="space-y-4">
                     {blocsDevises.length > 1 && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                         {bloc.currency}
                       </p>
                     )}
@@ -164,12 +164,12 @@ export default function AdminDashboardPage() {
                       return (
                         <div key={plan}>
                           <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">{plan}</span>
-                            <span className="text-slate-600 dark:text-slate-400 font-mono tabular-nums">
+                            <span className="font-semibold text-slate-700">{plan}</span>
+                            <span className="text-slate-600 font-mono tabular-nums">
                               {formatMoney(amount, bloc.currency)}
                             </span>
                           </div>
-                          <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                             <div
                               className="h-full rounded-full bg-brand-600"
                               style={{ width: amount > 0 ? `${Math.max(widthPct, 4)}%` : "0%" }}
@@ -185,10 +185,10 @@ export default function AdminDashboardPage() {
           )}
         </div>
 
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{t("admin.dashboard.trialsEndingSoon.title")}</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.dashboard.trialsEndingSoon.subtitle")}</p>
+            <h3 className="font-bold text-slate-900 text-base">{t("admin.dashboard.trialsEndingSoon.title")}</h3>
+            <p className="text-xs text-slate-600">{t("admin.dashboard.trialsEndingSoon.subtitle")}</p>
           </div>
           {trialsEndingSoon.length === 0 ? (
             <EmptyState icon={Clock3} title={t("admin.dashboard.trialsEndingSoon.empty")} />
@@ -196,24 +196,24 @@ export default function AdminDashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-contour-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
+                  <tr className="border-b border-contour-200 text-slate-600 uppercase text-[10px]">
                     <th className="py-2.5">{t("admin.dashboard.trialsEndingSoon.manager")}</th>
                     <th className="py-2.5 text-right" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-contour-100">
                   {trialsEndingSoon.map((trial) => (
-                    <tr key={trial.userId} className="text-slate-700 dark:text-slate-300">
+                    <tr key={trial.userId} className="text-slate-700">
                       <td className="py-3">
                         <p className="font-semibold">{trial.agencyName ?? t("admin.dashboard.trialsEndingSoon.noAgencyName")}</p>
-                        <p className="text-slate-600 dark:text-slate-400">{trial.email}</p>
+                        <p className="text-slate-600">{trial.email}</p>
                       </td>
                       <td className="py-3 text-right">
                         <span
                           className={`inline-flex items-center gap-1 font-semibold px-2.5 py-1 rounded-full ${
                             trial.daysRemaining === 0
-                              ? "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300"
-                              : "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                              ? "bg-red-50 text-red-700"
+                              : "bg-amber-50 text-amber-700"
                           }`}
                         >
                           <AlertTriangle size={12} />

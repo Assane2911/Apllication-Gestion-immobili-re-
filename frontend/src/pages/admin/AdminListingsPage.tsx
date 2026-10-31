@@ -39,13 +39,13 @@ interface Page {
 }
 
 const CLASSES_STATUT: Record<string, string> = {
-  PUBLISHED: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
-  DRAFT: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
-  ARCHIVED: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  PUBLISHED: "bg-emerald-50 text-emerald-700",
+  DRAFT: "bg-slate-100 text-slate-600",
+  ARCHIVED: "bg-slate-100 text-slate-600",
 };
 
 const champ =
-  "rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100";
+  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900";
 
 /**
  * Modération des annonces de la vitrine publique.
@@ -126,13 +126,13 @@ export default function AdminListingsPage() {
 
   const date = (iso: string) => new Date(iso).toLocaleDateString(i18n.language);
   const bouton =
-    "text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50";
+    "text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50";
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t("admin.listings.title")}</h2>
-        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t("admin.listings.subtitle")}</p>
+        <h2 className="text-xl font-bold text-slate-900">{t("admin.listings.title")}</h2>
+        <p className="text-xs text-slate-600 mt-1">{t("admin.listings.subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap gap-2" role="group" aria-label={t("admin.listings.tabsLabel")}>
@@ -151,7 +151,7 @@ export default function AdminListingsPage() {
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
                 actif
                   ? "bg-brand-600 text-white border-brand-600"
-                  : "border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
               }`}
             >
               {t(`admin.listings.tabs.${onglet || "ALL"}`)}
@@ -190,21 +190,21 @@ export default function AdminListingsPage() {
       </div>
 
       {erreurAction && (
-        <p role="alert" className="text-xs text-red-700 dark:text-red-400">
+        <p role="alert" className="text-xs text-red-700">
           {t("admin.listings.actionError")} — {erreurAction}
         </p>
       )}
 
       {erreur && (
-        <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("admin.listings.errorTitle")}</p>
-          <p role="alert" className="text-xs text-red-700 dark:text-red-400 mt-0.5">{erreur}</p>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-800">{t("admin.listings.errorTitle")}</p>
+          <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
         </div>
       )}
 
       {/* « Aucune annonce » ne s'affiche qu'une fois la réponse reçue :
           l'annoncer pendant le chargement donnerait une réponse fausse. */}
-      {chargement && !donnees && <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.listings.loading")}</p>}
+      {chargement && !donnees && <p className="text-xs text-slate-600">{t("admin.listings.loading")}</p>}
 
       {donnees && donnees.items.length === 0 && !erreur && (
         <EmptyState
@@ -225,8 +225,8 @@ export default function AdminListingsPage() {
               return (
                 <li
                   key={a.id}
-                  className={`rounded-2xl border bg-white dark:bg-slate-900 p-4 ${
-                    masquee ? "border-red-300 dark:border-red-900" : "border-contour-200 dark:border-slate-800"
+                  className={`rounded-2xl border bg-white p-4 ${
+                    masquee ? "border-red-300" : "border-contour-200"
                   }`}
                 >
                   <div className="flex gap-4">
@@ -234,17 +234,17 @@ export default function AdminListingsPage() {
                       <img
                         src={fileUrl(a.imageUrl) ?? undefined}
                         alt=""
-                        className="w-20 h-20 rounded-lg object-cover shrink-0 bg-slate-100 dark:bg-slate-800"
+                        className="w-20 h-20 rounded-lg object-cover shrink-0 bg-slate-100"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-lg shrink-0 bg-slate-100 dark:bg-slate-800" aria-hidden="true" />
+                      <div className="w-20 h-20 rounded-lg shrink-0 bg-slate-100" aria-hidden="true" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 wrap-break-word">{a.title}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      <p className="text-sm font-semibold text-slate-900 wrap-break-word">{a.title}</p>
+                      <p className="text-xs text-slate-600 mt-0.5">
                         {a.location} · {formatMoney(a.price, a.currency)}
                       </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 break-all">
+                      <p className="text-xs text-slate-600 mt-0.5 break-all">
                         {t("admin.listings.manager", { who: a.agencyName ? `${a.agencyName} (${a.managerEmail})` : a.managerEmail })}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -254,22 +254,22 @@ export default function AdminListingsPage() {
                           {t(`common.status.${a.status}`)}
                         </span>
                         {a.featured && (
-                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700">
                             {t("admin.listings.featuredBadge")}
                           </span>
                         )}
                         {masquee && (
-                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-rose-50 text-rose-700">
                             {t("admin.listings.hiddenBadge")}
                           </span>
                         )}
                         {a.managerSuspendedAt && (
-                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-900 text-white">
                             {t("admin.listings.suspendedBadge")}
                           </span>
                         )}
                         {!a.managerSuspendedAt && a.managerSubscriptionExpired && (
-                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700">
                             {t("admin.listings.expiredBadge")}
                           </span>
                         )}
@@ -278,7 +278,7 @@ export default function AdminListingsPage() {
                   </div>
 
                   {masquee && a.hiddenByAdminAt && (
-                    <div className="mt-3 text-xs text-slate-700 dark:text-slate-300">
+                    <div className="mt-3 text-xs text-slate-700">
                       <p>{t("admin.listings.hiddenSince", { date: date(a.hiddenByAdminAt) })}</p>
                       {a.moderationReason && <p className="mt-0.5 wrap-break-word">{t("admin.listings.reason", { reason: a.moderationReason })}</p>}
                     </div>
@@ -317,7 +317,7 @@ export default function AdminListingsPage() {
                         href={`/vitrine/annonces/${a.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
+                        className="text-xs font-semibold text-brand-600 hover:underline"
                       >
                         {t("admin.listings.viewPublic")}
                       </a>
@@ -326,14 +326,14 @@ export default function AdminListingsPage() {
 
                   {masquageId === a.id && !masquee && (
                     <form
-                      className="mt-3 space-y-2 rounded-xl border border-contour-200 dark:border-slate-800 p-3"
+                      className="mt-3 space-y-2 rounded-xl border border-contour-200 p-3"
                       onSubmit={(e) => {
                         e.preventDefault();
                         void agir(a.id, "hide", { reason: motif.trim() });
                       }}
                     >
-                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t("admin.listings.hideTitle")}</p>
-                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300" htmlFor={`motif-${a.id}`}>
+                      <p className="text-xs font-semibold text-slate-900">{t("admin.listings.hideTitle")}</p>
+                      <label className="block text-xs font-medium text-slate-700" htmlFor={`motif-${a.id}`}>
                         {t("admin.listings.reasonLabel")}
                       </label>
                       <textarea
@@ -345,7 +345,7 @@ export default function AdminListingsPage() {
                         placeholder={t("admin.listings.reasonPlaceholder")}
                         className={`${champ} w-full`}
                       />
-                      <p className="text-xs text-slate-600 dark:text-slate-400">{t("admin.listings.reasonHelp")}</p>
+                      <p className="text-xs text-slate-600">{t("admin.listings.reasonHelp")}</p>
                       <div className="flex gap-2">
                         <button
                           type="submit"

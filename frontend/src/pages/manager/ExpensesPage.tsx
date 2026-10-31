@@ -28,11 +28,11 @@ const PAGE_SIZE = 20;
 const DROPDOWN_PAGE_SIZE = 100;
 
 const categoryColors: Record<ExpenseCategory, string> = {
-  MAINTENANCE: "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300",
-  TAX: "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300",
-  INSURANCE: "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300",
-  SYNDIC: "bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300",
-  OTHER: "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300",
+  MAINTENANCE: "bg-amber-100 text-amber-800",
+  TAX: "bg-red-100 text-red-800",
+  INSURANCE: "bg-blue-100 text-blue-800",
+  SYNDIC: "bg-purple-100 text-purple-800",
+  OTHER: "bg-slate-100 text-slate-800",
 };
 
 interface FinancialSummary {
@@ -268,8 +268,8 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.expenses.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.expenses.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">
             {t("manager.expenses.subtitle")}
           </p>
         </div>
@@ -278,7 +278,7 @@ export default function ExpensesPage() {
           <button
             onClick={exportCSV}
             disabled={exportingCsv}
-            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-60 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 transition-colors"
+            className="bg-slate-100 hover:bg-slate-200 disabled:opacity-60 text-slate-700 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 flex items-center gap-1.5 transition-colors"
           >
             <Download size={13} aria-hidden="true" /> {exportingCsv ? t("manager.expenses.exportingCsv") : t("manager.expenses.exportCsv")}
           </button>
@@ -295,7 +295,7 @@ export default function ExpensesPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => loadData()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -330,14 +330,14 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <label htmlFor="expense-property-filter" className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.filterByProperty")}</label>
+          <label htmlFor="expense-property-filter" className="text-xs font-semibold text-slate-700">{t("manager.expenses.filterByProperty")}</label>
           <select
             id="expense-property-filter"
             value={selectedPropertyId}
             onChange={(e) => handlePropertyFilterChange(e.target.value)}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           >
             <option value="">{t("manager.expenses.allProperties")}</option>
             {properties.map((p) => (
@@ -347,26 +347,26 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.expenses.expenseLines", { count: total })}</p>
+        <p className="text-xs text-slate-600">{t("manager.expenses.expenseLines", { count: total })}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t("manager.expenses.fullReportLabel")}</span>
+          <span className="text-xs font-semibold text-slate-700">{t("manager.expenses.fullReportLabel")}</span>
           <input
             type="date"
             aria-label={t("manager.expenses.fields.reportDateFrom")}
             value={reportRange.from}
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           />
-          <span className="text-xs text-slate-600 dark:text-slate-400">{t("manager.expenses.to")}</span>
+          <span className="text-xs text-slate-600">{t("manager.expenses.to")}</span>
           <input
             type="date"
             aria-label={t("manager.expenses.fields.reportDateTo")}
             value={reportRange.to}
             onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })}
-            className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
           />
         </div>
         <Bulle texte={t("manager.tips.expenseReport")}>
@@ -383,10 +383,10 @@ export default function ExpensesPage() {
       {/* Vide, le tableau ne contient plus rien que le clavier atteigne : le cadre défilant le devient (voir structureEtCibles). */}
       <div
         {...(expenses.length === 0 ? { role: "region", tabIndex: 0, "aria-label": t("manager.expenses.title") } : {})}
-        className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto focus-visible:ring-2 focus-visible:ring-brand-500"
+        className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 text-slate-700 text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.date")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.property")}</th>
@@ -397,39 +397,39 @@ export default function ExpensesPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.expenses.table.action")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {expenses.map((exp) => (
-              <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
+              <tr key={exp.id} className="hover:bg-slate-50/50">
+                <td className="px-4 py-3 text-slate-600 text-xs">
                   {formaterJour(exp.expenseDate, i18n.language)}
                 </td>
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{exp.property?.title}</td>
+                <td className="px-4 py-3 font-medium text-slate-900">{exp.property?.title}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
-                      categoryColors[exp.category] || "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                      categoryColors[exp.category] || "bg-slate-100 text-slate-700"
                     }`}
                   >
                     {categoryLabels[exp.category] || exp.category}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-800 dark:text-slate-200">
+                <td className="px-4 py-3 text-slate-800">
                   <span className="inline-flex items-center gap-1.5">
                     {exp.title}
                     {(exp.recurrence || exp.templateId) && (
                       <Bulle texte={exp.recurrence ? t("manager.expenses.recurrenceModelHint") : t("manager.expenses.recurrenceOccurrenceHint")}>
-                        <Repeat size={12} className="text-brand-600 dark:text-brand-400 shrink-0" aria-hidden="true" />
+                        <Repeat size={12} className="text-brand-600 shrink-0" aria-hidden="true" />
                       </Bulle>
                     )}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400">{formatDeduction(exp.amount, exp.currency, formatMoney)}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
+                <td className="px-4 py-3 font-bold text-red-600">{formatDeduction(exp.amount, exp.currency, formatMoney)}</td>
+                <td className="px-4 py-3 text-slate-600 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
                   <Bulle texte={t("manager.tips.expenseDelete")}>
                   <button
                     onClick={() => handleDelete(exp)}
-                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline"
+                    className="text-xs text-red-600 hover:text-red-800 hover:underline"
                   >
                     {t("common.actions.delete")}
                   </button>
@@ -439,7 +439,7 @@ export default function ExpensesPage() {
             ))}
             {expenses.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center text-slate-600 dark:text-slate-400 py-8 text-sm">
+                <td colSpan={7} className="text-center text-slate-600 py-8 text-sm">
                   {t("manager.expenses.noExpenses")}
                 </td>
               </tr>
@@ -452,12 +452,12 @@ export default function ExpensesPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200 dark:border-slate-800">
+          <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 id="expense-modal-title" className="font-bold text-slate-900 dark:text-slate-100 text-lg">{t("manager.expenses.modalTitle")}</h3>
+              <h3 id="expense-modal-title" className="font-bold text-slate-900 text-lg">{t("manager.expenses.modalTitle")}</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-slate-600 hover:text-slate-600"
                 aria-label={t("common.actions.close")}
               >
                 <X size={18} />
@@ -466,13 +466,13 @@ export default function ExpensesPage() {
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label htmlFor="expense-modal-property" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.property")}</label>
+                <label htmlFor="expense-modal-property" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.property")}</label>
                 <select
                   id="expense-modal-property"
                   required
                   value={form.propertyId}
                   onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                 >
                   <option value="">{t("manager.expenses.fields.selectProperty")}</option>
                   {properties.map((p) => (
@@ -485,12 +485,12 @@ export default function ExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="expense-modal-category" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.category")}</label>
+                  <label htmlFor="expense-modal-category" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.category")}</label>
                   <select
                     id="expense-modal-category"
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   >
                     <option value="MAINTENANCE">{t("manager.expenses.categoriesShort.MAINTENANCE")}</option>
                     <option value="TAX">{t("manager.expenses.categoriesShort.TAX")}</option>
@@ -500,21 +500,21 @@ export default function ExpensesPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="expense-modal-date" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.invoiceDate")}</label>
+                  <label htmlFor="expense-modal-date" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.invoiceDate")}</label>
                   <input
                     id="expense-modal-date"
                     type="date"
                     required
                     value={form.expenseDate}
                     onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 sm:col-span-1">
-                  <label htmlFor="expense-modal-title" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.titleSupplier")}</label>
+                  <label htmlFor="expense-modal-title" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.titleSupplier")}</label>
                   <input
                     id="expense-modal-title"
                     required
@@ -522,11 +522,11 @@ export default function ExpensesPage() {
                     maxLength={200}
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label htmlFor="expense-modal-amount" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.amount")}</label>
+                  <label htmlFor="expense-modal-amount" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.amount")}</label>
                   <input
                     id="expense-modal-amount"
                     type="number"
@@ -537,13 +537,13 @@ export default function ExpensesPage() {
                     placeholder="0.00"
                     value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm font-semibold"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm font-semibold"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="expense-modal-notes" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t("manager.expenses.fields.notes")}</label>
+                <label htmlFor="expense-modal-notes" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.notes")}</label>
                 <textarea
                   id="expense-modal-notes"
                   rows={2}
@@ -551,13 +551,13 @@ export default function ExpensesPage() {
                   maxLength={5000}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="expense-modal-recurrence" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="expense-modal-recurrence" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t("manager.expenses.fields.recurrence")}
                   </label>
                   <Bulle texte={t("manager.tips.expenseRecurrence")}>
@@ -565,7 +565,7 @@ export default function ExpensesPage() {
                     id="expense-modal-recurrence"
                     value={form.recurrence}
                     onChange={(e) => setForm({ ...form, recurrence: e.target.value as "" | ExpenseRecurrence })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                   >
                     <option value="">{t("manager.expenses.fields.recurrenceNone")}</option>
                     <option value="MONTHLY">{t("manager.expenses.fields.recurrenceMonthly")}</option>
@@ -575,7 +575,7 @@ export default function ExpensesPage() {
                 </div>
                 {form.recurrence && (
                   <div>
-                    <label htmlFor="expense-modal-recurrence-end" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label htmlFor="expense-modal-recurrence-end" className="block text-xs font-semibold text-slate-700 mb-1">
                       {t("manager.expenses.fields.recurrenceEndDate")}
                     </label>
                     <input
@@ -583,19 +583,19 @@ export default function ExpensesPage() {
                       type="date"
                       value={form.recurrenceEndDate}
                       onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
-                      className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
                     />
                   </div>
                 )}
               </div>
 
-              {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+              {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-3 py-2"
+                  className="text-xs text-slate-600 hover:text-slate-700 px-3 py-2"
                 >
                   {t("common.actions.cancel")}
                 </button>

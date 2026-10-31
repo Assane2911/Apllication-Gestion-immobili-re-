@@ -186,8 +186,8 @@ export default function InspectionsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("manager.inspections.title")}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("manager.inspections.count", { count: inspections.length })}</p>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.inspections.title")}</h2>
+          <p className="text-sm text-slate-600 mt-1">{t("manager.inspections.count", { count: inspections.length })}</p>
         </div>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
           {t("manager.inspections.addBtn")}
@@ -195,7 +195,7 @@ export default function InspectionsPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -204,12 +204,12 @@ export default function InspectionsPage() {
       )}
 
       {showCreateForm && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-4">{t("manager.inspections.formTitle")}</h3>
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+          <h3 className="font-medium text-slate-900 mb-4">{t("manager.inspections.formTitle")}</h3>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="inspection-contract" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.inspections.fields.contract")}</label>
-              <select id="inspection-contract" required value={createForm.contractId} onChange={(e) => setCreateForm({ ...createForm, contractId: e.target.value })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="inspection-contract" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.inspections.fields.contract")}</label>
+              <select id="inspection-contract" required value={createForm.contractId} onChange={(e) => setCreateForm({ ...createForm, contractId: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">{t("manager.inspections.fields.selectContract")}</option>
                 {contracts.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -219,8 +219,8 @@ export default function InspectionsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="inspection-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("manager.inspections.fields.type")}</label>
-              <select id="inspection-type" value={createForm.type} onChange={(e) => setCreateForm({ ...createForm, type: e.target.value as "ENTRY" | "EXIT" })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm">
+              <label htmlFor="inspection-type" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.inspections.fields.type")}</label>
+              <select id="inspection-type" value={createForm.type} onChange={(e) => setCreateForm({ ...createForm, type: e.target.value as "ENTRY" | "EXIT" })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="ENTRY">{t("manager.inspections.typeEntry")}</option>
                 <option value="EXIT">{t("manager.inspections.typeExit")}</option>
               </select>
@@ -230,7 +230,7 @@ export default function InspectionsPage() {
               <button type="submit" disabled={creating} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
                 {creating ? t("common.actions.saving") : t("manager.inspections.create")}
               </button>
-              <button type="button" onClick={() => setShowCreateForm(false)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+              <button type="button" onClick={() => setShowCreateForm(false)} className="text-sm text-slate-600 px-4 py-2">
                 {t("common.actions.cancel")}
               </button>
             </div>
@@ -239,12 +239,12 @@ export default function InspectionsPage() {
       )}
 
       {editingInspection && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
+        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-slate-900 dark:text-slate-100">{t("manager.inspections.editTitle")}</h3>
+            <h3 className="font-medium text-slate-900">{t("manager.inspections.editTitle")}</h3>
             <button
               onClick={() => setEditingInspection(null)}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="text-slate-400 hover:text-slate-600"
               aria-label={t("common.actions.close")}
             >
               <X size={18} />
@@ -252,24 +252,24 @@ export default function InspectionsPage() {
           </div>
 
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">{t("manager.inspections.roomsTitle")}</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.roomsTitle")}</h4>
             <div className="space-y-2">
-              {editForm.rooms.length === 0 && <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.inspections.noRooms")}</p>}
+              {editForm.rooms.length === 0 && <p className="text-xs text-slate-600">{t("manager.inspections.noRooms")}</p>}
               {editForm.rooms.map((room, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_1fr_auto] gap-2 items-start bg-slate-50 dark:bg-slate-800/60 rounded-lg p-2.5">
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_1fr_auto] gap-2 items-start bg-slate-50 rounded-lg p-2.5">
                   <input
                     aria-label={t("manager.inspections.roomName")}
                     placeholder={t("manager.inspections.roomName")}
                     value={room.name}
                     maxLength={200}
                     onChange={(e) => updateRoom(i, { name: e.target.value })}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
+                    className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
                   />
                   <select
                     aria-label={t("manager.inspections.roomCondition")}
                     value={room.condition}
                     onChange={(e) => updateRoom(i, { condition: e.target.value as RoomCondition })}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
+                    className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
                   >
                     <option value="BON">{t("manager.inspections.conditionGood")}</option>
                     <option value="MOYEN">{t("manager.inspections.conditionFair")}</option>
@@ -281,50 +281,50 @@ export default function InspectionsPage() {
                     value={room.notes}
                     maxLength={2000}
                     onChange={(e) => updateRoom(i, { notes: e.target.value })}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
+                    className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
                   />
-                  <button type="button" onClick={() => removeRoom(i)} className="text-red-600 dark:text-red-400 hover:underline text-xs px-2 py-1.5">
+                  <button type="button" onClick={() => removeRoom(i)} className="text-red-600 hover:underline text-xs px-2 py-1.5">
                     {t("manager.inspections.removeRow")}
                   </button>
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addRoom} disabled={editForm.rooms.length >= 100} className="mt-2 text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
+            <button type="button" onClick={addRoom} disabled={editForm.rooms.length >= 100} className="mt-2 text-brand-600 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
               {t("manager.inspections.addRoom")}
             </button>
           </div>
 
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">{t("manager.inspections.metersTitle")}</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.metersTitle")}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label htmlFor="meter-electricity" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("manager.inspections.meterElectricity")}</label>
-                <input id="meter-electricity" maxLength={100} value={editForm.meters.electricity} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, electricity: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
+                <label htmlFor="meter-electricity" className="block text-xs text-slate-600 mb-1">{t("manager.inspections.meterElectricity")}</label>
+                <input id="meter-electricity" maxLength={100} value={editForm.meters.electricity} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, electricity: e.target.value } })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm" />
               </div>
               <div>
-                <label htmlFor="meter-water" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("manager.inspections.meterWater")}</label>
-                <input id="meter-water" maxLength={100} value={editForm.meters.water} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, water: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
+                <label htmlFor="meter-water" className="block text-xs text-slate-600 mb-1">{t("manager.inspections.meterWater")}</label>
+                <input id="meter-water" maxLength={100} value={editForm.meters.water} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, water: e.target.value } })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm" />
               </div>
               <div>
-                <label htmlFor="meter-gas" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("manager.inspections.meterGas")}</label>
-                <input id="meter-gas" maxLength={100} value={editForm.meters.gas} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, gas: e.target.value } })} className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm" />
+                <label htmlFor="meter-gas" className="block text-xs text-slate-600 mb-1">{t("manager.inspections.meterGas")}</label>
+                <input id="meter-gas" maxLength={100} value={editForm.meters.gas} onChange={(e) => setEditForm({ ...editForm, meters: { ...editForm.meters, gas: e.target.value } })} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm" />
               </div>
             </div>
           </div>
 
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">{t("manager.inspections.keysTitle")}</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.keysTitle")}</h4>
             <div className="space-y-2">
-              {editForm.keys.length === 0 && <p className="text-xs text-slate-600 dark:text-slate-400">{t("manager.inspections.noKeys")}</p>}
+              {editForm.keys.length === 0 && <p className="text-xs text-slate-600">{t("manager.inspections.noKeys")}</p>}
               {editForm.keys.map((key, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_auto] gap-2 items-start bg-slate-50 dark:bg-slate-800/60 rounded-lg p-2.5">
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_auto] gap-2 items-start bg-slate-50 rounded-lg p-2.5">
                   <input
                     aria-label={t("manager.inspections.keyLabel")}
                     placeholder={t("manager.inspections.keyLabel")}
                     value={key.label}
                     maxLength={200}
                     onChange={(e) => updateKey(i, { label: e.target.value })}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
+                    className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
                   />
                   <input
                     aria-label={t("manager.inspections.keyQuantity")}
@@ -334,34 +334,34 @@ export default function InspectionsPage() {
                     placeholder={t("manager.inspections.keyQuantity")}
                     value={key.quantity}
                     onChange={(e) => updateKey(i, { quantity: Number(e.target.value) })}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1.5 text-sm"
+                    className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
                   />
-                  <button type="button" onClick={() => removeKey(i)} className="text-red-600 dark:text-red-400 hover:underline text-xs px-2 py-1.5">
+                  <button type="button" onClick={() => removeKey(i)} className="text-red-600 hover:underline text-xs px-2 py-1.5">
                     {t("manager.inspections.removeRow")}
                   </button>
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addKey} disabled={editForm.keys.length >= 50} className="mt-2 text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
+            <button type="button" onClick={addKey} disabled={editForm.keys.length >= 50} className="mt-2 text-brand-600 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
               {t("manager.inspections.addKey")}
             </button>
           </div>
 
           <div>
-            <label htmlFor="inspection-comments" className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">{t("manager.inspections.generalComments")}</label>
+            <label htmlFor="inspection-comments" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.generalComments")}</label>
             <textarea
               id="inspection-comments"
               rows={3}
               value={editForm.generalComments}
               maxLength={20000}
               onChange={(e) => setEditForm({ ...editForm, generalComments: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
 
           {editError && <p role="alert" className="text-sm text-red-600">{editError}</p>}
 
-          <div className="flex gap-2 pt-2 border-t border-contour-100 dark:border-slate-800">
+          <div className="flex gap-2 pt-2 border-t border-contour-100">
             <Bulle texte={t("manager.tips.inspectionSave")}>
             <button type="button" onClick={handleSave} disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
               {saving ? t("common.actions.saving") : t("common.actions.save")}
@@ -370,7 +370,7 @@ export default function InspectionsPage() {
             <button type="button" onClick={handleFinalize} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
               {t("manager.inspections.finalize")}
             </button>
-            <button type="button" onClick={() => setEditingInspection(null)} className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+            <button type="button" onClick={() => setEditingInspection(null)} className="text-sm text-slate-600 px-4 py-2">
               {t("common.actions.cancel")}
             </button>
           </div>
@@ -386,9 +386,9 @@ export default function InspectionsPage() {
         />
       ) : (
       <>
-      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="hidden sm:block bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-left">
+          <thead className="bg-slate-200/70 text-slate-700 text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.property")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.tenant")}</th>
@@ -399,42 +399,42 @@ export default function InspectionsPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.inspections.table.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-contour-100">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={7} />)
             ) : (
             inspections.map((insp) => (
               <tr key={insp.id}>
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{insp.property?.title}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{insp.tenant?.firstName} {insp.tenant?.lastName}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{formaterJour(insp.inspectionDate, i18n.language)}</td>
+                <td className="px-4 py-3 font-medium text-slate-900">{insp.property?.title}</td>
+                <td className="px-4 py-3 text-slate-600">{insp.tenant?.firstName} {insp.tenant?.lastName}</td>
+                <td className="px-4 py-3 text-slate-600">{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</td>
+                <td className="px-4 py-3 text-slate-600 text-xs">{formaterJour(insp.inspectionDate, i18n.language)}</td>
                 <td className="px-4 py-3"><Badge status={insp.status} /></td>
                 <td className="px-4 py-3 text-xs space-y-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400">{t("manager.inspections.agency")}</span>
+                    <span className="text-[10px] text-slate-600">{t("manager.inspections.agency")}</span>
                     {insp.signedByManagerAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                      <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.inspections.signed")}
                       </span>
                     ) : insp.status === "COMPLETED" ? (
                       <Bulle texte={t("manager.tips.inspectionSign")}>
-                      <button onClick={() => setSigningInspection(insp)} className="text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1">
+                      <button onClick={() => setSigningInspection(insp)} className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1">
                         <PenLine size={13} aria-hidden="true" /> {t("manager.inspections.sign")}
                       </button>
                       </Bulle>
                     ) : (
-                      <span className="text-slate-600 dark:text-slate-400">—</span>
+                      <span className="text-slate-600">—</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400">{t("manager.inspections.tenantLabel")}</span>
+                    <span className="text-[10px] text-slate-600">{t("manager.inspections.tenantLabel")}</span>
                     {insp.signedByTenantAt ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                      <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.inspections.signed")}
                       </span>
                     ) : (
-                      <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
+                      <span className="text-amber-700 inline-flex items-center gap-1">
                         <Hourglass size={12} aria-hidden="true" /> {t("manager.inspections.pendingSignature")}
                       </span>
                     )}
@@ -443,21 +443,21 @@ export default function InspectionsPage() {
                 <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                   {insp.status === "DRAFT" && (
                     <Bulle texte={t("manager.tips.inspectionEdit")}>
-                    <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg transition-colors">
+                    <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition-colors">
                       {t("manager.inspections.edit")}
                     </button>
                     </Bulle>
                   )}
                   {insp.status === "COMPLETED" && (
                     <Bulle texte={t("manager.tips.inspectionView")}>
-                    <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg transition-colors">
+                    <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium px-2.5 py-1 rounded-lg transition-colors">
                       {t("manager.inspections.viewReport")}
                     </button>
                     </Bulle>
                   )}
                   {insp.status === "DRAFT" && (
                     <Bulle texte={t("manager.tips.inspectionDelete")}>
-                    <button onClick={() => handleDelete(insp)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
+                    <button onClick={() => handleDelete(insp)} className="text-red-600 hover:underline text-xs">
                       {t("common.actions.delete")}
                     </button>
                     </Bulle>
@@ -472,43 +472,43 @@ export default function InspectionsPage() {
 
       <div className="sm:hidden space-y-3">
         {inspections.map((insp) => (
-          <div key={insp.id} className="bg-white dark:bg-slate-900 rounded-xl border border-contour-200 dark:border-slate-800 shadow-sm p-4 space-y-2.5">
+          <div key={insp.id} className="bg-white rounded-xl border border-contour-200 shadow-sm p-4 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-medium text-slate-900 dark:text-slate-100">{insp.property?.title}</p>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{insp.tenant?.firstName} {insp.tenant?.lastName}</p>
+                <p className="font-medium text-slate-900">{insp.property?.title}</p>
+                <p className="text-xs text-slate-600">{insp.tenant?.firstName} {insp.tenant?.lastName}</p>
               </div>
               <Badge status={insp.status} />
             </div>
-            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+            <div className="flex items-center justify-between text-xs text-slate-600">
               <span>{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</span>
               <span>{formaterJour(insp.inspectionDate, i18n.language)}</span>
             </div>
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100 dark:border-slate-800">
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100">
               {insp.status === "DRAFT" && (
                 <Bulle texte={t("manager.tips.inspectionEdit")}>
-                <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-2.5 py-1 rounded-lg">
+                <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-lg">
                   {t("manager.inspections.edit")}
                 </button>
                 </Bulle>
               )}
               {insp.status === "COMPLETED" && !insp.signedByManagerAt && (
                 <Bulle texte={t("manager.tips.inspectionSign")}>
-                <button onClick={() => setSigningInspection(insp)} className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                <button onClick={() => setSigningInspection(insp)} className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
                   <PenLine size={12} aria-hidden="true" /> {t("manager.inspections.sign")}
                 </button>
                 </Bulle>
               )}
               {insp.status === "COMPLETED" && (
                 <Bulle texte={t("manager.tips.inspectionView")}>
-                <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium px-2.5 py-1 rounded-lg">
+                <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg">
                   {t("manager.inspections.viewReport")}
                 </button>
                 </Bulle>
               )}
               {insp.status === "DRAFT" && (
                 <Bulle texte={t("manager.tips.inspectionDelete")}>
-                <button onClick={() => handleDelete(insp)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
+                <button onClick={() => handleDelete(insp)} className="text-red-600 hover:underline text-xs">
                   {t("common.actions.delete")}
                 </button>
                 </Bulle>

@@ -163,7 +163,7 @@ export default function Bulle({ texte, children, position = "haut", className = 
           id={id}
           // Invisible le temps d'une mesure : elle est placée avant la première peinture.
           style={{ top: placement?.top ?? 0, left: placement?.left ?? 0, visibility: placement ? "visible" : "hidden" }}
-          className="fixed z-50 pointer-events-none w-max max-w-[min(20rem,calc(100vw-1rem))] rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-3 py-2 text-sm font-medium leading-snug shadow-xl ring-1 ring-black/10 dark:ring-white/20"
+          className="fixed z-50 pointer-events-none w-max max-w-[min(20rem,calc(100vw-1rem))] rounded-lg bg-slate-900 text-white px-3 py-2 text-sm font-medium leading-snug shadow-xl ring-1 ring-black/10"
         >
           {texte}
           {placement && (
@@ -174,7 +174,7 @@ export default function Bulle({ texte, children, position = "haut", className = 
                   ? { left: placement.pointe - 5, [cote === "haut" ? "bottom" : "top"]: -4 }
                   : { top: placement.pointe - 5, [cote === "droite" ? "left" : "right"]: -4 }
               }
-              className="absolute h-2.5 w-2.5 rotate-45 rounded-[2px] bg-slate-900 dark:bg-slate-100"
+              className="absolute h-2.5 w-2.5 rotate-45 rounded-[2px] bg-slate-900"
             />
           )}
         </span>

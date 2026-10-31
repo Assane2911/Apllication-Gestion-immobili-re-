@@ -90,14 +90,14 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
     >
       <div
         {...dialogue}
-        className={`bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full h-[85vh] flex flex-col shadow-2xl border border-contour-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ${
+        className={`bg-white rounded-2xl max-w-3xl w-full h-[85vh] flex flex-col shadow-2xl border border-contour-200 overflow-hidden transition-all duration-200 ${
           visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
-        <div className="px-6 py-4 border-b border-contour-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
+        <div className="px-6 py-4 border-b border-contour-200 flex items-center justify-between bg-slate-50">
           <div>
-            <h3 id="document-title" className="font-bold text-slate-900 dark:text-slate-100 text-base">{title}</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <h3 id="document-title" className="font-bold text-slate-900 text-base">{title}</h3>
+            <p className="text-xs text-slate-600">
               {erreurImpression
                 ? t("components.documentModal.printFailed")
                 : t("components.documentModal.subtitle")}
@@ -113,7 +113,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2"
+              className="text-slate-400 hover:text-slate-700 p-2"
               aria-label={t("common.actions.close")}
             >
               <X size={18} />
@@ -121,9 +121,9 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-100 dark:bg-slate-950 p-4 relative overflow-hidden">
+        <div className="flex-1 bg-slate-100 p-4 relative overflow-hidden">
           {loading && (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-600 dark:text-slate-400 text-sm">
+            <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-sm">
               {t("components.documentModal.loading")}
             </div>
           )}
@@ -138,7 +138,7 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
               srcDoc={htmlContent}
               title={title}
               sandbox="allow-same-origin allow-modals"
-              className="w-full h-full bg-white rounded-xl shadow border border-contour-200 dark:border-slate-700"
+              className="w-full h-full bg-white rounded-xl shadow border border-contour-200"
             />
           )}
         </div>

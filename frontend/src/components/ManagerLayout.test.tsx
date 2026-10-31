@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../context/auth";
 import type { AuthContextValue } from "../context/auth";
 import { CurrencyProvider } from "../context/CurrencyContext";
-import { ThemeContext } from "../context/theme";
 import type { AuthUser } from "../types";
 import { traiterRetourSurCouche } from "../utils/couchesRetour";
 import ManagerLayout from "./ManagerLayout";
@@ -51,7 +50,6 @@ function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnair
   return render(
     <AuthContext.Provider value={authValue(utilisateur, logout)}>
       <CurrencyProvider>
-        <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => {} }}>
           <MemoryRouter initialEntries={[entree]}>
             <Routes>
               <Route path="/login" element={<div>Page de connexion</div>} />
@@ -64,7 +62,6 @@ function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnair
               </Route>
             </Routes>
           </MemoryRouter>
-        </ThemeContext.Provider>
       </CurrencyProvider>
     </AuthContext.Provider>
   );

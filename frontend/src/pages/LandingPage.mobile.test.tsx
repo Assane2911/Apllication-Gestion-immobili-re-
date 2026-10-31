@@ -2,7 +2,6 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
-import { ThemeProvider } from "../context/ThemeContext";
 import { AuthProvider } from "../context/AuthContext";
 import LandingPage from "./LandingPage";
 
@@ -37,9 +36,9 @@ function simulerEcran(etroit: boolean) {
 function renderPage() {
   return render(
     <MemoryRouter>
-      <ThemeProvider><AuthProvider>
+      <AuthProvider>
         <LandingPage />
-      </AuthProvider></ThemeProvider>
+      </AuthProvider>
     </MemoryRouter>
   );
 }

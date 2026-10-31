@@ -79,12 +79,12 @@ export default function AdminSubscriptionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t("admin.subscriptions.title")}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t("admin.subscriptions.subtitle")}</p>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("admin.subscriptions.title")}</h2>
+        <p className="text-sm text-slate-600 mt-1">{t("admin.subscriptions.subtitle")}</p>
       </div>
 
       {loadError && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -101,11 +101,11 @@ export default function AdminSubscriptionsPage() {
       )}
 
       {rows.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-contour-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-contour-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
+                <tr className="border-b border-contour-200 text-slate-600 uppercase text-[10px]">
                   <th className="py-2.5">{t("admin.subscriptions.table.manager")}</th>
                   <th className="py-2.5">{t("admin.subscriptions.table.plan")}</th>
                   <th className="py-2.5">{t("admin.subscriptions.table.cycle")}</th>
@@ -115,22 +115,22 @@ export default function AdminSubscriptionsPage() {
                   <th className="py-2.5" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-contour-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-contour-100">
                 {rows.map((row) => (
-                  <tr key={row.id} className="text-slate-700 dark:text-slate-300">
+                  <tr key={row.id} className="text-slate-700">
                     <td className="py-3 font-semibold">{row.managerEmail}</td>
                     <td className="py-3">{t(`common.plans.${row.plan}`, { defaultValue: row.plan })}</td>
                     <td className="py-3">
                       {row.billingCycle === "ANNUAL" ? t("admin.subscriptions.annual") : t("admin.subscriptions.monthly")}
                     </td>
                     <td className="py-3 font-bold">{formatMoney(row.amount, row.currency)}</td>
-                    <td className="py-3 text-slate-600 dark:text-slate-400">{row.paymentRef || "—"}</td>
+                    <td className="py-3 text-slate-600">{row.paymentRef || "—"}</td>
                     <td className="py-3">{new Date(row.createdAt).toLocaleDateString(i18n.language)}</td>
                     <td className="py-3 text-right whitespace-nowrap">
                       <button
                         onClick={() => reject(row)}
                         disabled={confirmingId === row.id || rejectingId === row.id}
-                        className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap mr-2"
+                        className="bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-600 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap mr-2"
                       >
                         {rejectingId === row.id
                           ? t("admin.subscriptions.rejecting")
