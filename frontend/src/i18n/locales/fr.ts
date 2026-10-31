@@ -470,7 +470,7 @@ const fr = {
     },
     logout: "Se déconnecter",
     collapse: "Réduire le menu",
-    expand: "Déployer le menu",
+    expand: "Garder le menu déployé",
     groups: {
       overview: "Pilotage",
       portfolio: "Patrimoine",

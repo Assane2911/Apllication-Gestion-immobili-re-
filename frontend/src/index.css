@@ -447,6 +447,32 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(19%) sepia(37%) saturate(1500%) hue-rotate(176deg) brightness(92%);
 }
 
+/* Champs de formulaire de l'espace : fond blanc, trait net, et au focus un liseré d'encre avec un halo orange d'annotation. */
+html [data-surface="app"] :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]), select, textarea) {
+  background-color: #ffffff;
+  border-color: #b9c7cc;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+html [data-surface="app"] :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]), select, textarea):hover:not(:disabled) {
+  border-color: var(--color-ink-900);
+}
+html [data-surface="app"] :is(input, select, textarea):focus {
+  outline: none;
+  border-color: var(--color-ink-900);
+  box-shadow: 0 0 0 3px rgb(217 72 15 / 0.22);
+}
+html [data-surface="app"] :is(input, select, textarea):disabled {
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-500);
+}
+
+/* Pastilles d'état (statuts, étiquettes) : angles droits, comme les cartouches d'un plan. */
+html [data-surface="app"] span.rounded-full:where([class*="px-"]) {
+  border-radius: 2px;
+}
+
 /* En-têtes de tableaux : bandeau bleu de plan, libellés blancs, comme un tableau de légende. */
 html [data-surface="app"] thead {
   background-color: var(--color-ink-900);
