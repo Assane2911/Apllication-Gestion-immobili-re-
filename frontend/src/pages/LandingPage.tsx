@@ -706,72 +706,93 @@ export default function LandingPage() {
 
           {/* Badges ROI */}
           <div className="mt-8 grid grid-cols-3 gap-3 max-w-lg mx-auto">
-            <div className="bg-white/80 border border-slate-300 rounded-2xl p-3 text-center hover:border-emerald-500/40 transition-colors">
+            <div className="bg-white border border-slate-300 rounded-sm p-3 text-center hover:border-emerald-500/40 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-emerald-800">-85%</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.adminTime")}</span>
             </div>
-            <div className="bg-white/80 border border-slate-300 rounded-2xl p-3 text-center hover:border-brand-500/40 transition-colors">
+            <div className="bg-white border border-slate-300 rounded-sm p-3 text-center hover:border-brand-500/40 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-brand-700">0</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.unpaidRent")}</span>
             </div>
-            <div className="bg-white/80 border border-slate-300 rounded-2xl p-3 text-center hover:border-brand-500/40 transition-colors">
+            <div className="bg-white border border-slate-300 rounded-sm p-3 text-center hover:border-brand-500/40 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-brand-700">100%</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.certified")}</span>
             </div>
           </div>
         </Reveal>
 
-        {/* Tableau comparatif */}
+        {/* Tableau comparatif : légende de plan, la colonne ImmoPlatform Pro cernée d'un trait d'encre */}
         <Reveal delay={120}>
-          <div className="bg-white border border-slate-300 rounded-md overflow-hidden shadow-md">
+          <div className="bg-white border-[1.5px] border-ink-900 shadow-md">
             {/* En-tête du tableau */}
-            <div className="grid grid-cols-1 md:grid-cols-12 border-b border-slate-300 bg-white/90 text-sm font-bold">
-              <div className="md:col-span-4 p-5 text-slate-700 uppercase tracking-wider text-xs flex items-center">
+            <div className="hidden md:grid md:grid-cols-12 bg-ink-900 text-white">
+              <div className="md:col-span-4 px-6 py-4 font-mono text-[11px] uppercase tracking-[0.12em] flex items-center">
                 {t("landing.compare.headers.feature")}
               </div>
-              <div className="md:col-span-4 p-5 bg-slate-50 text-rose-700 border-t md:border-t-0 md:border-l border-slate-300 flex items-center gap-2">
-                <X size={16} className="shrink-0" aria-hidden="true" />
+              <div className="md:col-span-4 px-6 py-4 border-l border-white/25 text-sm font-semibold flex items-center gap-2.5 text-slate-200">
+                <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center border border-slate-400">
+                  <X size={12} strokeWidth={2.5} />
+                </span>
                 <span>{t("landing.compare.headers.traditional")}</span>
               </div>
-              <div className="md:col-span-4 p-5 bg-brand-50 text-brand-800 border-t md:border-t-0 md:border-l border-slate-300 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="md:col-span-4 px-6 py-4 border-l border-white/25 bg-orange-700 text-sm font-semibold flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
                   <Sparkles size={16} className="shrink-0" aria-hidden="true" />
                   <span>ImmoPlatform Pro</span>
                 </div>
-                <span className="text-[10px] bg-white text-brand-800 px-2.5 py-0.5 rounded-sm border border-brand-600 font-semibold">
+                <span className="font-mono text-[10px] uppercase tracking-wider bg-white text-ink-900 px-2 py-0.5">
                   {t("landing.compare.headers.recommended")}
                 </span>
               </div>
             </div>
 
             {/* Lignes du comparatif */}
-            <div className="divide-y divide-slate-300">
+            <div>
               {COMPARE_ROWS.map((row, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-1 md:grid-cols-12 hover:bg-slate-200 transition-colors duration-200"
+                  className="group grid grid-cols-1 md:grid-cols-12 border-t border-slate-300 first:border-t-0 md:first:border-t-0"
                 >
                   {/* Nom du critère */}
-                  <div className="md:col-span-4 p-5 flex items-start gap-3">
-                    <row.icon size={20} strokeWidth={1.75} className="shrink-0 mt-0.5 text-slate-700" aria-hidden="true" />
+                  <div className="md:col-span-4 px-6 py-5 flex items-start gap-4 transition-colors duration-200 group-hover:bg-slate-100">
+                    <span aria-hidden="true" className="w-5 shrink-0 pt-2.5 font-mono text-[11px] text-orange-700">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center border border-slate-400 bg-white text-ink-900">
+                      <row.icon size={19} strokeWidth={1.75} />
+                    </span>
                     <div>
                       <h3 className="font-bold text-slate-900 text-sm">{t(`landing.compare.rows.${row.key}.title`)}</h3>
-                      <p className="text-xs text-slate-700 mt-0.5">{t(`landing.compare.rows.${row.key}.description`)}</p>
+                      <p className="text-xs text-slate-700 mt-0.5 leading-relaxed">{t(`landing.compare.rows.${row.key}.description`)}</p>
                     </div>
                   </div>
 
                   {/* Gestion traditionnelle */}
-                  <div className="md:col-span-4 p-5 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-300/80 flex items-start gap-2.5">
-                    <X size={15} className="text-rose-700 shrink-0" aria-hidden="true" />
-                    <span className="text-xs text-slate-700 leading-relaxed">{t(`landing.compare.rows.${row.key}.traditional`)}</span>
+                  <div
+                    data-etiquette={t("landing.compare.headers.traditional")}
+                    className="md:col-span-4 px-6 py-5 bg-slate-50 md:border-l border-slate-300 transition-colors duration-200 group-hover:bg-slate-100 max-md:before:block max-md:before:mb-2 max-md:before:font-mono max-md:before:text-[10px] max-md:before:uppercase max-md:before:tracking-wider max-md:before:text-slate-600 max-md:before:content-[attr(data-etiquette)]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-rose-700/60 text-rose-700">
+                        <X size={12} strokeWidth={2.5} />
+                      </span>
+                      <span className="text-[13px] text-slate-700 leading-relaxed">{t(`landing.compare.rows.${row.key}.traditional`)}</span>
+                    </div>
                   </div>
 
                   {/* ImmoPlatform Pro */}
-                  <div className="md:col-span-4 p-5 bg-brand-50 border-t md:border-t-0 md:border-l border-slate-300/80 flex items-start gap-2.5">
-                    <Check size={15} strokeWidth={2.5} className="text-brand-700 shrink-0" aria-hidden="true" />
-                    <span className="text-xs text-slate-900 font-medium leading-relaxed">
-                      {t(`landing.compare.rows.${row.key}.immoplatform`)}
-                    </span>
+                  <div
+                    data-etiquette="ImmoPlatform Pro"
+                    className="md:col-span-4 px-6 py-5 bg-brand-50 md:border-l-[1.5px] border-ink-900 transition-colors duration-200 group-hover:bg-brand-100 max-md:before:block max-md:before:mb-2 max-md:before:font-mono max-md:before:text-[10px] max-md:before:uppercase max-md:before:tracking-wider max-md:before:text-orange-700 max-md:before:content-[attr(data-etiquette)]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center bg-ink-900 text-white">
+                        <Check size={12} strokeWidth={3} />
+                      </span>
+                      <span className="text-[13px] text-slate-900 font-medium leading-relaxed">
+                        {t(`landing.compare.rows.${row.key}.immoplatform`)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -781,13 +802,13 @@ export default function LandingPage() {
 
         {/* CTA sous le comparatif */}
         <Reveal delay={200} className="mt-12 text-center">
-          <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-white/80 border border-slate-300 p-4 sm:px-8 rounded-2xl shadow-lg">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-white border-[1.5px] border-ink-900 p-4 sm:px-8 shadow-md">
             <span className="text-xs text-slate-700 font-medium">
               {t("landing.compare.cta.text")}
             </span>
             <Link
               to="/inscription"
-              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-sm transition-all hover:scale-105"
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-6 py-2.5 transition-colors"
             >
               {t("landing.compare.cta.button")}
             </Link>
