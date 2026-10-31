@@ -18,8 +18,8 @@ export default function Logo({ taille = 36, className = "" }: { taille?: number;
       <rect x="41" y="9" width="11" height="12" rx="1.5" className={cheminee} />
       <g className={trait} strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 31 32 13 53 29" />
-        <path d="M23 34v21" />
-        <path d="M32 55V37h11a8.5 8.5 0 0 1 0 17H32" />
+        <path d="M23 35v20" />
+        <path d="M32 55V35h10a7 7 0 0 1 0 14H32" />
       </g>
     </svg>
   );
