@@ -27,7 +27,8 @@ function variable(nom: string): string {
 }
 
 const canvas = css.match(/--color-canvas:\s*(#[0-9a-fA-F]{6})/)![1];
-const fonds = { "blanc des cartes": "#ffffff", "fond des pages": canvas };
+const blanc = css.match(/--color-white:\s*(#[0-9a-fA-F]{6})/)![1];
+const fonds = { "papier des cartes": blanc, "fond des pages": canvas };
 
 describe("thème clair — contraste du texte", () => {
   for (const [nom, seuil] of [

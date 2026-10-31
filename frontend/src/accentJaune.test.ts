@@ -73,8 +73,8 @@ describe("accent jaune — variables et survol", () => {
       const m = css.match(new RegExp(`--color-${nom}:\\s*(#[0-9a-fA-F]{6})`));
       expect(m).not.toBeNull();
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(m![1].slice(i, i + 2), 16));
-      expect(Math.min(r, g, b)).toBeGreaterThan(190); // jamais plus sombre qu'aujourd'hui
-      expect(r).toBeGreaterThanOrEqual(b - 6); // légère chaleur : le bleu ne domine plus le rouge
+      expect(Math.min(r, g, b)).toBeGreaterThan(160); // assez clair pour rester discret, assez marqué pour se voir sur le papier sable
+      expect(Math.abs(r - b)).toBeLessThan(40); // gris bleuté du plan : jamais une couleur franche
     }
   });
 });

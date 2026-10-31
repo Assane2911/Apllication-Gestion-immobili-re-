@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ThemeProvider } from "../../context/ThemeContext";
 import { describe, expect, it } from "vitest";
 import { COMPANY } from "../../legal/companyInfo";
 import MentionsLegalesPage from "./MentionsLegalesPage";
@@ -7,9 +8,9 @@ import MentionsLegalesPage from "./MentionsLegalesPage";
 describe("MentionsLegalesPage", () => {
   it("affiche le titre et les informations légales de l'éditeur", () => {
     render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <MentionsLegalesPage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     expect(screen.getByRole("heading", { name: "Mentions légales", level: 1 })).toBeInTheDocument();
@@ -20,9 +21,9 @@ describe("MentionsLegalesPage", () => {
 
   it("situe l'éditeur aux États-Unis, là où se trouvent son siège et sa société : jamais en France", () => {
     render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <MentionsLegalesPage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     expect(screen.getByText("Pays : États-Unis")).toBeInTheDocument();
@@ -33,9 +34,9 @@ describe("MentionsLegalesPage", () => {
 
   it("définit un titre d'onglet propre à la page", () => {
     render(
-      <MemoryRouter>
+      <ThemeProvider><MemoryRouter>
         <MentionsLegalesPage />
-      </MemoryRouter>
+      </MemoryRouter></ThemeProvider>
     );
 
     expect(document.title).toBe("Mentions légales | ImmoPlatform Pro");

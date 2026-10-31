@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Seo from "./components/Seo";
+import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import LandingPage from "./pages/LandingPage";
@@ -46,7 +47,7 @@ const description = () => document.head.querySelector('meta[name="description"]'
 function rendre(page: ReactElement, entree: string) {
   return render(
     <MemoryRouter initialEntries={[entree]}>
-      <AuthProvider>{page}</AuthProvider>
+      <ThemeProvider><AuthProvider>{page}</AuthProvider></ThemeProvider>
     </MemoryRouter>
   );
 }

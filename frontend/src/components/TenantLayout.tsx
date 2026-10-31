@@ -22,7 +22,7 @@ export default function TenantLayout() {
   const pageCourante = navItems.find((item) => item.to === pathname.replace(/\/+$/, ""));
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-slate-950">
+    <div className="min-h-screen">
       {pageCourante && <title>{`${t(`nav.tenant.${pageCourante.key}`)} | ${t("common.appName")}`}</title>}
       <EnteteEspace
         largeur="4xl"

@@ -42,21 +42,27 @@ export default function TrialBanner() {
     const bgGradient = isUrgent
       ? "from-amber-600 to-orange-700"
       : isWarning
-      ? "from-indigo-600 to-brand-700"
-      : "from-slate-900 to-brand-900";
+      ? "from-brand-600 to-brand-800"
+      : "";
 
     return (
-      <div className={`surface-sombre bg-linear-to-r ${bgGradient} text-white px-4 py-3 rounded-xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 border border-white/10`}>
+      <div
+        className={`${
+          bgGradient
+            ? `surface-sombre bg-linear-to-r ${bgGradient} text-white border border-white/10`
+            : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-ink-900 dark:border-slate-300/50"
+        } px-4 py-3 rounded-md shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3`}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <div className={`w-8 h-8 rounded-full ${bgGradient ? "bg-white/20" : "bg-ocre/40"} flex items-center justify-center shrink-0`}>
             <Hourglass size={15} aria-hidden="true" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="bg-white/20 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className={`${bgGradient ? "bg-white/20 text-white" : "bg-ocre/30 text-slate-900 dark:text-white"} text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
                 {t("components.trialBanner.trialBadge")}
               </span>
-              <span className="text-xs font-medium text-white/90">
+              <span className={`text-xs font-medium ${bgGradient ? "text-white/90" : "text-slate-800 dark:text-white/90"}`}>
                 {trialDaysRemaining === 0
                   ? t("components.trialBanner.lastDay")
                   : trialDaysRemaining === 1
@@ -64,14 +70,14 @@ export default function TrialBanner() {
                   : t("components.trialBanner.daysLeft", { count: trialDaysRemaining })}
               </span>
             </div>
-            <p className="text-xs text-white/80 mt-0.5">
+            <p className={`text-xs ${bgGradient ? "text-white/80" : "text-slate-700 dark:text-white/80"} mt-0.5`}>
               {t("components.trialBanner.trialDesc")}
             </p>
           </div>
         </div>
         <Link
           to="/subscription"
-          className="bg-white text-slate-900 hover:bg-slate-100 text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition-all hover:scale-105 shrink-0"
+          className={`${bgGradient ? "bg-white text-slate-900 hover:bg-slate-100" : "bg-brand-600 text-white hover:bg-brand-700"} text-xs font-semibold px-3.5 py-1.5 rounded-md shadow-sm transition-colors shrink-0`}
         >
           {t("components.trialBanner.chooseOfferCta")}
         </Link>

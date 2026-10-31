@@ -4,8 +4,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Interlignes des tailles de texte en longueurs fixes, comme dans Tailwind 3.
      Tailwind 4 les exprime en rapports (1,43 pour text-sm…), que les enfants
@@ -20,47 +21,70 @@
   --text-3xl--line-height: 2.25rem;
   --text-4xl--line-height: 2.5rem;
 
-  --color-canvas: #edf1f6;
+  /* Identité « Plan d'architecte » : papier calque quadrillé, bleu de plan comme encre, orange en annotation.
+     Les gris Tailwind (slate) deviennent des gris bleutés de la gamme du plan : les ~800 classes slate-* des pages
+     suivent sans être réécrites. `white` est un papier à peine teinté (cartes, champs). */
+  --color-canvas: #f7f8f5;
+  --color-white: #fdfdfb;
 
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  --color-slate-50: #f3f5f2;
+  --color-slate-100: #e8edea;
+  --color-slate-200: #d6dedb;
+  --color-slate-300: #c0cccb;
+  --color-slate-400: #8ca0aa;
+  --color-slate-500: #6a7f8a;
+  --color-slate-600: #4b6270;
+  --color-slate-700: #2b5270;
+  --color-slate-800: #17456a;
+  --color-slate-900: #0f3d5e;
+  --color-slate-950: #0a2538;
 
-  --color-ink-700: #232b3f;
-  --color-ink-800: #151b2c;
-  --color-ink-900: #0f1524;
-  --color-ink-950: #0a0e1a;
+  /* Bleu de plan : boutons, liens, focus. */
+  --color-brand-50: #eef4f8;
+  --color-brand-100: #dce8f1;
+  --color-brand-200: #b7d0e2;
+  --color-brand-300: #86aecb;
+  --color-brand-400: #4b84ad;
+  --color-brand-500: #1d5c8a;
+  --color-brand-600: #124a73;
+  --color-brand-700: #0f3d5e;
+  --color-brand-800: #0b2e48;
+  --color-brand-900: #08233a;
 
-  --shadow-2xs:
-    0 1px 2px 0 rgb(15 23 42 / 0.09), 0 1px 4px -1px rgb(15 23 42 / 0.07);
-  --shadow-xs:
-    0 1px 2px 0 rgb(15 23 42 / 0.12), 0 3px 8px -2px rgb(15 23 42 / 0.1);
-  --shadow-sm:
-    0 1px 3px 0 rgb(15 23 42 / 0.12), 0 4px 10px -4px rgb(15 23 42 / 0.12);
-  --shadow:
-    0 2px 4px -1px rgb(15 23 42 / 0.12), 0 6px 14px -4px rgb(15 23 42 / 0.14);
-  --shadow-md:
-    0 4px 8px -2px rgb(15 23 42 / 0.12), 0 12px 24px -6px rgb(15 23 42 / 0.16);
-  --shadow-lg:
-    0 8px 16px -4px rgb(15 23 42 / 0.14), 0 20px 40px -10px rgb(15 23 42 / 0.18);
-  --shadow-xl:
-    0 12px 24px -6px rgb(15 23 42 / 0.16),
-    0 32px 56px -14px rgb(15 23 42 / 0.22);
+  --color-ink-700: #2b5270;
+  --color-ink-800: #17456a;
+  --color-ink-900: #0f3d5e;
+  --color-ink-950: #0a2538;
+
+  /* Orange d'annotation (cotes, retards, repères) : `ocre` garde son nom dans les classes déjà écrites. */
+  --color-ocre: #d9480f;
+  --color-sable: #f7f8f5;
+
+  /* Angles presque droits : un plan n'a pas de coins arrondis (les pastilles `rounded-full` restent rondes). */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.125rem;
+  --radius-xl: 0.1875rem;
+  --radius-2xl: 0.1875rem;
+  --radius-3xl: 0.25rem;
+  --radius-4xl: 0.25rem;
+
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 3px 3px 0 0 rgb(15 61 94 / 0.14);
+  --shadow-lg: 4px 4px 0 0 rgb(15 61 94 / 0.16);
+  --shadow-xl: 6px 6px 0 0 rgb(15 61 94 / 0.18);
 
   /* Contours et séparateurs : slate-100 (#f1f5f9) et slate-200 (#e2e8f0)
      disparaissaient sur fond clair (les `divide-slate-100` des listes étaient
      invisibles). Teintes dédiées, utilisées uniquement par `border-*`/`divide-*`
      (`border-contour-100`, `divide-contour-200`…) : le texte et les fonds en
      slate-100/200 gardent leur teinte. */
-  --color-contour-100: #e9e9e6;
-  --color-contour-200: #dcdcd8;
+  --color-contour-100: #d6dedb;
+  --color-contour-200: #b9c7cc;
 
   --animate-float: float 6s ease-in-out infinite;
   --animate-float-slow: float 9s ease-in-out infinite;
@@ -110,7 +134,7 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+    border-color: var(--color-slate-300, currentcolor);
   }
 }
 
@@ -162,7 +186,7 @@
 
 @utility card-hover {
   /* Interactive smooth card lift */
-  @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-950/50 hover:border-yellow-400/70 dark:hover:border-yellow-400/40;
+  @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-950/50 hover:border-brand-700 dark:hover:border-slate-300/60;
   /* Reflet jaune sous la carte soulevée (accent du thème, voir « Accent jaune » plus bas). */
   &:hover {
     box-shadow: 0 10px 24px -10px var(--jaune-lueur);
@@ -180,16 +204,24 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem; /* les ancres de l'accueil ne passent plus sous la barre fixe */
     -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 
   body {
     @apply bg-canvas text-slate-900 dark:bg-slate-950 dark:text-slate-100 m-0 antialiased font-sans;
+    background-image: var(--trame);
+    background-size: var(--trame-taille, 24px 24px);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Manrope sur les titres, appliqué une fois ici plutôt que dans chaque page —
+  /* Archivo sur les titres, appliqué une fois ici plutôt que dans chaque page —
      seul le poids/la taille restent à la charge de chaque composant. */
   h1, h2, h3 {
     @apply font-display;
@@ -220,10 +252,10 @@
    fonce ici plutôt que de réécrire ~800 occurrences dans les pages. Valeurs
    vérifiées par `couleursThemeClair.test.ts`. */
 html:not(.dark) {
-  --texte-300: #7a8aa0; /* icônes et éléments décoratifs : 3,1:1 minimum */
-  --texte-400: #5b6b82; /* texte tertiaire : 4,8:1 sur le fond des pages */
-  --texte-500: #4d5b72; /* texte secondaire : 6,1:1 */
-  --texte-600: #3a475c; /* texte courant atténué : 8,5:1 */
+  --texte-300: #7f929b; /* icônes et éléments décoratifs : 3,1:1 minimum */
+  --texte-400: #55697a; /* texte tertiaire : 5,3:1 sur le papier */
+  --texte-500: #46596a; /* texte secondaire : 6,8:1 */
+  --texte-600: #34495a; /* texte courant atténué : 8,5:1 */
 }
 
 html:not(.dark) [data-surface="app"] .text-slate-300:not(.surface-sombre *) {
@@ -246,7 +278,6 @@ html:not(.dark) [data-surface="app"] .text-slate-600:not(.surface-sombre *) {
 /* Relief : fond de page en léger dégradé (la lumière vient du haut), cartes
    blanches à contour sans ombre → ombre de base, champs légèrement creusés. */
 html:not(.dark) body {
-  background-image: linear-gradient(180deg, #f4f7fb 0, #edf1f6 320px);
   background-attachment: fixed;
 }
 
@@ -276,14 +307,23 @@ html:not(.dark)
    surfaces toujours sombres (`surface-sombre`) ne sont pas touchées. Le liseré ne se pose que sur les cartes de premier
    niveau (pas sur celles imbriquées dans une autre carte) et laisse intactes celles qui déclarent leur propre ombre.
    Vérifié par `accentJaune.test.ts`. */
+/* Le « liseré » des cartes est désormais un trait de bleu de plan (variables gardées sous leur ancien nom). */
 :root {
-  --jaune-trait: rgb(234 179 8 / 0.55);
-  --jaune-lueur: rgb(202 138 4 / 0.2);
+  --jaune-trait: rgb(15 61 94 / 0.9);
+  --jaune-lueur: rgb(15 61 94 / 0);
+  /* Papier calque : un quadrillage de 24 px, très discret. */
+  --trame:
+    linear-gradient(#e3e8e4 1px, transparent 1px),
+    linear-gradient(90deg, #e3e8e4 1px, transparent 1px);
+  --trame-taille: 24px 24px;
 }
 
 html.dark {
-  --jaune-trait: rgb(250 204 21 / 0.4);
-  --jaune-lueur: rgb(250 204 21 / 0.12);
+  --jaune-trait: rgb(231 237 242 / 0.55);
+  --jaune-lueur: rgb(231 237 242 / 0);
+  --trame:
+    linear-gradient(rgb(231 237 242 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(231 237 242 / 0.045) 1px, transparent 1px);
 }
 
 /* Cartes de premier niveau, thème clair. Le liseré passe par les variables d'ombre de Tailwind (--tw-inset-shadow,
@@ -331,4 +371,48 @@ html.dark
     .border[class*="dark:bg-slate-900"] *
   ) {
   box-shadow: var(--tw-inset-shadow), var(--tw-ring-offset-shadow);
+}
+
+/* Hachures de plan (bleu de plan et orange) : en tête du menu, sur les cartouches. */
+@utility bande-motif {
+  background-image: repeating-linear-gradient(
+    135deg,
+    #0f3d5e 0 2px,
+    transparent 2px 6px,
+    #d9480f 6px 8px,
+    transparent 8px 12px
+  );
+}
+
+/* Libellés de colonnes en police technique, chiffres alignés : la signature typographique du plan. */
+@layer base {
+  th {
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+  td,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Les murs du plan de l'accueil se tracent au chargement (sans mouvement si la personne l'a demandé). */
+@keyframes tracer {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@utility plan-trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tracer 1.8s ease-out 0.3s forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }

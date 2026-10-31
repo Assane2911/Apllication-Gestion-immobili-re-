@@ -71,7 +71,7 @@ export default function VitrinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-slate-950">
+    <div className="min-h-screen">
       <Seo title={t("seo.vitrine.title")} description={t("seo.vitrine.description")} canonical="/vitrine" />
       <VitrineHeader />
 

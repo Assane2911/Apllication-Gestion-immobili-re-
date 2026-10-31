@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import Logo from "../components/Logo";
 import { api, apiErrorMessage } from "../api/client";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+import { LangueEtTheme } from "../components/BoutonTheme";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
 
@@ -40,28 +41,28 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative">
+    <main className="relative isolate min-h-screen flex items-center justify-center px-6 py-12">
       <Seo title={`${t("seo.forgotPassword.title")} | ${t("common.appName")}`} description={t("seo.forgotPassword.description")} canonical="/mot-de-passe-oublie" />
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-        <Link to="/login" className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors">
+        <Link to="/login" className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 transition-colors">
           {t("auth.forgotPassword.backToLogin")}
         </Link>
-        <LanguageSwitcher />
+        <LangueEtTheme />
       </div>
 
       <Reveal className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <img src="/app-icon.png" alt="Logo" className="w-9 h-9 rounded-xl shadow" />
-          <span className="font-bold text-lg tracking-tight text-white">{t("common.appName")}</span>
+          <Logo />
+          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">{t("common.appName")}</span>
         </div>
 
         {sent ? (
           <div className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-4">
               <MailIcon />
             </div>
-            <h1 className="text-xl font-bold text-white">{t("auth.forgotPassword.sentTitle")}</h1>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed">{t("auth.forgotPassword.sentSubtitle")}</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t("auth.forgotPassword.sentTitle")}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">{t("auth.forgotPassword.sentSubtitle")}</p>
             <Link
               to="/login"
               className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
@@ -71,12 +72,12 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-white text-center">{t("auth.forgotPassword.title")}</h1>
-            <p className="text-sm text-slate-400 text-center mt-1.5">{t("auth.forgotPassword.subtitle")}</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white text-center">{t("auth.forgotPassword.title")}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-1.5">{t("auth.forgotPassword.subtitle")}</p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
               <div>
-                <label htmlFor="forgot-password-email" className="block text-xs font-medium text-slate-400 mb-1.5">{t("auth.login.email")}</label>
+                <label htmlFor="forgot-password-email" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">{t("auth.login.email")}</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
                     <MailIcon />
@@ -87,14 +88,14 @@ export default function ForgotPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900 text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
                     placeholder={t("auth.login.emailPlaceholder")}
                   />
                 </div>
               </div>
 
               {error && (
-                <p role="alert" className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                <p role="alert" className="text-xs text-red-700 dark:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                   {error}
                 </p>
               )}
