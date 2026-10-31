@@ -149,8 +149,7 @@ export default function RegisterPage() {
       {/* Panneau de gauche : image de marque (masqué sur mobile) */}
       <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden border-r border-slate-200/70 bg-white/55 backdrop-blur-sm dark:border-slate-800/70 dark:bg-slate-950/55 p-12 xl:p-16">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-24 -left-16 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl animate-float-slow" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 bg-ocre/25 rounded-full blur-3xl animate-float-delay" />
+          <div className="bande-motif absolute inset-x-0 top-0 h-3.5" />
         </div>
 
         <Reveal className="relative flex items-center gap-3">

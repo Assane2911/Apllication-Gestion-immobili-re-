@@ -74,7 +74,7 @@ export function GraphiqueParc({ data, libelles }: { data: Array<{ status: Proper
   );
 }
 
-const COULEURS_REVENUS_FISCAL = ["#2563eb", "#0891b2", "#7c3aed", "#be185d"];
+const COULEURS_REVENUS_FISCAL = ["#124a73", "#d9480f", "#2b8a6e", "#6a7f8a"];
 const COULEURS_DEPENSES_FISCAL = ["#f59e0b", "#ea580c", "#65a30d", "#a16207"];
 
 /** Revenus et dépenses de l'année par mois, une paire de barres par devise (bilan fiscal). */

@@ -14,7 +14,7 @@ import Bulle from "../../components/Bulle";
 const categoryDotColors: Record<ExpenseCategory, string> = {
   MAINTENANCE: "#f59e0b",
   TAX: "#dc2626",
-  INSURANCE: "#2563eb",
+  INSURANCE: "#124a73",
   SYNDIC: "#7c3aed",
   OTHER: "#64748b",
 };

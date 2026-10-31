@@ -74,7 +74,7 @@ describe("accent jaune — variables et survol", () => {
       expect(m).not.toBeNull();
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(m![1].slice(i, i + 2), 16));
       expect(Math.min(r, g, b)).toBeGreaterThan(160); // assez clair pour rester discret, assez marqué pour se voir sur le papier sable
-      expect(r).toBeGreaterThanOrEqual(b - 6); // légère chaleur : le bleu ne domine plus le rouge
+      expect(Math.abs(r - b)).toBeLessThan(40); // gris bleuté du plan : jamais une couleur franche
     }
   });
 });

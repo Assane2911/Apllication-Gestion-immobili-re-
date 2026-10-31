@@ -6,7 +6,7 @@
  */
 export default function Logo({ taille = 36, sur = "auto", className = "" }: { taille?: number; sur?: "auto" | "sombre"; className?: string }) {
   const trait = sur === "sombre" ? "stroke-slate-100" : "stroke-ink-900 dark:stroke-slate-100";
-  const cheminee = sur === "sombre" ? "fill-ocre" : "fill-brand-600 dark:fill-ocre";
+  const cheminee = "fill-ocre";
   return (
     <svg
       role="img"

@@ -39,7 +39,7 @@ const FEATURE_CARDS = [
   { key: "receipts", icon: Receipt, color: "bg-brand-500/15 dark:bg-brand-600/20 text-brand-700 dark:text-brand-400" },
   { key: "signature", icon: PenLine, color: "bg-ink-800/10 dark:bg-ink-700/50 text-ink-800 dark:text-slate-200" },
   { key: "reminders", icon: Megaphone, color: "bg-emerald-600/20 text-emerald-800 dark:text-emerald-400" },
-  { key: "dashboard", icon: LayoutDashboard, color: "bg-ocre/25 text-amber-800 dark:text-ocre" },
+  { key: "dashboard", icon: LayoutDashboard, color: "bg-ocre/25 text-amber-800 dark:text-orange-400" },
   { key: "expenses", icon: Wallet, color: "bg-amber-600/20 text-amber-800 dark:text-amber-400" },
   { key: "tenantPortal", icon: Home, color: "bg-ink-800/10 dark:bg-ink-700/50 text-ink-700 dark:text-slate-200" },
   { key: "security", icon: Lock, color: "bg-rose-600/20 text-rose-700 dark:text-rose-400" },
@@ -105,7 +105,7 @@ function ContractMockup() {
         <div className="h-2 w-4/6 bg-slate-200 dark:bg-slate-800 rounded-full" />
       </div>
       <div className="mt-4 border-t border-slate-300 dark:border-slate-800 pt-4 flex items-center justify-between">
-        <svg width="90" height="32" viewBox="0 0 90 32" className="text-ink-700 dark:text-ocre overflow-visible">
+        <svg width="90" height="32" viewBox="0 0 90 32" className="text-ink-700 dark:text-orange-400 overflow-visible">
           <path
             d="M2 24 C 10 6, 16 6, 22 18 S 34 30, 40 14 S 52 4, 58 20 S 70 28, 76 10 S 84 4, 88 16"
             fill="none"
@@ -203,7 +203,7 @@ function EnteteSection({ numero, titre, sous }: { numero: string; titre: string;
   return (
     <Reveal className="mb-12 grid md:grid-cols-12 gap-4 md:gap-8 items-end">
       <div className="md:col-span-7">
-        <span aria-hidden="true" className="font-mono text-xs tracking-widest text-brand-700 dark:text-ocre">
+        <span aria-hidden="true" className="font-mono text-xs tracking-widest text-orange-700 dark:text-orange-400">
           {numero} ——
         </span>
         <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{titre}</h2>
@@ -229,11 +229,11 @@ function PlanAccroche() {
           <path d="M230 120a34 34 0 0 1 -34 -34" opacity=".6" />
           <path d="M320 300a34 34 0 0 0 34 34" opacity=".6" />
         </g>
-        <g className="text-brand-600 dark:text-ocre" stroke="currentColor" strokeWidth="1.5" fill="none">
+        <g className="text-orange-700 dark:text-orange-400" stroke="currentColor" strokeWidth="1.5" fill="none">
           <path d="M60 28H440M60 20V36M440 20V36M52 36L68 20M432 36L448 20" />
           <path d="M470 60V340M462 60H478M462 340H478" />
         </g>
-        <g className="text-brand-700 dark:text-ocre" fill="currentColor" fontFamily="DM Mono, monospace" fontSize="14">
+        <g className="text-orange-700 dark:text-orange-400" fill="currentColor" fontFamily="DM Mono, monospace" fontSize="14">
           <text x="250" y="20" textAnchor="middle">7,60 m</text>
           <text x="490" y="205" textAnchor="middle" transform="rotate(90 490 205)">5,60 m</text>
         </g>
@@ -376,7 +376,7 @@ export default function LandingPage() {
             <Reveal delay={80}>
               <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.05]">
                 {t("landing.hero.titleLine1")} <br />
-                <span className="text-brand-600 dark:text-ocre italic">
+                <span className="text-orange-700 dark:text-orange-400 italic">
                   {t("landing.hero.titleLine2")}
                 </span>
               </h1>
@@ -612,7 +612,7 @@ export default function LandingPage() {
       <section id="trust" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
         <div className="grid md:grid-cols-12 gap-10">
           <Reveal className="md:col-span-5">
-            <span aria-hidden="true" className="font-mono text-xs tracking-widest text-brand-700 dark:text-ocre">05 ——</span>
+            <span aria-hidden="true" className="font-mono text-xs tracking-widest text-orange-700 dark:text-orange-400">05 ——</span>
             <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{t("landing.trust.title")}</h2>
             <p className="text-sm text-slate-700 dark:text-slate-400 mt-3 leading-relaxed">{t("landing.trust.subtitle")}</p>
             <Link to="/confidentialite" className="mt-5 inline-block text-xs font-semibold text-brand-700 dark:text-brand-300 underline underline-offset-4 hover:text-brand-800 dark:hover:text-brand-200">
@@ -638,7 +638,7 @@ export default function LandingPage() {
       <section id="faq" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80 dark:border-slate-300/30">
         <div className="grid md:grid-cols-12 gap-10">
           <Reveal className="md:col-span-4">
-            <span aria-hidden="true" className="font-mono text-xs tracking-widest text-brand-700 dark:text-ocre">06 ——</span>
+            <span aria-hidden="true" className="font-mono text-xs tracking-widest text-orange-700 dark:text-orange-400">06 ——</span>
             <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{t("landing.faq.title")}</h2>
           </Reveal>
 
@@ -654,7 +654,7 @@ export default function LandingPage() {
                     >
                       <span className="text-base font-semibold text-slate-900 dark:text-white">{item.q}</span>
                       <span
-                        className={`text-xl leading-none text-brand-700 dark:text-ocre transition-transform duration-300 shrink-0 ${isOpen ? "rotate-45" : ""}`}
+                        className={`text-xl leading-none text-orange-700 dark:text-orange-400 transition-transform duration-300 shrink-0 ${isOpen ? "rotate-45" : ""}`}
                       >
                         +
                       </span>
