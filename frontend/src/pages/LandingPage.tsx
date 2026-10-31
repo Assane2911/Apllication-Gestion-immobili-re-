@@ -485,9 +485,9 @@ export default function LandingPage() {
             </Reveal>
 
             <Reveal delay={80}>
-              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.05]">
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-semibold tracking-tight text-slate-900 leading-[1.08]">
                 {t("landing.hero.titleLine1")} <br />
-                <span className="text-orange-700 italic">
+                <span className="text-orange-700">
                   {t("landing.hero.titleLine2")}
                 </span>
               </h1>

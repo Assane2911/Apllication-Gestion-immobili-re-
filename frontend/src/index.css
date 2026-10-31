@@ -4,6 +4,10 @@
 @theme {
   --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+
+  /* Titres posés, pas criards : le plus gras de la plateforme est le 700 (gras), pas le 800 ou le 900. */
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
   --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Interlignes des tailles de texte en longueurs fixes, comme dans Tailwind 3.
@@ -367,7 +371,7 @@ html
   h1,
   h2,
   h3 {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
   }
 }
 
