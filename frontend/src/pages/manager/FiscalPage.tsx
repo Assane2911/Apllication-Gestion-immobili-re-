@@ -10,6 +10,7 @@ import type { AnnualFiscalSynthesis, ExpenseCategory } from "../../types";
 import { devisesPresentes, formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
 import { moisCourt } from "../../utils/moisDuGraphique";
 import Bulle from "../../components/Bulle";
+import { NomDuBien } from "../../components/PlanLogement";
 
 const categoryDotColors: Record<ExpenseCategory, string> = {
   MAINTENANCE: "#f59e0b",
@@ -322,7 +323,7 @@ export default function FiscalPage() {
             <tbody className="divide-y divide-contour-100">
               {synthesis.bilanParBien.map((row) => (
                 <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{row.propertyTitle}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></td>
                   <td className="px-4 py-3 text-slate-600 text-xs">{row.currency}</td>
                   <td className="px-4 py-3 text-emerald-700 font-semibold tabular-nums">
                     {formatMoney(row.revenue, row.currency)}

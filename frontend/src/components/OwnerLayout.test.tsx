@@ -63,7 +63,7 @@ describe("OwnerLayout", () => {
 
     expect(screen.getByText("Contenu de la page CRG")).toBeInTheDocument();
     const lienCrg = screen.getByRole("link", { name: /Compte-rendu de gestion/ });
-    expect(lienCrg.className).toMatch(/from-brand-600/);
+    expect(lienCrg.className).toMatch(/bg-ink-900/);
   });
 
   it("sur téléphone, l'onglet du CRG s'intitule « Compte-rendu » pour laisser la place au tableau de bord", () => {

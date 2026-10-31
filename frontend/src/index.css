@@ -178,12 +178,11 @@
 }
 
 @utility glass-card {
-  /* Subtle glassmorphism */
-  @apply bg-white/80 backdrop-blur-md border border-contour-200/80 shadow-xs;
+  @apply bg-white border border-contour-200;
 }
 
 @utility glass-panel {
-  @apply bg-white/90 backdrop-blur-lg border border-contour-200;
+  @apply bg-white border border-contour-200;
 }
 
 @utility card-hover {
@@ -373,6 +372,15 @@ html
   h3 {
     letter-spacing: -0.015em;
   }
+}
+
+/* En-têtes de tableaux : bandeau bleu de plan, libellés blancs, comme un tableau de légende. */
+html [data-surface="app"] thead {
+  background-color: var(--color-ink-900);
+  color: #ffffff;
+}
+html [data-surface="app"] thead :is(th, button, span, svg) {
+  color: inherit;
 }
 
 /* Les murs du plan de l'accueil se tracent au chargement (sans mouvement si la personne l'a demandé). */

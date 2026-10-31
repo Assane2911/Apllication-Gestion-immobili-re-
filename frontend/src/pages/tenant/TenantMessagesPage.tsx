@@ -78,7 +78,7 @@ export default function TenantMessagesPage() {
             </select>
           )}
           <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             {t("tenant.messages.online")}
           </span>
         </div>

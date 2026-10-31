@@ -164,7 +164,7 @@ export default function LoginPage() {
     <div className="relative isolate min-h-screen grid grid-cols-1 lg:grid-cols-2">
       <Seo title={`${t("seo.login.title")} | ${t("common.appName")}`} description={t("seo.login.description")} canonical="/login" />
       {/* Panneau de gauche : image de marque (masqué sur mobile) */}
-      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden border-r border-slate-200/70 bg-white/55 backdrop-blur-sm p-12 xl:p-16">
+      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden border-r border-slate-200/70 bg-white/60 p-12 xl:p-16">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="bande-motif absolute inset-x-0 top-0 h-3.5" />
         </div>
@@ -193,7 +193,7 @@ export default function LoginPage() {
         </Reveal>
 
         <Reveal delay={200} className="relative inline-flex items-center gap-2 text-xs text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 w-fit">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-400" />
           {t("auth.login.panel.trialNote")}
         </Reveal>
       </aside>

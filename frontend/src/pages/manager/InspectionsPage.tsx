@@ -18,6 +18,7 @@ import type {
   RoomCondition,
 } from "../../types";
 import { formaterJour } from "../../utils/jourCivil";
+import { NomDuBien } from "../../components/PlanLogement";
 
 const PAGE_SIZE = 20;
 // Pour le sélecteur de contrat du formulaire de création : liste large, non paginée.
@@ -405,7 +406,7 @@ export default function InspectionsPage() {
             ) : (
             inspections.map((insp) => (
               <tr key={insp.id}>
-                <td className="px-4 py-3 font-medium text-slate-900">{insp.property?.title}</td>
+                <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={insp.property?.title} id={insp.property?.id} /></td>
                 <td className="px-4 py-3 text-slate-600">{insp.tenant?.firstName} {insp.tenant?.lastName}</td>
                 <td className="px-4 py-3 text-slate-600">{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</td>
                 <td className="px-4 py-3 text-slate-600 text-xs">{formaterJour(insp.inspectionDate, i18n.language)}</td>
@@ -475,7 +476,7 @@ export default function InspectionsPage() {
           <div key={insp.id} className="bg-white rounded-xl border border-contour-200 shadow-sm p-4 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-medium text-slate-900">{insp.property?.title}</p>
+                <p className="font-medium text-slate-900"><NomDuBien titre={insp.property?.title} id={insp.property?.id} /></p>
                 <p className="text-xs text-slate-600">{insp.tenant?.firstName} {insp.tenant?.lastName}</p>
               </div>
               <Badge status={insp.status} />

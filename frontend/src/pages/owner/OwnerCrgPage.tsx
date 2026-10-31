@@ -10,6 +10,7 @@ import { useCurrency } from "../../context/currency";
 import type { CrgSynthesis } from "../../types";
 import { formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
+import { NomDuBien } from "../../components/PlanLogement";
 
 /** Vrai si le montant est positif ou nul dans TOUTES les devises. */
 function allNonNegative(byCurrency: Record<string, number>): boolean {
@@ -99,7 +100,6 @@ export default function OwnerCrgPage() {
     <div className="space-y-6">
       {/* Bandeau d'accueil — même style que OwnerDashboardPage.tsx */}
       <div className="relative overflow-hidden rounded-md bg-white text-slate-900 p-6 sm:p-7 border-2 border-ink-900">
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-ocre/30 blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("owner.crg.title")}</h2>
           <p className="text-xs sm:text-sm text-slate-700 mt-1 max-w-xl">{t("owner.crg.subtitle")}</p>
@@ -181,7 +181,7 @@ export default function OwnerCrgPage() {
           <div className="divide-y divide-contour-100">
             {crg.properties.map((row) => (
               <div key={`${row.propertyId}-${row.currency}`} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
-                <p className="text-sm font-semibold text-slate-900">{row.propertyTitle}</p>
+                <p className="text-sm font-semibold text-slate-900"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></p>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="text-right">
                     <p className="text-slate-600">{t("owner.crg.table.loyers")}</p>

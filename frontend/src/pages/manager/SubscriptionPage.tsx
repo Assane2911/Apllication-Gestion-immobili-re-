@@ -458,7 +458,7 @@ export default function SubscriptionPage() {
 
       {/* Modal de Souscription / Paiement */}
       {!isNativeApp && selectedPlan && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
           <Dialogue onClose={() => setSelectedPlan(null)} titreId="subscription-modal-title" fermable={!subscribing} className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-6 border border-contour-100">
             <div className="flex items-center justify-between border-b border-contour-100 pb-4">
               <div>

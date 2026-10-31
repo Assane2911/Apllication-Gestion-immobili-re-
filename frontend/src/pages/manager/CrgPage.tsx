@@ -11,6 +11,7 @@ import { useCurrency } from "../../context/currency";
 import type { CrgSynthesis } from "../../types";
 import { formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
 import Bulle from "../../components/Bulle";
+import { NomDuBien } from "../../components/PlanLogement";
 
 /** Vrai si le montant est positif ou nul dans TOUTES les devises. */
 function allNonNegative(byCurrency: Record<string, number>): boolean {
@@ -214,7 +215,7 @@ export default function CrgPage() {
             <tbody className="divide-y divide-contour-100">
               {crg.properties.map((row) => (
                 <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{row.propertyTitle}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></td>
                   <td className="px-4 py-3 text-slate-600 text-xs">{row.currency}</td>
                   <td className="px-4 py-3 text-emerald-700 font-semibold tabular-nums">
                     {formatMoney(row.loyersEncaisses, row.currency)}
