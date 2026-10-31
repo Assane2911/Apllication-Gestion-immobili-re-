@@ -468,6 +468,29 @@ html [data-surface="app"] :is(input, select, textarea):disabled {
   color: var(--color-slate-500);
 }
 
+/* Champ « fichier » : le bouton du navigateur devient un bouton au trait d'encre. */
+html [data-surface="app"] input[type="file"] {
+  font-size: 0.8125rem;
+  color: var(--color-slate-700);
+}
+html [data-surface="app"] input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.85rem;
+  border: 1.5px solid var(--color-ink-900);
+  background: #ffffff;
+  color: var(--color-ink-900);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+html [data-surface="app"] input[type="file"]::file-selector-button:hover {
+  background: var(--color-slate-100);
+}
+
 /* Pastilles d'état (statuts, étiquettes) : angles droits, comme les cartouches d'un plan. */
 html [data-surface="app"] span.rounded-full:where([class*="px-"]) {
   border-radius: 2px;

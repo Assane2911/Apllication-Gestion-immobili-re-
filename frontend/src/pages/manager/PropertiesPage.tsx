@@ -1,4 +1,4 @@
-import { Building2 } from "lucide-react";
+import { Building2, MapPin, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
@@ -149,7 +149,7 @@ export default function PropertiesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">{t("manager.properties.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">{t("manager.properties.count", { count: properties.length })}</p>
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.properties.count", { count: Math.max(total, properties.length) })}</p>
         </div>
         <Bulle texte={t("manager.tips.propertyCreate")}>
         <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
@@ -243,18 +243,18 @@ export default function PropertiesPage() {
         />
       ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {properties.map((p) => (
-          <div
+        {properties.map((p, rang) => (
+          <article
             key={p.id}
-            className="group bg-white rounded-2xl border border-contour-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 transition-all duration-200 overflow-hidden flex flex-col justify-between"
+            className="group bg-white border border-contour-200/90 hover:border-ink-900 transition-colors duration-200 overflow-hidden flex flex-col justify-between"
           >
             <div>
-              <div className="relative h-40 bg-slate-100 overflow-hidden">
+              <div className="relative h-44 bg-slate-100 border-b border-slate-300 overflow-hidden">
                 {p.imageUrl ? (
                   <img
                     src={fileUrl(p.imageUrl) ?? undefined}
                     alt={p.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 motion-reduce:transform-none"
                   />
                 ) : (
                   <PlanLogement id={p.id} className="w-full h-full" />
@@ -262,41 +262,53 @@ export default function PropertiesPage() {
                 <div className="absolute top-3 right-3 z-10">
                   <Badge status={p.status} />
                 </div>
+                {/* Numéro de fiche, comme l'étiquette d'une planche de plan. */}
+                <span aria-hidden="true" className="absolute bottom-0 left-0 z-10 bg-ink-900 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white">
+                  {String((page - 1) * PAGE_SIZE + rang + 1).padStart(2, "0")}
+                </span>
               </div>
               <div className="p-4 sm:p-5">
-                <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-brand-600 transition-colors">
-                  {p.title}
-                </h3>
-                <p className="text-xs text-slate-600 mt-1 line-clamp-1">{p.address}</p>
-                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-contour-100">
-                  <span className="font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                    {p.surface} m²
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {formatMoney(p.rent, p.currency)} <span className="text-xs font-normal text-slate-600">{t("manager.properties.perMonth")}</span>
-                  </span>
-                </div>
+                <h3 className="font-bold text-slate-900 text-base leading-snug">{p.title}</h3>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-600">
+                  <MapPin size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
+                  <span className="line-clamp-1">{p.address}</span>
+                </p>
+                {/* Fiche technique : deux cases, libellé en police technique, valeur aux chiffres alignés. */}
+                <dl className="mt-4 grid grid-cols-2 border border-slate-300 divide-x divide-slate-300">
+                  <div className="px-3 py-2">
+                    <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("manager.properties.fields.surface")}</dt>
+                    <dd className="mt-0.5 text-sm font-semibold tabular-nums text-slate-900">{p.surface} m²</dd>
+                  </div>
+                  <div className="px-3 py-2">
+                    <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("manager.properties.fields.rent")}</dt>
+                    <dd className="mt-0.5 text-sm font-semibold tabular-nums text-slate-900">
+                      {formatMoney(p.rent, p.currency)} <span className="text-xs font-normal text-slate-600">{t("manager.properties.perMonth")}</span>
+                    </dd>
+                  </div>
+                </dl>
               </div>
             </div>
-            <div className="px-4 sm:px-5 pb-4 pt-1 flex items-center justify-end gap-2 border-t border-slate-50">
-              <Bulle texte={t("manager.tips.propertyEdit")}>
-              <button
-                onClick={() => openEdit(p)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-              >
-                {t("common.actions.edit")}
-              </button>
+            <div className="grid grid-cols-2 divide-x divide-slate-300 border-t border-slate-300 text-xs font-semibold">
+              <Bulle texte={t("manager.tips.propertyEdit")} className="block">
+                <button
+                  onClick={() => openEdit(p)}
+                  className="flex w-full items-center justify-center gap-1.5 py-2.5 text-slate-700 hover:bg-slate-100 hover:text-ink-900 transition-colors cursor-pointer"
+                >
+                  <Pencil size={13} aria-hidden="true" />
+                  {t("common.actions.edit")}
+                </button>
               </Bulle>
-              <Bulle texte={t("manager.tips.propertyDelete")}>
-              <button
-                onClick={() => handleDelete(p)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
-              >
-                {t("common.actions.delete")}
-              </button>
+              <Bulle texte={t("manager.tips.propertyDelete")} className="block">
+                <button
+                  onClick={() => handleDelete(p)}
+                  className="flex w-full items-center justify-center gap-1.5 py-2.5 text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                  {t("common.actions.delete")}
+                </button>
               </Bulle>
             </div>
-          </div>
+          </article>
         ))}
       </div>
       )}
