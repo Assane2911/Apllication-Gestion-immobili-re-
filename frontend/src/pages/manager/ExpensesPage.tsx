@@ -30,11 +30,11 @@ const PAGE_SIZE = 20;
 const DROPDOWN_PAGE_SIZE = 100;
 
 const categoryColors: Record<ExpenseCategory, string> = {
-  MAINTENANCE: "bg-amber-100 text-amber-800",
-  TAX: "bg-red-100 text-red-800",
-  INSURANCE: "bg-blue-100 text-blue-800",
-  SYNDIC: "bg-purple-100 text-purple-800",
-  OTHER: "bg-slate-100 text-slate-800",
+  MAINTENANCE: "border-orange-700/50 bg-orange-50 text-orange-800",
+  TAX: "border-rose-600/50 bg-rose-50 text-rose-800",
+  INSURANCE: "border-brand-600/50 bg-brand-50 text-brand-800",
+  SYNDIC: "border-ink-900/40 bg-slate-100 text-ink-900",
+  OTHER: "border-slate-400 bg-slate-50 text-slate-700",
 };
 
 interface FinancialSummary {
@@ -280,7 +280,7 @@ export default function ExpensesPage() {
           <button
             onClick={exportCSV}
             disabled={exportingCsv}
-            className="bg-slate-100 hover:bg-slate-200 disabled:opacity-60 text-slate-700 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-300 flex items-center gap-1.5 transition-colors"
+            className="border border-slate-400 bg-white hover:border-ink-900 hover:bg-slate-100 disabled:opacity-60 text-slate-800 text-xs font-semibold px-3.5 py-2.5 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Download size={13} aria-hidden="true" /> {exportingCsv ? t("manager.expenses.exportingCsv") : t("manager.expenses.exportCsv")}
           </button>
@@ -334,7 +334,7 @@ export default function ExpensesPage() {
 
       <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <label htmlFor="expense-property-filter" className="text-xs font-semibold text-slate-700">{t("manager.expenses.filterByProperty")}</label>
+          <label htmlFor="expense-property-filter" className="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-700">{t("manager.expenses.filterByProperty")}</label>
           <select
             id="expense-property-filter"
             value={selectedPropertyId}
@@ -349,12 +349,12 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-600">{t("manager.expenses.expenseLines", { count: total })}</p>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-slate-600">{t("manager.expenses.expenseLines", { count: total })}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold text-slate-700">{t("manager.expenses.fullReportLabel")}</span>
+          <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-700">{t("manager.expenses.fullReportLabel")}</span>
           <ChampDate
             aria-label={t("manager.expenses.fields.reportDateFrom")}
             value={reportRange.from}
@@ -400,14 +400,14 @@ export default function ExpensesPage() {
           <tbody className="divide-y divide-contour-100">
             {expenses.map((exp) => (
               <tr key={exp.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 text-slate-600 text-xs">
+                <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap tabular-nums">
                   {formaterJour(exp.expenseDate, i18n.language)}
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={exp.property?.title} id={exp.property?.id} /></td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
-                      categoryColors[exp.category] || "bg-slate-100 text-slate-700"
+                    className={`inline-block border px-2 py-0.5 rounded-sm font-mono text-[10px] font-medium uppercase tracking-wider whitespace-nowrap ${
+                      categoryColors[exp.category] || "border-slate-400 bg-slate-50 text-slate-700"
                     }`}
                   >
                     {categoryLabels[exp.category] || exp.category}
@@ -423,13 +423,13 @@ export default function ExpensesPage() {
                     )}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-bold text-red-600">{formatDeduction(exp.amount, exp.currency, formatMoney)}</td>
+                <td className="px-4 py-3 font-semibold tabular-nums whitespace-nowrap text-rose-700">{formatDeduction(exp.amount, exp.currency, formatMoney)}</td>
                 <td className="px-4 py-3 text-slate-600 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
                   <Bulle texte={t("manager.tips.expenseDelete")}>
                   <button
                     onClick={() => handleDelete(exp)}
-                    className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                    className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors cursor-pointer"
                   >
                     {t("common.actions.delete")}
                   </button>
