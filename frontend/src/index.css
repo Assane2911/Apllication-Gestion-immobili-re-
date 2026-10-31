@@ -501,8 +501,10 @@ html [data-surface="app"] thead {
   background-color: var(--color-ink-900);
   color: #ffffff;
 }
-html [data-surface="app"] thead :is(th, button, span, svg) {
-  color: inherit;
+/* Tout ce qui est dans l'en-tête hérite du blanc, y compris une couleur posée sur la ligne (`<tr class="text-slate-600">`). */
+html [data-surface="app"] thead :is(tr, th, td, button, a, span, p, svg) {
+  /* !important : les règles « texte atténué » (.text-slate-600…) ont une spécificité plus forte et rendraient le texte gris sur bleu. */
+  color: inherit !important;
 }
 
 /* Les murs du plan de l'accueil se tracent au chargement (sans mouvement si la personne l'a demandé). */
