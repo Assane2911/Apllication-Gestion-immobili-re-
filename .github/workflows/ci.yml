@@ -22,8 +22,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
-    name: Backend — types et tests
+  # Les tests du backend (207 fichiers, chacun sur sa propre base PGlite) étaient la seule étape lente de la CI : environ
+  # 12 minutes sur un seul job, contre moins de 2 minutes pour tout le reste. Ils sont donc répartis en TRANCHES qui
+  # tournent en parallèle (`vitest --shard`), chacune sur sa propre machine de 4 cœurs ; le temps d'attente d'une pull
+  # request tombe au tiers environ. Le contrôle « Backend — types et tests » garde son NOM : il est maintenant le verrou
+  # qui n'est vert que si les types ET toutes les tranches le sont (un contrôle requis ne change donc pas de nom).
+  backend-types:
+    name: Backend — types
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,13 +47,50 @@ jobs:
         working-directory: backend
         run: npx tsc --noEmit -p tsconfig.json
 
+  backend-tests:
+    name: Backend — tests (tranche ${{ matrix.tranche }}/3)
+    runs-on: ubuntu-latest
+    strategy:
+      # Une tranche en échec ne doit pas interrompre les autres : on veut voir TOUS les tests qui cassent d'un coup.
+      fail-fast: false
+      matrix:
+        tranche: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Installer les dépendances
+        working-directory: backend
+        run: npm ci
+
       # Aucun secret n'est nécessaire : la suite tourne sur une base PGlite en
       # mémoire et neutralise elle-même SMTP, Sentry, Supabase et les clés de
       # paiement (voir src/test/setupTestDb.ts). Elle ne peut donc en aucun cas
       # toucher la vraie base ni envoyer d'email réel.
-      - name: Lancer les tests
+      - name: Lancer les tests (tranche ${{ matrix.tranche }} sur 3)
         working-directory: backend
-        run: npm test
+        run: npx vitest run --shard=${{ matrix.tranche }}/3
+
+  backend:
+    name: Backend — types et tests
+    runs-on: ubuntu-latest
+    needs: [backend-types, backend-tests]
+    # `always()` : sans lui, ce job serait IGNORÉ (et non en échec) quand un job dont il dépend échoue, et un contrôle
+    # ignoré peut être pris pour un succès. Il échoue donc explicitement.
+    if: ${{ always() }}
+    steps:
+      - name: Types et toutes les tranches de tests réussis
+        env:
+          TYPES: ${{ needs.backend-types.result }}
+          TESTS: ${{ needs.backend-tests.result }}
+        run: |
+          echo "types : $TYPES, tests : $TESTS"
+          test "$TYPES" = "success" && test "$TESTS" = "success"
 
   # Démarrage réel du backend, tel qu'il tourne en production : Node 24 (celui de Vercel), dépendances de production
   # SEULEMENT (les outils de test ne sont pas là-bas), instrumentation Sentry active. Du 5 au 7 octobre 2026, le site est
