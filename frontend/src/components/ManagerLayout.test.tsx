@@ -133,7 +133,6 @@ describe("ManagerLayout — menu sur téléphone", () => {
     const { container } = renderManagerLayout("/dashboard");
     const barre = container.querySelector("aside")!;
     expect(barre.className).toMatch(/(^|\s)h-dvh(\s|$)/);
-    expect(barre.className).toMatch(/sm:h-screen/);
     expect(barre.className).not.toMatch(/(^|\s)h-screen(\s|$)/);
   });
 

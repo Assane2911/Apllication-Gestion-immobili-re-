@@ -472,7 +472,7 @@ const pt: TranslationSchema = {
     },
     logout: "Terminar sessão",
     collapse: "Recolher menu",
-    expand: "Expandir menu",
+    expand: "Manter o menu aberto",
     groups: {
       overview: "Resumo",
       portfolio: "Património",

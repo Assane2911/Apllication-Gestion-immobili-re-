@@ -472,7 +472,7 @@ const es: TranslationSchema = {
     },
     logout: "Cerrar sesión",
     collapse: "Contraer menú",
-    expand: "Expandir menú",
+    expand: "Mantener el menú abierto",
     groups: {
       overview: "Resumen",
       portfolio: "Patrimonio",

@@ -31,7 +31,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import Logo from "./Logo";
-import Bulle from "./Bulle";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
 import { enregistrerCoucheRetour } from "../utils/couchesRetour";
@@ -99,10 +98,10 @@ const groupes: ReadonlyArray<{ cle: string; items: ReadonlyArray<{ to: string; k
 ];
 const navItems = groupes.flatMap((groupe) => groupe.items);
 
-const CLE_REPLI = "menu-gestionnaire-replie";
-const lireRepli = () => {
+const CLE_EPINGLE = "menu-gestionnaire-epingle";
+const lireEpingle = () => {
   try {
-    return localStorage.getItem(CLE_REPLI) === "1";
+    return localStorage.getItem(CLE_EPINGLE) === "1";
   } catch {
     return false;
   }
@@ -114,18 +113,24 @@ export default function ManagerLayout() {
   const { demanderDeconnexion, dialogue: dialogueDeconnexion } = useConfirmationDeconnexion();
   const sub = user?.subscription;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  // Replié : une colonne d'icônes sur ordinateur (le tiroir du téléphone reste toujours déployé).
-  const [replie, setReplie] = useState(lireRepli);
-  const basculerRepli = () =>
-    setReplie((actuel) => {
+  // Comme le menu de Supabase : une colonne d'icônes qui s'ouvre quand la souris la survole (ou qu'un élément du menu a
+  // le focus) et se referme quand elle la quitte. « Garder le menu déployé » l'épingle ouvert. Le tiroir du téléphone
+  // reste toujours déployé.
+  const [epingle, setEpingle] = useState(lireEpingle);
+  const [survol, setSurvol] = useState(false);
+  const ouvert = epingle || survol;
+  const basculerEpingle = () =>
+    setEpingle((actuel) => {
       try {
-        localStorage.setItem(CLE_REPLI, actuel ? "0" : "1");
+        localStorage.setItem(CLE_EPINGLE, actuel ? "0" : "1");
       } catch {
         /* le réglage n'est alors pas retenu, sans gravité */
       }
       return !actuel;
     });
-  const masquerSiReplie = replie ? "sm:hidden" : "";
+  // Texte et blocs qui n'ont leur place que menu ouvert : ils s'effacent en colonne d'icônes.
+  const etiquette = ouvert ? "" : "sm:opacity-0 sm:pointer-events-none";
+  const seulementOuvert = ouvert ? "" : "sm:hidden";
   // Le bouton retour d'Android referme le menu ouvert avant de changer de page (voir useBoutonRetourAndroid).
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -137,6 +142,7 @@ export default function ManagerLayout() {
   const { pathname } = useLocation();
   const chemin = pathname.replace(/\/+$/, "");
   const entree = [...navItems, ...pagesHorsMenu].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
+  const groupeDeLaPage = groupes.find((g) => g.items.some((item) => item === entree));
   const rangFeuille = navItems.findIndex((item) => item === entree);
   const moisEnCours = new Intl.DateTimeFormat(i18n.language, { month: "long", year: "numeric" }).format(new Date());
   const libellePage = /^\/proprietaires\/[^/]+\/crg$/.test(chemin) ? t("nav.owner.crg") : entree ? t(`nav.manager.${entree.key}`) : null;
@@ -151,132 +157,111 @@ export default function ManagerLayout() {
           aria-hidden="true"
         />
       )}
+      {/* Réserve la place de la colonne ; le menu, lui, se déploie par-dessus le contenu. */}
+      <div aria-hidden="true" className={`hidden sm:block shrink-0 transition-[width] duration-200 ${epingle ? "w-64" : "w-16"}`} />
       <aside
-        className={`fixed sm:sticky inset-y-0 sm:top-0 left-0 z-40 w-64 ${replie ? "sm:w-16" : "sm:w-64"} h-dvh sm:h-screen bg-white text-slate-900 border-r-[1.5px] border-ink-900 flex flex-col shrink-0 shadow-xl transform transition-[transform,width] duration-200 ease-in-out ${
-          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
-        } sm:translate-x-0`}
+        onMouseEnter={() => setSurvol(true)}
+        onMouseLeave={(e) => {
+          // Une liste déroulante ouverte (monnaie, langue) sort du menu : on ne referme pas sous le choix de la personne.
+          if (document.activeElement instanceof HTMLSelectElement && e.currentTarget.contains(document.activeElement)) return;
+          setSurvol(false);
+        }}
+        onFocus={() => setSurvol(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false);
+        }}
+        className={`fixed inset-y-0 left-0 z-40 w-64 ${ouvert ? "sm:w-64" : "sm:w-16"} h-dvh bg-white text-slate-900 border-r border-slate-300 flex flex-col overflow-hidden transform transition-[transform,width,box-shadow] duration-200 ease-in-out ${
+          ouvert && !epingle ? "sm:shadow-xl" : "shadow-xl sm:shadow-none"
+        } ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0`}
       >
-        <div aria-hidden="true" className="bande-motif h-3.5 shrink-0" />
-        <div className={`shrink-0 px-5 py-5 border-b-[1.5px] border-ink-900 ${replie ? "sm:px-3" : ""}`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative shrink-0">
-                <Logo />
-              </div>
-              <div className={`min-w-0 ${masquerSiReplie}`}>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-extrabold leading-tight truncate">{t("common.appName")}</h1>
-                </div>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600 truncate">{t("components.managerLayout.subtitle")}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => setMobileNavOpen(false)}
-                className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
-                aria-label={t("components.managerLayout.closeMenuAria")}
-              >
-                <X size={15} />
-              </button>
+        <div className="shrink-0 h-16 px-3.5 flex items-center justify-between gap-3 border-b border-slate-300">
+          <div className="flex items-center gap-3 min-w-0">
+            <Logo />
+            <div className={`min-w-0 whitespace-nowrap transition-opacity duration-150 ${etiquette}`}>
+              <h1 className="text-sm font-extrabold leading-tight truncate">{t("common.appName")}</h1>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600 truncate">{t("components.managerLayout.subtitle")}</p>
             </div>
           </div>
-          {sub?.isTrialActive && (
-            <div className={`mt-3 bg-brand-50 border border-ocre/60 rounded-sm px-3 py-1.5 text-[11px] text-slate-800 flex items-center justify-between shadow-2xs ${masquerSiReplie}`}>
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ocre opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-ocre" />
-                </span>
-                <span>{t("components.managerLayout.trialFree")}</span>
-              </div>
-              <span className="font-mono font-medium text-white bg-ocre px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
-            </div>
-          )}
-          <div className={`mt-3 pt-3 border-t border-slate-300 ${masquerSiReplie}`}>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">
-              {t("nav.currencyLabel")}
-            </span>
-            <CurrencySelector className="w-full [&>select]:w-full" />
-          </div>
-          <div className={`mt-2 ${masquerSiReplie}`}>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">
-              {t("common.language.label")}
-            </span>
-            <LanguageSwitcher className="w-full [&>select]:w-full" />
-          </div>
+          <button
+            onClick={() => setMobileNavOpen(false)}
+            className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors"
+            aria-label={t("components.managerLayout.closeMenuAria")}
+          >
+            <X size={15} />
+          </button>
         </div>
-        <nav className={`flex-1 min-h-0 overflow-y-auto py-3 ${replie ? "px-3 sm:px-2" : "px-3"}`} onClick={() => setMobileNavOpen(false)}>
+        <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-2" onClick={() => setMobileNavOpen(false)}>
           {groupes.map((groupe, rang) => (
-            <div key={groupe.cle} className={rang > 0 ? "mt-4" : ""}>
-              <p className={`px-3 pb-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500 ${masquerSiReplie}`}>
-                {t(`nav.groups.${groupe.cle}`)}
-              </p>
-              {/* Replié, un simple filet sépare les rubriques. */}
-              {rang > 0 && <div aria-hidden="true" className={`mb-2 hidden border-t border-slate-300 ${replie ? "sm:block" : ""}`} />}
+            // Des filets séparent les rubriques, sans intitulé, comme dans Supabase ; le nom reste lu par les lecteurs d'écran.
+            <div key={groupe.cle} role="group" aria-label={t(`nav.groups.${groupe.cle}`)} className={rang > 0 ? "mt-2 pt-2 border-t border-slate-300" : ""}>
               <div className="space-y-0.5">
-                {groupe.items.map((item) => {
-                  const libelle = t(`nav.manager.${item.key}`);
-                  return (
-                    // La bulle s'ouvre à DROITE : dans une barre latérale, au-dessus recouvrirait l'entrée précédente,
-                    // c'est-à-dire une autre cible cliquable. Repliée, elle donne le nom de la page (l'icône seule ne le dit pas).
-                    <Bulle key={item.to} texte={replie ? libelle : t(`nav.tips.${item.key}`)} position="droite" className="block">
-                      <NavLink
-                        to={item.to}
-                        end={item.to === "/dashboard"}
-                        aria-label={replie ? libelle : undefined}
-                        className={({ isActive }) =>
-                          `group relative flex items-center gap-3 px-3 py-2 text-[13px] rounded-sm transition-colors duration-200 ${replie ? "sm:justify-center sm:px-0" : ""} ${
-                            isActive ? "bg-brand-50 text-ink-900 font-semibold" : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                          }`
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            {/* Trait orange à gauche de la page courante, comme la barre d'état du menu de Supabase. */}
-                            <span aria-hidden="true" className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-ocre transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-0"}`} />
-                            <item.icone size={17} strokeWidth={isActive ? 2.1 : 1.8} aria-hidden="true" className={`shrink-0 transition-colors duration-200 ${isActive ? "text-ink-900" : "text-slate-500 group-hover:text-ink-900"}`} />
-                            <span className={`truncate ${masquerSiReplie}`}>{libelle}</span>
-                          </>
-                        )}
-                      </NavLink>
-                    </Bulle>
-                  );
-                })}
+                {groupe.items.map((item) => (
+                  // Pas de bulle d'aide ici : le menu se déploie au survol et donne déjà le nom de la page.
+                  <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === "/dashboard"}
+                      className={({ isActive }) =>
+                        `group flex items-center gap-3.5 h-11 px-3.5 text-sm whitespace-nowrap rounded-md transition-colors duration-150 ${
+                          isActive ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <item.icone size={20} strokeWidth={isActive ? 1.9 : 1.6} aria-hidden="true" className={`shrink-0 ${isActive ? "text-ink-900" : "text-slate-600 group-hover:text-ink-900"}`} />
+                          <span className={`truncate transition-opacity duration-150 ${etiquette}`}>{t(`nav.manager.${item.key}`)}</span>
+                        </>
+                      )}
+                  </NavLink>
+                ))}
               </div>
             </div>
           ))}
         </nav>
-        <button
-          type="button"
-          onClick={basculerRepli}
-          aria-pressed={replie}
-          aria-label={replie ? t("nav.expand") : t("nav.collapse")}
-          className="hidden sm:flex shrink-0 items-center gap-3 border-t border-slate-300 px-6 py-2.5 text-[13px] text-slate-600 hover:bg-slate-100 hover:text-ink-900 transition-colors cursor-pointer"
-        >
-          {replie ? <ChevronsRight size={17} aria-hidden="true" className="mx-auto" /> : <ChevronsLeft size={17} aria-hidden="true" />}
-          <span className={masquerSiReplie}>{t("nav.collapse")}</span>
-        </button>
-        <div className={`shrink-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-[1.5px] border-ink-900 bg-slate-50 ${replie ? "sm:px-2" : ""}`}>
-          <div className={`flex items-center gap-2.5 min-w-0 p-1.5 bg-white border border-slate-300 ${replie ? "sm:justify-center" : ""}`}>
-            <div className="w-8 h-8 bg-ink-900 flex items-center justify-center text-xs font-bold text-white shrink-0">
-              {(user?.email?.[0] || "?").toUpperCase()}
+        <div className="shrink-0 border-t border-slate-300 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-white">
+          {sub?.isTrialActive && (
+            <div className={`mb-2 mx-1 bg-brand-50 border border-ocre/60 rounded-sm px-3 py-1.5 text-[11px] text-slate-800 flex items-center justify-between ${seulementOuvert}`}>
+              <span>{t("components.managerLayout.trialFree")}</span>
+              <span className="font-mono font-medium text-white bg-ocre px-1.5 py-0.5 rounded-sm text-[10px]">{sub.trialDaysRemaining} j</span>
             </div>
-            <div className={`min-w-0 flex-1 ${masquerSiReplie}`}>
-              <p className="text-xs text-slate-900 font-medium truncate">{user?.email}</p>
-              <p className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                {t("nav.manager.dashboard")}
-              </p>
+          )}
+          <div className={`mb-2 mx-1 grid w-full grid-cols-2 gap-2 ${seulementOuvert}`}>
+            <div className="min-w-0 w-full">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("nav.currencyLabel")}</span>
+              <CurrencySelector className="w-full [&>select]:w-full" />
+            </div>
+            <div className="min-w-0 w-full">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("common.language.label")}</span>
+              <LanguageSwitcher className="w-full [&>select]:w-full" />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={basculerEpingle}
+            aria-pressed={epingle}
+            aria-label={epingle ? t("nav.collapse") : t("nav.expand")}
+            className="hidden sm:flex w-full h-11 items-center gap-3.5 px-3.5 rounded-md text-sm text-slate-700 whitespace-nowrap hover:bg-slate-100 hover:text-ink-900 transition-colors cursor-pointer"
+          >
+            {epingle ? <ChevronsLeft size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" /> : <ChevronsRight size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />}
+            <span className={`transition-opacity duration-150 ${etiquette}`}>{epingle ? t("nav.collapse") : t("nav.expand")}</span>
+          </button>
+          <div className="flex items-center gap-1">
+            <div className="flex flex-1 min-w-0 items-center gap-3.5 h-11 px-2 whitespace-nowrap" title={user?.email}>
+              <div className="w-8 h-8 bg-ink-900 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                {(user?.email?.[0] || "?").toUpperCase()}
+              </div>
+              <div className={`min-w-0 transition-opacity duration-150 ${etiquette}`}>
+                <p className="text-xs text-slate-900 font-medium truncate">{user?.email}</p>
+              </div>
             </div>
           </div>
           <button
             onClick={demanderDeconnexion}
-            aria-label={replie ? t("nav.logout") : undefined}
-            title={replie ? t("nav.logout") : undefined}
-            className="mt-2.5 w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-rose-500/10 hover:text-rose-700 hover:border-rose-500/30 transition-all cursor-pointer"
+            className="w-full h-11 flex items-center gap-3.5 px-3.5 rounded-md text-sm text-slate-700 whitespace-nowrap hover:bg-rose-500/10 hover:text-rose-700 transition-colors cursor-pointer"
           >
-            <LogOut size={13} />
-            <span className={masquerSiReplie}>{t("nav.logout")}</span>
+            <LogOut size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
+            <span className={`transition-opacity duration-150 ${etiquette}`}>{t("nav.logout")}</span>
           </button>
         </div>
       </aside>
@@ -295,6 +280,15 @@ export default function ManagerLayout() {
           <GlobalSearch />
           <NotificationBell />
         </div>
+        {/* Fil d'Ariane décoratif (rubrique / page) : le texte vient d'attributs, il ne double ni le titre ni le menu. */}
+        {groupeDeLaPage && entree && (
+          <p
+            aria-hidden="true"
+            data-groupe={`${t(`nav.groups.${groupeDeLaPage.cle}`)}  /  `}
+            data-page={t(`nav.manager.${entree.key}`)}
+            className="mb-4 font-mono text-[11px] uppercase tracking-wider text-slate-600 before:content-[attr(data-groupe)] after:font-bold after:text-ink-900 after:content-[attr(data-page)]"
+          />
+        )}
         <TrialBanner />
         <Outlet />
         {/* Cartouche de feuille, en pied de plan : repère décoratif (numéro de l'entrée du menu, mois en cours). */}
