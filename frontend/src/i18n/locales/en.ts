@@ -1672,6 +1672,7 @@ const en: TranslationSchema = {
       firstInvoice: "First invoice: {{month}}",
       noInvoice: "No invoice to create",
       chooseFile: "Choose a CSV file",
+      dropHint: "or drag it here",
       analysing: "Analysing the file…",
       encodingWarning: "Unreadable characters were detected: save your file as UTF-8 CSV from your spreadsheet, then upload it again.",
       done: "{{count}} {{type}} imported.",

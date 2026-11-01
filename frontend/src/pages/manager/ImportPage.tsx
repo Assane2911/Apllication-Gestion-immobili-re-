@@ -1,4 +1,4 @@
-import { FileUp, Download } from "lucide-react";
+import { Building2, Download, FileText, FileUp, Users, type LucideIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -25,10 +25,20 @@ interface Analyse {
 }
 
 const STYLES_STATUT: Record<StatutLigne, string> = {
-  OK: "bg-emerald-100 text-emerald-800",
-  DOUBLON: "bg-amber-100 text-amber-800",
-  ERREUR: "bg-red-100 text-red-800",
+  OK: "border-emerald-300 bg-emerald-50 text-emerald-800",
+  DOUBLON: "border-orange-700/50 bg-orange-50 text-orange-800",
+  ERREUR: "border-rose-300 bg-rose-50 text-rose-800",
 };
+
+/** Filet de couleur de chaque case du résumé. */
+const FILETS_RESUME: Record<string, string> = {
+  total: "border-t-slate-400",
+  valid: "border-t-emerald-600",
+  duplicates: "border-t-orange-700",
+  errors: "border-t-rose-600",
+};
+
+const ICONES_TYPE: Record<TypeImport, LucideIcon> = { properties: Building2, tenants: Users, contracts: FileText };
 
 /** Lecture du fichier en UTF-8 (FileReader : valable sur tous les navigateurs, y compris anciens). */
 function lireFichier(fichier: File): Promise<string> {
@@ -98,9 +108,22 @@ export default function ImportPage() {
     }
   }
 
-  async function choisirFichier(e: React.ChangeEvent<HTMLInputElement>) {
+  const [survolZone, setSurvolZone] = useState(false);
+
+  function choisirFichier(e: React.ChangeEvent<HTMLInputElement>) {
     const fichier = e.target.files?.[0];
-    if (!fichier) return;
+    if (fichier) void traiterFichier(fichier);
+  }
+
+  /** Dépôt d'un fichier sur la zone : même traitement qu'un choix par le sélecteur. */
+  function deposerFichier(e: React.DragEvent) {
+    e.preventDefault();
+    setSurvolZone(false);
+    const fichier = e.dataTransfer.files?.[0];
+    if (fichier) void traiterFichier(fichier);
+  }
+
+  async function traiterFichier(fichier: File) {
     setError(null);
     setResultat(null);
     setAnalyse(null);
@@ -144,67 +167,102 @@ export default function ImportPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900">{t("manager.import.title")}</h2>
-        <p className="text-sm text-slate-600 mt-1">{t("manager.import.subtitle")}</p>
+        <p className="mt-1 text-sm text-slate-600">{t("manager.import.subtitle")}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm space-y-4">
-        <div role="radiogroup" aria-label={t("manager.import.typeLabel")} className="flex flex-wrap gap-2">
-          {(["properties", "tenants", "contracts"] as const).map((valeur) => (
+      {/* Quoi importer : trois grandes cases, une par type de fichier. */}
+      <div role="radiogroup" aria-label={t("manager.import.typeLabel")} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {(["properties", "tenants", "contracts"] as const).map((valeur) => {
+          const Icone = ICONES_TYPE[valeur];
+          const actif = type === valeur;
+          return (
             <button
               key={valeur}
               type="button"
               role="radio"
-              aria-checked={type === valeur}
+              aria-checked={actif}
               onClick={() => changerType(valeur)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                type === valeur
-                  ? "bg-brand-600 text-white border-brand-600"
-                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+              className={`flex cursor-pointer items-center gap-3 border px-4 py-3.5 text-left text-sm font-semibold transition-colors ${
+                actif
+                  ? "border-ink-900 bg-ink-900 text-white shadow-[inset_4px_0_0_var(--color-orange-700)]"
+                  : "border-slate-400 bg-white text-slate-800 hover:border-ink-900 hover:bg-slate-50"
               }`}
             >
+              <Icone size={20} aria-hidden="true" className={actif ? "text-white" : "text-ink-900"} />
               {t(`manager.import.types.${valeur}`)}
             </button>
-          ))}
-        </div>
-
-        <ol className="text-sm text-slate-700 list-decimal pl-5 space-y-1">
-          <li>
-            {t("manager.import.step1")}{" "}
-            <button type="button" onClick={telechargerModele} className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1">
-              <Download size={13} aria-hidden="true" /> {t("manager.import.downloadTemplate")}
-            </button>
-          </li>
-          <li>{t("manager.import.step2")}</li>
-          <li>{t("manager.import.step3")}</li>
-        </ol>
-        <p className="text-xs text-slate-600">{t(`manager.import.columns.${type}`)}</p>
-        {type === "contracts" && <p className="text-xs text-slate-600">{t("manager.import.contractsNote")}</p>}
-
-        <div>
-          <label htmlFor="import-fichier" className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg cursor-pointer">
-            <FileUp size={15} aria-hidden="true" /> {t("manager.import.chooseFile")}
-          </label>
-          <input id="import-fichier" ref={champFichier} type="file" accept=".csv,.txt,text/csv" onChange={choisirFichier} className="sr-only" />
-          {nomFichier && <span className="ml-3 text-sm text-slate-600">{nomFichier}</span>}
-        </div>
+          );
+        })}
       </div>
 
-      {chargement && <p role="status" className="text-sm text-slate-600">{t("manager.import.analysing")}</p>}
+      {/* Comment : trois étapes numérotées, la troisième porte la zone de dépôt. */}
+      <ol className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <li className="border border-slate-300 bg-white p-4">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">01</p>
+          <p className="mt-2 text-sm text-slate-800">{t("manager.import.step1")}</p>
+          <button
+            type="button"
+            onClick={telechargerModele}
+            className="mt-3 inline-flex cursor-pointer items-center gap-1.5 border border-ink-900 bg-white px-3 py-1.5 text-xs font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white"
+          >
+            <Download size={13} aria-hidden="true" /> {t("manager.import.downloadTemplate")}
+          </button>
+        </li>
+        <li className="border border-slate-300 bg-white p-4">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">02</p>
+          <p className="mt-2 text-sm text-slate-800">{t("manager.import.step2")}</p>
+        </li>
+        <li className="border border-slate-300 bg-white p-4">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">03</p>
+          <p className="mt-2 text-sm text-slate-800">{t("manager.import.step3")}</p>
+        </li>
+      </ol>
+
+      {/* Colonnes attendues, en police technique : c'est la partie à recopier dans le tableur. */}
+      <div className="border-l-2 border-orange-700 bg-white px-4 py-3">
+        <p className="font-mono text-xs leading-relaxed text-slate-800">{t(`manager.import.columns.${type}`)}</p>
+        {type === "contracts" && <p className="mt-2 text-xs leading-relaxed text-slate-700">{t("manager.import.contractsNote")}</p>}
+      </div>
+
+      {/* Zone de dépôt : on peut y glisser le fichier ou cliquer pour le choisir. */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setSurvolZone(true);
+        }}
+        onDragLeave={() => setSurvolZone(false)}
+        onDrop={deposerFichier}
+        className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed px-4 py-8 text-center transition-colors ${
+          survolZone ? "border-orange-700 bg-orange-50" : "border-slate-400 bg-white"
+        }`}
+      >
+        <FileUp size={28} strokeWidth={1.5} aria-hidden="true" className="text-ink-900" />
+        <label
+          htmlFor="import-fichier"
+          className="inline-flex cursor-pointer items-center gap-2 border border-ink-900 bg-ink-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
+        >
+          {t("manager.import.chooseFile")}
+        </label>
+        <input id="import-fichier" ref={champFichier} type="file" accept=".csv,.txt,text/csv" onChange={choisirFichier} className="sr-only" />
+        <p className="text-xs text-slate-600">{nomFichier ? <span className="font-mono text-sm text-slate-900">{nomFichier}</span> : t("manager.import.dropHint")}</p>
+      </div>
+
+      {chargement && <p role="status" className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.import.analysing")}</p>}
 
       {error && (
-        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
           {error}
         </div>
       )}
 
       {encodageSuspect && (
-        <div role="alert" className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
+        <div role="alert" className="border border-orange-700/40 bg-orange-50 px-4 py-3 text-sm text-orange-900">
           {t("manager.import.encodingWarning")}
         </div>
       )}
 
       {resultat && (
-        <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-4 rounded-xl text-sm space-y-2">
+        <div role="status" className="space-y-2 border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm text-emerald-900 shadow-[inset_4px_0_0_var(--color-emerald-600)]">
           <p className="font-semibold">{t("manager.import.done", { count: resultat.importees ?? 0, type: libelleType })}</p>
           {(resultat.resume.doublons > 0 || resultat.resume.erreurs > 0) && (
             <p>{t("manager.import.skipped", { duplicates: resultat.resume.doublons, errors: resultat.resume.erreurs })}</p>
@@ -213,7 +271,7 @@ export default function ImportPage() {
             <Link to={PAGES_LISTE[type]} className="font-semibold underline">
               {t("manager.import.seeList", { type: libelleType })}
             </Link>
-            <button type="button" onClick={reinitialiser} className="font-semibold underline">
+            <button type="button" onClick={reinitialiser} className="cursor-pointer font-semibold underline">
               {t("manager.import.newImport")}
             </button>
           </p>
@@ -222,39 +280,43 @@ export default function ImportPage() {
 
       {analyse && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Résumé en une bande de quatre cases, chacune avec son filet de couleur. */}
+          <div className="grid grid-cols-2 gap-px border border-slate-300 bg-slate-300 sm:grid-cols-4">
             {[
               { cle: "total", valeur: analyse.resume.total },
               { cle: "valid", valeur: analyse.resume.valides },
               { cle: "duplicates", valeur: analyse.resume.doublons },
               { cle: "errors", valeur: analyse.resume.erreurs },
             ].map((carte) => (
-              <div key={carte.cle} className="bg-white rounded-xl border border-contour-200 px-4 py-3 shadow-sm">
-                <p className="text-xs text-slate-600">{t(`manager.import.summary.${carte.cle}`)}</p>
-                <p className="text-2xl font-bold text-slate-900">{carte.valeur}</p>
+              <div key={carte.cle} className={`border-t-4 bg-white px-4 py-3 ${FILETS_RESUME[carte.cle]}`}>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t(`manager.import.summary.${carte.cle}`)}</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{carte.valeur}</p>
               </div>
             ))}
           </div>
 
           {analyse.capacite && analyse.capacite.maximum !== null && (
-            <p className="text-xs text-slate-600">
+            <p className="font-mono text-xs text-slate-700">
               {t("manager.import.capacity", { existing: analyse.capacite.existants, max: analyse.capacite.maximum, remaining: analyse.capacite.restant ?? 0 })}
             </p>
           )}
 
-          <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto max-h-112 overflow-y-auto">
+          <div className="max-h-112 overflow-x-auto overflow-y-auto border border-slate-300 bg-white">
             <table className="w-full text-sm">
-              <thead className="bg-slate-200/70 text-slate-700 text-left sticky top-0">
+              <thead className="sticky top-0 text-left">
                 <tr>
                   <th className="px-4 py-2 font-semibold">{t("manager.import.table.line")}</th>
                   <th className="px-4 py-2 font-semibold">{t("manager.import.table.data")}</th>
                   <th className="px-4 py-2 font-semibold">{t("manager.import.table.status")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-contour-100">
+              <tbody className="divide-y divide-slate-300">
                 {analyse.lignes.map((l) => (
-                  <tr key={l.ligne}>
-                    <td className="px-4 py-2 text-slate-600">{l.ligne}</td>
+                  <tr
+                    key={l.ligne}
+                    className={l.statut === "ERREUR" ? "shadow-[inset_3px_0_0_var(--color-rose-600)]" : l.statut === "DOUBLON" ? "shadow-[inset_3px_0_0_var(--color-orange-700)]" : ""}
+                  >
+                    <td className="px-4 py-2 font-mono text-xs tabular-nums text-slate-600">{String(l.ligne).padStart(2, "0")}</td>
                     <td className="px-4 py-2 text-slate-900">
                       {libelleLigne(analyse.type, l.donnees)}
                       {analyse.type === "contracts" && l.statut === "OK" && (
@@ -269,7 +331,9 @@ export default function ImportPage() {
                       ))}
                     </td>
                     <td className="px-4 py-2">
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${STYLES_STATUT[l.statut]}`}>{t(`manager.import.status.${l.statut}`)}</span>
+                      <span className={`inline-block border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${STYLES_STATUT[l.statut]}`}>
+                        {t(`manager.import.status.${l.statut}`)}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -277,16 +341,20 @@ export default function ImportPage() {
             </table>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={importer}
               disabled={import_ || analyse.resume.valides === 0}
-              className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg"
+              className="cursor-pointer border border-ink-900 bg-ink-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {import_ ? t("manager.import.importing") : t("manager.import.importButton", { count: analyse.resume.valides })}
             </button>
-            <button type="button" onClick={reinitialiser} className="text-sm text-slate-600 hover:underline">
+            <button
+              type="button"
+              onClick={reinitialiser}
+              className="cursor-pointer border-b border-ink-900/40 text-sm font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700"
+            >
               {t("common.actions.cancel")}
             </button>
           </div>

@@ -1673,6 +1673,7 @@ const fr = {
       firstInvoice: "Première facture : {{month}}",
       noInvoice: "Aucune facture à créer",
       chooseFile: "Choisir un fichier CSV",
+      dropHint: "ou glissez-le ici",
       analysing: "Analyse du fichier…",
       encodingWarning: "Des caractères illisibles ont été détectés : enregistrez votre fichier en CSV UTF-8 depuis le tableur, puis rechargez-le.",
       done: "{{count}} {{type}} importé(s).",

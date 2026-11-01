@@ -1672,6 +1672,7 @@ const pt: TranslationSchema = {
       firstInvoice: "Primeira fatura: {{month}}",
       noInvoice: "Nenhuma fatura a criar",
       chooseFile: "Escolher um ficheiro CSV",
+      dropHint: "ou arraste-o para aqui",
       analysing: "A analisar o ficheiro…",
       encodingWarning: "Foram detetados caracteres ilegíveis: guarde o ficheiro como CSV UTF-8 na folha de cálculo e carregue-o novamente.",
       done: "{{count}} {{type}} importado(s).",
