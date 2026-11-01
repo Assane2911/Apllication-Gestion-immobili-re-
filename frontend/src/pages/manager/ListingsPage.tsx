@@ -1,4 +1,4 @@
-import { Building2, Megaphone } from "lucide-react";
+import { ExternalLink, Megaphone, MapPin, Pencil, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -16,6 +16,7 @@ import { CURRENCIES } from "../../context/currency";
 import { PAYS } from "../../data/pays";
 import Bulle from "../../components/Bulle";
 import { nomDevise } from "../../utils/nomDevise";
+import PlanLogement from "../../components/PlanLogement";
 
 const LISTING_TYPES: ListingType[] = ["RENT", "SALE", "PROMOTION", "LAND", "OTHER"];
 const PRICE_PERIODS: PricePeriod[] = ["MONTH", "ONE_TIME"];
@@ -195,19 +196,21 @@ export default function ListingsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">{t("manager.listings.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">{t("manager.listings.count", { count: listings.length })}</p>
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.listings.count", { count: Math.max(total, listings.length) })}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           {/*
             Sans ce lien, le gestionnaire n'avait aucun moyen de voir ce que
             ses annonces donnent une fois publiées : la vitrine n'était reliée
             à rien. Publier sans pouvoir regarder le résultat, c'est publier à
             l'aveugle.
           */}
-          <Link to="/vitrine" className="text-sm font-medium text-brand-600 hover:underline">
+          <Link to="/vitrine" className="inline-flex items-center gap-1.5 border-b border-ink-900/40 pb-0.5 text-sm font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
+            <ExternalLink size={14} aria-hidden="true" />
             {t("manager.listings.viewVitrine")}
           </Link>
-          <Link to="/leads" className="text-sm font-medium text-brand-600 hover:underline">
+          <Link to="/leads" className="inline-flex items-center gap-1.5 border-b border-ink-900/40 pb-0.5 text-sm font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
+            <Users size={14} aria-hidden="true" />
             {t("manager.listings.viewLeads")}
           </Link>
           <Bulle texte={t("manager.tips.listingCreate")}>
@@ -359,35 +362,37 @@ export default function ListingsPage() {
         />
       ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {listings.map((listing) => (
-          <div
+        {listings.map((listing, rang) => (
+          <article
             key={listing.id}
-            className="group bg-white rounded-2xl border border-contour-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 transition-all duration-200 overflow-hidden flex flex-col justify-between"
+            className="group bg-white border border-contour-200/90 hover:border-ink-900 transition-colors duration-200 overflow-hidden flex flex-col justify-between"
           >
             <div>
-              <div className="relative h-40 bg-slate-100 overflow-hidden">
+              <div className="relative h-44 bg-slate-100 border-b border-slate-300 overflow-hidden">
                 {listing.imageUrl ? (
                   <img
                     src={fileUrl(listing.imageUrl) ?? undefined}
                     alt={listing.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 motion-reduce:transform-none"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300">
-                    <Building2 size={40} strokeWidth={1.5} aria-hidden="true" />
-                  </div>
+                  <PlanLogement id={listing.id} className="w-full h-full" />
                 )}
                 <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
                   <Badge status={listing.status} />
                   {listing.featured && (
-                    <span className="text-[10px] font-bold text-white bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="border border-orange-700 bg-orange-700 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-white">
                       {t("manager.listings.featuredBadge")}
                     </span>
                   )}
                 </div>
+                {/* Numéro de fiche, comme l'étiquette d'une planche de plan. */}
+                <span aria-hidden="true" className="absolute bottom-0 left-0 z-10 bg-ink-900 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white">
+                  {String((page - 1) * PAGE_SIZE + rang + 1).padStart(2, "0")}
+                </span>
               </div>
               {listing.hiddenByAdminAt && (
-                <div role="note" className="bg-red-50 border-y border-red-200 px-4 py-3">
+                <div role="note" className="border-b border-red-200 bg-red-50 px-4 py-3 shadow-[inset_3px_0_0_var(--color-rose-600)]">
                   <p className="text-xs font-semibold text-red-800">{t("manager.listings.moderation.title")}</p>
                   {listing.moderationReason && (
                     <p className="text-xs text-red-700 mt-0.5 wrap-break-word">
@@ -398,45 +403,53 @@ export default function ListingsPage() {
                 </div>
               )}
               <div className="p-4 sm:p-5">
-                <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-brand-600 transition-colors">
-                  {listing.title}
-                </h3>
-                <p className="text-xs text-slate-600 mt-1 line-clamp-1">
-                  {listing.location}
-                  {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
+                <h3 className="font-bold text-slate-900 text-base leading-snug">{listing.title}</h3>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-600">
+                  <MapPin size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
+                  <span className="line-clamp-1">
+                    {listing.location}
+                    {listing.country ? ` · ${countryLabel(listing.country, i18n.language)}` : ""}
+                  </span>
                 </p>
-                <div className="flex items-center justify-between text-xs sm:text-sm mt-4 pt-3 border-t border-contour-100">
-                  <span className="font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                    {t(`manager.listings.types.${listing.type}`)}
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {formatMoney(listing.price, listing.currency)}{" "}
-                    {listing.pricePeriod === "MONTH" && (
-                      <span className="text-xs font-normal text-slate-600">{t("manager.listings.perMonth")}</span>
-                    )}
-                  </span>
-                </div>
+                {/* Fiche technique : nature de l'annonce et prix, libellés en police technique. */}
+                <dl className="mt-4 grid grid-cols-2 border border-slate-300 divide-x divide-slate-300">
+                  <div className="px-3 py-2">
+                    <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("manager.listings.fields.type")}</dt>
+                    <dd className="mt-0.5 text-sm font-semibold text-slate-900">{t(`manager.listings.types.${listing.type}`)}</dd>
+                  </div>
+                  <div className="px-3 py-2">
+                    <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("manager.listings.fields.price")}</dt>
+                    <dd className="mt-0.5 text-sm font-semibold tabular-nums text-slate-900">
+                      {formatMoney(listing.price, listing.currency)}{" "}
+                      {listing.pricePeriod === "MONTH" && (
+                        <span className="text-xs font-normal text-slate-600">{t("manager.listings.perMonth")}</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
               </div>
             </div>
-            <div className="px-4 sm:px-5 pb-4 pt-1 flex items-center justify-end gap-2 border-t border-slate-50">
-              <Bulle texte={t("manager.tips.listingEdit")}>
-              <button
-                onClick={() => openEdit(listing)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-              >
-                {t("common.actions.edit")}
-              </button>
+            <div className="grid grid-cols-2 divide-x divide-slate-300 border-t border-slate-300 text-xs font-semibold">
+              <Bulle texte={t("manager.tips.listingEdit")} className="block">
+                <button
+                  onClick={() => openEdit(listing)}
+                  className="flex w-full items-center justify-center gap-1.5 py-2.5 text-slate-700 hover:bg-slate-100 hover:text-ink-900 transition-colors cursor-pointer"
+                >
+                  <Pencil size={13} aria-hidden="true" />
+                  {t("common.actions.edit")}
+                </button>
               </Bulle>
-              <Bulle texte={t("manager.tips.listingDelete")}>
-              <button
-                onClick={() => handleDelete(listing)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
-              >
-                {t("common.actions.delete")}
-              </button>
+              <Bulle texte={t("manager.tips.listingDelete")} className="block">
+                <button
+                  onClick={() => handleDelete(listing)}
+                  className="flex w-full items-center justify-center gap-1.5 py-2.5 text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                  {t("common.actions.delete")}
+                </button>
               </Bulle>
             </div>
-          </div>
+          </article>
         ))}
       </div>
       )}
