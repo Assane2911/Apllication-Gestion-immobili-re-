@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -79,7 +79,7 @@ describe("DashboardPage — axe des mois", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByLabelText("mois du graphique")).toBeInTheDocument());
-    const lignes = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+    const lignes = within(screen.getByLabelText("mois du graphique")).getAllByRole("listitem").map((li) => li.textContent ?? "");
     expect(lignes).toHaveLength(6);
     // Aucune clé technique à l'écran.
     expect(lignes.some((l) => /\d{4}-\d{2}/.test(l))).toBe(false);

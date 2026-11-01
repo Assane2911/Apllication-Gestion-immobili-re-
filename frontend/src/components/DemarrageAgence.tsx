@@ -74,7 +74,7 @@ export default function DemarrageAgence({ stats }: { stats: Pick<DashboardStats,
   }
 
   return (
-    <section aria-labelledby="demarrage-titre" className="rounded-2xl border border-brand-200 bg-brand-50/60 p-5">
+    <section aria-labelledby="demarrage-titre" className="border border-ink-900 bg-white p-5 shadow-[inset_4px_0_0_var(--color-orange-700)]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 id="demarrage-titre" className="font-bold text-slate-900 text-base">
@@ -94,7 +94,7 @@ export default function DemarrageAgence({ stats }: { stats: Pick<DashboardStats,
         {etapes.map((e) => (
           <li key={e.cle} className="flex items-start gap-3">
             {e.faite ? (
-              <CheckCircle2 size={18} className="text-emerald-600 mt-0.5 shrink-0" aria-label={t("manager.demarrage.faite")} />
+              <CheckCircle2 size={18} className="text-ink-900 mt-0.5 shrink-0" aria-label={t("manager.demarrage.faite")} />
             ) : (
               <Circle size={18} className="text-slate-400 mt-0.5 shrink-0" aria-label={t("manager.demarrage.afaire")} />
             )}
