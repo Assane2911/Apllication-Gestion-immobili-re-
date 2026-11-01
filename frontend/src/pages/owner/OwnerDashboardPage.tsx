@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -7,7 +7,10 @@ import SectionReglage from "../../components/SectionReglage";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import { useCurrency } from "../../context/currency";
 import type { OwnerDashboard } from "../../types";
+import { csvTableauDeBord } from "../../utils/csvProprietaire";
 import { fenetreDesMois, libelleDuMois } from "../../utils/moisDuGraphique";
+
+type ColonneTri = "title" | "collected" | "pending" | "share";
 
 const ETIQUETTE = "font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600";
 
@@ -22,6 +25,37 @@ export default function OwnerDashboardPage() {
   const { formatMoney } = useCurrency();
   const [data, setData] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Tri du tableau des biens : `null` = l'ordre du serveur.
+  const [tri, setTri] = useState<{ colonne: ColonneTri; sens: "asc" | "desc" } | null>(null);
+
+  function trierPar(colonne: ColonneTri) {
+    // Un clic trie du plus grand au plus petit (sauf le nom), un deuxième inverse, un troisième rend l'ordre d'origine.
+    setTri((actuel) => {
+      const sensInitial = colonne === "title" ? "asc" : "desc";
+      if (!actuel || actuel.colonne !== colonne) return { colonne, sens: sensInitial };
+      if (actuel.sens === sensInitial) return { colonne, sens: sensInitial === "asc" ? "desc" : "asc" };
+      return null;
+    });
+  }
+
+  function exporterCsv() {
+    if (!data) return;
+    const contenu = csvTableauDeBord(data, {
+      property: t("owner.dashboard.property"),
+      address: t("owner.dashboard.address"),
+      currency: t("owner.dashboard.currency"),
+      collected: t("owner.dashboard.collected"),
+      pending: t("owner.dashboard.pending"),
+      month: t("owner.dashboard.month"),
+      revenue: t("owner.dashboard.revenueLabel"),
+    });
+    const url = URL.createObjectURL(new Blob([contenu], { type: "text/csv;charset=utf-8;" }));
+    const lien = document.createElement("a");
+    lien.href = url;
+    lien.download = `tableau-de-bord-${new Date().toISOString().split("T")[0]}.csv`;
+    lien.click();
+    URL.revokeObjectURL(url);
+  }
 
   function load() {
     api
@@ -72,6 +106,20 @@ export default function OwnerDashboardPage() {
   const devises = Array.from(new Set([...collectedCurrencies, ...pendingCurrencies])).sort();
   const moisAvecDonnees = Object.keys(data.revenueByMonth);
   const fenetre = fenetreDesMois(new Date(), moisAvecDonnees);
+  // Part de chaque bien dans les loyers perçus de SA devise (jamais comparée à une autre monnaie), puis tri demandé.
+  const lignesBiens = data.properties.map((p) => {
+    const totalDevise = data.properties.filter((q) => q.currency === p.currency).reduce((somme, q) => somme + q.collected, 0);
+    return { p, part: totalDevise > 0 ? Math.round((p.collected / totalDevise) * 100) : 0 };
+  });
+  if (tri) {
+    const facteur = tri.sens === "asc" ? 1 : -1;
+    lignesBiens.sort((x, y) => {
+      if (tri.colonne === "title") return facteur * x.p.title.localeCompare(y.p.title);
+      const colonne = tri.colonne;
+      const valeur = (l: (typeof lignesBiens)[number]) => (colonne === "share" ? l.part : colonne === "collected" ? l.p.collected : l.p.pending);
+      return facteur * (valeur(x) - valeur(y));
+    });
+  }
   const devisesHistorique = Array.from(new Set(moisAvecDonnees.flatMap((m) => Object.keys(data.revenueByMonth[m])))).sort();
 
   return (
@@ -81,13 +129,23 @@ export default function OwnerDashboardPage() {
           <h2 className="text-2xl font-semibold text-slate-900">{t("owner.dashboard.title")}</h2>
           <p className="mt-1 max-w-xl text-sm text-slate-600">{t("owner.dashboard.subtitle")}</p>
         </div>
-        <Link
-          to="/proprietaire/crg"
-          className="group inline-flex items-center gap-2 border border-ink-900 bg-white px-4 py-2.5 text-xs font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white"
-        >
-          {t("owner.dashboard.openCrg")}
-          <ArrowRight size={14} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={exporterCsv}
+            className="inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900"
+          >
+            <Download size={13} aria-hidden="true" />
+            {t("owner.dashboard.exportCsv")}
+          </button>
+          <Link
+            to="/proprietaire/crg"
+            className="group inline-flex items-center gap-2 border border-ink-900 bg-white px-4 py-2.5 text-xs font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white"
+          >
+            {t("owner.dashboard.openCrg")}
+            <ArrowRight size={14} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
       </div>
 
       {/* 01 — Le mois en cours : ce qui est arrivé, ce qui reste à arriver, et la part déjà encaissée. */}
@@ -139,9 +197,10 @@ export default function OwnerDashboardPage() {
                       {devises.length > 1 ? `${currency} · ` : ""}
                       {t("owner.dashboard.collectionRate", { pct: taux })}
                     </p>
-                    <p className="font-mono text-[11px] tabular-nums text-slate-600">
-                      {`${t("owner.dashboard.estimatedFee")} · ${formatMoney(commission, currency)}`}
-                    </p>
+                    <div className="text-right font-mono text-[11px] tabular-nums text-slate-600">
+                      <p>{`${t("owner.dashboard.estimatedFee")} · ${formatMoney(commission, currency)}`}</p>
+                      <p className="font-semibold text-ink-900">{`${t("owner.dashboard.estimatedNet")} · ${formatMoney(percu - commission, currency)}`}</p>
+                    </div>
                   </div>
                   <div
                     role="progressbar"
@@ -179,6 +238,7 @@ export default function OwnerDashboardPage() {
               const dernier = valeurs[valeurs.length - 1];
               const precedent = valeurs[valeurs.length - 2] ?? 0;
               const variation = precedent > 0 ? Math.round(((dernier - precedent) / precedent) * 100) : null;
+              const cumul = valeurs.reduce((somme, v) => somme + v, 0);
               return (
                 <div key={currency}>
                   <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -190,6 +250,9 @@ export default function OwnerDashboardPage() {
                       {variation !== null && ` · ${t("owner.dashboard.vsPrevious")} ${variation > 0 ? "+" : ""}${variation} %`}
                     </p>
                   </div>
+                  <p className="mb-2 font-mono text-[11px] tabular-nums text-slate-600">
+                    {`${t("owner.dashboard.sixMonthTotal")} · ${formatMoney(cumul, currency)} · ${t("owner.dashboard.yearProjection")} · ${formatMoney(moyenne * 12, currency)}`}
+                  </p>
                   <ul className="divide-y divide-slate-200 border border-slate-300">
                     {fenetre.map((mois, i) => (
                       <li key={mois} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5">
@@ -220,36 +283,56 @@ export default function OwnerDashboardPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left">
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("owner.dashboard.property")}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("owner.dashboard.collected")}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("owner.dashboard.pending")}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("owner.dashboard.share")}</th>
+                  {(
+                    [
+                      ["title", t("owner.dashboard.property")],
+                      ["collected", t("owner.dashboard.collected")],
+                      ["pending", t("owner.dashboard.pending")],
+                      ["share", t("owner.dashboard.share")],
+                    ] as const
+                  ).map(([colonne, libelle]) => {
+                    const actif = tri?.colonne === colonne;
+                    return (
+                      <th key={colonne} scope="col" aria-sort={actif ? (tri.sens === "asc" ? "ascending" : "descending") : "none"} className="px-4 py-3 font-semibold">
+                        {/* Un clic trie la colonne ; la flèche dit dans quel sens, et un troisième clic rend l'ordre d'origine. */}
+                        <button type="button" onClick={() => trierPar(colonne)} className="inline-flex cursor-pointer items-center gap-1.5 text-left font-semibold">
+                          {libelle}
+                          {actif ? (
+                            tri.sens === "asc" ? <ArrowUp size={12} aria-hidden="true" /> : <ArrowDown size={12} aria-hidden="true" />
+                          ) : (
+                            <ArrowUpDown size={12} aria-hidden="true" className="opacity-50" />
+                          )}
+                        </button>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {data.properties.map((p) => {
-                  // Part du bien dans les loyers perçus de SA devise (jamais comparée à une autre monnaie).
-                  const totalDevise = data.properties.filter((q) => q.currency === p.currency).reduce((somme, q) => somme + q.collected, 0);
-                  const part = totalDevise > 0 ? Math.round((p.collected / totalDevise) * 100) : 0;
-                  return (
-                    <tr key={`${p.propertyId}-${p.currency}`} className="hover:bg-slate-50">
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900">{p.title}</p>
-                        <p className="text-xs text-slate-600">{p.address}</p>
-                      </td>
-                      <td className="px-4 py-3 font-bold tabular-nums text-ink-900">{formatMoney(p.collected, p.currency)}</td>
-                      <td className="px-4 py-3 font-bold tabular-nums text-orange-700">{formatMoney(p.pending, p.currency)}</td>
-                      <td className="w-40 px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div aria-hidden="true" className="h-1.5 flex-1 bg-slate-200">
-                            <div className="h-full bg-ink-900" style={{ width: `${part}%` }} />
-                          </div>
-                          <span className="w-10 text-right font-mono text-[11px] tabular-nums text-slate-700">{`${part} %`}</span>
+                {lignesBiens.map(({ p, part }) => (
+                  <tr key={`${p.propertyId}-${p.currency}`} className="hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-slate-900">{p.title}</p>
+                      <p className="text-xs text-slate-600">{p.address}</p>
+                      {p.pending === 0 && p.collected > 0 && (
+                        <span className="mt-1 inline-block border border-ink-900 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("owner.dashboard.settled")}</span>
+                      )}
+                      {p.collected === 0 && p.pending > 0 && (
+                        <span className="mt-1 inline-block border border-orange-300 bg-orange-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-900">{t("owner.dashboard.nothingCollected")}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-bold tabular-nums text-ink-900">{formatMoney(p.collected, p.currency)}</td>
+                    <td className="px-4 py-3 font-bold tabular-nums text-orange-700">{formatMoney(p.pending, p.currency)}</td>
+                    <td className="w-40 px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div aria-hidden="true" className="h-1.5 flex-1 bg-slate-200">
+                          <div className="h-full bg-ink-900" style={{ width: `${part}%` }} />
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <span className="w-10 text-right font-mono text-[11px] tabular-nums text-slate-700">{`${part} %`}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

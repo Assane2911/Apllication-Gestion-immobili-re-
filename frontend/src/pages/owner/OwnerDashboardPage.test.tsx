@@ -176,5 +176,91 @@ describe("OwnerDashboardPage", () => {
 
       expect(await screen.findByRole("link", { name: /Voir mon compte-rendu de gestion/ })).toHaveAttribute("href", "/proprietaire/crg");
     });
+
+    it("donne le net estimé après commission, hors charges", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: dashboard() });
+      renderPage();
+
+      // 1 000 perçus moins 8 % de commission : 920.
+      expect(await screen.findByText("Net estimé (hors charges) · 920 €")).toBeInTheDocument();
+    });
+
+    it("totalise les six mois et projette l'année à partir de la moyenne", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: dashboard({ revenueByMonth: { "2026-09": { EUR: 600 }, "2026-10": { EUR: 1200 }, "2026-11": { EUR: 1500 } } }),
+      });
+      renderPage();
+
+      // Cumul 3 300 ; moyenne 550 sur six mois ; projection sur douze mois : 6 600.
+      const historique = within(await screen.findByRole("region", { name: "Historique (6 derniers mois)" }));
+      expect(historique.getByText(/Cumul sur 6 mois · 3[\s ]300 €/)).toBeInTheDocument();
+      expect(historique.getByText(/Projection sur 12 mois · 6[\s ]600 €/)).toBeInTheDocument();
+    });
+
+    it("signale un bien soldé et un bien dont rien n'a encore été perçu", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: dashboard({
+          properties: [
+            { propertyId: "p1", title: "Villa Ngor", address: "Route de Ngor", currency: "EUR", collected: 800, pending: 0 },
+            { propertyId: "p2", title: "Studio Plateau", address: "Plateau", currency: "EUR", collected: 0, pending: 300 },
+            { propertyId: "p3", title: "Maison Almadies", address: "Almadies", currency: "EUR", collected: 500, pending: 100 },
+          ],
+        }),
+      });
+      renderPage();
+
+      expect(await screen.findAllByText("Soldé")).toHaveLength(1);
+      expect(screen.getAllByText("Rien perçu")).toHaveLength(1);
+    });
+
+    it("trie les biens au clic sur une colonne, dans les deux sens, puis rend l'ordre d'origine", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce({
+        data: dashboard({
+          properties: [
+            { propertyId: "p1", title: "Bravo", address: "A", currency: "EUR", collected: 200, pending: 0 },
+            { propertyId: "p2", title: "Alpha", address: "B", currency: "EUR", collected: 900, pending: 0 },
+            { propertyId: "p3", title: "Charlie", address: "C", currency: "EUR", collected: 500, pending: 0 },
+          ],
+        }),
+      });
+      renderPage();
+      await screen.findByText("Bravo");
+      const ordre = () =>
+        within(screen.getByRole("region", { name: "Mes biens" }))
+          .getAllByRole("row")
+          .slice(1)
+          .map((ligne) => within(ligne).getByText(/^(Alpha|Bravo|Charlie)$/).textContent);
+      expect(ordre()).toEqual(["Bravo", "Alpha", "Charlie"]);
+
+      const colonne = screen.getByRole("button", { name: "Perçu" });
+      await user.click(colonne);
+      expect(ordre()).toEqual(["Alpha", "Charlie", "Bravo"]);
+      expect(screen.getByRole("columnheader", { name: "Perçu" })).toHaveAttribute("aria-sort", "descending");
+
+      await user.click(colonne);
+      expect(ordre()).toEqual(["Bravo", "Charlie", "Alpha"]);
+
+      await user.click(colonne);
+      expect(ordre()).toEqual(["Bravo", "Alpha", "Charlie"]);
+      expect(screen.getByRole("columnheader", { name: "Perçu" })).toHaveAttribute("aria-sort", "none");
+    });
+
+    it("exporte le tableau de bord en CSV", async () => {
+      const user = userEvent.setup();
+      URL.createObjectURL = vi.fn(() => "blob:test");
+      URL.revokeObjectURL = vi.fn();
+      const clic = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      mockedApi.get.mockResolvedValueOnce({ data: dashboard() });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: "Exporter en CSV" }));
+
+      expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+      const blob = vi.mocked(URL.createObjectURL).mock.calls[0][0] as Blob;
+      expect(blob.type).toContain("text/csv");
+      expect(clic).toHaveBeenCalled();
+      clic.mockRestore();
+    });
   });
 });
