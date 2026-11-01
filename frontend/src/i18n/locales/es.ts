@@ -681,6 +681,13 @@ const es: TranslationSchema = {
   },
 
   landing: {
+    stickyCta: "Pruébelo gratis",
+    steps: {
+      title: "Del registro al primer recibo",
+      create: { title: "Cree su cuenta", desc: "Bastan unos minutos: un correo, el país de su agencia, y empieza la prueba de 15 días." },
+      add: { title: "Añada sus inmuebles e inquilinos", desc: "Introduzca sus inmuebles, inquilinos y contratos, o impórtelos desde un archivo." },
+      automate: { title: "Deje trabajar a la plataforma", desc: "Recibos, recordatorios de alquiler y seguimiento de rentabilidad sin volver a escribir nada." },
+    },
     nav: {
       features: "Funcionalidades",
       vitrine: "Nuestros inmuebles",
@@ -804,6 +811,10 @@ const es: TranslationSchema = {
       linkLabel: "Consultar nuestra política de privacidad →",
     },
     faq: {
+      searchLabel: "Buscar en las preguntas frecuentes",
+      searchPlaceholder: "Buscar una pregunta…",
+      noResult: "Ninguna pregunta coincide con su búsqueda.",
+      clearSearch: "Borrar la búsqueda",
       title: "Preguntas frecuentes",
       items: [
         {
@@ -834,6 +845,22 @@ const es: TranslationSchema = {
       cta: "Comenzar mi prueba gratuita de 15 días →",
     },
     pricing: {
+      perYear: "/ año",
+      monthlyEquivalent: "es decir {{price}} / mes",
+      currencyLabel: "Moneda",
+      cycleLabel: "Periodo de facturación",
+      monthly: "Mensual",
+      annual: "Anual",
+      annualSaving: "Pague al año: {{pct}} % de ahorro",
+      advisor: {
+        title: "Encontrar mi fórmula",
+        label: "¿Cuántos inmuebles gestiona?",
+        result: "Para {{count}} inmueble(s), le recomendamos",
+        upTo: "Hasta {{max}} inmuebles incluidos",
+        unlimited: "Inmuebles ilimitados",
+        perProperty: "es decir {{price}} por inmueble y mes",
+        forYou: "Para sus {{count}} inmueble(s)",
+      },
       title: "Planes simples y transparentes",
       subtitle: "Todos los planes incluyen 15 días de prueba gratuita sin necesidad de tarjeta bancaria, con una guía de inicio paso a paso.",
       perMonth: "/ mes",

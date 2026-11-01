@@ -681,6 +681,13 @@ const pt: TranslationSchema = {
   },
 
   landing: {
+    stickyCta: "Experimente grátis",
+    steps: {
+      title: "Do registo ao primeiro recibo",
+      create: { title: "Crie a sua conta", desc: "Bastam alguns minutos: um email, o país da sua agência, e o teste de 15 dias começa." },
+      add: { title: "Adicione os seus imóveis e inquilinos", desc: "Introduza os seus imóveis, inquilinos e contratos, ou importe-os de um ficheiro." },
+      automate: { title: "Deixe a plataforma trabalhar", desc: "Recibos, lembretes de renda e acompanhamento da rentabilidade sem voltar a escrever nada." },
+    },
     nav: {
       features: "Funcionalidades",
       vitrine: "Os nossos imóveis",
@@ -804,6 +811,10 @@ const pt: TranslationSchema = {
       linkLabel: "Consultar a nossa política de privacidade →",
     },
     faq: {
+      searchLabel: "Pesquisar nas perguntas frequentes",
+      searchPlaceholder: "Pesquisar uma pergunta…",
+      noResult: "Nenhuma pergunta corresponde à sua pesquisa.",
+      clearSearch: "Limpar a pesquisa",
       title: "Perguntas frequentes",
       items: [
         {
@@ -834,6 +845,22 @@ const pt: TranslationSchema = {
       cta: "Iniciar o meu teste grátis de 15 dias →",
     },
     pricing: {
+      perYear: "/ ano",
+      monthlyEquivalent: "ou seja {{price}} / mês",
+      currencyLabel: "Moeda",
+      cycleLabel: "Período de faturação",
+      monthly: "Mensal",
+      annual: "Anual",
+      annualSaving: "Pague por ano: {{pct}} % de poupança",
+      advisor: {
+        title: "Encontrar a minha fórmula",
+        label: "Quantos imóveis gere?",
+        result: "Para {{count}} imóvel(is), recomendamos",
+        upTo: "Até {{max}} imóveis incluídos",
+        unlimited: "Imóveis ilimitados",
+        perProperty: "ou seja {{price}} por imóvel e por mês",
+        forYou: "Para os seus {{count}} imóvel(is)",
+      },
       title: "Planos simples e transparentes",
       subtitle: "Todos os planos incluem 15 dias de teste grátis, sem necessidade de cartão bancário, com um guia de início passo a passo.",
       perMonth: "/ mês",

@@ -19,13 +19,5 @@ export const PLAN_CLASSES: Record<ManagerPlan, string> = {
   ENTERPRISE: "border border-orange-700 bg-orange-50 text-orange-900",
 };
 
-/**
- * Nombre de biens inclus par formule (`null` = illimité). Reprend les plafonds du serveur
- * (`maxPropertiesForPlan`, backend/src/controllers/subscription.controller.ts), qui reste l'autorité : cette table ne
- * sert qu'à situer l'usage d'un compte par rapport à sa formule.
- */
-export const PLAFOND_BIENS: Record<ManagerPlan, number | null> = {
-  STARTER: 5,
-  PRO: 25,
-  ENTERPRISE: null,
-};
+/** Nombre de biens inclus par formule : table partagée avec l'accueil (voir data/lignesFormules.ts). */
+export { PLAFOND_BIENS } from "../../data/lignesFormules";

@@ -681,6 +681,13 @@ const en: TranslationSchema = {
   },
 
   landing: {
+    stickyCta: "Try it for free",
+    steps: {
+      title: "From sign-up to your first receipt",
+      create: { title: "Create your account", desc: "A few minutes is enough: an email address, your agency's country, and the 15-day trial starts." },
+      add: { title: "Add your properties and tenants", desc: "Enter your properties, tenants and leases, or import them from a file." },
+      automate: { title: "Let the platform work", desc: "Receipts, rent reminders and profitability tracking happen without re-typing." },
+    },
     nav: {
       features: "Features",
       vitrine: "Our properties",
@@ -804,6 +811,10 @@ const en: TranslationSchema = {
       linkLabel: "Read our privacy policy →",
     },
     faq: {
+      searchLabel: "Search the FAQ",
+      searchPlaceholder: "Search a question…",
+      noResult: "No question matches your search.",
+      clearSearch: "Clear the search",
       title: "Frequently asked questions",
       items: [
         {
@@ -834,6 +845,22 @@ const en: TranslationSchema = {
       cta: "Start my free 15-day trial →",
     },
     pricing: {
+      perYear: "/ year",
+      monthlyEquivalent: "i.e. {{price}} / month",
+      currencyLabel: "Currency",
+      cycleLabel: "Billing period",
+      monthly: "Monthly",
+      annual: "Annual",
+      annualSaving: "Pay yearly: {{pct}}% saved",
+      advisor: {
+        title: "Find my plan",
+        label: "How many properties do you manage?",
+        result: "For {{count}} propert(ies), we recommend",
+        upTo: "Up to {{max}} properties included",
+        unlimited: "Unlimited properties",
+        perProperty: "i.e. {{price}} per property per month",
+        forYou: "For your {{count}} propert(ies)",
+      },
       title: "Simple, transparent plans",
       subtitle: "Every plan includes a free 15-day trial, no credit card required, with a step-by-step getting started guide.",
       perMonth: "/ month",

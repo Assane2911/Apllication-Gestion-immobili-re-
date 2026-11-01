@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -247,5 +248,130 @@ describe("LandingPage — jour d'échéance", () => {
     ["pt", pt],
   ])("%s : le comparatif ne fixe pas l'échéance au 5", (_langue, textes) => {
     expect(textes.landing.compare.rows.reminders.immoplatform).not.toMatch(/\b5(th|º|\s?e)?\b|\bcinco\b/i);
+  });
+});
+
+describe("LandingPage — tarifs, conseil de formule, FAQ et essai fixé", () => {
+  const plans = (devise: "EUR" | "XOF") =>
+    devise === "EUR"
+      ? [
+          { id: "STARTER", monthlyPrice: 9, annualPrice: 86 },
+          { id: "PRO", monthlyPrice: 29, annualPrice: 278 },
+          { id: "ENTERPRISE", monthlyPrice: 49, annualPrice: 470 },
+        ]
+      : [
+          { id: "STARTER", monthlyPrice: 5000, annualPrice: 48000 },
+          { id: "PRO", monthlyPrice: 15000, annualPrice: 144000 },
+          { id: "ENTERPRISE", monthlyPrice: 25000, annualPrice: 240000 },
+        ];
+
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  function servirTarifs() {
+    mockedApi.get.mockImplementation((chemin: string, options?: { params?: { currency?: "EUR" | "XOF" } }) =>
+      Promise.resolve(chemin === "/subscription/plans" ? { data: plans(options?.params?.currency ?? "EUR") } : { data: {} })
+    );
+  }
+
+  it("garde les prix par défaut, sans choix de devise ni de période, tant que le serveur n'a pas répondu", () => {
+    renderPage();
+    expect(screen.queryByRole("group", { name: "Devise" })).not.toBeInTheDocument();
+    expect(screen.getByText("29€")).toBeInTheDocument();
+  });
+
+  it("propose la devise et la période une fois les tarifs reçus, et affiche les prix de la devise choisie", async () => {
+    servirTarifs();
+    const user = userEvent.setup();
+    renderPage();
+
+    const devises = within(await screen.findByRole("group", { name: "Devise" }));
+    expect(screen.getByText(/^29\s€$/)).toBeInTheDocument();
+
+    await user.click(devises.getByRole("button", { name: "XOF FCFA" }));
+    expect(screen.getByText(/^15\s?000 FCFA$/)).toBeInTheDocument();
+    expect(devises.getByRole("button", { name: "XOF FCFA" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("passe au prix annuel avec son équivalent mensuel et l'économie réelle", async () => {
+    servirTarifs();
+    const user = userEvent.setup();
+    renderPage();
+
+    const periode = within(await screen.findByRole("group", { name: "Période de facturation" }));
+    await user.click(periode.getByRole("button", { name: "Annuel" }));
+
+    expect(screen.getByText(/^278\s€$/)).toBeInTheDocument();
+    // 278 € sur l'année : 23,17 € par mois (arrondi à deux décimales).
+    expect(screen.getByText(/soit 23,17\s€ \/ mois/)).toBeInTheDocument();
+    expect(screen.getByText("Payez à l'année : 20 % d'économie")).toBeInTheDocument();
+  });
+
+  it("conseille la formule qui couvre le nombre de biens, aux plafonds exacts", () => {
+    renderPage();
+    const curseur = screen.getByLabelText("Combien de biens gérez-vous ?");
+    const conseil = screen.getByText(/nous vous conseillons/).closest("div") as HTMLElement;
+
+    expect(within(conseil).getByText("Starter")).toBeInTheDocument();
+    fireEvent.change(curseur, { target: { value: "5" } });
+    expect(within(conseil).getByText("Starter")).toBeInTheDocument();
+    fireEvent.change(curseur, { target: { value: "6" } });
+    expect(within(conseil).getByText("Professionnel")).toBeInTheDocument();
+    expect(within(conseil).getByText(/Jusqu'à 25 biens inclus/)).toBeInTheDocument();
+    fireEvent.change(curseur, { target: { value: "26" } });
+    expect(within(conseil).getByText("Agence & Multi-Comptes")).toBeInTheDocument();
+    expect(within(conseil).getByText(/Biens illimités/)).toBeInTheDocument();
+  });
+
+  it("calcule le coût par bien avec les vrais tarifs, et marque la colonne conseillée une fois le curseur bougé", async () => {
+    servirTarifs();
+    renderPage();
+    await screen.findByRole("group", { name: "Devise" });
+
+    fireEvent.change(screen.getByLabelText("Combien de biens gérez-vous ?"), { target: { value: "10" } });
+
+    // Formule Professionnelle à 29 € pour 10 biens : 2,90 € par bien et par mois.
+    expect(screen.getByText(/soit 2,9\s€ par bien et par mois/)).toBeInTheDocument();
+    expect(screen.getByText("Pour vos 10 bien(s)")).toBeInTheDocument();
+  });
+
+  it("filtre la FAQ au fil de la saisie, sans tenir compte des accents, et le dit quand rien ne correspond", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const champ = screen.getByRole("searchbox", { name: "Rechercher dans la FAQ" });
+    const avant = screen.getAllByRole("button", { expanded: false }).length + screen.getAllByRole("button", { expanded: true }).length;
+    await user.type(champ, "securite");
+    const apres = screen.getAllByRole("button", { expanded: false }).length + screen.getAllByRole("button", { expanded: true }).length;
+    expect(apres).toBeLessThan(avant);
+
+    await user.clear(champ);
+    await user.type(champ, "zzzzzzzz");
+    expect(screen.getByText(/Aucune question ne correspond/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Effacer la recherche" }));
+    expect(champ).toHaveValue("");
+    expect(screen.queryByText(/Aucune question ne correspond/)).not.toBeInTheDocument();
+  });
+
+  it("annonce en trois étapes le chemin de l'inscription à la première quittance", () => {
+    renderPage();
+    const etapes = within(screen.getByRole("region", { name: "De l'inscription à la première quittance" }));
+    expect(etapes.getAllByRole("listitem")).toHaveLength(3);
+    expect(etapes.getByText("Créez votre compte")).toBeInTheDocument();
+  });
+
+  it("n'offre le bouton d'essai fixé qu'aux visiteurs non connectés, une fois l'accroche dépassée", async () => {
+    renderPage();
+    const lien = screen.getByRole("link", { name: /Essayer gratuitement/ });
+    expect(lien).toHaveAttribute("href", "/inscription");
+    expect(lien).toHaveAttribute("tabindex", "-1");
+
+    Object.defineProperty(window, "scrollY", { value: 900, configurable: true });
+    fireEvent.scroll(window);
+    await waitFor(() => expect(screen.getByRole("link", { name: /Essayer gratuitement/ })).toHaveAttribute("tabindex", "0"));
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
   });
 });
