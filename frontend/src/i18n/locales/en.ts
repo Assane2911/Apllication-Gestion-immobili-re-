@@ -2072,6 +2072,19 @@ const en: TranslationSchema = {
       title: "Agency Identity & White Label",
       subtitle: "Customize the contact details and legal notices shown on your official receipts and contracts",
       success: "Agency settings updated successfully! Your future receipts will include this information.",
+      sections: {
+        index: "Contents",
+        identity: "Agency identity",
+        logo: "Logo",
+        stamp: "Stamp",
+        bank: "Bank details",
+        reminders: "Reminders",
+        retention: "Retention",
+        security: "Security",
+        twoFactor: "Two-factor authentication",
+        team: "Team",
+        danger: "Danger zone",
+      },
       overdue: {
         title: "Automatic overdue rent reminders",
         hint: "Off by default. Once on, each unpaid rent gets at most three email reminders (main tenant and co-tenants), plus WhatsApp on the Professional plan when the reminder template is configured; after 90 days late, no more automatic reminders: it is up to you.",
@@ -2201,6 +2214,8 @@ const en: TranslationSchema = {
       nativeFallback: "To subscribe or change plan, sign in from the website on a computer or your mobile browser — the app only shows your current subscription.",
       subtitle: "Manage your property management plan and billing options.",
       currentStatus: "Your current status",
+      cells: { plan: "Plan", due: "Due date", usage: "Properties used" },
+      usage: { of: "{{count}} / {{max}}", unlimited: "{{count}} (unlimited)" },
       features: {
         maxProperties5: "Up to 5 properties",
         receipts: "Automatic rent receipts",

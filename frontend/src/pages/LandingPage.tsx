@@ -884,98 +884,61 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section : un tableau de formules, trois colonnes dans un seul cadre, comme sur la page Abonnement. */}
       <section id="pricing" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80">
         <EnteteSection numero="07" titre={t("landing.pricing.title")} sous={t("landing.pricing.subtitle")} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Starter */}
-          <Reveal delay={0}>
-            <div className="h-full bg-white/40 border border-slate-300 rounded-lg p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-400 transition-all duration-300">
-              <div>
-                <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">{t("landing.pricing.starter.name")}</span>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-slate-900">9€</span>
-                  <span className="text-slate-700 text-xs">{t("landing.pricing.perMonth")}</span>
+        <Reveal>
+          <div className="grid grid-cols-1 divide-y divide-slate-400 border-2 border-ink-900 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
+            {(
+              [
+                { cle: "starter", id: "STARTER", prix: "9€", fonctionnalites: starterFeatures, populaire: false },
+                { cle: "pro", id: "PRO", prix: "29€", fonctionnalites: proFeatures, populaire: true },
+                { cle: "enterprise", id: "ENTERPRISE", prix: "49€", fonctionnalites: enterpriseFeatures, populaire: false },
+              ] as const
+            ).map((formule) => (
+              <article key={formule.cle} className="flex flex-col">
+                {/* Bandeau de colonne : le nom de la formule ; orange et avec la mention « populaire » pour la formule conseillée. */}
+                <div
+                  className={`flex items-center justify-between gap-3 border-b px-6 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider ${
+                    formule.populaire ? "border-orange-700 bg-orange-700 text-white" : "border-slate-400 bg-slate-50 text-slate-800"
+                  }`}
+                >
+                  <span className="uppercase">{t(`landing.pricing.${formule.cle}.name`)}</span>
+                  {formule.populaire && <span>{t("landing.pricing.pro.badge")}</span>}
                 </div>
-                <p className="text-xs text-slate-700 mt-2">{t("manager.subscription.planDescriptions.STARTER")}</p>
-                <ul className="mt-6 space-y-3 text-xs text-slate-700">
-                  {starterFeatures.map((feat, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <Check size={13} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-800" aria-hidden="true" />
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <Link
-                to="/inscription"
-                className="mt-8 w-full block text-center bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold text-xs py-3 rounded-xl transition-colors"
-              >
-                {t("landing.pricing.starter.cta")}
-              </Link>
-            </div>
-          </Reveal>
 
-          {/* Pro */}
-          <Reveal delay={100}>
-            <div className="h-full bg-brand-50 border-2 border-brand-600 rounded-md p-8 flex flex-col justify-between relative shadow-md">
-              <span className="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] uppercase font-extrabold px-3 py-0.5 rounded-full tracking-wider">
-                {t("landing.pricing.pro.badge")}
-              </span>
-              <div>
-                <span className="text-xs font-semibold text-brand-700 uppercase tracking-wider">{t("landing.pricing.pro.name")}</span>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-slate-900">29€</span>
-                  <span className="text-slate-700 text-xs">{t("landing.pricing.perMonth")}</span>
+                <div className="flex flex-1 flex-col justify-between p-6 sm:p-8">
+                  <div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-4xl font-extrabold tabular-nums text-slate-900">{formule.prix}</span>
+                      <span className="text-xs text-slate-700">{t("landing.pricing.perMonth")}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-700">{t(`manager.subscription.planDescriptions.${formule.id}`)}</p>
+                    <ul className="mt-6 space-y-3 border-t border-slate-300 pt-5 text-xs text-slate-800">
+                      {formule.fonctionnalites.map((feat, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-emerald-700 bg-emerald-50">
+                            <Check size={11} strokeWidth={3} className="text-emerald-800" aria-hidden="true" />
+                          </span>
+                          {feat}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Link
+                    to="/inscription"
+                    className={`mt-8 block w-full border py-3 text-center text-xs font-semibold text-white transition-colors ${
+                      formule.populaire ? "border-orange-700 bg-orange-700 hover:bg-orange-800" : "border-ink-900 bg-ink-900 hover:bg-brand-600"
+                    }`}
+                  >
+                    {t(`landing.pricing.${formule.cle}.cta`)}
+                  </Link>
                 </div>
-                <p className="text-xs text-slate-700 mt-2">{t("manager.subscription.planDescriptions.PRO")}</p>
-                <ul className="mt-6 space-y-3 text-xs text-slate-800">
-                  {proFeatures.map((feat, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <Check size={13} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-800" aria-hidden="true" />
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <Link
-                to="/inscription"
-                className="mt-8 w-full block text-center bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-3 rounded-xl transition-colors shadow-sm"
-              >
-                {t("landing.pricing.pro.cta")}
-              </Link>
-            </div>
-          </Reveal>
-
-          {/* Enterprise */}
-          <Reveal delay={200}>
-            <div className="h-full bg-white/40 border border-slate-300 rounded-lg p-8 flex flex-col justify-between hover:-translate-y-1.5 hover:border-slate-400 transition-all duration-300">
-              <div>
-                <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">{t("landing.pricing.enterprise.name")}</span>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-slate-900">49€</span>
-                  <span className="text-slate-700 text-xs">{t("landing.pricing.perMonth")}</span>
-                </div>
-                <p className="text-xs text-slate-700 mt-2">{t("manager.subscription.planDescriptions.ENTERPRISE")}</p>
-                <ul className="mt-6 space-y-3 text-xs text-slate-700">
-                  {enterpriseFeatures.map((feat, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <Check size={13} strokeWidth={2.5} className="shrink-0 mt-0.5 text-emerald-800" aria-hidden="true" />
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <Link
-                to="/inscription"
-                className="mt-8 w-full block text-center bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold text-xs py-3 rounded-xl transition-colors"
-              >
-                {t("landing.pricing.enterprise.cta")}
-              </Link>
-            </div>
-          </Reveal>
-        </div>
+              </article>
+            ))}
+          </div>
+        </Reveal>
       </section>
 
       {/* Final CTA Banner : cartouche de plan */}

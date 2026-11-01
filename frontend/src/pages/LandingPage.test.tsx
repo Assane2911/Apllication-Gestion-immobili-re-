@@ -121,7 +121,7 @@ describe("LandingPage", () => {
     renderPage();
     const cartes = ["Starter", "Professionnel", "Agence & Multi-Comptes"].map((nom) => {
       const entete = screen.getByText(nom, { selector: "span.uppercase" });
-      return within(entete.closest("div")!.parentElement!);
+      return within(entete.closest("article")!);
     });
     const [starter, pro, agence] = cartes;
 

@@ -2074,6 +2074,19 @@ const es: TranslationSchema = {
       title: "Identidad de la Agencia y Marca Blanca",
       subtitle: "Personaliza los datos de contacto y las menciones legales que aparecerán en tus recibos y contratos oficiales",
       success: "¡Configuración de la agencia actualizada con éxito! Tus próximos recibos incluirán esta información.",
+      sections: {
+        index: "Índice",
+        identity: "Identidad de la agencia",
+        logo: "Logotipo",
+        stamp: "Sello",
+        bank: "Datos bancarios",
+        reminders: "Recordatorios",
+        retention: "Conservación",
+        security: "Seguridad",
+        twoFactor: "Doble autenticación",
+        team: "Equipo",
+        danger: "Zona de peligro",
+      },
       overdue: {
         title: "Recordatorios automáticos de impagos",
         hint: "Desactivados por defecto. Una vez activados, cada alquiler impagado recibe como máximo tres recordatorios por email (titular y coinquilinos), y por WhatsApp con la fórmula Profesional si la plantilla de recordatorio está configurada; pasados 90 días de retraso, ningún recordatorio automático más: la continuación le corresponde.",
@@ -2203,6 +2216,8 @@ const es: TranslationSchema = {
       nativeFallback: "Para suscribirse o cambiar de plan, inicie sesión desde el sitio web, en un ordenador o en el navegador del móvil — la aplicación solo muestra su suscripción actual.",
       subtitle: "Gestiona tu plan de gestión inmobiliaria y tus opciones de facturación.",
       currentStatus: "Tu estado actual",
+      cells: { plan: "Plan", due: "Vencimiento", usage: "Inmuebles usados" },
+      usage: { of: "{{count}} / {{max}}", unlimited: "{{count}} (ilimitado)" },
       features: {
         maxProperties5: "Hasta 5 inmuebles",
         receipts: "Emisión automática de recibos",

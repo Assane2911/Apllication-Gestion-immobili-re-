@@ -2073,6 +2073,19 @@ const fr = {
       title: "Identité de l'Agence & Marque Blanche",
       subtitle: "Personnalisez les coordonnées et mentions légales qui apparaîtront sur vos quittances et contrats officiels",
       success: "Paramètres de l'agence mis à jour avec succès ! Vos futures quittances intégreront ces informations.",
+      sections: {
+        index: "Sommaire",
+        identity: "Identité de l'agence",
+        logo: "Logo",
+        stamp: "Tampon",
+        bank: "Coordonnées bancaires",
+        reminders: "Relances",
+        retention: "Conservation",
+        security: "Sécurité",
+        twoFactor: "Double authentification",
+        team: "Équipe",
+        danger: "Zone de danger",
+      },
       overdue: {
         title: "Relances automatiques des impayés",
         hint: "Désactivées par défaut. Une fois activées, chaque loyer impayé reçoit au plus trois relances par email (titulaire et colocataires), et par WhatsApp avec la formule Professionnel si le modèle de relance est configuré ; au-delà de 90 jours de retard, plus aucune relance automatique : la suite vous revient.",
@@ -2202,6 +2215,8 @@ const fr = {
       nativeFallback: "Pour souscrire ou changer d'offre, connectez-vous depuis le site web sur ordinateur ou votre navigateur mobile — l'app se contente d'afficher votre abonnement en cours.",
       subtitle: "Gérez votre formule de gestion immobilière et vos options de facturation.",
       currentStatus: "Votre statut actuel",
+      cells: { plan: "Formule", due: "Échéance", usage: "Biens utilisés" },
+      usage: { of: "{{count}} / {{max}}", unlimited: "{{count}} (illimité)" },
       features: {
         maxProperties5: "Jusqu'à 5 biens immobiliers",
         receipts: "Émission automatique des quittances",

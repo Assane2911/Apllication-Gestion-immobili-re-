@@ -2072,6 +2072,19 @@ const pt: TranslationSchema = {
       title: "Identidade da Agência & Marca Branca",
       subtitle: "Personalize os dados de contacto e as menções legais que aparecerão nos seus recibos e contratos oficiais",
       success: "Definições da agência atualizadas com sucesso! Os seus futuros recibos incluirão estas informações.",
+      sections: {
+        index: "Índice",
+        identity: "Identidade da agência",
+        logo: "Logótipo",
+        stamp: "Carimbo",
+        bank: "Dados bancários",
+        reminders: "Lembretes",
+        retention: "Conservação",
+        security: "Segurança",
+        twoFactor: "Dupla autenticação",
+        team: "Equipa",
+        danger: "Zona de perigo",
+      },
       overdue: {
         title: "Lembretes automáticos de rendas em atraso",
         hint: "Desativados por defeito. Uma vez ativados, cada renda por pagar recebe no máximo três lembretes por email (titular e coinquilinos), e por WhatsApp com o plano Profissional se o modelo de lembrete estiver configurado; após 90 dias de atraso, mais nenhum lembrete automático: a sequência cabe-lhe a si.",
@@ -2201,6 +2214,8 @@ const pt: TranslationSchema = {
       nativeFallback: "Para subscrever ou mudar de plano, inicie sessão no site, num computador ou no navegador do telemóvel — a aplicação limita-se a mostrar a sua subscrição atual.",
       subtitle: "Gira o seu plano de gestão imobiliária e as suas opções de faturação.",
       currentStatus: "O seu estado atual",
+      cells: { plan: "Plano", due: "Vencimento", usage: "Imóveis usados" },
+      usage: { of: "{{count}} / {{max}}", unlimited: "{{count}} (ilimitado)" },
       features: {
         maxProperties5: "Até 5 imóveis",
         receipts: "Emissão automática de recibos",
