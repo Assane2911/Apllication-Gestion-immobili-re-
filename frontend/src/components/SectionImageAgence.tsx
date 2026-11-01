@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import type { AgencySettings } from "../types";
+import SectionReglage from "./SectionReglage";
 
 const CHAMP_REPONSE = { logo: "logoUrl", stamp: "stampOrSignatureUrl" } as const;
 
@@ -12,10 +13,13 @@ const CHAMP_REPONSE = { logo: "logoUrl", stamp: "stampOrSignatureUrl" } as const
  */
 export default function SectionImageAgence({
   ressource,
+  numero,
   url,
   onChange,
 }: {
   ressource: keyof typeof CHAMP_REPONSE;
+  /** Numéro de la rubrique dans la page de réglages. */
+  numero: string;
   url: string | null;
   onChange: (url: string | null) => void;
 }) {
@@ -63,25 +67,19 @@ export default function SectionImageAgence({
   }
 
   return (
-    <section
-      aria-labelledby={`agency-${ressource}-title`}
-      className="bg-white rounded-2xl border border-contour-200 shadow-sm p-6"
-    >
-      <h3 id={`agency-${ressource}-title`} className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-        {t(`${cle}.title`)}
-      </h3>
-      <p className="text-sm text-slate-600 mt-2">{t(`${cle}.description`)}</p>
+    <SectionReglage id={`agency-${ressource}`} idTitre={`agency-${ressource}-title`} numero={numero} titre={t(`${cle}.title`)}>
+      <p className="text-sm text-slate-600">{t(`${cle}.description`)}</p>
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {url && (
           <img
             src={url}
             alt={t(`${cle}.previewAlt`)}
-            className="h-14 max-w-[200px] object-contain rounded-lg border border-contour-200 bg-white p-1"
+            className="h-14 max-w-[200px] border border-slate-300 bg-white object-contain p-1"
           />
         )}
         <label
-          className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold border border-slate-300 bg-white text-slate-800 shadow-sm focus-within:ring-2 focus-within:ring-brand-500 ${
-            busy ? "opacity-60 cursor-wait" : "cursor-pointer hover:bg-slate-50"
+          className={`inline-flex items-center border border-ink-900 bg-white px-4 py-2 text-sm font-semibold text-ink-900 transition-colors ${
+            busy ? "cursor-wait opacity-60" : "cursor-pointer hover:bg-ink-900 hover:text-white"
           }`}
         >
           {busy ? t(`${cle}.uploading`) : url ? t(`${cle}.replace`) : t(`${cle}.choose`)}
@@ -92,7 +90,7 @@ export default function SectionImageAgence({
             type="button"
             onClick={handleRemove}
             disabled={busy}
-            className="text-sm font-semibold text-red-700 hover:underline disabled:opacity-60"
+            className="cursor-pointer border-b border-rose-700/40 text-sm font-semibold text-rose-700 hover:border-rose-700 disabled:opacity-60"
           >
             {t(`${cle}.remove`)}
           </button>
@@ -108,6 +106,6 @@ export default function SectionImageAgence({
           {t(`${cle}.saved`)}
         </p>
       )}
-    </section>
+    </SectionReglage>
   );
 }

@@ -27,7 +27,7 @@ export default function MembreEquipe({
         <p className="text-sm font-medium text-slate-900">{member.email}</p>
         <p
           className={`text-xs ${
-            member.expired ? "text-amber-700 font-semibold" : "text-slate-600"
+            member.expired ? "font-semibold text-orange-800" : "text-slate-600"
           }`}
         >
           {!enAttente
@@ -41,7 +41,7 @@ export default function MembreEquipe({
         aria-label={t("manager.agencySettings.team.roleAria", { email: member.email })}
         value={member.role}
         onChange={(e) => onChangeRole(member, e.target.value as TeamRole)}
-        className="text-xs border border-slate-300 bg-white text-slate-900 rounded-lg px-2 py-1.5"
+        className="border border-slate-400 bg-white px-2 py-1.5 text-xs text-slate-900"
       >
         {ROLES_EQUIPE.map((r) => (
           <option key={r} value={r}>
@@ -54,7 +54,7 @@ export default function MembreEquipe({
           type="button"
           onClick={() => onResend(member)}
           aria-label={t("manager.agencySettings.team.resendAria", { email: member.email })}
-          className="text-brand-700 hover:underline text-xs font-semibold"
+          className="cursor-pointer border-b border-ink-900/40 text-xs font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700"
         >
           {t("manager.agencySettings.team.resendButton")}
         </button>
@@ -62,7 +62,7 @@ export default function MembreEquipe({
       <button
         type="button"
         onClick={() => onRemove(member)}
-        className="text-red-600 hover:underline text-xs font-semibold"
+        className="cursor-pointer border-b border-rose-700/40 text-xs font-semibold text-rose-700 hover:border-rose-700"
       >
         {t("manager.agencySettings.team.removeButton")}
       </button>
