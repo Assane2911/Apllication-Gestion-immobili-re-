@@ -159,4 +159,49 @@ describe("AdminSettingsPage", () => {
 
     expect(await screen.findByRole("button", { name: "Activer la double authentification" })).toBeInTheDocument();
   });
+
+  it("contrôle la clé de l'IBAN et le format du BIC, sans empêcher l'enregistrement", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+
+    const iban = await screen.findByLabelText("IBAN de la plateforme");
+    await user.type(iban, "FR7630001007941234567890186");
+    expect(screen.getByText(/La clé de cet IBAN ne correspond pas/)).toBeInTheDocument();
+
+    await user.clear(iban);
+    await user.type(iban, "FR76 3000 1007 9412 3456 7890 185");
+    expect(screen.getByText("Clé IBAN valide")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("BIC / SWIFT"), "BDFEFRP");
+    expect(screen.getByText("Un BIC compte 8 ou 11 caractères")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("BIC / SWIFT"), "PXXX");
+    expect(screen.getByText("Format BIC valide")).toBeInTheDocument();
+  });
+
+  it("montre l'aperçu de ce que verront les gestionnaires, IBAN groupé par quatre", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+
+    const apercu = await screen.findByRole("complementary", { name: "Ce que verront les gestionnaires" });
+    expect(apercu).toHaveTextContent("Saisissez l'IBAN pour voir l'aperçu.");
+
+    await user.type(screen.getByLabelText("IBAN de la plateforme"), "fr7630001007941234567890185");
+    expect(apercu).toHaveTextContent("FR76 3000 1007 9412 3456 7890 185");
+  });
+
+  it("signale les modifications non enregistrées puis le retour à jour après l'enregistrement", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }) });
+    mockedApi.put.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+
+    expect(await screen.findByText("À jour")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("BIC / SWIFT"), "A");
+    expect(screen.getByText("Modifications non enregistrées")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(await screen.findByText("À jour")).toBeInTheDocument();
+  });
 });

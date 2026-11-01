@@ -102,7 +102,7 @@ describe("AdminManagersPage", () => {
     renderPage();
     await screen.findByText("Agence Alpha");
 
-    await user.selectOptions(screen.getByLabelText("Filtrer par statut"), "SUSPENDED");
+    await user.click(within(screen.getByRole("group", { name: "Filtrer par statut" })).getByRole("button", { name: "Suspendu" }));
 
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/admin/managers", { params: { page: 1, status: "SUSPENDED" } })
@@ -134,7 +134,7 @@ describe("AdminManagersPage", () => {
       expect(mockedApi.get).toHaveBeenLastCalledWith("/admin/managers", { params: { page: 1, plan: "PRO" } })
     );
 
-    await user.selectOptions(screen.getByLabelText("Filtrer par statut"), "EXPIRED");
+    await user.click(within(screen.getByRole("group", { name: "Filtrer par statut" })).getByRole("button", { name: "Expiré" }));
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/admin/managers", {
         params: { page: 1, plan: "PRO", status: "EXPIRED" },
@@ -175,7 +175,7 @@ describe("AdminManagersPage", () => {
     await screen.findByText("Agence Alpha");
 
     await userEvent.selectOptions(screen.getByRole("combobox", { name: /formule/i }), "PRO");
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: /statut/i }), "SUSPENDED");
+    await userEvent.click(within(screen.getByRole("group", { name: /statut/i })).getByRole("button", { name: "Suspendu" }));
     await userEvent.type(screen.getByRole("searchbox", { name: /rechercher/i }), "alpha");
     // La recherche est temporisée (300 ms) : le bouton doit porter la valeur validée.
     await waitFor(() =>
@@ -189,5 +189,63 @@ describe("AdminManagersPage", () => {
         responseType: "blob",
       })
     );
+  });
+
+  it("chiffre chaque onglet de statut avec les comptes du tableau de bord", async () => {
+    mockedApi.get.mockImplementation((chemin: string) =>
+      Promise.resolve(
+        chemin === "/admin/dashboard/stats"
+          ? { data: { managers: { total: 12, trialActive: 4, subscriptionActive: 6, expired: 2, suspended: 1 } } }
+          : page([ligne()])
+      )
+    );
+    renderPage();
+    await screen.findByRole("link", { name: "Agence Alpha" });
+
+    const onglets = within(screen.getByRole("group", { name: "Filtrer par statut" }));
+    expect(await onglets.findByRole("button", { name: "Tous les statuts · 12" })).toBeInTheDocument();
+    expect(onglets.getByRole("button", { name: "Actif · 6" })).toBeInTheDocument();
+    expect(onglets.getByRole("button", { name: "Essai · 4" })).toBeInTheDocument();
+    expect(onglets.getByRole("button", { name: "Suspendu · 1" })).toBeInTheDocument();
+    // L'onglet de l'état choisi est annoncé comme pressé.
+    await userEvent.click(onglets.getByRole("button", { name: "Actif · 6" }));
+    expect(onglets.getByRole("button", { name: "Actif · 6" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("situe l'usage d'un compte face au plafond de biens de sa formule, et signale celui qui l'approche", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        ligne({ id: "a", agencyName: "Agence Proche", plan: "STARTER", propertiesCount: 5 }),
+        ligne({ id: "b", agencyName: "Agence Large", plan: "PRO", propertiesCount: 3 }),
+        ligne({ id: "c", agencyName: "Agence Sans Limite", plan: "ENTERPRISE", propertiesCount: 90 }),
+      ])
+    );
+    renderPage();
+
+    const tableau = within(await screen.findByRole("table"));
+    expect(tableau.getByRole("meter", { name: "5 bien(s) sur 5 inclus dans la formule" })).toHaveAttribute("aria-valuenow", "5");
+    expect(tableau.getByRole("meter", { name: "3 bien(s) sur 25 inclus dans la formule" })).toBeInTheDocument();
+    // Formule illimitée : aucune jauge, et aucune alerte.
+    expect(tableau.getAllByRole("meter")).toHaveLength(2);
+    expect(tableau.getAllByText("Proche du plafond")).toHaveLength(1);
+  });
+
+  it("propose d'écrire au gestionnaire et de copier son adresse", async () => {
+    const ecrire = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+    mockedApi.get.mockResolvedValueOnce(page([ligne()]));
+    renderPage();
+
+    expect(await screen.findByRole("link", { name: "Écrire à agence@test.local" })).toHaveAttribute("href", "mailto:agence@test.local");
+    await userEvent.click(screen.getByRole("button", { name: "Copier l'adresse agence@test.local" }));
+    expect(ecrire).toHaveBeenCalledWith("agence@test.local");
+  });
+
+  it("annonce le délai restant d'un essai en cours", async () => {
+    const dansDeuxJours = new Date(Date.now() + 2 * 86_400_000 - 3_600_000).toISOString();
+    mockedApi.get.mockResolvedValueOnce(page([ligne({ status: "TRIAL", trialEndsAt: dansDeuxJours, subscriptionEndsAt: null })]));
+    renderPage();
+
+    expect(await screen.findByText("dans 2 jour(s)")).toBeInTheDocument();
   });
 });

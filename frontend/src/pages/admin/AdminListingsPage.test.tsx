@@ -202,4 +202,50 @@ describe("AdminListingsPage", () => {
     expect(liens).toHaveLength(1);
     expect(liens[0]).toHaveAttribute("href", "/vitrine/annonces/a2");
   });
+
+  it("propose des motifs courants en un clic, cumulables avec le texte déjà saisi", async () => {
+    mockedApi.get.mockResolvedValue(page([annonce()]));
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+    renderPage();
+    await screen.findByText("Villa Ngor");
+
+    await userEvent.click(screen.getByRole("button", { name: "Masquer" }));
+    const motifs = within(screen.getByRole("group", { name: "Motifs fréquents" }));
+    await userEvent.click(motifs.getByRole("button", { name: "Photos" }));
+    await userEvent.click(motifs.getByRole("button", { name: "Prix" }));
+    // Un motif déjà ajouté ne l'est pas deux fois.
+    await userEvent.click(motifs.getByRole("button", { name: "Photos" }));
+
+    const champ = screen.getByRole("textbox", { name: /Motif du masquage/ });
+    expect(champ).toHaveValue("Photos sans rapport avec le bien. Prix trompeur ou irréaliste.");
+
+    await userEvent.click(screen.getByRole("button", { name: "Masquer l'annonce" }));
+    await waitFor(() =>
+      expect(mockedApi.post).toHaveBeenCalledWith("/admin/listings/a1/hide", {
+        reason: "Photos sans rapport avec le bien. Prix trompeur ou irréaliste.",
+      })
+    );
+  });
+
+  it("n'indique « En ligne sur la vitrine » que pour une annonce réellement visible du public", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        annonce({ id: "ok", title: "Villa visible" }),
+        annonce({ id: "brouillon", title: "Villa brouillon", status: "DRAFT" }),
+        annonce({ id: "masquee", title: "Villa masquée", hiddenByAdminAt: "2026-10-01T10:00:00.000Z", moderationReason: "Doublon" }),
+        annonce({ id: "suspendu", title: "Villa suspendue", managerSuspendedAt: "2026-10-02T10:00:00.000Z" }),
+      ])
+    );
+    renderPage();
+
+    await screen.findByText("Villa visible");
+    expect(screen.getAllByText("En ligne sur la vitrine")).toHaveLength(1);
+  });
+
+  it("propose d'écrire au gestionnaire de l'annonce", async () => {
+    mockedApi.get.mockResolvedValueOnce(page([annonce()]));
+    renderPage();
+
+    expect(await screen.findByRole("link", { name: "Écrire au gestionnaire" })).toHaveAttribute("href", "mailto:agence@test.local");
+  });
 });

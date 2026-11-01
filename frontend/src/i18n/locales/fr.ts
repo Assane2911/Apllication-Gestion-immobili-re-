@@ -2549,6 +2549,12 @@ const fr = {
       listings: "Annonces",
     },
     managers: {
+      count: "{{count}} compte(s)",
+      copyEmail: "Copier l'adresse {{email}}",
+      writeTo: "Écrire à {{email}}",
+      inDays: "dans {{count}} jour(s)",
+      capacity: "{{used}} bien(s) sur {{max}} inclus dans la formule",
+      nearLimit: "Proche du plafond",
       title: "Gestionnaires",
       subtitle: "Les comptes agence de la plateforme, du plus récent au plus ancien",
       searchPlaceholder: "Rechercher par email ou nom d'agence",
@@ -2585,6 +2591,7 @@ const fr = {
       },
     },
     managerDetail: {
+      inactiveFor: "Inactif depuis {{count}} jour(s)",
       adjust: {
         title: "Ajuster l'abonnement",
         description: "Gestes commerciaux et corrections. Chaque ajustement est tracé dans le journal d'audit avec son motif. Aucun paiement n'est créé : la facturation et le MRR ne changent pas.",
@@ -2643,6 +2650,8 @@ const fr = {
       yes: "Oui",
       no: "Non",
       usage: {
+        propertiesHint: "sur {{max}} inclus dans la formule",
+        propertiesUnlimited: "Biens illimités dans la formule",
         properties: "Biens",
         tenants: "Locataires",
         activeContracts: "Contrats actifs",
@@ -2676,6 +2685,7 @@ const fr = {
         none: "Ce gestionnaire n'a pas encore renseigné les informations de son agence.",
       },
       billing: {
+        totalPaid: "Total encaissé",
         title: "Historique de facturation (10 derniers)",
         empty: "Aucun paiement enregistré.",
         date: "Date",
@@ -2719,6 +2729,24 @@ const fr = {
       },
     },
     listings: {
+      count: "{{count}} annonce(s)",
+      onlineBadge: "En ligne sur la vitrine",
+      writeToManager: "Écrire au gestionnaire",
+      quickReasons: "Motifs fréquents",
+      quickLabel: {
+        photos: "Photos",
+        price: "Prix",
+        content: "Contenu",
+        duplicate: "Doublon",
+        contact: "Coordonnées",
+      },
+      quick: {
+        photos: "Photos sans rapport avec le bien.",
+        price: "Prix trompeur ou irréaliste.",
+        content: "Contenu inapproprié ou contraire aux règles de la plateforme.",
+        duplicate: "Annonce en double d'une autre annonce.",
+        contact: "Coordonnées personnelles dans la description : utilisez le formulaire de contact de la fiche.",
+      },
       title: "Annonces de la vitrine",
       subtitle: "Toutes les annonces publiées par les gestionnaires, de la plus récente à la plus ancienne",
       searchPlaceholder: "Rechercher par titre, lieu, email ou agence",
@@ -2755,6 +2783,8 @@ const fr = {
       actionError: "Action impossible",
     },
     suggestions: {
+      writeToAuthor: "Écrire à l'auteur",
+      unreadFor: "Sans suite depuis {{count}} jour(s)",
       tabsLabel: "Filtrer par statut",
       tabs: {
         ALL: "Toutes",
@@ -2796,6 +2826,24 @@ const fr = {
       },
     },
     dashboard: {
+      todo: {
+        title: "À traiter",
+        subtitle: "Ce qui attend une décision de votre part",
+        allClear: "Rien ne vous attend : tout est à jour.",
+        transfers: "{{count}} virement(s) à confirmer",
+        trials: "{{count}} essai(s) à relancer",
+        expired: "{{count}} compte(s) sans accès",
+        suspended: "{{count}} compte(s) suspendu(s)",
+      },
+      pipeline: {
+        title: "Répartition des comptes",
+        conversion: "Taux d'abonnement : {{rate}} %",
+        empty: "Aucun compte pour le moment.",
+        ACTIVE: "Abonnés",
+        TRIAL: "En essai",
+        EXPIRED: "Sans accès",
+        OTHER: "Autres",
+      },
       title: "Tableau de bord",
       subtitle: "Vue d'ensemble de la plateforme, tous gestionnaires confondus",
       errorTitle: "Impossible de charger le tableau de bord",
@@ -2815,10 +2863,15 @@ const fr = {
         activeContractsHint: "Toutes agences confondues",
       },
       mrrByPlan: {
+        arr: "ARR (×12)",
+        average: "Panier moyen",
         title: "MRR par formule",
         empty: "Aucun abonnement payant actif pour le moment.",
       },
       trialsEndingSoon: {
+        remaining: "Reste",
+        actions: "Actions",
+        contact: "Écrire à {{email}}",
         title: "Essais se terminant bientôt",
         subtitle: "À relancer avant la fin de leur essai gratuit (7 jours ou moins)",
         empty: "Aucun essai ne se termine dans les 7 prochains jours.",
@@ -2829,11 +2882,18 @@ const fr = {
       },
     },
     subscriptions: {
+      pendingCount: "{{count}} virement(s) en attente",
+      toCollect: "À encaisser",
+      period: "du {{from}} au {{to}}",
+      copyReference: "Copier la référence {{reference}}",
+      today: "Reçu aujourd'hui",
+      waiting: "depuis {{count}} jour(s)",
       title: "Virements bancaires en attente",
       subtitle: "Abonnements SaaS payés par virement, en attente de confirmation manuelle",
       emptyTitle: "Aucun virement en attente",
       emptyDescription: "Tous les abonnements payés par virement bancaire ont été confirmés.",
       table: {
+        actions: "Actions",
         manager: "Gestionnaire",
         plan: "Formule",
         cycle: "Cycle",
@@ -2851,6 +2911,22 @@ const fr = {
       rejectPrompt: "Rejeter la demande de virement de {{amount}} de {{email}} ? Cette action n'active aucun abonnement et ne peut pas être annulée.",
     },
     settings: {
+      sections: { bank: "Coordonnées bancaires" },
+      check: {
+        ibanValid: "Clé IBAN valide",
+        ibanInvalid: "La clé de cet IBAN ne correspond pas : vérifiez la saisie",
+        bicValid: "Format BIC valide",
+        bicInvalid: "Un BIC compte 8 ou 11 caractères",
+      },
+      unsaved: "Modifications non enregistrées",
+      upToDate: "À jour",
+      preview: {
+        title: "Ce que verront les gestionnaires",
+        iban: "IBAN",
+        bic: "BIC",
+        note: "Affiché sur la page d'abonnement, quand un gestionnaire choisit de payer par virement.",
+        empty: "Saisissez l'IBAN pour voir l'aperçu.",
+      },
       title: "Paramètres de la plateforme",
       subtitle: "Coordonnées bancaires utilisées pour recevoir les abonnements réglés par virement",
       success: "Coordonnées bancaires enregistrées",
@@ -2863,6 +2939,7 @@ const fr = {
       save: "Enregistrer",
       saving: "Enregistrement...",
       twoFactor: {
+        disabled: "Double authentification inactive",
         title: "Sécurité du compte administrateur",
         description:
           "Ce compte confirme les virements, suspend et supprime des agences. Exigez, en plus du mot de passe, un code à usage unique généré par une application d'authentification à chaque connexion.",

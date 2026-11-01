@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -161,7 +161,7 @@ describe("AdminSuggestionsPage", () => {
       mockedApi.patch.mockResolvedValueOnce({ data: {} });
       render(<AdminSuggestionsPage />);
 
-      await user.selectOptions(await screen.findByLabelText("Statut de la suggestion"), "PLANNED");
+      await user.click(within(await screen.findByRole("group", { name: "Statut de la suggestion" })).getByRole("button", { name: "Prévue" }));
 
       await waitFor(() => expect(mockedApi.patch).toHaveBeenCalledWith("/admin/suggestions/s1", { status: "PLANNED" }));
       await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
@@ -202,7 +202,7 @@ describe("AdminSuggestionsPage", () => {
       mockedApi.patch.mockRejectedValueOnce({ response: { data: { error: "Suggestion introuvable" } }, isAxiosError: true });
       render(<AdminSuggestionsPage />);
 
-      await user.selectOptions(await screen.findByLabelText("Statut de la suggestion"), "DONE");
+      await user.click(within(await screen.findByRole("group", { name: "Statut de la suggestion" })).getByRole("button", { name: "Réalisée" }));
 
       expect(await screen.findByRole("alert")).toHaveTextContent("Suggestion introuvable");
     });
@@ -211,7 +211,7 @@ describe("AdminSuggestionsPage", () => {
       mockedApi.get.mockResolvedValueOnce(page([suggestion({ status: undefined })]));
       render(<AdminSuggestionsPage />);
 
-      expect(await screen.findByLabelText("Statut de la suggestion")).toHaveValue("NEW");
+      expect(within(await screen.findByRole("group", { name: "Statut de la suggestion" })).getByRole("button", { name: "Nouvelle" })).toHaveAttribute("aria-pressed", "true");
     });
 
     it("dit qu'un onglet est vide plutôt que de prétendre qu'il n'y a aucune suggestion", async () => {
@@ -223,6 +223,35 @@ describe("AdminSuggestionsPage", () => {
       await user.click(await screen.findByRole("button", { name: "Écartées (0)" }));
 
       expect(await screen.findByText("Aucune suggestion dans cet onglet")).toBeInTheDocument();
+    });
+    it("propose d'écrire à un auteur dont on connaît l'adresse, mais pas à un compte supprimé", async () => {
+      mockedApi.get.mockResolvedValueOnce(
+        page([
+          suggestion({ id: "s1", authorId: "u1", authorLabel: "agence@test.local" }),
+          suggestion({ id: "s2", authorId: null, authorLabel: "parti@test.local" }),
+        ])
+      );
+      render(<AdminSuggestionsPage />);
+
+      const liens = await screen.findAllByRole("link", { name: "Écrire à l'auteur" });
+      expect(liens).toHaveLength(1);
+      expect(liens[0]).toHaveAttribute("href", "mailto:agence@test.local");
+    });
+
+    it("signale une suggestion restée « Nouvelle » depuis plus d'une semaine, et seulement celle-là", async () => {
+      const ilYa = (jours: number) => new Date(Date.now() - jours * 86_400_000 - 60_000).toISOString();
+      mockedApi.get.mockResolvedValueOnce(
+        page([
+          suggestion({ id: "vieille", createdAt: ilYa(12), message: "Vieille idée" }),
+          suggestion({ id: "recente", createdAt: ilYa(2), message: "Idée fraîche" }),
+          suggestion({ id: "traitee", createdAt: ilYa(30), status: "PLANNED", message: "Idée déjà prévue" }),
+        ])
+      );
+      render(<AdminSuggestionsPage />);
+
+      expect(await screen.findAllByText("Sans suite depuis 12 jour(s)")).toHaveLength(1);
+      expect(screen.queryByText(/Sans suite depuis 2 /)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Sans suite depuis 30/)).not.toBeInTheDocument();
     });
   });
 });

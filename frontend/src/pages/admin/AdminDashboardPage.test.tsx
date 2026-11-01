@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
@@ -10,7 +11,9 @@ function renderPage() {
   return render(
     <AuthProvider>
       <CurrencyProvider>
-        <AdminDashboardPage />
+        <MemoryRouter>
+          <AdminDashboardPage />
+        </MemoryRouter>
       </CurrencyProvider>
     </AuthProvider>
   );
@@ -124,5 +127,52 @@ describe("AdminDashboardPage", () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats() });
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
     await waitFor(() => expect(screen.getByText("Agence du Port")).toBeInTheDocument());
+  });
+
+  it("range en tête ce qui attend l'administrateur, avec un raccourci vers chaque sujet", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: stats({ managers: { total: 12, trialActive: 4, subscriptionActive: 6, expired: 2, suspended: 1 } }) });
+    mockedApi.get.mockResolvedValueOnce({ data: [{ id: "v1" }, { id: "v2" }] });
+
+    renderPage();
+
+    const virements = await screen.findByRole("link", { name: /2 virement\(s\) à confirmer/ });
+    expect(virements).toHaveAttribute("href", "/admin/virements");
+    expect(screen.getByRole("link", { name: /1 essai\(s\) à relancer/ })).toHaveAttribute("href", "/admin/gestionnaires");
+    expect(screen.getByRole("link", { name: /2 compte\(s\) sans accès/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /1 compte\(s\) suspendu\(s\)/ })).toBeInTheDocument();
+  });
+
+  it("annonce que tout est à jour quand rien n'attend, et se passe des virements si leur liste est indisponible", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: stats({ managers: { total: 3, trialActive: 1, subscriptionActive: 2, expired: 0 }, trialsEndingSoon: [] }),
+    });
+    mockedApi.get.mockRejectedValueOnce(new Error("réseau"));
+
+    renderPage();
+
+    expect(await screen.findByText("Rien ne vous attend : tout est à jour.")).toBeInTheDocument();
+  });
+
+  it("donne le revenu annuel et le panier moyen de chaque devise, et la répartition des comptes", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: stats() });
+
+    renderPage();
+
+    // 68,17 € × 12 ; 68,17 € répartis sur 2 comptes payants.
+    expect(await screen.findByText("818,04 €")).toBeInTheDocument();
+    expect(screen.getByText("34,09 €")).toBeInTheDocument();
+    expect(screen.getByText("Abonnés · 6")).toBeInTheDocument();
+    expect(screen.getByText("En essai · 4")).toBeInTheDocument();
+    expect(screen.getByText("Sans accès · 2")).toBeInTheDocument();
+    expect(screen.getByText("Taux d'abonnement : 50 %")).toBeInTheDocument();
+  });
+
+  it("relie chaque essai à la fiche du gestionnaire et permet de lui écrire", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: stats() });
+
+    renderPage();
+
+    expect(await screen.findByRole("link", { name: "Agence du Port" })).toHaveAttribute("href", "/admin/gestionnaires/mgr-1");
+    expect(screen.getByRole("link", { name: "Écrire à agence-port@test.local" })).toHaveAttribute("href", "mailto:agence-port@test.local");
   });
 });

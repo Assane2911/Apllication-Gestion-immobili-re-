@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import AdminSubscriptionsPage from "./AdminSubscriptionsPage";
@@ -43,7 +44,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -60,7 +63,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -77,7 +82,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -97,7 +104,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -119,7 +128,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -144,7 +155,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -171,7 +184,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -193,7 +208,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -218,7 +235,9 @@ describe("AdminSubscriptionsPage", () => {
     render(
       <AuthProvider>
         <CurrencyProvider>
-          <AdminSubscriptionsPage />
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
         </CurrencyProvider>
       </AuthProvider>
     );
@@ -231,5 +250,59 @@ describe("AdminSubscriptionsPage", () => {
       expect(window.alert).toHaveBeenCalledWith("Ce virement a déjà été confirmé : impossible de le rejeter")
     );
     expect(screen.getByText("agence@test.local")).toBeInTheDocument();
+  });
+
+  function rendre() {
+    return render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+  }
+
+  it("totalise ce qui reste à encaisser devise par devise, sans jamais les additionner", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: [
+        pendingTransfer({ id: "a", currency: "EUR", amount: 29 }),
+        pendingTransfer({ id: "b", currency: "EUR", amount: 39, managerEmail: "b@test.local" }),
+        pendingTransfer({ id: "c", currency: "XOF", amount: 15000, managerEmail: "c@test.local" }),
+      ],
+    });
+    rendre();
+
+    expect(await screen.findByText("3 virement(s) en attente")).toBeInTheDocument();
+    expect(screen.getByText("À encaisser · 68 €")).toBeInTheDocument();
+    expect(screen.getByText(/À encaisser · 15\s?000 FCFA/)).toBeInTheDocument();
+  });
+
+  it("signale l'ancienneté de chaque virement et place le plus ancien en tête", async () => {
+    const ilYa = (jours: number) => new Date(Date.now() - jours * 86_400_000 - 60_000).toISOString();
+    mockedApi.get.mockResolvedValueOnce({
+      data: [
+        pendingTransfer({ id: "recent", managerEmail: "recent@test.local", createdAt: ilYa(1) }),
+        pendingTransfer({ id: "vieux", managerEmail: "vieux@test.local", createdAt: ilYa(6) }),
+      ],
+    });
+    rendre();
+
+    expect(await screen.findByText("depuis 6 jour(s)")).toBeInTheDocument();
+    expect(screen.getByText("depuis 1 jour(s)")).toBeInTheDocument();
+    const liens = screen.getAllByRole("link").map((l) => l.textContent);
+    expect(liens).toEqual(["vieux@test.local", "recent@test.local"]);
+  });
+
+  it("relie le virement à la fiche du gestionnaire et permet de copier la référence", async () => {
+    const ecrire = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+    mockedApi.get.mockResolvedValueOnce({ data: [pendingTransfer()] });
+    rendre();
+
+    expect(await screen.findByRole("link", { name: "agence@test.local" })).toHaveAttribute("href", "/admin/gestionnaires/mgr-1");
+    await userEvent.click(screen.getByRole("button", { name: "Copier la référence VIR-2026-001" }));
+    expect(ecrire).toHaveBeenCalledWith("VIR-2026-001");
   });
 });
