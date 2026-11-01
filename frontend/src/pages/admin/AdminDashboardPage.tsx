@@ -133,7 +133,7 @@ export default function AdminDashboardPage() {
             {t("admin.dashboard.todo.allClear")}
           </p>
         ) : (
-          <ul className="grid gap-px border border-slate-300 bg-slate-300 sm:grid-cols-2">
+          <ul className="grid gap-px border border-slate-300 bg-slate-300 sm:grid-cols-2 sm:[&>li:last-child:nth-child(odd)]:col-span-2">
             {aTraiter.map(({ cle, to, icone: Icone, texte, urgent }) => (
               <li key={cle} className="bg-white">
                 <Link
