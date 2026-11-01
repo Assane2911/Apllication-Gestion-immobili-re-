@@ -2,7 +2,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
+import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "../../context/AuthContext";
+import { CurrencyProvider } from "../../context/CurrencyContext";
 import type { Conversation, Message, PaginatedResponse } from "../../types";
 import MessagesPage from "./MessagesPage";
 
@@ -48,7 +50,11 @@ function message(overrides: Partial<Message> = {}): Message {
 function renderPage() {
   return render(
     <AuthProvider>
-      <MessagesPage />
+      <CurrencyProvider>
+        <MemoryRouter>
+          <MessagesPage />
+        </MemoryRouter>
+      </CurrencyProvider>
     </AuthProvider>
   );
 }
@@ -299,5 +305,88 @@ describe("MessagesPage (gestionnaire)", () => {
     await user.click(screen.getByRole("button", { name: "Envoyer" }));
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/messages/c1", { content: "Pour Binta" }, { params: { tenantId: "t2" } }));
+  });
+});
+
+describe("MessagesPage (gestionnaire) — présentation du fil", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  const contrat = {
+    id: "c1",
+    rent: 450000,
+    currency: "XOF",
+    startDate: "2026-01-01T00:00:00.000Z",
+    endDate: "2026-12-31T00:00:00.000Z",
+    status: "ACTIVE",
+    tenant: { firstName: "Awa", lastName: "Diallo", phone: "+221 77 123 45 67", email: "awa@exemple.test" },
+    property: { id: "p1", title: "Studio Centre-ville", address: "12 rue des Almadies" },
+  };
+
+  it("intercale un filet de date entre deux jours et ne répète l'auteur qu'au début d'un bloc", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({
+      data: {
+        contract: contrat,
+        messages: [
+          message({ id: "m1", content: "Premier", createdAt: "2025-03-10T09:00:00.000Z" }),
+          message({ id: "m2", content: "Deuxième", createdAt: "2025-03-10T09:02:00.000Z" }),
+          message({ id: "m3", content: "Réponse", senderRole: "MANAGER", createdAt: "2025-03-11T09:00:00.000Z" }),
+        ],
+      },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Deuxième")).toBeInTheDocument());
+
+    // Deux jours différents : deux filets de date.
+    expect(screen.getByText(/10 mars 2025/i)).toBeInTheDocument();
+    expect(screen.getByText(/11 mars 2025/i)).toBeInTheDocument();
+    // « Awa (Locataire) » n'apparaît qu'une fois pour les deux messages rapprochés.
+    expect(screen.getAllByText("Awa (Locataire)")).toHaveLength(1);
+  });
+
+  it("affiche la fiche du bail (loyer, période, contact) à côté du fil", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { contract: contrat, messages: [message()] } });
+
+    renderPage();
+    const fiche = await screen.findByRole("complementary", { name: "Fiche du fil" });
+
+    expect(fiche).toHaveTextContent("12 rue des Almadies");
+    expect(fiche).toHaveTextContent("1 message(s) dans ce fil");
+    expect(screen.getByRole("link", { name: "awa@exemple.test" })).toHaveAttribute("href", "mailto:awa@exemple.test");
+    expect(screen.getByRole("link", { name: "Voir les contrats" })).toHaveAttribute("href", "/contracts");
+  });
+
+  it("signale d'un carré orange la discussion dont le dernier message du locataire n'est pas lu", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      conversationsPage([
+        conversation({ id: "c1:t1", lastMessage: message({ isRead: true }) }),
+        conversation({ id: "c2:t2", contractId: "c2", tenant: { firstName: "Moussa", lastName: "Ndiaye" } as Conversation["tenant"], lastMessage: message({ id: "m9", isRead: false }) }),
+      ])
+    );
+    mockedApi.get.mockResolvedValueOnce({ data: { contract: contrat, messages: [] } });
+
+    renderPage();
+    // La première discussion est ouverte d'office : seule la seconde peut porter la marque.
+    await waitFor(() => expect(screen.getAllByRole("img", { name: "Nouveau message" })).toHaveLength(1));
+  });
+
+  it("Entrée envoie le message, Maj+Entrée passe à la ligne", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { contract: contrat, messages: [] } });
+    mockedApi.post.mockResolvedValueOnce({ data: message({ id: "new", senderRole: "MANAGER", content: "Ligne 1\nLigne 2" }) });
+
+    renderPage();
+    const champ = await screen.findByPlaceholderText("Écrivez votre message...");
+    await user.type(champ, "Ligne 1{Shift>}{Enter}{/Shift}Ligne 2");
+    expect(mockedApi.post).not.toHaveBeenCalled();
+
+    await user.type(champ, "{Enter}");
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/messages/c1", { content: "Ligne 1\nLigne 2" }));
   });
 });
