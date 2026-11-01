@@ -20,7 +20,7 @@ export default function Pagination({ page, totalPages, total, onPageChange }: Pa
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="text-xs font-semibold px-3 py-1.5 border border-slate-400 text-slate-800 bg-white hover:border-ink-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {t("common.pagination.previous")}
         </button>
@@ -31,7 +31,7 @@ export default function Pagination({ page, totalPages, total, onPageChange }: Pa
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="text-xs font-semibold px-3 py-1.5 border border-slate-400 text-slate-800 bg-white hover:border-ink-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {t("common.pagination.next")}
         </button>

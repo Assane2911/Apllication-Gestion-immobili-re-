@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -101,8 +101,10 @@ describe("PropertiesPage (manager)", () => {
     await waitFor(() => expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument());
     expect(screen.getByText("1 rue de la Paix")).toBeInTheDocument();
     expect(screen.getByText("30 m²")).toBeInTheDocument();
-    expect(screen.getByText(/500 €/)).toBeInTheDocument();
-    expect(screen.getByText("Disponible")).toBeInTheDocument();
+    // Le loyer figure aussi dans la synthèse du parc : on lit celui de la fiche du bien.
+    const fiche = screen.getByRole("article");
+    expect(within(fiche).getByText(/500 €/)).toBeInTheDocument();
+    expect(within(fiche).getByText("Disponible")).toBeInTheDocument();
   });
 
   /**
@@ -244,5 +246,119 @@ describe("PropertiesPage (manager)", () => {
 
     expect(window.confirm).toHaveBeenCalled();
     await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/properties/prop-1"));
+  });
+
+  describe("synthèse, recherche et vues", () => {
+    const parc = [
+      property({ id: "p1", title: "Villa Baobab", address: "Almadies, Dakar", surface: 120, rent: 1200, status: "OCCUPIED", ownerId: "o1" }),
+      property({ id: "p2", title: "Studio Plateau", address: "Plateau, Dakar", surface: 25, rent: 400, status: "AVAILABLE" }),
+      property({ id: "p3", title: "Atelier Mermoz", address: "Mermoz, Dakar", surface: 60, rent: 700, status: "OCCUPIED" }),
+      property({ id: "p4", title: "Loft Sacré-Cœur", address: "Sacré-Cœur, Dakar", surface: 80, rent: 900, status: "MAINTENANCE" }),
+    ];
+    const proprietaire: Owner = {
+      id: "o1",
+      firstName: "Awa",
+      lastName: "Ndiaye",
+      companyName: "SCI Baobab",
+      email: "awa@exemple.com",
+      phone: "+221770000000",
+      managementFeeRate: 8,
+      portalStatus: "NONE",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    async function afficher() {
+      mockedApi.get.mockImplementation(async (url: string) => (url === "/owners" ? paginatedOwners([proprietaire]) : paginated(parc)));
+      renderPage();
+      await screen.findByText("Villa Baobab");
+    }
+
+    it("résume le parc : occupation, loyers loués et manque à gagner", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse du parc");
+      expect(within(synthese).getByText("50 %")).toBeInTheDocument();
+      expect(within(synthese).getByText("1 900 €")).toBeInTheDocument();
+      expect(within(synthese).getByText("400 €")).toBeInTheDocument();
+    });
+
+    it("filtre par statut en indiquant l'effectif de chaque statut", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      const filtres = screen.getByRole("group", { name: "Filtrer par statut" });
+      expect(within(filtres).getByRole("button", { name: /Tous\s*4/ })).toHaveAttribute("aria-pressed", "true");
+      await user.click(within(filtres).getByRole("button", { name: /Occupé\s*2/ }));
+      expect(screen.getByText("Villa Baobab")).toBeInTheDocument();
+      expect(screen.queryByText("Studio Plateau")).not.toBeInTheDocument();
+    });
+
+    it("cherche sans tenir compte des accents ni de la casse, y compris dans le nom du propriétaire", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "sacre coeur");
+      expect(screen.getByText("Loft Sacré-Cœur")).toBeInTheDocument();
+      expect(screen.queryByText("Villa Baobab")).not.toBeInTheDocument();
+
+      await user.clear(screen.getByRole("searchbox"));
+      await user.type(screen.getByRole("searchbox"), "sci baobab");
+      expect(screen.getByText("Villa Baobab")).toBeInTheDocument();
+      expect(screen.queryByText("Studio Plateau")).not.toBeInTheDocument();
+    });
+
+    it("propose de réinitialiser quand rien ne correspond", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "zzzz");
+      expect(screen.getByText("Aucun résultat pour ces critères.")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Réinitialiser les filtres" }));
+      expect(screen.getByText("Villa Baobab")).toBeInTheDocument();
+    });
+
+    it("trie par loyer décroissant", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.selectOptions(screen.getByLabelText("Trier par"), "Loyer décroissant");
+      const titres = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+      expect(titres.filter((t) => t !== "Synthèse du parc")).toEqual(["Villa Baobab", "Loft Sacré-Cœur", "Atelier Mermoz", "Studio Plateau"]);
+    });
+
+    it("nomme le propriétaire de chaque bien", async () => {
+      await afficher();
+      expect(screen.getByText("Propriétaire : SCI Baobab")).toBeInTheDocument();
+      expect(screen.getAllByText("Sans propriétaire")).toHaveLength(3);
+    });
+
+    it("bascule en vue tableau, avec le loyer au m², et mémorise le choix", async () => {
+      const user = userEvent.setup();
+      localStorage.removeItem("immoplatform.biens.vue");
+      await afficher();
+      await user.click(screen.getByRole("button", { name: "Tableau" }));
+      const tableau = screen.getByRole("table");
+      const ligne = within(tableau).getByText("Villa Baobab").closest("tr") as HTMLElement;
+      expect(within(ligne).getByText("10 €")).toBeInTheDocument();
+      expect(localStorage.getItem("immoplatform.biens.vue")).toBe("tableau");
+      await user.click(screen.getByRole("button", { name: "Cartes" }));
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      localStorage.removeItem("immoplatform.biens.vue");
+    });
+
+    it("exporte les biens affichés en CSV", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "plateau");
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      const lignes = texte.split("\n");
+      expect(lignes).toHaveLength(2);
+      expect(lignes[1]).toContain('"Studio Plateau"');
+      expect(lignes[1]).toContain("400,00");
+    });
   });
 });

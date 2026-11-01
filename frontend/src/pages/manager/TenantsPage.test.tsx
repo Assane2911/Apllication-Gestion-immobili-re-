@@ -474,4 +474,114 @@ describe("TenantsPage — cibles des actions des cartes (téléphone)", () => {
       expect(action.className, action.textContent ?? "").toMatch(/(^|\s)-my-1(\s|$)/);
     }
   });
+
+  describe("synthèse, recherche, filtres et export", () => {
+    const fiab = (niveau: "excellent" | "bon" | "moyen" | "risque" | "insuffisant", score: number | null, enRetardActuel = 0) => ({ score, niveau, payeATemps: 3, payeEnRetard: 1, enRetardActuel });
+    const parc = [
+      tenant({ id: "t1", firstName: "Awa", lastName: "Diallo", userId: "u1", idDocument: "x", fiabilite: fiab("excellent", 95) }),
+      tenant({ id: "t2", firstName: "Moussa", lastName: "Ba", phone: "+221 77 111 22 33", email: "moussa@example.com", fiabilite: fiab("risque", 25, 1) }),
+      tenant({ id: "t3", firstName: "Élodie", lastName: "Sow", email: "elodie@example.com", idDocument: "y", fiabilite: fiab("bon", 80) }),
+      tenant({ id: "t4", firstName: "Ibrahima", lastName: "Fall", email: "ibra@example.com", fiabilite: fiab("insuffisant", null) }),
+    ];
+
+    async function afficher() {
+      mockedApi.get.mockResolvedValue(paginated(parc));
+      renderPage();
+      await screen.findByRole("table");
+    }
+
+    const noms = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+
+    it("résume les accès au portail, les pièces d'identité et les fiabilités à surveiller", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des locataires");
+      expect(within(synthese).getByText("1 / 4")).toBeInTheDocument(); // portail
+      expect(within(synthese).getByText("2 / 4")).toBeInTheDocument(); // pièces d'identité
+      expect(within(synthese).getByText("3 sans accès")).toBeInTheDocument();
+      expect(within(synthese).getByText("2 manquante(s)")).toBeInTheDocument();
+      expect(within(synthese).getByText("retard de paiement ou risque")).toBeInTheDocument();
+    });
+
+    it("filtre les locataires à surveiller, sans accès ou sans pièce d'identité", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      const filtres = screen.getByRole("group", { name: "Filtrer les locataires" });
+
+      await user.click(within(filtres).getByRole("button", { name: /À surveiller\s*1/ }));
+      expect(noms()).toHaveLength(1);
+      expect(noms()[0]).toContain("Moussa Ba");
+
+      await user.click(within(filtres).getByRole("button", { name: /Sans accès portail\s*3/ }));
+      expect(noms()).toHaveLength(3);
+
+      await user.click(within(filtres).getByRole("button", { name: /Sans pièce d'identité\s*2/ }));
+      expect(noms().map((n) => n.includes("Moussa") || n.includes("Ibrahima"))).toEqual([true, true]);
+    });
+
+    it("cherche par nom, sans tenir compte des accents, ou par numéro", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "elodie");
+      expect(noms()).toHaveLength(1);
+      expect(noms()[0]).toContain("Élodie Sow");
+
+      await user.clear(screen.getByRole("searchbox"));
+      await user.type(screen.getByRole("searchbox"), "111 22");
+      expect(noms()).toHaveLength(1);
+      expect(noms()[0]).toContain("Moussa Ba");
+    });
+
+    it("trie par fiabilité : les scores les plus bas d'abord, ceux sans score à la fin", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.selectOptions(screen.getByLabelText("Trier par"), "Fiabilité (à surveiller d'abord)");
+      const ordre = noms().map((n) => ["Moussa", "Élodie", "Awa", "Ibrahima"].find((prenom) => n.includes(prenom)));
+      expect(ordre).toEqual(["Moussa", "Élodie", "Awa", "Ibrahima"]);
+    });
+
+    it("rend le téléphone et l'email cliquables", async () => {
+      await afficher();
+      const tableau = screen.getByRole("table");
+      expect(within(tableau).getByRole("link", { name: "+221 77 111 22 33" })).toHaveAttribute("href", "tel:+221771112233");
+      expect(within(tableau).getByRole("link", { name: "moussa@example.com" })).toHaveAttribute("href", "mailto:moussa@example.com");
+    });
+
+    it("exporte les locataires affichés en CSV, sans les fiches anonymisées", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "moussa");
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      const lignes = texte.split("\n");
+      expect(lignes).toHaveLength(2);
+      expect(lignes[1]).toContain('"Moussa Ba"');
+      expect(lignes[1]).toContain('"moussa@example.com";"Non";25');
+    });
+  });
+
+  it("génère un mot de passe provisoire pour l'accès au portail, et le copie", async () => {
+    const user = userEvent.setup();
+    const ecrire = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+    mockedApi.get.mockResolvedValue(paginated([tenant()]));
+    renderPage();
+
+    await user.click(await screen.findAllByRole("button", { name: "Créer l'accès" }).then((b) => b[0]));
+    expect(screen.queryByRole("button", { name: "Copier" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Générer" }));
+
+    const champ = screen.getByLabelText("Mot de passe temporaire") as HTMLInputElement;
+    expect(champ.value).toHaveLength(12);
+    await user.click(screen.getByRole("button", { name: "Copier" }));
+    expect(ecrire).toHaveBeenCalledWith(champ.value);
+    expect(await screen.findByRole("button", { name: "Copié" })).toBeInTheDocument();
+  });
 });

@@ -1,26 +1,42 @@
-import { Users } from "lucide-react";
+import { Check, Copy, Download, KeyRound, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
 import { SUPPORTED_LANGUAGES } from "../../i18n";
 import { preparerFichier } from "../../utils/fichiers";
+import BandeauChiffres from "../../components/BandeauChiffres";
+import BarreListe from "../../components/BarreListe";
 import ChampTelephone from "../../components/ChampTelephone";
+import SectionReglage from "../../components/SectionReglage";
 import Initiales from "../../components/Initiales";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { PaginatedResponse, ReliabilityLevel, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
+import { motDePasseTemporaire } from "../../utils/motDePasseTemporaire";
+import { correspond } from "../../utils/recherche";
+import { aSurveiller, csvLocataires, trierLocataires, type CritereTriLocataire } from "../../utils/syntheseParc";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
+
+// Sous ce nombre de fiches, la recherche et les filtres n'apportent rien : la barre d'outils reste cachée.
+const SEUIL_OUTILS = 4;
+const CHAMP = "w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900";
+const LIBELLE = "mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600";
+const BOUTON_PLEIN = "cursor-pointer bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const BOUTON_TRAIT = "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900";
+const LIEN_ACTION = "cursor-pointer border-b border-ink-900/40 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700 whitespace-nowrap";
+type Filtre = "all" | "watch" | "noPortal" | "noId";
 
 const emptyForm = { civility: "", firstName: "", lastName: "", phone: "", email: "", language: "fr" };
 const PAGE_SIZE = 20;
 
 const CLASSES_PAR_NIVEAU: Record<ReliabilityLevel, string> = {
-  excellent: "bg-emerald-50 text-emerald-700",
-  bon: "bg-teal-50 text-teal-700",
-  moyen: "bg-amber-50 text-amber-700",
-  risque: "bg-red-50 text-red-700",
-  insuffisant: "bg-slate-100 text-slate-600",
+  excellent: "border-ink-900 bg-ink-900 text-white",
+  bon: "border-ink-900 bg-white text-ink-900",
+  moyen: "border-orange-300 bg-orange-50 text-orange-900",
+  risque: "border-orange-700 bg-orange-700 text-white",
+  insuffisant: "border-slate-300 bg-slate-100 text-slate-600",
 };
 
 /** Badge du score interne de ponctualité de paiement — voir reliability.service.ts côté API. */
@@ -40,7 +56,7 @@ function BadgeFiabilite({ tenant }: { tenant: Tenant }) {
     <Bulle texte={texteBulle}>
       <span
         tabIndex={0}
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium cursor-default ${CLASSES_PAR_NIVEAU[f.niveau]}`}
+        className={`inline-flex cursor-default items-center gap-1 border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${CLASSES_PAR_NIVEAU[f.niveau]}`}
       >
         {f.score !== null ? `${f.score}/100 · ${libelle}` : libelle}
       </span>
@@ -66,6 +82,10 @@ export default function TenantsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [recherche, setRecherche] = useState("");
+  const [filtre, setFiltre] = useState<Filtre>("all");
+  const [tri, setTri] = useState<CritereTriLocataire>("recent");
+  const [motDePasseCopie, setMotDePasseCopie] = useState(false);
 
   function load(signal?: AbortSignal) {
     api
@@ -207,6 +227,21 @@ export default function TenantsPage() {
     }
   }
 
+  function genererMotDePasse() {
+    setPortalPassword(motDePasseTemporaire());
+    setMotDePasseCopie(false);
+  }
+
+  async function copierMotDePasse() {
+    try {
+      await navigator.clipboard.writeText(portalPassword);
+      setMotDePasseCopie(true);
+      setTimeout(() => setMotDePasseCopie(false), 1800);
+    } catch {
+      // Presse-papiers indisponible : le mot de passe reste affiché, il peut être recopié à la main.
+    }
+  }
+
   async function handleCreatePortal(e: React.FormEvent) {
     e.preventDefault();
     if (!portalTenant || creatingPortal) return;
@@ -223,6 +258,55 @@ export default function TenantsPage() {
     }
   }
 
+  const actifs = tenants.filter((l) => !l.anonymizedAt);
+  const sansPortail = actifs.filter((l) => !l.userId);
+  const sansPiece = actifs.filter((l) => !l.idDocument);
+  const asurveiller = actifs.filter(aSurveiller);
+  const afficherOutils = tenants.length >= SEUIL_OUTILS;
+  const visibles = trierLocataires(
+    tenants.filter((l) => {
+      if (filtre === "watch" && !aSurveiller(l)) return false;
+      if (filtre === "noPortal" && (l.userId || l.anonymizedAt)) return false;
+      if (filtre === "noId" && (l.idDocument || l.anonymizedAt)) return false;
+      return correspond(recherche, l.firstName, l.lastName, l.phone, l.email);
+    }),
+    tri
+  );
+  const filtresActifs = recherche.trim() !== "" || filtre !== "all";
+
+  function exporterCsv() {
+    telechargerCsv(
+      `locataires-${dateDuJourPourFichier()}.csv`,
+      csvLocataires(visibles, {
+        name: t("manager.tenants.table.name"),
+        phone: t("manager.tenants.table.phone"),
+        email: t("manager.tenants.table.email"),
+        portal: t("manager.tenants.csvPortal"),
+        reliability: t("manager.tenants.csvReliability"),
+        yes: t("manager.tenants.csvYes"),
+        no: t("manager.tenants.csvNo"),
+      })
+    );
+  }
+
+  function ouvrirPortail(tenant: Tenant) {
+    setPortalTenant(tenant);
+    setPortalMsg(null);
+    setPortalPassword("");
+    setMotDePasseCopie(false);
+  }
+
+  const lienTel = (l: Tenant) => (
+    <a href={`tel:${l.phone.replace(/\s+/g, "")}`} title={t("manager.tenants.call", { name: `${l.firstName} ${l.lastName}` })} className="hover:text-orange-700 hover:underline">
+      {l.phone}
+    </a>
+  );
+  const lienMail = (l: Tenant) => (
+    <a href={`mailto:${l.email}`} title={t("manager.tenants.writeTo", { name: `${l.firstName} ${l.lastName}` })} className="whitespace-nowrap hover:text-orange-700 hover:underline sm:[overflow-wrap:normal]">
+      {l.email}
+    </a>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -231,52 +315,51 @@ export default function TenantsPage() {
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.tenants.count", { count: tenants.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.tenantCreate")}>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 shadow-sm transition-colors">
-          {t("manager.tenants.addBtn")}
-        </button>
+          <button onClick={openCreate} className={BOUTON_PLEIN}>
+            {t("manager.tenants.addBtn")}
+          </button>
         </Bulle>
       </div>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
           <span>{loadError}</span>
-          <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load()} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
           </button>
         </div>
       )}
 
       {showForm && (
-        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 mb-4">{editing ? t("manager.tenants.formTitleEdit") : t("manager.tenants.formTitleNew")}</h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SectionReglage id="fiche-locataire" numero="01" titre={editing ? t("manager.tenants.formTitleEdit") : t("manager.tenants.formTitleNew")}>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label htmlFor="tenant-civility" className="block text-sm font-medium text-slate-700 mb-1">{t("common.civility.label")}</label>
-              <select id="tenant-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className="w-full md:w-56 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
+              <label htmlFor="tenant-civility" className={LIBELLE}>{t("common.civility.label")}</label>
+              <select id="tenant-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className={`${CHAMP} md:w-56`}>
                 <option value="">{t("common.civility.none")}</option>
                 <option value="M">{t("common.civility.M")}</option>
                 <option value="MME">{t("common.civility.MME")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="tenant-firstName" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.firstName")}</label>
-              <input id="tenant-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-firstName" className={LIBELLE}>{t("manager.tenants.fields.firstName")}</label>
+              <input id="tenant-firstName" required maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="tenant-lastName" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.lastName")}</label>
-              <input id="tenant-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-lastName" className={LIBELLE}>{t("manager.tenants.fields.lastName")}</label>
+              <input id="tenant-lastName" required maxLength={100} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="tenant-phone" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.phone")}</label>
+              <label htmlFor="tenant-phone" className={LIBELLE}>{t("manager.tenants.fields.phone")}</label>
               <ChampTelephone id="tenant-phone" required value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
             <div>
-              <label htmlFor="tenant-email" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.email")}</label>
-              <input id="tenant-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-email" className={LIBELLE}>{t("manager.tenants.fields.email")}</label>
+              <input id="tenant-email" required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={CHAMP} />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="tenant-language" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.language")}</label>
-              <select id="tenant-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} aria-describedby="tenant-language-hint" className="w-full md:w-56 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
+              <label htmlFor="tenant-language" className={LIBELLE}>{t("manager.tenants.fields.language")}</label>
+              <select id="tenant-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} aria-describedby="tenant-language-hint" className={`${CHAMP} md:w-56`}>
                 {SUPPORTED_LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>{l.label}</option>
                 ))}
@@ -284,46 +367,114 @@ export default function TenantsPage() {
               <p id="tenant-language-hint" className="mt-1 text-xs text-slate-600">{t("manager.tenants.fields.languageHint")}</p>
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="tenant-idDocument" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.fields.idDocument")}</label>
+              <label htmlFor="tenant-idDocument" className={LIBELLE}>{t("manager.tenants.fields.idDocument")}</label>
               <input id="tenant-idDocument" type="file" accept="image/*,application/pdf" onChange={(e) => void choisirPiece(e)} className="w-full text-sm" />
             </div>
-            {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
-            <div className="md:col-span-2 flex gap-2">
-              <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
+            {error && <p role="alert" className="text-sm text-red-600 md:col-span-2">{error}</p>}
+            <div className="flex gap-2 md:col-span-2">
+              <button type="submit" disabled={saving} className={BOUTON_PLEIN}>
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="cursor-pointer px-4 py-2 text-sm text-slate-600 hover:text-ink-900">
                 {t("common.actions.cancel")}
               </button>
             </div>
           </form>
-        </div>
+        </SectionReglage>
       )}
 
       {portalTenant && (
-        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 mb-1">
-            {t("manager.tenants.createPortalTitle", { name: `${portalTenant.firstName} ${portalTenant.lastName}` })}
-          </h3>
-          <p className="text-xs text-slate-600 mb-4">{t("manager.tenants.loginId", { email: portalTenant.email })}</p>
+        <SectionReglage id="acces-portail" numero="02" titre={t("manager.tenants.createPortalTitle", { name: `${portalTenant.firstName} ${portalTenant.lastName}` })}>
+          <p className="mb-4 font-mono text-[11px] text-slate-600">{t("manager.tenants.loginId", { email: portalTenant.email })}</p>
           <form onSubmit={handleCreatePortal} className="flex flex-wrap items-end gap-3">
             <div>
-              <label htmlFor="tenant-tempPassword" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.tenants.tempPassword")}</label>
-              <input id="tenant-tempPassword" required minLength={8} type="text" value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="tenant-tempPassword" className={LIBELLE}>{t("manager.tenants.tempPassword")}</label>
+              <input id="tenant-tempPassword" required minLength={8} type="text" value={portalPassword} onChange={(e) => { setPortalPassword(e.target.value); setMotDePasseCopie(false); }} className={`${CHAMP} w-64 font-mono`} />
             </div>
-            <button
-              type="submit"
-              disabled={creatingPortal}
-              className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg"
-            >
+            <button type="button" onClick={genererMotDePasse} className={BOUTON_TRAIT}>
+              <KeyRound size={13} aria-hidden="true" />
+              {t("manager.tenants.generatePassword")}
+            </button>
+            {portalPassword && (
+              <button type="button" onClick={copierMotDePasse} className={BOUTON_TRAIT}>
+                {motDePasseCopie ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                {motDePasseCopie ? t("manager.tenants.copiedPassword") : t("manager.tenants.copyPassword")}
+              </button>
+            )}
+            <button type="submit" disabled={creatingPortal} className={BOUTON_PLEIN}>
               {creatingPortal ? t("common.actions.saving") : t("manager.tenants.createAccess")}
             </button>
-            <button type="button" onClick={() => { setPortalTenant(null); setPortalMsg(null); }} className="text-sm text-slate-500 px-2 py-2">
+            <button type="button" onClick={() => { setPortalTenant(null); setPortalMsg(null); }} className="cursor-pointer px-2 py-2 text-sm text-slate-500 hover:text-ink-900">
               {t("common.actions.close")}
             </button>
           </form>
-          {portalMsg && <p className="text-sm mt-2 text-slate-600">{portalMsg}</p>}
-        </div>
+          <p className="mt-3 text-xs text-slate-600">{t("manager.tenants.passwordHint")}</p>
+          {portalMsg && <p className="mt-2 border-l-2 border-orange-700 pl-3 text-sm text-slate-700">{portalMsg}</p>}
+        </SectionReglage>
+      )}
+
+      {!loading && tenants.length > 0 && (
+        <BandeauChiffres
+          etiquette={t("manager.tenants.summary.label")}
+          cases={[
+            { libelle: t("manager.tenants.summary.total"), valeur: actifs.length, aide: t("manager.tenants.summary.totalHint") },
+            {
+              libelle: t("manager.tenants.summary.portal"),
+              valeur: `${actifs.length - sansPortail.length} / ${actifs.length}`,
+              aide: t("manager.tenants.summary.portalHint", { count: sansPortail.length }),
+            },
+            {
+              libelle: t("manager.tenants.summary.idDocs"),
+              valeur: `${actifs.length - sansPiece.length} / ${actifs.length}`,
+              aide: t("manager.tenants.summary.idDocsHint", { count: sansPiece.length }),
+              ton: sansPiece.length > 0 ? "alerte" : "normal",
+            },
+            {
+              libelle: t("manager.tenants.summary.watch"),
+              valeur: asurveiller.length,
+              aide: t("manager.tenants.summary.watchHint"),
+              ton: asurveiller.length > 0 ? "alerte" : "normal",
+            },
+          ]}
+        />
+      )}
+
+      {!loading && afficherOutils && (
+        <>
+          <BarreListe
+            idPrefixe="locataires"
+            recherche={recherche}
+            onRecherche={setRecherche}
+            placeholderRecherche={t("manager.tenants.search")}
+            libelleFiltres={t("manager.tenants.filtersLabel")}
+            filtres={[
+              { cle: "all", libelle: t("manager.liste.all"), compte: tenants.length },
+              { cle: "watch", libelle: t("manager.tenants.filters.watch"), compte: asurveiller.length },
+              { cle: "noPortal", libelle: t("manager.tenants.filters.noPortal"), compte: sansPortail.length },
+              { cle: "noId", libelle: t("manager.tenants.filters.noId"), compte: sansPiece.length },
+            ]}
+            filtreActif={filtre}
+            onFiltre={(cle) => setFiltre(cle as Filtre)}
+            tri={{
+              libelle: t("manager.tenants.sort.label"),
+              valeur: tri,
+              onChange: (v) => setTri(v as CritereTriLocataire),
+              options: [
+                { valeur: "recent", libelle: t("manager.tenants.sort.recent") },
+                { valeur: "nom", libelle: t("manager.tenants.sort.name") },
+                { valeur: "fiabilite", libelle: t("manager.tenants.sort.reliability") },
+              ],
+            }}
+          >
+            <button type="button" onClick={exporterCsv} className={BOUTON_TRAIT}>
+              <Download size={13} aria-hidden="true" />
+              {t("manager.liste.exportCsv")}
+            </button>
+          </BarreListe>
+          <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-wider text-slate-600">
+            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { shown: visibles.length, total: tenants.length })}
+          </p>
+        </>
       )}
 
       {!loading && tenants.length === 0 && !showForm ? (
@@ -333,12 +484,21 @@ export default function TenantsPage() {
           description={t("manager.tenants.emptyDesc")}
           action={{ label: t("manager.tenants.addBtn"), onClick: openCreate }}
         />
+      ) : !loading && visibles.length === 0 && tenants.length > 0 ? (
+        <div className="border border-slate-300 bg-white p-8 text-center shadow-[inset_4px_0_0_var(--color-ink-900)]">
+          <p className="text-sm text-slate-700">{t("manager.liste.noResult")}</p>
+          {filtresActifs && (
+            <button type="button" onClick={() => { setRecherche(""); setFiltre("all"); }} className={`${BOUTON_TRAIT} mt-4`}>
+              {t("manager.liste.resetFilters")}
+            </button>
+          )}
+        </div>
       ) : (
       <>
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
+      <div className="relative hidden overflow-x-auto border border-slate-300 bg-white sm:block">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 text-slate-700 text-left">
+          <thead className="text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.name")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.phone")}</th>
@@ -351,23 +511,23 @@ export default function TenantsPage() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100">
+          <tbody className="divide-y divide-slate-200">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <TableRowSkeleton key={i} columns={7} />)
             ) : (
-            tenants.map((tenant) => (
-              <tr key={tenant.id}>
+            visibles.map((tenant) => (
+              <tr key={tenant.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium text-slate-900">
                   <div className="flex items-center gap-3">
                     <Initiales prenom={tenant.firstName} nom={tenant.lastName} />
                     <span className="whitespace-nowrap">{tenant.firstName} {tenant.lastName}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-slate-600 whitespace-nowrap tabular-nums">{tenant.phone}</td>
-                <td className="px-4 py-3 text-slate-600">{tenant.email}</td>
+                <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-600">{lienTel(tenant)}</td>
+                <td className="px-4 py-3 text-slate-600">{lienMail(tenant)}</td>
                 <td className="px-4 py-3">
                   {tenant.idDocument ? (
-                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 hover:underline">
+                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className={LIEN_ACTION}>
                       {t("manager.tenants.viewIdDocument")}
                     </button></Bulle>
                   ) : (
@@ -379,24 +539,24 @@ export default function TenantsPage() {
                 </td>
                 <td className="px-4 py-3">
                   {tenant.userId ? (
-                    <span className="inline-flex items-center gap-1.5 border border-emerald-600/50 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-emerald-600" />{t("manager.tenants.portalActive")}</span>
+                    <span className="inline-flex items-center gap-1.5 border border-ink-900 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900"><span aria-hidden="true" className="size-1.5 bg-ink-900" />{t("manager.tenants.portalActive")}</span>
                   ) : (
                     <Bulle texte={t("manager.tips.tenantPortal")}>
-                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors whitespace-nowrap">
+                    <button onClick={() => ouvrirPortail(tenant)} className={LIEN_ACTION}>
                       {t("manager.tenants.createAccess")}
                     </button>
                     </Bulle>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right"><div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5">
-                  <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors whitespace-nowrap">{t("common.actions.edit")}</button></Bulle>
-                  <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-xs font-semibold text-slate-700 border-b border-slate-400/60 hover:border-ink-900 hover:text-ink-900 transition-colors">{t("manager.tenants.exportData")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className={LIEN_ACTION}>{t("common.actions.edit")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="cursor-pointer border-b border-slate-400/60 text-xs font-semibold text-slate-700 transition-colors hover:border-ink-900 hover:text-ink-900">{t("manager.tenants.exportData")}</button></Bulle>
                   {tenant.anonymizedAt ? (
-                    <span className="text-slate-600 text-xs">{t("manager.tenants.anonymized")}</span>
+                    <span className="text-xs text-slate-600">{t("manager.tenants.anonymized")}</span>
                   ) : (
-                    <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-xs font-semibold text-amber-800 border-b border-amber-700/40 hover:border-amber-800 transition-colors">{t("manager.tenants.anonymize")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="cursor-pointer border-b border-orange-700/40 text-xs font-semibold text-orange-800 transition-colors hover:border-orange-800">{t("manager.tenants.anonymize")}</button></Bulle>
                   )}
-                  <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">{t("common.actions.delete")}</button></Bulle>
+                  <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="cursor-pointer border-b border-rose-700/40 text-xs font-semibold text-rose-700 transition-colors hover:border-rose-700">{t("common.actions.delete")}</button></Bulle>
                 </div></td>
               </tr>
             ))
@@ -406,55 +566,55 @@ export default function TenantsPage() {
       </div>
 
       {/* Vue cartes empilées (mobile, < sm) */}
-      <div className="sm:hidden space-y-3">
+      <div className="space-y-3 sm:hidden">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-contour-200 p-4 space-y-2">
+              <div key={i} className="space-y-2 border border-slate-300 bg-white p-4">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-40" />
               </div>
             ))
-          : tenants.map((tenant) => (
-              <div key={tenant.id} className="bg-white rounded-xl border border-contour-200 shadow-sm p-4 space-y-2.5">
+          : visibles.map((tenant) => (
+              <div key={tenant.id} className="space-y-2.5 border border-slate-300 bg-white p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex min-w-0 items-center gap-3">
                     <Initiales prenom={tenant.firstName} nom={tenant.lastName} />
                     <p className="font-medium text-slate-900">{tenant.firstName} {tenant.lastName}</p>
                   </div>
                   {tenant.userId ? (
-                    <span className="text-emerald-700 text-[11px] font-medium shrink-0">{t("manager.tenants.portalActiveMobile")}</span>
+                    <span className="shrink-0 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("manager.tenants.portalActiveMobile")}</span>
                   ) : (
                     <Bulle texte={t("manager.tips.tenantPortal")}>
-                    <button onClick={() => { setPortalTenant(tenant); setPortalMsg(null); setPortalPassword(""); }} className="text-brand-600 hover:underline text-[11px] font-medium shrink-0 py-1 -my-1">
+                    <button onClick={() => ouvrirPortail(tenant)} className="-my-1 shrink-0 cursor-pointer border-b border-ink-900/40 py-1 text-[11px] font-semibold text-ink-900">
                       {t("manager.tenants.createAccess")}
                     </button>
                     </Bulle>
                   )}
                 </div>
-                <div className="text-xs text-slate-600 space-y-0.5">
-                  <p>{tenant.phone}</p>
-                  <p>{tenant.email}</p>
+                <div className="space-y-1 text-xs text-slate-600">
+                  <p>{lienTel(tenant)}</p>
+                  <p>{lienMail(tenant)}</p>
                 </div>
                 <div>
                   <BadgeFiabilite tenant={tenant} />
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-contour-100 text-xs">
+                <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-xs">
                   {tenant.idDocument ? (
-                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="text-brand-600 hover:underline py-1 -my-1">
+                    <Bulle texte={t("manager.tips.tenantIdDocument")}><button onClick={() => openIdDocument(tenant)} className="-my-1 cursor-pointer border-b border-ink-900/40 py-1 font-semibold text-ink-900">
                       {t("manager.tenants.viewIdDocumentMobile")}
                     </button></Bulle>
                   ) : (
                     <span className="text-slate-500">{t("manager.tenants.noIdDocument")}</span>
                   )}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="text-brand-600 hover:underline py-1 -my-1">{t("common.actions.edit")}</button></Bulle>
-                    <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="text-slate-600 hover:underline py-1 -my-1">{t("manager.tenants.exportData")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className="-my-1 cursor-pointer border-b border-ink-900/40 py-1 font-semibold text-ink-900">{t("common.actions.edit")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="-my-1 cursor-pointer py-1 text-slate-600 hover:underline">{t("manager.tenants.exportData")}</button></Bulle>
                     {tenant.anonymizedAt ? (
                       <span className="text-slate-600">{t("manager.tenants.anonymized")}</span>
                     ) : (
-                      <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="text-amber-700 hover:underline py-1 -my-1">{t("manager.tenants.anonymize")}</button></Bulle>
+                      <Bulle texte={t("manager.tips.tenantAnonymize")}><button onClick={() => handleAnonymize(tenant)} className="-my-1 cursor-pointer py-1 text-orange-800 hover:underline">{t("manager.tenants.anonymize")}</button></Bulle>
                     )}
-                    <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="text-red-600 hover:underline py-1 -my-1">{t("common.actions.delete")}</button></Bulle>
+                    <Bulle texte={t("manager.tips.tenantDelete")}><button onClick={() => handleDelete(tenant)} className="-my-1 cursor-pointer py-1 text-rose-700 hover:underline">{t("common.actions.delete")}</button></Bulle>
                   </div>
                 </div>
               </div>
