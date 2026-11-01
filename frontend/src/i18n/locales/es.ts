@@ -2,6 +2,21 @@ import type { TranslationSchema } from "./fr";
 
 const es: TranslationSchema = {
   common: {
+    crgReleve: {
+      previous: "Mes anterior",
+      next: "Mes siguiente",
+      thisMonth: "Mes actual",
+      decompte: "Cuenta del mes",
+      shareNet: "Neto",
+      shareCommission: "Comisión",
+      shareCharges: "Gastos",
+      share: "Reparto de los alquileres",
+      copySummary: "Copiar el resumen",
+      copied: "Copiado",
+      copyIban: "Copiar el IBAN",
+      copyIbanShort: "Copiar",
+      state: { none: "Nada transferido todavía", partial: "Transferido en parte", done: "Transferido en su totalidad", over: "Exceso por regularizar" },
+    },
     // Noms des formules : un seul nom par formule, partout dans l'interface.
     plans: { STARTER: "Starter", PRO: "Profesional", ENTERPRISE: "Agencia y Multicuentas" },
     history: { back: "Atrás", next: "Siguiente" },
@@ -2543,6 +2558,8 @@ const es: TranslationSchema = {
         totalNet: "Neto a transferir",
       },
       table: {
+        property: "Inmueble",
+        currency: "Moneda",
         title: "Detalle por propiedad",
         loyers: "Alquileres cobrados",
         charges: "Gastos deducidos",

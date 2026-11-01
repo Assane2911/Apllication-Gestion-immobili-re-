@@ -1,26 +1,21 @@
-import { FileText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { Check, ClipboardCopy, Copy, FileText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled } from "../../api/client";
+import Bulle from "../../components/Bulle";
+import DecompteCrg from "../../components/DecompteCrg";
 import DocumentModal from "../../components/DocumentModal";
+import EtatReversementCrg from "../../components/EtatReversementCrg";
 import ReversementsSection from "../../components/ReversementsSection";
+import SelecteurPeriodeCrg from "../../components/SelecteurPeriodeCrg";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
-import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import type { CrgSynthesis } from "../../types";
-import { formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
-import Bulle from "../../components/Bulle";
-import { NomDuBien } from "../../components/PlanLogement";
-
-/** Vrai si le montant est positif ou nul dans TOUTES les devises. */
-function allNonNegative(byCurrency: Record<string, number>): boolean {
-  const values = Object.values(byCurrency);
-  return values.length === 0 || values.every((amount) => amount >= 0);
-}
+import { resumeCrg } from "../../utils/resumeCrg";
 
 /**
  * CRG (Compte-Rendu de Gestion) mensuel du propriétaire connecté (Espace
- * propriétaire) — même contenu que CrgPage.tsx côté gestionnaire (statistiques,
+ * propriétaire) — même contenu que CrgPage.tsx côté gestionnaire (décompte,
  * détail par bien, export HTML), scopé automatiquement à "/crg/mine" plutôt
  * qu'à un :ownerId choisi, plus les coordonnées bancaires du propriétaire
  * (à qui le net sera reversé), absentes côté gestionnaire pour ne pas
@@ -37,6 +32,7 @@ export default function OwnerCrgPage() {
   const [loading, setLoading] = useState(true);
   const [showExport, setShowExport] = useState(false);
   const [showAnnual, setShowAnnual] = useState(false);
+  const [copie, setCopie] = useState<"resume" | "iban" | null>(null);
 
   const loadData = useCallback((selectedMonth: number, selectedYear: number, signal?: AbortSignal) => {
     setLoading(true);
@@ -63,19 +59,41 @@ export default function OwnerCrgPage() {
     return () => controller.abort();
   }, [loadData, month, year]);
 
-  const monthOptions = Array.from({ length: 12 }, (_, i) => ({
-    value: i + 1,
-    label: new Date(2000, i, 1).toLocaleDateString(i18n.language, { month: "long" }),
-  }));
-  const yearOptions = Array.from({ length: 6 }, (_, i) => now.getFullYear() - i);
+  const periode = new Date(year, month - 1, 1).toLocaleDateString(i18n.language, { month: "long", year: "numeric" });
+
+  async function copier(quoi: "resume" | "iban") {
+    if (!crg) return;
+    const texte =
+      quoi === "iban"
+        ? (crg.iban ?? "")
+        : resumeCrg(
+            crg,
+            periode,
+            {
+              titre: t("owner.crg.title"),
+              loyers: t("owner.crg.stats.totalLoyers"),
+              charges: t("owner.crg.stats.totalCharges"),
+              commission: t("owner.crg.stats.totalCommission"),
+              net: t("owner.crg.stats.totalNet"),
+            },
+            formatMoney
+          );
+    try {
+      await navigator.clipboard.writeText(texte);
+      setCopie(quoi);
+      setTimeout(() => setCopie((actuel) => (actuel === quoi ? null : actuel)), 1800);
+    } catch {
+      // Presse-papiers indisponible : l'export HTML reste disponible.
+    }
+  }
 
   if (error) {
     return (
-      <div className="bg-rose-50 border border-rose-200 text-rose-700 p-6 rounded-2xl shadow-xs">
+      <div className="border border-rose-200 bg-rose-50 p-6 text-rose-700">
         <p className="text-sm">{error}</p>
         <button
           onClick={() => loadData(month, year)}
-          className="mt-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+          className="mt-4 cursor-pointer bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-rose-700"
         >
           {t("common.actions.retry")}
         </button>
@@ -86,144 +104,87 @@ export default function OwnerCrgPage() {
   if (loading || !crg) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
-        <Skeleton className="h-[240px] w-full rounded-xl" />
+        <Skeleton className="h-[240px] w-full" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Bandeau d'accueil — même style que OwnerDashboardPage.tsx */}
-      <div className="relative overflow-hidden rounded-md bg-white text-slate-900 p-6 sm:p-7 border-2 border-ink-900">
-        <div className="relative z-10">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t("owner.crg.title")}</h2>
-          <p className="text-xs sm:text-sm text-slate-700 mt-1 max-w-xl">{t("owner.crg.subtitle")}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-slate-900">{t("owner.crg.title")}</h2>
+          <p className="mt-1 max-w-xl text-sm text-slate-600">{t("owner.crg.subtitle")}</p>
+        </div>
+        <EtatReversementCrg crg={crg} />
+      </div>
+
+      <div className="flex flex-wrap items-end justify-between gap-4 border border-slate-300 bg-white p-4">
+        <SelecteurPeriodeCrg month={month} year={year} onChange={(m, a) => { setMonth(m); setYear(a); }} idPrefixe="owner-crg" ns="owner.crg" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Bulle texte={t("owner.tips.crgExport")}>
+            <button
+              onClick={() => setShowExport(true)}
+              className="flex cursor-pointer items-center gap-1.5 bg-ink-900 px-3.5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700"
+            >
+              <FileText size={13} aria-hidden="true" /> {t("owner.crg.exportHtml")}
+            </button>
+          </Bulle>
+          <button
+            onClick={() => setShowAnnual(true)}
+            className="flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900"
+          >
+            <FileText size={13} aria-hidden="true" /> {t("owner.crg.exportAnnual", { year })}
+          </button>
+          <button
+            onClick={() => copier("resume")}
+            className="flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900"
+          >
+            {copie === "resume" ? <Check size={13} aria-hidden="true" /> : <ClipboardCopy size={13} aria-hidden="true" />}
+            {copie === "resume" ? t("common.crgReleve.copied") : t("common.crgReleve.copySummary")}
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 flex-wrap">
-        <label htmlFor="owner-crg-month-select" className="text-xs font-semibold text-slate-700">
-          {t("owner.crg.monthLabel")}
-        </label>
-        <select
-          id="owner-crg-month-select"
-          value={month}
-          onChange={(e) => setMonth(Number(e.target.value))}
-          className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500 capitalize"
-        >
-          {monthOptions.map((m) => (
-            <option key={m.value} value={m.value} className="capitalize">
-              {m.label}
-            </option>
-          ))}
-        </select>
-        <label htmlFor="owner-crg-year-select" className="text-xs font-semibold text-slate-700">
-          {t("owner.crg.yearLabel")}
-        </label>
-        <select
-          id="owner-crg-year-select"
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
-        >
-          {yearOptions.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-        <Bulle texte={t("owner.tips.crgExport")}>
-        <button
-          onClick={() => setShowExport(true)}
-          className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
-        >
-          <FileText size={13} aria-hidden="true" /> {t("owner.crg.exportHtml")}
-        </button>
-        </Bulle>
-        <button
-          onClick={() => setShowAnnual(true)}
-          className="border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
-        >
-          <FileText size={13} aria-hidden="true" /> {t("owner.crg.exportAnnual", { year })}
-        </button>
-      </div>
+      <DecompteCrg crg={crg} ns="owner.crg" periode={periode} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Wallet} label={t("owner.crg.stats.totalLoyers")} value={formatByCurrency(crg.totalLoyersByCurrency, formatMoney)} accent="green" />
-        <StatCard icon={TrendingDown} label={t("owner.crg.stats.totalCharges")} value={formatByCurrency(crg.totalChargesByCurrency, formatMoney)} accent="red" />
-        <StatCard
-          icon={Landmark}
-          label={t("owner.crg.stats.totalCommission")}
-          value={formatByCurrency(crg.totalCommissionByCurrency, formatMoney)}
-          hint={t("owner.crg.feeRateHint", { rate: crg.managementFeeRate })}
-          accent="amber"
-        />
-        <StatCard
-          icon={TrendingUp}
-          label={t("owner.crg.stats.totalNet")}
-          value={formatByCurrency(crg.totalNetByCurrency, formatMoney)}
-          accent={allNonNegative(crg.totalNetByCurrency) ? "green" : "red"}
-        />
-      </div>
-
-      <div className="bg-white rounded-2xl border border-contour-200/90 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-contour-100">
-          <h3 className="text-sm font-bold text-slate-900">{t("owner.crg.table.title")}</h3>
+      <section aria-label={t("owner.crg.bankDetailsTitle")} className="border border-slate-300 bg-white">
+        <header className="flex items-baseline gap-3 border-b border-slate-300 bg-slate-50 px-5 py-3">
+          <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">03</span>
+          <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("owner.crg.bankDetailsTitle")}</h3>
+        </header>
+        <div className="p-5">
+          {crg.iban ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-slate-600">
+                IBAN : <span className="font-mono text-sm font-semibold text-ink-900">{crg.iban}</span>
+                {crg.bic && (
+                  <>
+                    {" "}
+                    — BIC : <span className="font-mono text-sm font-semibold text-ink-900">{crg.bic}</span>
+                  </>
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={() => copier("iban")}
+                aria-label={t("common.crgReleve.copyIban")}
+                className="flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900"
+              >
+                {copie === "iban" ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                {copie === "iban" ? t("common.crgReleve.copied") : t("common.crgReleve.copyIbanShort")}
+              </button>
+            </div>
+          ) : (
+            <p className="border-l-2 border-orange-700 pl-3 text-xs text-slate-700">{t("owner.crg.noBankDetails")}</p>
+          )}
         </div>
-        {crg.properties.length === 0 ? (
-          <p className="p-4 sm:p-5 text-xs text-slate-600">{t("owner.crg.empty")}</p>
-        ) : (
-          <div className="divide-y divide-contour-100">
-            {crg.properties.map((row) => (
-              <div key={`${row.propertyId}-${row.currency}`} className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
-                <p className="text-sm font-semibold text-slate-900"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></p>
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="text-right">
-                    <p className="text-slate-600">{t("owner.crg.table.loyers")}</p>
-                    <p className="font-bold text-emerald-700">{formatMoney(row.loyersEncaisses, row.currency)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-slate-600">{t("owner.crg.table.charges")}</p>
-                    <p className="font-bold text-red-600">{formatDeduction(row.chargesDeduites, row.currency, formatMoney)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-slate-600">{t("owner.crg.table.commission")}</p>
-                    <p className="font-bold text-amber-700">{formatDeduction(row.commission, row.currency, formatMoney)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-slate-600">{t("owner.crg.table.net")}</p>
-                    <p className={`font-bold ${row.netAReverser >= 0 ? "text-emerald-700" : "text-red-700"}`}>
-                      {formatMoney(row.netAReverser, row.currency)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-contour-200/90 p-4 sm:p-5 shadow-xs">
-        <h3 className="text-sm font-bold text-slate-900 mb-2">{t("owner.crg.bankDetailsTitle")}</h3>
-        {crg.iban ? (
-          <p className="text-xs text-slate-600">
-            IBAN : <span className="font-mono">{crg.iban}</span>
-            {crg.bic && (
-              <>
-                {" "}
-                — BIC : <span className="font-mono">{crg.bic}</span>
-              </>
-            )}
-          </p>
-        ) : (
-          <p className="text-xs text-slate-600">{t("owner.crg.noBankDetails")}</p>
-        )}
-      </div>
+      </section>
 
       <ReversementsSection crg={crg} />
 

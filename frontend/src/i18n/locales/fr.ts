@@ -1,5 +1,20 @@
 const fr = {
   common: {
+    crgReleve: {
+      previous: "Mois précédent",
+      next: "Mois suivant",
+      thisMonth: "Mois en cours",
+      decompte: "Décompte du mois",
+      shareNet: "Net",
+      shareCommission: "Commission",
+      shareCharges: "Charges",
+      share: "Répartition des loyers",
+      copySummary: "Copier le récapitulatif",
+      copied: "Copié",
+      copyIban: "Copier l'IBAN",
+      copyIbanShort: "Copier",
+      state: { none: "Rien reversé pour l'instant", partial: "Reversé en partie", done: "Reversé en totalité", over: "Trop-perçu à régulariser" },
+    },
     // Noms des formules : un seul nom par formule, partout dans l'interface.
     plans: { STARTER: "Starter", PRO: "Professionnel", ENTERPRISE: "Agence & Multi-Comptes" },
     history: { back: "Retour", next: "Suivant" },
@@ -2542,6 +2557,8 @@ const fr = {
         totalNet: "Net à reverser",
       },
       table: {
+        property: "Bien",
+        currency: "Devise",
         title: "Détail par bien",
         loyers: "Loyers encaissés",
         charges: "Charges déduites",
