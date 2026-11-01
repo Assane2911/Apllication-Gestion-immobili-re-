@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -82,6 +82,7 @@ describe("LoginPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();
+    localStorage.removeItem("immo.email-memorise");
   });
 
   it("affiche le formulaire de connexion", () => {
@@ -402,5 +403,57 @@ describe("LoginPage — connexion avec Google (VITE_GOOGLE_CLIENT_ID configuré)
 
     expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument();
     expect(screen.queryByLabelText("Mot de passe")).not.toBeInTheDocument();
+  });
+
+  describe("confort de saisie", () => {
+    function reponseConnexion(role = "MANAGER") {
+      mockedApi.post.mockResolvedValueOnce({ data: { user: { id: "u1", email: "agence@test.local", role }, accessToken: "t" } });
+    }
+
+    it("avertit quand le verrouillage des majuscules est actif pendant la saisie du mot de passe", async () => {
+      renderPage();
+      const champ = screen.getByLabelText("Mot de passe");
+
+      fireEvent.keyUp(champ, { key: "A", modifierCapsLock: true });
+      expect(screen.getByText("Verr. Maj. activé")).toBeInTheDocument();
+
+      fireEvent.keyUp(champ, { key: "a", modifierCapsLock: false });
+      expect(screen.queryByText("Verr. Maj. activé")).not.toBeInTheDocument();
+    });
+
+    it("mémorise l'adresse e-mail seulement si l'utilisateur le demande, et la propose à la visite suivante", async () => {
+      const user = userEvent.setup();
+      reponseConnexion();
+      const { unmount } = renderPage();
+      await user.type(screen.getByLabelText("Email"), "agence@test.local");
+      await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+      await user.click(screen.getByRole("checkbox", { name: "Se souvenir de mon adresse e-mail" }));
+      await user.click(screen.getByRole("button", { name: "Se connecter" }));
+      await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
+      expect(localStorage.getItem("immo.email-memorise")).toBe("agence@test.local");
+      unmount();
+      // Nouvelle visite : la session est fermée, seule l'adresse mémorisée subsiste.
+      localStorage.clear();
+      localStorage.setItem("immo.email-memorise", "agence@test.local");
+
+      renderPage();
+      expect(screen.getByLabelText("Email")).toHaveValue("agence@test.local");
+      expect(screen.getByRole("checkbox", { name: "Se souvenir de mon adresse e-mail" })).toBeChecked();
+    });
+
+    it("n'enregistre rien quand la case n'est pas cochée, et oublie l'adresse si on la décoche", async () => {
+      const user = userEvent.setup();
+      localStorage.setItem("immo.email-memorise", "ancienne@test.local");
+      reponseConnexion();
+      renderPage();
+      await user.click(screen.getByRole("checkbox", { name: "Se souvenir de mon adresse e-mail" }));
+      await user.clear(screen.getByLabelText("Email"));
+      await user.type(screen.getByLabelText("Email"), "agence@test.local");
+      await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+      await user.click(screen.getByRole("button", { name: "Se connecter" }));
+
+      await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
+      expect(localStorage.getItem("immo.email-memorise")).toBeNull();
+    });
   });
 });

@@ -505,7 +505,15 @@ const pt: TranslationSchema = {
   },
 
   auth: {
+    cartouche: {
+      login: "Início de sessão",
+      register: "Registo",
+      sheet: "Folha",
+    },
     login: {
+      step: "Passo {{current}} de {{total}}",
+      capsLock: "Caps Lock ativado",
+      rememberEmail: "Lembrar o meu endereço de email",
       suspended: "A sua conta está suspensa. Contacte o suporte da plataforma para saber mais.",
       inactive: "A sua sessão foi terminada por inatividade. Inicie sessão novamente para continuar.",
       loggedOut: "Você saiu da sua conta. Até logo!",
@@ -549,6 +557,14 @@ const pt: TranslationSchema = {
       reloadError: "País guardado, mas não foi possível recarregar o perfil. Recarregue a página.",
     },
     register: {
+      trialTag: "Teste gratuito de 15 dias",
+      sections: { access: "Acesso", agency: "Agência", referral: "Apadrinhamento" },
+      checks: { length: "12 caracteres ou mais", case: "Maiúsculas e minúsculas", digit: "Um dígito", symbol: "Um símbolo" },
+      strength: { label: "Força da palavra-passe", level1: "Demasiado curta", level2: "Média", level3: "Boa", level4: "Excelente" },
+      match: "As palavras-passe coincidem",
+      noMatch: "As palavras-passe diferem",
+      referralFromLink: "Código retirado da ligação de apadrinhamento",
+      nextSteps: ["Abra o email de confirmação que acabámos de enviar.", "Clique na ligação que contém para ativar a sua conta.", "Inicie sessão e comece o seu teste gratuito."],
       title: "Criar uma conta",
       subtitle: "15 dias de teste grátis, sem cartão bancário.",
       email: "Email",
