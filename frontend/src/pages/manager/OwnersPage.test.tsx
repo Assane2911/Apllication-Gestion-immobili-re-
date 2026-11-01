@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -314,5 +314,102 @@ describe("OwnersPage (manager)", () => {
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/crg/payouts/summary", expect.anything()));
     expect(screen.getAllByText(/Awa/).length).toBeGreaterThan(0);
     expect(screen.queryByRole("region", { name: /Reversements de/ })).not.toBeInTheDocument();
+  });
+
+  describe("synthèse, recherche, filtres et IBAN", () => {
+    const parc = [
+      owner({ id: "o1", firstName: "Awa", lastName: "Diallo", iban: "FR7630006000011234567890189", portalStatus: "ACTIVE", managementFeeRate: 6 }),
+      owner({ id: "o2", firstName: "Moussa", lastName: "Ba", companyName: "SCI Baobab", email: "moussa@example.com", portalStatus: "PENDING", managementFeeRate: 10 }),
+      owner({ id: "o3", firstName: "Élodie", lastName: "Sow", email: "elodie@example.com", iban: "FR7630006000011234567890189", managementFeeRate: 8 }),
+      owner({ id: "o4", firstName: "Ibrahima", lastName: "Fall", email: "ibra@example.com", managementFeeRate: 12 }),
+    ];
+
+    async function afficher(synthese: LigneSynthese[] = []) {
+      queueOwners(parc, synthese);
+      renderPage();
+      await screen.findByRole("table");
+    }
+
+    const lignes = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+
+    it("résume les accès, la commission moyenne et les propriétaires sans IBAN", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des propriétaires");
+      expect(within(synthese).getByText("1 / 4")).toBeInTheDocument();
+      expect(within(synthese).getByText("1 invité(s), 2 sans accès")).toBeInTheDocument();
+      expect(within(synthese).getByText("9 %")).toBeInTheDocument();
+      expect(within(synthese).getByText("2")).toBeInTheDocument(); // sans IBAN
+    });
+
+    it("filtre les propriétaires sans accès, invités ou sans IBAN", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      const filtres = screen.getByRole("group", { name: "Filtrer les propriétaires" });
+
+      await user.click(within(filtres).getByRole("button", { name: /Invités\s*1/ }));
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Moussa Ba");
+
+      await user.click(within(filtres).getByRole("button", { name: /Sans IBAN\s*2/ }));
+      expect(lignes()).toHaveLength(2);
+    });
+
+    it("cherche par société, et trie par commission décroissante", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "sci baobab");
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Moussa Ba");
+
+      await user.clear(screen.getByRole("searchbox"));
+      await user.selectOptions(screen.getByLabelText("Trier par"), "Commission décroissante");
+      expect(lignes().map((l) => ["Ibrahima", "Moussa", "Élodie", "Awa"].find((p) => l.includes(p)))).toEqual(["Ibrahima", "Moussa", "Élodie", "Awa"]);
+    });
+
+    it("totalise les reversements à effectuer devise par devise", async () => {
+      await afficher([
+        { ownerId: "o1", ownerName: "Awa Diallo", hasIban: true, resteByCurrency: { EUR: 400 } },
+        { ownerId: "o3", ownerName: "Élodie Sow", hasIban: false, resteByCurrency: { EUR: 250, XOF: 300000 } },
+      ]);
+      const bloc = await screen.findByRole("region", { name: /Reversements de/ });
+      expect(within(bloc).getByText(/Total à reverser : 650 € \+ 300 000/)).toBeInTheDocument();
+      expect(within(bloc).getByText("Pas d'IBAN renseigné")).toBeInTheDocument();
+    });
+
+    it("exporte les propriétaires en CSV, sans l'IBAN", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      await afficher();
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      expect(texte.split("\n")).toHaveLength(5);
+      expect(texte).not.toContain("FR7630");
+      expect(texte).toContain('"SCI Baobab"');
+    });
+  });
+
+  it("indique si la clé de contrôle de l'IBAN saisi est valide, sans bloquer l'enregistrement", async () => {
+    const user = userEvent.setup();
+    queueOwners([]);
+    renderPage();
+    await user.click((await screen.findAllByRole("button", { name: "+ Ajouter un propriétaire" }))[0]);
+
+    const iban = screen.getByLabelText(/IBAN/);
+    await user.type(iban, "FR7630006000011234567890189");
+    expect(screen.getByText("Clé de contrôle valide")).toBeInTheDocument();
+    await user.clear(iban);
+    await user.type(iban, "FR7630006000011234567890180");
+    expect(screen.getByText("La clé de contrôle ne correspond pas : vérifiez la saisie.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
+
+    await user.type(screen.getByLabelText(/BIC/), "ABC");
+    expect(screen.getByText("Un BIC compte 8 ou 11 caractères.")).toBeInTheDocument();
   });
 });
