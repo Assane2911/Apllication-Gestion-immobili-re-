@@ -7,18 +7,15 @@ import AuthLayout from "../components/AuthLayout";
 import ChampAuth from "../components/ChampAuth";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import Seo from "../components/Seo";
+import IndicateurForce from "../components/IndicateurForce";
 import SelecteurPays from "../components/SelecteurPays";
 import { useAuth } from "../context/auth";
 import { isGoogleSignInEnabled } from "../utils/googleAuth";
-import { forceMotDePasse } from "../utils/forceMotDePasse";
 import { homePathForRole } from "../utils/roleHome";
 
 const BOUTON_PRINCIPAL =
   "flex w-full cursor-pointer items-center justify-center gap-2 bg-ink-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
 const MESSAGE_ERREUR = "border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800";
-
-/** Couleur de chaque segment de l'indicateur de force, selon le niveau atteint. */
-const COULEUR_FORCE = ["bg-slate-200", "bg-orange-700", "bg-orange-400", "bg-ink-900/70", "bg-ink-900"] as const;
 
 /** Rubrique du formulaire : numéro de repère et titre en police technique, filet dessous. */
 function Rubrique({ numero, titre, children }: { numero: string; titre: string; children: React.ReactNode }) {
@@ -56,13 +53,6 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
-  const force = forceMotDePasse(password);
-  const critereLabels = {
-    longueur: t("auth.register.checks.length"),
-    casse: t("auth.register.checks.case"),
-    chiffre: t("auth.register.checks.digit"),
-    symbole: t("auth.register.checks.symbol"),
-  } as const;
   const etapes = t("auth.register.nextSteps", { returnObjects: true }) as string[];
 
   async function handleSubmit(e: React.FormEvent) {
@@ -189,38 +179,7 @@ export default function RegisterPage() {
                 aide={
                   <>
                     <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
-                    {/* Force du mot de passe : une aide à la saisie, qui ne bloque rien de plus que la longueur minimale. */}
-                    {force.niveau > 0 && (
-                      <div className="mt-2.5">
-                        <div
-                          role="meter"
-                          aria-label={t("auth.register.strength.label")}
-                          aria-valuemin={1}
-                          aria-valuemax={4}
-                          aria-valuenow={force.niveau}
-                          aria-valuetext={t(`auth.register.strength.level${force.niveau}`)}
-                          className="flex gap-1"
-                        >
-                          {[1, 2, 3, 4].map((segment) => (
-                            <span key={segment} className={`h-1.5 flex-1 ${segment <= force.niveau ? COULEUR_FORCE[force.niveau] : "bg-slate-200"}`} />
-                          ))}
-                        </div>
-                        <p aria-live="polite" className="mt-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-800">
-                          {t(`auth.register.strength.level${force.niveau}`)}
-                        </p>
-                        <ul className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
-                          {(Object.keys(critereLabels) as Array<keyof typeof critereLabels>).map((cle) => (
-                            <li
-                              key={cle}
-                              className={`flex items-center gap-1.5 text-[11px] ${force.criteres[cle] ? "font-semibold text-ink-900" : "text-slate-600"}`}
-                            >
-                              {force.criteres[cle] ? <Check size={11} aria-hidden="true" /> : <Circle size={9} aria-hidden="true" />}
-                              {critereLabels[cle]}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <IndicateurForce motDePasse={password} />
                   </>
                 }
               />

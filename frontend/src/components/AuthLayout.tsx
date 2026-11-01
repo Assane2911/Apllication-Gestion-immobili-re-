@@ -5,10 +5,16 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import Logo from "./Logo";
 import Reveal from "./Reveal";
 
+/** Les pages du parcours d'accès, dans l'ordre des feuilles du cartouche. */
+const FEUILLES = ["login", "register", "forgotPassword", "resetPassword", "verifyEmail"] as const;
+export type PageAuth = (typeof FEUILLES)[number];
+
 interface AuthLayoutProps {
-  page: "login" | "register";
+  page: PageAuth;
   /** Libellé du lien de retour vers l'accueil. */
   retour: string;
+  /** Lien de retour : l'accueil par défaut (connexion, inscription), la connexion pour les autres pages. */
+  retourVers?: string;
   children: ReactNode;
 }
 
@@ -17,9 +23,11 @@ interface AuthLayoutProps {
  * cartouche de feuille) ; à droite, le formulaire posé sur le papier quadrillé. La planche est masquée sur téléphone, où la
  * marque est reprise au-dessus du formulaire.
  */
-export default function AuthLayout({ page, retour, children }: AuthLayoutProps) {
+export default function AuthLayout({ page, retour, retourVers = "/landing", children }: AuthLayoutProps) {
   const { t } = useTranslation();
-  const highlights = t(`auth.${page}.panel.highlights`, { returnObjects: true }) as string[];
+  // L'inscription a son propre discours ; toutes les autres pages reprennent celui de la connexion.
+  const panneau = page === "register" ? "register" : "login";
+  const highlights = t(`auth.${panneau}.panel.highlights`, { returnObjects: true }) as string[];
   const cases = [
     { cle: "project", libelle: t("common.cartouche.project"), valeur: t("common.appName") },
     { cle: "page", libelle: t("common.cartouche.page"), valeur: t(`auth.cartouche.${page}`) },
@@ -48,8 +56,8 @@ export default function AuthLayout({ page, retour, children }: AuthLayoutProps) 
         </Reveal>
 
         <Reveal delay={100} className="relative max-w-md">
-          <p className="text-3xl font-extrabold leading-tight xl:text-4xl xl:leading-10">{t(`auth.${page}.panel.title`)}</p>
-          <p className="mt-4 text-sm leading-relaxed text-slate-300">{t(`auth.${page}.panel.subtitle`)}</p>
+          <p className="text-3xl font-extrabold leading-tight xl:text-4xl xl:leading-10">{t(`auth.${panneau}.panel.title`)}</p>
+          <p className="mt-4 text-sm leading-relaxed text-slate-300">{t(`auth.${panneau}.panel.subtitle`)}</p>
 
           <ol className="mt-8 border-t border-white/20">
             {highlights.map((item, i) => (
@@ -66,7 +74,7 @@ export default function AuthLayout({ page, retour, children }: AuthLayoutProps) 
         <div className="relative space-y-4">
           <Reveal delay={200}>
             <p className="inline-block border border-orange-300/60 px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-orange-200">
-              {t(`auth.${page}.panel.trialNote`)}
+              {t(`auth.${panneau}.panel.trialNote`)}
             </p>
           </Reveal>
           {/* Cartouche de feuille : décoratif, comme celui des espaces connectés. */}
@@ -80,7 +88,8 @@ export default function AuthLayout({ page, retour, children }: AuthLayoutProps) 
             <div className="bg-white px-3 py-2 text-ink-900">
               <p className="text-[9px] uppercase tracking-widest text-slate-600">{t("auth.cartouche.sheet")}</p>
               <p className="mt-0.5 text-sm font-bold">
-                {page === "login" ? "01" : "02"} <span className="text-[10px] font-normal text-slate-600">/ 02</span>
+                {String(FEUILLES.indexOf(page) + 1).padStart(2, "0")}{" "}
+                <span className="text-[10px] font-normal text-slate-600">/ {String(FEUILLES.length).padStart(2, "0")}</span>
               </p>
             </div>
           </div>
@@ -90,7 +99,7 @@ export default function AuthLayout({ page, retour, children }: AuthLayoutProps) 
       <main className="relative flex flex-col items-center justify-center px-6 pb-12 pt-20">
         <div className="absolute left-6 right-6 top-6 flex items-center justify-between">
           <Link
-            to="/landing"
+            to={retourVers}
             className="border-b border-ink-900/40 pb-0.5 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700"
           >
             {retour}

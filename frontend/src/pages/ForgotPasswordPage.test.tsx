@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -23,6 +23,7 @@ function renderPage() {
 describe("ForgotPasswordPage", () => {
   beforeEach(() => {
     mockedApi.post.mockReset();
+    vi.useRealTimers();
   });
 
   it("affiche un message de succès générique après l'envoi, que l'email existe ou non", async () => {
@@ -51,5 +52,45 @@ describe("ForgotPasswordPage", () => {
     await user.click(screen.getByRole("button", { name: "Envoyer le lien" }));
 
     expect(await screen.findByText("Erreur serveur")).toBeInTheDocument();
+  });
+
+  it("rappelle l'adresse saisie une fois le lien envoyé, et permet d'en changer", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
+    renderPage();
+    await user.type(screen.getByLabelText("Email"), "quelqu-un@test.local");
+    await user.click(screen.getByRole("button", { name: "Envoyer le lien" }));
+
+    expect(await screen.findByText("Envoyé à quelqu-un@test.local")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Utiliser une autre adresse" }));
+    expect(screen.getByLabelText("Email")).toHaveValue("quelqu-un@test.local");
+  });
+
+  it("n'autorise le renvoi qu'après un délai, puis redemande le lien", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockedApi.post.mockResolvedValue({ data: { success: true } });
+    renderPage();
+    await user.type(screen.getByLabelText("Email"), "quelqu-un@test.local");
+    await user.click(screen.getByRole("button", { name: "Envoyer le lien" }));
+
+    const bouton = await screen.findByRole("button", { name: /Renvoyer dans \d+ s/ });
+    expect(bouton).toBeDisabled();
+
+    // Le compte à rebours avance d'une seconde à la fois : React doit se mettre à jour entre deux tics.
+    for (let seconde = 0; seconde < 31; seconde++) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+    }
+    const renvoyer = screen.getByRole("button", { name: "Renvoyer le lien" });
+    expect(renvoyer).toBeEnabled();
+
+    await user.click(renvoyer);
+    expect(await screen.findByText("Un nouveau lien vient d'être envoyé.")).toBeInTheDocument();
+    expect(mockedApi.post).toHaveBeenCalledTimes(2);
+    // Le délai repart après chaque envoi.
+    expect(screen.getByRole("button", { name: /Renvoyer dans \d+ s/ })).toBeDisabled();
   });
 });

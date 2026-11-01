@@ -506,6 +506,9 @@ const en: TranslationSchema = {
 
   auth: {
     cartouche: {
+      forgotPassword: "Recovery",
+      resetPassword: "Reset",
+      verifyEmail: "Verification",
       login: "Sign in",
       register: "Sign up",
       sheet: "Sheet",
@@ -606,6 +609,11 @@ const en: TranslationSchema = {
       },
     },
     forgotPassword: {
+      sentTo: "Sent to {{email}}",
+      resend: "Resend the link",
+      resendIn: "Resend in {{count}} s",
+      resent: "A new link has just been sent.",
+      changeAddress: "Use another address",
       backToLogin: "← Back to login",
       backToLoginButton: "Back to login",
       title: "Forgot password",
@@ -616,6 +624,7 @@ const en: TranslationSchema = {
       sentSubtitle: "If an account exists with this email, you'll receive a reset link shortly. Check your spam folder too.",
     },
     resetPassword: {
+      loginNow: "Sign in now",
       title: "New password",
       subtitle: "Choose a new password for your account.",
       newPassword: "New password",

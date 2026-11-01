@@ -506,6 +506,9 @@ const pt: TranslationSchema = {
 
   auth: {
     cartouche: {
+      forgotPassword: "Recuperação",
+      resetPassword: "Reposição",
+      verifyEmail: "Verificação",
       login: "Início de sessão",
       register: "Registo",
       sheet: "Folha",
@@ -606,6 +609,11 @@ const pt: TranslationSchema = {
       },
     },
     forgotPassword: {
+      sentTo: "Enviado para {{email}}",
+      resend: "Reenviar a ligação",
+      resendIn: "Reenviar em {{count}} s",
+      resent: "Foi enviada uma nova ligação.",
+      changeAddress: "Usar outro endereço",
       backToLogin: "← Voltar à conexão",
       backToLoginButton: "Voltar à conexão",
       title: "Esqueceu a palavra-passe",
@@ -616,6 +624,7 @@ const pt: TranslationSchema = {
       sentSubtitle: "Se existir uma conta com este email, vai receber um link de reinicialização em breve. Verifique também os spams.",
     },
     resetPassword: {
+      loginNow: "Iniciar sessão agora",
       title: "Nova palavra-passe",
       subtitle: "Escolha uma nova palavra-passe para a sua conta.",
       newPassword: "Nova palavra-passe",
