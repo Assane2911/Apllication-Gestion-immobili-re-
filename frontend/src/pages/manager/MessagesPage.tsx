@@ -1,43 +1,15 @@
-import { ArrowLeft, Mail, MessageSquare, Phone, Send } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { ArrowLeft, Mail, MessageSquare, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import FilDeMessages from "../../components/FilDeMessages";
 import Initiales from "../../components/Initiales";
 import Pagination from "../../components/Pagination";
 import PlanLogement from "../../components/PlanLogement";
+import ZoneDeSaisie from "../../components/ZoneDeSaisie";
 import { useCurrency } from "../../context/currency";
 import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
-import type { Message } from "../../types";
-import { debutDeJour, libelleDuJour } from "../../utils/libelleDuJour";
 
 const PAGE_SIZE = 20;
-const LONGUEUR_MAX = 5000;
-/** Deux messages du même auteur à moins de cinq minutes l'un de l'autre forment un seul bloc. */
-const FENETRE_GROUPE_MS = 5 * 60 * 1000;
-
-type Ligne =
-  | { genre: "jour"; cle: string; libelle: string }
-  | { genre: "message"; message: Message; debutDeBloc: boolean };
-
-/** Intercale un filet de date à chaque changement de jour et repère le premier message de chaque bloc. */
-function composerLignes(messages: Message[], langue: string): Ligne[] {
-  const lignes: Ligne[] = [];
-  let precedent: Message | null = null;
-  for (const message of messages) {
-    const date = new Date(message.createdAt);
-    const nouveauJour = !precedent || debutDeJour(new Date(precedent.createdAt)) !== debutDeJour(date);
-    if (nouveauJour) lignes.push({ genre: "jour", cle: `jour-${message.id}`, libelle: libelleDuJour(message.createdAt, langue) });
-    const memeBloc =
-      !nouveauJour &&
-      precedent !== null &&
-      precedent.senderRole === message.senderRole &&
-      date.getTime() - new Date(precedent.createdAt).getTime() < FENETRE_GROUPE_MS;
-    lignes.push({ genre: "message", message, debutDeBloc: !memeBloc });
-    precedent = message;
-  }
-  return lignes;
-}
-
 function EnteteDeFiche({ children }: { children: React.ReactNode }) {
   return (
     <h4 className="mb-2 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
@@ -69,16 +41,8 @@ export default function MessagesPage() {
     handleSend,
   } = useConversationThread("MANAGER", { refreshOnSend: true });
 
-  // Le fil s'ouvre toujours sur le message le plus récent.
-  const defilement = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const zone = defilement.current;
-    if (zone) zone.scrollTop = zone.scrollHeight;
-  }, [messages, selectedThreadId]);
-
   const conversationActive = conversations.find((c) => cleDuFil(c) === selectedThreadId);
   const rangActif = conversationActive ? conversations.indexOf(conversationActive) : -1;
-  const lignes = composerLignes(messages, i18n.language);
   const formatDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(i18n.language) : "—");
 
   return (
@@ -186,87 +150,28 @@ export default function MessagesPage() {
                 </span>
               </div>
 
-              <div ref={defilement} className="flex-1 overflow-y-auto bg-slate-50 px-4 py-5 md:px-6">
-                {loadingMessages && (
-                  <p className="py-4 text-center text-xs text-slate-600">{t("manager.messages.loadingMessages")}</p>
-                )}
-                {lignes.map((ligne) => {
-                  if (ligne.genre === "jour") {
-                    return (
-                      <div key={ligne.cle} className="my-5 flex items-center gap-3 first:mt-0">
-                        <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{ligne.libelle}</span>
-                        <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
-                      </div>
-                    );
-                  }
-                  const m = ligne.message;
-                  const isMe = m.senderRole === "MANAGER";
-                  const heure = new Date(m.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" });
-                  return (
-                    <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"} ${ligne.debutDeBloc ? "mt-4" : "mt-1"}`}>
-                      {ligne.debutDeBloc && (
-                        <span className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-600">
-                          {isMe ? t("manager.messages.you") : t("manager.messages.tenantParen", { name: activeDetails.tenant?.firstName })}
-                        </span>
-                      )}
-                      <div
-                        className={`max-w-[85%] px-4 py-2.5 text-xs leading-relaxed md:max-w-md ${
-                          isMe
-                            ? "bg-ink-900 text-white"
-                            : "border border-slate-300 bg-white text-slate-800 shadow-[inset_3px_0_0_var(--color-orange-700)]"
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap wrap-break-word">{m.content}</p>
-                        <p className={`mt-1 text-right font-mono text-[10px] ${isMe ? "text-white/70" : "text-slate-500"}`}>
-                          {heure}
-                          {isMe && ` · ${m.isRead ? t("manager.messages.read") : t("manager.messages.sent")}`}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!loadingMessages && messages.length === 0 && (
-                  <p className="py-12 text-center text-xs text-slate-600">{t("manager.messages.noMessagesInThread")}</p>
-                )}
-              </div>
+              <FilDeMessages
+                messages={messages}
+                roleMoi="MANAGER"
+                libelleMoi={t("manager.messages.you")}
+                libelleAutre={t("manager.messages.tenantParen", { name: activeDetails.tenant?.firstName })}
+                libelleLu={t("manager.messages.read")}
+                libelleEnvoye={t("manager.messages.sent")}
+                chargement={loadingMessages}
+                libelleChargement={t("manager.messages.loadingMessages")}
+                libelleVide={t("manager.messages.noMessagesInThread")}
+              />
 
-              <form onSubmit={handleSend} className="border-t border-slate-300 bg-white p-4">
-                <textarea
-                  rows={2}
-                  aria-label={t("manager.messages.writeMessage")}
-                  placeholder={t("manager.messages.writeMessage")}
-                  value={newText}
-                  maxLength={LONGUEUR_MAX}
-                  onChange={(e) => setNewText(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Entrée envoie, Maj+Entrée passe à la ligne ; on ne touche pas à la saisie en cours de composition (IME).
-                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                      e.preventDefault();
-                      if (!sending && newText.trim()) e.currentTarget.form?.requestSubmit();
-                    }
-                  }}
-                  className="block w-full resize-none border border-slate-400 bg-white px-4 py-2.5 text-xs text-slate-900"
-                />
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className="hidden font-mono text-[10px] uppercase tracking-wider text-slate-500 sm:block">{t("manager.messages.sendHint")}</p>
-                  <div className="ml-auto flex items-center gap-3">
-                    <span
-                      className={`font-mono text-[10px] tabular-nums ${newText.length > LONGUEUR_MAX - 500 ? "text-rose-700" : "text-slate-500"}`}
-                    >
-                      {newText.length} / {LONGUEUR_MAX}
-                    </span>
-                    <button
-                      type="submit"
-                      disabled={sending || !newText.trim()}
-                      className="inline-flex cursor-pointer items-center gap-1.5 border border-ink-900 bg-ink-900 px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-50"
-                    >
-                      <Send size={13} aria-hidden="true" />
-                      {sending ? t("manager.messages.sending") : t("manager.messages.send")}
-                    </button>
-                  </div>
-                </div>
-              </form>
+              <ZoneDeSaisie
+                valeur={newText}
+                onChange={setNewText}
+                onSubmit={handleSend}
+                envoi={sending}
+                libelleChamp={t("manager.messages.writeMessage")}
+                libelleEnvoyer={t("manager.messages.send")}
+                libelleEnvoi={t("manager.messages.sending")}
+                indice={t("manager.messages.sendHint")}
+              />
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-sm text-slate-600">

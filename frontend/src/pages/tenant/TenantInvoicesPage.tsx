@@ -2,13 +2,12 @@ import { CheckCircle2, Clock, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
-import Badge from "../../components/Badge";
 import BankDetails from "../../components/BankDetails";
 import DocumentModal from "../../components/DocumentModal";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
-import type { AgencyBankInfo, Invoice, PaymentMethod } from "../../types";
+import type { AgencyBankInfo, Invoice, InvoiceStatus, PaymentMethod } from "../../types";
 import Bulle from "../../components/Bulle";
 import { formaterJour } from "../../utils/jourCivil";
 import { NomDuBien } from "../../components/PlanLogement";
@@ -16,6 +15,14 @@ import { NomDuBien } from "../../components/PlanLogement";
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, monthIndex1to12 - 1, 1));
 }
+
+/** Filet de la ligne et étiquette de statut : le rouge signale un retard, le vert un loyer réglé, l'orange un loyer à régler. */
+const TEINTE_FACTURE: Record<InvoiceStatus, { filet: string; tag: string }> = {
+  PENDING: { filet: "border-l-orange-700", tag: "border-orange-700/50 bg-orange-50 text-orange-800" },
+  LATE: { filet: "border-l-rose-600", tag: "border-rose-300 bg-rose-50 text-rose-800" },
+  PAID: { filet: "border-l-emerald-600", tag: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+  CANCELLED: { filet: "border-l-slate-400", tag: "border-slate-400 bg-slate-100 text-slate-700" },
+};
 
 export default function TenantInvoicesPage() {
   const { t, i18n } = useTranslation();
@@ -102,17 +109,13 @@ export default function TenantInvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            {t("tenant.invoices.title")}
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-            {t("tenant.invoices.subtitle")}
-          </p>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{t("tenant.invoices.title")}</h2>
+          <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">{t("tenant.invoices.subtitle")}</p>
         </div>
         {unpaidInvoices.length === 0 && invoices.length > 0 && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700">
+          <div className="inline-flex items-center gap-1.5 border border-emerald-300 bg-emerald-50 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
             <CheckCircle2 size={14} />
             {t("tenant.invoices.allUpToDate")}
           </div>
@@ -121,142 +124,122 @@ export default function TenantInvoicesPage() {
 
       {/* Retour d'un prestataire de paiement : voir useRetourDePaiement. */}
       {retourPaiement === "succes" && (
-        <div className="text-sm bg-sky-50 border border-sky-200 text-sky-800 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
+        <div className="flex items-center gap-2 border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 shadow-[inset_4px_0_0_var(--color-sky-600)]">
           <Clock size={16} />
           <span>{t("common.payment.returned")}</span>
         </div>
       )}
       {retourPaiement === "annule" && (
-        <div className="text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 shadow-2xs">
+        <div className="border border-orange-700/40 bg-orange-50 px-4 py-3 text-sm text-orange-900 shadow-[inset_4px_0_0_var(--color-orange-700)]">
           {t("common.payment.cancelled")}
         </div>
       )}
 
       {message && (
-        <div role="status" className="text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 flex items-center gap-2 shadow-2xs">
+        <div role="status" className="flex items-center gap-2 border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 shadow-[inset_4px_0_0_var(--color-emerald-600)]">
           <CheckCircle2 size={16} />
           <span>{message}</span>
         </div>
       )}
-      {error && (
-        <div className="text-sm bg-rose-50 border border-rose-200 text-rose-800 rounded-xl px-4 py-3 shadow-2xs">
-          {error}
-        </div>
-      )}
+      {error && <div className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-[inset_4px_0_0_var(--color-rose-600)]">{error}</div>}
 
-      {/* Quick Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        <div className="bg-white rounded-2xl border border-contour-200/90 p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
-              {t("tenant.invoices.pendingTitle")}
+      {/* Résumé : loyers à régler et quittances disponibles, en une bande de deux cases. */}
+      <div className="grid grid-cols-1 gap-px border border-slate-300 bg-slate-300 sm:grid-cols-2">
+        <div className="flex items-start justify-between gap-3 border-t-4 border-t-orange-700 bg-white p-4">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("tenant.invoices.pendingTitle")}</p>
+            <p className="mt-1.5 text-2xl font-bold text-slate-900">
+              {t(unpaidInvoices.length > 1 ? "tenant.invoices.pendingMany" : "tenant.invoices.pendingOne", { count: unpaidInvoices.length })}
             </p>
-            <span className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock size={15} aria-hidden="true" />
-            </span>
           </div>
-          <p className="text-2xl font-bold mt-2 text-slate-900">
-            {t(unpaidInvoices.length > 1 ? "tenant.invoices.pendingMany" : "tenant.invoices.pendingOne", { count: unpaidInvoices.length })}
-          </p>
+          <Clock size={18} aria-hidden="true" className="mt-1 text-orange-700" />
         </div>
-        <div className="bg-white rounded-2xl border border-contour-200/90 p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
-              {t("tenant.invoices.receiptsTitle")}
+        <div className="flex items-start justify-between gap-3 border-t-4 border-t-emerald-600 bg-white p-4">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("tenant.invoices.receiptsTitle")}</p>
+            <p className="mt-1.5 text-2xl font-bold text-slate-900">
+              {t(paidInvoices.length > 1 ? "tenant.invoices.receiptMany" : "tenant.invoices.receiptOne", { count: paidInvoices.length })}
             </p>
-            <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Download size={15} aria-hidden="true" />
-            </span>
           </div>
-          <p className="text-2xl font-bold mt-2 text-slate-900">
-            {t(paidInvoices.length > 1 ? "tenant.invoices.receiptMany" : "tenant.invoices.receiptOne", { count: paidInvoices.length })}
-          </p>
+          <Download size={18} aria-hidden="true" className="mt-1 text-emerald-700" />
         </div>
       </div>
 
-      <div className="space-y-3.5">
+      {/* Le registre des loyers : une ligne par échéance, le mois en onglet à gauche. */}
+      <div className="space-y-3">
         {invoices.map((inv) => {
           const isPaid = inv.status === "PAID";
-          const isLate = inv.status === "LATE";
+          const teinte = TEINTE_FACTURE[inv.status] ?? TEINTE_FACTURE.CANCELLED;
+          const mois = monthLabel(i18n.language, inv.periodMonth);
           return (
-            <div
-              key={inv.id}
-              className={`bg-white rounded-2xl border shadow-xs transition-all duration-200 p-5 ${
-                isLate
-                  ? "border-rose-300 bg-rose-50/10"
-                  : isPaid
-                  ? "border-contour-200/90"
-                  : "border-amber-200"
-              }`}
-            >
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-slate-900 capitalize text-base">
-                      {monthLabel(i18n.language, inv.periodMonth)} {inv.periodYear}
-                    </p>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-xs font-medium text-slate-600">
-                      <NomDuBien titre={inv.contract?.property?.title} id={inv.contract?.property?.id} />
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    {t("tenant.invoices.dueDate", {
-                      date: formaterJour(inv.dueDate, i18n.language),
-                    })}
-                  </p>
+            <div key={inv.id} className={`border border-l-4 border-slate-300 bg-white ${teinte.filet}`}>
+              <div className="flex flex-wrap items-stretch">
+                <div className="flex w-20 shrink-0 flex-col items-center justify-center border-r border-slate-300 bg-slate-50 px-2 py-3 text-center font-mono">
+                  <span aria-hidden="true" className="text-[10px] uppercase tracking-wider text-slate-600">{new Intl.DateTimeFormat(i18n.language, { month: "short" }).format(new Date(2000, inv.periodMonth - 1, 1))}</span>
+                  <span aria-hidden="true" className="text-lg font-bold tabular-nums text-ink-900">{inv.periodYear}</span>
                 </div>
 
-                <div className="flex items-center gap-3.5 flex-wrap">
-                  <span className="font-bold text-lg sm:text-xl text-slate-900">
-                    {formatMoney(inv.amount, inv.currency)}
-                  </span>
-                  <Badge status={inv.status} />
-                  {!isPaid && inv.status !== "CANCELLED" && (inv.montantRegle ?? 0) > 0 && (inv.resteDu ?? 0) > 0 && (
-                    <span className="basis-full text-[11px] font-medium text-amber-700">
-                      {t("tenant.invoices.partiallyPaid", {
-                        paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
-                        remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
+                <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-4 p-4">
+                  <div className="min-w-0">
+                    <p className="text-base font-bold capitalize text-slate-900">
+                      {mois} {inv.periodYear}
+                    </p>
+                    <p className="mt-0.5 text-xs font-medium text-slate-700">
+                      <NomDuBien titre={inv.contract?.property?.title} id={inv.contract?.property?.id} />
+                    </p>
+                    <p className="mt-1 font-mono text-[11px] text-slate-600">
+                      {t("tenant.invoices.dueDate", {
+                        date: formaterJour(inv.dueDate, i18n.language),
                       })}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3.5">
+                    <span className="text-lg font-bold tabular-nums text-slate-900 sm:text-xl">{formatMoney(inv.amount, inv.currency)}</span>
+                    <span className={`border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${teinte.tag}`}>
+                      {t(`common.status.${inv.status}`, { defaultValue: inv.status })}
                     </span>
-                  )}
-                  {isPaid && (
-                    <Bulle texte={t("tenant.tips.viewReceipt")}>
-                    <button
-                      onClick={() => setActiveReceiptInvoice(inv)}
-                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                    >
-                      <Download size={13} />
-                      <span>{t("tenant.invoices.receiptPdf")}</span>
-                    </button>
-                    </Bulle>
-                  )}
-                  {!isPaid && inv.status !== "CANCELLED" && (
-                    <Bulle texte={t("tenant.tips.choosePayment")}>
-                    <button
-                      onClick={() => setPayingId(payingId === inv.id ? null : inv.id)}
-                      className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs shadow-brand-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                    >
-                      {t("tenant.invoices.pay")}
-                    </button>
-                    </Bulle>
-                  )}
+                    {!isPaid && inv.status !== "CANCELLED" && (inv.montantRegle ?? 0) > 0 && (inv.resteDu ?? 0) > 0 && (
+                      <span className="basis-full text-[11px] font-medium text-orange-800">
+                        {t("tenant.invoices.partiallyPaid", {
+                          paid: formatMoney(inv.montantRegle ?? 0, inv.currency),
+                          remaining: formatMoney(inv.resteDu ?? 0, inv.currency),
+                        })}
+                      </span>
+                    )}
+                    {isPaid && (
+                      <Bulle texte={t("tenant.tips.viewReceipt")}>
+                        <button
+                          onClick={() => setActiveReceiptInvoice(inv)}
+                          className="flex cursor-pointer items-center gap-1.5 border border-emerald-700 bg-white px-3.5 py-2 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-50"
+                        >
+                          <Download size={13} />
+                          <span>{t("tenant.invoices.receiptPdf")}</span>
+                        </button>
+                      </Bulle>
+                    )}
+                    {!isPaid && inv.status !== "CANCELLED" && (
+                      <Bulle texte={t("tenant.tips.choosePayment")}>
+                        <button
+                          onClick={() => setPayingId(payingId === inv.id ? null : inv.id)}
+                          className="cursor-pointer border border-ink-900 bg-ink-900 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
+                        >
+                          {t("tenant.invoices.pay")}
+                        </button>
+                      </Bulle>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {payingId === inv.id && (
-                <div className="mt-5 pt-4 border-t border-contour-100 animate-in fade-in duration-200">
-                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
-                    {t("tenant.invoices.choosePaymentTitle")}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="border-t border-slate-300 bg-slate-50 p-4">
+                  <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("tenant.invoices.choosePaymentTitle")}</p>
+                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                     {methods.map((m) => (
-                      <div
-                        key={m.key}
-                        className="border border-contour-200 rounded-xl p-4 bg-slate-50/50 hover:border-brand-400 transition-colors"
-                      >
+                      <div key={m.key} className="border border-slate-300 bg-white p-4 transition-colors hover:border-ink-900 hover:shadow-[inset_4px_0_0_var(--color-orange-700)]">
                         <p className="text-sm font-bold text-slate-800">{m.label}</p>
-                        <p className="text-xs text-slate-600 mt-1">{m.hint}</p>
+                        <p className="mt-1 text-xs text-slate-600">{m.hint}</p>
                         {m.key === "BANK_TRANSFER" && (
                           <>
                             <BankDetails
@@ -274,18 +257,18 @@ export default function TenantInvoicesPage() {
                               value={bankRef}
                               maxLength={200}
                               onChange={(e) => setBankRef(e.target.value)}
-                              className="w-full mt-3 rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500/30 outline-hidden"
+                              className="mt-3 w-full border border-slate-400 bg-white px-3 py-1.5 text-xs text-slate-900"
                             />
                           </>
                         )}
-                        <Bulle texte={t("tenant.tips.pay")}>
-                        <button
-                          onClick={() => pay(inv.id, m.key)}
-                          disabled={enCoursDePaiement}
-                          className="mt-3.5 w-full text-xs font-semibold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg py-2 transition-colors cursor-pointer shadow-2xs"
-                        >
-                          {enCoursDePaiement ? t("tenant.invoices.paying") : t("tenant.invoices.chooseMethod")}
-                        </button>
+                        <Bulle texte={t("tenant.tips.pay")} className="block">
+                          <button
+                            onClick={() => pay(inv.id, m.key)}
+                            disabled={enCoursDePaiement}
+                            className="mt-3.5 w-full cursor-pointer border border-ink-900 bg-ink-900 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {enCoursDePaiement ? t("tenant.invoices.paying") : t("tenant.invoices.chooseMethod")}
+                          </button>
                         </Bulle>
                       </div>
                     ))}
@@ -296,8 +279,8 @@ export default function TenantInvoicesPage() {
           );
         })}
         {invoices.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-2xl border border-contour-200 p-6">
-            <p className="text-slate-600 text-sm">{t("tenant.invoices.noInvoices")}</p>
+          <div className="border border-slate-300 bg-white p-6 py-12 text-center">
+            <p className="text-sm text-slate-600">{t("tenant.invoices.noInvoices")}</p>
           </div>
         )}
       </div>
