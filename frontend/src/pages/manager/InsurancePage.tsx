@@ -148,18 +148,26 @@ export default function InsurancePage() {
     }
   }
 
+  /** Filet à gauche de la ligne : rose pour une police échue, orange quand l'échéance approche. */
+  function barreEcheance(policy: InsurancePolicy) {
+    const jours = joursAvantEcheance(policy.expiryDate);
+    if (jours < 0) return "shadow-[inset_3px_0_0_var(--color-rose-600)]";
+    if (jours <= JOURS_ALERTE_ECHEANCE) return "shadow-[inset_3px_0_0_var(--color-orange-700)]";
+    return "";
+  }
+
   function echeanceBadge(policy: InsurancePolicy) {
     const jours = joursAvantEcheance(policy.expiryDate);
     if (jours < 0) {
       return (
-        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-red-100 text-red-800">
+        <span className="inline-block border px-2 py-0.5 rounded-sm font-mono text-[10px] font-medium uppercase tracking-wider whitespace-nowrap border-rose-600/50 bg-rose-50 text-rose-800">
           {t("manager.insurance.expired")}
         </span>
       );
     }
     if (jours <= JOURS_ALERTE_ECHEANCE) {
       return (
-        <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-medium bg-amber-100 text-amber-800">
+        <span className="inline-block border px-2 py-0.5 rounded-sm font-mono text-[10px] font-medium uppercase tracking-wider whitespace-nowrap border-orange-700/50 bg-orange-50 text-orange-800">
           {t("manager.insurance.expiringSoon", { count: jours })}
         </span>
       );
@@ -195,7 +203,7 @@ export default function InsurancePage() {
 
       <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <label htmlFor="insurance-property-filter" className="text-xs font-semibold text-slate-700">
+          <label htmlFor="insurance-property-filter" className="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-700">
             {t("manager.insurance.filterByProperty")}
           </label>
           <select
@@ -212,7 +220,7 @@ export default function InsurancePage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-600">{t("manager.insurance.policyLines", { count: total })}</p>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-slate-600">{t("manager.insurance.policyLines", { count: total })}</p>
       </div>
 
       {/* Vide, le tableau ne contient plus rien que le clavier atteigne : le cadre défilant le devient (voir structureEtCibles). */}
@@ -234,14 +242,14 @@ export default function InsurancePage() {
           <tbody className="divide-y divide-contour-100">
             {policies.map((policy) => (
               <tr key={policy.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={policy.property?.title} id={policy.property?.id} /></td>
+                <td className={`px-4 py-3 font-medium text-slate-900 ${barreEcheance(policy)}`}><NomDuBien titre={policy.property?.title} id={policy.property?.id} /></td>
                 <td className="px-4 py-3 text-slate-800">{policy.insurerName}</td>
-                <td className="px-4 py-3 text-slate-600 text-xs">{policy.policyNumber}</td>
-                <td className="px-4 py-3 text-slate-800">
+                <td className="px-4 py-3 text-slate-700 font-mono text-xs whitespace-nowrap">{policy.policyNumber}</td>
+                <td className="px-4 py-3 text-slate-800 tabular-nums whitespace-nowrap">
                   {policy.premiumAmount != null ? formatMoney(policy.premiumAmount, policy.currency) : "—"}
                 </td>
-                <td className="px-4 py-3 text-slate-600 text-xs">
-                  <span className="inline-flex items-center gap-1.5">
+                <td className="px-4 py-3 text-slate-600 text-xs tabular-nums">
+                  <span className="inline-flex flex-wrap items-center gap-1.5">
                     {formaterJour(policy.expiryDate, i18n.language)}
                     {echeanceBadge(policy)}
                   </span>
@@ -249,13 +257,13 @@ export default function InsurancePage() {
                 <td className="px-4 py-3 text-right whitespace-nowrap">
                   <button
                     onClick={() => openEditModal(policy)}
-                    className="text-xs text-brand-600 hover:underline mr-3"
+                    className="mr-4 text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors cursor-pointer"
                   >
                     {t("common.actions.edit")}
                   </button>
                   <button
                     onClick={() => handleDelete(policy)}
-                    className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                    className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors cursor-pointer"
                   >
                     {t("common.actions.delete")}
                   </button>
