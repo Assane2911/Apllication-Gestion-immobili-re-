@@ -1980,6 +1980,13 @@ const es: TranslationSchema = {
       scheduleLabel: "Visita planificada:",
       changeStatus: "Cambiar el estado:",
       noIssuesForFilter: "Ninguna incidencia para este filtro",
+      fiche: {
+        reference: "Incidencia",
+        reportedBy: "Reportado por",
+        property: "Inmueble",
+        reportedOn: "Reportado el",
+        handling: "Gestión",
+      },
       photoAlt: "Foto incidencia {{index}}",
       enlargedPhotoAlt: "Foto ampliada",
     },

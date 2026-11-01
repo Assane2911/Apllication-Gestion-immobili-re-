@@ -1979,6 +1979,13 @@ const fr = {
       scheduleLabel: "Intervention planifiée :",
       changeStatus: "Changer le statut :",
       noIssuesForFilter: "Aucun incident pour ce filtre",
+      fiche: {
+        reference: "Incident",
+        reportedBy: "Signalé par",
+        property: "Bien",
+        reportedOn: "Signalé le",
+        handling: "Traitement",
+      },
       photoAlt: "Photo incident {{index}}",
       enlargedPhotoAlt: "Photo agrandie",
     },

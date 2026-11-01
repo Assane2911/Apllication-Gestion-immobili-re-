@@ -1,7 +1,7 @@
+import { Camera, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl, isRequestCancelled, liste } from "../../api/client";
-import Badge from "../../components/Badge";
 import Pagination from "../../components/Pagination";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { IssueReport, IssueStatus, PaginatedResponse, Vendor } from "../../types";
@@ -10,6 +10,16 @@ import Bulle from "../../components/Bulle";
 
 const statusOptions: IssueStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"];
 const PAGE_SIZE = 20;
+
+/** Filet de couleur de la fiche et pastille du statut : le rouge crie l'urgence, le vert referme le dossier. */
+const teinteStatut: Record<IssueStatus, { filet: string; tag: string }> = {
+  OPEN: { filet: "border-l-rose-600", tag: "border-rose-300 bg-rose-50 text-rose-800" },
+  IN_PROGRESS: { filet: "border-l-orange-700", tag: "border-orange-700/50 bg-orange-50 text-orange-800" },
+  RESOLVED: { filet: "border-l-emerald-600", tag: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+  REJECTED: { filet: "border-l-slate-400", tag: "border-slate-400 bg-slate-100 text-slate-700" },
+};
+
+const CLASSE_ETIQUETTE = "mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600";
 
 /**
  * `<input type="datetime-local">` attend "AAAA-MM-JJTHH:mm" en heure LOCALE,
@@ -30,6 +40,8 @@ export default function IssuesPage() {
   const [filter, setFilter] = useState<IssueStatus | "ALL">("ALL");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  // Photo affichée en grand pour chaque incident (la première par défaut).
+  const [photoChoisie, setPhotoChoisie] = useState<Record<string, number>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -127,30 +139,30 @@ export default function IssuesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.issues.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">
-            {t("manager.issues.subtitle")}
-          </p>
-        </div>
-        <select
-          aria-label={t("manager.issues.filterByStatus")}
-          value={filter}
-          onChange={(e) => handleFilterChange(e.target.value as IssueStatus | "ALL")}
-          className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white text-slate-900 shadow-sm"
-        >
-          <option value="ALL">{t("manager.issues.allStatuses")}</option>
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>
-              {t(`common.status.${s}`)}
-            </option>
-          ))}
-        </select>
+      <div>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.issues.title")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("manager.issues.subtitle")}</p>
+      </div>
+
+      {/* Filtre : une réglette d'onglets plutôt qu'une liste déroulante, le statut courant est visible d'un coup d'œil. */}
+      <div role="group" aria-label={t("manager.issues.filterByStatus")} className="flex flex-wrap border border-slate-400 bg-white sm:inline-flex">
+        {(["ALL", ...statusOptions] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-pressed={filter === s}
+            onClick={() => handleFilterChange(s)}
+            className={`flex-1 cursor-pointer border-r border-slate-400 px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors last:border-r-0 sm:flex-none ${
+              filter === s ? "bg-ink-900 text-white" : "text-slate-800 hover:bg-slate-100"
+            }`}
+          >
+            {s === "ALL" ? t("manager.issues.allStatuses") : t(`common.status.${s}`)}
+          </button>
+        ))}
       </div>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -158,138 +170,183 @@ export default function IssuesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {issues.map((issue) => {
+      <div className="space-y-5">
+        {issues.map((issue, rang) => {
           const allPhotos = getAllIssuePhotos(issue);
+          const rangPhoto = Math.min(photoChoisie[issue.id] ?? 0, allPhotos.length - 1);
+          const teinte = teinteStatut[issue.status] ?? teinteStatut.REJECTED;
           return (
-            <div key={issue.id} className="bg-white rounded-2xl border border-contour-200 shadow-sm overflow-hidden flex flex-col justify-between">
-              <div>
-                {/* Galerie photos */}
-                <div className="bg-slate-900 p-3 flex gap-2 overflow-x-auto">
-                  {allPhotos.map((url, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setLightbox(fileUrl(url))}
-                      className="relative h-44 w-52 shrink-0 rounded-xl overflow-hidden cursor-zoom-in border border-slate-700 bg-slate-800"
-                    >
-                      <img
-                        src={fileUrl(url) ?? undefined}
-                        alt={t("manager.issues.photoAlt", { index: idx + 1 })}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform"
-                      />
-                      <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-sm">
-                        {t("manager.issues.photoCount", { current: idx + 1, total: allPhotos.length })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-bold text-slate-900 text-base">{issue.title}</h3>
-                    <Badge status={issue.status} />
+            <article
+              key={issue.id}
+              className={`border border-slate-300 border-l-4 bg-white lg:grid lg:grid-cols-[19rem_1fr] ${teinte.filet}`}
+            >
+              {/* Les photos du signalement : une grande, les autres en vignettes. */}
+              <div className="border-b border-slate-300 bg-slate-50 p-3 lg:border-b-0 lg:border-r">
+                <button
+                  type="button"
+                  onClick={() => setLightbox(fileUrl(allPhotos[rangPhoto]))}
+                  aria-label={t("manager.issues.enlargedPhotoAlt")}
+                  className="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden border border-slate-300 bg-slate-200"
+                >
+                  <img
+                    src={fileUrl(allPhotos[rangPhoto]) ?? undefined}
+                    alt={t("manager.issues.photoAlt", { index: rangPhoto + 1 })}
+                    className="h-full w-full object-cover"
+                  />
+                  <span className="absolute bottom-0 left-0 inline-flex items-center gap-1.5 bg-ink-900 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white">
+                    <Camera size={11} aria-hidden="true" />
+                    {t("manager.issues.photoCount", { current: rangPhoto + 1, total: allPhotos.length })}
+                  </span>
+                </button>
+                {allPhotos.length > 1 && (
+                  <div className="mt-2 flex gap-2 overflow-x-auto">
+                    {allPhotos.map((url, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setPhotoChoisie((p) => ({ ...p, [issue.id]: idx }))}
+                        aria-pressed={idx === rangPhoto}
+                        aria-label={t("manager.issues.photoAlt", { index: idx + 1 })}
+                        className={`h-14 w-16 shrink-0 cursor-pointer overflow-hidden border-2 ${
+                          idx === rangPhoto ? "border-orange-700" : "border-slate-300 hover:border-ink-900"
+                        }`}
+                      >
+                        <img src={fileUrl(url) ?? undefined} alt="" className="h-full w-full object-cover" />
+                      </button>
+                    ))}
                   </div>
+                )}
+              </div>
 
-                  <p className="text-xs text-slate-600 leading-relaxed">{issue.description}</p>
-
-                  <div className="pt-2 border-t border-contour-100 flex items-center justify-between text-xs text-slate-600">
-                    <div>
-                      <span className="font-semibold text-slate-700">
-                        {issue.tenant?.firstName} {issue.tenant?.lastName}
-                      </span>{" "}
-                      • {issue.tenant?.phone}
+              <div className="flex min-w-0 flex-col">
+                <div className="flex-1 space-y-4 p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono text-[10px] uppercase tracking-wider text-orange-700">
+                        {t("manager.issues.fiche.reference")} {String((page - 1) * PAGE_SIZE + rang + 1).padStart(2, "0")}
+                      </p>
+                      <h3 className="mt-0.5 text-base font-bold leading-snug text-slate-900">{issue.title}</h3>
                     </div>
-                    <span className="text-[11px] text-slate-600">
-                      {new Date(issue.createdAt).toLocaleDateString(i18n.language)}
+                    <span className={`shrink-0 border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${teinte.tag}`}>
+                      {t(`common.status.${issue.status}`)}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-600 font-medium">
-                    {t("manager.issues.concernedProperty")} <span className="text-slate-800">{issue.contract?.property?.title}</span>
-                  </p>
+                  <p className="whitespace-pre-line text-xs leading-relaxed text-slate-700">{issue.description}</p>
 
+                  <dl className="grid grid-cols-1 divide-y divide-slate-300 border border-slate-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    <div className="px-3 py-2">
+                      <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("manager.issues.fiche.reportedBy")}</dt>
+                      <dd className="mt-0.5 text-xs font-semibold text-slate-900">
+                        {issue.tenant?.firstName} {issue.tenant?.lastName}
+                      </dd>
+                      {issue.tenant?.phone && (
+                        <dd className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-slate-700">
+                          <Phone size={11} aria-hidden="true" className="text-orange-700" />
+                          {issue.tenant.phone}
+                        </dd>
+                      )}
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("manager.issues.fiche.property")}</dt>
+                      <dd className="mt-0.5 text-xs font-semibold text-slate-900">{issue.contract?.property?.title}</dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("manager.issues.fiche.reportedOn")}</dt>
+                      <dd className="mt-0.5 text-xs font-semibold tabular-nums text-slate-900">
+                        {new Date(issue.createdAt).toLocaleDateString(i18n.language)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {/* Le traitement : à qui on confie l'intervention, quand, et ce qu'on répond au locataire. */}
                   <div>
-                    <label htmlFor={`issue-vendor-${issue.id}`} className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      {t("manager.issues.vendorLabel")}
-                    </label>
-                    <Bulle texte={t("manager.tips.issueVendor")}>
-                    <select
-                      id={`issue-vendor-${issue.id}`}
-                      value={issue.vendor?.id ?? ""}
-                      onChange={(e) => assignVendor(issue, e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2 text-xs"
-                    >
-                      <option value="">{t("manager.issues.noVendor")}</option>
-                      {vendors.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.name}
-                          {v.trade ? ` (${v.trade})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                    </Bulle>
+                    <h4 className="mb-3 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
+                      {t("manager.issues.fiche.handling")}
+                      <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor={`issue-vendor-${issue.id}`} className={CLASSE_ETIQUETTE}>
+                          {t("manager.issues.vendorLabel")}
+                        </label>
+                        <Bulle texte={t("manager.tips.issueVendor")} className="block">
+                          <select
+                            id={`issue-vendor-${issue.id}`}
+                            value={issue.vendor?.id ?? ""}
+                            onChange={(e) => assignVendor(issue, e.target.value)}
+                            className="w-full border border-slate-400 bg-white px-3 py-2 text-xs text-slate-900"
+                          >
+                            <option value="">{t("manager.issues.noVendor")}</option>
+                            {vendors.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.name}
+                                {v.trade ? ` (${v.trade})` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </Bulle>
+                      </div>
+                      <div>
+                        <label htmlFor={`issue-schedule-${issue.id}`} className={CLASSE_ETIQUETTE}>
+                          {t("manager.issues.scheduleLabel")}
+                        </label>
+                        <Bulle texte={issue.vendor ? t("manager.tips.issueSchedule") : t("manager.tips.issueScheduleNoVendor")} className="block">
+                          <input
+                            id={`issue-schedule-${issue.id}`}
+                            type="datetime-local"
+                            disabled={!issue.vendor}
+                            defaultValue={versDatetimeLocal(issue.scheduledAt)}
+                            onChange={(e) => scheduleIntervention(issue, e.target.value)}
+                            className="w-full border border-slate-400 bg-white px-3 py-2 text-xs text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                        </Bulle>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label htmlFor={`issue-response-${issue.id}`} className={CLASSE_ETIQUETTE}>
+                          {t("manager.issues.responseLabel")}
+                        </label>
+                        <textarea
+                          id={`issue-response-${issue.id}`}
+                          placeholder={t("manager.issues.responsePlaceholder")}
+                          defaultValue={issue.managerNote ?? ""}
+                          maxLength={2000}
+                          onChange={(e) => setNotes((n) => ({ ...n, [issue.id]: e.target.value }))}
+                          className="w-full border border-slate-400 bg-white px-3 py-2 text-xs text-slate-900"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
                   </div>
+                </div>
 
-                  <div>
-                    <label htmlFor={`issue-schedule-${issue.id}`} className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      {t("manager.issues.scheduleLabel")}
-                    </label>
-                    <Bulle texte={issue.vendor ? t("manager.tips.issueSchedule") : t("manager.tips.issueScheduleNoVendor")}>
-                    <input
-                      id={`issue-schedule-${issue.id}`}
-                      type="datetime-local"
-                      disabled={!issue.vendor}
-                      defaultValue={versDatetimeLocal(issue.scheduledAt)}
-                      onChange={(e) => scheduleIntervention(issue, e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    </Bulle>
-                  </div>
-
-                  <div>
-                    <label htmlFor={`issue-response-${issue.id}`} className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      {t("manager.issues.responseLabel")}
-                    </label>
-                    <textarea
-                      id={`issue-response-${issue.id}`}
-                      placeholder={t("manager.issues.responsePlaceholder")}
-                      defaultValue={issue.managerNote ?? ""}
-                      maxLength={2000}
-                      onChange={(e) => setNotes((n) => ({ ...n, [issue.id]: e.target.value }))}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500"
-                      rows={2}
-                    />
+                {/* Avancement du dossier : quatre cases, la case courante est pleine. */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-300 bg-slate-50 px-4 py-3 sm:px-5">
+                  <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.issues.changeStatus")}</span>
+                  <div role="group" aria-label={t("manager.issues.changeStatus")} className="flex w-full border border-slate-400 bg-white sm:w-auto">
+                    {statusOptions.map((s) => (
+                      <Bulle key={s} texte={t("manager.tips.issueStatus")} className="flex flex-1 border-r border-slate-400 last:border-r-0">
+                        <button
+                          onClick={() => updateStatus(issue, s)}
+                          disabled={issue.status === s}
+                          aria-pressed={issue.status === s}
+                          className={`w-full whitespace-nowrap px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                            issue.status === s ? "cursor-default bg-ink-900 text-white" : "cursor-pointer text-slate-800 hover:bg-slate-100"
+                          }`}
+                        >
+                          {t(`common.status.${s}`)}
+                        </button>
+                      </Bulle>
+                    ))}
                   </div>
                 </div>
               </div>
-
-              {/* Boutons de changement de statut */}
-              <div className="p-4 border-t border-contour-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-slate-600">{t("manager.issues.changeStatus")}</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {statusOptions.map((s) => (
-                    <Bulle key={s} texte={t("manager.tips.issueStatus")}>
-                    <button
-                      onClick={() => updateStatus(issue, s)}
-                      disabled={issue.status === s}
-                      className={`text-xs px-3 py-1 rounded-full border font-medium transition-all ${
-                        issue.status === s
-                          ? "bg-slate-200 text-slate-600 border-slate-300 cursor-default"
-                          : "border-slate-300 text-slate-700 hover:bg-white hover:border-slate-400 cursor-pointer"
-                      }`}
-                    >
-                      <Badge status={s} />
-                    </button>
-                    </Bulle>
-                  ))}
-                </div>
-              </div>
-            </div>
+            </article>
           );
         })}
 
         {issues.length === 0 && (
-          <p className="text-slate-600 text-sm col-span-2 text-center py-16 bg-white rounded-2xl border border-contour-200">
+          <p className="border border-slate-300 bg-white py-16 text-center text-sm text-slate-600">
             {t("manager.issues.noIssuesForFilter")}
           </p>
         )}

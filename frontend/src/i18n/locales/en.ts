@@ -1978,6 +1978,13 @@ const en: TranslationSchema = {
       scheduleLabel: "Scheduled visit:",
       changeStatus: "Change status:",
       noIssuesForFilter: "No issues for this filter",
+      fiche: {
+        reference: "Incident",
+        reportedBy: "Reported by",
+        property: "Property",
+        reportedOn: "Reported on",
+        handling: "Handling",
+      },
       photoAlt: "Issue photo {{index}}",
       enlargedPhotoAlt: "Enlarged photo",
     },
