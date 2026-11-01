@@ -81,6 +81,8 @@ npm run db:push   # crée les tables dans votre base Supabase
 
 Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : créez **deux projets Vercel séparés** pointant vers le même dépôt GitHub, chacun avec un "Root Directory" différent.
 
+> **Économie de constructions** : chaque dossier porte, dans son `vercel.json`, une `ignoreCommand` (`git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- .`). Vercel l'exécute dans le Root Directory du projet avant de construire : si rien n'a changé dans ce dossier depuis le dernier déploiement réussi de la branche, la construction est ignorée (code de sortie 0). Un commit qui ne touche que `frontend/` ne reconstruit donc pas le backend, et inversement ; un commit de réalignement sans changement de contenu ne reconstruit rien. En cas de doute (commit introuvable dans le clone, erreur de `git`), le code de sortie est non nul et la construction a lieu : on construit de trop plutôt que pas assez.
+
 ### 3.1 Déployer le backend
 
 1. Sur [vercel.com](https://vercel.com) → **Add New → Project** → importez le dépôt GitHub `Apllication-Gestion-immobili-re-`.
