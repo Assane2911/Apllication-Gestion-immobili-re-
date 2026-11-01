@@ -2317,6 +2317,9 @@ const pt: TranslationSchema = {
       totalReferred: "Indicação(ões) inscrita(s)",
       rewardCap: "Limite: {{used}} de {{max}} indicações recompensadas.",
       rewardCapReached: "Limite atingido: novas indicações ainda podem se cadastrar, mas já não prolongam o seu acesso.",
+      reward: { label: "Recompensa", days: "dias grátis" },
+      stats: { title: "Acompanhamento da indicação", rewarded: "Indicados recompensados", daysEarned: "Dias ganhos", daysShort: "d" },
+      steps: { share: "Partilhe o seu código ou ligação com um colega ou um proprietário.", signup: "O seu indicado cria a conta e confirma o email.", reward: "São adicionados {{days}} dias ao seu acesso automaticamente." },
     },
   },
 

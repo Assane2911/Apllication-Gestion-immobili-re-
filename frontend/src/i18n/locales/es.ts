@@ -2319,6 +2319,9 @@ const es: TranslationSchema = {
       totalReferred: "Referido(s) inscrito(s)",
       rewardCap: "Límite: {{used}} de {{max}} referidos recompensados.",
       rewardCapReached: "Límite alcanzado: los nuevos referidos pueden registrarse, pero ya no amplían su acceso.",
+      reward: { label: "Recompensa", days: "días gratis" },
+      stats: { title: "Seguimiento del patrocinio", rewarded: "Referidos recompensados", daysEarned: "Días ganados", daysShort: "d" },
+      steps: { share: "Comparta su código o enlace con un colega o un propietario.", signup: "Su referido crea su cuenta y confirma su correo.", reward: "Se añaden {{days}} días a su acceso automáticamente." },
     },
   },
 

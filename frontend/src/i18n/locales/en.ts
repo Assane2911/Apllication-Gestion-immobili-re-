@@ -2317,6 +2317,9 @@ const en: TranslationSchema = {
       totalReferred: "Referred signup(s)",
       rewardCap: "Limit: {{used}} of {{max}} rewarded referrals used.",
       rewardCapReached: "Limit reached: new referrals can still sign up, but no longer extend your access.",
+      reward: { label: "Reward", days: "days free" },
+      stats: { title: "Referral tracking", rewarded: "Rewarded referrals", daysEarned: "Days earned", daysShort: "d" },
+      steps: { share: "Share your code or link with a colleague or a landlord.", signup: "Your referral creates an account and confirms their email.", reward: "{{days}} days are added to your access automatically." },
     },
   },
 
