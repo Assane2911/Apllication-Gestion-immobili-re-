@@ -11,10 +11,10 @@ import { COULEUR_DEPENSES, COULEUR_REVENUS, COULEURS_STATUT } from "./couleurs";
  * attendre la bibliothèque. Un test interdit à une page d'importer `recharts` directement.
  */
 const STYLE_INFOBULLE = {
-  borderRadius: "14px",
+  borderRadius: "0",
   fontSize: "14px",
   lineHeight: 1.4,
-  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
+  boxShadow: "none",
   backgroundColor: "#0f172a",
   color: "#f8fafc",
   border: "1px solid rgba(255,255,255,0.1)",
@@ -59,8 +59,8 @@ export function GraphiqueRevenusDepenses({ data, currency }: { data: Array<{ mon
           formatter={(value) => (value === "revenue" ? t("manager.dashboard.charts.legendRevenue") : t("manager.dashboard.charts.legendExpense"))}
           wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
         />
-        <Bar dataKey="revenue" name="revenue" fill={COULEUR_REVENUS} radius={[2, 2, 0, 0]} />
-        <Bar dataKey="expense" name="expense" fill="url(#hachure-depenses)" stroke={COULEUR_DEPENSES} strokeWidth={1} radius={[2, 2, 0, 0]} />
+        <Bar dataKey="revenue" name="revenue" fill={COULEUR_REVENUS} radius={0} />
+        <Bar dataKey="expense" name="expense" fill="url(#hachure-depenses)" stroke={COULEUR_DEPENSES} strokeWidth={1} radius={0} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -128,8 +128,8 @@ export function GraphiqueComparaisonFiscale({ data, devises }: { data: Array<Rec
         />
         {devises.map((currency, idx) => (
           <Fragment key={currency}>
-            <Bar dataKey={`revenue_${currency}`} name={`revenue_${currency}`} fill={COULEURS_REVENUS_FISCAL[idx % COULEURS_REVENUS_FISCAL.length]} radius={[2, 2, 0, 0]} />
-            <Bar dataKey={`expense_${currency}`} name={`expense_${currency}`} fill={`url(#hachure-fiscal-${idx % COULEURS_DEPENSES_FISCAL.length})`} stroke={COULEURS_DEPENSES_FISCAL[idx % COULEURS_DEPENSES_FISCAL.length]} strokeWidth={1} radius={[2, 2, 0, 0]} />
+            <Bar dataKey={`revenue_${currency}`} name={`revenue_${currency}`} fill={COULEURS_REVENUS_FISCAL[idx % COULEURS_REVENUS_FISCAL.length]} radius={0} />
+            <Bar dataKey={`expense_${currency}`} name={`expense_${currency}`} fill={`url(#hachure-fiscal-${idx % COULEURS_DEPENSES_FISCAL.length})`} stroke={COULEURS_DEPENSES_FISCAL[idx % COULEURS_DEPENSES_FISCAL.length]} strokeWidth={1} radius={0} />
           </Fragment>
         ))}
       </BarChart>

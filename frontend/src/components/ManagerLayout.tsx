@@ -152,7 +152,7 @@ export default function ManagerLayout() {
         <div className="flex items-center justify-between gap-3 mb-6">
           <button
             onClick={() => setMobileNavOpen(true)}
-            className="sm:hidden shrink-0 w-9 h-9 rounded-xl bg-white border border-contour-200 flex items-center justify-center text-slate-600 shadow-2xs hover:bg-slate-50 transition-colors"
+            className="sm:hidden shrink-0 w-9 h-9 bg-white border border-slate-400 flex items-center justify-center text-ink-900 hover:border-ink-900 transition-colors"
             aria-label={t("components.managerLayout.openMenuAria")}
           >
             <Menu size={18} />
@@ -186,7 +186,7 @@ export default function ManagerLayout() {
           peutVoirLeGuide(user) && (
             <Link
               to="/guide-demarrage"
-              className="flex items-center gap-2 rounded-full bg-white hover:bg-slate-50 text-slate-800 border border-contour-200 text-xs font-semibold px-4 py-2.5 shadow-md transition-colors"
+              className="flex items-center gap-2 bg-white hover:border-ink-900 text-slate-800 border border-slate-400 text-xs font-semibold px-4 py-2.5 transition-colors"
             >
               <BookOpen size={14} aria-hidden="true" /> {t("nav.manager.guide")}
             </Link>

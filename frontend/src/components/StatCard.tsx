@@ -14,37 +14,37 @@ interface StatCardProps {
 }
 
 const accentClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
-  blue: "bg-brand-50 text-brand-600 border-brand-200/60",
-  green: "bg-emerald-50 text-emerald-600 border-emerald-200/60",
-  amber: "bg-amber-50 text-amber-600 border-amber-200/60",
-  red: "bg-rose-50 text-rose-600 border-rose-200/60",
+  blue: "bg-brand-50 text-ink-900 border-brand-200/60",
+  green: "bg-slate-50 text-ink-900 border-slate-300",
+  amber: "bg-orange-50 text-orange-700 border-orange-200",
+  red: "bg-orange-50 text-orange-700 border-orange-300",
 };
 
 const valueTextClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
-  blue: "text-slate-900 group-hover:text-brand-600",
-  green: "text-slate-900 group-hover:text-emerald-600",
-  amber: "text-slate-900 group-hover:text-amber-600",
-  red: "text-slate-900 group-hover:text-rose-600",
+  blue: "text-slate-900 group-hover:text-ink-900",
+  green: "text-slate-900 group-hover:text-ink-900",
+  amber: "text-slate-900 group-hover:text-orange-700",
+  red: "text-slate-900 group-hover:text-orange-700",
 };
 
 /** Couleur de la cote (ligne de dimension) posée au-dessus de chaque chiffre, comme sur une feuille de plan. */
 const coteClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
   blue: "text-slate-900",
-  green: "text-emerald-700",
+  green: "text-ink-900",
   amber: "text-orange-700",
   red: "text-orange-700",
 };
 
 const jaugeClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
   blue: "bg-ink-900",
-  green: "bg-emerald-700",
+  green: "bg-ink-900",
   amber: "bg-orange-700",
   red: "bg-orange-700",
 };
 
 export default function StatCard({ label, value, hint, accent = "blue", icon: Icon, to, progress }: StatCardProps) {
   const classes =
-    "group relative block bg-white rounded-2xl border border-contour-200/90 p-5 shadow-xs hover:border-ink-900 transition-colors duration-200 overflow-hidden";
+    "group relative block bg-white border border-slate-300 p-5 hover:border-ink-900 transition-colors duration-200 overflow-hidden";
   const contenu = (
     <>
       <div aria-hidden="true" className={`relative z-10 mb-3 flex items-center ${coteClasses[accent]}`}>
@@ -60,7 +60,7 @@ export default function StatCard({ label, value, hint, accent = "blue", icon: Ic
       <div className="flex items-start justify-between gap-3 relative z-10">
         <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-slate-600">{label}</p>
         {Icon && (
-          <div className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center shadow-2xs transition-transform duration-200 group-hover:scale-105 ${accentClasses[accent]}`}>
+          <div className={`shrink-0 w-10 h-10 border flex items-center justify-center ${accentClasses[accent]}`}>
             <Icon size={19} strokeWidth={2.2} />
           </div>
         )}
