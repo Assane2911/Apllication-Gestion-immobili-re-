@@ -1924,6 +1924,7 @@ const en: TranslationSchema = {
     listingLeads: {
       title: "Visit & Info Requests (CRM)",
       subtitle: "Requests received via the public storefront on your listings",
+      count: "{{count}} request(s) received",
       backToListings: "← Back to listings",
       filterByListing: "Filter by listing",
       allListings: "All listings",

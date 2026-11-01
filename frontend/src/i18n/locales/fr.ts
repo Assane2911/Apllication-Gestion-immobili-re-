@@ -1925,6 +1925,7 @@ const fr = {
     listingLeads: {
       title: "Demandes de visite & d'information (CRM)",
       subtitle: "Demandes reçues via la vitrine publique sur vos annonces",
+      count: "{{count}} demande(s) reçue(s)",
       backToListings: "← Retour aux annonces",
       filterByListing: "Filtrer par annonce",
       allListings: "Toutes les annonces",

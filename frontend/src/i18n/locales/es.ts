@@ -1926,6 +1926,7 @@ const es: TranslationSchema = {
     listingLeads: {
       title: "Solicitudes de visita e información (CRM)",
       subtitle: "Solicitudes recibidas a través de la vitrina pública sobre sus anuncios",
+      count: "{{count}} solicitud(es) recibida(s)",
       backToListings: "← Volver a los anuncios",
       filterByListing: "Filtrar por anuncio",
       allListings: "Todos los anuncios",

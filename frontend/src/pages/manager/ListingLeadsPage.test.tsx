@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -102,7 +102,7 @@ describe("ListingLeadsPage (manager)", () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Aïcha Ndiaye")).toBeInTheDocument());
 
-    await userEvent.setup().click(screen.getByRole("button", { name: "Contacté" }));
+    await userEvent.setup().click(within(screen.getByRole("group", { name: "Changer le statut :" })).getByRole("button", { name: "Contacté" }));
 
     await waitFor(() =>
       expect(mockedApi.patch).toHaveBeenCalledWith("/listings/leads/lead-1", {
@@ -119,7 +119,7 @@ describe("ListingLeadsPage (manager)", () => {
     await waitFor(() => expect(screen.getByText("Aïcha Ndiaye")).toBeInTheDocument());
 
     mockedApi.get.mockResolvedValueOnce(leadsPaginated([]));
-    await userEvent.setup().selectOptions(screen.getByLabelText("Filtrer par statut"), "CONVERTED");
+    await userEvent.setup().click(within(screen.getByRole("group", { name: "Filtrer par statut" })).getByRole("button", { name: "Converti" }));
 
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/listings/leads", {
