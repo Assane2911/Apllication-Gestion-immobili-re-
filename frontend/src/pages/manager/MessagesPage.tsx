@@ -8,32 +8,12 @@ import PlanLogement from "../../components/PlanLogement";
 import { useCurrency } from "../../context/currency";
 import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
 import type { Message } from "../../types";
+import { debutDeJour, libelleDuJour } from "../../utils/libelleDuJour";
 
 const PAGE_SIZE = 20;
 const LONGUEUR_MAX = 5000;
 /** Deux messages du même auteur à moins de cinq minutes l'un de l'autre forment un seul bloc. */
 const FENETRE_GROUPE_MS = 5 * 60 * 1000;
-
-function debutDeJour(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
-/** « Aujourd'hui », « hier », sinon « jeudi 30 octobre » (l'année n'apparaît que si elle n'est pas l'année courante). */
-function libelleDuJour(iso: string, langue: string): string {
-  const date = new Date(iso);
-  const maintenant = new Date();
-  const ecart = Math.round((debutDeJour(date) - debutDeJour(maintenant)) / 86_400_000);
-  if (ecart === 0 || ecart === -1) {
-    const relatif = new Intl.RelativeTimeFormat(langue, { numeric: "auto" }).format(ecart, "day");
-    return relatif.charAt(0).toLocaleUpperCase(langue) + relatif.slice(1);
-  }
-  return date.toLocaleDateString(langue, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    ...(date.getFullYear() !== maintenant.getFullYear() ? { year: "numeric" as const } : {}),
-  });
-}
 
 type Ligne =
   | { genre: "jour"; cle: string; libelle: string }

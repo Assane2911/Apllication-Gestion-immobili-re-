@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,6 +37,12 @@ function renderPage() {
   );
 }
 
+// Les entrées sont des éléments de liste ; la liste déroulante du filtre répète les libellés d'action, d'où les `selector: "p"`.
+async function attendreFrise() {
+  await screen.findAllByRole("listitem");
+  return screen;
+}
+
 describe("AdminAuditPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
@@ -46,9 +52,9 @@ describe("AdminAuditPage", () => {
     mockedApi.get.mockResolvedValueOnce(page([entree()]));
     renderPage();
 
-    const tableau = within(await screen.findByRole("table"));
+    const tableau = await attendreFrise();
     expect(tableau.getByText("admin@test.local")).toBeInTheDocument();
-    expect(tableau.getByText("Virement confirmé")).toBeInTheDocument();
+    expect(tableau.getByText("Virement confirmé", { selector: "p" })).toBeInTheDocument();
     expect(tableau.getByText("Virement PRO de 29 EUR confirmé (réf. VIR-1)")).toBeInTheDocument();
     expect(tableau.getByRole("link", { name: "agence@test.local" })).toHaveAttribute("href", "/admin/gestionnaires/mgr-1");
   });
@@ -59,8 +65,8 @@ describe("AdminAuditPage", () => {
     );
     renderPage();
 
-    const tableau = within(await screen.findByRole("table"));
-    expect(tableau.getByText("Coordonnées bancaires modifiées")).toBeInTheDocument();
+    const tableau = await attendreFrise();
+    expect(tableau.getByText("Coordonnées bancaires modifiées", { selector: "p" })).toBeInTheDocument();
     expect(tableau.queryByRole("link")).not.toBeInTheDocument();
   });
 
@@ -80,9 +86,9 @@ describe("AdminAuditPage", () => {
     );
     renderPage();
 
-    const tableau = within(await screen.findByRole("table"));
-    expect(tableau.getByText("Compte suspendu")).toBeInTheDocument();
-    expect(tableau.getByText("Suspension levée", { selector: "td.font-semibold" })).toBeInTheDocument();
+    const tableau = await attendreFrise();
+    expect(tableau.getByText("Compte suspendu", { selector: "p" })).toBeInTheDocument();
+    expect(tableau.getByText("Suspension levée", { selector: "p.font-medium" })).toBeInTheDocument();
   });
 
   it("traduit les actions d'ajustement d'abonnement", async () => {
@@ -94,9 +100,9 @@ describe("AdminAuditPage", () => {
     );
     renderPage();
 
-    const tableau = within(await screen.findByRole("table"));
-    expect(tableau.getByText("Jours offerts")).toBeInTheDocument();
-    expect(tableau.getByText("Formule modifiée")).toBeInTheDocument();
+    const tableau = await attendreFrise();
+    expect(tableau.getByText("Jours offerts", { selector: "p" })).toBeInTheDocument();
+    expect(tableau.getByText("Formule modifiée", { selector: "p" })).toBeInTheDocument();
   });
 
   it("traduit les actions d'accès illimité", async () => {
@@ -108,9 +114,9 @@ describe("AdminAuditPage", () => {
     );
     renderPage();
 
-    const tableau = within(await screen.findByRole("table"));
-    expect(tableau.getByText("Accès illimité accordé", { selector: "td.font-semibold" })).toBeInTheDocument();
-    expect(tableau.getByText("Accès illimité retiré", { selector: "td.font-semibold" })).toBeInTheDocument();
+    const tableau = await attendreFrise();
+    expect(tableau.getByText("Accès illimité accordé", { selector: "p.font-medium" })).toBeInTheDocument();
+    expect(tableau.getByText("Accès illimité retiré", { selector: "p.font-medium" })).toBeInTheDocument();
   });
 
   it("affiche un état vide", async () => {
@@ -124,7 +130,7 @@ describe("AdminAuditPage", () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValue(page([entree()]));
     renderPage();
-    await screen.findByRole("table");
+    await attendreFrise();
 
     await user.selectOptions(screen.getByLabelText("Filtrer par action"), "subscription.bank_transfer.reject");
 

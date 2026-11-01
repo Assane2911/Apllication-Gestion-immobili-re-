@@ -481,6 +481,15 @@ const en: TranslationSchema = {
       operations: "Operations",
       account: "Account",
     },
+    ownerGroups: {
+      overview: "Overview",
+      reports: "Reports",
+    },
+    tenantGroups: {
+      overview: "Overview",
+      rental: "My rental",
+      exchanges: "Exchanges",
+    },
     managerSpace: "Manager area",
     tenantSpace: "Tenant area",
     ownerSpace: "Owner area",
@@ -2037,6 +2046,7 @@ const en: TranslationSchema = {
       title: "Activity Log",
       subtitle: "History of actions performed on your properties, tenants, contracts and payments",
       filterByType: "Filter by category",
+      count: "{{count}} recorded action(s)",
       filters: {
         all: "All categories",
         property: "Properties",
@@ -2644,6 +2654,7 @@ const en: TranslationSchema = {
       title: "Audit log",
       subtitle: "Sensitive administration actions, newest first",
       filterLabel: "Filter by action",
+      count: "{{count}} recorded action(s)",
       allActions: "All actions",
       errorTitle: "Unable to load the audit log",
       loading: "Loading the log...",

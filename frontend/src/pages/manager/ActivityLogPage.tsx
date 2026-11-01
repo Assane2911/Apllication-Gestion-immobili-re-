@@ -1,10 +1,11 @@
-import { Banknote, Building2, Clock, FileText, Receipt, Settings, ShieldCheck, Wrench, Users } from "lucide-react";
+import { Banknote, Building2, Clock, FileText, LayoutGrid, Receipt, Settings, ShieldCheck, Wrench, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
+import FriseJournal from "../../components/FriseJournal";
 import Pagination from "../../components/Pagination";
-import { TableRowSkeleton } from "../../components/Skeleton";
+import { Skeleton } from "../../components/Skeleton";
 import type { ActivityLogEntry, PaginatedResponse } from "../../types";
 
 const PAGE_SIZE = 20;
@@ -23,7 +24,7 @@ const iconByEntityType: Record<string, typeof Building2> = {
 };
 
 export default function ActivityLogPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [entityType, setEntityType] = useState("ALL");
@@ -31,16 +32,6 @@ export default function ActivityLogPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-
-  function formatDateTime(d: string) {
-    return new Date(d).toLocaleString(i18n.language, {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
 
   function load(type: string, pageToLoad: number, signal?: AbortSignal) {
     setLoading(true);
@@ -78,32 +69,41 @@ export default function ActivityLogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.activityLog.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">
-            {t("manager.activityLog.subtitle")}
-          </p>
-        </div>
-        <select
-          aria-label={t("manager.activityLog.filterByType")}
-          value={entityType}
-          onChange={(e) => {
-            setEntityType(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white text-slate-900 shadow-sm"
-        >
-          {entityTypes.map((opt) => (
-            <option key={opt} value={opt}>
+      <div>
+        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.activityLog.title")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("manager.activityLog.subtitle")}</p>
+        {!loading && !loadError && (
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.activityLog.count", { count: total })}</p>
+        )}
+      </div>
+
+      {/* Filtre par catégorie : une réglette d'onglets avec le pictogramme de chaque catégorie. */}
+      <div role="group" aria-label={t("manager.activityLog.filterByType")} className="flex flex-wrap border border-slate-400 bg-white sm:inline-flex">
+        {entityTypes.map((opt) => {
+          const Icone = opt === "ALL" ? LayoutGrid : iconByEntityType[opt];
+          const actif = entityType === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              aria-pressed={actif}
+              onClick={() => {
+                setEntityType(opt);
+                setPage(1);
+              }}
+              className={`inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-r border-slate-400 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors last:border-r-0 sm:flex-none ${
+                actif ? "bg-ink-900 text-white" : "text-slate-800 hover:bg-slate-100"
+              }`}
+            >
+              <Icone size={12} aria-hidden="true" />
               {t(`manager.activityLog.filters.${opt === "ALL" ? "all" : opt}`)}
-            </option>
-          ))}
-        </select>
+            </button>
+          );
+        })}
       </div>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-xs flex items-center justify-between gap-3">
           <span>{loadError}</span>
           <button onClick={() => load(entityType, page)} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -111,50 +111,42 @@ export default function ActivityLogPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 text-slate-700 text-left">
-            <tr>
-              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.when")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.who")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.category")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.activityLog.table.detail")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-contour-100">
-            {loading ? (
-              Array.from({ length: 6 }).map((_, i) => <TableRowSkeleton key={i} columns={4} />)
-            ) : (
-              logs.map((log) => {
-                const Icon = iconByEntityType[log.entityType] ?? Clock;
-                return (
-                  <tr key={log.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap">
-                      {formatDateTime(log.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700 text-xs">{log.actorLabel}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
-                        <Icon size={12} />
-                        {log.entityLabel}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 text-xs">{log.details}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-
-        {!loading && !loadError && logs.length === 0 && (
-          <EmptyState
-            icon={Clock}
-            title={t("manager.activityLog.emptyTitle")}
-            description={t("manager.activityLog.emptyDesc")}
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 border border-slate-300 bg-white p-4">
+              <Skeleton className="h-6 w-6" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <FriseJournal
+            entrees={logs.map((log) => ({
+              id: log.id,
+              date: log.createdAt,
+              icone: iconByEntityType[log.entityType] ?? Clock,
+              titre: log.details || log.entityLabel,
+              auteur: log.actorLabel,
+              etiquette: log.entityLabel,
+            }))}
           />
-        )}
-      </div>
+
+          {!loadError && logs.length === 0 && (
+            <div className="border border-slate-300 bg-white">
+              <EmptyState
+                icon={Clock}
+                title={t("manager.activityLog.emptyTitle")}
+                description={t("manager.activityLog.emptyDesc")}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
     </div>

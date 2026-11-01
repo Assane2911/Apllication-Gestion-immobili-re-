@@ -481,6 +481,15 @@ const pt: TranslationSchema = {
       operations: "Operações",
       account: "Conta",
     },
+    ownerGroups: {
+      overview: "Resumo",
+      reports: "Relatórios",
+    },
+    tenantGroups: {
+      overview: "Resumo",
+      rental: "O meu arrendamento",
+      exchanges: "Comunicação",
+    },
     managerSpace: "Área do gestor",
     tenantSpace: "Área do inquilino",
     ownerSpace: "Área do proprietário",
@@ -2037,6 +2046,7 @@ const pt: TranslationSchema = {
       title: "Registo de Atividade",
       subtitle: "Histórico das ações efetuadas nos seus imóveis, inquilinos, contratos e pagamentos",
       filterByType: "Filtrar por categoria",
+      count: "{{count}} ação(ões) registada(s)",
       filters: {
         all: "Todas as categorias",
         property: "Imóveis",
@@ -2644,6 +2654,7 @@ const pt: TranslationSchema = {
       title: "Registo de auditoria",
       subtitle: "As ações sensíveis da administração, da mais recente à mais antiga",
       filterLabel: "Filtrar por ação",
+      count: "{{count}} ação(ões) registada(s)",
       allActions: "Todas as ações",
       errorTitle: "Não foi possível carregar o registo de auditoria",
       loading: "A carregar o registo...",

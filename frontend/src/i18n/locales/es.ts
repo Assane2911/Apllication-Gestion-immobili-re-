@@ -481,6 +481,15 @@ const es: TranslationSchema = {
       operations: "Operaciones",
       account: "Cuenta",
     },
+    ownerGroups: {
+      overview: "Resumen",
+      reports: "Informes",
+    },
+    tenantGroups: {
+      overview: "Resumen",
+      rental: "Mi alquiler",
+      exchanges: "Comunicación",
+    },
     managerSpace: "Espacio gestor",
     tenantSpace: "Espacio inquilino",
     ownerSpace: "Espacio propietario",
@@ -2039,6 +2048,7 @@ const es: TranslationSchema = {
       title: "Registro de actividad",
       subtitle: "Historial de acciones realizadas sobre tus propiedades, inquilinos, contratos y pagos",
       filterByType: "Filtrar por categoría",
+      count: "{{count}} acción(es) registrada(s)",
       filters: {
         all: "Todas las categorías",
         property: "Propiedades",
@@ -2646,6 +2656,7 @@ const es: TranslationSchema = {
       title: "Registro de auditoría",
       subtitle: "Las acciones sensibles de la administración, de la más reciente a la más antigua",
       filterLabel: "Filtrar por acción",
+      count: "{{count}} acción(es) registrada(s)",
       allActions: "Todas las acciones",
       errorTitle: "No se puede cargar el registro de auditoría",
       loading: "Cargando el registro...",

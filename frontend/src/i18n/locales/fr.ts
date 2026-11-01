@@ -479,6 +479,15 @@ const fr = {
       operations: "Exploitation",
       account: "Compte",
     },
+    ownerGroups: {
+      overview: "Pilotage",
+      reports: "Rapports",
+    },
+    tenantGroups: {
+      overview: "Pilotage",
+      rental: "Ma location",
+      exchanges: "Échanges",
+    },
     managerSpace: "Espace gestionnaire",
     tenantSpace: "Espace locataire",
     ownerSpace: "Espace propriétaire",
@@ -2038,6 +2047,7 @@ const fr = {
       title: "Journal d'activité",
       subtitle: "Historique des actions effectuées sur vos biens, locataires, contrats et paiements",
       filterByType: "Filtrer par catégorie",
+      count: "{{count}} action(s) enregistrée(s)",
       filters: {
         all: "Toutes les catégories",
         property: "Biens",
@@ -2645,6 +2655,7 @@ const fr = {
       title: "Journal d'audit",
       subtitle: "Les actions sensibles de l'administration, de la plus récente à la plus ancienne",
       filterLabel: "Filtrer par action",
+      count: "{{count}} action(s) enregistrée(s)",
       allActions: "Toutes les actions",
       errorTitle: "Impossible de charger le journal d'audit",
       loading: "Chargement du journal...",

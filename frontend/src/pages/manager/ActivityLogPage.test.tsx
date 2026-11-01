@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -59,7 +59,7 @@ describe("ActivityLogPage", () => {
     await waitFor(() => expect(screen.getByText("Création du bien Studio Centre-ville")).toBeInTheDocument());
 
     mockedApi.get.mockResolvedValueOnce(reponse([entry({ entityType: "issue", entityLabel: "Incident" })]));
-    await userEvent.setup().selectOptions(screen.getByLabelText("Filtrer par catégorie"), "issue");
+    await userEvent.setup().click(within(screen.getByRole("group", { name: "Filtrer par catégorie" })).getByRole("button", { name: "Incidents" }));
 
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/activity-log", {
@@ -98,12 +98,30 @@ describe("ActivityLogPage", () => {
     expect(mockedApi.get).toHaveBeenLastCalledWith("/activity-log", { params: { page: 2, pageSize: 20 }, signal: expect.anything() });
 
     mockedApi.get.mockResolvedValueOnce(reponse([entry({ entityType: "issue" })], { total: 1 }));
-    await user.selectOptions(screen.getByLabelText("Filtrer par catégorie"), "issue");
+    await user.click(within(screen.getByRole("group", { name: "Filtrer par catégorie" })).getByRole("button", { name: "Incidents" }));
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/activity-log", {
         params: { page: 1, pageSize: 20, entityType: "issue" },
         signal: expect.anything(),
       })
     );
+  });
+
+  it("range les entrées par jour : un titre de jour par date, avec le nombre d'actions", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      reponse([
+        entry({ id: "a", details: "Action du soir", createdAt: "2025-03-11T18:00:00.000Z" }),
+        entry({ id: "b", details: "Action du matin", createdAt: "2025-03-11T08:00:00.000Z" }),
+        entry({ id: "c", details: "Action de la veille", createdAt: "2025-03-10T12:00:00.000Z" }),
+      ])
+    );
+    render(<ActivityLogPage />);
+
+    await waitFor(() => expect(screen.getByText("Action du soir")).toBeInTheDocument());
+    const jourRecent = screen.getByRole("region", { name: /11 mars 2025/i });
+    expect(within(jourRecent).getAllByRole("listitem")).toHaveLength(2);
+    const jourAncien = screen.getByRole("region", { name: /10 mars 2025/i });
+    expect(within(jourAncien).getByText("Action de la veille")).toBeInTheDocument();
+    expect(screen.getByText("3 action(s) enregistrée(s)")).toBeInTheDocument();
   });
 });

@@ -63,28 +63,9 @@ describe("OwnerLayout", () => {
 
     expect(screen.getByText("Contenu de la page CRG")).toBeInTheDocument();
     const lienCrg = screen.getByRole("link", { name: /Compte-rendu de gestion/ });
-    expect(lienCrg.className).toMatch(/bg-ink-900/);
-  });
-
-  it("sur téléphone, l'onglet du CRG s'intitule « Compte-rendu » pour laisser la place au tableau de bord", () => {
-    vi.stubGlobal("matchMedia", (requete: string) => ({
-      matches: requete === "(max-width: 639px)",
-      media: requete,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-      onchange: null,
-    }));
-    try {
-      renderOwnerLayout("/proprietaire/crg");
-      const lienCrg = screen.getByRole("link", { name: "Compte-rendu de gestion" });
-      expect(lienCrg).toHaveTextContent(/^Compte-rendu$/);
-      expect(screen.getByRole("link", { name: "Tableau de bord" })).toHaveTextContent(/^Tableau de bord$/);
-    } finally {
-      vi.unstubAllGlobals();
-    }
+    expect(lienCrg).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Tableau de bord" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("group", { name: "Rapports" })).toContainElement(lienCrg);
   });
 
   it("demande confirmation, puis appelle logout", async () => {
