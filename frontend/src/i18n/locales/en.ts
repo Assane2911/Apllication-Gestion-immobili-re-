@@ -2005,6 +2005,12 @@ const en: TranslationSchema = {
       emptyTitle: "No providers yet",
       emptyDesc: "Add a provider (name, phone) so you can assign them to an issue reported by a tenant.",
       confirmDelete: 'Delete provider "{{name}}"?',
+      filters: {
+        byTrade: "Filter by trade",
+        all: "All",
+        search: "Search a vendor",
+        noMatch: "No vendor matches this search.",
+      },
       table: {
         name: "Name",
         trade: "Trade",

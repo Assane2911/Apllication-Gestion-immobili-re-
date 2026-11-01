@@ -2005,6 +2005,12 @@ const pt: TranslationSchema = {
       emptyTitle: "Ainda não há prestadores",
       emptyDesc: "Adicione um prestador (nome, telefone) para poder atribuí-lo a um incidente comunicado por um inquilino.",
       confirmDelete: 'Eliminar o prestador "{{name}}"?',
+      filters: {
+        byTrade: "Filtrar por ofício",
+        all: "Todos",
+        search: "Procurar um prestador",
+        noMatch: "Nenhum prestador corresponde a esta pesquisa.",
+      },
       table: {
         name: "Nome",
         trade: "Ofício",
