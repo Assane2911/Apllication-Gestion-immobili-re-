@@ -21,6 +21,9 @@ describe.skipIf(!existsSync(resolve(RACINE, "backend/vercel.json")))("vercel.jso
       expect(config.ignoreCommand).toContain("HEAD");
       // Limité au dossier du projet : sans cela, tout changement du dépôt déclencherait la construction.
       expect(config.ignoreCommand).toMatch(/-- \.$/);
+      // Un commit de comparaison introuvable (réalignement après une fusion en squash) doit donner « construire »
+      // (code 1) : `git diff` seul sortirait en 128, que Vercel traite comme une erreur de déploiement.
+      expect(config.ignoreCommand).toMatch(/^git cat-file -e \S+\^\{commit\} 2>\/dev\/null \|\| exit 1; git diff --quiet /);
     });
   }
 });
