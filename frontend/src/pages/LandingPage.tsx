@@ -26,6 +26,7 @@ import Logo from "../components/Logo";
 import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import PiedDeSite from "../components/PiedDeSite";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
 import { FORMULE_REPRISE, LIGNES_FORMULES, type IdFormule } from "../data/lignesFormules";
@@ -967,27 +968,17 @@ export default function LandingPage() {
       </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-300/80 py-12 px-6 bg-white text-center text-xs text-slate-700">
-        <p>{t("landing.footer.rights")}</p>
-        <p className="mt-2">{t("landing.footer.tagline")}</p>
-        <div className="mt-4 flex items-center justify-center gap-4">
-          <Link to="/vitrine" className="hover:text-slate-300 transition-colors">
-            {t("landing.nav.vitrine")}
-          </Link>
-          <Link to="/mentions-legales" className="hover:text-slate-300 transition-colors">
-            {t("landing.footer.legal")}
-          </Link>
-          <span className="text-slate-700">·</span>
-          <Link to="/cgu" className="hover:text-slate-300 transition-colors">
-            {t("landing.footer.terms")}
-          </Link>
-          <span className="text-slate-700">·</span>
-          <Link to="/confidentialite" className="hover:text-slate-300 transition-colors">
-            {t("landing.footer.privacy")}
-          </Link>
-        </div>
-      </footer>
+      {/* Footer : pied de plan */}
+      <PiedDeSite
+        accroche={t("landing.footer.tagline")}
+        liens={[
+          { to: "/vitrine", libelle: t("landing.nav.vitrine") },
+          { to: "/mentions-legales", libelle: t("landing.footer.legal") },
+          { to: "/cgu", libelle: t("landing.footer.terms") },
+          { to: "/confidentialite", libelle: t("landing.footer.privacy") },
+        ]}
+        mentions={<p>{t("landing.footer.rights")}</p>}
+      />
     </div>
   );
 }
