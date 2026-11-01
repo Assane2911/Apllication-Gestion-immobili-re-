@@ -201,7 +201,7 @@ export default function LoginPage() {
           <p className="mt-1.5 text-sm text-slate-600">{t("auth.login.subtitle")}</p>
 
           {deconnecte && (
-            <p role="status" className="mt-5 border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+            <p role="status" className="mt-5 border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-ink-900 shadow-[inset_4px_0_0_var(--color-ink-900)]">
               {t("auth.login.loggedOut")}
             </p>
           )}

@@ -293,10 +293,10 @@ describe("RegisterPage — inscription avec Google (VITE_GOOGLE_CLIENT_ID config
       await user.type(screen.getByLabelText("Mot de passe"), "Abcdefgh1");
 
       const critere = (nom: string) => screen.getByText(nom).closest("li") as HTMLElement;
-      expect(critere("Majuscules et minuscules")).toHaveClass("text-emerald-800");
-      expect(critere("Un chiffre")).toHaveClass("text-emerald-800");
-      expect(critere("Un symbole")).not.toHaveClass("text-emerald-800");
-      expect(critere("12 caractères ou plus")).not.toHaveClass("text-emerald-800");
+      expect(critere("Majuscules et minuscules")).toHaveClass("text-ink-900");
+      expect(critere("Un chiffre")).toHaveClass("text-ink-900");
+      expect(critere("Un symbole")).not.toHaveClass("text-ink-900");
+      expect(critere("12 caractères ou plus")).not.toHaveClass("text-ink-900");
     });
 
     it("dit en direct si les deux mots de passe correspondent, sans attendre l'envoi", async () => {

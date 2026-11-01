@@ -18,7 +18,7 @@ const BOUTON_PRINCIPAL =
 const MESSAGE_ERREUR = "border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800";
 
 /** Couleur de chaque segment de l'indicateur de force, selon le niveau atteint. */
-const COULEUR_FORCE = ["bg-slate-200", "bg-orange-700", "bg-amber-500", "bg-emerald-600", "bg-emerald-700"] as const;
+const COULEUR_FORCE = ["bg-slate-200", "bg-orange-700", "bg-orange-400", "bg-ink-900/70", "bg-ink-900"] as const;
 
 /** Rubrique du formulaire : numéro de repère et titre en police technique, filet dessous. */
 function Rubrique({ numero, titre, children }: { numero: string; titre: string; children: React.ReactNode }) {
@@ -125,7 +125,7 @@ export default function RegisterPage() {
 
       {sent ? (
         <div>
-          <div className="flex size-12 items-center justify-center border border-emerald-300 bg-emerald-50 text-emerald-800">
+          <div className="flex size-12 items-center justify-center border border-slate-300 bg-slate-50 text-ink-900">
             <Mail size={22} aria-hidden="true" />
           </div>
           <h1 className="mt-4 text-xl font-bold text-slate-900">{t("auth.register.sentTitle")}</h1>
@@ -212,7 +212,7 @@ export default function RegisterPage() {
                           {(Object.keys(critereLabels) as Array<keyof typeof critereLabels>).map((cle) => (
                             <li
                               key={cle}
-                              className={`flex items-center gap-1.5 text-[11px] ${force.criteres[cle] ? "text-emerald-800" : "text-slate-600"}`}
+                              className={`flex items-center gap-1.5 text-[11px] ${force.criteres[cle] ? "font-semibold text-ink-900" : "text-slate-600"}`}
                             >
                               {force.criteres[cle] ? <Check size={11} aria-hidden="true" /> : <Circle size={9} aria-hidden="true" />}
                               {critereLabels[cle]}
@@ -238,7 +238,7 @@ export default function RegisterPage() {
                 placeholder={t("auth.register.passwordPlaceholder")}
                 aide={
                   confirmPassword !== "" && (
-                    <p className={`mt-1.5 flex items-center gap-1.5 font-mono text-[11px] ${confirmPassword === password ? "text-emerald-800" : "text-orange-700"}`}>
+                    <p className={`mt-1.5 flex items-center gap-1.5 font-mono text-[11px] ${confirmPassword === password ? "text-ink-900" : "text-orange-700"}`}>
                       {confirmPassword === password ? <Check size={12} aria-hidden="true" /> : <Circle size={9} aria-hidden="true" />}
                       {confirmPassword === password ? t("auth.register.match") : t("auth.register.noMatch")}
                     </p>
@@ -273,7 +273,7 @@ export default function RegisterPage() {
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 placeholder={t("auth.register.referralCodePlaceholder")}
-                aide={referralCode && (searchParams.get("ref") ?? "").toUpperCase() === referralCode ? <p className="mt-1.5 font-mono text-[11px] text-emerald-800">{t("auth.register.referralFromLink")}</p> : undefined}
+                aide={referralCode && (searchParams.get("ref") ?? "").toUpperCase() === referralCode ? <p className="mt-1.5 font-mono text-[11px] text-slate-700">{t("auth.register.referralFromLink")}</p> : undefined}
               />
             </Rubrique>
 
