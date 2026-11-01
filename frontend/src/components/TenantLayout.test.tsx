@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { AuthContext } from "../context/auth";
@@ -48,55 +49,31 @@ function renderTenantLayout() {
   );
 }
 
-/**
- * Régression : sur mobile, le bouton « Se déconnecter » sortait complètement
- * de l'écran. Le conteneur des contrôles (langue/devise/thème/déconnexion)
- * n'acceptait pas de retour à la ligne (`flex` sans `flex-wrap`) : dès que
- * les sélecteurs de langue et de devise (du texte assez long, ex. "EUR (€) —
- * Euro") ne tenaient plus sur une seule ligne à côté du bouton thème et du
- * bouton de déconnexion, ces deux derniers étaient poussés hors du viewport
- * sans aucun moyen d'y accéder (pas de défilement horizontal). Le bouton
- * était de plus stylé uniquement au survol (`hover:`), un état qui n'existe
- * pas au doigt sur un écran tactile : même quand il restait visible, rien ne
- * le distinguait visuellement des icônes voisines avant d'être touché.
- *
- * jsdom ne calcule pas de vraie mise en page (pas de retour à la ligne flex
- * observable), donc on vérifie ici la présence des classes qui portent
- * réellement le correctif, complément à la vérification visuelle (capture
- * d'écran à 360/390px) faite en dehors de la suite de tests.
- */
-describe("TenantLayout — bouton de déconnexion", () => {
-  it("est toujours visible (texte non masqué) et stylé distinctement au repos, pas seulement au survol", () => {
+describe("TenantLayout — menu latéral", () => {
+  it("propose les quatre pages du portail dans le menu latéral, rangées en rubriques", () => {
     renderTenantLayout();
-    const bouton = screen.getByRole("button", { name: /se déconnecter/i });
 
-    expect(bouton).toBeVisible();
-    // Le libellé ne doit plus être caché sur mobile (ancienne classe
-    // `hidden sm:inline`), sans quoi seule une icône reste sur un petit écran.
-    expect(bouton.querySelector(".hidden")).toBeNull();
-    // Style rose visible au repos (pas uniquement via une classe `hover:`),
-    // pour rester reconnaissable au doigt sans interaction préalable.
-    // text-rose-700 (et non -600) : contraste WCAG AA insuffisant sur le fond
-    // rose-50 (voir l'audit d'accessibilité axe-core).
-    expect(bouton.className).toMatch(/text-rose-700/);
-    expect(bouton.className).toMatch(/bg-rose-50/);
+    for (const nom of ["Mon logement", "Mes loyers", "Messagerie", "Signaler un problème"]) {
+      expect(screen.getByRole("link", { name: nom })).toBeInTheDocument();
+    }
+    expect(screen.getByRole("group", { name: "Échanges" })).toBeInTheDocument();
+    // La page affichée est signalée comme page courante.
+    expect(screen.getByRole("link", { name: "Mon logement" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("permet aux contrôles (langue/devise/thème/déconnexion) de passer à la ligne au lieu de déborder hors de l'écran", () => {
+  it("affiche le nom du locataire connecté et garde le contenu de la route active", () => {
+    renderTenantLayout();
+    expect(screen.getByText("Fatou Diop")).toBeInTheDocument();
+    expect(screen.getByText("Contenu du portail")).toBeInTheDocument();
+  });
+
+  it("garde un bouton de déconnexion accessible, qui demande confirmation avant de fermer la session", async () => {
     renderTenantLayout();
     const bouton = screen.getByRole("button", { name: /se déconnecter/i });
+    expect(bouton).toBeInTheDocument();
 
-    // On remonte jusqu'au conteneur qui gère le retour à la ligne, au lieu de
-    // supposer que c'est le parent IMMÉDIAT. Les bulles d'aide insèrent une
-    // enveloppe autour du bouton ; elle est en `display: contents`, donc
-    // invisible pour la mise en page — le bouton reste bien un enfant direct
-    // du flex aux yeux du navigateur — mais elle existe dans l'arbre DOM. Le
-    // test vérifie la propriété qui compte (les contrôles peuvent passer à la
-    // ligne), pas la profondeur exacte à laquelle elle est déclarée.
-    const conteneurControles = bouton.closest(".flex-wrap");
-
-    expect(conteneurControles).not.toBeNull();
-    expect(conteneurControles).toContainElement(bouton);
+    await userEvent.setup().click(bouton);
+    expect(screen.getByRole("dialog", { name: "Se déconnecter ?" })).toBeInTheDocument();
   });
 });
 
@@ -120,7 +97,7 @@ describe("TenantLayout — titre de l'onglet", () => {
 
   it("n'affiche plus en dur « Espace résident » : le libellé suit la langue", () => {
     renderTenantLayout();
-    expect(screen.getByText("Espace résident", { selector: "span" })).toBeInTheDocument();
+    expect(screen.getByText("Espace résident")).toBeInTheDocument();
   });
 });
 

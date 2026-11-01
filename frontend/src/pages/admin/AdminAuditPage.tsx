@@ -1,10 +1,11 @@
-import { ScrollText } from "lucide-react";
+import { CreditCard, Download, Landmark, Megaphone, ScrollText, UserCog, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import BoutonExportCsv from "../../components/BoutonExportCsv";
 import EmptyState from "../../components/EmptyState";
+import FriseJournal from "../../components/FriseJournal";
 import Pagination from "../../components/Pagination";
 
 const ACTIONS = [
@@ -25,6 +26,15 @@ const ACTIONS = [
   "export.managers",
   "export.audit",
 ] as const;
+
+/** Pictogramme d'une action d'après sa famille (le mot avant le premier point). */
+const ICONE_PAR_FAMILLE: Record<string, LucideIcon> = {
+  subscription: CreditCard,
+  platform: Landmark,
+  manager: UserCog,
+  listing: Megaphone,
+  export: Download,
+};
 
 interface AuditEntry {
   id: string;
@@ -54,7 +64,7 @@ interface Page {
  * lisible sous sa clé brute.
  */
 export default function AdminAuditPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [donnees, setDonnees] = useState<Page | null>(null);
   const [page, setPage] = useState(1);
   const [action, setAction] = useState("");
@@ -88,7 +98,10 @@ export default function AdminAuditPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-900">{t("admin.audit.title")}</h2>
-        <p className="text-xs text-slate-600 mt-1">{t("admin.audit.subtitle")}</p>
+        <p className="mt-1 text-xs text-slate-600">{t("admin.audit.subtitle")}</p>
+        {donnees && !erreur && (
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.audit.count", { count: donnees.total })}</p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -99,7 +112,7 @@ export default function AdminAuditPage() {
             setPage(1);
           }}
           aria-label={t("admin.audit.filterLabel")}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+          className="border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900"
         >
           <option value="">{t("admin.audit.allActions")}</option>
           {ACTIONS.map((a) => (
@@ -112,7 +125,7 @@ export default function AdminAuditPage() {
       </div>
 
       {erreur && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+        <div className="border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-800">{t("admin.audit.errorTitle")}</p>
           <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
         </div>
@@ -126,41 +139,24 @@ export default function AdminAuditPage() {
 
       {donnees && donnees.items.length > 0 && (
         <>
-          <div className="rounded-2xl border border-contour-200 bg-white overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-slate-600 border-b border-contour-200">
-                  <th className="px-4 py-3 font-semibold">{t("admin.audit.table.date")}</th>
-                  <th className="px-4 py-3 font-semibold">{t("admin.audit.table.admin")}</th>
-                  <th className="px-4 py-3 font-semibold">{t("admin.audit.table.action")}</th>
-                  <th className="px-4 py-3 font-semibold">{t("admin.audit.table.target")}</th>
-                  <th className="px-4 py-3 font-semibold">{t("admin.audit.table.details")}</th>
-                </tr>
-              </thead>
-              <tbody className="text-slate-800">
-                {donnees.items.map((e) => (
-                  <tr key={e.id} className="border-b last:border-b-0 border-contour-100 align-top">
-                    <td className="px-4 py-3 whitespace-nowrap">{new Date(e.createdAt).toLocaleString(i18n.language)}</td>
-                    <td className="px-4 py-3">{e.adminEmail}</td>
-                    <td className="px-4 py-3 font-semibold">{libelleAction(e.action)}</td>
-                    <td className="px-4 py-3">
-                      {e.targetUserId ? (
-                        <Link
-                          to={`/admin/gestionnaires/${e.targetUserId}`}
-                          className="text-brand-700 hover:underline"
-                        >
-                          {e.targetLabel ?? e.targetUserId}
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 wrap-break-word min-w-48">{e.details ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <FriseJournal
+            entrees={donnees.items.map((e) => ({
+              id: e.id,
+              date: e.createdAt,
+              icone: ICONE_PAR_FAMILLE[e.action.split(".")[0]] ?? ScrollText,
+              titre: libelleAction(e.action),
+              detail: e.details ?? undefined,
+              auteur: e.adminEmail,
+              cible: e.targetUserId ? (
+                <Link
+                  to={`/admin/gestionnaires/${e.targetUserId}`}
+                  className="border-b border-ink-900/40 font-medium text-ink-900 hover:border-orange-700 hover:text-orange-700"
+                >
+                  {e.targetLabel ?? e.targetUserId}
+                </Link>
+              ) : undefined,
+            }))}
+          />
 
           <Pagination page={donnees.page} totalPages={donnees.totalPages} total={donnees.total} onPageChange={setPage} />
         </>
