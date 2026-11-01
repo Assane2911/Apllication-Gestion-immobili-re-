@@ -7,6 +7,7 @@ import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion"
 import BoutonSuggestion from "./BoutonSuggestion";
 import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
+import CartouchePlan from "./CartouchePlan";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 import NotificationBell from "./NotificationBell";
 
@@ -84,6 +85,9 @@ export default function TenantLayout() {
             />
           )}
           <Outlet />
+          {entree && (
+            <CartouchePlan espace={t("nav.tenantSpace")} page={t(`nav.tenant.${entree.key}`)} rang={navItems.indexOf(entree) + 1} total={navItems.length} />
+          )}
         </div>
       </main>
 

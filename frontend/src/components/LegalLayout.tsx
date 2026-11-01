@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Logo from "./Logo";
 import { COMPANY } from "../legal/companyInfo";
+import PiedDeSite from "./PiedDeSite";
 import Seo from "./Seo";
 
 const LEGAL_PAGES = [
@@ -84,11 +85,14 @@ export default function LegalLayout({ title, description, children }: LegalLayou
         <div className="text-sm leading-relaxed text-slate-700 space-y-8">{children}</div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-8 px-6 text-center text-xs text-slate-600">
-        <p>
-          © 2026 {COMPANY.tradeName}. {COMPANY.legalStatus}.
-        </p>
-      </footer>
+      <PiedDeSite
+        etroit
+        mentions={
+          <p>
+            © 2026 {COMPANY.tradeName}. {COMPANY.legalStatus}.
+          </p>
+        }
+      />
     </div>
   );
 }

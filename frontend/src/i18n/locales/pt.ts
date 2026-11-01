@@ -318,6 +318,14 @@ const pt: TranslationSchema = {
     },
     appName: "ImmoPlatform Pro",
     sheet: "Folha",
+    cartouche: {
+      project: "Projeto",
+      space: "Espaço",
+      page: "Página",
+      date: "Data",
+      notice: "Avisos",
+      footerNav: "Ligações do rodapé",
+    },
     calendar: {
       choose: "Escolher uma data",
       previous: "Mês anterior",

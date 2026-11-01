@@ -5,6 +5,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
 import LanguageSwitcher from "./LanguageSwitcher";
+import CartouchePlan from "./CartouchePlan";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 
 // Même menu latéral que l'espace gestionnaire (colonne d'icônes qui s'ouvre au survol), rangé en quatre rubriques.
@@ -87,6 +88,9 @@ export default function AdminLayout() {
             />
           )}
           <Outlet />
+          {entree && (
+            <CartouchePlan espace={t("components.adminLayout.title")} page={t(`admin.nav.${entree.key}`)} rang={navItems.indexOf(entree) + 1} total={navItems.length} />
+          )}
         </div>
       </main>
     </div>

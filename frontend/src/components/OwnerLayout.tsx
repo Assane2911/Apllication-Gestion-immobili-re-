@@ -7,6 +7,7 @@ import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion"
 import BoutonSuggestion from "./BoutonSuggestion";
 import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
+import CartouchePlan from "./CartouchePlan";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 
 // Même menu latéral que l'espace gestionnaire (colonne d'icônes qui s'ouvre au survol), rangé en deux rubriques.
@@ -76,6 +77,9 @@ export default function OwnerLayout() {
             />
           )}
           <Outlet />
+          {entree && (
+            <CartouchePlan espace={t("nav.ownerSpace")} page={t(`nav.owner.${entree.key}`)} rang={navItems.indexOf(entree) + 1} total={navItems.length} />
+          )}
         </div>
       </main>
 

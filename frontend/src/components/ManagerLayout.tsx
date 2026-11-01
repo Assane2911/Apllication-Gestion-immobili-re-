@@ -25,6 +25,7 @@ import {
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import CartouchePlan from "./CartouchePlan";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
@@ -94,7 +95,7 @@ const navItems = groupes.flatMap((groupe) => groupe.items);
 
 
 export default function ManagerLayout() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { demanderDeconnexion, dialogue: dialogueDeconnexion } = useConfirmationDeconnexion();
   const sub = user?.subscription;
@@ -108,7 +109,6 @@ export default function ManagerLayout() {
   const entree = [...navItems, ...pagesHorsMenu].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
   const groupeDeLaPage = groupes.find((g) => g.items.some((item) => item === entree));
   const rangFeuille = navItems.findIndex((item) => item === entree);
-  const moisEnCours = new Intl.DateTimeFormat(i18n.language, { month: "long", year: "numeric" }).format(new Date());
   const libellePage = /^\/proprietaires\/[^/]+\/crg$/.test(chemin) ? t("nav.owner.crg") : entree ? t(`nav.manager.${entree.key}`) : null;
 
   return (
@@ -172,19 +172,9 @@ export default function ManagerLayout() {
         )}
         <TrialBanner />
         <Outlet />
-        {/* Cartouche de feuille, en pied de plan : repère décoratif (numéro de l'entrée du menu, mois en cours). */}
-        {rangFeuille >= 0 && (
-          <div
-            aria-hidden="true"
-            className="mt-10 mb-14 flex items-stretch justify-between border-[1.5px] border-ink-900 bg-white font-mono text-[10px] uppercase tracking-wider text-slate-600"
-          >
-            <span className="border-r-[1.5px] border-ink-900 px-3 py-1.5">{t("common.appName")}</span>
-            <span className="hidden flex-1 bande-motif opacity-25 sm:block" />
-            <span className="border-l-[1.5px] border-ink-900 px-3 py-1.5">{moisEnCours}</span>
-            <span className="border-l-[1.5px] border-ink-900 bg-ink-900 px-3 py-1.5 text-white">
-              {t("common.sheet")} {String(rangFeuille + 1).padStart(2, "0")} / {String(navItems.length).padStart(2, "0")}
-            </span>
-          </div>
+        {/* Cartouche de feuille, en pied de plan : repère décoratif (espace, page, date, numéro de l'entrée du menu). */}
+        {rangFeuille >= 0 && entree && (
+          <CartouchePlan espace={t("nav.managerSpace")} page={t(`nav.manager.${entree.key}`)} rang={rangFeuille + 1} total={navItems.length} />
         )}
       </main>
 

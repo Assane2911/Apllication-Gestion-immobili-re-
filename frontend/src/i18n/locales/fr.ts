@@ -316,6 +316,14 @@ const fr = {
     },
     appName: "ImmoPlatform Pro",
     sheet: "Feuille",
+    cartouche: {
+      project: "Projet",
+      space: "Espace",
+      page: "Page",
+      date: "Date",
+      notice: "Mentions",
+      footerNav: "Liens du pied de page",
+    },
     calendar: {
       choose: "Choisir une date",
       previous: "Mois précédent",
