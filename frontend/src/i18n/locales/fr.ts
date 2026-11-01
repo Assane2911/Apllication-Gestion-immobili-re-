@@ -2318,6 +2318,9 @@ const fr = {
       totalReferred: "Filleul(s) inscrit(s)",
       rewardCap: "Plafond : {{used}} filleul(s) récompensé(s) sur {{max}}.",
       rewardCapReached: "Plafond atteint : vos prochains filleuls peuvent s'inscrire, mais ne prolongent plus votre accès.",
+      reward: { label: "Récompense", days: "jours offerts" },
+      stats: { title: "Suivi du parrainage", rewarded: "Filleuls récompensés", daysEarned: "Jours gagnés", daysShort: "j" },
+      steps: { share: "Partagez votre code ou votre lien avec un confrère ou un propriétaire.", signup: "Votre filleul crée son compte et confirme son adresse email.", reward: "{{days}} jours s'ajoutent automatiquement à votre accès." },
     },
   },
 
