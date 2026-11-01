@@ -270,4 +270,66 @@ describe("RegisterPage — inscription avec Google (VITE_GOOGLE_CLIENT_ID config
     expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument();
     expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
   });
+
+  describe("aide à la saisie", () => {
+    it("n'affiche aucun indicateur tant que le mot de passe est vide, puis le niveau au fil de la frappe", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      expect(screen.queryByRole("meter")).not.toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Mot de passe"), "abc");
+      expect(screen.getByRole("meter", { name: "Force du mot de passe" })).toHaveAttribute("aria-valuenow", "1");
+      expect(screen.getByText("Trop court")).toBeInTheDocument();
+
+      await user.clear(screen.getByLabelText("Mot de passe"));
+      await user.type(screen.getByLabelText("Mot de passe"), "Abcdefghijk1!");
+      expect(screen.getByRole("meter", { name: "Force du mot de passe" })).toHaveAttribute("aria-valuenow", "4");
+      expect(screen.getByText("Excellent")).toBeInTheDocument();
+    });
+
+    it("coche les critères remplis du mot de passe", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await user.type(screen.getByLabelText("Mot de passe"), "Abcdefgh1");
+
+      const critere = (nom: string) => screen.getByText(nom).closest("li") as HTMLElement;
+      expect(critere("Majuscules et minuscules")).toHaveClass("text-ink-900");
+      expect(critere("Un chiffre")).toHaveClass("text-ink-900");
+      expect(critere("Un symbole")).not.toHaveClass("text-ink-900");
+      expect(critere("12 caractères ou plus")).not.toHaveClass("text-ink-900");
+    });
+
+    it("dit en direct si les deux mots de passe correspondent, sans attendre l'envoi", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      expect(screen.queryByText("Les mots de passe correspondent")).not.toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Mot de passe"), "Password123!");
+      await user.type(screen.getByLabelText("Confirmer le mot de passe"), "Password12");
+      expect(screen.getByText("Les mots de passe diffèrent")).toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Confirmer le mot de passe"), "3!");
+      expect(screen.getByText("Les mots de passe correspondent")).toBeInTheDocument();
+    });
+
+    it("indique que le code de parrainage vient du lien, mais plus une fois modifié à la main", async () => {
+      const user = userEvent.setup();
+      renderPage("/inscription?ref=ab12cd34");
+      expect(screen.getByText("Code repris du lien de parrainage")).toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Code de parrainage (facultatif)"), "X");
+      expect(screen.queryByText("Code repris du lien de parrainage")).not.toBeInTheDocument();
+    });
+
+    it("détaille les étapes suivantes une fois l'inscription envoyée", async () => {
+      const user = userEvent.setup();
+      mockedApi.post.mockResolvedValueOnce({ data: { message: "ok" } });
+      renderPage();
+      await fillForm(user);
+      await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
+
+      expect(await screen.findByText("Vérifiez votre boîte mail")).toBeInTheDocument();
+      expect(screen.getByText("Cliquez sur le lien qu'il contient pour activer votre compte.")).toBeInTheDocument();
+    });
+  });
 });

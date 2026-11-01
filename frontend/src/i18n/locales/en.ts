@@ -505,7 +505,15 @@ const en: TranslationSchema = {
   },
 
   auth: {
+    cartouche: {
+      login: "Sign in",
+      register: "Sign up",
+      sheet: "Sheet",
+    },
     login: {
+      step: "Step {{current}} of {{total}}",
+      capsLock: "Caps Lock is on",
+      rememberEmail: "Remember my email address",
       suspended: "Your account is suspended. Contact platform support to find out more.",
       inactive: "You were signed out after a period of inactivity. Sign in again to continue.",
       loggedOut: "You have been signed out. See you soon!",
@@ -549,6 +557,14 @@ const en: TranslationSchema = {
       reloadError: "Country saved, but your profile could not be reloaded. Reload the page.",
     },
     register: {
+      trialTag: "15-day free trial",
+      sections: { access: "Access", agency: "Agency", referral: "Referral" },
+      checks: { length: "12 characters or more", case: "Upper and lower case", digit: "A digit", symbol: "A symbol" },
+      strength: { label: "Password strength", level1: "Too short", level2: "Fair", level3: "Good", level4: "Excellent" },
+      match: "Passwords match",
+      noMatch: "Passwords differ",
+      referralFromLink: "Code taken from the referral link",
+      nextSteps: ["Open the confirmation email we just sent you.", "Click the link inside to activate your account.", "Sign in and start your free trial."],
       title: "Create an account",
       subtitle: "15-day free trial, no credit card required.",
       email: "Email",

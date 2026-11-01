@@ -505,7 +505,15 @@ const es: TranslationSchema = {
   },
 
   auth: {
+    cartouche: {
+      login: "Acceso",
+      register: "Registro",
+      sheet: "Hoja",
+    },
     login: {
+      step: "Paso {{current}} de {{total}}",
+      capsLock: "Bloq Mayús activado",
+      rememberEmail: "Recordar mi dirección de correo",
       suspended: "Su cuenta está suspendida. Contacte con el soporte de la plataforma para más información.",
       inactive: "Se cerró su sesión por inactividad. Vuelva a iniciar sesión para continuar.",
       loggedOut: "Ha cerrado sesión. ¡Hasta pronto!",
@@ -549,6 +557,14 @@ const es: TranslationSchema = {
       reloadError: "País guardado, pero no se pudo recargar el perfil. Recargue la página.",
     },
     register: {
+      trialTag: "Prueba gratuita de 15 días",
+      sections: { access: "Acceso", agency: "Agencia", referral: "Patrocinio" },
+      checks: { length: "12 caracteres o más", case: "Mayúsculas y minúsculas", digit: "Un dígito", symbol: "Un símbolo" },
+      strength: { label: "Seguridad de la contraseña", level1: "Demasiado corta", level2: "Media", level3: "Buena", level4: "Excelente" },
+      match: "Las contraseñas coinciden",
+      noMatch: "Las contraseñas difieren",
+      referralFromLink: "Código tomado del enlace de patrocinio",
+      nextSteps: ["Abra el correo de confirmación que acabamos de enviarle.", "Haga clic en el enlace que contiene para activar su cuenta.", "Inicie sesión y comience su prueba gratuita."],
       title: "Crear una cuenta",
       subtitle: "15 días de prueba gratuita, sin tarjeta bancaria.",
       email: "Correo electrónico",

@@ -1,64 +1,49 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import Logo from "../components/Logo";
+import { Eye, EyeOff, Lock, Mail, TriangleAlert } from "lucide-react";
 import { api, apiErrorCode, apiErrorMessage } from "../api/client";
+import AuthLayout from "../components/AuthLayout";
+import ChampAuth from "../components/ChampAuth";
 import GoogleSignInButton from "../components/GoogleSignInButton";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
 import { useAuth } from "../context/auth";
 import { homePathForRole } from "../utils/roleHome";
 import { isGoogleSignInEnabled } from "../utils/googleAuth";
 
-function MailIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
-      <path d="M3.5 6.5 12 13 20.5 6.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+const CLE_EMAIL_MEMORISE = "immo.email-memorise";
+
+/** Adresse mémorisée à la dernière connexion (si l'utilisateur l'a demandé). Le stockage peut être indisponible : on s'en passe. */
+function emailMemorise(): string {
+  try {
+    return localStorage.getItem(CLE_EMAIL_MEMORISE) ?? "";
+  } catch {
+    return "";
+  }
 }
 
-function LockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
-      <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" strokeLinecap="round" />
-    </svg>
-  );
+function memoriserEmail(email: string | null) {
+  try {
+    if (email) localStorage.setItem(CLE_EMAIL_MEMORISE, email);
+    else localStorage.removeItem(CLE_EMAIL_MEMORISE);
+  } catch {
+    // Stockage indisponible (navigation privée) : la connexion n'en dépend pas.
+  }
 }
 
-function EyeIcon({ off }: { off: boolean }) {
-  return off ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path
-        d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24M6.6 6.7C4.3 8.2 2.7 10.3 2 12c1.6 3.8 5.6 7 10 7 1.6 0 3.1-.4 4.4-1.1M9.9 4.2C10.6 4.1 11.3 4 12 4c4.4 0 8.4 3.2 10 7-.5 1.2-1.2 2.4-2.1 3.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M2 12c1.6-3.8 5.6-7 10-7s8.4 3.2 10 7c-1.6 3.8-5.6 7-10 7s-8.4-3.2-10-7Z" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
-      <path d="M4 12.5 9.5 18 20 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const BOUTON_PRINCIPAL =
+  "flex w-full cursor-pointer items-center justify-center gap-2 bg-ink-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const MESSAGE_ERREUR = "border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800";
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const { user: utilisateur, login, loginWithGoogle, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(emailMemorise);
+  // Coché d'office quand une adresse a déjà été mémorisée : décocher puis se connecter l'oublie.
+  const [souvenir, setSouvenir] = useState(() => emailMemorise() !== "");
+  // Verr. Maj. actif pendant la saisie du mot de passe : la cause la plus courante d'un « mot de passe incorrect ».
+  const [majActive, setMajActive] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   // Arrivée depuis l'intercepteur d'api/client.ts après une suspension de compte.
@@ -82,8 +67,6 @@ export default function LoginPage() {
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState("");
 
-  const highlights = t("auth.login.panel.highlights", { returnObjects: true }) as string[];
-
   async function doLogin(loginEmail: string, loginPassword: string, source: "form") {
     setError(null);
     setDeconnecte(false);
@@ -92,6 +75,8 @@ export default function LoginPage() {
     setLoading(source);
     try {
       const result = await login(loginEmail, loginPassword);
+      // L'adresse est mémorisée dès que le mot de passe est accepté (même si un second facteur reste à saisir).
+      memoriserEmail(souvenir ? loginEmail.trim() : null);
       if ("twoFactorRequired" in result) {
         setPendingToken(result.pendingToken);
         return;
@@ -161,245 +146,179 @@ export default function LoginPage() {
   if (utilisateur) return <Navigate to={homePathForRole(utilisateur.role)} replace />;
 
   return (
-    <div className="relative isolate min-h-screen grid grid-cols-1 lg:grid-cols-2">
+    <AuthLayout page="login" retour={t("auth.login.backToHome")}>
       <Seo title={`${t("seo.login.title")} | ${t("common.appName")}`} description={t("seo.login.description")} canonical="/login" />
-      {/* Panneau de gauche : image de marque (masqué sur mobile) */}
-      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden border-r border-slate-200/70 bg-white/60 p-12 xl:p-16">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="bande-motif absolute inset-x-0 top-0 h-3.5" />
-        </div>
 
-        <Reveal className="relative flex items-center gap-3">
-          <Logo />
-          <span className="font-bold text-lg tracking-tight text-slate-900">{t("common.appName")}</span>
-        </Reveal>
+      {pendingToken ? (
+        <>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">{t("auth.login.step", { current: 2, total: 2 })}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">{t("auth.twoFactor.title")}</h1>
+          <p className="mt-1.5 text-sm text-slate-600">{t("auth.twoFactor.subtitle")}</p>
 
-        <Reveal delay={100} className="relative max-w-md">
-          <p className="text-3xl xl:text-4xl font-extrabold text-slate-900 leading-tight xl:leading-10">
-            {t("auth.login.panel.title")}
-          </p>
-          <p className="mt-4 text-sm text-slate-600 leading-relaxed">{t("auth.login.panel.subtitle")}</p>
+          <form onSubmit={handleTwoFactorSubmit} className="mt-7 space-y-4">
+            <ChampAuth
+              id="login-2fa-code"
+              label={t("auth.twoFactor.codeLabel")}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              required
+              value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value)}
+              placeholder={t("auth.twoFactor.codePlaceholder")}
+              aide={<p className="mt-1.5 text-xs text-slate-600">{t("auth.twoFactor.backupCodeHint")}</p>}
+            />
 
-          <ul className="mt-8 space-y-3.5">
-            {highlights.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
-                  <CheckIcon />
-                </span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </Reveal>
+            {error && (
+              <p role="alert" className={MESSAGE_ERREUR}>
+                {error}
+              </p>
+            )}
 
-        <Reveal delay={200} className="relative inline-flex items-center gap-2 text-xs text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 w-fit">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-400" />
-          {t("auth.login.panel.trialNote")}
-        </Reveal>
-      </aside>
+            <button type="submit" disabled={loading !== null} className={BOUTON_PRINCIPAL}>
+              {loading === "2fa" && <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+              {loading === "2fa" ? t("auth.twoFactor.submitting") : t("auth.twoFactor.submit")}
+            </button>
 
-      {/* Panneau de droite : formulaire */}
-      <main className="flex flex-col items-center justify-center px-6 pt-20 pb-12 lg:pt-12 relative">
-        <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-          <Link
-            to="/landing"
-            className="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            {t("auth.login.backToHome")}
-          </Link>
-          <LanguageSwitcher />
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingToken(null);
+                setTwoFactorCode("");
+                setError(null);
+              }}
+              className="w-full cursor-pointer text-center text-xs font-semibold text-ink-900 transition-colors hover:text-orange-700"
+            >
+              {t("auth.twoFactor.back")}
+            </button>
+          </form>
+        </>
+      ) : (
+        <>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">{t("auth.cartouche.login")}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">{t("auth.login.title")}</h1>
+          <p className="mt-1.5 text-sm text-slate-600">{t("auth.login.subtitle")}</p>
 
-        <Reveal className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <Logo />
-            <span className="font-bold text-lg tracking-tight text-slate-900">{t("common.appName")}</span>
-          </div>
-
-          {pendingToken ? (
-            <>
-              <h1 className="text-2xl font-bold text-slate-900 text-center">{t("auth.twoFactor.title")}</h1>
-              <p className="text-sm text-slate-600 text-center mt-1.5">{t("auth.twoFactor.subtitle")}</p>
-
-              <form onSubmit={handleTwoFactorSubmit} className="mt-8 space-y-4">
-                <div>
-                  <label htmlFor="login-2fa-code" className="block text-xs font-medium text-slate-600 mb-1.5">
-                    {t("auth.twoFactor.codeLabel")}
-                  </label>
-                  <input
-                    id="login-2fa-code"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    autoFocus
-                    required
-                    value={twoFactorCode}
-                    onChange={(e) => setTwoFactorCode(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3.5 py-2.5 text-sm text-center tracking-[0.3em] placeholder:text-slate-400 placeholder:tracking-normal focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    placeholder={t("auth.twoFactor.codePlaceholder")}
-                  />
-                  <p className="mt-1.5 text-xs text-slate-500">{t("auth.twoFactor.backupCodeHint")}</p>
-                </div>
-
-                {error && (
-                  <p role="alert" className="text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading !== null}
-                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-                >
-                  {loading === "2fa" && (
-                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  )}
-                  {loading === "2fa" ? t("auth.twoFactor.submitting") : t("auth.twoFactor.submit")}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPendingToken(null);
-                    setTwoFactorCode("");
-                    setError(null);
-                  }}
-                  className="w-full text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors text-center"
-                >
-                  {t("auth.twoFactor.back")}
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-slate-900 text-center">{t("auth.login.title")}</h1>
-              <p className="text-sm text-slate-600 text-center mt-1.5">{t("auth.login.subtitle")}</p>
-
-              {deconnecte && (
-                <p role="status" className="mt-5 text-xs text-emerald-700 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 text-center">
-                  {t("auth.login.loggedOut")}
-                </p>
-              )}
-
-              <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-                <div>
-                  <label htmlFor="login-email" className="block text-xs font-medium text-slate-600 mb-1.5">{t("auth.login.email")}</label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <MailIcon />
-                    </span>
-                    <input
-                      id="login-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                      placeholder={t("auth.login.emailPlaceholder")}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="login-password" className="block text-xs font-medium text-slate-600 mb-1.5">{t("auth.login.password")}</label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <LockIcon />
-                    </span>
-                    <input
-                      id="login-password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                      placeholder={t("auth.login.passwordPlaceholder")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
-                    >
-                      <EyeIcon off={showPassword} />
-                    </button>
-                  </div>
-                  <div className="mt-1.5 text-right">
-                    <Link to="/mot-de-passe-oublie" className="text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
-                      {t("auth.login.forgotPasswordLink")}
-                    </Link>
-                  </div>
-                </div>
-
-                {error && (
-                  <p role="alert" className="text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                    {error}
-                  </p>
-                )}
-
-                {unverifiedEmail && (
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    disabled={resendState !== "idle"}
-                    className="w-full text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-60 transition-colors text-center"
-                  >
-                    {resendState === "sending"
-                      ? t("auth.login.resendVerificationSending")
-                      : resendState === "sent"
-                      ? t("auth.login.resendVerificationSent")
-                      : t("auth.login.resendVerificationButton")}
-                  </button>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading !== null}
-                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-                >
-                  {loading === "form" && (
-                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  )}
-                  {loading === "form" ? t("auth.login.submitting") : t("auth.login.submit")}
-                </button>
-              </form>
-
-              {isGoogleSignInEnabled() && (
-                <div className="mt-5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-slate-200" />
-                    <span className="text-[11px] uppercase tracking-wide text-slate-500">{t("auth.google.orDivider")}</span>
-                    <div className="h-px flex-1 bg-slate-200" />
-                  </div>
-                  <div className="mt-4">
-                    <GoogleSignInButton
-                      onCredential={handleGoogleCredential}
-                      onError={() => setGoogleError(t("auth.google.error"))}
-                      locale={i18n.language}
-                    />
-                  </div>
-                  {googleError && (
-                    <p role="alert" className="mt-3 text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                      {googleError}
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {!pendingToken && (
-            <p className="mt-6 text-center text-xs text-slate-600">
-              {t("auth.login.noAccountText")}{" "}
-              <Link to="/inscription" className="font-medium text-brand-600 hover:text-brand-700 transition-colors">
-                {t("auth.login.registerLink")}
-              </Link>
+          {deconnecte && (
+            <p role="status" className="mt-5 border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-ink-900 shadow-[inset_4px_0_0_var(--color-ink-900)]">
+              {t("auth.login.loggedOut")}
             </p>
           )}
 
-        </Reveal>
-      </main>
-    </div>
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+            <ChampAuth
+              id="login-email"
+              label={t("auth.login.email")}
+              icone={Mail}
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("auth.login.emailPlaceholder")}
+            />
+
+            <ChampAuth
+              id="login-password"
+              label={t("auth.login.password")}
+              icone={Lock}
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyUp={(e) => setMajActive(e.getModifierState("CapsLock"))}
+              onBlur={() => setMajActive(false)}
+              placeholder={t("auth.login.passwordPlaceholder")}
+              droite={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center text-slate-500 transition-colors hover:text-ink-900"
+                >
+                  {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                </button>
+              }
+              aide={
+                <>
+                  {majActive && (
+                    <p className="mt-1.5 flex items-center gap-1.5 font-mono text-[11px] font-semibold text-orange-700">
+                      <TriangleAlert size={12} aria-hidden="true" />
+                      {t("auth.login.capsLock")}
+                    </p>
+                  )}
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
+                      <input type="checkbox" checked={souvenir} onChange={(e) => setSouvenir(e.target.checked)} className="size-3.5" />
+                      {t("auth.login.rememberEmail")}
+                    </label>
+                    <Link to="/mot-de-passe-oublie" className="text-xs font-semibold text-ink-900 transition-colors hover:text-orange-700">
+                      {t("auth.login.forgotPasswordLink")}
+                    </Link>
+                  </div>
+                </>
+              }
+            />
+
+            {error && (
+              <p role="alert" className={MESSAGE_ERREUR}>
+                {error}
+              </p>
+            )}
+
+            {unverifiedEmail && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendState !== "idle"}
+                className="w-full cursor-pointer border border-ink-900 py-2 text-center text-xs font-semibold text-ink-900 transition-colors hover:bg-slate-50 disabled:opacity-60"
+              >
+                {resendState === "sending"
+                  ? t("auth.login.resendVerificationSending")
+                  : resendState === "sent"
+                    ? t("auth.login.resendVerificationSent")
+                    : t("auth.login.resendVerificationButton")}
+              </button>
+            )}
+
+            <button type="submit" disabled={loading !== null} className={BOUTON_PRINCIPAL}>
+              {loading === "form" && <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+              {loading === "form" ? t("auth.login.submitting") : t("auth.login.submit")}
+            </button>
+          </form>
+
+          {isGoogleSignInEnabled() && (
+            <div className="mt-5">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-300" />
+                <span className="font-mono text-[11px] uppercase tracking-wider text-slate-600">{t("auth.google.orDivider")}</span>
+                <div className="h-px flex-1 bg-slate-300" />
+              </div>
+              <div className="mt-4">
+                <GoogleSignInButton
+                  onCredential={handleGoogleCredential}
+                  onError={() => setGoogleError(t("auth.google.error"))}
+                  locale={i18n.language}
+                />
+              </div>
+              {googleError && (
+                <p role="alert" className={`mt-3 ${MESSAGE_ERREUR}`}>
+                  {googleError}
+                </p>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {!pendingToken && (
+        <p className="mt-6 border-t border-dashed border-slate-300 pt-5 text-center text-xs text-slate-700">
+          {t("auth.login.noAccountText")}{" "}
+          <Link to="/inscription" className="border-b border-ink-900/40 pb-0.5 font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
+            {t("auth.login.registerLink")}
+          </Link>
+        </p>
+      )}
+    </AuthLayout>
   );
 }

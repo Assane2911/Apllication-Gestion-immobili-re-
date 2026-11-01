@@ -503,7 +503,15 @@ const fr = {
   },
 
   auth: {
+    cartouche: {
+      login: "Connexion",
+      register: "Inscription",
+      sheet: "Feuille",
+    },
     login: {
+      step: "Étape {{current}} sur {{total}}",
+      capsLock: "Verr. Maj. activé",
+      rememberEmail: "Se souvenir de mon adresse e-mail",
       suspended: "Votre compte est suspendu. Contactez le support de la plateforme pour en savoir plus.",
       inactive: "Vous avez été déconnecté après une période d'inactivité. Reconnectez-vous pour continuer.",
       loggedOut: "Vous avez été déconnecté. À bientôt !",
@@ -547,6 +555,14 @@ const fr = {
       reloadError: "Pays enregistré, mais le profil n'a pas pu être rechargé. Rechargez la page.",
     },
     register: {
+      trialTag: "Essai gratuit de 15 jours",
+      sections: { access: "Accès", agency: "Agence", referral: "Parrainage" },
+      checks: { length: "12 caractères ou plus", case: "Majuscules et minuscules", digit: "Un chiffre", symbol: "Un symbole" },
+      strength: { label: "Force du mot de passe", level1: "Trop court", level2: "Moyen", level3: "Bon", level4: "Excellent" },
+      match: "Les mots de passe correspondent",
+      noMatch: "Les mots de passe diffèrent",
+      referralFromLink: "Code repris du lien de parrainage",
+      nextSteps: ["Ouvrez l'email de confirmation que nous venons de vous envoyer.", "Cliquez sur le lien qu'il contient pour activer votre compte.", "Connectez-vous et commencez votre essai gratuit."],
       title: "Créer un compte",
       subtitle: "15 jours d'essai gratuit, sans carte bancaire.",
       email: "Email",

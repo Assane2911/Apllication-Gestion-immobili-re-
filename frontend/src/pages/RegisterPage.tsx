@@ -1,66 +1,35 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import Logo from "../components/Logo";
+import { Check, Circle, Eye, EyeOff, Gift, Lock, Mail } from "lucide-react";
 import { apiErrorMessage } from "../api/client";
+import AuthLayout from "../components/AuthLayout";
+import ChampAuth from "../components/ChampAuth";
 import GoogleSignInButton from "../components/GoogleSignInButton";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
 import SelecteurPays from "../components/SelecteurPays";
 import { useAuth } from "../context/auth";
 import { isGoogleSignInEnabled } from "../utils/googleAuth";
+import { forceMotDePasse } from "../utils/forceMotDePasse";
 import { homePathForRole } from "../utils/roleHome";
 
-function MailIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
-      <path d="M3.5 6.5 12 13 20.5 6.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const BOUTON_PRINCIPAL =
+  "flex w-full cursor-pointer items-center justify-center gap-2 bg-ink-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const MESSAGE_ERREUR = "border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800";
 
-function LockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
-      <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" strokeLinecap="round" />
-    </svg>
-  );
-}
+/** Couleur de chaque segment de l'indicateur de force, selon le niveau atteint. */
+const COULEUR_FORCE = ["bg-slate-200", "bg-orange-700", "bg-orange-400", "bg-ink-900/70", "bg-ink-900"] as const;
 
-function EyeIcon({ off }: { off: boolean }) {
-  return off ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path
-        d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24M6.6 6.7C4.3 8.2 2.7 10.3 2 12c1.6 3.8 5.6 7 10 7 1.6 0 3.1-.4 4.4-1.1M9.9 4.2C10.6 4.1 11.3 4 12 4c4.4 0 8.4 3.2 10 7-.5 1.2-1.2 2.4-2.1 3.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M2 12c1.6-3.8 5.6-7 10-7s8.4 3.2 10 7c-1.6 3.8-5.6 7-10 7s-8.4-3.2-10-7Z" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function GiftIcon() {
+/** Rubrique du formulaire : numéro de repère et titre en police technique, filet dessous. */
+function Rubrique({ numero, titre, children }: { numero: string; titre: string; children: React.ReactNode }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3.5" y="9" width="17" height="11" rx="1.5" />
-      <path d="M3.5 13.5h17M12 9v11M8 9a2.5 2.5 0 1 1 0-5c1.5 0 2.8 1.2 4 3 1.2-1.8 2.5-3 4-3a2.5 2.5 0 1 1 0 5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
-      <path d="M4 12.5 9.5 18 20 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <fieldset className="min-w-0 space-y-4">
+      <legend className="mb-3 flex w-full items-baseline gap-2.5 border-b border-slate-300 pb-2">
+        <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">{numero}</span>
+        <span className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{titre}</span>
+      </legend>
+      {children}
+    </fieldset>
   );
 }
 
@@ -87,7 +56,14 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
-  const highlights = t("auth.register.panel.highlights", { returnObjects: true }) as string[];
+  const force = forceMotDePasse(password);
+  const critereLabels = {
+    longueur: t("auth.register.checks.length"),
+    casse: t("auth.register.checks.case"),
+    chiffre: t("auth.register.checks.digit"),
+    symbole: t("auth.register.checks.symbol"),
+  } as const;
+  const etapes = t("auth.register.nextSteps", { returnObjects: true }) as string[];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -144,244 +120,218 @@ export default function RegisterPage() {
   if (utilisateur) return <Navigate to={homePathForRole(utilisateur.role)} replace />;
 
   return (
-    <div className="relative isolate min-h-screen grid grid-cols-1 lg:grid-cols-2">
+    <AuthLayout page="register" retour={t("auth.register.backToHome")}>
       <Seo title={`${t("seo.register.title")} | ${t("common.appName")}`} description={t("seo.register.description")} canonical="/inscription" />
-      {/* Panneau de gauche : image de marque (masqué sur mobile) */}
-      <aside className="hidden lg:flex relative flex-col justify-between overflow-hidden border-r border-slate-200/70 bg-white/60 p-12 xl:p-16">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="bande-motif absolute inset-x-0 top-0 h-3.5" />
-        </div>
 
-        <Reveal className="relative flex items-center gap-3">
-          <Logo />
-          <span className="font-bold text-lg tracking-tight text-slate-900">{t("common.appName")}</span>
-        </Reveal>
+      {sent ? (
+        <div>
+          <div className="flex size-12 items-center justify-center border border-slate-300 bg-slate-50 text-ink-900">
+            <Mail size={22} aria-hidden="true" />
+          </div>
+          <h1 className="mt-4 text-xl font-bold text-slate-900">{t("auth.register.sentTitle")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("auth.register.sentSubtitle")}</p>
 
-        <Reveal delay={100} className="relative max-w-md">
-          <p className="text-3xl xl:text-4xl font-extrabold text-slate-900 leading-tight xl:leading-10">
-            {t("auth.register.panel.title")}
-          </p>
-          <p className="mt-4 text-sm text-slate-600 leading-relaxed">{t("auth.register.panel.subtitle")}</p>
-
-          <ul className="mt-8 space-y-3.5">
-            {highlights.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
-                  <CheckIcon />
-                </span>
-                {item}
+          {/* Ce qu'il reste à faire pour ouvrir le compte, dans l'ordre. */}
+          <ol className="mt-6 border-t border-slate-300">
+            {etapes.map((etape, i) => (
+              <li key={i} className="flex items-baseline gap-3 border-b border-slate-200 py-2.5 text-sm text-slate-800">
+                <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">{String(i + 1).padStart(2, "0")}</span>
+                {etape}
               </li>
             ))}
-          </ul>
-        </Reveal>
+          </ol>
 
-        <Reveal delay={200} className="relative inline-flex items-center gap-2 text-xs text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 w-fit">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-400" />
-          {t("auth.register.panel.trialNote")}
-        </Reveal>
-      </aside>
-
-      {/* Panneau de droite : formulaire */}
-      <main className="flex flex-col items-center justify-center px-6 pt-20 pb-12 lg:pt-12 relative">
-        <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-          <Link
-            to="/landing"
-            className="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            {t("auth.register.backToHome")}
+          <Link to="/login" className={`mt-6 ${BOUTON_PRINCIPAL}`}>
+            {t("auth.register.loginLink")}
           </Link>
-          <LanguageSwitcher />
         </div>
+      ) : (
+        <>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">{t("auth.register.trialTag")}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">{t("auth.register.title")}</h1>
+          <p className="mt-1.5 text-sm text-slate-600">{t("auth.register.subtitle")}</p>
 
-        <Reveal className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <Logo />
-            <span className="font-bold text-lg tracking-tight text-slate-900">{t("common.appName")}</span>
-          </div>
+          <form onSubmit={handleSubmit} className="mt-7 space-y-6">
+            <Rubrique numero="01" titre={t("auth.register.sections.access")}>
+              <ChampAuth
+                id="register-email"
+                label={t("auth.register.email")}
+                icone={Mail}
+                type="email"
+                required
+                maxLength={254}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t("auth.register.emailPlaceholder")}
+              />
 
-          {sent ? (
-            <div className="text-center">
-              <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center mb-4">
-                <MailIcon />
-              </div>
-              <h1 className="text-xl font-bold text-slate-900">{t("auth.register.sentTitle")}</h1>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">{t("auth.register.sentSubtitle")}</p>
-              <Link
-                to="/login"
-                className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-              >
-                {t("auth.register.loginLink")}
-              </Link>
-            </div>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-slate-900 text-center">{t("auth.register.title")}</h1>
-              <p className="text-sm text-slate-600 text-center mt-1.5">{t("auth.register.subtitle")}</p>
+              <ChampAuth
+                id="register-password"
+                label={t("auth.register.password")}
+                icone={Lock}
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                maxLength={128}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t("auth.register.passwordPlaceholder")}
+                droite={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
+                    className="flex h-6 w-6 cursor-pointer items-center justify-center text-slate-500 transition-colors hover:text-ink-900"
+                  >
+                    {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                  </button>
+                }
+                aide={
+                  <>
+                    <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
+                    {/* Force du mot de passe : une aide à la saisie, qui ne bloque rien de plus que la longueur minimale. */}
+                    {force.niveau > 0 && (
+                      <div className="mt-2.5">
+                        <div
+                          role="meter"
+                          aria-label={t("auth.register.strength.label")}
+                          aria-valuemin={1}
+                          aria-valuemax={4}
+                          aria-valuenow={force.niveau}
+                          aria-valuetext={t(`auth.register.strength.level${force.niveau}`)}
+                          className="flex gap-1"
+                        >
+                          {[1, 2, 3, 4].map((segment) => (
+                            <span key={segment} className={`h-1.5 flex-1 ${segment <= force.niveau ? COULEUR_FORCE[force.niveau] : "bg-slate-200"}`} />
+                          ))}
+                        </div>
+                        <p aria-live="polite" className="mt-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-800">
+                          {t(`auth.register.strength.level${force.niveau}`)}
+                        </p>
+                        <ul className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
+                          {(Object.keys(critereLabels) as Array<keyof typeof critereLabels>).map((cle) => (
+                            <li
+                              key={cle}
+                              className={`flex items-center gap-1.5 text-[11px] ${force.criteres[cle] ? "font-semibold text-ink-900" : "text-slate-600"}`}
+                            >
+                              {force.criteres[cle] ? <Check size={11} aria-hidden="true" /> : <Circle size={9} aria-hidden="true" />}
+                              {critereLabels[cle]}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                }
+              />
 
-              <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-                <div>
-                  <label htmlFor="register-email" className="block text-xs font-medium text-slate-600 mb-1.5">{t("auth.register.email")}</label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <MailIcon />
-                    </span>
-                    <input
-                      id="register-email"
-                      type="email"
-                      required
-                      maxLength={254}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                      placeholder={t("auth.register.emailPlaceholder")}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="register-password" className="block text-xs font-medium text-slate-600 mb-1.5">{t("auth.register.password")}</label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <LockIcon />
-                    </span>
-                    <input
-                      id="register-password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      minLength={8}
-                      maxLength={128}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                      placeholder={t("auth.register.passwordPlaceholder")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
-                    >
-                      <EyeIcon off={showPassword} />
-                    </button>
-                  </div>
-                  <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
-                </div>
-
-                <div>
-                  <label htmlFor="register-confirm-password" className="block text-xs font-medium text-slate-600 mb-1.5">
-                    {t("auth.register.confirmPassword")}
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <LockIcon />
-                    </span>
-                    <input
-                      id="register-confirm-password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      minLength={8}
-                      maxLength={128}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                      placeholder={t("auth.register.passwordPlaceholder")}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="register-country" className="block text-xs font-medium text-slate-600 mb-1.5">{t("auth.register.country")}</label>
-                  <SelecteurPays
-                    id="register-country"
-                    value={country}
-                    onChange={setCountry}
-                    placeholder={t("auth.register.countryPlaceholder")}
-                    className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
-                  />
-                  <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.countryHint")}</p>
-                </div>
-
-                <div>
-                  <label htmlFor="register-referral-code" className="block text-xs font-medium text-slate-600 mb-1.5">
-                    {t("auth.register.referralCode")}
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <GiftIcon />
-                    </span>
-                    <input
-                      id="register-referral-code"
-                      type="text"
-                      maxLength={64}
-                      value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                      className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors uppercase"
-                      placeholder={t("auth.register.referralCodePlaceholder")}
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <p role="alert" className="text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading || googleLoading}
-                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-                >
-                  {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                  {loading ? t("auth.register.submitting") : t("auth.register.submit")}
-                </button>
-              </form>
-
-              {isGoogleSignInEnabled() && (
-                <div className="mt-5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-slate-200" />
-                    <span className="text-[11px] uppercase tracking-wide text-slate-500">{t("auth.google.orDivider")}</span>
-                    <div className="h-px flex-1 bg-slate-200" />
-                  </div>
-                  <div className="mt-4">
-                    <GoogleSignInButton
-                      onCredential={handleGoogleCredential}
-                      onError={() => setGoogleError(t("auth.google.error"))}
-                      locale={i18n.language}
-                    />
-                  </div>
-                  {googleLoading && <p className="mt-3 text-center text-xs text-slate-600">{t("auth.register.submitting")}</p>}
-                  {googleError && (
-                    <p role="alert" className="mt-3 text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                      {googleError}
+              <ChampAuth
+                id="register-confirm-password"
+                label={t("auth.register.confirmPassword")}
+                icone={Lock}
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                maxLength={128}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder={t("auth.register.passwordPlaceholder")}
+                aide={
+                  confirmPassword !== "" && (
+                    <p className={`mt-1.5 flex items-center gap-1.5 font-mono text-[11px] ${confirmPassword === password ? "text-ink-900" : "text-orange-700"}`}>
+                      {confirmPassword === password ? <Check size={12} aria-hidden="true" /> : <Circle size={9} aria-hidden="true" />}
+                      {confirmPassword === password ? t("auth.register.match") : t("auth.register.noMatch")}
                     </p>
-                  )}
-                </div>
+                  )
+                }
+              />
+            </Rubrique>
+
+            <Rubrique numero="02" titre={t("auth.register.sections.agency")}>
+              <div>
+                <label htmlFor="register-country" className="mb-1.5 block font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-700">
+                  {t("auth.register.country")}
+                </label>
+                <SelecteurPays
+                  id="register-country"
+                  value={country}
+                  onChange={setCountry}
+                  placeholder={t("auth.register.countryPlaceholder")}
+                  className="w-full border border-slate-400 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/20"
+                />
+                <p className="mt-1.5 border-l-2 border-orange-700 pl-2.5 text-[11px] leading-relaxed text-slate-700">{t("auth.register.countryHint")}</p>
+              </div>
+            </Rubrique>
+
+            <Rubrique numero="03" titre={t("auth.register.sections.referral")}>
+              <ChampAuth
+                id="register-referral-code"
+                label={t("auth.register.referralCode")}
+                icone={Gift}
+                type="text"
+                maxLength={64}
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder={t("auth.register.referralCodePlaceholder")}
+                aide={referralCode && (searchParams.get("ref") ?? "").toUpperCase() === referralCode ? <p className="mt-1.5 font-mono text-[11px] text-slate-700">{t("auth.register.referralFromLink")}</p> : undefined}
+              />
+            </Rubrique>
+
+            {error && (
+              <p role="alert" className={MESSAGE_ERREUR}>
+                {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={loading || googleLoading} className={BOUTON_PRINCIPAL}>
+              {loading && <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+              {loading ? t("auth.register.submitting") : t("auth.register.submit")}
+            </button>
+          </form>
+
+          {isGoogleSignInEnabled() && (
+            <div className="mt-5">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-300" />
+                <span className="font-mono text-[11px] uppercase tracking-wider text-slate-600">{t("auth.google.orDivider")}</span>
+                <div className="h-px flex-1 bg-slate-300" />
+              </div>
+              <div className="mt-4">
+                <GoogleSignInButton
+                  onCredential={handleGoogleCredential}
+                  onError={() => setGoogleError(t("auth.google.error"))}
+                  locale={i18n.language}
+                />
+              </div>
+              {googleLoading && <p className="mt-3 text-center text-xs text-slate-600">{t("auth.register.submitting")}</p>}
+              {googleError && (
+                <p role="alert" className={`mt-3 ${MESSAGE_ERREUR}`}>
+                  {googleError}
+                </p>
               )}
-
-              <p className="mt-5 text-[11px] text-slate-600 text-center leading-relaxed">
-                {t("auth.register.legalPrefix")}{" "}
-                <Link to="/cgu" className="text-brand-600 hover:text-brand-700 transition-colors">
-                  {t("auth.register.legalTerms")}
-                </Link>{" "}
-                {t("auth.register.legalAnd")}{" "}
-                <Link to="/confidentialite" className="text-brand-600 hover:text-brand-700 transition-colors">
-                  {t("auth.register.legalPrivacy")}
-                </Link>
-                {t("auth.register.legalSuffix")}
-              </p>
-
-              <p className="mt-6 text-center text-xs text-slate-600">
-                {t("auth.register.alreadyHaveAccount")}{" "}
-                <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700 transition-colors">
-                  {t("auth.register.loginLink")}
-                </Link>
-              </p>
-            </>
+            </div>
           )}
-        </Reveal>
-      </main>
-    </div>
+
+          <p className="mt-5 text-center text-[11px] leading-relaxed text-slate-600">
+            {t("auth.register.legalPrefix")}{" "}
+            <Link to="/cgu" className="font-semibold text-ink-900 underline decoration-ink-900/30 underline-offset-2 hover:text-orange-700">
+              {t("auth.register.legalTerms")}
+            </Link>{" "}
+            {t("auth.register.legalAnd")}{" "}
+            <Link to="/confidentialite" className="font-semibold text-ink-900 underline decoration-ink-900/30 underline-offset-2 hover:text-orange-700">
+              {t("auth.register.legalPrivacy")}
+            </Link>
+            {t("auth.register.legalSuffix")}
+          </p>
+
+          <p className="mt-5 border-t border-dashed border-slate-300 pt-5 text-center text-xs text-slate-700">
+            {t("auth.register.alreadyHaveAccount")}{" "}
+            <Link to="/login" className="border-b border-ink-900/40 pb-0.5 font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
+              {t("auth.register.loginLink")}
+            </Link>
+          </p>
+        </>
+      )}
+    </AuthLayout>
   );
 }
