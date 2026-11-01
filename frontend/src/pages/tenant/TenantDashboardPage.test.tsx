@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
@@ -242,5 +242,120 @@ describe("TenantDashboardPage", () => {
     );
     await waitFor(() => expect(creerUrl).toHaveBeenCalled());
     expect(revoquerUrl).toHaveBeenCalled();
+  });
+
+  describe("tableau de bord enrichi", () => {
+    beforeEach(() => {
+      // « Aujourd'hui » : le 1er août 2026, pour des échéances et un avancement prévisibles.
+      vi.setSystemTime(new Date(2026, 7, 1, 12));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("liste ce qui attend le locataire : bail à signer, état des lieux à signer, loyers à régler", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ status: "PENDING" }), invoice({ id: "inv-2", status: "LATE" })] })] });
+      mockedApi.get.mockResolvedValueOnce({
+        data: [{ id: "i1", contractId: "c1", type: "ENTRY", status: "COMPLETED", signedByTenantAt: null, property: { title: "Studio Centre-ville" } }],
+      });
+      renderPage();
+
+      const bail = await screen.findByRole("link", { name: "Bail à signer · Studio Centre-ville" });
+      expect(bail).toHaveAttribute("href", "#bail-c1");
+      expect(screen.getByRole("link", { name: "État des lieux à signer · Studio Centre-ville" })).toHaveAttribute("href", "#bail-c1");
+      expect(screen.getByRole("link", { name: "2 loyer(s) à régler" })).toHaveAttribute("href", "/portail/paiements");
+    });
+
+    it("annonce que tout est à jour quand rien n'attend (bail signé, loyers réglés)", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: "2026-01-02T10:00:00.000Z", invoices: [invoice({ status: "PAID" })] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      expect(await screen.findByText("Rien à faire : tout est à jour.")).toBeInTheDocument();
+    });
+
+    it("n'impose rien au colocataire, qui ne signe pas en ligne", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ qualite: "COLOCATAIRE" })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      expect(await screen.findByText("Rien à faire : tout est à jour.")).toBeInTheDocument();
+    });
+
+    it("situe le bail dans le temps : pourcentage écoulé et jours restants", async () => {
+      // Du 1er janvier au 31 décembre 2026 ; au 1er août, 212 jours sur 364 sont écoulés (58 %).
+      mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      const barre = await screen.findByRole("progressbar", { name: "Avancement du bail" });
+      expect(barre).toHaveAttribute("aria-valuenow", "58");
+      expect(screen.getByText("58 % écoulé")).toBeInTheDocument();
+      expect(screen.getByText("152 jour(s) restant(s)")).toBeInTheDocument();
+    });
+
+    it("dit qu'un bail est terminé, ou qu'il n'a pas encore commencé", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ startDate: "2025-01-01T00:00:00.000Z", endDate: "2025-12-31T00:00:00.000Z" })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      const { unmount } = renderPage();
+      expect(await screen.findByText("Bail terminé")).toBeInTheDocument();
+      unmount();
+
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ startDate: "2026-09-01T00:00:00.000Z", endDate: "2027-08-31T00:00:00.000Z" })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+      expect(await screen.findByText("Commence dans 31 jour(s)")).toBeInTheDocument();
+    });
+
+    it("annonce la prochaine échéance et son délai, ou le retard", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ dueDate: "2026-08-06T00:00:00.000Z", status: "PENDING" })] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      const { unmount } = renderPage();
+      expect(await screen.findByText("dans 5 jour(s)")).toBeInTheDocument();
+      unmount();
+
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ dueDate: "2026-07-27T00:00:00.000Z", status: "LATE" })] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+      expect(await screen.findByText("en retard de 5 jour(s)")).toBeInTheDocument();
+    });
+
+    it("résume les loyers réglés, sans compter les factures annulées", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: [
+          contract({
+            invoices: [
+              invoice({ id: "a", status: "PAID" }),
+              invoice({ id: "b", status: "PAID" }),
+              invoice({ id: "c", status: "PENDING" }),
+              invoice({ id: "d", status: "CANCELLED" }),
+            ],
+          }),
+        ],
+      });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      expect(await screen.findByText("2 loyer(s) réglé(s) sur 3")).toBeInTheDocument();
+    });
+
+    it("dit « aucun loyer en attente » quand tout est réglé", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ status: "PAID" })] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      expect(await screen.findByText("Aucun loyer en attente")).toBeInTheDocument();
+    });
+
+    it("rappelle le jour d'échéance du loyer, et propose le logement sur une carte", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ paymentDay: 5 })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      expect(await screen.findByText("Échéance le 5 de chaque mois")).toBeInTheDocument();
+      const lien = screen.getByRole("link", { name: "Voir sur la carte" });
+      expect(lien).toHaveAttribute("href", expect.stringContaining("maps/search"));
+      expect(lien).toHaveAttribute("href", expect.stringContaining(encodeURIComponent("1 rue de la Paix")));
+    });
   });
 });
