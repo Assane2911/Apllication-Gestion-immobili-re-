@@ -2214,6 +2214,8 @@ const en: TranslationSchema = {
       nativeFallback: "To subscribe or change plan, sign in from the website on a computer or your mobile browser — the app only shows your current subscription.",
       subtitle: "Manage your property management plan and billing options.",
       currentStatus: "Your current status",
+      cells: { plan: "Plan", due: "Due date", usage: "Properties used" },
+      usage: { of: "{{count}} / {{max}}", unlimited: "{{count}} (unlimited)" },
       features: {
         maxProperties5: "Up to 5 properties",
         receipts: "Automatic rent receipts",

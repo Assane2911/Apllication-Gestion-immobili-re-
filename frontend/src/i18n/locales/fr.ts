@@ -2215,6 +2215,8 @@ const fr = {
       nativeFallback: "Pour souscrire ou changer d'offre, connectez-vous depuis le site web sur ordinateur ou votre navigateur mobile — l'app se contente d'afficher votre abonnement en cours.",
       subtitle: "Gérez votre formule de gestion immobilière et vos options de facturation.",
       currentStatus: "Votre statut actuel",
+      cells: { plan: "Formule", due: "Échéance", usage: "Biens utilisés" },
+      usage: { of: "{{count}} / {{max}}", unlimited: "{{count}} (illimité)" },
       features: {
         maxProperties5: "Jusqu'à 5 biens immobiliers",
         receipts: "Émission automatique des quittances",

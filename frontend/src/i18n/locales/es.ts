@@ -2216,6 +2216,8 @@ const es: TranslationSchema = {
       nativeFallback: "Para suscribirse o cambiar de plan, inicie sesión desde el sitio web, en un ordenador o en el navegador del móvil — la aplicación solo muestra su suscripción actual.",
       subtitle: "Gestiona tu plan de gestión inmobiliaria y tus opciones de facturación.",
       currentStatus: "Tu estado actual",
+      cells: { plan: "Plan", due: "Vencimiento", usage: "Inmuebles usados" },
+      usage: { of: "{{count}} / {{max}}", unlimited: "{{count}} (ilimitado)" },
       features: {
         maxProperties5: "Hasta 5 inmuebles",
         receipts: "Emisión automática de recibos",
