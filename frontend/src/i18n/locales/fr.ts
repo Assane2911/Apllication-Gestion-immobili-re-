@@ -1796,6 +1796,7 @@ const fr = {
       subtitle: "Synthèse annuelle des revenus, charges et résultat net — base de votre déclaration de revenus fonciers",
       errorTitle: "Erreur de chargement du bilan fiscal",
       yearLabel: "Exercice",
+      sections: { summary: "Synthèse", analysis: "Analyse", perProperty: "Par bien" },
       downloadGrandLivre: "Télécharger le Grand Livre (CSV)",
       downloadingGrandLivre: "Génération...",
       downloadFEC: "Export FEC",

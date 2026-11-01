@@ -12,18 +12,30 @@ import { moisCourt } from "../../utils/moisDuGraphique";
 import Bulle from "../../components/Bulle";
 import { NomDuBien } from "../../components/PlanLogement";
 
+// Couleurs de la charte (celles des étiquettes de la page Dépenses) : orange d'annotation, rose, bleu de plan, vert, gris-bleu.
 const categoryDotColors: Record<ExpenseCategory, string> = {
-  MAINTENANCE: "#f59e0b",
-  TAX: "#dc2626",
+  MAINTENANCE: "#d9480f",
+  TAX: "#be123c",
   INSURANCE: "#124a73",
-  SYNDIC: "#7c3aed",
-  OTHER: "#64748b",
+  SYNDIC: "#2b8a6e",
+  OTHER: "#8ca0aa",
 };
 
 /** Vrai si le résultat net est positif ou nul dans TOUTES les devises. */
 function allPositive(byCurrency: Record<string, number>): boolean {
   const values = Object.values(byCurrency);
   return values.length === 0 || values.every((amount) => amount >= 0);
+}
+
+/** Intitulé de section façon feuille de plan (comme le tableau de bord) : numéro, libellé, filet jusqu'au bord. */
+function IntituleSection({ numero, libelle }: { numero: string; libelle: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span aria-hidden="true" className="font-mono text-[11px] text-orange-700">{numero}</span>
+      <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700">{libelle}</h3>
+      <div aria-hidden="true" className="h-px flex-1 bg-slate-300" />
+    </div>
+  );
 }
 
 export default function FiscalPage() {
@@ -193,7 +205,7 @@ export default function FiscalPage() {
           <p className="text-sm text-slate-600 mt-1">{t("manager.fiscal.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <label htmlFor="fiscal-year-select" className="text-xs font-semibold text-slate-700">
+          <label htmlFor="fiscal-year-select" className="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-700">
             {t("manager.fiscal.yearLabel")}
           </label>
           <select
@@ -212,7 +224,7 @@ export default function FiscalPage() {
           <button
             onClick={downloadGrandLivre}
             disabled={downloading}
-            className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+            className="bg-ink-900 hover:bg-brand-600 disabled:opacity-60 text-white text-xs font-semibold px-3.5 py-2.5 border border-ink-900 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <BookText size={13} aria-hidden="true" /> {downloading ? t("manager.fiscal.downloadingGrandLivre") : t("manager.fiscal.downloadGrandLivre")}
           </button>
@@ -221,7 +233,7 @@ export default function FiscalPage() {
           <button
             onClick={downloadFEC}
             disabled={downloadingFEC}
-            className="border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="border border-slate-400 bg-white text-slate-800 hover:border-ink-900 hover:bg-slate-100 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <FileSpreadsheet size={13} aria-hidden="true" /> {downloadingFEC ? t("manager.fiscal.downloadingFEC") : t("manager.fiscal.downloadFEC")}
           </button>
@@ -230,7 +242,7 @@ export default function FiscalPage() {
           <button
             onClick={downloadSyscohada}
             disabled={downloadingSyscohada}
-            className="border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="border border-slate-400 bg-white text-slate-800 hover:border-ink-900 hover:bg-slate-100 disabled:opacity-60 text-xs font-semibold px-3.5 py-2.5 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Scale size={13} aria-hidden="true" /> {downloadingSyscohada ? t("manager.fiscal.downloadingSyscohada") : t("manager.fiscal.downloadSyscohada")}
           </button>
@@ -238,6 +250,7 @@ export default function FiscalPage() {
         </div>
       </div>
 
+      <IntituleSection numero="01" libelle={t("manager.fiscal.sections.summary")} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           icon={Wallet}
@@ -262,6 +275,7 @@ export default function FiscalPage() {
         />
       </div>
 
+      <IntituleSection numero="02" libelle={t("manager.fiscal.sections.analysis")} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl border border-contour-200 p-6 shadow-sm">
           <h3 className="font-bold text-slate-900 text-base mb-4">
@@ -283,23 +297,41 @@ export default function FiscalPage() {
           {categoryEntries.length === 0 ? (
             <p className="text-sm text-slate-600 py-16 text-center">{t("manager.fiscal.charts.noCategoryData")}</p>
           ) : (
-            <ul className="space-y-3">
-              {categoryEntries.map(([category, byCurrency]) => (
-                <li key={category} className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm text-slate-700">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: categoryDotColors[category] }} />
-                    {categoryLabels[category] ?? category}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900 tabular-nums">
-                    {formatByCurrency(byCurrency, formatMoney)}
-                  </span>
-                </li>
-              ))}
+            <ul className="space-y-4">
+              {categoryEntries.map(([category, byCurrency]) => {
+                // Part de la catégorie dans le total, seulement quand toutes les dépenses sont dans la même devise.
+                const devisesUtilisees = new Set(categoryEntries.flatMap(([, montants]) => Object.keys(montants)));
+                const devise = devisesUtilisees.size === 1 ? [...devisesUtilisees][0] : null;
+                const total = devise ? categoryEntries.reduce((somme, [, montants]) => somme + Number(montants[devise] ?? 0), 0) : 0;
+                const part = devise && total > 0 ? Math.round((Number(byCurrency[devise] ?? 0) / total) * 100) : null;
+                return (
+                  <li key={category}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2 text-sm text-slate-700">
+                        <span className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: categoryDotColors[category] }} />
+                        {categoryLabels[category] ?? category}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900 tabular-nums">
+                        {formatByCurrency(byCurrency, formatMoney)}
+                      </span>
+                    </div>
+                    {part !== null && (
+                      <div className="mt-1.5 flex items-center gap-2" aria-hidden="true">
+                        <div className="h-1.5 flex-1 bg-slate-200">
+                          <div className="h-full" style={{ width: `${part}%`, backgroundColor: categoryDotColors[category] }} />
+                        </div>
+                        <span className="w-9 text-right font-mono text-[10px] text-slate-600">{part} %</span>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
       </div>
 
+      <IntituleSection numero="03" libelle={t("manager.fiscal.sections.perProperty")} />
       <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-contour-100 flex items-center gap-2">
           <Landmark size={16} className="text-slate-600" />

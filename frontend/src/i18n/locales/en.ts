@@ -1795,6 +1795,7 @@ const en: TranslationSchema = {
       subtitle: "Annual summary of income, expenses and net result — the basis for your rental income tax return",
       errorTitle: "Error loading the tax report",
       yearLabel: "Fiscal year",
+      sections: { summary: "Summary", analysis: "Analysis", perProperty: "By property" },
       downloadGrandLivre: "Download General Ledger (CSV)",
       downloadingGrandLivre: "Generating...",
       downloadFEC: "FEC export",
