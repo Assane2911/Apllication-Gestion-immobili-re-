@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -165,5 +165,77 @@ describe("CrgPage", () => {
     await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
     expect(screen.queryByText(/-0\s?€/)).toBeNull();
     expect(screen.queryAllByText(/^-0/)).toHaveLength(0);
+  });
+
+  it("passe au mois voisin avec les flèches, d'une année à l'autre, et revient au mois en cours", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValue({ data: crg() });
+    renderPage("/proprietaires/owner-1/crg?month=1&year=2026");
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Mois précédent" }));
+    await waitFor(() => expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/owner-1", { params: { month: 12, year: 2025 } }));
+
+    await user.click(screen.getByRole("button", { name: "Mois suivant" }));
+    await waitFor(() => expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/owner-1", { params: { month: 1, year: 2026 } }));
+
+    await user.click(screen.getByRole("button", { name: "Mois en cours" }));
+    await waitFor(() => expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/owner-1", { params: { month: 9, year: 2026 } }));
+    // Sur le mois en cours, le raccourci est inutile.
+    expect(screen.getByRole("button", { name: "Mois en cours" })).toBeDisabled();
+  });
+
+  it("présente le décompte en soustraction et la répartition des loyers en pourcentages", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg() });
+    renderPage();
+
+    const decompte = within(await screen.findByRole("region", { name: "Décompte du mois" }));
+    expect(decompte.getByText("Loyers encaissés")).toBeInTheDocument();
+    expect(decompte.getByText("Net à reverser")).toBeInTheDocument();
+    expect(decompte.getByText("Net · 80 %")).toBeInTheDocument();
+    expect(decompte.getByText("Commission · 10 %")).toBeInTheDocument();
+    expect(decompte.getByText("Charges · 10 %")).toBeInTheDocument();
+  });
+
+  it("ne mélange jamais deux devises dans la même barre de répartition", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: crg({
+        totalLoyersByCurrency: { EUR: 1000, XOF: 500000 },
+        totalChargesByCurrency: { EUR: 100, XOF: 0 },
+        totalCommissionByCurrency: { EUR: 100, XOF: 50000 },
+        totalNetByCurrency: { EUR: 800, XOF: 450000 },
+      }),
+    });
+    renderPage();
+
+    const decompte = within(await screen.findByRole("region", { name: "Décompte du mois" }));
+    expect(decompte.queryByText(/Net · \d+ %/)).not.toBeInTheDocument();
+  });
+
+  it("indique où en est le reversement du mois", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg({ resteAReverserByCurrency: { EUR: 300 }, totalReverseByCurrency: { EUR: 500 } }) });
+    const { unmount } = renderPage();
+    expect(await screen.findByText("Reversé en partie")).toBeInTheDocument();
+    unmount();
+
+    mockedApi.get.mockResolvedValueOnce({ data: crg({ resteAReverserByCurrency: { EUR: 0 }, totalReverseByCurrency: { EUR: 800 } }) });
+    renderPage();
+    expect(await screen.findByText("Reversé en totalité")).toBeInTheDocument();
+  });
+
+  it("copie un récapitulatif en texte brut, prêt à coller dans un message", async () => {
+    const user = userEvent.setup();
+    const ecrire = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+    mockedApi.get.mockResolvedValueOnce({ data: crg() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Copier le récapitulatif" }));
+
+    expect(ecrire).toHaveBeenCalledTimes(1);
+    const texte = ecrire.mock.calls[0][0] as string;
+    expect(texte).toContain("Fatou Diop");
+    expect(texte).toContain("Net à reverser : 800 €");
   });
 });

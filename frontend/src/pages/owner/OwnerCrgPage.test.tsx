@@ -158,4 +158,38 @@ describe("OwnerCrgPage", () => {
     expect(screen.queryByText(/-0\s?€/)).toBeNull();
     expect(screen.queryAllByText(/^-0/)).toHaveLength(0);
   });
+
+  it("passe au mois précédent avec la flèche", async () => {
+    mockedApi.get.mockResolvedValue({ data: crg() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Mois précédent" }));
+    await waitFor(() => expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/mine", expect.objectContaining({ params: { month: 8, year: 2026 } })));
+  });
+
+  it("copie l'IBAN tel qu'enregistré, d'un clic", async () => {
+    const user = userEvent.setup();
+    const ecrire = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+    mockedApi.get.mockResolvedValueOnce({ data: crg() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Copier l'IBAN" }));
+    expect(ecrire).toHaveBeenCalledWith("FR7630006000011234567890189");
+  });
+
+  it("n'offre pas de copie d'IBAN quand aucune coordonnée n'est enregistrée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg({ iban: null, bic: null }) });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Copier l'IBAN" })).not.toBeInTheDocument();
+  });
+
+  it("indique où en est le reversement du mois", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg({ resteAReverserByCurrency: { EUR: 800 }, totalReverseByCurrency: { EUR: 0 } }) });
+    renderPage();
+    expect(await screen.findByText("Rien reversé pour l'instant")).toBeInTheDocument();
+  });
 });
