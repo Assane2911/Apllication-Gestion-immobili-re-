@@ -1980,6 +1980,13 @@ const es: TranslationSchema = {
       scheduleLabel: "Visita planificada:",
       changeStatus: "Cambiar el estado:",
       noIssuesForFilter: "Ninguna incidencia para este filtro",
+      fiche: {
+        reference: "Incidencia",
+        reportedBy: "Reportado por",
+        property: "Inmueble",
+        reportedOn: "Reportado el",
+        handling: "Gestión",
+      },
       photoAlt: "Foto incidencia {{index}}",
       enlargedPhotoAlt: "Foto ampliada",
     },
@@ -2000,6 +2007,12 @@ const es: TranslationSchema = {
       emptyTitle: "Aún no hay proveedores",
       emptyDesc: "Añade un proveedor (nombre, teléfono) para poder asignarlo a una incidencia comunicada por un inquilino.",
       confirmDelete: '¿Eliminar al proveedor "{{name}}"?',
+      filters: {
+        byTrade: "Filtrar por oficio",
+        all: "Todos",
+        search: "Buscar un proveedor",
+        noMatch: "Ningún proveedor coincide con esta búsqueda.",
+      },
       table: {
         name: "Nombre",
         trade: "Oficio",

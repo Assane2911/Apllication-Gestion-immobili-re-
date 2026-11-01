@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -44,17 +44,44 @@ describe("VendorsPage (manager)", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Plomberie Fall")).toBeInTheDocument());
-    expect(screen.getByText("Plombier")).toBeInTheDocument();
+    // « Plombier » figure sur la fiche et dans l'onglet de filtre.
+    const fiche = screen.getByRole("article");
+    expect(within(fiche).getByText("Plombier")).toBeInTheDocument();
     expect(screen.getByText("+221770001122")).toBeInTheDocument();
     expect(screen.getByText("fall@example.com")).toBeInTheDocument();
   });
 
-  it("la colonne des boutons d'action a un en-tête lisible par un lecteur d'écran", async () => {
+  it("filtre le carnet par métier (onglets) et par recherche", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({
+      data: [
+        vendor({ id: "v1", name: "Plomberie Fall", trade: "Plombier" }),
+        vendor({ id: "v2", name: "Élec Ndoye", trade: "Électricien", phone: "+221770003344", email: null }),
+      ],
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("article")).toHaveLength(2));
+
+    const onglets = screen.getByRole("group", { name: "Filtrer par métier" });
+    await user.click(within(onglets).getByRole("button", { name: /Électricien/ }));
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.getByText("Élec Ndoye")).toBeInTheDocument();
+
+    await user.click(within(onglets).getByRole("button", { name: /Tous/ }));
+    await user.type(screen.getByRole("searchbox", { name: "Rechercher un prestataire" }), "fall");
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.getByText("Plomberie Fall")).toBeInTheDocument();
+
+    await user.clear(screen.getByRole("searchbox", { name: "Rechercher un prestataire" }));
+    await user.type(screen.getByRole("searchbox", { name: "Rechercher un prestataire" }), "zzz");
+    expect(screen.getByText("Aucun prestataire ne correspond à cette recherche.")).toBeInTheDocument();
+  });
+
+  it("téléphone et e-mail sont des liens directs", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [vendor()] });
     renderPage();
-
-    await waitFor(() => expect(screen.getByText("Plomberie Fall")).toBeInTheDocument());
-    expect(screen.getByRole("columnheader", { name: "Actions" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("link", { name: "+221770001122" })).toHaveAttribute("href", "tel:+221770001122"));
+    expect(screen.getByRole("link", { name: "fall@example.com" })).toHaveAttribute("href", "mailto:fall@example.com");
   });
 
   it("affiche l'état vide avec un bouton d'ajout", async () => {

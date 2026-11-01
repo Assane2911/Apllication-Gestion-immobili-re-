@@ -1978,6 +1978,13 @@ const pt: TranslationSchema = {
       scheduleLabel: "Visita planeada:",
       changeStatus: "Alterar o estado:",
       noIssuesForFilter: "Nenhum incidente para este filtro",
+      fiche: {
+        reference: "Incidente",
+        reportedBy: "Reportado por",
+        property: "Imóvel",
+        reportedOn: "Reportado em",
+        handling: "Tratamento",
+      },
       photoAlt: "Foto do incidente {{index}}",
       enlargedPhotoAlt: "Foto ampliada",
     },
@@ -1998,6 +2005,12 @@ const pt: TranslationSchema = {
       emptyTitle: "Ainda não há prestadores",
       emptyDesc: "Adicione um prestador (nome, telefone) para poder atribuí-lo a um incidente comunicado por um inquilino.",
       confirmDelete: 'Eliminar o prestador "{{name}}"?',
+      filters: {
+        byTrade: "Filtrar por ofício",
+        all: "Todos",
+        search: "Procurar um prestador",
+        noMatch: "Nenhum prestador corresponde a esta pesquisa.",
+      },
       table: {
         name: "Nome",
         trade: "Ofício",

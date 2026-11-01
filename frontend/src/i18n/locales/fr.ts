@@ -1979,6 +1979,13 @@ const fr = {
       scheduleLabel: "Intervention planifiée :",
       changeStatus: "Changer le statut :",
       noIssuesForFilter: "Aucun incident pour ce filtre",
+      fiche: {
+        reference: "Incident",
+        reportedBy: "Signalé par",
+        property: "Bien",
+        reportedOn: "Signalé le",
+        handling: "Traitement",
+      },
       photoAlt: "Photo incident {{index}}",
       enlargedPhotoAlt: "Photo agrandie",
     },
@@ -1999,6 +2006,12 @@ const fr = {
       emptyTitle: "Aucun prestataire pour l'instant",
       emptyDesc: "Ajoutez un prestataire (nom, téléphone) pour pouvoir l'assigner à un incident signalé par un locataire.",
       confirmDelete: 'Supprimer le prestataire "{{name}}" ?',
+      filters: {
+        byTrade: "Filtrer par métier",
+        all: "Tous",
+        search: "Rechercher un prestataire",
+        noMatch: "Aucun prestataire ne correspond à cette recherche.",
+      },
       table: {
         name: "Nom",
         trade: "Métier",

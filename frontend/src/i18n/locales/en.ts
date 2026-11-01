@@ -1978,6 +1978,13 @@ const en: TranslationSchema = {
       scheduleLabel: "Scheduled visit:",
       changeStatus: "Change status:",
       noIssuesForFilter: "No issues for this filter",
+      fiche: {
+        reference: "Incident",
+        reportedBy: "Reported by",
+        property: "Property",
+        reportedOn: "Reported on",
+        handling: "Handling",
+      },
       photoAlt: "Issue photo {{index}}",
       enlargedPhotoAlt: "Enlarged photo",
     },
@@ -1998,6 +2005,12 @@ const en: TranslationSchema = {
       emptyTitle: "No providers yet",
       emptyDesc: "Add a provider (name, phone) so you can assign them to an issue reported by a tenant.",
       confirmDelete: 'Delete provider "{{name}}"?',
+      filters: {
+        byTrade: "Filter by trade",
+        all: "All",
+        search: "Search a vendor",
+        noMatch: "No vendor matches this search.",
+      },
       table: {
         name: "Name",
         trade: "Trade",

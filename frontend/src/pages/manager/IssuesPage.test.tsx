@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -96,7 +96,7 @@ describe("IssuesPage (gestionnaire)", () => {
     mockedApi.put.mockResolvedValueOnce({ data: {} });
     mockedApi.get.mockResolvedValueOnce(paginated([issue({ status: "RESOLVED" })]));
 
-    await userEvent.setup().click(screen.getByRole("button", { name: "Résolu" }));
+    await userEvent.setup().click(within(screen.getByRole("group", { name: "Changer le statut :" })).getByRole("button", { name: "Résolu" }));
 
     await waitFor(() =>
       expect(mockedApi.put).toHaveBeenCalledWith("/issues/iss-1/status", {
@@ -112,7 +112,7 @@ describe("IssuesPage (gestionnaire)", () => {
     await waitFor(() => expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument());
 
     mockedApi.get.mockResolvedValueOnce(paginated([]));
-    await userEvent.setup().selectOptions(screen.getByLabelText("Filtrer par statut"), "RESOLVED");
+    await userEvent.setup().click(within(screen.getByRole("group", { name: "Filtrer par statut" })).getByRole("button", { name: "Résolu" }));
 
     await waitFor(() =>
       expect(mockedApi.get).toHaveBeenLastCalledWith("/issues", {
