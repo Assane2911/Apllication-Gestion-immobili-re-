@@ -16,3 +16,14 @@ export type IdFormule = keyof typeof LIGNES_FORMULES;
 
 /** Les lignes « Tout ce qui est inclus dans … » nomment la formule reprise, dans la langue de l'interface. */
 export const FORMULE_REPRISE: Record<string, IdFormule> = { includesStarter: "STARTER", includesPro: "PRO" };
+
+/**
+ * Nombre de biens inclus par formule (`null` = illimité). Reprend les plafonds du serveur (`maxPropertiesForPlan`,
+ * backend/src/controllers/subscription.controller.ts), qui reste l'autorité : cette table sert à situer un compte face à
+ * sa formule (administration) et à conseiller une formule à un visiteur (accueil).
+ */
+export const PLAFOND_BIENS: Record<IdFormule, number | null> = {
+  STARTER: 5,
+  PRO: 25,
+  ENTERPRISE: null,
+};

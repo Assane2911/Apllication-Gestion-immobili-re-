@@ -679,6 +679,13 @@ const fr = {
   },
 
   landing: {
+    stickyCta: "Essayer gratuitement",
+    steps: {
+      title: "De l'inscription à la première quittance",
+      create: { title: "Créez votre compte", desc: "Quelques minutes suffisent : une adresse e-mail, le pays de votre agence, et l'essai de 15 jours démarre." },
+      add: { title: "Ajoutez vos biens et locataires", desc: "Saisissez vos biens, vos locataires et leurs baux, ou importez-les depuis un fichier." },
+      automate: { title: "Laissez la plateforme travailler", desc: "Quittances, rappels de loyer et suivi de rentabilité se font sans ressaisie." },
+    },
     nav: {
       features: "Fonctionnalités",
       vitrine: "Nos biens",
@@ -802,6 +809,10 @@ const fr = {
       linkLabel: "Consulter notre politique de confidentialité →",
     },
     faq: {
+      searchLabel: "Rechercher dans la FAQ",
+      searchPlaceholder: "Rechercher une question…",
+      noResult: "Aucune question ne correspond à votre recherche.",
+      clearSearch: "Effacer la recherche",
       title: "Questions fréquentes",
       items: [
         {
@@ -832,6 +843,22 @@ const fr = {
       cta: "Démarrer mon essai gratuit de 15 jours →",
     },
     pricing: {
+      perYear: "/ an",
+      monthlyEquivalent: "soit {{price}} / mois",
+      currencyLabel: "Devise",
+      cycleLabel: "Période de facturation",
+      monthly: "Mensuel",
+      annual: "Annuel",
+      annualSaving: "Payez à l'année : {{pct}} % d'économie",
+      advisor: {
+        title: "Trouver ma formule",
+        label: "Combien de biens gérez-vous ?",
+        result: "Pour {{count}} bien(s), nous vous conseillons",
+        upTo: "Jusqu'à {{max}} biens inclus",
+        unlimited: "Biens illimités",
+        perProperty: "soit {{price}} par bien et par mois",
+        forYou: "Pour vos {{count}} bien(s)",
+      },
       title: "Des formules simples et transparentes",
       subtitle: "Toutes les formules incluent 15 jours d'essai gratuit sans carte bancaire requise, avec le guide de démarrage pas à pas.",
       perMonth: "/ mois",
@@ -3051,6 +3078,44 @@ const fr = {
   },
 
   vitrine: {
+    kicker: "Annonces des agences partenaires",
+    count: "{{count}} annonce(s)",
+    resetFilters: "Réinitialiser les filtres",
+    perMonthShort: "/ mois",
+    newBadge: "Nouveau",
+    similar: "Annonces similaires",
+    favorites: {
+      viewLabel: "Vue des annonces",
+      all: "Toutes",
+      tab: "Mes favoris",
+      add: "Ajouter « {{title}} » aux favoris",
+      remove: "Retirer « {{title}} » des favoris",
+      save: "Mettre de côté",
+      saved: "Mise de côté",
+      empty: "Vous n'avez encore rien mis de côté. Touchez le cœur d'une annonce pour la retrouver ici.",
+      note: "Vos favoris sont gardés dans ce navigateur : ils ne sont envoyés à personne.",
+    },
+    details: {
+      title: "Caractéristiques",
+      description: "Description",
+      type: "Type",
+      surface: "Surface",
+      rooms: "Pièces",
+      pricePerSqm: "Prix au m²",
+      country: "Pays",
+      published: "Publiée le",
+    },
+    directContact: {
+      title: "Contact direct",
+      call: "Appeler l'agence",
+      whatsapp: "Écrire sur WhatsApp",
+      email: "Écrire par email",
+    },
+    footerTagline: "Les annonces de nos agences partenaires, en France et en Afrique francophone.",
+    footerHome: "Accueil du site",
+    footerLegal: "Mentions légales",
+    footerTerms: "CGU & CGV",
+    footerPrivacy: "Politique de confidentialité",
     brand: "ImmoPlatform Pro — Annonces",
     managerLogin: "Espace gestionnaire",
     title: "Trouvez votre prochain bien",

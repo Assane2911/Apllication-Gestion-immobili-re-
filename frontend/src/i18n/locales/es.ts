@@ -681,6 +681,13 @@ const es: TranslationSchema = {
   },
 
   landing: {
+    stickyCta: "Pruébelo gratis",
+    steps: {
+      title: "Del registro al primer recibo",
+      create: { title: "Cree su cuenta", desc: "Bastan unos minutos: un correo, el país de su agencia, y empieza la prueba de 15 días." },
+      add: { title: "Añada sus inmuebles e inquilinos", desc: "Introduzca sus inmuebles, inquilinos y contratos, o impórtelos desde un archivo." },
+      automate: { title: "Deje trabajar a la plataforma", desc: "Recibos, recordatorios de alquiler y seguimiento de rentabilidad sin volver a escribir nada." },
+    },
     nav: {
       features: "Funcionalidades",
       vitrine: "Nuestros inmuebles",
@@ -804,6 +811,10 @@ const es: TranslationSchema = {
       linkLabel: "Consultar nuestra política de privacidad →",
     },
     faq: {
+      searchLabel: "Buscar en las preguntas frecuentes",
+      searchPlaceholder: "Buscar una pregunta…",
+      noResult: "Ninguna pregunta coincide con su búsqueda.",
+      clearSearch: "Borrar la búsqueda",
       title: "Preguntas frecuentes",
       items: [
         {
@@ -834,6 +845,22 @@ const es: TranslationSchema = {
       cta: "Comenzar mi prueba gratuita de 15 días →",
     },
     pricing: {
+      perYear: "/ año",
+      monthlyEquivalent: "es decir {{price}} / mes",
+      currencyLabel: "Moneda",
+      cycleLabel: "Periodo de facturación",
+      monthly: "Mensual",
+      annual: "Anual",
+      annualSaving: "Pague al año: {{pct}} % de ahorro",
+      advisor: {
+        title: "Encontrar mi fórmula",
+        label: "¿Cuántos inmuebles gestiona?",
+        result: "Para {{count}} inmueble(s), le recomendamos",
+        upTo: "Hasta {{max}} inmuebles incluidos",
+        unlimited: "Inmuebles ilimitados",
+        perProperty: "es decir {{price}} por inmueble y mes",
+        forYou: "Para sus {{count}} inmueble(s)",
+      },
       title: "Planes simples y transparentes",
       subtitle: "Todos los planes incluyen 15 días de prueba gratuita sin necesidad de tarjeta bancaria, con una guía de inicio paso a paso.",
       perMonth: "/ mes",
@@ -3052,6 +3079,44 @@ const es: TranslationSchema = {
   },
 
   vitrine: {
+    kicker: "Anuncios de las agencias asociadas",
+    count: "{{count}} anuncio(s)",
+    resetFilters: "Restablecer los filtros",
+    perMonthShort: "/ mes",
+    newBadge: "Nuevo",
+    similar: "Anuncios similares",
+    favorites: {
+      viewLabel: "Vista de los anuncios",
+      all: "Todos",
+      tab: "Mis favoritos",
+      add: "Añadir «{{title}}» a favoritos",
+      remove: "Quitar «{{title}}» de favoritos",
+      save: "Guardar",
+      saved: "Guardado",
+      empty: "Aún no ha guardado nada. Toque el corazón de un anuncio para encontrarlo aquí.",
+      note: "Sus favoritos se guardan en este navegador: no se envían a nadie.",
+    },
+    details: {
+      title: "Características",
+      description: "Descripción",
+      type: "Tipo",
+      surface: "Superficie",
+      rooms: "Habitaciones",
+      pricePerSqm: "Precio por m²",
+      country: "País",
+      published: "Publicado el",
+    },
+    directContact: {
+      title: "Contacto directo",
+      call: "Llamar a la agencia",
+      whatsapp: "Escribir por WhatsApp",
+      email: "Enviar un correo",
+    },
+    footerTagline: "Los anuncios de nuestras agencias asociadas, en Francia y en África francófona.",
+    footerHome: "Inicio del sitio",
+    footerLegal: "Aviso legal",
+    footerTerms: "Condiciones",
+    footerPrivacy: "Política de privacidad",
     brand: "ImmoPlatform Pro — Anuncios",
     managerLogin: "Acceso gestor",
     title: "Encuentre su próxima propiedad",

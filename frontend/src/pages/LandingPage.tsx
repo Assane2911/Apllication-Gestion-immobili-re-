@@ -1,5 +1,6 @@
 import {
   Apple,
+  ArrowRight,
   Building2,
   Camera,
   Check,
@@ -14,6 +15,7 @@ import {
   PenLine,
   Receipt,
   Scale,
+  Search,
   Smartphone,
   Sparkles,
   Wallet,
@@ -22,6 +24,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { api } from "../api/client";
 import Logo from "../components/Logo";
 import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -29,21 +32,22 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import PiedDeSite from "../components/PiedDeSite";
 import Reveal from "../components/Reveal";
 import Seo from "../components/Seo";
-import { FORMULE_REPRISE, LIGNES_FORMULES, type IdFormule } from "../data/lignesFormules";
+import { FORMULE_REPRISE, LIGNES_FORMULES, PLAFOND_BIENS, type IdFormule } from "../data/lignesFormules";
 import { useInView } from "../hooks/useInView";
 import { useAuth } from "../context/auth";
 import { buildOrganizationJsonLd, buildSoftwareApplicationJsonLd } from "../utils/structuredData";
+import { economieAnnuelle, formaterPrix, formuleConseillee, lireTarifs, type CycleFacturation, type DevisePublique, type Tarifs } from "../utils/prixPublics";
 import { homePathForRole } from "../utils/roleHome";
 
 const FEATURE_CARDS = [
   { key: "receipts", icon: Receipt, color: "bg-brand-500/15 text-brand-700" },
   { key: "signature", icon: PenLine, color: "bg-ink-800/10 text-ink-800" },
-  { key: "reminders", icon: Megaphone, color: "bg-emerald-600/20 text-emerald-800" },
+  { key: "reminders", icon: Megaphone, color: "bg-ink-800/10 text-ink-800" },
   { key: "dashboard", icon: LayoutDashboard, color: "bg-ocre/25 text-amber-800" },
   { key: "expenses", icon: Wallet, color: "bg-amber-600/20 text-amber-800" },
   { key: "tenantPortal", icon: Home, color: "bg-ink-800/10 text-ink-700" },
   { key: "security", icon: Lock, color: "bg-rose-600/20 text-rose-700" },
-  { key: "multiCurrency", icon: Globe, color: "bg-teal-600/20 text-teal-800" },
+  { key: "multiCurrency", icon: Globe, color: "bg-ocre/25 text-amber-800" },
   { key: "multiLanguage", icon: Languages, color: "bg-brand-500/15 text-brand-700" },
 ] as const;
 
@@ -61,16 +65,16 @@ function DashboardMockup() {
   const [ref, inView] = useInView<HTMLDivElement>();
   const bars = [40, 65, 50, 80, 60, 95];
   return (
-    <div ref={ref} className="bg-white border border-slate-300 rounded-2xl p-5 h-full">
+    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full">
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[
-          { v: "94%", c: "text-emerald-800" },
+          { v: "94%", c: "text-ink-900" },
           { v: "12", c: "text-brand-700" },
           { v: "2", c: "text-rose-700" },
         ].map((s, i) => (
           <div
             key={i}
-            className={`bg-slate-100 rounded-xl p-2.5 text-center transition-all duration-500 motion-reduce:transition-none ${
+            className={`bg-slate-100  p-2.5 text-center transition-all duration-500 motion-reduce:transition-none ${
               inView ? "opacity-100 scale-100" : "opacity-0 scale-90"
             }`}
             style={{ transitionDelay: inView ? `${i * 100}ms` : "0ms" }}
@@ -83,7 +87,7 @@ function DashboardMockup() {
         {bars.map((h, i) => (
           <div
             key={i}
-            className="flex-1 rounded-t-xs bg-brand-600 transition-all duration-700 ease-out motion-reduce:transition-none"
+            className="flex-1  bg-brand-600 transition-all duration-700 ease-out motion-reduce:transition-none"
             style={{ height: inView ? `${h}%` : "4%", transitionDelay: `${i * 80}ms` }}
           />
         ))}
@@ -97,12 +101,12 @@ function ContractMockup() {
   const { t } = useTranslation();
   const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div ref={ref} className="bg-white border border-slate-300 rounded-2xl p-5 h-full flex flex-col justify-between">
+    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full flex flex-col justify-between">
       <div className="space-y-2">
-        <div className="h-2.5 w-2/3 bg-slate-700 rounded-full" />
-        <div className="h-2 w-full bg-slate-200 rounded-full" />
-        <div className="h-2 w-5/6 bg-slate-200 rounded-full" />
-        <div className="h-2 w-4/6 bg-slate-200 rounded-full" />
+        <div className="h-2.5 w-2/3 bg-slate-700 " />
+        <div className="h-2 w-full bg-slate-200 " />
+        <div className="h-2 w-5/6 bg-slate-200 " />
+        <div className="h-2 w-4/6 bg-slate-200 " />
       </div>
       <div className="mt-4 border-t border-slate-300 pt-4 flex items-center justify-between">
         <svg width="90" height="32" viewBox="0 0 90 32" className="text-ink-700 overflow-visible">
@@ -119,7 +123,7 @@ function ContractMockup() {
           />
         </svg>
         <span
-          className={`text-[10px] font-bold text-emerald-800 bg-emerald-500/10 px-2.5 py-1 rounded-full transition-all duration-500 motion-reduce:transition-none ${
+          className={`text-[10px] font-bold text-ink-900 bg-slate-100 px-2.5 py-1  transition-all duration-500 motion-reduce:transition-none ${
             inView ? "opacity-100 scale-100" : "opacity-0 scale-75"
           }`}
           style={{ transitionDelay: "1.1s" }}
@@ -136,7 +140,7 @@ function ExpensesMockup() {
   const { t } = useTranslation();
   const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div ref={ref} className="bg-white border border-slate-300 rounded-2xl p-5 h-full flex flex-col justify-between">
+    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full flex flex-col justify-between">
       <div className="flex items-end gap-3 h-24">
         {[
           { r: 55, e: 20 },
@@ -146,11 +150,11 @@ function ExpensesMockup() {
         ].map((m, i) => (
           <div key={i} className="flex-1 flex items-end gap-0.5 h-full">
             <div
-              className="flex-1 rounded-t-md bg-emerald-500/70 transition-all duration-700 ease-out motion-reduce:transition-none"
+              className="flex-1  bg-ink-900/70 transition-all duration-700 ease-out motion-reduce:transition-none"
               style={{ height: inView ? `${m.r}%` : "4%", transitionDelay: `${i * 90}ms` }}
             />
             <div
-              className="flex-1 rounded-t-md bg-rose-500/60 transition-all duration-700 ease-out motion-reduce:transition-none"
+              className="flex-1  bg-rose-500/60 transition-all duration-700 ease-out motion-reduce:transition-none"
               style={{ height: inView ? `${m.e}%` : "4%", transitionDelay: `${i * 90 + 40}ms` }}
             />
           </div>
@@ -158,7 +162,7 @@ function ExpensesMockup() {
       </div>
       <div className="mt-4 flex items-center justify-between text-xs">
         <span className="text-slate-700">{t("landing.mock.netFlow")}</span>
-        <span className="font-bold text-emerald-800">+ 68%</span>
+        <span className="font-bold text-ink-900">+ 68%</span>
       </div>
     </div>
   );
@@ -169,16 +173,16 @@ function TenantMockup() {
   const { t } = useTranslation();
   const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div ref={ref} className="bg-white border border-slate-300 rounded-2xl p-5 h-full flex flex-col gap-3">
-      <div className="bg-slate-100 rounded-xl p-3 flex items-center justify-between">
+    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full flex flex-col gap-3">
+      <div className="bg-slate-100  p-3 flex items-center justify-between">
         <span className="text-[11px] text-slate-700">{t("landing.mock.rentMonth")}</span>
-        <span className="text-[10px] font-bold text-white bg-brand-600 px-2.5 py-1 rounded-full">
+        <span className="text-[10px] font-bold text-white bg-brand-600 px-2.5 py-1 ">
           {t("landing.mock.pay")}
         </span>
       </div>
       <div className="flex-1 flex flex-col gap-2 justify-end">
         <div
-          className={`self-start max-w-[75%] bg-slate-200 text-slate-800 text-[10px] px-3 py-2 rounded-2xl rounded-bl-sm transition-all duration-500 motion-reduce:transition-none ${
+          className={`self-start max-w-[75%] bg-slate-200 text-slate-800 text-[10px] px-3 py-2   transition-all duration-500 motion-reduce:transition-none ${
             inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
           }`}
           style={{ transitionDelay: "150ms" }}
@@ -186,7 +190,7 @@ function TenantMockup() {
           {t("landing.mock.tenantMessage")}
         </div>
         <div
-          className={`self-end max-w-[75%] bg-brand-600 text-white text-[10px] px-3 py-2 rounded-2xl rounded-br-sm transition-all duration-500 motion-reduce:transition-none ${
+          className={`self-end max-w-[75%] bg-brand-600 text-white text-[10px] px-3 py-2   transition-all duration-500 motion-reduce:transition-none ${
             inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
           }`}
           style={{ transitionDelay: "550ms" }}
@@ -219,7 +223,7 @@ function EnteteSection({ numero, titre, sous }: { numero: string; titre: string;
  */
 function PlanAccroche() {
   return (
-    <div aria-hidden="true" className="relative mx-auto w-full max-w-xl aspect-5/4 border-2 border-ink-900 bg-white/70 rounded-md">
+    <div aria-hidden="true" className="relative mx-auto w-full max-w-xl aspect-5/4 border-2 border-ink-900 bg-white/70 ">
       <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full text-ink-900">
         <g fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round">
           <path d="M60 60H440V340H60Z" pathLength="1" className="plan-trace" />
@@ -311,7 +315,7 @@ function BoutonHautDePage({ libelle }: { libelle: string }) {
       href="#top"
       aria-label={libelle}
       title={libelle}
-      className={`fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center border-2 border-ink-900 bg-white text-ink-900 shadow-md transition-all duration-300 hover:bg-ink-900 hover:text-white motion-reduce:transition-none ${
+      className={`fixed bottom-20 right-4 z-40 flex h-11 w-11 lg:bottom-6 lg:right-6 items-center justify-center border-2 border-ink-900 bg-white text-ink-900 shadow-md transition-all duration-300 hover:bg-ink-900 hover:text-white motion-reduce:transition-none ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
@@ -366,18 +370,48 @@ const LIEN_MENU = "lien-plan flex items-center gap-1.5 px-3 xl:px-4 whitespace-n
 const NUMERO_MENU = "font-mono text-[10px] text-orange-700";
 
 export default function LandingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   // Sous 640 px, l'en-tête ne tient qu'en version resserrée (voir LandingPage.mobile.test.tsx).
   const telephone = useMediaQuery("(max-width: 639px)");
   // Entre 640 et 1279 px, la barre flottante garde le code court de la langue pour que tous les liens tiennent.
   const ecranMoyen = useMediaQuery("(max-width: 1279px)");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [recherche, setRecherche] = useState("");
+  // Tarifs publics du serveur, par devise : tant qu'ils ne sont pas tous deux arrivés, les prix affichés par défaut
+  // (en euros, au mois) restent seuls visibles et les choix de devise et de période n'apparaissent pas.
+  const [tarifs, setTarifs] = useState<Partial<Record<DevisePublique, Tarifs>>>({});
+  const [devise, setDevise] = useState<DevisePublique>("EUR");
+  const [cycle, setCycle] = useState<CycleFacturation>("MONTHLY");
+  const [nombreDeBiens, setNombreDeBiens] = useState(3);
+  const [conseilDemande, setConseilDemande] = useState(false);
+  // Le bouton d'essai fixé en bas de l'écran (téléphone) n'apparaît qu'une fois l'accroche dépassée.
+  const [essaiFixe, setEssaiFixe] = useState(false);
   // Barre qui se resserre et prend une ombre dès que la page défile ; menu plein écran sur téléphone et tablette.
   const [defile, setDefile] = useState(false);
   const [menuOuvert, setMenuOuvert] = useState(false);
   useEffect(() => {
     const surDefilement = () => setDefile(window.scrollY > 12);
+    surDefilement();
+    window.addEventListener("scroll", surDefilement, { passive: true });
+    return () => window.removeEventListener("scroll", surDefilement);
+  }, []);
+  useEffect(() => {
+    let vivant = true;
+    for (const code of ["EUR", "XOF"] as const) {
+      Promise.resolve(api.get<unknown>("/subscription/plans", { params: { currency: code } }))
+        .then((res) => {
+          const lus = lireTarifs(res?.data);
+          if (vivant && lus) setTarifs((courants) => ({ ...courants, [code]: lus }));
+        })
+        .catch(() => {});
+    }
+    return () => {
+      vivant = false;
+    };
+  }, []);
+  useEffect(() => {
+    const surDefilement = () => setEssaiFixe(window.scrollY > 700);
     surDefilement();
     window.addEventListener("scroll", surDefilement, { passive: true });
     return () => window.removeEventListener("scroll", surDefilement);
@@ -417,6 +451,25 @@ export default function LandingPage() {
   const extras = t("landing.extras", { returnObjects: true }) as string[];
   const trustItems = t("landing.trust.items", { returnObjects: true }) as string[];
   const faqItems = t("landing.faq.items", { returnObjects: true }) as { q: string; a: string }[];
+  const choixTarifaire = Boolean(tarifs.EUR && tarifs.XOF);
+  const tarifsActifs = choixTarifaire ? tarifs[devise] : undefined;
+  const PRIX_PAR_DEFAUT: Record<IdFormule, string> = { STARTER: "9€", PRO: "29€", ENTERPRISE: "49€" };
+  const prixDe = (id: IdFormule) =>
+    tarifsActifs ? formaterPrix(cycle === "ANNUAL" ? tarifsActifs[id].annual : tarifsActifs[id].monthly, devise, i18n.language) : PRIX_PAR_DEFAUT[id];
+  const equivalentMensuel = (id: IdFormule) => (tarifsActifs && cycle === "ANNUAL" ? formaterPrix(tarifsActifs[id].annual / 12, devise, i18n.language) : null);
+  const economie = tarifsActifs ? economieAnnuelle(tarifsActifs.PRO) : 0;
+  const formuleChoisie = formuleConseillee(nombreDeBiens);
+  const NOM_FORMULE: Record<IdFormule, string> = {
+    STARTER: t("landing.pricing.starter.name"),
+    PRO: t("landing.pricing.pro.name"),
+    ENTERPRISE: t("landing.pricing.enterprise.name"),
+  };
+  const parBien = tarifsActifs ? tarifsActifs[formuleChoisie].monthly / nombreDeBiens : null;
+  // Recherche dans la FAQ, sans tenir compte des accents ni de la casse.
+  const normaliser = (texte: string) => texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const questionsAffichees = faqItems
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => !recherche.trim() || normaliser(`${item.q} ${item.a}`).includes(normaliser(recherche.trim())));
 
   return (
     <div id="top" className="min-h-screen text-slate-900 selection:bg-brand-500 selection:text-white">
@@ -555,8 +608,8 @@ export default function LandingPage() {
         <div className="grid lg:grid-cols-12 gap-14 lg:gap-8 items-center">
           <div className="lg:col-span-6 text-center lg:text-left">
             <Reveal>
-              <div className="inline-flex items-center gap-2 bg-ocre/20 border border-ocre/60 rounded-full px-4 py-1.5 text-xs text-slate-900 font-medium mb-7">
-                <span className="w-2 h-2 rounded-full bg-brand-600"></span>
+              <div className="inline-flex items-center gap-2 bg-ocre/20 border border-ocre/60  px-4 py-1.5 text-xs text-slate-900 font-medium mb-7">
+                <span className="w-2 h-2  bg-brand-600"></span>
                 {t("landing.badge")}
               </div>
             </Reveal>
@@ -580,7 +633,7 @@ export default function LandingPage() {
               <div className="mt-9 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                 <Link
                   to="/inscription"
-                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-8 py-3.5 rounded-md shadow-lg shadow-brand-600/25 transition-colors"
+                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-8 py-3.5  shadow-lg shadow-brand-600/25 transition-colors"
                 >
                   {t("landing.hero.ctaTrial")}
                 </Link>
@@ -593,7 +646,7 @@ export default function LandingPage() {
                     generalement voir un visiteur qui hesite a demarrer l'essai. */}
                 <a
                   href="#pricing"
-                  className="w-full sm:w-auto text-center border-2 border-ink-900 text-slate-900 hover:bg-ink-900 hover:text-white font-semibold text-sm px-6 py-3 rounded-md transition-colors"
+                  className="w-full sm:w-auto text-center border-2 border-ink-900 text-slate-900 hover:bg-ink-900 hover:text-white font-semibold text-sm px-6 py-3  transition-colors"
                 >
                   {t("landing.hero.ctaPricing")}
                 </a>
@@ -615,6 +668,23 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* De l'inscription à la première quittance : trois feuilles, dans l'ordre. */}
+      <section aria-label={t("landing.steps.title")} className="px-6 max-w-7xl mx-auto pb-20">
+        <Reveal>
+          <ol className="grid grid-cols-1 border-2 border-ink-900 bg-white md:grid-cols-3 md:divide-x md:divide-ink-900 max-md:divide-y max-md:divide-ink-900">
+            {(["create", "add", "automate"] as const).map((cle, i) => (
+              <li key={cle} className="flex items-start gap-4 p-6">
+                <span aria-hidden="true" className="font-display text-4xl font-extrabold leading-none text-ocre">{String(i + 1).padStart(2, "0")}</span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">{t(`landing.steps.${cle}.title`)}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-700">{t(`landing.steps.${cle}.desc`)}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
+      </section>
+
       {/* Features Section : grille asymétrique */}
       <section id="features" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80">
         <EnteteSection numero="01" titre={t("landing.featuresSection.title")} sous={t("landing.featuresSection.subtitle")} />
@@ -622,11 +692,11 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-left">
           {FEATURE_CARDS.map((card, i) => (
             <Reveal key={card.key} delay={(i % 3) * 100} className={`group ${PORTEES_FONCTIONS[i]}`}>
-              <div className="relative h-full bg-white/70 border border-slate-400/70 p-6 rounded-md hover:border-ink-900 transition-colors">
+              <div className="relative h-full bg-white/70 border border-slate-400/70 p-6  hover:border-ink-900 transition-colors">
                 <span aria-hidden="true" className="absolute top-4 right-5 font-mono text-[11px] text-slate-600">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <div className={`w-11 h-11 rounded-md ${card.color} flex items-center justify-center mb-4`}>
+                <div className={`w-11 h-11  ${card.color} flex items-center justify-center mb-4`}>
                   <card.icon size={22} strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">{t(`landing.features.${card.key}.title`)}</h3>
@@ -640,7 +710,7 @@ export default function LandingPage() {
           {extras.map((extra, i) => (
             <span
               key={i}
-              className="font-mono text-[11px] uppercase tracking-wide text-slate-800 border border-slate-400/70 px-3 py-1.5 rounded-sm hover:border-ink-900 transition-colors"
+              className="font-mono text-[11px] uppercase tracking-wide text-slate-800 border border-slate-400/70 px-3 py-1.5  hover:border-ink-900 transition-colors"
             >
               {extra}
             </span>
@@ -660,7 +730,7 @@ export default function LandingPage() {
             { m: <TenantMockup />, k: "tenant" },
           ].map((item, i) => (
             <Reveal key={item.k} delay={i * 100}>
-              <div className="h-full bg-white/50 border border-slate-400/70 rounded-md p-5">
+              <div className="h-full bg-white/50 border border-slate-400/70  p-5">
                 <div className="h-44 mb-5">{item.m}</div>
                 <h3 className="text-base font-bold text-slate-900 mb-1.5">{t(`landing.productTour.${item.k}.title`)}</h3>
                 <p className="text-xs text-slate-700 leading-relaxed">{t(`landing.productTour.${item.k}.desc`)}</p>
@@ -692,7 +762,7 @@ export default function LandingPage() {
       {/* Comparison Section: Gestion Traditionnelle vs ImmoPlatform Pro */}
       <section id="compare" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-300/80">
         <Reveal className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 bg-white border border-slate-300 rounded-sm px-4 py-1.5 text-xs text-slate-800 font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 bg-white border border-slate-300  px-4 py-1.5 text-xs text-slate-800 font-semibold mb-4">
             <Scale size={13} aria-hidden="true" /> <span>{t("landing.compare.badge")}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
@@ -707,15 +777,15 @@ export default function LandingPage() {
 
           {/* Badges ROI */}
           <div className="mt-8 grid grid-cols-3 gap-3 max-w-lg mx-auto">
-            <div className="bg-white border border-slate-300 rounded-sm p-3 text-center hover:border-emerald-500/40 transition-colors">
-              <span className="block text-xl sm:text-2xl font-black text-emerald-800">-85%</span>
+            <div className="bg-white border border-slate-300  p-3 text-center hover:border-ink-900 transition-colors">
+              <span className="block text-xl sm:text-2xl font-black text-ink-900">-85%</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.adminTime")}</span>
             </div>
-            <div className="bg-white border border-slate-300 rounded-sm p-3 text-center hover:border-brand-500/40 transition-colors">
+            <div className="bg-white border border-slate-300  p-3 text-center hover:border-brand-500/40 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-brand-700">0</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.unpaidRent")}</span>
             </div>
-            <div className="bg-white border border-slate-300 rounded-sm p-3 text-center hover:border-brand-500/40 transition-colors">
+            <div className="bg-white border border-slate-300  p-3 text-center hover:border-brand-500/40 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-brand-700">100%</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.certified")}</span>
             </div>
@@ -834,7 +904,7 @@ export default function LandingPage() {
               <Reveal key={i} delay={i * 80}>
                 <div className="flex items-start gap-4 border-b border-slate-400/70 py-5 text-sm text-slate-800 leading-relaxed">
                   <span aria-hidden="true" className="font-mono text-[11px] text-slate-600 pt-0.5">{String(i + 1).padStart(2, "0")}</span>
-                  <Check size={15} strokeWidth={2.5} className="text-emerald-800 shrink-0 mt-1" aria-hidden="true" />
+                  <Check size={15} strokeWidth={2.5} className="text-ink-900 shrink-0 mt-1" aria-hidden="true" />
                   <span>{item}</span>
                 </div>
               </Reveal>
@@ -851,36 +921,55 @@ export default function LandingPage() {
             <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">{t("landing.faq.title")}</h2>
           </Reveal>
 
-          <div className="md:col-span-8 border-t border-slate-400/70">
-            {faqItems.map((item, i) => {
-              const isOpen = openFaq === i;
-              return (
-                <Reveal key={i} delay={i * 60}>
-                  <div className="border-b border-slate-400/70">
-                    <button
-                      onClick={() => setOpenFaq(isOpen ? null : i)}
-                      className="w-full flex items-center justify-between gap-4 text-left py-5"
-                    >
-                      <span className="text-base font-semibold text-slate-900">{item.q}</span>
-                      <span
-                        className={`text-xl leading-none text-orange-700 transition-transform duration-300 shrink-0 ${isOpen ? "rotate-45" : ""}`}
+          <div className="md:col-span-8">
+            {/* Chercher une question : le mot saisi filtre la liste, accents et casse ignorés. */}
+            <div className="relative mb-4">
+              <Search size={15} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="search"
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                placeholder={t("landing.faq.searchPlaceholder")}
+                aria-label={t("landing.faq.searchLabel")}
+                className="w-full border border-slate-400 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/20"
+              />
+            </div>
+            {questionsAffichees.length === 0 && (
+              <p className="border border-dashed border-slate-400 bg-white px-4 py-6 text-center text-sm text-slate-700">
+                {t("landing.faq.noResult")}{" "}
+                <button type="button" onClick={() => setRecherche("")} className="cursor-pointer font-semibold text-ink-900 underline underline-offset-4 hover:text-orange-700">
+                  {t("landing.faq.clearSearch")}
+                </button>
+              </p>
+            )}
+            <div className="border-t border-slate-400/70">
+              {questionsAffichees.map(({ item, index: i }) => {
+                const isOpen = openFaq === i || Boolean(recherche.trim() && questionsAffichees.length === 1);
+                return (
+                  <Reveal key={i}>
+                    <div className="border-b border-slate-400/70">
+                      <button
+                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                        aria-expanded={isOpen}
+                        className="w-full flex items-center justify-between gap-4 text-left py-5 cursor-pointer"
                       >
-                        +
-                      </span>
-                    </button>
-                    <div
-                      className={`grid transition-all duration-300 ease-in-out motion-reduce:transition-none ${
-                        isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                      }`}
-                    >
-                      <div className="overflow-hidden">
-                        <p className="pb-5 text-sm text-slate-700 leading-relaxed max-w-2xl">{item.a}</p>
+                        <span className="text-base font-semibold text-slate-900">{item.q}</span>
+                        <span className={`text-xl leading-none text-orange-700 transition-transform duration-300 shrink-0 ${isOpen ? "rotate-45" : ""}`}>+</span>
+                      </button>
+                      <div
+                        className={`grid transition-all duration-300 ease-in-out motion-reduce:transition-none ${
+                          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                        }`}
+                      >
+                        <div className="overflow-hidden">
+                          <p className="pb-5 text-sm text-slate-700 leading-relaxed max-w-2xl">{item.a}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Reveal>
-              );
-            })}
+                  </Reveal>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
@@ -889,13 +978,97 @@ export default function LandingPage() {
       <section id="pricing" className="py-24 px-6 max-w-7xl mx-auto border-t-2 border-ink-900/80">
         <EnteteSection numero="07" titre={t("landing.pricing.title")} sous={t("landing.pricing.subtitle")} />
 
+        {/* Devise et période : seulement quand le serveur a donné ses tarifs dans les deux devises. */}
+        {choixTarifaire && (
+          <Reveal className="mb-6 flex flex-wrap items-center gap-3">
+            <div role="group" aria-label={t("landing.pricing.currencyLabel")} className="flex border border-slate-400 bg-white">
+              {(["EUR", "XOF"] as const).map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={devise === code}
+                  onClick={() => setDevise(code)}
+                  className={`cursor-pointer border-r border-slate-400 px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors last:border-r-0 ${
+                    devise === code ? "bg-ink-900 text-white" : "text-slate-800 hover:bg-slate-100"
+                  }`}
+                >
+                  {code === "EUR" ? "EUR €" : "XOF FCFA"}
+                </button>
+              ))}
+            </div>
+            <div role="group" aria-label={t("landing.pricing.cycleLabel")} className="flex border border-slate-400 bg-white">
+              {(["MONTHLY", "ANNUAL"] as const).map((valeur) => (
+                <button
+                  key={valeur}
+                  type="button"
+                  aria-pressed={cycle === valeur}
+                  onClick={() => setCycle(valeur)}
+                  className={`cursor-pointer border-r border-slate-400 px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors last:border-r-0 ${
+                    cycle === valeur ? "bg-ink-900 text-white" : "text-slate-800 hover:bg-slate-100"
+                  }`}
+                >
+                  {valeur === "MONTHLY" ? t("landing.pricing.monthly") : t("landing.pricing.annual")}
+                </button>
+              ))}
+            </div>
+            {economie > 0 && <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">{t("landing.pricing.annualSaving", { pct: economie })}</p>}
+          </Reveal>
+        )}
+
+        {/* Trouver sa formule : le nombre de biens à gérer, et la plus petite formule qui les couvre. */}
+        <Reveal className="mb-8">
+          <div className="border-[1.5px] border-ink-900 bg-white">
+            <div className="flex items-baseline gap-3 border-b border-ink-900 bg-slate-50 px-5 py-3">
+              <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">+</span>
+              <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("landing.pricing.advisor.title")}</h3>
+            </div>
+            <div className="grid items-center gap-6 p-5 md:grid-cols-2 md:p-6">
+              <div>
+                <label htmlFor="nombre-de-biens" className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-700">
+                  {t("landing.pricing.advisor.label")}
+                </label>
+                <div className="mt-3 flex items-center gap-4">
+                  <input
+                    id="nombre-de-biens"
+                    type="range"
+                    min={1}
+                    max={60}
+                    value={nombreDeBiens}
+                    onChange={(e) => {
+                      setNombreDeBiens(Number(e.target.value));
+                      setConseilDemande(true);
+                    }}
+                    className="h-2 flex-1 cursor-pointer accent-ink-900"
+                  />
+                  <output htmlFor="nombre-de-biens" className="w-14 border border-ink-900 py-1 text-center font-mono text-sm font-bold tabular-nums text-ink-900">
+                    {nombreDeBiens}
+                  </output>
+                </div>
+              </div>
+              <div aria-live="polite" className="border-l-4 border-orange-700 bg-slate-50 px-4 py-3">
+                <p className="text-sm text-slate-800">
+                  {t("landing.pricing.advisor.result", { count: nombreDeBiens })} <strong className="text-ink-900">{NOM_FORMULE[formuleChoisie]}</strong>
+                </p>
+                <p className="mt-1 font-mono text-[11px] text-slate-700">
+                  {PLAFOND_BIENS[formuleChoisie] === null
+                    ? t("landing.pricing.advisor.unlimited")
+                    : t("landing.pricing.advisor.upTo", { max: PLAFOND_BIENS[formuleChoisie] })}
+                  {" · "}
+                  {prixDe(formuleChoisie)} {cycle === "ANNUAL" && tarifsActifs ? t("landing.pricing.perYear") : t("landing.pricing.perMonth")}
+                  {parBien !== null && ` · ${t("landing.pricing.advisor.perProperty", { price: formaterPrix(parBien, devise, i18n.language) })}`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
         <Reveal>
           <div className="grid grid-cols-1 divide-y divide-slate-400 border-2 border-ink-900 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
             {(
               [
-                { cle: "starter", id: "STARTER", prix: "9€", fonctionnalites: starterFeatures, populaire: false },
-                { cle: "pro", id: "PRO", prix: "29€", fonctionnalites: proFeatures, populaire: true },
-                { cle: "enterprise", id: "ENTERPRISE", prix: "49€", fonctionnalites: enterpriseFeatures, populaire: false },
+                { cle: "starter", id: "STARTER", fonctionnalites: starterFeatures, populaire: false },
+                { cle: "pro", id: "PRO", fonctionnalites: proFeatures, populaire: true },
+                { cle: "enterprise", id: "ENTERPRISE", fonctionnalites: enterpriseFeatures, populaire: false },
               ] as const
             ).map((formule) => (
               <article key={formule.cle} className="flex flex-col">
@@ -906,21 +1079,28 @@ export default function LandingPage() {
                   }`}
                 >
                   <span className="uppercase">{t(`landing.pricing.${formule.cle}.name`)}</span>
-                  {formule.populaire && <span>{t("landing.pricing.pro.badge")}</span>}
+                  {conseilDemande && formule.id === formuleChoisie ? (
+                    <span className="[text-transform:uppercase] bg-white px-1.5 py-0.5 text-ink-900">{t("landing.pricing.advisor.forYou", { count: nombreDeBiens })}</span>
+                  ) : (
+                    formule.populaire && <span>{t("landing.pricing.pro.badge")}</span>
+                  )}
                 </div>
 
                 <div className="flex flex-1 flex-col justify-between p-6 sm:p-8">
                   <div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-4xl font-extrabold tabular-nums text-slate-900">{formule.prix}</span>
-                      <span className="text-xs text-slate-700">{t("landing.pricing.perMonth")}</span>
+                      <span className="text-4xl font-extrabold tabular-nums text-slate-900">{prixDe(formule.id)}</span>
+                      <span className="text-xs text-slate-700">{cycle === "ANNUAL" && tarifsActifs ? t("landing.pricing.perYear") : t("landing.pricing.perMonth")}</span>
                     </div>
+                    {equivalentMensuel(formule.id) && (
+                      <p className="mt-1 font-mono text-[11px] text-slate-600">{t("landing.pricing.monthlyEquivalent", { price: equivalentMensuel(formule.id) })}</p>
+                    )}
                     <p className="mt-2 text-xs text-slate-700">{t(`manager.subscription.planDescriptions.${formule.id}`)}</p>
                     <ul className="mt-6 space-y-3 border-t border-slate-300 pt-5 text-xs text-slate-800">
                       {formule.fonctionnalites.map((feat, i) => (
                         <li key={i} className="flex items-start gap-2.5">
-                          <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-emerald-700 bg-emerald-50">
-                            <Check size={11} strokeWidth={3} className="text-emerald-800" aria-hidden="true" />
+                          <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-ink-900 bg-white">
+                            <Check size={11} strokeWidth={3} className="text-ink-900" aria-hidden="true" />
                           </span>
                           {feat}
                         </li>
@@ -945,7 +1125,7 @@ export default function LandingPage() {
       {/* Final CTA Banner : cartouche de plan */}
       <section className="px-6 max-w-7xl mx-auto pb-24">
         <Reveal>
-          <div className="overflow-hidden border-2 border-ink-900 bg-white rounded-md">
+          <div className="overflow-hidden border-2 border-ink-900 bg-white ">
             <div aria-hidden="true" className="bande-motif h-3" />
             <div className="grid md:grid-cols-12 gap-8 items-center px-8 py-12 md:px-12">
               <div className="md:col-span-8">
@@ -957,7 +1137,7 @@ export default function LandingPage() {
               <div className="md:col-span-4 md:text-right">
                 <Link
                   to="/inscription"
-                  className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm px-8 py-3.5 rounded-md shadow-lg shadow-brand-600/25 transition-colors"
+                  className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm px-8 py-3.5  shadow-lg shadow-brand-600/25 transition-colors"
                 >
                   {t("landing.finalCta.cta")}
                 </Link>
@@ -967,6 +1147,19 @@ export default function LandingPage() {
         </Reveal>
       </section>
       </main>
+
+      {!user && (
+        <div
+          className={`fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] border-ink-900 bg-white px-4 py-3 transition-transform duration-300 lg:hidden motion-reduce:transition-none ${
+            essaiFixe && !menuOuvert ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <Link to="/inscription" tabIndex={essaiFixe ? 0 : -1} className="flex items-center justify-center gap-2 bg-ink-900 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-700">
+            {t("landing.stickyCta")}
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
       {/* Footer : pied de plan */}
       <PiedDeSite
