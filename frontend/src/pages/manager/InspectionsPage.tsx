@@ -188,9 +188,9 @@ export default function InspectionsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">{t("manager.inspections.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">{t("manager.inspections.count", { count: inspections.length })}</p>
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.inspections.count", { count: inspections.length })}</p>
         </div>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg shadow-brand-600/20 transition-all">
+        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 shadow-sm transition-colors">
           {t("manager.inspections.addBtn")}
         </button>
       </div>
@@ -253,11 +253,11 @@ export default function InspectionsPage() {
           </div>
 
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.roomsTitle")}</h4>
+            <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.roomsTitle")}</h4>
             <div className="space-y-2">
               {editForm.rooms.length === 0 && <p className="text-xs text-slate-600">{t("manager.inspections.noRooms")}</p>}
               {editForm.rooms.map((room, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_1fr_auto] gap-2 items-start bg-slate-50 rounded-lg p-2.5">
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_1fr_auto] gap-2 items-start bg-slate-50 border border-slate-300 p-2.5">
                   <input
                     aria-label={t("manager.inspections.roomName")}
                     placeholder={t("manager.inspections.roomName")}
@@ -284,19 +284,19 @@ export default function InspectionsPage() {
                     onChange={(e) => updateRoom(i, { notes: e.target.value })}
                     className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
                   />
-                  <button type="button" onClick={() => removeRoom(i)} className="text-red-600 hover:underline text-xs px-2 py-1.5">
+                  <button type="button" onClick={() => removeRoom(i)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors px-2 py-1.5">
                     {t("manager.inspections.removeRow")}
                   </button>
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addRoom} disabled={editForm.rooms.length >= 100} className="mt-2 text-brand-600 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
+            <button type="button" onClick={addRoom} disabled={editForm.rooms.length >= 100} className="mt-2 text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors disabled:opacity-50">
               {t("manager.inspections.addRoom")}
             </button>
           </div>
 
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.metersTitle")}</h4>
+            <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.metersTitle")}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="meter-electricity" className="block text-xs text-slate-600 mb-1">{t("manager.inspections.meterElectricity")}</label>
@@ -314,11 +314,11 @@ export default function InspectionsPage() {
           </div>
 
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.keysTitle")}</h4>
+            <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.keysTitle")}</h4>
             <div className="space-y-2">
               {editForm.keys.length === 0 && <p className="text-xs text-slate-600">{t("manager.inspections.noKeys")}</p>}
               {editForm.keys.map((key, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_auto] gap-2 items-start bg-slate-50 rounded-lg p-2.5">
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_auto] gap-2 items-start bg-slate-50 border border-slate-300 p-2.5">
                   <input
                     aria-label={t("manager.inspections.keyLabel")}
                     placeholder={t("manager.inspections.keyLabel")}
@@ -337,19 +337,19 @@ export default function InspectionsPage() {
                     onChange={(e) => updateKey(i, { quantity: Number(e.target.value) })}
                     className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
                   />
-                  <button type="button" onClick={() => removeKey(i)} className="text-red-600 hover:underline text-xs px-2 py-1.5">
+                  <button type="button" onClick={() => removeKey(i)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors px-2 py-1.5">
                     {t("manager.inspections.removeRow")}
                   </button>
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addKey} disabled={editForm.keys.length >= 50} className="mt-2 text-brand-600 hover:underline text-xs font-semibold disabled:opacity-50 disabled:no-underline">
+            <button type="button" onClick={addKey} disabled={editForm.keys.length >= 50} className="mt-2 text-xs font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors disabled:opacity-50">
               {t("manager.inspections.addKey")}
             </button>
           </div>
 
           <div>
-            <label htmlFor="inspection-comments" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">{t("manager.inspections.generalComments")}</label>
+            <label htmlFor="inspection-comments" className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.generalComments")}</label>
             <textarea
               id="inspection-comments"
               rows={3}
@@ -408,8 +408,12 @@ export default function InspectionsPage() {
               <tr key={insp.id}>
                 <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={insp.property?.title} id={insp.property?.id} /></td>
                 <td className="px-4 py-3 text-slate-600">{insp.tenant?.firstName} {insp.tenant?.lastName}</td>
-                <td className="px-4 py-3 text-slate-600">{insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}</td>
-                <td className="px-4 py-3 text-slate-600 text-xs">{formaterJour(insp.inspectionDate, i18n.language)}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-block border px-2 py-0.5 rounded-sm font-mono text-[10px] font-medium uppercase tracking-wider whitespace-nowrap ${insp.type === "ENTRY" ? "border-emerald-600/50 bg-emerald-50 text-emerald-800" : "border-orange-700/50 bg-orange-50 text-orange-800"}`}>
+                    {insp.type === "ENTRY" ? t("manager.inspections.typeEntry") : t("manager.inspections.typeExit")}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap tabular-nums">{formaterJour(insp.inspectionDate, i18n.language)}</td>
                 <td className="px-4 py-3"><Badge status={insp.status} /></td>
                 <td className="px-4 py-3 text-xs space-y-1">
                   <div className="flex items-center gap-1">
@@ -420,7 +424,7 @@ export default function InspectionsPage() {
                       </span>
                     ) : insp.status === "COMPLETED" ? (
                       <Bulle texte={t("manager.tips.inspectionSign")}>
-                      <button onClick={() => setSigningInspection(insp)} className="text-brand-600 font-semibold hover:underline inline-flex items-center gap-1">
+                      <button onClick={() => setSigningInspection(insp)} className="font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors inline-flex items-center gap-1">
                         <PenLine size={13} aria-hidden="true" /> {t("manager.inspections.sign")}
                       </button>
                       </Bulle>
@@ -441,24 +445,24 @@ export default function InspectionsPage() {
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                <td className="px-4 py-3 text-right whitespace-nowrap [&>*]:ml-2">
                   {insp.status === "DRAFT" && (
                     <Bulle texte={t("manager.tips.inspectionEdit")}>
-                    <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition-colors">
+                    <button onClick={() => openEdit(insp)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100">
                       {t("manager.inspections.edit")}
                     </button>
                     </Bulle>
                   )}
                   {insp.status === "COMPLETED" && (
                     <Bulle texte={t("manager.tips.inspectionView")}>
-                    <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium px-2.5 py-1 rounded-lg transition-colors">
+                    <button onClick={() => setViewingReportInspection(insp)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50">
                       {t("manager.inspections.viewReport")}
                     </button>
                     </Bulle>
                   )}
                   {insp.status === "DRAFT" && (
                     <Bulle texte={t("manager.tips.inspectionDelete")}>
-                    <button onClick={() => handleDelete(insp)} className="text-red-600 hover:underline text-xs">
+                    <button onClick={() => handleDelete(insp)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">
                       {t("common.actions.delete")}
                     </button>
                     </Bulle>
@@ -488,28 +492,28 @@ export default function InspectionsPage() {
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100">
               {insp.status === "DRAFT" && (
                 <Bulle texte={t("manager.tips.inspectionEdit")}>
-                <button onClick={() => openEdit(insp)} className="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-lg">
+                <button onClick={() => openEdit(insp)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100">
                   {t("manager.inspections.edit")}
                 </button>
                 </Bulle>
               )}
               {insp.status === "COMPLETED" && !insp.signedByManagerAt && (
                 <Bulle texte={t("manager.tips.inspectionSign")}>
-                <button onClick={() => setSigningInspection(insp)} className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                <button onClick={() => setSigningInspection(insp)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50">
                   <PenLine size={12} aria-hidden="true" /> {t("manager.inspections.sign")}
                 </button>
                 </Bulle>
               )}
               {insp.status === "COMPLETED" && (
                 <Bulle texte={t("manager.tips.inspectionView")}>
-                <button onClick={() => setViewingReportInspection(insp)} className="text-xs bg-brand-50 text-brand-700 font-medium px-2.5 py-1 rounded-lg">
+                <button onClick={() => setViewingReportInspection(insp)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50">
                   {t("manager.inspections.viewReport")}
                 </button>
                 </Bulle>
               )}
               {insp.status === "DRAFT" && (
                 <Bulle texte={t("manager.tips.inspectionDelete")}>
-                <button onClick={() => handleDelete(insp)} className="text-red-600 hover:underline text-xs">
+                <button onClick={() => handleDelete(insp)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">
                   {t("common.actions.delete")}
                 </button>
                 </Bulle>
