@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AxiosError } from "axios";
 import { MemoryRouter } from "react-router-dom";
@@ -225,5 +225,18 @@ describe("ImportPage", () => {
     await user.click(screen.getByRole("radio", { name: "Contrats" }));
     await user.click(screen.getByRole("button", { name: /Télécharger le modèle/ }));
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/import/modele/contracts", { responseType: "blob" }));
+  });
+
+  it("accepte un fichier glissé sur la zone de dépôt, comme un fichier choisi par le sélecteur", async () => {
+    mockedApi.post.mockResolvedValueOnce({ data: analyse() });
+    renderPage();
+
+    const zone = screen.getByText("ou glissez-le ici").closest("div") as HTMLElement;
+    const fichier = new File([CSV], "biens.csv", { type: "text/csv" });
+    fireEvent.drop(zone, { dataTransfer: { files: [fichier] } });
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/import/preview", { type: "properties", csv: CSV }));
+    expect(await screen.findByText("Studio A — 1 rue X")).toBeInTheDocument();
+    expect(screen.getByText("biens.csv")).toBeInTheDocument();
   });
 });
