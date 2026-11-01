@@ -1797,6 +1797,7 @@ const es: TranslationSchema = {
       subtitle: "Síntesis anual de ingresos, gastos y resultado neto — base de su declaración de rentas inmobiliarias",
       errorTitle: "Error al cargar el balance fiscal",
       yearLabel: "Ejercicio",
+      sections: { summary: "Resumen", analysis: "Análisis", perProperty: "Por inmueble" },
       downloadGrandLivre: "Descargar el Libro Mayor (CSV)",
       downloadingGrandLivre: "Generando...",
       downloadFEC: "Exportación FEC",

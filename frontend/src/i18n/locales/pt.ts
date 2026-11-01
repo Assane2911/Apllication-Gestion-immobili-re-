@@ -1795,6 +1795,7 @@ const pt: TranslationSchema = {
       subtitle: "Síntese anual das receitas, despesas e resultado líquido — base da sua declaração de rendimentos prediais",
       errorTitle: "Erro ao carregar o balanço fiscal",
       yearLabel: "Exercício",
+      sections: { summary: "Resumo", analysis: "Análise", perProperty: "Por imóvel" },
       downloadGrandLivre: "Descarregar o Livro-Razão (CSV)",
       downloadingGrandLivre: "A gerar...",
       downloadFEC: "Exportação FEC",
