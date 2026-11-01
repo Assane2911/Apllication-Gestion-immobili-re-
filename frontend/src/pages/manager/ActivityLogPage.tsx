@@ -24,7 +24,7 @@ const iconByEntityType: Record<string, typeof Building2> = {
 };
 
 export default function ActivityLogPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [entityType, setEntityType] = useState("ALL");
