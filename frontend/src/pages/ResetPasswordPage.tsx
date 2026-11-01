@@ -1,37 +1,18 @@
-import { useState } from "react";
+import { Check, Circle, Eye, EyeOff, Lock } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import Logo from "../components/Logo";
 import { api, apiErrorMessage } from "../api/client";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-import Reveal from "../components/Reveal";
+import AuthLayout from "../components/AuthLayout";
+import ChampAuth from "../components/ChampAuth";
+import IndicateurForce from "../components/IndicateurForce";
 import Seo from "../components/Seo";
 
-function LockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
-      <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function EyeIcon({ off }: { off: boolean }) {
-  return off ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path
-        d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24M6.6 6.7C4.3 8.2 2.7 10.3 2 12c1.6 3.8 5.6 7 10 7 1.6 0 3.1-.4 4.4-1.1M9.9 4.2C10.6 4.1 11.3 4 12 4c4.4 0 8.4 3.2 10 7-.5 1.2-1.2 2.4-2.1 3.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M2 12c1.6-3.8 5.6-7 10-7s8.4 3.2 10 7c-1.6 3.8-5.6 7-10 7s-8.4-3.2-10-7Z" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
+const BOUTON_PRINCIPAL =
+  "flex w-full cursor-pointer items-center justify-center gap-2 bg-ink-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const MESSAGE_ERREUR = "border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800";
+/** Délai avant la redirection vers la connexion une fois le mot de passe changé. */
+const DELAI_REDIRECTION_MS = 2500;
 
 export default function ResetPasswordPage() {
   const { t } = useTranslation();
@@ -45,6 +26,13 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // La redirection part d'un effet (et non d'un minuteur lancé dans le gestionnaire) : quitter la page l'annule.
+  useEffect(() => {
+    if (!done) return;
+    const minuteur = setTimeout(() => navigate("/login"), DELAI_REDIRECTION_MS);
+    return () => clearTimeout(minuteur);
+  }, [done, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,7 +51,6 @@ export default function ResetPasswordPage() {
     try {
       await api.post("/auth/reset-password", { token, password });
       setDone(true);
-      setTimeout(() => navigate("/login"), 2500);
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
@@ -72,116 +59,100 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="relative isolate min-h-screen flex items-center justify-center px-6 py-12">
+    <AuthLayout page="resetPassword" retour={t("auth.forgotPassword.backToLogin")} retourVers="/login">
       <Seo title={`${t("seo.resetPassword.title")} | ${t("common.appName")}`} noindex />
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-        <Link to="/login" className="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors">
-          {t("auth.forgotPassword.backToLogin")}
-        </Link>
-        <LanguageSwitcher />
-      </div>
 
-      <Reveal className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <Logo />
-          <span className="font-bold text-lg tracking-tight text-slate-900">{t("common.appName")}</span>
+      {!token ? (
+        <div>
+          <h1 className="sr-only">{t("auth.resetPassword.title")}</h1>
+          <p className="border border-red-300 bg-red-50 px-3 py-3 text-sm text-red-800">{t("auth.resetPassword.missingToken")}</p>
+          <Link to="/mot-de-passe-oublie" className={`mt-6 ${BOUTON_PRINCIPAL}`}>
+            {t("auth.resetPassword.requestNewLink")}
+          </Link>
         </div>
-
-        {!token ? (
-          <div className="text-center">
-            <h1 className="sr-only">{t("auth.resetPassword.title")}</h1>
-            <p className="text-sm text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-3">
-              {t("auth.resetPassword.missingToken")}
-            </p>
-            <Link
-              to="/mot-de-passe-oublie"
-              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-            >
-              {t("auth.resetPassword.requestNewLink")}
-            </Link>
+      ) : done ? (
+        <div>
+          <div className="flex size-12 items-center justify-center border border-slate-300 bg-slate-50 text-ink-900">
+            <Lock size={22} aria-hidden="true" />
           </div>
-        ) : done ? (
-          <div className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center mb-4">
-              <LockIcon />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">{t("auth.resetPassword.doneTitle")}</h1>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">{t("auth.resetPassword.doneSubtitle")}</p>
+          <h1 className="mt-4 text-xl font-bold text-slate-900">{t("auth.resetPassword.doneTitle")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("auth.resetPassword.doneSubtitle")}</p>
+          {/* Le temps qu'il reste avant la redirection, en barre qui se remplit. */}
+          <div aria-hidden="true" className="mt-5 h-1.5 bg-slate-200">
+            <div className="h-full bg-ink-900 motion-safe:animate-[remplir_2.5s_linear_forwards]" />
           </div>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold text-slate-900 text-center">{t("auth.resetPassword.title")}</h1>
-            <p className="text-sm text-slate-600 text-center mt-1.5">{t("auth.resetPassword.subtitle")}</p>
+          <Link to="/login" className={`mt-6 ${BOUTON_PRINCIPAL}`}>
+            {t("auth.resetPassword.loginNow")}
+          </Link>
+        </div>
+      ) : (
+        <>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">{t("auth.cartouche.resetPassword")}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">{t("auth.resetPassword.title")}</h1>
+          <p className="mt-1.5 text-sm text-slate-600">{t("auth.resetPassword.subtitle")}</p>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-              <div>
-                <label htmlFor="reset-password-new" className="block text-xs font-medium text-slate-600 mb-1.5">
-                  {t("auth.resetPassword.newPassword")}
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                    <LockIcon />
-                  </span>
-                  <input
-                    id="reset-password-new"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    maxLength={128}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    placeholder={t("auth.login.passwordPlaceholder")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
-                  >
-                    <EyeIcon off={showPassword} />
-                  </button>
-                </div>
-              </div>
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+            <ChampAuth
+              id="reset-password-new"
+              label={t("auth.resetPassword.newPassword")}
+              icone={Lock}
+              type={showPassword ? "text" : "password"}
+              required
+              maxLength={128}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t("auth.login.passwordPlaceholder")}
+              droite={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center text-slate-500 transition-colors hover:text-ink-900"
+                >
+                  {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                </button>
+              }
+              aide={
+                <>
+                  <p className="mt-1.5 text-[11px] text-slate-600">{t("auth.register.passwordHint")}</p>
+                  <IndicateurForce motDePasse={password} />
+                </>
+              }
+            />
 
-              <div>
-                <label htmlFor="reset-password-confirm" className="block text-xs font-medium text-slate-600 mb-1.5">
-                  {t("auth.resetPassword.confirmPassword")}
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                    <LockIcon />
-                  </span>
-                  <input
-                    id="reset-password-confirm"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    maxLength={128}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    placeholder={t("auth.login.passwordPlaceholder")}
-                  />
-                </div>
-              </div>
+            <ChampAuth
+              id="reset-password-confirm"
+              label={t("auth.resetPassword.confirmPassword")}
+              icone={Lock}
+              type={showPassword ? "text" : "password"}
+              required
+              maxLength={128}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder={t("auth.login.passwordPlaceholder")}
+              aide={
+                confirmPassword !== "" && (
+                  <p className={`mt-1.5 flex items-center gap-1.5 font-mono text-[11px] ${confirmPassword === password ? "text-ink-900" : "text-orange-700"}`}>
+                    {confirmPassword === password ? <Check size={12} aria-hidden="true" /> : <Circle size={9} aria-hidden="true" />}
+                    {confirmPassword === password ? t("auth.register.match") : t("auth.register.noMatch")}
+                  </p>
+                )
+              }
+            />
 
-              {error && (
-                <p role="alert" className="text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                  {error}
-                </p>
-              )}
+            {error && (
+              <p role="alert" className={MESSAGE_ERREUR}>
+                {error}
+              </p>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-              >
-                {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                {loading ? t("auth.resetPassword.submitting") : t("auth.resetPassword.submit")}
-              </button>
-            </form>
-          </>
-        )}
-      </Reveal>
-    </main>
+            <button type="submit" disabled={loading} className={BOUTON_PRINCIPAL}>
+              {loading && <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+              {loading ? t("auth.resetPassword.submitting") : t("auth.resetPassword.submit")}
+            </button>
+          </form>
+        </>
+      )}
+    </AuthLayout>
   );
 }

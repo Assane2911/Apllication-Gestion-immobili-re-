@@ -401,6 +401,16 @@ html
 }
 
 /* Menu plein écran de l'accueil : s'ouvre en cercle depuis le bouton, puis les entrées montent l'une après l'autre. */
+/* Barre de progression qui se remplit pendant le délai avant une redirection. */
+@keyframes remplir {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
 @keyframes ouvrir-menu {
   from {
     clip-path: circle(0% at calc(100% - 2.5rem) 2.25rem);

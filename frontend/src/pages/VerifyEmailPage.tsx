@@ -2,12 +2,13 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import Logo from "../components/Logo";
 import { apiErrorMessage } from "../api/client";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-import Reveal from "../components/Reveal";
+import AuthLayout from "../components/AuthLayout";
 import Seo from "../components/Seo";
 import { useAuth } from "../context/auth";
+
+const BOUTON_PRINCIPAL =
+  "flex w-full cursor-pointer items-center justify-center gap-2 bg-ink-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
 
 export default function VerifyEmailPage() {
   const { t } = useTranslation();
@@ -41,66 +42,48 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <main className="relative isolate min-h-screen flex items-center justify-center px-6 py-12">
+    <AuthLayout page="verifyEmail" retour={t("auth.verifyEmail.backToLogin")} retourVers="/login">
       <Seo title={`${t("seo.verifyEmail.title")} | ${t("common.appName")}`} noindex />
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-        <Link to="/login" className="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors">
-          {t("auth.verifyEmail.backToLogin")}
-        </Link>
-        <LanguageSwitcher />
-      </div>
 
-      <Reveal className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <Logo />
-          <span className="font-bold text-lg tracking-tight text-slate-900">{t("common.appName")}</span>
+      {!token ? (
+        <div>
+          <h1 className="sr-only">{t("auth.verifyEmail.errorTitle")}</h1>
+          <p className="border border-red-300 bg-red-50 px-3 py-3 text-sm text-red-800">{t("auth.verifyEmail.missingToken")}</p>
+          <Link to="/login" className={`mt-6 ${BOUTON_PRINCIPAL}`}>
+            {t("auth.verifyEmail.backToLogin")}
+          </Link>
         </div>
-
-        {!token ? (
-          <div className="text-center">
-            <h1 className="sr-only">{t("auth.verifyEmail.errorTitle")}</h1>
-            <p className="text-sm text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-3">
-              {t("auth.verifyEmail.missingToken")}
-            </p>
-            <Link
-              to="/login"
-              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-            >
-              {t("auth.verifyEmail.backToLogin")}
-            </Link>
+      ) : status === "verifying" ? (
+        <div>
+          <div className="flex size-12 items-center justify-center border border-slate-300 bg-slate-50">
+            <span className="size-5 animate-spin rounded-full border-2 border-ink-900/30 border-t-ink-900" />
           </div>
-        ) : status === "verifying" ? (
-          <div className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-brand-500/15 text-brand-600 flex items-center justify-center mb-4">
-              <span className="w-5 h-5 border-2 border-brand-400/40 border-t-brand-400 rounded-full animate-spin" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">{t("auth.verifyEmail.verifying")}</h1>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">{t("auth.verifyEmail.verifyingSubtitle")}</p>
+          <h1 className="mt-4 text-xl font-bold text-slate-900">{t("auth.verifyEmail.verifying")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("auth.verifyEmail.verifyingSubtitle")}</p>
+        </div>
+      ) : status === "success" ? (
+        <div role="status">
+          <div className="flex size-12 items-center justify-center border border-slate-300 bg-slate-50 text-ink-900">
+            <CheckCircle2 size={24} strokeWidth={1.8} aria-hidden="true" />
           </div>
-        ) : status === "success" ? (
-          <div role="status" className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center mb-4">
-              <CheckCircle2 size={24} strokeWidth={1.8} />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">{t("auth.verifyEmail.successTitle")}</h1>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">{t("auth.verifyEmail.successSubtitle")}</p>
+          <h1 className="mt-4 text-xl font-bold text-slate-900">{t("auth.verifyEmail.successTitle")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("auth.verifyEmail.successSubtitle")}</p>
+          <div aria-hidden="true" className="mt-5 h-1.5 bg-slate-200">
+            <div className="h-full bg-ink-900 motion-safe:animate-[remplir_2.5s_linear_forwards]" />
           </div>
-        ) : (
-          <div className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-red-500/15 text-red-600 flex items-center justify-center mb-4">
-              <XCircle size={24} strokeWidth={1.8} />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">{t("auth.verifyEmail.errorTitle")}</h1>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">{error ?? t("auth.verifyEmail.errorSubtitle")}</p>
-            <Link
-              to="/login"
-              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-            >
-              {t("auth.verifyEmail.backToLogin")}
-            </Link>
+        </div>
+      ) : (
+        <div>
+          <div className="flex size-12 items-center justify-center border border-red-300 bg-red-50 text-red-700">
+            <XCircle size={24} strokeWidth={1.8} aria-hidden="true" />
           </div>
-        )}
-      </Reveal>
-    </main>
+          <h1 className="mt-4 text-xl font-bold text-slate-900">{t("auth.verifyEmail.errorTitle")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{error ?? t("auth.verifyEmail.errorSubtitle")}</p>
+          <Link to="/login" className={`mt-6 ${BOUTON_PRINCIPAL}`}>
+            {t("auth.verifyEmail.backToLogin")}
+          </Link>
+        </div>
+      )}
+    </AuthLayout>
   );
 }

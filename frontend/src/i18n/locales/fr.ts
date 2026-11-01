@@ -504,6 +504,9 @@ const fr = {
 
   auth: {
     cartouche: {
+      forgotPassword: "Récupération",
+      resetPassword: "Réinitialisation",
+      verifyEmail: "Vérification",
       login: "Connexion",
       register: "Inscription",
       sheet: "Feuille",
@@ -604,6 +607,11 @@ const fr = {
       },
     },
     forgotPassword: {
+      sentTo: "Envoyé à {{email}}",
+      resend: "Renvoyer le lien",
+      resendIn: "Renvoyer dans {{count}} s",
+      resent: "Un nouveau lien vient d'être envoyé.",
+      changeAddress: "Utiliser une autre adresse",
       backToLogin: "← Retour à la connexion",
       backToLoginButton: "Retour à la connexion",
       title: "Mot de passe oublié",
@@ -614,6 +622,7 @@ const fr = {
       sentSubtitle: "Si un compte existe avec cet email, vous allez recevoir un lien de réinitialisation dans quelques instants. Pensez à vérifier vos spams.",
     },
     resetPassword: {
+      loginNow: "Se connecter maintenant",
       title: "Nouveau mot de passe",
       subtitle: "Choisissez un nouveau mot de passe pour votre compte.",
       newPassword: "Nouveau mot de passe",

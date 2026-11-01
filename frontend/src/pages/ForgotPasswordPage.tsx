@@ -1,20 +1,17 @@
-import { useState } from "react";
+import { Mail } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import Logo from "../components/Logo";
 import { api, apiErrorMessage } from "../api/client";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-import Reveal from "../components/Reveal";
+import AuthLayout from "../components/AuthLayout";
+import ChampAuth from "../components/ChampAuth";
 import Seo from "../components/Seo";
 
-function MailIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
-      <path d="M3.5 6.5 12 13 20.5 6.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const BOUTON_PRINCIPAL =
+  "flex w-full cursor-pointer items-center justify-center gap-2 bg-ink-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const MESSAGE_ERREUR = "border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800";
+/** Délai avant de pouvoir redemander un lien : évite de saturer la boîte du destinataire d'un double clic nerveux. */
+const DELAI_RENVOI_SECONDES = 30;
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
@@ -22,9 +19,17 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  // Secondes restantes avant de pouvoir renvoyer le lien ; 0 = renvoi possible.
+  const [attente, setAttente] = useState(0);
+  const [renvoye, setRenvoye] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (attente <= 0) return;
+    const minuteur = setTimeout(() => setAttente((s) => s - 1), 1000);
+    return () => clearTimeout(minuteur);
+  }, [attente]);
+
+  async function demander() {
     setError(null);
     setLoading(true);
     try {
@@ -33,85 +38,109 @@ export default function ForgotPasswordPage() {
       // de succès, que l'adresse soit inscrite ou non.
       await api.post("/auth/forgot-password", { email });
       setSent(true);
+      setAttente(DELAI_RENVOI_SECONDES);
+      return true;
     } catch (err) {
       setError(apiErrorMessage(err));
+      return false;
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setRenvoye(false);
+    await demander();
+  }
+
+  async function renvoyer() {
+    setRenvoye(false);
+    if (await demander()) setRenvoye(true);
+  }
+
   return (
-    <main className="relative isolate min-h-screen flex items-center justify-center px-6 py-12">
+    <AuthLayout page="forgotPassword" retour={t("auth.forgotPassword.backToLogin")} retourVers="/login">
       <Seo title={`${t("seo.forgotPassword.title")} | ${t("common.appName")}`} description={t("seo.forgotPassword.description")} canonical="/mot-de-passe-oublie" />
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-        <Link to="/login" className="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors">
-          {t("auth.forgotPassword.backToLogin")}
-        </Link>
-        <LanguageSwitcher />
-      </div>
 
-      <Reveal className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <Logo />
-          <span className="font-bold text-lg tracking-tight text-slate-900">{t("common.appName")}</span>
-        </div>
-
-        {sent ? (
-          <div className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center mb-4">
-              <MailIcon />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">{t("auth.forgotPassword.sentTitle")}</h1>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">{t("auth.forgotPassword.sentSubtitle")}</p>
-            <Link
-              to="/login"
-              className="mt-6 inline-block w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-            >
-              {t("auth.forgotPassword.backToLoginButton")}
-            </Link>
+      {sent ? (
+        <div>
+          <div className="flex size-12 items-center justify-center border border-slate-300 bg-slate-50 text-ink-900">
+            <Mail size={22} aria-hidden="true" />
           </div>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold text-slate-900 text-center">{t("auth.forgotPassword.title")}</h1>
-            <p className="text-sm text-slate-600 text-center mt-1.5">{t("auth.forgotPassword.subtitle")}</p>
+          <h1 className="mt-4 text-xl font-bold text-slate-900">{t("auth.forgotPassword.sentTitle")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("auth.forgotPassword.sentSubtitle")}</p>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-              <div>
-                <label htmlFor="forgot-password-email" className="block text-xs font-medium text-slate-600 mb-1.5">{t("auth.login.email")}</label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                    <MailIcon />
-                  </span>
-                  <input
-                    id="forgot-password-email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 pl-10 pr-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-                    placeholder={t("auth.login.emailPlaceholder")}
-                  />
-                </div>
-              </div>
+          {/* L'adresse saisie, pour repérer une faute de frappe sans recommencer. */}
+          <p className="mt-5 border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-ink-900 shadow-[inset_4px_0_0_var(--color-ink-900)]">
+            {t("auth.forgotPassword.sentTo", { email })}
+          </p>
 
-              {error && (
-                <p role="alert" className="text-xs text-red-700 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                  {error}
-                </p>
-              )}
+          {error && (
+            <p role="alert" className={`mt-4 ${MESSAGE_ERREUR}`}>
+              {error}
+            </p>
+          )}
+          {renvoye && !error && <p className="mt-4 font-mono text-[11px] text-slate-700">{t("auth.forgotPassword.resent")}</p>}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02]"
-              >
-                {loading && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                {loading ? t("auth.forgotPassword.submitting") : t("auth.forgotPassword.submit")}
-              </button>
-            </form>
-          </>
-        )}
-      </Reveal>
-    </main>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-slate-300 pt-4 text-xs">
+            <button
+              type="button"
+              onClick={renvoyer}
+              disabled={attente > 0 || loading}
+              className="cursor-pointer border-b border-ink-900/40 pb-0.5 font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700 disabled:cursor-default disabled:border-transparent disabled:text-slate-500 disabled:hover:text-slate-500"
+            >
+              {attente > 0 ? t("auth.forgotPassword.resendIn", { count: attente }) : t("auth.forgotPassword.resend")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSent(false);
+                setError(null);
+                setRenvoye(false);
+              }}
+              className="cursor-pointer font-semibold text-ink-900 transition-colors hover:text-orange-700"
+            >
+              {t("auth.forgotPassword.changeAddress")}
+            </button>
+          </div>
+
+          <Link to="/login" className={`mt-6 ${BOUTON_PRINCIPAL}`}>
+            {t("auth.forgotPassword.backToLoginButton")}
+          </Link>
+        </div>
+      ) : (
+        <>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">{t("auth.cartouche.forgotPassword")}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">{t("auth.forgotPassword.title")}</h1>
+          <p className="mt-1.5 text-sm text-slate-600">{t("auth.forgotPassword.subtitle")}</p>
+
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+            <ChampAuth
+              id="forgot-password-email"
+              label={t("auth.login.email")}
+              icone={Mail}
+              type="email"
+              required
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("auth.login.emailPlaceholder")}
+            />
+
+            {error && (
+              <p role="alert" className={MESSAGE_ERREUR}>
+                {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={loading} className={BOUTON_PRINCIPAL}>
+              {loading && <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+              {loading ? t("auth.forgotPassword.submitting") : t("auth.forgotPassword.submit")}
+            </button>
+          </form>
+        </>
+      )}
+    </AuthLayout>
   );
 }
