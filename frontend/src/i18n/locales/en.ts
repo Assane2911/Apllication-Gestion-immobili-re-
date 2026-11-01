@@ -2037,6 +2037,7 @@ const en: TranslationSchema = {
       title: "Activity Log",
       subtitle: "History of actions performed on your properties, tenants, contracts and payments",
       filterByType: "Filter by category",
+      count: "{{count}} recorded action(s)",
       filters: {
         all: "All categories",
         property: "Properties",

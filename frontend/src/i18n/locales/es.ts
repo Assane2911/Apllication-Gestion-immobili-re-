@@ -2039,6 +2039,7 @@ const es: TranslationSchema = {
       title: "Registro de actividad",
       subtitle: "Historial de acciones realizadas sobre tus propiedades, inquilinos, contratos y pagos",
       filterByType: "Filtrar por categoría",
+      count: "{{count}} acción(es) registrada(s)",
       filters: {
         all: "Todas las categorías",
         property: "Propiedades",

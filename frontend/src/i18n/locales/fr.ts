@@ -2038,6 +2038,7 @@ const fr = {
       title: "Journal d'activité",
       subtitle: "Historique des actions effectuées sur vos biens, locataires, contrats et paiements",
       filterByType: "Filtrer par catégorie",
+      count: "{{count}} action(s) enregistrée(s)",
       filters: {
         all: "Toutes les catégories",
         property: "Biens",
