@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,6 +52,7 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();
+    localStorage.removeItem("immo.favoris-vitrine");
   });
 
   it("affiche la fiche complète de l'annonce et met à jour le titre de l'onglet", async () => {
@@ -113,5 +114,85 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
     });
 
     await waitFor(() => expect(screen.getByText(/Votre demande a bien été envoyée/)).toBeInTheDocument());
+  });
+
+  it("propose de joindre l'agence directement, seulement par les moyens qu'elle a renseignés", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: listing({ contactPhone: "+221 76 000 00 00", contactWhatsapp: "+221 77 111 22 33", contactEmail: "agence@test.local" }) });
+    const { unmount } = renderPage();
+
+    expect(await screen.findByRole("link", { name: "Appeler l'agence" })).toHaveAttribute("href", "tel:+221760000000");
+    expect(screen.getByRole("link", { name: "Écrire sur WhatsApp" })).toHaveAttribute("href", "https://wa.me/221771112233");
+    expect(screen.getByRole("link", { name: "Écrire par email" })).toHaveAttribute("href", expect.stringContaining("mailto:agence@test.local"));
+    unmount();
+
+    mockedApi.get.mockResolvedValueOnce({ data: listing({ contactEmail: "agence@test.local" }) });
+    renderPage();
+    await screen.findByRole("link", { name: "Écrire par email" });
+    expect(screen.queryByRole("link", { name: "Appeler l'agence" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Écrire sur WhatsApp" })).not.toBeInTheDocument();
+  });
+
+  it("n'affiche aucun bloc de contact direct quand l'agence n'a renseigné aucun moyen", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: listing() });
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Appartement 2 pièces vue mer" });
+    expect(screen.queryByText("Contact direct")).not.toBeInTheDocument();
+  });
+
+  it("calcule le prix au m² (loyer par mois) et liste les caractéristiques", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: listing({ price: 550, surface: 55 }) });
+    renderPage();
+
+    const caracteristiques = within(await screen.findByRole("region", { name: "Caractéristiques" }));
+    expect(caracteristiques.getByText("10 EUR / m² / mois")).toBeInTheDocument();
+    expect(caracteristiques.getByText("55 m²")).toBeInTheDocument();
+    expect(caracteristiques.getByText("2 pièce(s)")).toBeInTheDocument();
+    expect(caracteristiques.getByText("Sénégal")).toBeInTheDocument();
+  });
+
+  it("n'invente pas de prix au m² quand la surface n'est pas renseignée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: listing({ surface: null }) });
+    renderPage();
+
+    const caracteristiques = within(await screen.findByRole("region", { name: "Caractéristiques" }));
+    expect(caracteristiques.queryByText("Prix au m²")).not.toBeInTheDocument();
+  });
+
+  it("met l'annonce de côté depuis sa fiche", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: listing() });
+    renderPage();
+
+    const bouton = await screen.findByRole("button", { name: "Mettre de côté" });
+    await user.click(bouton);
+    expect(screen.getByRole("button", { name: "Mise de côté" })).toHaveAttribute("aria-pressed", "true");
+    expect(JSON.parse(localStorage.getItem("immo.favoris-vitrine") ?? "[]")).toHaveLength(1);
+  });
+
+  it("montre des annonces similaires, sans l'annonce courante, et se passe d'elles si leur chargement échoue", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: listing() });
+    mockedApi.get.mockResolvedValueOnce({
+      data: {
+        items: [listing(), listing({ id: "autre", title: "Studio Plateau" })],
+        page: 1,
+        pageSize: 4,
+        total: 2,
+        totalPages: 1,
+      },
+    });
+    const { unmount } = renderPage();
+
+    const similaires = within(await screen.findByRole("region", { name: "Annonces similaires" }));
+    expect(similaires.getByText("Studio Plateau")).toBeInTheDocument();
+    expect(similaires.queryByText("Appartement 2 pièces vue mer")).not.toBeInTheDocument();
+    expect(mockedApi.get).toHaveBeenCalledWith("/listings/public", { params: { page: 1, pageSize: 4, type: "RENT", country: "SN" } });
+    unmount();
+
+    mockedApi.get.mockResolvedValueOnce({ data: listing() });
+    mockedApi.get.mockRejectedValueOnce(new Error("réseau"));
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Appartement 2 pièces vue mer" });
+    expect(screen.queryByRole("region", { name: "Annonces similaires" })).not.toBeInTheDocument();
   });
 });
