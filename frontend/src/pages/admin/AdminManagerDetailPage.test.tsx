@@ -491,4 +491,52 @@ describe("AdminManagerDetailPage", () => {
       expect(screen.getByRole("button", { name: "Supprimer définitivement" })).toBeInTheDocument();
     });
   });
+
+  it("totalise ce que le compte a réglé, devise par devise, en ignorant les paiements non aboutis", async () => {
+    const base = fiche().billingHistory[0];
+    mockedApi.get.mockResolvedValueOnce({
+      data: fiche({
+        billingHistory: [
+          { ...base, id: "b1", amount: 29, currency: "EUR", status: "PAID" },
+          { ...base, id: "b2", amount: 39, currency: "EUR", status: "PAID", paymentRef: "VIR-002" },
+          { ...base, id: "b3", amount: 15000, currency: "XOF", status: "PAID", paymentRef: "VIR-003" },
+          { ...base, id: "b4", amount: 500, currency: "EUR", status: "PENDING", paymentRef: "VIR-004" },
+        ],
+      }),
+    });
+    renderPage();
+
+    expect(await screen.findByText("Total encaissé · 68 €")).toBeInTheDocument();
+    expect(screen.getByText(/Total encaissé · 15\s?000 FCFA/)).toBeInTheDocument();
+  });
+
+  it("signale un compte sans activité depuis plus d'un mois, et pas un compte actif récemment", async () => {
+    const { unmount } = (mockedApi.get.mockResolvedValueOnce({ data: fiche({ lastActivityAt: "2025-01-01T00:00:00.000Z" }) }), renderPage());
+    expect(await screen.findByText(/Inactif depuis \d+ jour\(s\)/)).toBeInTheDocument();
+    unmount();
+
+    mockedApi.get.mockResolvedValueOnce({ data: fiche({ lastActivityAt: new Date(Date.now() - 3 * 86_400_000).toISOString() }) });
+    renderPage();
+    await screen.findByRole("heading", { name: "Agence Alpha" });
+    expect(screen.queryByText(/Inactif depuis/)).not.toBeInTheDocument();
+  });
+
+  it("situe les biens du compte face au plafond de sa formule (aucun plafond pour la formule illimitée)", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+    const { unmount } = renderPage();
+    expect(await screen.findByText("sur 25 inclus dans la formule")).toBeInTheDocument();
+    unmount();
+
+    const base = fiche();
+    mockedApi.get.mockResolvedValueOnce({ data: fiche({ subscription: { ...base.subscription, plan: "ENTERPRISE" } }) });
+    renderPage();
+    expect(await screen.findByText("Biens illimités dans la formule")).toBeInTheDocument();
+  });
+
+  it("propose d'écrire au gestionnaire depuis sa fiche", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+    renderPage();
+
+    expect(await screen.findByRole("link", { name: "Écrire à agence@test.local" })).toHaveAttribute("href", "mailto:agence@test.local");
+  });
 });

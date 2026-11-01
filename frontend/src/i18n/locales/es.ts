@@ -2550,6 +2550,12 @@ const es: TranslationSchema = {
       listings: "Anuncios",
     },
     managers: {
+      count: "{{count}} cuenta(s)",
+      copyEmail: "Copiar la dirección {{email}}",
+      writeTo: "Escribir a {{email}}",
+      inDays: "en {{count}} día(s)",
+      capacity: "{{used}} de {{max}} bienes incluidos en la fórmula",
+      nearLimit: "Cerca del límite",
       title: "Gestores",
       subtitle: "Las cuentas de agencia de la plataforma, de la más reciente a la más antigua",
       searchPlaceholder: "Buscar por correo o nombre de agencia",
@@ -2586,6 +2592,7 @@ const es: TranslationSchema = {
       },
     },
     managerDetail: {
+      inactiveFor: "Inactivo desde hace {{count}} día(s)",
       adjust: {
         title: "Ajustar la suscripción",
         description: "Gestos comerciales y correcciones. Cada ajuste queda registrado en el registro de auditoría con su motivo. No se crea ningún pago: la facturación y el MRR no cambian.",
@@ -2644,6 +2651,8 @@ const es: TranslationSchema = {
       yes: "Sí",
       no: "No",
       usage: {
+        propertiesHint: "de {{max}} incluidos en la fórmula",
+        propertiesUnlimited: "Bienes ilimitados en la fórmula",
         properties: "Inmuebles",
         tenants: "Inquilinos",
         activeContracts: "Contratos activos",
@@ -2677,6 +2686,7 @@ const es: TranslationSchema = {
         none: "Este gestor aún no ha indicado los datos de su agencia.",
       },
       billing: {
+        totalPaid: "Total cobrado",
         title: "Historial de facturación (últimos 10)",
         empty: "Ningún pago registrado.",
         date: "Fecha",
@@ -2720,6 +2730,24 @@ const es: TranslationSchema = {
       },
     },
     listings: {
+      count: "{{count}} anuncio(s)",
+      onlineBadge: "En línea en el escaparate",
+      writeToManager: "Escribir al gestor",
+      quickReasons: "Motivos frecuentes",
+      quickLabel: {
+        photos: "Fotos",
+        price: "Precio",
+        content: "Contenido",
+        duplicate: "Duplicado",
+        contact: "Contacto",
+      },
+      quick: {
+        photos: "Fotos sin relación con el inmueble.",
+        price: "Precio engañoso o poco realista.",
+        content: "Contenido inapropiado o contrario a las normas de la plataforma.",
+        duplicate: "Anuncio duplicado de otro anuncio.",
+        contact: "Datos de contacto personales en la descripción: use el formulario de contacto del anuncio.",
+      },
       title: "Anuncios del escaparate",
       subtitle: "Todos los anuncios publicados por los gestores, del más reciente al más antiguo",
       searchPlaceholder: "Buscar por título, lugar, email o agencia",
@@ -2756,6 +2784,8 @@ const es: TranslationSchema = {
       actionError: "Acción imposible",
     },
     suggestions: {
+      writeToAuthor: "Escribir al autor",
+      unreadFor: "Sin seguimiento desde hace {{count}} día(s)",
       tabsLabel: "Filtrar por estado",
       tabs: {
         ALL: "Todas",
@@ -2797,6 +2827,24 @@ const es: TranslationSchema = {
       },
     },
     dashboard: {
+      todo: {
+        title: "Pendiente",
+        subtitle: "Lo que espera una decisión suya",
+        allClear: "Nada le espera: todo está al día.",
+        transfers: "{{count}} transferencia(s) por confirmar",
+        trials: "{{count}} prueba(s) por reactivar",
+        expired: "{{count}} cuenta(s) sin acceso",
+        suspended: "{{count}} cuenta(s) suspendida(s)",
+      },
+      pipeline: {
+        title: "Reparto de las cuentas",
+        conversion: "Tasa de suscripción: {{rate}} %",
+        empty: "Aún no hay cuentas.",
+        ACTIVE: "Suscritos",
+        TRIAL: "En prueba",
+        EXPIRED: "Sin acceso",
+        OTHER: "Otros",
+      },
       title: "Panel de control",
       subtitle: "Vista general de la plataforma, todos los gestores incluidos",
       errorTitle: "No se pudo cargar el panel",
@@ -2816,10 +2864,15 @@ const es: TranslationSchema = {
         activeContractsHint: "En todas las agencias",
       },
       mrrByPlan: {
+        arr: "ARR (×12)",
+        average: "Cesta media",
         title: "MRR por plan",
         empty: "Ninguna suscripción de pago activa todavía.",
       },
       trialsEndingSoon: {
+        remaining: "Quedan",
+        actions: "Acciones",
+        contact: "Escribir a {{email}}",
         title: "Pruebas que terminan pronto",
         subtitle: "A contactar antes de que termine su prueba gratuita (7 días o menos)",
         empty: "Ninguna prueba termina en los próximos 7 días.",
@@ -2830,11 +2883,18 @@ const es: TranslationSchema = {
       },
     },
     subscriptions: {
+      pendingCount: "{{count}} transferencia(s) pendiente(s)",
+      toCollect: "Por cobrar",
+      period: "del {{from}} al {{to}}",
+      copyReference: "Copiar la referencia {{reference}}",
+      today: "Recibida hoy",
+      waiting: "desde hace {{count}} día(s)",
       title: "Transferencias bancarias pendientes",
       subtitle: "Suscripciones SaaS pagadas por transferencia bancaria, a la espera de confirmación manual",
       emptyTitle: "No hay transferencias pendientes",
       emptyDescription: "Todas las suscripciones pagadas por transferencia bancaria han sido confirmadas.",
       table: {
+        actions: "Acciones",
         manager: "Gestor",
         plan: "Plan",
         cycle: "Ciclo",
@@ -2852,6 +2912,22 @@ const es: TranslationSchema = {
       rejectPrompt: "¿Rechazar la solicitud de transferencia de {{amount}} de {{email}}? Esto no activa ninguna suscripción y no se puede deshacer.",
     },
     settings: {
+      sections: { bank: "Datos bancarios" },
+      check: {
+        ibanValid: "Clave IBAN válida",
+        ibanInvalid: "La clave de este IBAN no coincide: revise lo escrito",
+        bicValid: "Formato BIC válido",
+        bicInvalid: "Un BIC tiene 8 u 11 caracteres",
+      },
+      unsaved: "Cambios sin guardar",
+      upToDate: "Al día",
+      preview: {
+        title: "Lo que verán los gestores",
+        iban: "IBAN",
+        bic: "BIC",
+        note: "Se muestra en la página de suscripción cuando un gestor elige pagar por transferencia.",
+        empty: "Escriba el IBAN para ver la vista previa.",
+      },
       title: "Configuración de la plataforma",
       subtitle: "Datos bancarios utilizados para recibir las suscripciones pagadas por transferencia",
       success: "Datos bancarios guardados",
@@ -2864,6 +2940,7 @@ const es: TranslationSchema = {
       save: "Guardar",
       saving: "Guardando...",
       twoFactor: {
+        disabled: "Doble autenticación inactiva",
         title: "Seguridad de la cuenta de administrador",
         description:
           "Esta cuenta confirma transferencias y suspende o elimina agencias. Exija, además de la contraseña, un código de un solo uso generado por una aplicación de autenticación en cada inicio de sesión.",

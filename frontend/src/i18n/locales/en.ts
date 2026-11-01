@@ -2548,6 +2548,12 @@ const en: TranslationSchema = {
       listings: "Listings",
     },
     managers: {
+      count: "{{count}} account(s)",
+      copyEmail: "Copy the address {{email}}",
+      writeTo: "Email {{email}}",
+      inDays: "in {{count}} day(s)",
+      capacity: "{{used}} of {{max}} properties included in the plan",
+      nearLimit: "Near the limit",
       title: "Managers",
       subtitle: "The platform's agency accounts, newest first",
       searchPlaceholder: "Search by email or agency name",
@@ -2584,6 +2590,7 @@ const en: TranslationSchema = {
       },
     },
     managerDetail: {
+      inactiveFor: "Inactive for {{count}} day(s)",
       adjust: {
         title: "Adjust subscription",
         description: "Goodwill gestures and corrections. Every adjustment is recorded in the audit log with its reason. No payment is created: billing and MRR do not change.",
@@ -2642,6 +2649,8 @@ const en: TranslationSchema = {
       yes: "Yes",
       no: "No",
       usage: {
+        propertiesHint: "of {{max}} included in the plan",
+        propertiesUnlimited: "Unlimited properties in the plan",
         properties: "Properties",
         tenants: "Tenants",
         activeContracts: "Active contracts",
@@ -2675,6 +2684,7 @@ const en: TranslationSchema = {
         none: "This manager has not filled in their agency details yet.",
       },
       billing: {
+        totalPaid: "Total paid",
         title: "Billing history (last 10)",
         empty: "No payment recorded.",
         date: "Date",
@@ -2718,6 +2728,24 @@ const en: TranslationSchema = {
       },
     },
     listings: {
+      count: "{{count}} listing(s)",
+      onlineBadge: "Live on the showcase",
+      writeToManager: "Email the manager",
+      quickReasons: "Common reasons",
+      quickLabel: {
+        photos: "Photos",
+        price: "Price",
+        content: "Content",
+        duplicate: "Duplicate",
+        contact: "Contact details",
+      },
+      quick: {
+        photos: "Photos unrelated to the property.",
+        price: "Misleading or unrealistic price.",
+        content: "Inappropriate content or against the platform rules.",
+        duplicate: "Duplicate of another listing.",
+        contact: "Personal contact details in the description: use the contact form of the listing.",
+      },
       title: "Showcase listings",
       subtitle: "Every listing published by managers, newest first",
       searchPlaceholder: "Search by title, location, email or agency",
@@ -2754,6 +2782,8 @@ const en: TranslationSchema = {
       actionError: "Action failed",
     },
     suggestions: {
+      writeToAuthor: "Email the author",
+      unreadFor: "No follow-up for {{count}} day(s)",
       tabsLabel: "Filter by status",
       tabs: {
         ALL: "All",
@@ -2795,6 +2825,24 @@ const en: TranslationSchema = {
       },
     },
     dashboard: {
+      todo: {
+        title: "To do",
+        subtitle: "What is waiting for a decision from you",
+        allClear: "Nothing is waiting for you: all up to date.",
+        transfers: "{{count}} transfer(s) to confirm",
+        trials: "{{count}} trial(s) to follow up",
+        expired: "{{count}} account(s) without access",
+        suspended: "{{count}} suspended account(s)",
+      },
+      pipeline: {
+        title: "Account breakdown",
+        conversion: "Subscription rate: {{rate}}%",
+        empty: "No account yet.",
+        ACTIVE: "Subscribers",
+        TRIAL: "On trial",
+        EXPIRED: "No access",
+        OTHER: "Other",
+      },
       title: "Dashboard",
       subtitle: "Platform overview, across all managers",
       errorTitle: "Unable to load the dashboard",
@@ -2814,10 +2862,15 @@ const en: TranslationSchema = {
         activeContractsHint: "Across all agencies",
       },
       mrrByPlan: {
+        arr: "ARR (×12)",
+        average: "Average basket",
         title: "MRR by plan",
         empty: "No active paid subscription yet.",
       },
       trialsEndingSoon: {
+        remaining: "Left",
+        actions: "Actions",
+        contact: "Email {{email}}",
         title: "Trials ending soon",
         subtitle: "Follow up before their free trial ends (7 days or less)",
         empty: "No trial ends in the next 7 days.",
@@ -2828,11 +2881,18 @@ const en: TranslationSchema = {
       },
     },
     subscriptions: {
+      pendingCount: "{{count}} transfer(s) pending",
+      toCollect: "To collect",
+      period: "from {{from}} to {{to}}",
+      copyReference: "Copy the reference {{reference}}",
+      today: "Received today",
+      waiting: "for {{count}} day(s)",
       title: "Pending Bank Transfers",
       subtitle: "SaaS subscriptions paid by bank transfer, awaiting manual confirmation",
       emptyTitle: "No pending transfers",
       emptyDescription: "All bank transfer subscriptions have been confirmed.",
       table: {
+        actions: "Actions",
         manager: "Manager",
         plan: "Plan",
         cycle: "Cycle",
@@ -2850,6 +2910,22 @@ const en: TranslationSchema = {
       rejectPrompt: "Reject the {{amount}} transfer request from {{email}}? This does not activate any subscription and cannot be undone.",
     },
     settings: {
+      sections: { bank: "Bank details" },
+      check: {
+        ibanValid: "IBAN check digits valid",
+        ibanInvalid: "This IBAN's check digits do not match: please check what you typed",
+        bicValid: "BIC format valid",
+        bicInvalid: "A BIC has 8 or 11 characters",
+      },
+      unsaved: "Unsaved changes",
+      upToDate: "Up to date",
+      preview: {
+        title: "What managers will see",
+        iban: "IBAN",
+        bic: "BIC",
+        note: "Shown on the subscription page when a manager chooses to pay by bank transfer.",
+        empty: "Enter the IBAN to see the preview.",
+      },
       title: "Platform settings",
       subtitle: "Bank details used to receive subscriptions paid by bank transfer",
       success: "Bank details saved",
@@ -2862,6 +2938,7 @@ const en: TranslationSchema = {
       save: "Save",
       saving: "Saving...",
       twoFactor: {
+        disabled: "Two-factor authentication off",
         title: "Administrator account security",
         description:
           "This account confirms transfers and suspends or deletes agencies. Require, in addition to the password, a one-time code generated by an authenticator app at every sign-in.",
