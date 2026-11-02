@@ -1,8 +1,8 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
+import { AIDE, BOUTON_ANNULER, BOUTON_PLEIN, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
 /** Options du jour d'échéance : 1 à 28 (valables tous les mois) et « dernier jour du mois » (31). */
 export const JOURS_ECHEANCE = [...Array.from({ length: 28 }, (_, i) => i + 1), 31];
@@ -37,57 +37,39 @@ export default function PaymentDayModal({ contractId, paymentDay, startDay, onSu
     }
   }
 
-  const dialogue = useDialogue({ onClose, titreId: "payment-day-title", fermable: !saving });
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div
-        {...dialogue}
-        className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200"
-      >
-        <div className="flex items-start justify-between">
-          <h3 id="payment-day-title" className="text-lg font-bold text-slate-900">
-            {t("components.paymentDayModal.title")}
-          </h3>
-          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600">
-            <X size={18} />
+    <CadreModale titre={t("components.paymentDayModal.title")} titreId="payment-day-title" onClose={onClose} fermable={!saving} largeur="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="payment-day-select" className={ETIQUETTE}>
+            {t("manager.contracts.fields.paymentDay")}
+          </label>
+          <select id="payment-day-select" value={valeur} onChange={(e) => setValeur(e.target.value)} className={CHAMP}>
+            <option value="">
+              {t("manager.contracts.fields.paymentDayStart")} ({startDay})
+            </option>
+            {JOURS_ECHEANCE.map((jour) => (
+              <option key={jour} value={jour}>
+                {jour === 31 ? t("manager.contracts.fields.paymentDayLast") : t("manager.contracts.fields.paymentDayOption", { day: jour })}
+              </option>
+            ))}
+          </select>
+          <p className={AIDE}>{t("components.paymentDayModal.hint")}</p>
+        </div>
+        {error && (
+          <p role="alert" className={ERREUR}>
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+          <button type="button" onClick={onClose} disabled={saving} className={BOUTON_ANNULER}>
+            {t("common.actions.cancel")}
+          </button>
+          <button type="submit" disabled={saving} className={BOUTON_PLEIN}>
+            {saving ? t("components.paymentDayModal.saving") : t("components.paymentDayModal.save")}
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div>
-            <label htmlFor="payment-day-select" className="block text-xs font-semibold text-slate-700 mb-1">
-              {t("manager.contracts.fields.paymentDay")}
-            </label>
-            <select
-              id="payment-day-select"
-              value={valeur}
-              onChange={(e) => setValeur(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">{t("manager.contracts.fields.paymentDayStart")} ({startDay})</option>
-              {JOURS_ECHEANCE.map((jour) => (
-                <option key={jour} value={jour}>
-                  {jour === 31 ? t("manager.contracts.fields.paymentDayLast") : t("manager.contracts.fields.paymentDayOption", { day: jour })}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-slate-600">{t("components.paymentDayModal.hint")}</p>
-          </div>
-          {error && (
-            <p role="alert" className="text-xs text-red-600">
-              {error}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
-              {t("common.actions.cancel")}
-            </button>
-            <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg">
-              {saving ? t("components.paymentDayModal.saving") : t("components.paymentDayModal.save")}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </CadreModale>
   );
 }

@@ -992,6 +992,10 @@ const fr = {
       errorRequired: "Veuillez apposer votre signature sur le cadre avant de valider.",
     },
     depositRefundModal: {
+      totalDeductions: "Retenues",
+      retained: "{{percent}} % du dépôt retenu",
+      quickLabel: "Motifs courants",
+      quick: { cleaning: "Ménage", painting: "Peinture", repairs: "Réparations" },
       title: "Restitution du dépôt de garantie",
       depositAmount: "Dépôt initial : {{amount}}",
       deductionsTitle: "Retenues (dégâts, loyers impayés...)",
@@ -1023,6 +1027,8 @@ const fr = {
       deleting: "Suppression en cours...",
     },
     twoFactorSetup: {
+      copyCodes: "Copier les codes",
+      codesCopied: "Codes copiés",
       title: "Activer la double authentification",
       subtitle: "Scannez ce QR code avec une application d'authentification (Google Authenticator, Authy...).",
       subtitleBackupCodes: "Notez ces codes de secours avant de continuer.",
@@ -1038,6 +1044,8 @@ const fr = {
       done: "J'ai noté mes codes de secours",
     },
     markPaidModal: {
+      settle: "Solder",
+      afterPayment: "Reste dû après ce paiement : {{amount}}",
       title: "Marquer le loyer comme réglé",
       intro: "Loyer de {{name}} : {{amount}}.",
       warning: "La quittance partira immédiatement par email au locataire, et cette action est DÉFINITIVE : une facture réglée ne peut plus revenir en attente.",
@@ -1132,6 +1140,7 @@ const fr = {
       docTitle: "Mise en demeure de payer",
     },
     rentRevisionModal: {
+      annualImpact: "Sur douze mois : {{amount}}",
       title: "Réviser le loyer",
       current: "Loyer actuel : {{rent}}",
       method: "Méthode de calcul",
@@ -1192,6 +1201,7 @@ const fr = {
       hideRead: "Masquer les éléments lus",
     },
     trialBanner: {
+      progress: "Jours d'essai restants",
       expiredTitle: "Période d'essai expirée",
       expiredDesc:
         "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à une formule pour continuer à utiliser l'application.",
@@ -3419,6 +3429,7 @@ const fr = {
   },
 
   suggestions: {
+    counter: "{{count}} / 4000",
     button: "Une suggestion ?",
     zone: "Aide et suggestions",
     title: "Votre avis améliore la plateforme",

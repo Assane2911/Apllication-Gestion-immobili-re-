@@ -1,9 +1,9 @@
-import { X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
+import { AIDE, AVIS, BOUTON_ANNULER, BOUTON_PLEIN, CHAMP, ERREUR, ETIQUETTE, INFO } from "./styleFormulaire";
 
 type Mode = "PERCENT" | "INDEX" | "AMOUNT";
 
@@ -131,31 +131,20 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
     }
   }
 
-  const champ = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
-  const etiquette = "block text-xs font-semibold text-slate-700 mb-1";
-
-  const dialogue = useDialogue({ onClose, titreId: "rent-revision-title", fermable: !saving });
+  const champ = CHAMP;
+  const etiquette = ETIQUETTE;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div
-        {...dialogue}
-        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 id="rent-revision-title" className="text-lg font-bold text-slate-900">
-              {t("components.rentRevisionModal.title")}
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">{t("components.rentRevisionModal.current", { rent: formatMoney(rent, currency) })}</p>
-          </div>
-          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600">
-            <X size={18} />
-          </button>
-        </div>
-
+    <CadreModale
+      titre={t("components.rentRevisionModal.title")}
+      titreId="rent-revision-title"
+      sousTitre={t("components.rentRevisionModal.current", { rent: formatMoney(rent, currency) })}
+      onClose={onClose}
+      fermable={!saving}
+      largeur="lg"
+    >
         {programmee ? (
-          <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-3 text-sm text-amber-900">
+          <div className={`${AVIS} !px-4 !py-3 text-sm`}>
             <p>
               {t("components.rentRevisionModal.pending", {
                 from: formatMoney(programmee.previousRent, currency),
@@ -163,12 +152,12 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
                 month: libelleMois(programmee.effectiveDate),
               })}
             </p>
-            <button type="button" onClick={() => annuler(programmee)} className="mt-1 text-xs font-semibold underline">
+            <button type="button" onClick={() => annuler(programmee)} className="mt-2 cursor-pointer text-xs font-semibold underline hover:text-orange-700">
               {t("components.rentRevisionModal.cancelPending")}
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div role="radiogroup" aria-label={t("components.rentRevisionModal.method")} className="flex flex-wrap gap-2">
               {(["PERCENT", "INDEX", "AMOUNT"] as const).map((valeur) => (
                 <button
@@ -177,8 +166,8 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
                   role="radio"
                   aria-checked={mode === valeur}
                   onClick={() => setMode(valeur)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${
-                    mode === valeur ? "bg-brand-600 text-white border-brand-600" : "bg-white text-slate-700 border-slate-300"
+                  className={`cursor-pointer border px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                    mode === valeur ? "border-ink-900 bg-ink-900 text-white" : "border-slate-400 bg-white text-slate-800 hover:border-ink-900"
                   }`}
                 >
                   {t(`components.rentRevisionModal.modes.${valeur}`)}
@@ -218,10 +207,15 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
               </div>
             )}
 
-            <p role="status" className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-800">
+            <p role="status" className={`${INFO} !px-4 !py-3 text-sm`}>
               {nouveau === null
                 ? t("components.rentRevisionModal.previewEmpty")
                 : t("components.rentRevisionModal.preview", { rent: formatMoney(nouveau, currency), diff: `${ecart! >= 0 ? "+" : "−"}${formatMoney(Math.abs(ecart!), currency)}` })}
+              {nouveau !== null && ecart !== 0 && (
+                <span className="mt-1 block font-mono text-xs text-slate-700">
+                  {t("components.rentRevisionModal.annualImpact", { amount: `${ecart! >= 0 ? "+" : "−"}${formatMoney(Math.abs(arrondir(ecart! * 12)), currency)}` })}
+                </span>
+              )}
             </p>
 
             <div>
@@ -231,7 +225,7 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
                   <option key={m} value={m}>{libelleMois(m)}</option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-slate-600">{t("components.rentRevisionModal.effectiveHint")}</p>
+              <p className={AIDE}>{t("components.rentRevisionModal.effectiveHint")}</p>
             </div>
 
             <div>
@@ -239,39 +233,39 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
               <textarea id="rr-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={1000} className={champ} />
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 text-sm text-slate-800">
               <input type="checkbox" checked={notifyTenant} onChange={(e) => setNotifyTenant(e.target.checked)} />
               {t("components.rentRevisionModal.notify")}
             </label>
 
             {error && (
-              <p role="alert" className="text-xs text-red-600">{error}</p>
+              <p role="alert" className={ERREUR}>{error}</p>
             )}
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={onClose} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
+            <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+              <button type="button" onClick={onClose} disabled={saving} className={BOUTON_ANNULER}>
                 {t("common.actions.cancel")}
               </button>
-              <button type="submit" disabled={saving || nouveau === null || !effectiveDate} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg">
+              <button type="submit" disabled={saving || nouveau === null || !effectiveDate} className={BOUTON_PLEIN}>
                 {saving ? t("components.rentRevisionModal.saving") : t("components.rentRevisionModal.save")}
               </button>
             </div>
           </form>
         )}
         {programmee && error && (
-          <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>
+          <p role="alert" className={`mt-2 ${ERREUR}`}>{error}</p>
         )}
 
         {historique.length > 0 && (
-          <div className="mt-5 border-t border-contour-200 pt-4">
-            <h4 className="text-xs font-semibold text-slate-700 mb-2">{t("components.rentRevisionModal.history")}</h4>
+          <div className="mt-5 border-t border-slate-300 pt-4">
+            <h4 className={ETIQUETTE}>{t("components.rentRevisionModal.history")}</h4>
             <ul className="space-y-1.5">
               {historique.map((r) => (
-                <li key={r.id} className="text-xs text-slate-700 flex flex-wrap items-center gap-x-2">
-                  <span className="font-medium">{libelleMois(r.effectiveDate)}</span>
+                <li key={r.id} className="flex flex-wrap items-center gap-x-2 text-xs text-slate-800">
+                  <span className="font-semibold">{libelleMois(r.effectiveDate)}</span>
                   <span>{formatMoney(r.previousRent, currency)} → {formatMoney(r.newRent, currency)}</span>
-                  <span className="text-[11px] text-slate-500">({t(`components.rentRevisionModal.status.${r.status}`)})</span>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600">({t(`components.rentRevisionModal.status.${r.status}`)})</span>
                   {r.status !== "CANCELLED" && onOpenAvenant && (
-                    <button type="button" onClick={() => onOpenAvenant(r.id)} className="text-[11px] text-brand-600 font-semibold hover:underline">
+                    <button type="button" onClick={() => onOpenAvenant(r.id)} className="cursor-pointer text-[11px] font-semibold text-ink-900 underline decoration-ink-900/40 hover:text-orange-700">
                       {t("components.rentRevisionModal.amendment")}
                     </button>
                   )}
@@ -280,7 +274,6 @@ export default function RentRevisionModal({ contractId, rent, currency, endDate,
             </ul>
           </div>
         )}
-      </div>
-    </div>
+    </CadreModale>
   );
 }

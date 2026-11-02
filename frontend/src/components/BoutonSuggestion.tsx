@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { api, apiErrorMessage } from "../api/client";
 import Dialogue from "./Dialogue";
+import { BOUTON_ANNULER, BOUTON_PLEIN, CHAMP, ERREUR, INFO } from "./styleFormulaire";
 
 /**
  * Bouton « Une suggestion ? », flottant et présent sur tous les espaces.
@@ -63,7 +64,7 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
         <button
           type="button"
           onClick={() => setOuvert(true)}
-          className="flex items-center gap-2 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 shadow-md transition-colors"
+          className="flex cursor-pointer items-center gap-2 border border-ink-900 bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
         >
           <Lightbulb size={14} aria-hidden="true" /> {t("suggestions.button")}
         </button>
@@ -74,28 +75,28 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
           <Dialogue
             onClose={fermer}
             titreId="suggestion-titre"
-            className="w-full max-w-lg rounded-2xl bg-white border border-contour-200 shadow-xl p-5"
+            className="w-full max-w-lg border-2 border-ink-900 bg-white p-5"
           >
-            <h3 id="suggestion-titre" className="text-base font-bold text-slate-900">
+            <h3 id="suggestion-titre" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
               {t("suggestions.title")}
             </h3>
             <p className="mt-1 text-xs text-slate-600">{t("suggestions.subtitle")}</p>
 
             {envoye ? (
               <div className="mt-4">
-                <p className="text-sm text-emerald-700">{t("suggestions.thanks")}</p>
-                <div className="mt-4 flex justify-end gap-2">
+                <p className={`${INFO} text-sm`}>{t("suggestions.thanks")}</p>
+                <div className="mt-4 flex justify-end gap-3 border-t border-slate-300 pt-4">
                   <button
                     type="button"
                     onClick={() => setEnvoye(false)}
-                    className="text-xs font-semibold text-slate-600 px-3 py-2"
+                    className={BOUTON_ANNULER}
                   >
                     {t("suggestions.another")}
                   </button>
                   <button
                     type="button"
                     onClick={fermer}
-                    className="text-xs font-semibold bg-slate-900 text-white px-3.5 py-2 rounded-lg"
+                    className={BOUTON_PLEIN}
                   >
                     {t("common.actions.close")}
                   </button>
@@ -115,23 +116,24 @@ export default function BoutonSuggestion({ aCote }: { aCote?: ReactNode } = {}) 
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={t("suggestions.placeholder")}
-                  className="w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                  className={CHAMP}
                 />
+                <p className="text-right font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("suggestions.counter", { count: message.length })}</p>
 
-                {erreur && <p role="alert" className="text-xs text-red-600">{erreur}</p>}
+                {erreur && <p role="alert" className={ERREUR}>{erreur}</p>}
 
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
                   <button
                     type="button"
                     onClick={fermer}
-                    className="text-xs font-semibold text-slate-600 px-3 py-2"
+                    className={BOUTON_ANNULER}
                   >
                     {t("common.actions.cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={envoi}
-                    className="text-xs font-semibold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white px-3.5 py-2 rounded-lg"
+                    className={BOUTON_PLEIN}
                   >
                     {envoi ? t("suggestions.sending") : t("suggestions.send")}
                   </button>

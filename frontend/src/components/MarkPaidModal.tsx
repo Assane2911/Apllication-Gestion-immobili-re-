@@ -1,11 +1,11 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
 import type { MoyenSaisiAlaMain } from "../types";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
 import ChampDate from "./ChampDate";
+import { AIDE, AVIS, BOUTON_ANNULER, BOUTON_PLEIN, BOUTON_TRAIT, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
 const MOYENS: MoyenSaisiAlaMain[] = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"];
 
@@ -48,6 +48,7 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
   const montantSaisi = Number(montant.replace(",", "."));
   const montantValide = Number.isFinite(montantSaisi) && montantSaisi > 0 && montantSaisi <= remaining + 0.005;
   const partiel = montantValide && montantSaisi < remaining - 0.005;
+  const solde = montantValide && !partiel;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,47 +73,25 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
     }
   }
 
-  const champ =
-    "w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500";
-  const etiquette = "block text-xs font-semibold text-slate-700 mb-1";
-
-  const dialogue = useDialogue({ onClose, titreId: "mark-paid-title", fermable: !saving });
+  const champ = CHAMP;
+  const etiquette = ETIQUETTE;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div
-        {...dialogue}
-        className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-contour-200"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 id="mark-paid-title" className="text-lg font-bold text-slate-900">
-              {t("components.markPaidModal.title")}
-            </h3>
-            <p className="text-sm text-slate-700 mt-0.5">
-              {t("components.markPaidModal.intro", { name: tenantName, amount: amountLabel })}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="text-slate-400 hover:text-slate-600"
-            aria-label={t("common.actions.close")}
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <CadreModale
+      titre={t("components.markPaidModal.title")}
+      titreId="mark-paid-title"
+      sousTitre={t("components.markPaidModal.intro", { name: tenantName, amount: amountLabel })}
+      onClose={onClose}
+      fermable={!saving}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <p className={AVIS}>{partiel ? t("components.markPaidModal.warningPartial") : t("components.markPaidModal.warning")}</p>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            {partiel ? t("components.markPaidModal.warningPartial") : t("components.markPaidModal.warning")}
-          </p>
-
-          <div>
-            <label htmlFor="mark-paid-amount" className={etiquette}>
-              {t("components.markPaidModal.amountLabel")}
-            </label>
+        <div>
+          <label htmlFor="mark-paid-amount" className={etiquette}>
+            {t("components.markPaidModal.amountLabel")}
+          </label>
+          <div className="flex gap-2">
             <input
               id="mark-paid-amount"
               type="number"
@@ -124,78 +103,71 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
               onChange={(e) => setMontant(e.target.value)}
               className={champ}
             />
-            <p className="text-xs text-slate-600 mt-1">
-              {t("components.markPaidModal.amountHint", { remaining: formatMoney(remaining, currency) })}
-            </p>
+            {!solde && (
+              <button type="button" onClick={() => setMontant(String(remaining))} className={`${BOUTON_TRAIT} shrink-0`}>
+                {t("components.markPaidModal.settle")}
+              </button>
+            )}
           </div>
-
-          <div>
-            <label htmlFor="mark-paid-method" className={etiquette}>
-              {t("components.markPaidModal.methodLabel")}
-            </label>
-            <select id="mark-paid-method" value={method} onChange={(e) => setMethod(e.target.value as MoyenSaisiAlaMain)} className={champ}>
-              {MOYENS.map((m) => (
-                <option key={m} value={m}>
-                  {t(`common.paymentMethods.${m}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="mark-paid-date" className={etiquette}>
-              {t("components.markPaidModal.dateLabel")}
-            </label>
-            <ChampDate
-              id="mark-paid-date"
-              required
-              max={aujourdhui}
-              value={paidAt}
-              onChange={(e) => setPaidAt(e.target.value)}
-              className={champ}
-            />
-            <p className="text-xs text-slate-600 mt-1">{t("components.markPaidModal.dateHint")}</p>
-          </div>
-
-          <div>
-            <label htmlFor="mark-paid-ref" className={etiquette}>
-              {t("components.markPaidModal.referenceLabel")}
-            </label>
-            <input
-              id="mark-paid-ref"
-              type="text"
-              maxLength={200}
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder={t("components.markPaidModal.referencePlaceholder")}
-              className={champ}
-            />
-          </div>
-
-          {error && (
-            <p role="alert" className="text-xs text-red-600">
-              {error}
+          <p className={AIDE}>{t("components.markPaidModal.amountHint", { remaining: formatMoney(remaining, currency) })}</p>
+          {partiel && (
+            <p className="mt-1 font-mono text-xs font-semibold text-orange-700">
+              {t("components.markPaidModal.afterPayment", { amount: formatMoney(Math.round((remaining - montantSaisi) * 100) / 100, currency) })}
             </p>
           )}
+        </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
-              {t("common.actions.cancel")}
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors"
-            >
-              {saving
-                ? t("components.markPaidModal.saving")
-                : partiel
-                ? t("components.markPaidModal.confirmPartial")
-                : t("components.markPaidModal.confirmButton")}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div>
+          <label htmlFor="mark-paid-method" className={etiquette}>
+            {t("components.markPaidModal.methodLabel")}
+          </label>
+          <select id="mark-paid-method" value={method} onChange={(e) => setMethod(e.target.value as MoyenSaisiAlaMain)} className={champ}>
+            {MOYENS.map((m) => (
+              <option key={m} value={m}>
+                {t(`common.paymentMethods.${m}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="mark-paid-date" className={etiquette}>
+            {t("components.markPaidModal.dateLabel")}
+          </label>
+          <ChampDate id="mark-paid-date" required max={aujourdhui} value={paidAt} onChange={(e) => setPaidAt(e.target.value)} className={champ} />
+          <p className={AIDE}>{t("components.markPaidModal.dateHint")}</p>
+        </div>
+
+        <div>
+          <label htmlFor="mark-paid-ref" className={etiquette}>
+            {t("components.markPaidModal.referenceLabel")}
+          </label>
+          <input
+            id="mark-paid-ref"
+            type="text"
+            maxLength={200}
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            placeholder={t("components.markPaidModal.referencePlaceholder")}
+            className={champ}
+          />
+        </div>
+
+        {error && (
+          <p role="alert" className={ERREUR}>
+            {error}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+          <button type="button" onClick={onClose} disabled={saving} className={BOUTON_ANNULER}>
+            {t("common.actions.cancel")}
+          </button>
+          <button type="submit" disabled={saving} className={BOUTON_PLEIN}>
+            {saving ? t("components.markPaidModal.saving") : partiel ? t("components.markPaidModal.confirmPartial") : t("components.markPaidModal.confirmButton")}
+          </button>
+        </div>
+      </form>
+    </CadreModale>
   );
 }

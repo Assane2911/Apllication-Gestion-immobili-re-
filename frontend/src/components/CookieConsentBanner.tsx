@@ -64,14 +64,14 @@ export default function CookieConsentBanner() {
           <button
             type="button"
             onClick={() => repondre("rejected")}
-            className="text-xs font-semibold px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800"
+            className="cursor-pointer border border-slate-500 px-4 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-800"
           >
             {t("cookieConsent.reject")}
           </button>
           <button
             type="button"
             onClick={() => repondre("accepted")}
-            className="text-xs font-semibold px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white"
+            className="cursor-pointer border border-white bg-white px-4 py-2 text-xs font-semibold text-ink-900 transition-colors hover:bg-slate-100"
           >
             {t("cookieConsent.accept")}
           </button>

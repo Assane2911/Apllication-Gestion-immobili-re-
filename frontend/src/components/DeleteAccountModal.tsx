@@ -1,10 +1,10 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useAuth } from "../context/auth";
 import GoogleSignInButton from "./GoogleSignInButton";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
+import { BOUTON_ANNULER, BOUTON_DANGER, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
 interface DeleteAccountModalProps {
   onSuccess: () => void;
@@ -57,120 +57,87 @@ export default function DeleteAccountModal({ onSuccess, onClose }: DeleteAccount
     }
   }
 
-  const dialogue = useDialogue({ onClose, titreId: "delete-account-title", fermable: !deleting });
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
-        <div className="flex items-start justify-between">
+    <CadreModale
+      titre={t("components.deleteAccountModal.title")}
+      titreId="delete-account-title"
+      sousTitre={t("components.deleteAccountModal.subtitle")}
+      onClose={onClose}
+      fermable={!deleting}
+      largeur="lg"
+      danger
+    >
+      <div className={ERREUR}>
+        <p className="text-sm font-semibold">{t("components.deleteAccountModal.warningTitle")}</p>
+        <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
+          <li>{t("components.deleteAccountModal.warningProperties")}</li>
+          <li>{t("components.deleteAccountModal.warningTenants")}</li>
+          <li>{t("components.deleteAccountModal.warningContracts")}</li>
+          <li>{t("components.deleteAccountModal.warningDocuments")}</li>
+        </ul>
+      </div>
+
+      <form onSubmit={handleDelete} className="mt-4 space-y-4">
+        <div>
+          <label htmlFor="delete-account-confirm" className={ETIQUETTE}>
+            {t("components.deleteAccountModal.confirmLabel", { word: confirmationAttendue })}
+          </label>
+          <input
+            id="delete-account-confirm"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={confirmationAttendue}
+            autoComplete="off"
+            className={CHAMP}
+          />
+        </div>
+
+        {isGoogleOnly ? (
           <div>
-            <h3 id="delete-account-title" className="text-lg font-bold text-red-700">
-              {t("components.deleteAccountModal.title")}
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">
-              {t("components.deleteAccountModal.subtitle")}
-            </p>
+            <span className={ETIQUETTE}>{t("components.deleteAccountModal.googleLabel")}</span>
+            <p className="mb-2 text-xs text-slate-600">{t("components.deleteAccountModal.googleHint")}</p>
+            <GoogleSignInButton
+              onCredential={(credential) => {
+                setGoogleCredential(credential);
+                setError(null);
+              }}
+              onError={() => setError(t("auth.google.error"))}
+              locale={i18n.language}
+            />
+            {googleCredential && <p className="mt-2 text-xs font-semibold text-ink-900">{t("components.deleteAccountModal.googleConfirmed")}</p>}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={deleting}
-            className="text-slate-400 hover:text-slate-600"
-            aria-label={t("common.actions.close")}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
-          <p className="text-sm text-red-800 font-semibold">
-            {t("components.deleteAccountModal.warningTitle")}
-          </p>
-          <ul className="text-xs text-red-700 mt-2 space-y-1 list-disc list-inside">
-            <li>{t("components.deleteAccountModal.warningProperties")}</li>
-            <li>{t("components.deleteAccountModal.warningTenants")}</li>
-            <li>{t("components.deleteAccountModal.warningContracts")}</li>
-            <li>{t("components.deleteAccountModal.warningDocuments")}</li>
-          </ul>
-        </div>
-
-        <form onSubmit={handleDelete} className="mt-4 space-y-4">
+        ) : (
           <div>
-            <label htmlFor="delete-account-confirm" className="block text-xs font-semibold text-slate-700 mb-1">
-              {t("components.deleteAccountModal.confirmLabel", { word: confirmationAttendue })}
+            <label htmlFor="delete-account-password" className={ETIQUETTE}>
+              {t("components.deleteAccountModal.passwordLabel")}
             </label>
             <input
-              id="delete-account-confirm"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={confirmationAttendue}
-              autoComplete="off"
-              className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
+              id="delete-account-password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className={CHAMP}
             />
           </div>
+        )}
 
-          {isGoogleOnly ? (
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">
-                {t("components.deleteAccountModal.googleLabel")}
-              </span>
-              <p className="text-xs text-slate-600 mb-2">
-                {t("components.deleteAccountModal.googleHint")}
-              </p>
-              <GoogleSignInButton
-                onCredential={(credential) => {
-                  setGoogleCredential(credential);
-                  setError(null);
-                }}
-                onError={() => setError(t("auth.google.error"))}
-                locale={i18n.language}
-              />
-              {googleCredential && (
-                <p className="text-xs text-emerald-700 mt-2">
-                  {t("components.deleteAccountModal.googleConfirmed")}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div>
-              <label htmlFor="delete-account-password" className="block text-xs font-semibold text-slate-700 mb-1">
-                {t("components.deleteAccountModal.passwordLabel")}
-              </label>
-              <input
-                id="delete-account-password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-          )}
+        {error && (
+          <p role="alert" className={ERREUR}>
+            {error}
+          </p>
+        )}
 
-          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={deleting}
-              className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2"
-            >
-              {t("common.actions.cancel")}
-            </button>
-            <button
-              type="submit"
-              disabled={deleting || !confirmationValide || !preuveIdentiteFournie}
-              className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors"
-            >
-              {deleting
-                ? t("components.deleteAccountModal.deleting")
-                : t("components.deleteAccountModal.confirmButton")}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+          <button type="button" onClick={onClose} disabled={deleting} className={BOUTON_ANNULER}>
+            {t("common.actions.cancel")}
+          </button>
+          <button type="submit" disabled={deleting || !confirmationValide || !preuveIdentiteFournie} className={BOUTON_DANGER}>
+            {deleting ? t("components.deleteAccountModal.deleting") : t("components.deleteAccountModal.confirmButton")}
+          </button>
+        </div>
+      </form>
+    </CadreModale>
   );
 }

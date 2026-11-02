@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/react";
 import { AlertTriangle } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import i18n from "../i18n";
+import { BOUTON_PLEIN } from "./styleFormulaire";
 import { estFichierDisparu, rechargementAssure } from "../utils/rechargementApresDeploiement";
 
 interface Props {
@@ -51,8 +52,8 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-sm w-full text-center bg-white border border-contour-200 rounded-2xl shadow-sm p-8">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4">
+        <div className="w-full max-w-sm border-2 border-ink-900 bg-white p-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center border border-rose-700 bg-rose-50 text-rose-700">
             <AlertTriangle size={26} strokeWidth={1.75} />
           </div>
           <h1 className="text-base font-bold text-slate-900 mb-1.5">{i18n.t("components.errorBoundary.title")}</h1>
@@ -61,7 +62,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
+            className={BOUTON_PLEIN}
           >
             {i18n.t("components.errorBoundary.reload")}
           </button>

@@ -1,8 +1,8 @@
-import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
+import { AVIS, BOUTON_ANNULER, BOUTON_PLEIN, BOUTON_TRAIT, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
 interface TwoFactorSetupModalProps {
   onSuccess: () => void;
@@ -30,6 +30,7 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [codesCopies, setCodesCopies] = useState(false);
 
   useEffect(() => {
     api
@@ -63,135 +64,113 @@ export default function TwoFactorSetupModal({ onSuccess, onClose }: TwoFactorSet
     }
   }
 
-  const dialogue = useDialogue({ onClose, titreId: "two-factor-setup-title", fermable: !confirming });
+  async function copierCodes() {
+    try {
+      await navigator.clipboard.writeText(backupCodes.join("\n"));
+      setCodesCopies(true);
+    } catch {
+      // Presse-papiers indisponible : les codes restent affichés, à noter à la main.
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 id="two-factor-setup-title" className="text-lg font-bold text-slate-900">
-              {t("components.twoFactorSetup.title")}
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">
-              {step === "backupCodes" ? t("components.twoFactorSetup.subtitleBackupCodes") : t("components.twoFactorSetup.subtitle")}
-            </p>
-          </div>
-          {step === "qr" && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-600"
-              aria-label={t("common.actions.close")}
-            >
-              <X size={18} />
+    <CadreModale
+      titre={t("components.twoFactorSetup.title")}
+      titreId="two-factor-setup-title"
+      sousTitre={step === "backupCodes" ? t("components.twoFactorSetup.subtitleBackupCodes") : t("components.twoFactorSetup.subtitle")}
+      onClose={onClose}
+      fermable={!confirming}
+      largeur="lg"
+      boutonFermer={step === "qr"}
+    >
+      {step === "loading" && <p className="text-sm text-slate-600">{t("components.twoFactorSetup.loading")}</p>}
+
+      {step === "error" && (
+        <div className="space-y-4">
+          <p role="alert" className={ERREUR}>
+            {error}
+          </p>
+          <div className="flex justify-end">
+            <button type="button" onClick={onClose} className={BOUTON_TRAIT}>
+              {t("common.actions.close")}
             </button>
-          )}
+          </div>
         </div>
+      )}
 
-        {step === "loading" && (
-          <p className="mt-6 text-sm text-slate-600">{t("components.twoFactorSetup.loading")}</p>
-        )}
-
-        {step === "error" && (
-          <div className="mt-4 space-y-4">
-            <p role="alert" className="text-sm text-red-600">{error}</p>
-            <div className="flex justify-end">
-              <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
-                {t("common.actions.close")}
-              </button>
+      {step === "qr" && (
+        <form onSubmit={handleConfirm} className="space-y-4">
+          {qrCodeDataUrl && (
+            <div className="flex justify-center">
+              <img src={qrCodeDataUrl} alt={t("components.twoFactorSetup.qrAlt")} className="h-44 w-44 border border-slate-400 bg-white p-2" />
             </div>
-          </div>
-        )}
+          )}
 
-        {step === "qr" && (
-          <form onSubmit={handleConfirm} className="mt-4 space-y-4">
-            {qrCodeDataUrl && (
-              <div className="flex justify-center">
-                <img
-                  src={qrCodeDataUrl}
-                  alt={t("components.twoFactorSetup.qrAlt")}
-                  className="w-44 h-44 rounded-lg border border-contour-200 bg-white p-2"
-                />
-              </div>
-            )}
-
-            {secret && (
-              <div>
-                <p className="text-xs text-slate-600 text-center">
-                  {t("components.twoFactorSetup.manualEntryHint")}
-                </p>
-                <p className="mt-1 text-center font-mono text-sm tracking-wider text-slate-900 break-all">
-                  {secret}
-                </p>
-              </div>
-            )}
-
+          {secret && (
             <div>
-              <label htmlFor="two-factor-setup-code" className="block text-xs font-semibold text-slate-700 mb-1">
-                {t("components.twoFactorSetup.codeLabel")}
-              </label>
-              <input
-                id="two-factor-setup-code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                required
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full text-sm text-center tracking-[0.3em] border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
-                placeholder={t("components.twoFactorSetup.codePlaceholder")}
-              />
+              <p className="text-center text-xs text-slate-600">{t("components.twoFactorSetup.manualEntryHint")}</p>
+              <p className="mt-1 break-all text-center font-mono text-sm tracking-wider text-slate-900">{secret}</p>
             </div>
+          )}
 
-            {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={onClose} disabled={confirming} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
-                {t("common.actions.cancel")}
-              </button>
-              <button
-                type="submit"
-                disabled={confirming}
-                className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors"
-              >
-                {confirming ? t("components.twoFactorSetup.confirming") : t("components.twoFactorSetup.confirmButton")}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {step === "backupCodes" && (
-          <div className="mt-4 space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <p className="text-sm text-amber-800 font-semibold">
-                {t("components.twoFactorSetup.backupCodesWarning")}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 font-mono text-sm">
-              {backupCodes.map((backupCode) => (
-                <div
-                  key={backupCode}
-                  className="bg-slate-100 text-slate-900 rounded-lg px-3 py-2 text-center tracking-wider"
-                >
-                  {backupCode}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={onSuccess}
-                className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors"
-              >
-                {t("components.twoFactorSetup.done")}
-              </button>
-            </div>
+          <div>
+            <label htmlFor="two-factor-setup-code" className={ETIQUETTE}>
+              {t("components.twoFactorSetup.codeLabel")}
+            </label>
+            <input
+              id="two-factor-setup-code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className={`${CHAMP} text-center font-mono tracking-[0.3em]`}
+              placeholder={t("components.twoFactorSetup.codePlaceholder")}
+            />
           </div>
-        )}
-      </div>
-    </div>
+
+          {error && (
+            <p role="alert" className={ERREUR}>
+              {error}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+            <button type="button" onClick={onClose} disabled={confirming} className={BOUTON_ANNULER}>
+              {t("common.actions.cancel")}
+            </button>
+            <button type="submit" disabled={confirming} className={BOUTON_PLEIN}>
+              {confirming ? t("components.twoFactorSetup.confirming") : t("components.twoFactorSetup.confirmButton")}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {step === "backupCodes" && (
+        <div className="space-y-4">
+          <p className={AVIS}>
+            <span className="text-sm font-semibold">{t("components.twoFactorSetup.backupCodesWarning")}</span>
+          </p>
+
+          <div className="grid grid-cols-2 gap-px border border-slate-300 bg-slate-300 font-mono text-sm">
+            {backupCodes.map((backupCode) => (
+              <div key={backupCode} className="bg-slate-50 px-3 py-2 text-center tracking-wider text-slate-900">
+                {backupCode}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-300 pt-4">
+            <button type="button" onClick={copierCodes} className={BOUTON_TRAIT}>
+              {codesCopies ? t("components.twoFactorSetup.codesCopied") : t("components.twoFactorSetup.copyCodes")}
+            </button>
+            <button type="button" onClick={onSuccess} className={BOUTON_PLEIN}>
+              {t("components.twoFactorSetup.done")}
+            </button>
+          </div>
+        </div>
+      )}
+    </CadreModale>
   );
 }

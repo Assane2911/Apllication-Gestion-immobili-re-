@@ -994,6 +994,10 @@ const pt: TranslationSchema = {
       errorRequired: "Por favor, assine no quadro antes de confirmar.",
     },
     depositRefundModal: {
+      totalDeductions: "Retenções",
+      retained: "{{percent}} % da caução retida",
+      quickLabel: "Motivos habituais",
+      quick: { cleaning: "Limpeza", painting: "Pintura", repairs: "Reparações" },
       title: "Devolução do depósito de garantia",
       depositAmount: "Depósito inicial: {{amount}}",
       deductionsTitle: "Retenções (danos, rendas em dívida...)",
@@ -1025,6 +1029,8 @@ const pt: TranslationSchema = {
       deleting: "A eliminar...",
     },
     twoFactorSetup: {
+      copyCodes: "Copiar os códigos",
+      codesCopied: "Códigos copiados",
       title: "Ativar a verificação em duas etapas",
       subtitle: "Digitaliza este código QR com uma aplicação de autenticação (Google Authenticator, Authy...).",
       subtitleBackupCodes: "Anota estes códigos de recuperação antes de continuar.",
@@ -1040,6 +1046,8 @@ const pt: TranslationSchema = {
       done: "Anotei os meus códigos de recuperação",
     },
     markPaidModal: {
+      settle: "Liquidar",
+      afterPayment: "Em dívida após este pagamento: {{amount}}",
       title: "Marcar a renda como paga",
       intro: "Renda de {{name}}: {{amount}}.",
       warning: "O recibo será enviado de imediato por email ao inquilino, e esta ação é DEFINITIVA: uma fatura paga não pode voltar a pendente.",
@@ -1134,6 +1142,7 @@ const pt: TranslationSchema = {
       docTitle: "Notificação para pagamento",
     },
     rentRevisionModal: {
+      annualImpact: "Em doze meses: {{amount}}",
       title: "Rever a renda",
       current: "Renda atual: {{rent}}",
       method: "Método de cálculo",
@@ -1194,6 +1203,7 @@ const pt: TranslationSchema = {
       hideRead: "Ocultar os elementos lidos",
     },
     trialBanner: {
+      progress: "Dias de teste restantes",
       expiredTitle: "Período de teste expirado",
       expiredDesc:
         "O seu período de teste de 15 dias terminou. Subscreva um plano para continuar a usar a aplicação.",
@@ -3418,6 +3428,7 @@ const pt: TranslationSchema = {
   },
 
   suggestions: {
+    counter: "{{count}} / 4000",
     button: "Alguma sugestão?",
     zone: "Ajuda e sugestões",
     title: "A sua opinião melhora a plataforma",

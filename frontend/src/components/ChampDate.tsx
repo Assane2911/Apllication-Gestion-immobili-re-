@@ -156,7 +156,7 @@ export default function ChampDate({ onClick, ...champ }: Props) {
             role="dialog"
             aria-label={t("common.calendar.choose")}
             style={{ top: position.haut, left: position.gauche, width: LARGEUR }}
-            className="fixed z-[70] border-[1.5px] border-ink-900 bg-white text-slate-900 shadow-lg"
+            className="fixed z-[70] border-[1.5px] border-ink-900 bg-white text-slate-900 "
           >
             <div aria-hidden="true" className="bande-motif h-1.5" />
             <div className="flex items-center justify-between gap-2 border-b border-slate-300 px-3 py-2">

@@ -5,7 +5,7 @@ import { useHistorique } from "../context/historique";
 import Bulle from "./Bulle";
 
 const BOUTON =
-  "w-9 h-9 shrink-0 rounded-xl border border-contour-200 bg-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35";
+  "w-9 h-9 shrink-0 border border-slate-300 bg-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35";
 
 /**
  * « Retour » et « Suivant » dans l'historique de navigation de l'application (voir HistoriqueContext). L'application

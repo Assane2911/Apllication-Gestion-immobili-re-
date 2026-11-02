@@ -1,11 +1,12 @@
-import { Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
 import type { Guarantor } from "../types";
 import ChampTelephone from "./ChampTelephone";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
+import { BOUTON_ANNULER, BOUTON_PLEIN, CHAMP, ERREUR, ETIQUETTE, INFO } from "./styleFormulaire";
 
 interface GuarantorsModalProps {
   contractId: string;
@@ -103,31 +104,21 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
     }
   }
 
-  const champ = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
-  const etiquette = "block text-xs font-semibold text-slate-700 mb-1";
-
-  const dialogue = useDialogue({ onClose, titreId: "guarantors-title", fermable: !saving });
+  const champ = CHAMP;
+  const etiquette = ETIQUETTE;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200">
-        <div className="flex items-start justify-between">
-          <h3 id="guarantors-title" className="text-lg font-bold text-slate-900">{t("components.guarantors.title")}</h3>
-          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600">
-            <X size={18} />
-          </button>
-        </div>
-
-        {verrouille && <p className="mt-3 text-xs rounded-lg bg-slate-50 px-3 py-2 text-slate-700">{t("components.guarantors.locked")}</p>}
+    <CadreModale titre={t("components.guarantors.title")} titreId="guarantors-title" onClose={onClose} fermable={!saving} largeur="lg">
+      {verrouille && <p className={INFO}>{t("components.guarantors.locked")}</p>}
 
         {garants.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-600">{t("components.guarantors.none")}</p>
+          <p className="text-sm text-slate-600">{t("components.guarantors.none")}</p>
         ) : (
-          <ul className="mt-4 divide-y divide-contour-100">
+          <ul className="mt-1 divide-y divide-slate-300 border border-slate-300 px-3">
             {garants.map((g) => (
-              <li key={g.id} className="py-2 flex items-start justify-between gap-3 text-sm">
+              <li key={g.id} className="flex items-start justify-between gap-3 py-2 text-sm">
                 <span className="text-slate-800">
-                  <span className="font-medium">
+                  <span className="font-semibold">
                     {g.civility ? `${t(`common.civility.${g.civility}`)} ` : ""}
                     {g.firstName} {g.lastName}
                   </span>
@@ -137,11 +128,11 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
                   )}
                 </span>
                 {!verrouille && (
-                  <span className="flex items-center gap-2 shrink-0">
-                    <button type="button" onClick={() => ouvrir(g)} aria-label={t("components.guarantors.edit", { name: g.firstName })} className="text-slate-400 hover:text-brand-600">
+                  <span className="flex shrink-0 items-center gap-2">
+                    <button type="button" onClick={() => ouvrir(g)} aria-label={t("components.guarantors.edit", { name: g.firstName })} className="cursor-pointer p-1 text-slate-500 hover:text-ink-900">
                       <Pencil size={14} aria-hidden="true" />
                     </button>
-                    <button type="button" onClick={() => retirer(g)} aria-label={t("components.guarantors.remove", { name: g.firstName })} className="text-slate-400 hover:text-red-600">
+                    <button type="button" onClick={() => retirer(g)} aria-label={t("components.guarantors.remove", { name: g.firstName })} className="cursor-pointer p-1 text-slate-500 hover:text-rose-700">
                       <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </span>
@@ -152,13 +143,13 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
         )}
 
         {!verrouille && !formOuvert && garants.length < 5 && (
-          <button type="button" onClick={() => ouvrir()} className="mt-4 text-sm font-semibold text-brand-600 hover:underline">
+          <button type="button" onClick={() => ouvrir()} className="mt-4 cursor-pointer text-sm font-semibold text-ink-900 underline decoration-ink-900/40 hover:text-orange-700">
             {t("components.guarantors.add")}
           </button>
         )}
 
         {!verrouille && formOuvert && (
-          <form onSubmit={enregistrer} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 pt-4">
+          <form onSubmit={enregistrer} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-300 pt-4">
             <div className="sm:col-span-2">
               <label htmlFor="g-civility" className={etiquette}>{t("common.civility.label")}</label>
               <select id="g-civility" value={form.civility} onChange={(e) => setForm({ ...form, civility: e.target.value })} className={champ}>
@@ -196,19 +187,18 @@ export default function GuarantorsModal({ contractId, currency, verrouille, onCh
               <label htmlFor="g-notes" className={etiquette}>{t("components.guarantors.notes")}</label>
               <textarea id="g-notes" rows={2} maxLength={1000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={champ} />
             </div>
-            <div className="sm:col-span-2 flex justify-end gap-2">
-              <button type="button" onClick={() => setFormOuvert(false)} disabled={saving} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
+            <div className="flex justify-end gap-3 sm:col-span-2">
+              <button type="button" onClick={() => setFormOuvert(false)} disabled={saving} className={BOUTON_ANNULER}>
                 {t("common.actions.cancel")}
               </button>
-              <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg">
+              <button type="submit" disabled={saving} className={BOUTON_PLEIN}>
                 {saving ? t("components.guarantors.saving") : t("components.guarantors.save")}
               </button>
             </div>
           </form>
         )}
 
-        {error && <p role="alert" className="mt-3 text-xs text-red-600">{error}</p>}
-      </div>
-    </div>
+        {error && <p role="alert" className={`mt-3 ${ERREUR}`}>{error}</p>}
+    </CadreModale>
   );
 }

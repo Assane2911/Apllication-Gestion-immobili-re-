@@ -88,3 +88,23 @@ describe("TwoFactorSetupModal", () => {
     expect(screen.getByLabelText("Code affiché par l'application")).toBeInTheDocument();
   });
 });
+
+describe("TwoFactorSetupModal — copie des codes de secours", () => {
+  beforeEach(() => mockedApi.post.mockReset());
+
+  it("copie tous les codes, un par ligne, et n'offre pas de croix tant qu'ils n'ont pas été notés", async () => {
+    const user = userEvent.setup();
+    const ecrire = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+    mockedApi.post.mockResolvedValueOnce({ data: { secret: "ABCD", otpauthUrl: "otpauth://x", qrCodeDataUrl: "data:image/png;base64,xxx" } });
+    renderModal();
+    await user.type(await screen.findByLabelText("Code affiché par l'application"), "123456");
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true, backupCodes: ["aaa111", "bbb222"] } });
+    await user.click(screen.getByRole("button", { name: "Activer" }));
+
+    await user.click(await screen.findByRole("button", { name: "Copier les codes" }));
+    expect(ecrire).toHaveBeenCalledWith("aaa111\nbbb222");
+    expect(await screen.findByRole("button", { name: "Codes copiés" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Fermer" })).not.toBeInTheDocument();
+  });
+});

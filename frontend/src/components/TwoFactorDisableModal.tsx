@@ -1,10 +1,10 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useAuth } from "../context/auth";
 import GoogleSignInButton from "./GoogleSignInButton";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
+import { BOUTON_ANNULER, BOUTON_DANGER, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
 interface TwoFactorDisableModalProps {
   onSuccess: () => void;
@@ -43,87 +43,63 @@ export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorD
     }
   }
 
-  const dialogue = useDialogue({ onClose, titreId: "two-factor-disable-title", fermable: !disabling });
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div {...dialogue} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
-        <div className="flex items-start justify-between">
+    <CadreModale
+      titre={t("components.twoFactorDisable.title")}
+      titreId="two-factor-disable-title"
+      sousTitre={t("components.twoFactorDisable.subtitle")}
+      onClose={onClose}
+      fermable={!disabling}
+      largeur="lg"
+      danger
+    >
+      <form onSubmit={handleDisable} className="space-y-4">
+        {isGoogleOnly ? (
           <div>
-            <h3 id="two-factor-disable-title" className="text-lg font-bold text-slate-900">
-              {t("components.twoFactorDisable.title")}
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">
-              {t("components.twoFactorDisable.subtitle")}
-            </p>
+            <span className={ETIQUETTE}>{t("components.deleteAccountModal.googleLabel")}</span>
+            <p className="mb-2 text-xs text-slate-600">{t("components.deleteAccountModal.googleHint")}</p>
+            <GoogleSignInButton
+              onCredential={(credential) => {
+                setGoogleCredential(credential);
+                setError(null);
+              }}
+              onError={() => setError(t("auth.google.error"))}
+              locale={i18n.language}
+            />
+            {googleCredential && <p className="mt-2 text-xs font-semibold text-ink-900">{t("components.deleteAccountModal.googleConfirmed")}</p>}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={disabling}
-            className="text-slate-400 hover:text-slate-600"
-            aria-label={t("common.actions.close")}
-          >
-            <X size={18} />
+        ) : (
+          <div>
+            <label htmlFor="two-factor-disable-password" className={ETIQUETTE}>
+              {t("components.deleteAccountModal.passwordLabel")}
+            </label>
+            <input
+              id="two-factor-disable-password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className={CHAMP}
+            />
+          </div>
+        )}
+
+        {error && (
+          <p role="alert" className={ERREUR}>
+            {error}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+          <button type="button" onClick={onClose} disabled={disabling} className={BOUTON_ANNULER}>
+            {t("common.actions.cancel")}
+          </button>
+          <button type="submit" disabled={disabling || !preuveIdentiteFournie} className={BOUTON_DANGER}>
+            {disabling ? t("components.twoFactorDisable.disabling") : t("components.twoFactorDisable.confirmButton")}
           </button>
         </div>
-
-        <form onSubmit={handleDisable} className="mt-4 space-y-4">
-          {isGoogleOnly ? (
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">
-                {t("components.deleteAccountModal.googleLabel")}
-              </span>
-              <p className="text-xs text-slate-600 mb-2">
-                {t("components.deleteAccountModal.googleHint")}
-              </p>
-              <GoogleSignInButton
-                onCredential={(credential) => {
-                  setGoogleCredential(credential);
-                  setError(null);
-                }}
-                onError={() => setError(t("auth.google.error"))}
-                locale={i18n.language}
-              />
-              {googleCredential && (
-                <p className="text-xs text-emerald-700 mt-2">
-                  {t("components.deleteAccountModal.googleConfirmed")}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div>
-              <label htmlFor="two-factor-disable-password" className="block text-xs font-semibold text-slate-700 mb-1">
-                {t("components.deleteAccountModal.passwordLabel")}
-              </label>
-              <input
-                id="two-factor-disable-password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="w-full text-sm border border-slate-300 bg-white text-slate-900 rounded-lg px-3.5 py-2 focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-          )}
-
-          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} disabled={disabling} className="text-xs text-slate-500 hover:text-slate-700 px-3 py-2">
-              {t("common.actions.cancel")}
-            </button>
-            <button
-              type="submit"
-              disabled={disabling || !preuveIdentiteFournie}
-              className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors"
-            >
-              {disabling ? t("components.twoFactorDisable.disabling") : t("components.twoFactorDisable.confirmButton")}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </CadreModale>
   );
 }

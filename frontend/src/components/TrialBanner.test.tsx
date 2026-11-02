@@ -95,3 +95,17 @@ describe("TrialBanner", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+describe("TrialBanner — jauge de l'essai", () => {
+  it("montre ce qu'il reste des quinze jours d'essai", () => {
+    renderBanner(gestionnaire({ trialDaysRemaining: 6 }));
+    const jauge = screen.getByRole("progressbar", { name: "Jours d'essai restants" });
+    expect(jauge).toHaveAttribute("aria-valuenow", "6");
+    expect(jauge).toHaveAttribute("aria-valuemax", "15");
+  });
+
+  it("plafonne la jauge si le serveur annonce plus de jours que la durée de l'essai", () => {
+    renderBanner(gestionnaire({ trialDaysRemaining: 40 }));
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "15");
+  });
+});

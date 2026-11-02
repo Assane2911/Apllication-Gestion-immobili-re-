@@ -994,6 +994,10 @@ const es: TranslationSchema = {
       errorRequired: "Por favor, coloca tu firma en el recuadro antes de validar.",
     },
     depositRefundModal: {
+      totalDeductions: "Retenciones",
+      retained: "{{percent}} % de la fianza retenida",
+      quickLabel: "Motivos habituales",
+      quick: { cleaning: "Limpieza", painting: "Pintura", repairs: "Reparaciones" },
       title: "Devolución de la fianza",
       depositAmount: "Fianza inicial: {{amount}}",
       deductionsTitle: "Retenciones (daños, alquileres impagados...)",
@@ -1025,6 +1029,8 @@ const es: TranslationSchema = {
       deleting: "Eliminando...",
     },
     twoFactorSetup: {
+      copyCodes: "Copiar los códigos",
+      codesCopied: "Códigos copiados",
       title: "Activar la verificación en dos pasos",
       subtitle: "Escanea este código QR con una aplicación de autenticación (Google Authenticator, Authy...).",
       subtitleBackupCodes: "Anota estos códigos de respaldo antes de continuar.",
@@ -1040,6 +1046,8 @@ const es: TranslationSchema = {
       done: "He anotado mis códigos de respaldo",
     },
     markPaidModal: {
+      settle: "Saldar",
+      afterPayment: "Pendiente tras este pago: {{amount}}",
       title: "Marcar el alquiler como pagado",
       intro: "Alquiler de {{name}}: {{amount}}.",
       warning: "El recibo se enviará de inmediato por correo al inquilino, y esta acción es DEFINITIVA: una factura pagada no puede volver a estar pendiente.",
@@ -1134,6 +1142,7 @@ const es: TranslationSchema = {
       docTitle: "Requerimiento de pago",
     },
     rentRevisionModal: {
+      annualImpact: "En doce meses: {{amount}}",
       title: "Revisar el alquiler",
       current: "Alquiler actual: {{rent}}",
       method: "Método de cálculo",
@@ -1194,6 +1203,7 @@ const es: TranslationSchema = {
       hideRead: "Ocultar los elementos leídos",
     },
     trialBanner: {
+      progress: "Días de prueba restantes",
       expiredTitle: "Período de prueba expirado",
       expiredDesc:
         "Tu período de prueba de 15 días ha finalizado. Por favor, suscríbete a un plan para seguir usando la aplicación.",
@@ -3420,6 +3430,7 @@ const es: TranslationSchema = {
   },
 
   suggestions: {
+    counter: "{{count}} / 4000",
     button: "¿Alguna sugerencia?",
     zone: "Ayuda y sugerencias",
     title: "Su opinión mejora la plataforma",

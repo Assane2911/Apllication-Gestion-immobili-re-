@@ -14,10 +14,11 @@ const iconByType: Record<NotificationType, typeof Bell> = {
   lead: UserPlus,
 };
 
-const severityDot: Record<string, string> = {
-  info: "bg-brand-500",
-  warning: "bg-amber-500",
-  danger: "bg-red-500",
+/** Filet à gauche de chaque notification : encre pour une information, orange pour un avertissement, rouge pour un danger. */
+const severityBar: Record<string, string> = {
+  info: "shadow-[inset_3px_0_0_var(--color-ink-900)]",
+  warning: "shadow-[inset_3px_0_0_var(--color-orange-700)]",
+  danger: "shadow-[inset_3px_0_0_var(--color-rose-600)]",
 };
 
 const POLL_INTERVAL_MS = 30_000;
@@ -185,12 +186,12 @@ export default function NotificationBell({
       <Bulle texte={t(`${i18nPrefix}.tip`)}>
       <button
         onClick={basculer}
-        className="relative w-9 h-9 rounded-lg bg-white border border-contour-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+        className="relative flex h-9 w-9 cursor-pointer items-center justify-center border border-slate-400 bg-white text-slate-700 transition-colors hover:border-ink-900 hover:bg-slate-50"
         aria-label={t(`${i18nPrefix}.ariaLabel`)}
       >
         <Bell size={18} />
         {nonVues.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center bg-orange-700 px-1 font-mono text-[10px] font-bold text-white">
             {nonVues.length > 9 ? "9+" : nonVues.length}
           </span>
         )}
@@ -198,17 +199,17 @@ export default function NotificationBell({
       </Bulle>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl border border-contour-200 shadow-lg z-50">
-          <div className="px-4 py-3 border-b border-contour-100 flex items-start justify-between gap-3">
+        <div className="absolute right-0 z-50 mt-2 max-h-96 w-80 overflow-y-auto border-2 border-ink-900 bg-white">
+          <div className="flex items-start justify-between gap-3 border-b border-ink-900 bg-ink-900 px-4 py-3 text-white">
             <div className="min-w-0">
-              <h4 className="font-semibold text-sm text-slate-900">{t(`${i18nPrefix}.title`)}</h4>
-              <p className="text-xs text-slate-600">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length })}</p>
+              <h4 className="font-mono text-xs font-semibold uppercase tracking-wider">{t(`${i18nPrefix}.title`)}</h4>
+              <p className="text-xs text-white/85">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length })}</p>
             </div>
             {aTraiter.length > 0 && (
               <button
                 type="button"
                 onClick={toutMarquerLu}
-                className="shrink-0 text-xs font-medium text-brand-700 hover:text-brand-800 hover:underline"
+                className="shrink-0 cursor-pointer border-b border-white/50 text-xs font-semibold text-white hover:border-white"
               >
                 {t(`${i18nPrefix}.markAllRead`)}
               </button>
@@ -217,10 +218,10 @@ export default function NotificationBell({
           {affichees.length === 0 ? (
             <p className="text-sm text-slate-600 text-center py-8">{t(`${i18nPrefix}.allCaughtUp`)}</p>
           ) : (
-            <ul className="divide-y divide-contour-100">
+            <ul className="divide-y divide-slate-300">
               {affichees.map((n) => {
                 const Icon = iconByType[n.type];
-                const classes = [nouvelles.has(cleDe(n)) ? "bg-brand-50/70" : "", n.read ? "opacity-60" : ""]
+                const classes = [nouvelles.has(cleDe(n)) ? "bg-orange-50" : "", n.read ? "opacity-60" : ""]
                   .filter(Boolean)
                   .join(" ");
                 return (
@@ -228,9 +229,8 @@ export default function NotificationBell({
                     <Link
                       to={n.link}
                       onClick={fermer}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                      className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 ${severityBar[n.severity] ?? severityBar.info}`}
                     >
-                      <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${severityDot[n.severity]}`} />
                       <Icon size={16} className="mt-0.5 text-slate-600 shrink-0" />
                       <span className="min-w-0">
                         <span className="block text-sm text-slate-900 font-medium truncate">{n.title}</span>
@@ -246,7 +246,7 @@ export default function NotificationBell({
             <button
               type="button"
               onClick={() => setAfficherLues((a) => !a)}
-              className="w-full px-4 py-2.5 text-xs text-slate-600 hover:bg-slate-50 border-t border-contour-100 transition-colors"
+              className="w-full cursor-pointer border-t border-slate-300 px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-slate-700 transition-colors hover:bg-slate-50"
             >
               {afficherLues ? t(`${i18nPrefix}.hideRead`) : t(`${i18nPrefix}.showRead`, { count: lues.length })}
             </button>
