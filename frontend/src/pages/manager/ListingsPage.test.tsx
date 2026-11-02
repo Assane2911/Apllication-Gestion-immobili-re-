@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -242,5 +242,70 @@ describe("ListingsPage (manager) — annonce masquée par l'administration", () 
 
     expect(await screen.findByText("Studio visible")).toBeInTheDocument();
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+
+  describe("synthèse, recherche, partage et publication", () => {
+    const parc = () => [
+      listing({ id: "a", title: "Villa Baobab", price: 900, status: "PUBLISHED", featured: true }),
+      listing({ id: "b", title: "Studio Plateau", price: 300, status: "DRAFT" }),
+      listing({ id: "c", title: "Atelier Mermoz", price: 600, status: "PUBLISHED", hiddenByAdminAt: "2026-10-01T00:00:00.000Z", moderationReason: "Prix trompeur." }),
+      listing({ id: "d", title: "Loft Sacré-Cœur", price: 700, status: "ARCHIVED", location: "Sacré-Cœur, Dakar" }),
+    ];
+    const titres = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 3 }).textContent);
+
+    async function afficher() {
+      mockedApi.get.mockResolvedValueOnce(paginated(parc()));
+      renderPage();
+      await screen.findByText("Villa Baobab");
+    }
+
+    it("résume les annonces publiées, en brouillon, à la une et masquées", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des annonces");
+      expect(within(synthese).getByText("2")).toBeInTheDocument(); // publiées
+      expect(within(synthese).getAllByText("1")).toHaveLength(3); // brouillon, à la une, masquée
+    });
+
+    it("filtre par statut et cherche sans tenir compte des accents", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      const filtres = screen.getByRole("group", { name: "Filtrer par statut" });
+      await user.click(within(filtres).getByRole("button", { name: /Brouillon\s*1/ }));
+      expect(titres()).toEqual(["Studio Plateau"]);
+
+      await user.click(within(filtres).getByRole("button", { name: /Tous\s*4/ }));
+      await user.type(screen.getByRole("searchbox"), "sacre coeur");
+      expect(titres()).toEqual(["Loft Sacré-Cœur"]);
+    });
+
+    it("trie par prix décroissant", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.selectOptions(screen.getByLabelText("Trier par"), "Prix décroissant");
+      expect(titres()).toEqual(["Villa Baobab", "Loft Sacré-Cœur", "Atelier Mermoz", "Studio Plateau"]);
+    });
+
+    it("propose de voir et de copier le lien d'une annonce publiée, et de publier un brouillon", async () => {
+      const user = userEvent.setup();
+      const ecrire = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+      await afficher();
+
+      const villa = screen.getByRole("heading", { level: 3, name: "Villa Baobab" }).closest("article") as HTMLElement;
+      expect(within(villa).getByRole("link", { name: /Voir sur la vitrine/ })).toHaveAttribute("href", "/vitrine/annonces/a");
+      await user.click(within(villa).getByRole("button", { name: /Copier le lien/ }));
+      expect(ecrire).toHaveBeenCalledWith(`${window.location.origin}/vitrine/annonces/a`);
+      expect(await within(villa).findByText("Lien copié")).toBeInTheDocument();
+
+      const studio = screen.getByRole("heading", { level: 3, name: "Studio Plateau" }).closest("article") as HTMLElement;
+      expect(within(studio).queryByRole("link", { name: /Voir sur la vitrine/ })).not.toBeInTheDocument();
+      mockedApi.put.mockResolvedValueOnce({ data: {} });
+      mockedApi.get.mockResolvedValueOnce(paginated(parc()));
+      await user.click(within(studio).getByRole("button", { name: "Publier" }));
+      await waitFor(() => expect(mockedApi.put).toHaveBeenCalledTimes(1));
+      const [url, corps] = mockedApi.put.mock.calls[0];
+      expect(url).toBe("/listings/b");
+      expect(formDataEntries(corps as FormData)).toEqual({ status: "PUBLISHED" });
+    });
   });
 });

@@ -1,25 +1,32 @@
-import { CalendarDays, Mail, PhoneCall, Phone } from "lucide-react";
+import { CalendarDays, Download, Mail, MessageCircle, PhoneCall, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
+import BandeauChiffres from "../../components/BandeauChiffres";
+import BarreListe from "../../components/BarreListe";
 import EmptyState from "../../components/EmptyState";
 import Initiales from "../../components/Initiales";
 import Pagination from "../../components/Pagination";
 import type { Listing, LeadStatus, ListingLead, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
 import { formaterJour } from "../../utils/jourCivil";
+import { correspond } from "../../utils/recherche";
+import { aRepondreVite, ageEnJours, csvDemandes, JOURS_AVANT_RELANCE, lienWhatsapp, syntheseDemandes } from "../../utils/syntheseLocation";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
+
+const BOUTON_TRAIT = "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900";
 
 const STATUS_OPTIONS: LeadStatus[] = ["NEW", "CONTACTED", "VISITED", "CONVERTED", "ARCHIVED"];
 const PAGE_SIZE = 20;
 
-/** Filet de couleur de chaque fiche : l'orange signale ce qui attend une réponse, le vert une demande aboutie. */
+/** Filet de couleur de chaque fiche : l'orange signale ce qui attend une réponse, l'encre une demande aboutie. */
 const FILET_STATUT: Record<LeadStatus, string> = {
   NEW: "border-l-orange-700",
-  CONTACTED: "border-l-ink-900",
+  CONTACTED: "border-l-slate-500",
   VISITED: "border-l-brand-600",
-  CONVERTED: "border-l-emerald-600",
-  ARCHIVED: "border-l-slate-400",
+  CONVERTED: "border-l-ink-900",
+  ARCHIVED: "border-l-slate-300",
 };
 // Pour le sélecteur "annonce" du filtre : liste complète en une page plutôt
 // que de paginer un simple menu déroulant (même logique que le sélecteur
@@ -38,6 +45,7 @@ export default function ListingLeadsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [recherche, setRecherche] = useState("");
 
   function load(signal?: AbortSignal) {
     api
@@ -109,6 +117,31 @@ export default function ListingLeadsPage() {
     }
   }
 
+  const maintenant = new Date();
+  const synthese = syntheseDemandes(leads, maintenant);
+  const visibles = leads.filter((l) => correspond(recherche, l.prospectName, l.prospectEmail, l.prospectPhone, l.listingTitle, l.message));
+
+  function exporterCsv() {
+    telechargerCsv(
+      `demandes-${dateDuJourPourFichier()}.csv`,
+      csvDemandes(
+        visibles,
+        {
+          date: t("manager.listingLeads.csv.date"),
+          name: t("manager.listingLeads.csv.name"),
+          email: t("manager.listingLeads.csv.email"),
+          phone: t("manager.listingLeads.csv.phone"),
+          listing: t("manager.listingLeads.csv.listing"),
+          type: t("manager.listingLeads.csv.type"),
+          status: t("manager.listingLeads.csv.status"),
+          message: t("manager.listingLeads.csv.message"),
+        },
+        (type) => t(`manager.listingLeads.requestTypes.${type}`),
+        (st) => t(`common.status.${st}`)
+      )
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -117,43 +150,64 @@ export default function ListingLeadsPage() {
           <p className="mt-1 text-sm text-slate-600">{t("manager.listingLeads.subtitle")}</p>
           {!loading && !loadError && <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.listingLeads.count", { count: total })}</p>}
         </div>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Link
-            to="/annonces"
-            className="border-b border-ink-900/40 pb-0.5 text-sm font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700"
-          >
-            {t("manager.listingLeads.backToListings")}
-          </Link>
-          <select
-            aria-label={t("manager.listingLeads.filterByListing")}
-            value={listingFilter}
-            onChange={(e) => handleListingFilterChange(e.target.value)}
-            className="max-w-xs border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900"
-          >
-            <option value="ALL">{t("manager.listingLeads.allListings")}</option>
-            {listings.map((listing) => (
-              <option key={listing.id} value={listing.id}>{listing.title}</option>
-            ))}
-          </select>
-        </div>
+        <Link
+          to="/annonces"
+          className="border-b border-ink-900/40 pb-0.5 text-sm font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700"
+        >
+          {t("manager.listingLeads.backToListings")}
+        </Link>
       </div>
 
-      {/* Le parcours d'une demande, de la réception à l'aboutissement : chaque étape est aussi un filtre. */}
-      <div role="group" aria-label={t("manager.listingLeads.filterByStatus")} className="flex flex-wrap border border-slate-400 bg-white sm:inline-flex">
-        {(["ALL", ...STATUS_OPTIONS] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            aria-pressed={statusFilter === s}
-            onClick={() => handleStatusFilterChange(s)}
-            className={`flex-1 cursor-pointer whitespace-nowrap border-r border-slate-400 px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors last:border-r-0 sm:flex-none ${
-              statusFilter === s ? "bg-ink-900 text-white" : "text-slate-800 hover:bg-slate-100"
-            }`}
-          >
-            {s === "ALL" ? t("manager.listingLeads.allStatuses") : t(`common.status.${s}`)}
+      {leads.length > 0 && (
+        <BandeauChiffres
+          etiquette={t("manager.listingLeads.summary.label")}
+          cases={[
+            { libelle: t("manager.listingLeads.summary.new"), valeur: synthese.nouvelles, aide: t("manager.listingLeads.summary.newHint"), ton: synthese.nouvelles > 0 ? "alerte" : "normal" },
+            {
+              libelle: t("manager.listingLeads.summary.overdue"),
+              valeur: synthese.aRepondre,
+              aide: t("manager.listingLeads.summary.overdueHint", { days: JOURS_AVANT_RELANCE }),
+              ton: synthese.aRepondre > 0 ? "alerte" : "normal",
+            },
+            { libelle: t("manager.listingLeads.summary.visits"), valeur: synthese.visitesAOrganiser, aide: t("manager.listingLeads.summary.visitsHint") },
+            {
+              libelle: t("manager.listingLeads.summary.conversion"),
+              valeur: synthese.tauxAboutissement === null ? "—" : `${synthese.tauxAboutissement} %`,
+              aide: t("manager.listingLeads.summary.conversionHint", { count: synthese.abouties }),
+            },
+          ]}
+        />
+      )}
+
+      {/* Le parcours d'une demande, de la réception à l'aboutissement : chaque étape est aussi un filtre (appliqué par le serveur). */}
+      <BarreListe
+        idPrefixe="demandes"
+        recherche={recherche}
+        onRecherche={setRecherche}
+        placeholderRecherche={t("manager.listingLeads.search")}
+        libelleFiltres={t("manager.listingLeads.filterByStatus")}
+        filtres={(["ALL", ...STATUS_OPTIONS] as const).map((st) => ({ cle: st, libelle: st === "ALL" ? t("manager.listingLeads.allStatuses") : t(`common.status.${st}`) }))}
+        filtreActif={statusFilter}
+        onFiltre={(cle) => handleStatusFilterChange(cle as LeadStatus | "ALL")}
+      >
+        <select
+          aria-label={t("manager.listingLeads.filterByListing")}
+          value={listingFilter}
+          onChange={(e) => handleListingFilterChange(e.target.value)}
+          className="max-w-xs border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"
+        >
+          <option value="ALL">{t("manager.listingLeads.allListings")}</option>
+          {listings.map((listing) => (
+            <option key={listing.id} value={listing.id}>{listing.title}</option>
+          ))}
+        </select>
+        {leads.length > 0 && (
+          <button type="button" onClick={exporterCsv} className={BOUTON_TRAIT}>
+            <Download size={13} aria-hidden="true" />
+            {t("manager.liste.exportCsv")}
           </button>
-        ))}
-      </div>
+        )}
+      </BarreListe>
 
       {loadError && (
         <div className="flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
@@ -172,7 +226,7 @@ export default function ListingLeadsPage() {
         />
       ) : (
         <div className="space-y-5">
-          {leads.map((lead) => (
+          {visibles.map((lead) => (
             <article key={lead.id} className={`border border-l-4 border-slate-300 bg-white ${FILET_STATUT[lead.status] ?? FILET_STATUT.ARCHIVED}`}>
               <div className="lg:grid lg:grid-cols-[17rem_1fr]">
                 {/* Le contact : qui demande, comment le joindre, depuis quand. */}
@@ -194,8 +248,25 @@ export default function ListingLeadsPage() {
                         {lead.prospectPhone}
                       </a>
                     </li>
+                    {lienWhatsapp(lead.prospectPhone) && (
+                      <li className="flex items-center gap-2">
+                        <MessageCircle size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
+                        <a href={lienWhatsapp(lead.prospectPhone) ?? undefined} target="_blank" rel="noopener noreferrer" className="border-b border-ink-900/40 font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700">
+                          {t("manager.listingLeads.whatsapp")}
+                        </a>
+                      </li>
+                    )}
                   </ul>
-                  <p className="mt-4 font-mono text-[11px] tabular-nums text-slate-600">{new Date(lead.createdAt).toLocaleDateString(i18n.language)}</p>
+                  <p className="mt-4 font-mono text-[11px] tabular-nums text-slate-600">
+                    {new Date(lead.createdAt).toLocaleDateString(i18n.language)}
+                    {" · "}
+                    {ageEnJours(lead.createdAt, maintenant) === 0 ? t("manager.listingLeads.age.today") : t("manager.listingLeads.age.days", { count: ageEnJours(lead.createdAt, maintenant) })}
+                  </p>
+                  {aRepondreVite(lead, maintenant) && (
+                    <p className="mt-2 inline-block border border-orange-700 bg-orange-700 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-white">
+                      {t("manager.listingLeads.age.overdue")}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex min-w-0 flex-col">
