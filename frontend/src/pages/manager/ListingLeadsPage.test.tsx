@@ -162,4 +162,79 @@ describe("ListingLeadsPage (manager)", () => {
 
     expect(mockedApi.delete).not.toHaveBeenCalled();
   });
+
+  describe("synthèse, ancienneté, WhatsApp, recherche et export", () => {
+    const il_y_a = (jours: number) => new Date(Date.now() - jours * 86_400_000).toISOString();
+    const parc = () => [
+      lead({ id: "l1", prospectName: "Aïcha Ndiaye", createdAt: il_y_a(5), status: "NEW", requestType: "VISIT" }),
+      lead({ id: "l2", prospectName: "Moussa Ba", prospectPhone: "0771234567", createdAt: il_y_a(0), status: "NEW", requestType: "INFO", message: "Quel est le loyer ?" }),
+      lead({ id: "l3", prospectName: "Élodie Sow", createdAt: il_y_a(8), status: "CONVERTED" }),
+      lead({ id: "l4", prospectName: "Ibrahima Fall", createdAt: il_y_a(3), status: "CONTACTED", requestType: "VISIT" }),
+    ];
+    const noms = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 3 }).textContent);
+
+    async function afficher() {
+      mockedApi.get.mockImplementation(async (url: string) => (url === "/listings" ? listingsPaginated() : leadsPaginated(parc())));
+      renderPage();
+      await screen.findByText("Moussa Ba");
+    }
+
+    it("résume l'entonnoir : nouvelles, à relancer, visites à organiser, taux d'aboutissement", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des demandes");
+      const valeur = (libelle: string) => within(synthese).getByText(libelle).nextElementSibling;
+      expect(valeur("Nouvelles")).toHaveTextContent("2");
+      expect(valeur("À relancer")).toHaveTextContent("1"); // Aïcha : 5 jours sans réponse
+      expect(valeur("Visites à organiser")).toHaveTextContent("2"); // Aïcha (nouvelle) et Ibrahima (contacté)
+      expect(valeur("Taux d'aboutissement")).toHaveTextContent("25 %"); // 1 aboutie sur 4 actives
+    });
+
+    it("signale l'ancienneté de chaque demande et celles à relancer", async () => {
+      await afficher();
+      const aicha = screen.getByRole("heading", { level: 3, name: "Aïcha Ndiaye" }).closest("article") as HTMLElement;
+      expect(within(aicha).getByText(/Reçue il y a 5 j/)).toBeInTheDocument();
+      expect(within(aicha).getByText("À relancer")).toBeInTheDocument();
+
+      const moussa = screen.getByRole("heading", { level: 3, name: "Moussa Ba" }).closest("article") as HTMLElement;
+      expect(within(moussa).getByText(/Reçue aujourd'hui/)).toBeInTheDocument();
+      expect(within(moussa).queryByText("À relancer")).not.toBeInTheDocument();
+    });
+
+    it("ne propose WhatsApp que pour un numéro au format international", async () => {
+      await afficher();
+      const aicha = screen.getByRole("heading", { level: 3, name: "Aïcha Ndiaye" }).closest("article") as HTMLElement;
+      expect(within(aicha).getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/221771112233");
+      const moussa = screen.getByRole("heading", { level: 3, name: "Moussa Ba" }).closest("article") as HTMLElement;
+      expect(within(moussa).queryByRole("link", { name: "WhatsApp" })).not.toBeInTheDocument();
+    });
+
+    it("cherche dans le nom, le message ou l'annonce, sans tenir compte des accents", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "elodie");
+      expect(noms()).toEqual(["Élodie Sow"]);
+      await user.clear(screen.getByRole("searchbox"));
+      await user.type(screen.getByRole("searchbox"), "quel loyer");
+      expect(noms()).toEqual(["Moussa Ba"]);
+    });
+
+    it("exporte les demandes affichées en CSV", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "moussa");
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      const lignes = texte.split("\n");
+      expect(lignes).toHaveLength(2);
+      expect(lignes[1]).toContain('"Moussa Ba";"aicha@example.com"');
+    });
+  });
 });

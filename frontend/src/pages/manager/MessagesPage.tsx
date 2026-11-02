@@ -1,4 +1,5 @@
-import { ArrowLeft, Mail, MessageSquare, Phone } from "lucide-react";
+import { ArrowLeft, Mail, MessageSquare, Phone, Search, X } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import FilDeMessages from "../../components/FilDeMessages";
@@ -8,6 +9,9 @@ import PlanLogement from "../../components/PlanLogement";
 import ZoneDeSaisie from "../../components/ZoneDeSaisie";
 import { useCurrency } from "../../context/currency";
 import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
+import { correspond } from "../../utils/recherche";
+
+const REPONSES_RAPIDES = ["received", "visit", "thanks", "rent", "receipt"] as const;
 
 const PAGE_SIZE = 20;
 function EnteteDeFiche({ children }: { children: React.ReactNode }) {
@@ -41,6 +45,12 @@ export default function MessagesPage() {
     handleSend,
   } = useConversationThread("MANAGER", { refreshOnSend: true });
 
+  const [recherche, setRecherche] = useState("");
+  const [filtre, setFiltre] = useState<"all" | "unread">("all");
+  const estNonLue = (c: (typeof conversations)[number]) => c.lastMessage?.senderRole === "TENANT" && c.lastMessage.isRead === false;
+  const nbNonLues = conversations.filter(estNonLue).length;
+  const visibles = conversations.filter((c) => (filtre === "all" || estNonLue(c)) && correspond(recherche, c.tenant?.firstName, c.tenant?.lastName, c.property?.title));
+
   const conversationActive = conversations.find((c) => cleDuFil(c) === selectedThreadId);
   const rangActif = conversationActive ? conversations.indexOf(conversationActive) : -1;
   const formatDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(i18n.language) : "—");
@@ -53,7 +63,7 @@ export default function MessagesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-xs flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
           <span>{error}</span>
           <button onClick={() => loadConversations()} className="underline font-semibold shrink-0 whitespace-nowrap">
             {t("common.actions.retry")}
@@ -68,10 +78,53 @@ export default function MessagesPage() {
         >
           <div className="border-b border-ink-900 bg-ink-900 px-4 py-3 text-white">
             <h3 className="font-mono text-xs font-semibold uppercase tracking-wider">{t("manager.messages.ongoingDiscussions")}</h3>
-            <p className="mt-0.5 font-mono text-[11px] text-white/80">{t("manager.messages.conversationCount", { count: total })}</p>
+            <p className="mt-0.5 font-mono text-[11px] text-white/80">
+              {t("manager.messages.conversationCount", { count: total })}
+              {nbNonLues > 0 && ` · ${t("manager.messages.unreadCount", { count: nbNonLues })}`}
+            </p>
+          </div>
+          {/* Retrouver un fil : recherche (locataire, bien) et bascule « non lues ». */}
+          <div className="space-y-2 border-b border-slate-300 bg-white p-3">
+            <div className="relative">
+              <label htmlFor="messages-recherche" className="sr-only">{t("manager.messages.search")}</label>
+              <Search size={13} aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                id="messages-recherche"
+                type="search"
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                placeholder={t("manager.messages.search")}
+                className="w-full border border-slate-300 bg-white py-1.5 pl-8 pr-8 text-xs text-slate-900 [&::-webkit-search-cancel-button]:hidden"
+              />
+              {recherche && (
+                <button
+                  type="button"
+                  onClick={() => setRecherche("")}
+                  aria-label={t("manager.liste.clearSearch")}
+                  className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center text-slate-500 hover:text-ink-900"
+                >
+                  <X size={13} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            <div role="group" aria-label={t("manager.messages.filtersLabel")} className="flex border border-slate-400">
+              {(["all", "unread"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={filtre === f}
+                  onClick={() => setFiltre(f)}
+                  className={`flex-1 cursor-pointer border-r border-slate-400 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider last:border-r-0 ${
+                    filtre === f ? "bg-ink-900 text-white" : "bg-white text-slate-800 hover:bg-slate-100"
+                  }`}
+                >
+                  {t(`manager.messages.filters.${f}`)}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex-1 divide-y divide-slate-300 overflow-y-auto">
-            {conversations.map((c, rang) => {
+            {visibles.map((c, rang) => {
               const actif = selectedThreadId === cleDuFil(c);
               const nonLu = !actif && c.lastMessage?.senderRole === "TENANT" && c.lastMessage.isRead === false;
               return (
@@ -108,6 +161,9 @@ export default function MessagesPage() {
             })}
             {conversations.length === 0 && (
               <p className="p-6 text-center text-xs text-slate-600">{t("manager.messages.noActiveContracts")}</p>
+            )}
+            {conversations.length > 0 && visibles.length === 0 && (
+              <p className="p-6 text-center text-xs text-slate-600">{t("manager.messages.noMatch")}</p>
             )}
           </div>
           <div className="border-t border-slate-300 bg-white p-3">
@@ -161,6 +217,24 @@ export default function MessagesPage() {
                 libelleChargement={t("manager.messages.loadingMessages")}
                 libelleVide={t("manager.messages.noMessagesInThread")}
               />
+
+              {/* Réponses rapides : un clic insère le texte (sans l'envoyer), à compléter avant l'envoi. */}
+              <div role="group" aria-label={t("manager.messages.quick.label")} className="flex flex-wrap items-center gap-2 border-t border-slate-300 bg-slate-50 px-4 py-2.5">
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.messages.quick.label")}</span>
+                {REPONSES_RAPIDES.map((cle) => (
+                  <button
+                    key={cle}
+                    type="button"
+                    onClick={() => {
+                      const texte = t(`manager.messages.quick.${cle}Text`, { name: activeDetails.tenant?.firstName ?? "" });
+                      setNewText(newText.trim() ? `${newText.trimEnd()} ${texte}` : texte);
+                    }}
+                    className="cursor-pointer border border-slate-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-800 transition-colors hover:border-ink-900 hover:text-ink-900"
+                  >
+                    {t(`manager.messages.quick.${cle}`)}
+                  </button>
+                ))}
+              </div>
 
               <ZoneDeSaisie
                 valeur={newText}

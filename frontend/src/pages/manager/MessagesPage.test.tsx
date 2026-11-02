@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -388,5 +388,63 @@ describe("MessagesPage (gestionnaire) — présentation du fil", () => {
 
     await user.type(champ, "{Enter}");
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/messages/c1", { content: "Ligne 1\nLigne 2" }));
+  });
+
+  describe("recherche, non lues et réponses rapides", () => {
+    const fil = (nom: string, prenom: string, bien: string, contractId: string, nonLu = false) =>
+      conversation({
+        contractId,
+        tenant: { firstName: prenom, lastName: nom } as Conversation["tenant"],
+        property: { title: bien } as Conversation["property"],
+        lastMessage: nonLu ? message({ content: "Bonjour ?", senderRole: "TENANT", isRead: false }) : null,
+      });
+    const parc = () => [fil("Diallo", "Awa", "Villa Baobab", "c1"), fil("Ba", "Moussa", "Studio Plateau", "c2", true), fil("Sow", "Élodie", "Atelier Mermoz", "c3", true)];
+
+    async function afficher() {
+      mockedApi.get.mockResolvedValueOnce(conversationsPage(parc()));
+      mockedApi.get.mockResolvedValue({ data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Villa Baobab" } } } });
+      renderPage();
+      await screen.findByText("3 conversation(s) · 2 non lu(s)");
+    }
+    const index = () => screen.getByRole("heading", { name: /Discussions/i }).closest("div")!.parentElement as HTMLElement;
+
+    it("compte les conversations non lues dans l'en-tête", async () => {
+      await afficher();
+      expect(screen.getByText("3 conversation(s) · 2 non lu(s)")).toBeInTheDocument();
+    });
+
+    it("filtre les conversations non lues", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.click(within(screen.getByRole("group", { name: "Filtrer les conversations" })).getByRole("button", { name: "Non lues" }));
+      expect(within(index()).queryByText("Awa Diallo")).not.toBeInTheDocument();
+      expect(within(index()).getByText("Moussa Ba")).toBeInTheDocument();
+      expect(within(index()).getByText("Élodie Sow")).toBeInTheDocument();
+    });
+
+    it("cherche un locataire ou un bien, sans tenir compte des accents", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "elodie");
+      expect(within(index()).getByText("Élodie Sow")).toBeInTheDocument();
+      expect(within(index()).queryByText("Moussa Ba")).not.toBeInTheDocument();
+
+      await user.clear(screen.getByRole("searchbox"));
+      await user.type(screen.getByRole("searchbox"), "zzz");
+      expect(screen.getByText("Aucune conversation ne correspond.")).toBeInTheDocument();
+    });
+
+    it("insère une réponse rapide avec le prénom du locataire, sans l'envoyer", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      const rapides = await screen.findByRole("group", { name: "Réponses rapides" });
+      await user.click(within(rapides).getByRole("button", { name: "Bien reçu" }));
+      const champ = screen.getByRole("textbox", { name: /message/i }) as HTMLTextAreaElement;
+      expect(champ.value).toBe("Bonjour Awa, bien reçu, je reviens vers vous rapidement.");
+      expect(mockedApi.post).not.toHaveBeenCalled();
+
+      await user.click(within(rapides).getByRole("button", { name: "Merci" }));
+      expect(champ.value).toBe("Bonjour Awa, bien reçu, je reviens vers vous rapidement. Bonjour Awa, merci pour votre message.");
+    });
   });
 });
