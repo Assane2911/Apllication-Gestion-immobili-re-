@@ -182,7 +182,11 @@ export async function construireExportLocataire(tenantId: string) {
     })),
     signalements,
     etatsDesLieux,
-    messages: conversations,
+    // Un message vocal est signalé (date, durée, type) sans exposer le chemin de stockage de l'enregistrement.
+    messages: conversations.map((m: typeof messages.$inferSelect) => {
+      const { audioPath, ...reste } = m;
+      return { ...reste, vocal: Boolean(audioPath) || m.audioDurationSec !== null };
+    }),
     journalActivite: journal,
   };
 }

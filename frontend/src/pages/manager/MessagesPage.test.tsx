@@ -448,3 +448,23 @@ describe("MessagesPage (gestionnaire) — présentation du fil", () => {
     });
   });
 });
+
+describe("MessagesPage (gestionnaire) — messages vocaux", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("indique dans la liste que le dernier message est un vocal, avec sa durée, au lieu d'une ligne vide", async () => {
+    mockedApi.get.mockResolvedValueOnce(
+      conversationsPage([conversation({ lastMessage: message({ senderRole: "TENANT", content: "", isVoice: true, audioDurationSec: 75, isRead: true }) })])
+    );
+    mockedApi.get.mockResolvedValueOnce({
+      data: { messages: [message({ content: "", audioUrl: "https://stockage.test/v.webm", audioDurationSec: 75 })], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Studio Centre-ville" } } },
+    });
+    renderPage();
+
+    expect(await screen.findByText(/Message vocal \(1:15\)/, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(await screen.findByText("0:00 / 1:15", {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+});

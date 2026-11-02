@@ -11,6 +11,9 @@ import { assertAccesLocataireOuGestionnaire, chargerCompteCourant, chargerLocata
 import { assertPlanAtLeast } from "../middleware/auth";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { langueOuDefaut } from "../utils/langue";
+import { assertAudioContentMatchesDeclaredType } from "../middleware/upload";
+import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
+import { DUREE_MAX_MESSAGE_VOCAL_SEC, libelleMessageVocal, TOLERANCE_DUREE_SEC } from "../utils/messageVocal";
 
 type Qualite = "TITULAIRE" | "COLOCATAIRE";
 type Locataire = typeof tenants.$inferSelect;
@@ -27,6 +30,32 @@ function conditionDuFil(contractId: string, tenantId: string, titulaireId: strin
 }
 
 const idDuFil = (contractId: string, tenantId: string) => `${contractId}:${tenantId}`;
+
+type LigneMessage = typeof messages.$inferSelect;
+
+/**
+ * Le message tel que le client le reçoit : le chemin de stockage de l'enregistrement ne sort jamais (il révélerait
+ * l'organisation du bucket) ; il est remplacé par un lien signé à durée limitée, généré à chaque lecture du fil.
+ */
+async function messagePublic<T extends LigneMessage>(message: T): Promise<Omit<T, "audioPath"> & { audioUrl: string | null }> {
+  const { audioPath, ...reste } = message;
+  let audioUrl: string | null = null;
+  if (audioPath) {
+    // Un lien qu'on ne sait pas générer ne doit pas faire échouer tout le fil : le message s'affiche sans lecteur.
+    audioUrl = await getSignedUrl(audioPath).catch((err) => {
+      console.error("[message] Lien signé impossible pour un message vocal :", err);
+      return null;
+    });
+  }
+  return { ...reste, audioUrl };
+}
+
+/** Pour un aperçu (dernier message d'un fil) : pas de lien signé, seulement l'indication qu'il s'agit d'un vocal. */
+function apercuMessage(message: LigneMessage | null | undefined) {
+  if (!message) return null;
+  const { audioPath, ...reste } = message;
+  return { ...reste, isVoice: Boolean(audioPath) };
+}
 
 /** Lignes d'un résultat SQL brut, quel que soit le pilote (postgres-js : tableau ; PGlite : { rows }). */
 const lignesSql = <T>(resultat: unknown): T[] =>
@@ -119,7 +148,7 @@ export const listConversations = asyncHandler(async (req: Request, res: Response
     qualite: qualites.get(item.contract.id) ?? "TITULAIRE",
     property: item.property,
     tenant: moi,
-    lastMessage: dernierParFil.get(idDuFil(item.contract.id, moi.id)) ?? null,
+    lastMessage: apercuMessage(dernierParFil.get(idDuFil(item.contract.id, moi.id))),
   }));
   res.json(buildPaginatedResult(conversations, count, pagination));
 });
@@ -165,7 +194,7 @@ async function listerFilsDuGestionnaire(req: Request, res: Response, pagination:
       qualite: (Number(r.rang) === 0 ? "TITULAIRE" : "COLOCATAIRE") as Qualite,
       property: bail.property,
       tenant: locataireParId.get(r.tenant_id)!,
-      lastMessage: dernierParFil.get(idDuFil(r.contract_id, r.tenant_id)) ?? null,
+      lastMessage: apercuMessage(dernierParFil.get(idDuFil(r.contract_id, r.tenant_id))),
     };
   });
   res.json(buildPaginatedResult(conversations, total, pagination));
@@ -254,9 +283,11 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
     // L'auteur (id et adresse de connexion) n'est renvoyé qu'au gestionnaire : l'écran du locataire ne s'appuie que sur
     // `senderRole`, et l'adresse de connexion du gestionnaire — ou du propriétaire de l'agence, pour un message écrit
     // par un collaborateur — n'a pas à quitter l'espace gestionnaire.
-    messages: msgList.map(
-      (m: { message: typeof messages.$inferSelect; sender: { id: string; email: string; role: string } }) =>
-        req.user!.role === "MANAGER" ? { ...m.message, sender: m.sender } : { ...m.message, senderId: undefined }
+    messages: await Promise.all(
+      msgList.map(async (m: { message: typeof messages.$inferSelect; sender: { id: string; email: string; role: string } }) => {
+        const message = await messagePublic(m.message);
+        return req.user!.role === "MANAGER" ? { ...message, sender: m.sender } : { ...message, senderId: undefined };
+      })
     ),
   });
 });
@@ -312,5 +343,65 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  res.status(201).json(newMsg);
+  res.status(201).json(await messagePublic(newMsg));
+});
+
+const sendVoiceSchema = z.object({
+  durationSec: z.coerce
+    .number()
+    .int("Durée invalide")
+    .min(1, "Enregistrement trop court")
+    .max(DUREE_MAX_MESSAGE_VOCAL_SEC + TOLERANCE_DUREE_SEC, "Un message vocal ne peut pas dépasser 3 minutes"),
+});
+
+/**
+ * Message vocal : un enregistrement (WebM, Ogg ou MP4) rangé dans le stockage PRIVÉ, rattaché au fil comme un message
+ * texte. Mêmes règles d'accès et d'abonnement que `sendMessage` ; la vérification de propriété précède celle du
+ * contenu, pour que l'accès refusé reste un 403/404 net.
+ */
+export const sendVoiceMessage = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
+  const { contractId } = req.params;
+
+  const fil = await resoudreFil(req, contractId, true);
+  if (req.user.role === "MANAGER") {
+    assertPlanAtLeast(await chargerCompteCourant(req), "PRO");
+  }
+
+  const fichier = req.file;
+  if (!fichier) throw new ApiError(400, "Aucun enregistrement reçu", "AUDIO_REQUIRED");
+  const { durationSec } = sendVoiceSchema.parse(req.body);
+  assertAudioContentMatchesDeclaredType(fichier);
+
+  const audioPath = await uploadPrivateFile(fichier, "messages");
+  const [newMsg] = await db
+    .insert(messages)
+    .values({
+      contractId,
+      senderId: req.user.userId,
+      senderRole: req.user.role,
+      tenantId: fil.tenant.id,
+      content: "",
+      audioPath,
+      audioDurationSec: durationSec,
+      audioMime: fichier.mimetype,
+      isRead: false,
+    })
+    .returning();
+
+  if (req.user.role === "MANAGER" && fil.tenant.email && !fil.tenant.anonymizedAt) {
+    const langue = langueOuDefaut(fil.tenant.language);
+    const { subject, html } = newMessageFromManagerEmail({
+      tenantName: `${fil.tenant.firstName} ${fil.tenant.lastName}`,
+      propertyTitle: fil.property.title,
+      content: libelleMessageVocal(langue, durationSec),
+      frontendUrl: env.frontendUrl,
+      langue,
+    });
+    await sendEmail(fil.tenant.email, subject, html).catch((err) =>
+      console.error("[message] Échec de l'envoi de la notification de nouveau message:", err)
+    );
+  }
+
+  res.status(201).json(await messagePublic(newMsg));
 });

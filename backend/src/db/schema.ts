@@ -973,7 +973,13 @@ export const messages = pgTable(
     // l'agence, que les autres ne voient pas. Nul sur une ligne antérieure au rattrapage de
     // initDb : elle appartient alors au fil du titulaire du bail.
     tenantId: text("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
+    // Un message vocal garde `content` vide : son texte est ce que le fil affiche à défaut d'écoute (rien).
     content: text("content").notNull(),
+    // Message vocal : chemin du fichier dans le stockage PRIVÉ (jamais une URL : un lien signé est généré à chaque
+    // lecture du fil), durée en secondes et type du fichier. Nuls pour un message texte.
+    audioPath: text("audio_path"),
+    audioDurationSec: integer("audio_duration_sec"),
+    audioMime: text("audio_mime"),
     isRead: boolean("is_read").notNull().default(false),
     ...timestamps,
   },

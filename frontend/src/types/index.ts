@@ -382,6 +382,12 @@ export interface Message {
   senderId: string;
   senderRole: Role;
   content: string;
+  /** Message vocal : lien signé de l'enregistrement (durée limitée), sa durée en secondes et son type. `audioUrl` est nul quand le fichier a été effacé. */
+  audioUrl?: string | null;
+  audioDurationSec?: number | null;
+  audioMime?: string | null;
+  /** Dernier message d'un fil de la liste : vrai pour un vocal (la liste ne porte pas de lien signé). */
+  isVoice?: boolean;
   isRead: boolean;
   createdAt: string;
   sender?: {

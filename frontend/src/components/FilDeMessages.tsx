@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { Message, Role } from "../types";
 import { debutDeJour, libelleDuJour } from "../utils/libelleDuJour";
+import { estVocal } from "../utils/messageVocal";
+import LecteurVocal from "./LecteurVocal";
 
 /** Deux messages du même auteur à moins de cinq minutes l'un de l'autre forment un seul bloc. */
 const FENETRE_GROUPE_MS = 5 * 60 * 1000;
@@ -94,7 +96,11 @@ export default function FilDeMessages({
                 isMe ? "bg-ink-900 text-white" : "border border-slate-300 bg-white text-slate-800 shadow-[inset_3px_0_0_var(--color-orange-700)]"
               }`}
             >
-              <p className="whitespace-pre-wrap wrap-break-word">{m.content}</p>
+              {estVocal(m) ? (
+                <LecteurVocal url={m.audioUrl} duree={m.audioDurationSec ?? 0} surFondPlein={isMe} />
+              ) : (
+                <p className="whitespace-pre-wrap wrap-break-word">{m.content}</p>
+              )}
               <p className={`mt-1 text-right font-mono text-[10px] ${isMe ? "text-white/70" : "text-slate-500"}`}>
                 {heure}
                 {isMe && ` · ${m.isRead ? libelleLu : libelleEnvoye}`}

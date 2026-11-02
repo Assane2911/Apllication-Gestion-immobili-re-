@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
-import { and, desc, eq, inArray, or, SQL, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, or, SQL, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { activityLogs, contracts, inspections, invoices, issueReports, properties, tenants, users, contractGuarantors, contractCotenants } from "../db/schema";
+import { activityLogs, contracts, inspections, invoices, issueReports, messages, properties, tenants, users, contractGuarantors, contractCotenants } from "../db/schema";
 import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
 import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
 import { fetchFiabiliteParLocataire } from "../services/reliability.service";
@@ -272,10 +272,14 @@ async function envoyerExport(
  * confidentialité) : c'est à lui que le locataire adresse sa demande.
  *
  * Limites connues et assumées :
- *  - les messages échangés via la messagerie intégrée ne sont pas touchés. Leur
+ *  - les messages texte échangés via la messagerie intégrée ne sont pas touchés. Leur
  *    contenu appartient à l'échange entre les deux parties et peut servir de
  *    preuve au gestionnaire ; s'il contient des éléments identifiants, ils
- *    doivent être traités au cas par cas ;
+ *    doivent être traités au cas par cas. Les messages VOCAUX du locataire,
+ *    eux, sont effacés : une voix identifie son auteur directement. Leur
+ *    fichier est supprimé du stockage (et la ligne conserve date et durée, tant
+ *    que le compte d'accès au portail n'a pas été supprimé : la suppression de
+ *    ce compte emporte les messages qu'il a écrits) ;
  *  - les photos des signalements restent dans le stockage privé : elles
  *    montrent l'état du logement, preuve utile à la restitution de la caution ;
  *  - dans les textes libres (signalements, états des lieux), seul le nom, l'email
@@ -294,6 +298,11 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
   const nomAnonyme = "Locataire anonymisé";
   const pieceIdentite = existing.idDocument;
   const comptePortail = existing.userId;
+  // Les enregistrements de sa voix, lus avant la transaction pour les retirer du stockage une fois l'effacement acté.
+  const voix = await db
+    .select({ audioPath: messages.audioPath })
+    .from(messages)
+    .where(and(eq(messages.tenantId, existing.id), eq(messages.senderRole, "TENANT"), isNotNull(messages.audioPath)));
 
   await db.transaction(async (tx: Transaction) => {
     await tx
@@ -343,6 +352,11 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
         .where(inArray(contractGuarantors.contractId, tenantContractIds));
     }
     await tx.update(inspections).set({ tenantSignatureUrl: null }).where(eq(inspections.tenantId, existing.id));
+    // Ses messages vocaux : plus de fichier ni de type, la date et la durée restent.
+    await tx
+      .update(messages)
+      .set({ audioPath: null, audioMime: null })
+      .where(and(eq(messages.tenantId, existing.id), eq(messages.senderRole, "TENANT"), isNotNull(messages.audioPath)));
 
     // Les textes libres écrits sur lui : le titre, la description et la note du gestionnaire de ses signalements,
     // les commentaires et notes de pièces de ses états des lieux. Son nom, son email et son téléphone y sont
@@ -410,6 +424,7 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
   if (pieceIdentite) {
     await deleteStorageObjectBestEffort(pieceIdentite).catch(() => undefined);
   }
+  await Promise.allSettled(voix.map((v: { audioPath: string | null }) => deleteStorageObjectBestEffort(v.audioPath)));
 
   // Le nom réel ne doit apparaître ni ici ni dans aucune entrée passée (voir
   // le nettoyage ci-dessus) : cette entrée elle-même reste consultable dans

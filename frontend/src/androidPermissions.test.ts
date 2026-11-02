@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * `scripts/add-mobile-permissions.sh` qui les y insère après `npx cap add android` (un projet régénéré repartirait
  * sinon d'un manifeste différent).
  *
- * L'application n'a besoin que de la CAMÉRA : ses envois de fichiers passent par `<input type="file">`, y compris
+ * L'application n'a besoin que de la CAMÉRA et du MICRO (messages vocaux) : ses envois de fichiers passent par `<input type="file">`, y compris
  * `capture="environment"` pour photographier un incident. Le pont Capacitor y demande la permission caméra, et le
  * sélecteur de fichiers du système donne l'accès aux seules photos choisies, sans permission de lecture des médias.
  *
@@ -30,6 +30,11 @@ describe.skipIf(!dispo)("permissions Android", () => {
     expect(declarees()).toContain("android.permission.INTERNET");
   });
 
+  it("déclare le micro (messages vocaux), sans l'exiger pour installer l'application", () => {
+    expect(declarees()).toContain("android.permission.RECORD_AUDIO");
+    expect(readFileSync(manifeste, "utf8")).toMatch(/<uses-feature android:name="android\.hardware\.microphone" android:required="false"/);
+  });
+
   it("n'exige pas de matériel photo pour s'installer (tablettes, appareils sans caméra)", () => {
     expect(readFileSync(manifeste, "utf8")).toMatch(/<uses-feature android:name="android\.hardware\.camera" android:required="false"/);
   });
@@ -48,11 +53,18 @@ describe.skipIf(!dispo)("permissions Android", () => {
     expect(code).not.toContain("READ_MEDIA_IMAGES");
     expect(code).not.toContain("READ_EXTERNAL_STORAGE");
     expect(code).toContain("android.permission.CAMERA");
+    expect(code).toContain("android.permission.RECORD_AUDIO");
   });
 
   it("garde les descriptions d'usage iOS de la caméra et de la photothèque (App Store)", () => {
     const code = readFileSync(script, "utf8");
     expect(code).toContain("NSCameraUsageDescription");
     expect(code).toContain("NSPhotoLibraryUsageDescription");
+    expect(code).toContain("NSMicrophoneUsageDescription");
+  });
+
+  it("garde la description d'usage du micro dans le projet iOS", () => {
+    const plist = join(RACINE, "ios/App/App/Info.plist");
+    if (existsSync(plist)) expect(readFileSync(plist, "utf8")).toContain("NSMicrophoneUsageDescription");
   });
 });

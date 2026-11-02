@@ -1,9 +1,10 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import type { Conversation, Message, PaginatedResponse } from "../../types";
+import { installerFauxMicro } from "../../test/fauxMicro";
 import TenantMessagesPage from "./TenantMessagesPage";
 
 vi.mock("../../api/client", async () => {
@@ -238,5 +239,43 @@ describe("TenantMessagesPage — réponses rapides", () => {
     await user.click(within(groupe).getByRole("button", { name: "Demander ma quittance" }));
     expect(saisie).toHaveValue("Bonjour, Pourriez-vous m'envoyer ma quittance de loyer ? Merci d'avance.");
     expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+});
+
+describe("TenantMessagesPage — message vocal", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("envoie le vocal en multipart vers la route audio du bail, avec sa durée, puis l'ajoute au fil", async () => {
+    const user = userEvent.setup();
+    const micro = installerFauxMicro();
+    try {
+      mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+      mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
+      mockedApi.post.mockResolvedValueOnce({
+        data: message({ id: "v1", senderRole: "TENANT", content: "", audioUrl: "https://stockage.test/v1.webm", audioDurationSec: 1, audioMime: "audio/webm" }),
+      });
+      renderPage();
+
+      await user.click(await screen.findByRole("button", { name: "Enregistrer un message vocal" }));
+      await screen.findByText("Enregistrement");
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 1100));
+      });
+      await user.click(screen.getByRole("button", { name: "Terminer" }));
+      await user.click(await screen.findByRole("button", { name: "Envoyer le vocal" }));
+
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
+      const [url, corps] = mockedApi.post.mock.calls[0] as [string, FormData];
+      expect(url).toBe("/messages/c1/audio");
+      expect(corps).toBeInstanceOf(FormData);
+      expect(Number(corps.get("durationSec"))).toBeGreaterThanOrEqual(1);
+      expect((corps.get("audio") as File).name).toBe("vocal.webm");
+      expect(await screen.findByText("0:00 / 0:01")).toBeInTheDocument();
+    } finally {
+      micro.restaurer();
+    }
   });
 });

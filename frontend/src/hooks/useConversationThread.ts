@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { api, apiErrorMessage, isRequestCancelled, liste } from "../api/client";
+import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../api/client";
 import { useAuth } from "../context/auth";
 import type { Conversation, Message, PaginatedResponse, Role } from "../types";
+import { extensionEnregistrement } from "../utils/messageVocal";
+import type { EnregistrementVocal } from "./useEnregistreurVocal";
 
 const CONVERSATIONS_PAGE_SIZE = 20;
 
@@ -138,6 +140,21 @@ export function useConversationThread(role: Role, options: UseConversationThread
     }
   }
 
+  /**
+   * Envoie un message vocal dans le fil choisi. Rejette en cas d'échec : l'appelant (la zone de saisie) garde alors
+   * l'enregistrement et affiche l'erreur, au lieu de le perdre.
+   */
+  async function handleSendVoice(enregistrement: EnregistrementVocal) {
+    if (!selectedThreadId) return;
+    const { contractId, params } = cibleDuFil(selectedThreadId);
+    const donnees = new FormData();
+    donnees.append("audio", enregistrement.blob, `vocal.${extensionEnregistrement(enregistrement.type)}`);
+    donnees.append("durationSec", String(enregistrement.duree));
+    const res = await api.post(`/messages/${contractId}/audio`, donnees, { timeout: DELAI_UPLOAD_MS, ...(params ? { params } : {}) });
+    setMessages((prev) => [...prev, { ...res.data, sender: { id: user?.id || "", email: user?.email || "", role } }]);
+    if (refreshOnSend) loadConversations();
+  }
+
   return {
     conversations,
     page,
@@ -156,5 +173,6 @@ export function useConversationThread(role: Role, options: UseConversationThread
     error,
     loadConversations,
     handleSend,
+    handleSendVoice,
   };
 }
