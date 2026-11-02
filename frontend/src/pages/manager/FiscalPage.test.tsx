@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -70,7 +70,7 @@ describe("FiscalPage", () => {
     expect(region).toHaveAttribute("tabindex", "0");
   });
 
-  it("la ligne année + exports passe à la ligne au lieu de déborder de l'écran", async () => {
+  it("la ligne du choix d'exercice passe à la ligne au lieu de déborder de l'écran", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: synthesis() });
     renderPage();
 
@@ -187,5 +187,59 @@ describe("FiscalPage", () => {
       })
     );
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob)));
+  });
+
+  describe("synthèse, comparaison, tableau mensuel et exports", () => {
+    it("range les trois exports comptables dans leur section, avec ce que contient chacun", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: synthesis() });
+      renderPage();
+
+      const section = await screen.findByRole("region", { name: "Exports comptables" });
+      expect(within(section).getByRole("button", { name: /Grand Livre/ })).toBeInTheDocument();
+      expect(within(section).getByRole("button", { name: /Export FEC/ })).toBeInTheDocument();
+      expect(within(section).getByRole("button", { name: /Export SYSCOHADA/ })).toBeInTheDocument();
+      expect(within(section).getByText(/format demandé par l'administration fiscale française/)).toBeInTheDocument();
+    });
+
+    it("donne la marge nette de l'exercice quand il n'y a qu'une devise", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: synthesis({ totalRevenueByCurrency: { EUR: 10000 }, totalExpensesByCurrency: { EUR: 2500 }, netResultByCurrency: { EUR: 7500 } }),
+      });
+      renderPage();
+      const synthese = await screen.findByLabelText("Chiffres clés");
+      expect(within(synthese).getByText("75 %")).toBeInTheDocument();
+    });
+
+    it("compare les revenus à l'exercice précédent, à la demande", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockImplementation(async (_url: string, config?: { params?: { year?: number } }) => {
+        const annee = config?.params?.year;
+        return { data: synthesis({ year: annee, availableYears: [2025, 2026], totalRevenueByCurrency: { EUR: annee === 2025 ? 8000 : 10000 } }) };
+      });
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(2026, 5, 15));
+      try {
+        renderPage();
+        await user.click(await screen.findByRole("button", { name: "Comparer avec 2025" }));
+        expect(await screen.findByText("+25 % vs 2025")).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("bascule les douze mois en tableau accessible, avec le résultat de chaque mois", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce({
+        data: synthesis({ revenueByMonth: { "2026-03": { EUR: 2000 } }, expensesByMonth: { "2026-03": { EUR: 500 } } }),
+      });
+      renderPage();
+
+      const bascule = await screen.findByRole("group", { name: "Affichage de l'analyse" });
+      await user.click(within(bascule).getByRole("button", { name: "Tableau" }));
+      const tableau = screen.getByRole("table", { name: "Tableau des douze mois en EUR" });
+      expect(within(tableau).getAllByRole("row")).toHaveLength(13); // en-tête + douze mois
+      const mars = within(tableau).getAllByRole("row").find((r) => /1\s500\s€/.test(r.textContent ?? ""));
+      expect(mars).toHaveTextContent("2 000 €");
+    });
   });
 });
