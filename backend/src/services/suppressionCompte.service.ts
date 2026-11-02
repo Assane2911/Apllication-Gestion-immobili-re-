@@ -1,6 +1,6 @@
-import { eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
-import { agencySettings, contracts, invoices, issueReports, listings, properties, tenants, users } from "../db/schema";
+import { agencySettings, contracts, invoices, issueReports, listings, messages, properties, tenants, users } from "../db/schema";
 import { cancelStripeSubscriptionNow } from "./payment.service";
 import { deleteStorageObjectBestEffort } from "./storage.service";
 
@@ -38,7 +38,14 @@ import { deleteStorageObjectBestEffort } from "./storage.service";
 export async function supprimerCompteGestionnaire(user: typeof users.$inferSelect) {
   if (user.stripeSubscriptionId) await cancelStripeSubscriptionNow(user.stripeSubscriptionId);
 
-  const [managerProperties, managerListings, managerTenants, managerContracts, managerIssues, [reglagesAgence]] = await Promise.all([
+  const [managerAudios, managerProperties, managerListings, managerTenants, managerContracts, managerIssues, [reglagesAgence]] = await Promise.all([
+    // Les messages vocaux : leurs fichiers vivent dans le stockage privé, hors de portée des suppressions en cascade.
+    db
+      .select({ audioPath: messages.audioPath })
+      .from(messages)
+      .innerJoin(contracts, eq(messages.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(and(eq(properties.managerId, user.id), isNotNull(messages.audioPath))),
     db.select({ imageUrl: properties.imageUrl }).from(properties).where(eq(properties.managerId, user.id)),
     db.select({ imageUrl: listings.imageUrl }).from(listings).where(eq(listings.managerId, user.id)),
     db.select({ idDocument: tenants.idDocument }).from(tenants).where(eq(tenants.managerId, user.id)),
@@ -103,6 +110,7 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
     ...managerListings.map((l) => l.imageUrl),
     ...managerTenants.map((t) => t.idDocument),
     ...managerContracts.map((c) => c.scannedContractUrl),
+    ...managerAudios.map((m: { audioPath: string | null }) => m.audioPath),
     ...managerIssues.flatMap((i) => {
       const extras: string[] = [];
       if (i.additionalPhotos) {

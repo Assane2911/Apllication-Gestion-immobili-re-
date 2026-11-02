@@ -13,6 +13,9 @@ const EXTENSION_PAR_TYPE: Record<string, string> = {
   "image/webp": ".webp",
   "image/gif": ".gif",
   "application/pdf": ".pdf",
+  "audio/webm": ".webm",
+  "audio/mp4": ".m4a",
+  "audio/ogg": ".ogg",
 };
 
 function uniqueObjectPath(folder: string, mimetype: string) {
@@ -52,7 +55,7 @@ export async function uploadPublicFile(file: Express.Multer.File, folder: "prope
  * stockage — PAS une URL — à conserver en base. Utilisez `getSignedUrl` pour
  * générer un lien d'accès temporaire à la demande.
  */
-export async function uploadPrivateFile(file: Express.Multer.File, folder: "tenants" | "issues" | "contracts") {
+export async function uploadPrivateFile(file: Express.Multer.File, folder: "tenants" | "issues" | "contracts" | "messages") {
   const objectPath = uniqueObjectPath(folder, file.mimetype);
 
   const { error } = await supabaseAdmin.storage

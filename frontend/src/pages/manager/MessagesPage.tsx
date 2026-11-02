@@ -1,4 +1,4 @@
-import { ArrowLeft, Mail, MessageSquare, Phone, Search, X } from "lucide-react";
+import { ArrowLeft, Mail, MessageSquare, Mic, Phone, Search, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -7,6 +7,7 @@ import Initiales from "../../components/Initiales";
 import Pagination from "../../components/Pagination";
 import PlanLogement from "../../components/PlanLogement";
 import ZoneDeSaisie from "../../components/ZoneDeSaisie";
+import { estVocal, formaterDuree } from "../../utils/messageVocal";
 import { useCurrency } from "../../context/currency";
 import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
 import { correspond } from "../../utils/recherche";
@@ -43,6 +44,7 @@ export default function MessagesPage() {
     error,
     loadConversations,
     handleSend,
+    handleSendVoice,
   } = useConversationThread("MANAGER", { refreshOnSend: true });
 
   const [recherche, setRecherche] = useState("");
@@ -150,7 +152,18 @@ export default function MessagesPage() {
                     </p>
                     <p className="truncate text-[11px] text-slate-600">{c.property?.title}</p>
                     <p className={`mt-1 truncate text-[11px] ${nonLu ? "font-semibold text-slate-900" : "text-slate-600"}`}>
-                      {c.lastMessage ? c.lastMessage.content : t("manager.messages.noMessageYet")}
+                      {c.lastMessage ? (
+                        estVocal(c.lastMessage) ? (
+                          <>
+                            <Mic size={11} aria-hidden="true" className="mr-1 inline align-[-1px]" />
+                            {t("voice.label")} ({formaterDuree(c.lastMessage.audioDurationSec ?? 0)})
+                          </>
+                        ) : (
+                          c.lastMessage.content
+                        )
+                      ) : (
+                        t("manager.messages.noMessageYet")
+                      )}
                     </p>
                   </div>
                   {nonLu && (
@@ -240,6 +253,7 @@ export default function MessagesPage() {
                 valeur={newText}
                 onChange={setNewText}
                 onSubmit={handleSend}
+                onEnvoyerVocal={handleSendVoice}
                 envoi={sending}
                 libelleChamp={t("manager.messages.writeMessage")}
                 libelleEnvoyer={t("manager.messages.send")}

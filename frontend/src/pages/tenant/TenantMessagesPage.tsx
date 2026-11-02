@@ -22,6 +22,7 @@ export default function TenantMessagesPage() {
     error,
     loadConversations,
     handleSend,
+    handleSendVoice,
   } = useConversationThread("TENANT");
 
   if (loading) {
@@ -127,6 +128,7 @@ export default function TenantMessagesPage() {
           valeur={newText}
           onChange={setNewText}
           onSubmit={handleSend}
+          onEnvoyerVocal={handleSendVoice}
           envoi={sending}
           libelleChamp={t("tenant.messages.writeMessage")}
           libelleEnvoyer={t("tenant.messages.send")}

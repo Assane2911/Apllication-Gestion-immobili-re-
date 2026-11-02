@@ -70,5 +70,7 @@
   <string>Permet de photographier un problème signalé pour illustrer le ticket.</string>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>Permet de choisir une photo de bien ou un document depuis la bibliothèque.</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Permet d'enregistrer un message vocal à envoyer dans la messagerie.</string>
 </dict>
 </plist>

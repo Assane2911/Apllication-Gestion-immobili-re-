@@ -1,5 +1,6 @@
 import multer from "multer";
 import { ApiError } from "../utils/asyncHandler";
+import { detecterSignatureAudio, normaliserTypeAudio, TYPES_AUDIO_AUTORISES } from "../utils/messageVocal";
 
 const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"]);
 
@@ -39,6 +40,33 @@ export const uploadTenantDocument = multer({ storage, fileFilter, limits });
 export const uploadIssuePhoto = multer({ storage, fileFilter, limits });
 export const uploadContractScan = multer({ storage, fileFilter, limits });
 export const uploadListingImage = multer({ storage, fileFilter, limits });
+
+/**
+ * Messages vocaux : WebM, Ogg (Chrome, Firefox) ou MP4 (Safari), 4 Mo au plus (même plafond que les photos : voir
+ * MAX_UPLOAD_SIZE_MB). Le type déclaré est ramené à sa forme de base (« audio/webm;codecs=opus » devient
+ * « audio/webm ») avant d'être confronté au contenu réel (`assertAudioContentMatchesDeclaredType`).
+ */
+export const uploadMessageAudio = multer({
+  storage,
+  limits,
+  fileFilter(_req, file, cb) {
+    const type = normaliserTypeAudio(file.mimetype);
+    if (!TYPES_AUDIO_AUTORISES.has(type)) {
+      return cb(new ApiError(400, "Type d'enregistrement non autorisé (WebM, Ogg ou MP4 uniquement)", "AUDIO_TYPE_NOT_ALLOWED"));
+    }
+    file.mimetype = type;
+    cb(null, true);
+  },
+});
+
+/** Comme `assertFileContentMatchesDeclaredType`, pour un enregistrement : ses premiers octets doivent être ceux du type déclaré. */
+export function assertAudioContentMatchesDeclaredType(file: Express.Multer.File | undefined): void {
+  if (!file) return;
+  const detecte = detecterSignatureAudio(file.buffer);
+  if (!detecte || detecte !== file.mimetype) {
+    throw new ApiError(400, "Le contenu de l'enregistrement ne correspond pas au type déclaré", "AUDIO_CONTENT_MISMATCH");
+  }
+}
 
 /** Images d'agence (logo, tampon) : PNG ou JPEG seulement (les formats que savent dessiner les PDF), 2 Mo au plus. */
 export const MAX_LOGO_SIZE_MB = 2;

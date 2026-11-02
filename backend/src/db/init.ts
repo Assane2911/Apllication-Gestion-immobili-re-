@@ -778,6 +778,9 @@ export async function initDb() {
         sender_role TEXT NOT NULL,
         tenant_id TEXT REFERENCES tenants(id) ON DELETE CASCADE,
         content TEXT NOT NULL,
+        audio_path TEXT,
+        audio_duration_sec INTEGER,
+        audio_mime TEXT,
         is_read BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -1110,6 +1113,10 @@ export async function initDb() {
       );
     }
     await creerIndex("messages_tenant_id_idx", sql`CREATE INDEX IF NOT EXISTS messages_tenant_id_idx ON messages (tenant_id)`);
+    // Messages vocaux : trois colonnes nullables, ajoutées sans toucher aux lignes existantes.
+    await ajouterColonne("messages", "audio_path", sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS audio_path TEXT`);
+    await ajouterColonne("messages", "audio_duration_sec", sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS audio_duration_sec INTEGER`);
+    await ajouterColonne("messages", "audio_mime", sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS audio_mime TEXT`);
     await creerIndex("rate_limit_hits_reset_at_idx", sql`CREATE INDEX IF NOT EXISTS rate_limit_hits_reset_at_idx ON rate_limit_hits (reset_at)`);
     await creerIndex("activity_logs_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_manager_id_idx ON activity_logs (manager_id)`);
     await creerIndex("activity_logs_created_at_idx", sql`CREATE INDEX IF NOT EXISTS activity_logs_created_at_idx ON activity_logs (created_at)`);

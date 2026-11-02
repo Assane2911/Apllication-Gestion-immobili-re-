@@ -3,8 +3,10 @@ import {
   getMessagesByContract,
   listConversations,
   sendMessage,
+  sendVoiceMessage,
 } from "../controllers/message.controller";
 import { authenticate, requireActiveSubscription } from "../middleware/auth";
+import { uploadMessageAudio } from "../middleware/upload";
 
 const router = Router();
 
@@ -16,5 +18,6 @@ router.use(authenticate, requireActiveSubscription);
 router.get("/conversations", listConversations);
 router.get("/:contractId", getMessagesByContract);
 router.post("/:contractId", sendMessage);
+router.post("/:contractId/audio", uploadMessageAudio.single("audio"), sendVoiceMessage);
 
 export default router;

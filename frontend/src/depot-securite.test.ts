@@ -42,7 +42,8 @@ describe.skipIf(!dispo)("en-têtes de sécurité du site", () => {
   it("n'accorde que les fonctions du navigateur dont l'application se sert", () => {
     const permissions = enTetesDuSite().get("permissions-policy") ?? "";
     expect(permissions).toContain("camera=(self)");
-    expect(permissions).toContain("microphone=()");
+    // Le micro n'est accordé qu'au site lui-même : il sert aux messages vocaux de la messagerie.
+    expect(permissions).toContain("microphone=(self)");
     expect(permissions).toContain("geolocation=()");
     expect(permissions).toContain("payment=()");
   });

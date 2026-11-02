@@ -57,7 +57,9 @@ export default function PolitiqueConfidentialitePage() {
             </>,
             <>
               <strong className="text-slate-900">Messages</strong> échangés entre Gestionnaire et Locataire
-              via la messagerie intégrée.
+              via la messagerie intégrée, y compris les <strong className="text-slate-900">messages vocaux</strong> :
+              enregistrements de la voix des participants, rangés dans un espace de stockage privé et accessibles
+              par un lien temporaire aux seules personnes concernées par l'échange.
             </>,
             <>
               <strong className="text-slate-900">Données de préférence</strong> : langue d'affichage, thème
@@ -170,7 +172,7 @@ export default function PolitiqueConfidentialitePage() {
           items={[
             "Données de compte et données locatives (biens, locataires, baux, paiements, dépenses) : conservées pendant toute la durée de la relation contractuelle avec le Gestionnaire, et jusqu'à ce qu'il les supprime ou qu'il clôture son compte.",
             "Pièces d'identité des locataires et photographies (biens, annonces, incidents, baux scannés) : le fichier est supprimé du stockage en même temps que la fiche qui le référence — suppression du locataire, du bien, de l'annonce ou du contrat — et, en tout état de cause, à la clôture du compte du Gestionnaire.",
-            "Messages de la messagerie intégrée : conservés tant que le compte du Gestionnaire reste ouvert. Ils ne sont pas effacés par l'anonymisation d'un locataire, leur contenu appartenant à l'échange entre les deux parties.",
+            "Messages de la messagerie intégrée : conservés tant que le compte du Gestionnaire reste ouvert. Les messages écrits ne sont pas effacés par l'anonymisation d'un locataire, leur contenu appartenant à l'échange entre les deux parties. Les messages vocaux d'un locataire, dont la voix l'identifie, sont en revanche effacés du stockage lors de son anonymisation ; leurs fichiers sont aussi supprimés avec le compte du Gestionnaire.",
             "Journal d'activité de l'agence (traçabilité des actions) : conservé un an, puis effacé automatiquement — et en tout état de cause supprimé avec le compte.",
             "Données d'abonnement et de facturation : conservées pendant la durée requise par les obligations comptables et fiscales applicables, y compris après la clôture du compte.",
           ]}
