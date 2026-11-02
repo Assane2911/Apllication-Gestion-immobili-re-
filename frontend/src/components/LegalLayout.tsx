@@ -233,7 +233,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex cursor-pointer items-center gap-1.5 bg-ink-900 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-700"
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-ink-900 bg-ink-900 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-700"
               >
                 <Printer size={13} aria-hidden="true" />
                 Imprimer ou enregistrer en PDF

@@ -25,9 +25,9 @@ interface Props {
 }
 
 const BOUTON_TRAIT =
-  "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900 disabled:opacity-50";
+  "inline-flex cursor-pointer min-h-[38px] items-center gap-1.5 border border-slate-400 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900 disabled:opacity-50";
 const BOUTON_PLEIN =
-  "inline-flex cursor-pointer items-center gap-1.5 border border-ink-900 bg-ink-900 px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-50";
+  "inline-flex cursor-pointer min-h-[38px] items-center gap-1.5 border border-ink-900 bg-ink-900 px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-50";
 
 /**
  * Saisie d'un message : zone de deux lignes, compteur de caractères, bouton d'envoi. Entrée envoie, Maj+Entrée passe à la
