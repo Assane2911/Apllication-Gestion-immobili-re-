@@ -4,6 +4,8 @@ import Initiales from "../../components/Initiales";
 import ZoneDeSaisie from "../../components/ZoneDeSaisie";
 import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
 
+const REPONSES_RAPIDES = ["hello", "thanks", "problem", "receipt", "paid"] as const;
+
 export default function TenantMessagesPage() {
   const { t } = useTranslation();
   const {
@@ -28,7 +30,7 @@ export default function TenantMessagesPage() {
 
   if (error) {
     return (
-      <div className="border border-red-200 bg-red-50 p-6 text-red-700 shadow-[inset_4px_0_0_var(--color-rose-600)]">
+      <div className="border border-rose-300 bg-rose-50 p-6 text-rose-800 shadow-[inset_4px_0_0_var(--color-rose-600)]">
         <p className="text-sm">{error}</p>
         <button
           onClick={() => loadConversations()}
@@ -85,7 +87,7 @@ export default function TenantMessagesPage() {
               </select>
             )}
             <span className="inline-flex shrink-0 items-center gap-1.5 border border-white/50 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider">
-              <span aria-hidden="true" className="h-2 w-2 bg-emerald-400" />
+              <span aria-hidden="true" className="h-2 w-2 bg-orange-300" />
               {t("tenant.messages.online")}
             </span>
           </div>
@@ -102,6 +104,24 @@ export default function TenantMessagesPage() {
           libelleChargement={t("tenant.messages.loadingMessages")}
           libelleVide={t("tenant.messages.noMessagesYet")}
         />
+
+        {/* Réponses rapides : un clic insère le texte (sans l'envoyer), à compléter avant l'envoi. */}
+        <div role="group" aria-label={t("tenant.messages.quick.label")} className="flex flex-wrap items-center gap-2 border-t border-slate-300 bg-slate-50 px-4 py-2.5">
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("tenant.messages.quick.label")}</span>
+          {REPONSES_RAPIDES.map((cle) => (
+            <button
+              key={cle}
+              type="button"
+              onClick={() => {
+                const texte = t(`tenant.messages.quick.${cle}Text`);
+                setNewText(newText.trim() ? `${newText.trimEnd()} ${texte}` : texte);
+              }}
+              className="cursor-pointer border border-slate-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-800 transition-colors hover:border-ink-900 hover:text-ink-900"
+            >
+              {t(`tenant.messages.quick.${cle}`)}
+            </button>
+          ))}
+        </div>
 
         <ZoneDeSaisie
           valeur={newText}

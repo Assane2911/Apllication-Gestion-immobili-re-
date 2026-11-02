@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import type { Contract, IssueReport } from "../../types";
@@ -326,5 +326,74 @@ describe("TenantIssuesPage", () => {
     const [url, formData] = mockedApi.post.mock.calls[0];
     expect(url).toBe("/issues/iss-1/photo");
     expect((formDataEntries(formData as FormData).photo as File).name).toBe("photo2.jpg");
+  });
+});
+
+describe("TenantIssuesPage — suivi, filtres, motifs courants", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    URL.createObjectURL = vi.fn().mockReturnValue("blob:fake-preview");
+    URL.revokeObjectURL = vi.fn();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 20, 10, 0, 0));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const parc = () => [
+    issue({ id: "a", title: "Fuite d'eau", status: "OPEN", createdAt: "2026-06-10T08:00:00.000Z" }),
+    issue({ id: "b", title: "Porte bloquée", status: "IN_PROGRESS", createdAt: "2026-06-19T08:00:00.000Z", scheduledAt: "2026-06-25T09:00:00.000Z" }),
+    issue({ id: "c", title: "Volet cassé", status: "RESOLVED", createdAt: "2026-05-01T08:00:00.000Z" }),
+  ];
+
+  function afficher() {
+    mockedApi.get.mockResolvedValueOnce({ data: parc() });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+    renderPage();
+  }
+
+  it("résume les signalements en cours, traités, planifiés et l'attente la plus longue", async () => {
+    afficher();
+    const synthese = await screen.findByLabelText("Suivi de vos signalements");
+    const valeur = (libelle: string) => within(synthese).getByText(libelle).nextElementSibling;
+    expect(valeur("En cours")).toHaveTextContent("2");
+    expect(valeur("Traités")).toHaveTextContent("1");
+    expect(valeur("Interventions prévues")).toHaveTextContent("1");
+    expect(valeur("Attente la plus longue")).toHaveTextContent("10 j");
+  });
+
+  it("dit depuis combien de jours un signalement en cours attend, et rien pour un signalement clos", async () => {
+    afficher();
+    const fuite = (await screen.findByRole("heading", { level: 4, name: "Fuite d'eau" })).closest("article") as HTMLElement;
+    expect(within(fuite).getByText(/Signalé il y a 10 jour\(s\)/)).toBeInTheDocument();
+    const volet = screen.getByRole("heading", { level: 4, name: "Volet cassé" }).closest("article") as HTMLElement;
+    expect(within(volet).queryByText(/Signalé il y a|Signalé aujourd/)).not.toBeInTheDocument();
+  });
+
+  it("filtre les signalements en cours ou traités", async () => {
+    const user = userEvent.setup();
+    afficher();
+    await screen.findByLabelText("Suivi de vos signalements");
+    const groupe = screen.getByRole("group", { name: "Filtrer les signalements" });
+    await user.click(within(groupe).getByRole("button", { name: "Traités 1" }));
+    expect(screen.getByRole("heading", { level: 4, name: "Volet cassé" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 4, name: "Fuite d'eau" })).not.toBeInTheDocument();
+    await user.click(within(groupe).getByRole("button", { name: "En cours 2" }));
+    expect(screen.queryByRole("heading", { level: 4, name: "Volet cassé" })).not.toBeInTheDocument();
+  });
+
+  it("remplit le titre d'un motif courant et compte les caractères de la description", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+    renderPage();
+    await screen.findByLabelText("Titre de l'incident *");
+
+    await user.click(screen.getByRole("button", { name: "Panne d'électricité" }));
+    expect(screen.getByLabelText("Titre de l'incident *")).toHaveValue("Panne d'électricité");
+
+    expect(screen.getByText("0 / 5000")).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Description/), "Plus de courant");
+    expect(screen.getByText("15 / 5000")).toBeInTheDocument();
   });
 });

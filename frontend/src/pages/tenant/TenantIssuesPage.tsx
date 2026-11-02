@@ -2,17 +2,20 @@ import { Camera } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
+import BandeauChiffres from "../../components/BandeauChiffres";
+import GroupeFiltres from "../../components/GroupeFiltres";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport, IssueStatus } from "../../types";
 import { preparerFichier } from "../../utils/fichiers";
 import { getAllIssuePhotos } from "../../utils/issuePhotos";
+import { ancienneteSignalement, estEnCours, filtrerSignalements, MOTIFS_SIGNALEMENT, situationSignalements, type FiltreSignalements } from "../../utils/syntheseLocataire";
 import Bulle from "../../components/Bulle";
 
 /** Filet de couleur de la fiche, étiquette de statut et avancement (1 à 3 segments pleins sur 3) selon l'état du signalement. */
 const TEINTE_STATUT: Record<IssueStatus, { filet: string; tag: string; etape: number; barre: string }> = {
   OPEN: { filet: "border-l-rose-600", tag: "border-rose-300 bg-rose-50 text-rose-800", etape: 1, barre: "bg-rose-600" },
   IN_PROGRESS: { filet: "border-l-orange-700", tag: "border-orange-700/50 bg-orange-50 text-orange-800", etape: 2, barre: "bg-orange-700" },
-  RESOLVED: { filet: "border-l-emerald-600", tag: "border-emerald-300 bg-emerald-50 text-emerald-800", etape: 3, barre: "bg-emerald-600" },
+  RESOLVED: { filet: "border-l-ink-900", tag: "border-ink-900 bg-slate-50 text-ink-900", etape: 3, barre: "bg-ink-900" },
   REJECTED: { filet: "border-l-slate-400", tag: "border-slate-400 bg-slate-100 text-slate-700", etape: 3, barre: "bg-slate-400" },
 };
 
@@ -38,6 +41,7 @@ export default function TenantIssuesPage() {
   const [extraPreview, setExtraPreview] = useState<string | null>(null);
   const [savingExtra, setSavingExtra] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [filtre, setFiltre] = useState<FiltreSignalements>("all");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const extraFileInputRef = useRef<HTMLInputElement>(null);
@@ -151,6 +155,10 @@ export default function TenantIssuesPage() {
     }
   }
 
+  const maintenant = new Date();
+  const situation = situationSignalements(issues, maintenant);
+  const visibles = filtrerSignalements(issues, filtre);
+
   return (
     <div className="space-y-6">
       <div>
@@ -159,7 +167,7 @@ export default function TenantIssuesPage() {
       </div>
 
       {loadError && (
-        <div className="flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+        <div className="flex items-center justify-between gap-3 border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 shadow-[inset_4px_0_0_var(--color-rose-600)]">
           <span>{loadError}</span>
           <button onClick={load} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
@@ -198,6 +206,20 @@ export default function TenantIssuesPage() {
               placeholder={t("tenant.issues.issueTitlePlaceholder")}
               className={CHAMP}
             />
+            {/* Motifs courants : un clic remplit le titre (modifiable), pour un signalement plus rapide au téléphone. */}
+            <div role="group" aria-label={t("tenant.issues.quick.label")} className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("tenant.issues.quick.label")}</span>
+              {MOTIFS_SIGNALEMENT.map((cle) => (
+                <button
+                  key={cle}
+                  type="button"
+                  onClick={() => setTitle(t(`tenant.issues.quick.${cle}`))}
+                  className="cursor-pointer border border-slate-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-800 transition-colors hover:border-ink-900 hover:text-ink-900"
+                >
+                  {t(`tenant.issues.quick.${cle}`)}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -212,6 +234,7 @@ export default function TenantIssuesPage() {
               placeholder={t("tenant.issues.descriptionPlaceholder")}
               className={CHAMP}
             />
+            <p className="mt-1 text-right font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("tenant.issues.counter", { count: description.length })}</p>
           </div>
 
           {/* Zone de prise de photo */}
@@ -247,7 +270,7 @@ export default function TenantIssuesPage() {
             )}
           </div>
 
-          {error && <p role="alert" className="text-xs font-medium text-red-600">{error}</p>}
+          {error && <p role="alert" className="border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800 shadow-[inset_3px_0_0_var(--color-rose-600)]">{error}</p>}
 
           <button
             type="submit"
@@ -266,8 +289,37 @@ export default function TenantIssuesPage() {
           {t("tenant.issues.historyTitle")}
           <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
         </h3>
+        {issues.length > 0 && (
+          <div className="mb-4 space-y-3">
+            <BandeauChiffres
+              etiquette={t("tenant.issues.summary.label")}
+              cases={[
+                { libelle: t("tenant.issues.summary.active"), valeur: situation.enCours, aide: t("tenant.issues.summary.activeHint"), ton: situation.enCours > 0 ? "alerte" : "normal" },
+                { libelle: t("tenant.issues.summary.done"), valeur: situation.traites, aide: t("tenant.issues.summary.doneHint") },
+                { libelle: t("tenant.issues.summary.planned"), valeur: situation.planifies, aide: t("tenant.issues.summary.plannedHint") },
+                {
+                  libelle: t("tenant.issues.summary.oldest"),
+                  valeur: situation.enCours > 0 ? `${situation.plusAncien} j` : "—",
+                  aide: situation.enCours > 0 ? t("tenant.issues.summary.oldestHint", { days: situation.plusAncien }) : t("tenant.issues.summary.oldestNone"),
+                },
+              ]}
+            />
+            {issues.length > 2 && (
+              <GroupeFiltres
+                libelle={t("tenant.issues.filtersLabel")}
+                actif={filtre}
+                onChange={(cle) => setFiltre(cle as FiltreSignalements)}
+                filtres={[
+                  { cle: "all", libelle: t("tenant.issues.filters.all"), compte: issues.length },
+                  { cle: "active", libelle: t("tenant.issues.filters.active"), compte: filtrerSignalements(issues, "active").length },
+                  { cle: "done", libelle: t("tenant.issues.filters.done"), compte: filtrerSignalements(issues, "done").length },
+                ]}
+              />
+            )}
+          </div>
+        )}
         <div className="space-y-5">
-          {issues.map((issue, rang) => {
+          {visibles.map((issue, rang) => {
             const allPhotos = getAllIssuePhotos(issue);
             const teinte = TEINTE_STATUT[issue.status] ?? TEINTE_STATUT.REJECTED;
             return (
@@ -337,6 +389,14 @@ export default function TenantIssuesPage() {
                     )}
 
                     <p className="font-mono text-[11px] text-slate-600">
+                      {estEnCours(issue) && (
+                        <span className="mr-2 font-semibold text-orange-700">
+                          {ancienneteSignalement(issue, maintenant) === 0
+                            ? t("tenant.issues.age.today")
+                            : t("tenant.issues.age.days", { count: ancienneteSignalement(issue, maintenant) })}
+                          {" · "}
+                        </span>
+                      )}
                       {t("tenant.issues.reportedOn", {
                         date: new Date(issue.createdAt).toLocaleDateString(i18n.language),
                         time: new Date(issue.createdAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" }),
@@ -398,6 +458,9 @@ export default function TenantIssuesPage() {
           })}
           {issues.length === 0 && (
             <p className="border border-slate-300 bg-white py-12 text-center text-sm text-slate-600">{t("tenant.issues.noIssues")}</p>
+          )}
+          {issues.length > 0 && visibles.length === 0 && (
+            <p className="border border-slate-300 bg-white py-10 text-center text-sm text-slate-600">{t("tenant.issues.noResult")}</p>
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
@@ -374,5 +374,85 @@ describe("TenantInvoicesPage — langue de l'interface", () => {
     } finally {
       await changerLangue("fr");
     }
+  });
+});
+
+describe("TenantInvoicesPage — situation, retard et filtres", () => {
+  beforeEach(() => {
+    fileGet.length = 0;
+    mockedApi.get.mockReset();
+    installerGet();
+    mockedApi.post.mockReset();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 10, 15, 10, 0, 0));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const parc = () => [
+    invoice({ id: "a", status: "LATE", periodMonth: 10, dueDate: "2026-10-05T00:00:00.000Z", resteDu: 500 }),
+    invoice({ id: "b", status: "PENDING", periodMonth: 11, dueDate: "2026-11-05T00:00:00.000Z" }),
+    invoice({ id: "c", status: "PAID", periodMonth: 9, dueDate: "2026-09-05T00:00:00.000Z", paidAt: "2026-09-04T00:00:00.000Z" }),
+    invoice({ id: "d", status: "PAID", periodMonth: 12, periodYear: 2025, dueDate: "2025-12-05T00:00:00.000Z", paidAt: "2025-12-04T00:00:00.000Z" }),
+  ];
+
+  function afficher() {
+    queueGet({ data: parc() });
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <TenantInvoicesPage />
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+  }
+
+  it("résume la situation : reste dû, retards, échéance la plus ancienne, quittances", async () => {
+    afficher();
+    const synthese = await screen.findByLabelText("Situation de vos loyers");
+    const valeur = (libelle: string) => within(synthese).getByText(libelle).nextElementSibling;
+    expect(valeur("En attente de règlement")).toHaveTextContent("2 échéances");
+    expect(within(synthese).getByText(/Total dû : .*1.?000/)).toBeInTheDocument();
+    expect(valeur("En retard")).toHaveTextContent("2");
+    expect(within(synthese).getByText("jusqu'à 41 jour(s) de retard")).toBeInTheDocument();
+    expect(valeur("Prochaine échéance")).toHaveTextContent("05/10/2026");
+    expect(within(synthese).getByText("échue depuis 41 jour(s)")).toBeInTheDocument();
+    expect(within(synthese).getByText(/Réglé en 2026 : .*500/)).toBeInTheDocument();
+  });
+
+  it("indique le retard en jours sur la ligne du loyer en retard", async () => {
+    afficher();
+    expect(await screen.findByText(/En retard de 41 jour\(s\)/)).toBeInTheDocument();
+    expect(screen.getByText(/En retard de 10 jour\(s\)/)).toBeInTheDocument();
+  });
+
+  it("ouvre le règlement de l'échéance la plus ancienne en un clic", async () => {
+    const user = userEvent.setup();
+    afficher();
+    await user.click(await screen.findByRole("button", { name: "Payer l'échéance la plus ancienne" }));
+    const ligne = document.getElementById("loyer-a") as HTMLElement;
+    expect(await within(ligne).findByText("Sélectionnez un mode de règlement sécurisé")).toBeInTheDocument();
+    expect(within(document.getElementById("loyer-b") as HTMLElement).queryByText("Sélectionnez un mode de règlement sécurisé")).not.toBeInTheDocument();
+  });
+
+  it("filtre par état et par année", async () => {
+    const user = userEvent.setup();
+    afficher();
+    await screen.findByLabelText("Situation de vos loyers");
+    const groupe = screen.getByRole("group", { name: "Filtrer les loyers" });
+    expect(within(groupe).getByRole("button", { name: "Tous 4" })).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(within(groupe).getByRole("button", { name: "À régler 2" }));
+    expect(document.getElementById("loyer-a")).not.toBeNull();
+    expect(document.getElementById("loyer-c")).toBeNull();
+
+    await user.click(within(groupe).getByRole("button", { name: /Réglés/ }));
+    await user.selectOptions(screen.getByLabelText("Année"), "2025");
+    expect(document.getElementById("loyer-d")).not.toBeNull();
+    expect(document.getElementById("loyer-c")).toBeNull();
+
+    await user.selectOptions(screen.getByLabelText("Année"), "all");
+    await user.click(within(groupe).getByRole("button", { name: /À régler/ }));
+    await user.selectOptions(screen.getByLabelText("Année"), "2025");
+    expect(screen.getByText("Aucun loyer ne correspond à ce filtre.")).toBeInTheDocument();
   });
 });
