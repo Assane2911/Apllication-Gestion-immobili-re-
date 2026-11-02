@@ -60,7 +60,9 @@ export default function BoutonExportCsv({ chemin, params, prefixeFichier }: Bout
   }
 
   return (
-    <div className="flex flex-col items-start gap-1">
+    // Bouton et phrase d'aide sur une même ligne : sous le bouton, l'aide agrandissait la colonne et décalait la
+    // recherche et les menus voisins. Sur écran étroit, l'aide passe d'elle-même à la ligne.
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <button
         type="button"
         onClick={() => void exporter()}
@@ -70,9 +72,9 @@ export default function BoutonExportCsv({ chemin, params, prefixeFichier }: Bout
         <Download size={14} aria-hidden="true" />
         {enCours ? t("components.exportCsv.exporting") : t("components.exportCsv.button")}
       </button>
-      <p className="text-xs text-slate-600">{t("components.exportCsv.hint")}</p>
+      <p className="max-w-48 text-xs leading-4 text-slate-600">{t("components.exportCsv.hint")}</p>
       {erreur && (
-        <p role="alert" className="text-xs text-red-700">
+        <p role="alert" className="w-full text-xs text-red-700">
           {erreur}
         </p>
       )}
