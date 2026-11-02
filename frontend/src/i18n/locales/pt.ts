@@ -1001,12 +1001,6 @@ const pt: TranslationSchema = {
   },
 
   components: {
-    newVersion: {
-      title: "Está disponível uma nova versão da aplicação.",
-      hint: "Atualize para a usar; os dados não guardados serão perdidos.",
-      refresh: "Atualizar",
-      later: "Mais tarde",
-    },
     deconnexion: {
       title: "Sair?",
       message: "Sua sessão será encerrada neste dispositivo. Você precisará entrar novamente para voltar.",
