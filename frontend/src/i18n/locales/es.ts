@@ -1001,6 +1001,12 @@ const es: TranslationSchema = {
   },
 
   components: {
+    newVersion: {
+      title: "Hay una nueva versión de la aplicación disponible.",
+      hint: "Actualice para disfrutarla; se perderán los datos sin guardar.",
+      refresh: "Actualizar",
+      later: "Más tarde",
+    },
     deconnexion: {
       title: "¿Cerrar sesión?",
       message: "Se cerrará su sesión en este dispositivo. Tendrá que iniciar sesión de nuevo para volver.",
