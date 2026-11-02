@@ -990,6 +990,42 @@ export const messages = pgTable(
   })
 );
 
+// --- Discussion agence ↔ propriétaire ---
+/**
+ * La messagerie entre le gestionnaire et un propriétaire de ses biens. Distincte de `messages` : celle-là est
+ * rattachée à un bail (un fil par locataire), alors qu'un propriétaire n'a pas de bail — son fil est unique, rattaché à
+ * sa fiche. Même forme pour le texte et le vocal (chemin du fichier dans le stockage PRIVÉ, jamais une URL).
+ *
+ * `managerId` est redondant avec `owners.managerId` mais permet d'isoler par agence sans jointure. Un propriétaire
+ * anonymisé ou supprimé emporte son fil (et ses fichiers : voir anonymiserOwner, deleteOwner).
+ */
+export const ownerMessages = pgTable(
+  "owner_messages",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => owners.id, { onDelete: "cascade" }),
+    managerId: text("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    senderId: text("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    senderRole: roleEnum("sender_role").notNull(),
+    content: text("content").notNull(),
+    audioPath: text("audio_path"),
+    audioDurationSec: integer("audio_duration_sec"),
+    audioMime: text("audio_mime"),
+    isRead: boolean("is_read").notNull().default(false),
+    ...timestamps,
+  },
+  (table) => ({
+    ownerIdIdx: index("owner_messages_owner_id_idx").on(table.ownerId),
+    managerIdIdx: index("owner_messages_manager_id_idx").on(table.managerId),
+  })
+);
+
 // --- Suggestions (retours des utilisateurs sur la plateforme) ---
 /**
  * Ce que les utilisateurs proposent pour améliorer le Service.

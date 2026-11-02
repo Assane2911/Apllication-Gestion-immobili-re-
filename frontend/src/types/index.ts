@@ -378,7 +378,8 @@ export interface InsurancePolicy {
 
 export interface Message {
   id: string;
-  contractId: string;
+  /** Absent d'un message de la discussion avec un propriétaire (elle n'est pas rattachée à un bail). */
+  contractId?: string;
   senderId: string;
   senderRole: Role;
   content: string;
@@ -395,6 +396,22 @@ export interface Message {
     email: string;
     role: Role;
   };
+}
+
+/** Un fil de la messagerie propriétaires (côté gestionnaire) : un par propriétaire de l'agence. */
+export interface ConversationProprietaire {
+  id: string;
+  owner: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    companyName?: string | null;
+    civility?: string | null;
+    displayName: string;
+    hasPortalAccess: boolean;
+  };
+  unreadCount: number;
+  lastMessage: Message | null;
 }
 
 export interface Conversation {

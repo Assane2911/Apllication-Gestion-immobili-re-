@@ -42,6 +42,7 @@ function renderOwnerLayout(initialEntry = "/proprietaire") {
               <Route path="/proprietaire" element={<OwnerLayout />}>
                 <Route index element={<div>Résumé financier</div>} />
                 <Route path="crg" element={<div>Contenu de la page CRG</div>} />
+                <Route path="messages" element={<div>Contenu de la messagerie</div>} />
               </Route>
             </Routes>
           </MemoryRouter>
@@ -66,6 +67,16 @@ describe("OwnerLayout", () => {
     expect(lienCrg).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Tableau de bord" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("group", { name: "Rapports" })).toContainElement(lienCrg);
+  });
+
+  it("propose la messagerie avec l'agence, rangée avec le tableau de bord", () => {
+    renderOwnerLayout("/proprietaire/messages");
+
+    expect(screen.getByText("Contenu de la messagerie")).toBeInTheDocument();
+    const lienMessagerie = screen.getByRole("link", { name: /Messagerie/ });
+    expect(lienMessagerie).toHaveAttribute("href", "/proprietaire/messages");
+    expect(lienMessagerie).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("group", { name: "Pilotage" })).toContainElement(lienMessagerie);
   });
 
   it("demande confirmation, puis appelle logout", async () => {

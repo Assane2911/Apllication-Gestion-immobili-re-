@@ -603,6 +603,36 @@ export function newMessageFromManagerEmail(params: {
   };
 }
 
+/** Email envoyé au propriétaire lorsque son agence lui écrit dans la discussion de l'espace propriétaire. */
+export function newMessageForOwnerEmail(params: { ownerName: string; content: string; frontendUrl: string; langue?: Langue }) {
+  const { ownerName, content, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].messageProprietaire;
+  const [ouvrant, fermant] = TEXTES_SUITE[langue].guillemets;
+  const preview = content.length > 220 ? `${content.slice(0, 220)}…` : content;
+
+  return {
+    subject: t.sujet,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">${t.titre}</h2>
+        <p>${t.bonjour(escapeHtml(ownerName))}</p>
+        <p>${t.intro}</p>
+        <p style="background:#f8fafc; border-left:3px solid #2563eb; border-radius:4px; padding:12px 16px; color:#334155; font-style:italic;">
+          ${ouvrant}${escapeHtml(preview)}${fermant}
+        </p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${frontendUrl}/proprietaire/messages" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            ${t.bouton}
+          </a>
+        </div>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          ${TEXTES_COMPTE[langue].pied}
+        </p>
+      </div>
+    `,
+  };
+}
+
 /**
  * Template d'email de rappel de loyer envoyé automatiquement au locataire
  * au 1er de chaque mois, rappelant la date limite de règlement de CE loyer
