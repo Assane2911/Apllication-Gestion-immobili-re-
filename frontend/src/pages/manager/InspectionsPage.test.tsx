@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -251,5 +251,61 @@ describe("InspectionsPage (manager)", () => {
     await user.click(screen.getAllByRole("button", { name: "Voir le rapport" })[0]);
 
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/documents/inspection/insp-1", expect.objectContaining({ responseType: "text" })));
+  });
+
+  describe("synthèse, filtres, recherche et pièces types", () => {
+    const signe = { signedByManagerAt: "2026-01-16T00:00:00.000Z", signedByTenantAt: "2026-01-17T00:00:00.000Z" };
+    const parc = () => [
+      inspection({ id: "i1", status: "DRAFT", property: { title: "Villa Baobab" } as never }),
+      inspection({ id: "i2", status: "COMPLETED", property: { title: "Studio Plateau" } as never, tenant: { firstName: "Moussa", lastName: "Ba" } as never }),
+      inspection({ id: "i3", status: "COMPLETED", type: "EXIT", property: { title: "Atelier Mermoz" } as never, ...signe }),
+      inspection({ id: "i4", status: "COMPLETED", property: { title: "Loft Sacré-Cœur" } as never, ...signe }),
+    ];
+    const lignes = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+
+    async function afficher() {
+      queueLoad(parc());
+      renderPage();
+      await screen.findByRole("table");
+    }
+
+    it("résume brouillons, à signer, signés et entrées / sorties", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des états des lieux");
+      const valeur = (libelle: string) => within(synthese).getByText(libelle).nextElementSibling;
+      expect(valeur("Brouillons")).toHaveTextContent("1");
+      expect(valeur("À signer")).toHaveTextContent("1");
+      expect(valeur("Signés")).toHaveTextContent("2");
+      expect(valeur("Entrées / sorties")).toHaveTextContent("3 / 1");
+    });
+
+    it("filtre les états des lieux à signer et cherche par locataire", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      const filtres = screen.getByRole("group", { name: "Filtrer les états des lieux" });
+      await user.click(within(filtres).getByRole("button", { name: /À signer\s*1/ }));
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Studio Plateau");
+
+      await user.click(within(filtres).getByRole("button", { name: /Tous\s*4/ }));
+      await user.type(screen.getByRole("searchbox"), "sacre coeur");
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Loft Sacré-Cœur");
+    });
+
+    it("ajoute des pièces types d'un clic, compte leur état et passe tout en bon état", async () => {
+      const user = userEvent.setup();
+      queueLoad([inspection({ id: "i1", status: "DRAFT", rooms: [{ name: "Cave", condition: "MAUVAIS", notes: "" }] })]);
+      renderPage();
+      await user.click((await screen.findAllByRole("button", { name: "Éditer" }))[0]);
+
+      await user.click(screen.getByRole("button", { name: "Salon" }));
+      await user.click(screen.getByRole("button", { name: "Cuisine" }));
+      expect(screen.getAllByRole("textbox", { name: "Nom de la pièce" }).map((c) => (c as HTMLInputElement).value)).toEqual(["Cave", "Salon", "Cuisine"]);
+      expect(screen.getByText(/2 en bon état · 0 moyen\(s\) · 1 en mauvais état/)).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Tout en bon état" }));
+      expect(screen.getByText(/3 en bon état · 0 moyen\(s\) · 0 en mauvais état/)).toBeInTheDocument();
+    });
   });
 });

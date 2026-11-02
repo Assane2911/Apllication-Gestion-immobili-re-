@@ -2,20 +2,25 @@ import { Camera, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl, isRequestCancelled, liste } from "../../api/client";
+import BandeauChiffres from "../../components/BandeauChiffres";
+import BarreListe from "../../components/BarreListe";
 import Pagination from "../../components/Pagination";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { IssueReport, IssueStatus, PaginatedResponse, Vendor } from "../../types";
 import { getAllIssuePhotos } from "../../utils/issuePhotos";
 import Bulle from "../../components/Bulle";
+import { correspond } from "../../utils/recherche";
+import { ageEnJours } from "../../utils/syntheseLocation";
+import { incidentAncien, JOURS_INCIDENT_ANCIEN, sansPrestataire, syntheseIncidents } from "../../utils/syntheseExploitation";
 
 const statusOptions: IssueStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"];
 const PAGE_SIZE = 20;
 
-/** Filet de couleur de la fiche et pastille du statut : le rouge crie l'urgence, le vert referme le dossier. */
+/** Filet de couleur de la fiche et pastille du statut : l'orange plein crie l'urgence, l'encre referme le dossier. */
 const teinteStatut: Record<IssueStatus, { filet: string; tag: string }> = {
-  OPEN: { filet: "border-l-rose-600", tag: "border-rose-300 bg-rose-50 text-rose-800" },
-  IN_PROGRESS: { filet: "border-l-orange-700", tag: "border-orange-700/50 bg-orange-50 text-orange-800" },
-  RESOLVED: { filet: "border-l-emerald-600", tag: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+  OPEN: { filet: "border-l-orange-700", tag: "border-orange-700 bg-orange-700 text-white" },
+  IN_PROGRESS: { filet: "border-l-brand-600", tag: "border-orange-300 bg-orange-50 text-orange-900" },
+  RESOLVED: { filet: "border-l-ink-900", tag: "border-ink-900 bg-white text-ink-900" },
   REJECTED: { filet: "border-l-slate-400", tag: "border-slate-400 bg-slate-100 text-slate-700" },
 };
 
@@ -46,6 +51,8 @@ export default function IssuesPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [recherche, setRecherche] = useState("");
+  const [sansPrestataireSeul, setSansPrestataireSeul] = useState(false);
 
   function load(signal?: AbortSignal) {
     api
@@ -137,6 +144,14 @@ export default function IssuesPage() {
     }
   }
 
+  const maintenant = new Date();
+  const synthese = syntheseIncidents(issues, maintenant);
+  const visibles = issues.filter(
+    (i) =>
+      (!sansPrestataireSeul || sansPrestataire(i)) &&
+      correspond(recherche, i.title, i.description, i.tenant?.firstName, i.tenant?.lastName, i.contract?.property?.title, i.vendor?.name)
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -144,34 +159,52 @@ export default function IssuesPage() {
         <p className="mt-1 text-sm text-slate-600">{t("manager.issues.subtitle")}</p>
       </div>
 
-      {/* Filtre : une réglette d'onglets plutôt qu'une liste déroulante, le statut courant est visible d'un coup d'œil. */}
-      <div role="group" aria-label={t("manager.issues.filterByStatus")} className="flex flex-wrap border border-slate-400 bg-white sm:inline-flex">
-        {(["ALL", ...statusOptions] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            aria-pressed={filter === s}
-            onClick={() => handleFilterChange(s)}
-            className={`flex-1 cursor-pointer border-r border-slate-400 px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors last:border-r-0 sm:flex-none ${
-              filter === s ? "bg-ink-900 text-white" : "text-slate-800 hover:bg-slate-100"
-            }`}
-          >
-            {s === "ALL" ? t("manager.issues.allStatuses") : t(`common.status.${s}`)}
-          </button>
-        ))}
-      </div>
+      {issues.length > 0 && (
+        <BandeauChiffres
+          etiquette={t("manager.issues.summary.label")}
+          cases={[
+            { libelle: t("manager.issues.summary.open"), valeur: synthese.ouverts, aide: t("manager.issues.summary.openHint"), ton: synthese.ouverts > 0 ? "alerte" : "normal" },
+            { libelle: t("manager.issues.summary.noVendor"), valeur: synthese.sansPrestataire, aide: t("manager.issues.summary.noVendorHint"), ton: synthese.sansPrestataire > 0 ? "alerte" : "normal" },
+            { libelle: t("manager.issues.summary.old"), valeur: synthese.anciens, aide: t("manager.issues.summary.oldHint", { days: JOURS_INCIDENT_ANCIEN }), ton: synthese.anciens > 0 ? "alerte" : "normal" },
+            { libelle: t("manager.issues.summary.planned"), valeur: synthese.planifiees, aide: t("manager.issues.summary.plannedHint") },
+          ]}
+        />
+      )}
+
+      {/* Filtre de statut (appliqué par le serveur), recherche et bascule « sans prestataire » (sur la page chargée). */}
+      <BarreListe
+        idPrefixe="incidents"
+        recherche={recherche}
+        onRecherche={setRecherche}
+        placeholderRecherche={t("manager.issues.search")}
+        libelleFiltres={t("manager.issues.filterByStatus")}
+        filtres={(["ALL", ...statusOptions] as const).map((st) => ({ cle: st, libelle: st === "ALL" ? t("manager.issues.allStatuses") : t(`common.status.${st}`) }))}
+        filtreActif={filter}
+        onFiltre={(cle) => handleFilterChange(cle as IssueStatus | "ALL")}
+      >
+        <button
+          type="button"
+          aria-pressed={sansPrestataireSeul}
+          onClick={() => setSansPrestataireSeul((v) => !v)}
+          className={`cursor-pointer border px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+            sansPrestataireSeul ? "border-ink-900 bg-ink-900 text-white" : "border-slate-400 bg-white text-slate-800 hover:border-ink-900"
+          }`}
+        >
+          {t("manager.issues.unassignedOnly")}
+        </button>
+      </BarreListe>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-xs flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
           <span>{loadError}</span>
-          <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load()} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
           </button>
         </div>
       )}
 
       <div className="space-y-5">
-        {issues.map((issue, rang) => {
+        {visibles.map((issue, rang) => {
           const allPhotos = getAllIssuePhotos(issue);
           const rangPhoto = Math.min(photoChoisie[issue.id] ?? 0, allPhotos.length - 1);
           const teinte = teinteStatut[issue.status] ?? teinteStatut.REJECTED;
@@ -256,6 +289,12 @@ export default function IssuesPage() {
                       <dd className="mt-0.5 text-xs font-semibold tabular-nums text-slate-900">
                         {new Date(issue.createdAt).toLocaleDateString(i18n.language)}
                       </dd>
+                      {(issue.status === "OPEN" || issue.status === "IN_PROGRESS") && (
+                        <dd className={`mt-0.5 font-mono text-[11px] ${incidentAncien(issue, maintenant) ? "font-semibold text-orange-800" : "text-slate-600"}`}>
+                          {ageEnJours(issue.createdAt, maintenant) === 0 ? t("manager.issues.age.today") : t("manager.issues.age.days", { count: ageEnJours(issue.createdAt, maintenant) })}
+                          {incidentAncien(issue, maintenant) && ` · ${t("manager.issues.age.old")}`}
+                        </dd>
+                      )}
                     </div>
                   </dl>
 
@@ -345,9 +384,9 @@ export default function IssuesPage() {
           );
         })}
 
-        {issues.length === 0 && (
+        {visibles.length === 0 && (
           <p className="border border-slate-300 bg-white py-16 text-center text-sm text-slate-600">
-            {t("manager.issues.noIssuesForFilter")}
+            {issues.length > 0 ? t("manager.liste.noResult") : t("manager.issues.noIssuesForFilter")}
           </p>
         )}
       </div>
