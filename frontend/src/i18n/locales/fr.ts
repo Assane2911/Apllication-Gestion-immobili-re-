@@ -679,6 +679,19 @@ const fr = {
   },
 
   landing: {
+      reminders: {
+        title: "Simulateur · Relances automatiques",
+        subtitle: "Réglez le délai et l'intervalle, comme dans les paramètres de votre agence.",
+        grace: "Délai avant la première relance",
+        interval: "Intervalle entre deux relances",
+        days: "{{count}} jour(s)",
+        day: "J+{{day}}",
+        timeline: "Calendrier des relances d'un loyer impayé",
+        steps: { due: "Échéance du loyer", first: "Relance amiable", second: "Deuxième relance", third: "Dernière relance", end: "Fin des relances automatiques : la suite vous revient" },
+        summary: "Relance amiable à J+{{first}}, deuxième relance à J+{{second}}, dernière relance à J+{{third}}.",
+        note: "Chaque relance part par e-mail au titulaire et aux colocataires ; WhatsApp avec la formule Professionnel. Vous pouvez aussi prévenir les garants.",
+        cta: "Activer les relances pendant l'essai",
+      },
     stickyCta: "Essayer gratuitement",
     steps: {
       title: "De l'inscription à la première quittance",

@@ -12,19 +12,13 @@ import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
 import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
 import { useAuth } from "../../context/auth";
 import type { AgencySettings, RetentionEcheances, TeamMember, TeamRole } from "../../types";
+import { calendrierRelances } from "../../utils/relances";
 import { avertissementsBancaires, completudeProfil, formulaireModifie } from "../../utils/syntheseCompte";
 
 const ROLES_EQUIPE: TeamRole[] = ["FULL", "AGENT", "ACCOUNTANT", "READ_ONLY"];
 import Bulle from "../../components/Bulle";
 import MembreEquipe from "../../components/MembreEquipe";
 
-
-/** Jours de retard auxquels partent les trois relances, pour l'aperçu des réglages (même règle que le serveur). */
-export function calendrierRelances(grace: string, intervalle: string): { first: number; second: number; third: number } {
-  const g = Math.max(1, Number(grace) || 0);
-  const i = Math.max(1, Number(intervalle) || 0);
-  return { first: g, second: g + i, third: g + 2 * i };
-}
 
 const FORMULAIRE_INITIAL = {
   agencyName: "",

@@ -31,6 +31,7 @@ import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import PiedDeSite from "../components/PiedDeSite";
 import Reveal from "../components/Reveal";
+import SimulateurRelances from "../components/SimulateurRelances";
 import Seo from "../components/Seo";
 import { FORMULE_REPRISE, LIGNES_FORMULES, PLAFOND_BIENS, type IdFormule } from "../data/lignesFormules";
 import { useInView } from "../hooks/useInView";
@@ -43,11 +44,11 @@ const FEATURE_CARDS = [
   { key: "receipts", icon: Receipt, color: "bg-brand-500/15 text-brand-700" },
   { key: "signature", icon: PenLine, color: "bg-ink-800/10 text-ink-800" },
   { key: "reminders", icon: Megaphone, color: "bg-ink-800/10 text-ink-800" },
-  { key: "dashboard", icon: LayoutDashboard, color: "bg-ocre/25 text-amber-800" },
-  { key: "expenses", icon: Wallet, color: "bg-amber-600/20 text-amber-800" },
+  { key: "dashboard", icon: LayoutDashboard, color: "bg-orange-700/15 text-orange-800" },
+  { key: "expenses", icon: Wallet, color: "bg-orange-700/15 text-orange-800" },
   { key: "tenantPortal", icon: Home, color: "bg-ink-800/10 text-ink-700" },
   { key: "security", icon: Lock, color: "bg-rose-600/20 text-rose-700" },
-  { key: "multiCurrency", icon: Globe, color: "bg-ocre/25 text-amber-800" },
+  { key: "multiCurrency", icon: Globe, color: "bg-orange-700/15 text-orange-800" },
   { key: "multiLanguage", icon: Languages, color: "bg-brand-500/15 text-brand-700" },
 ] as const;
 
@@ -65,7 +66,7 @@ function DashboardMockup() {
   const [ref, inView] = useInView<HTMLDivElement>();
   const bars = [40, 65, 50, 80, 60, 95];
   return (
-    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full">
+    <div ref={ref} className="bg-white border border-slate-300 p-5 h-full">
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[
           { v: "94%", c: "text-ink-900" },
@@ -87,7 +88,7 @@ function DashboardMockup() {
         {bars.map((h, i) => (
           <div
             key={i}
-            className="flex-1  bg-brand-600 transition-all duration-700 ease-out motion-reduce:transition-none"
+            className="flex-1 bg-brand-600 transition-all duration-700 ease-out motion-reduce:transition-none"
             style={{ height: inView ? `${h}%` : "4%", transitionDelay: `${i * 80}ms` }}
           />
         ))}
@@ -101,7 +102,7 @@ function ContractMockup() {
   const { t } = useTranslation();
   const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full flex flex-col justify-between">
+    <div ref={ref} className="bg-white border border-slate-300 p-5 h-full flex flex-col justify-between">
       <div className="space-y-2">
         <div className="h-2.5 w-2/3 bg-slate-700 " />
         <div className="h-2 w-full bg-slate-200 " />
@@ -140,7 +141,7 @@ function ExpensesMockup() {
   const { t } = useTranslation();
   const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full flex flex-col justify-between">
+    <div ref={ref} className="bg-white border border-slate-300 p-5 h-full flex flex-col justify-between">
       <div className="flex items-end gap-3 h-24">
         {[
           { r: 55, e: 20 },
@@ -150,11 +151,11 @@ function ExpensesMockup() {
         ].map((m, i) => (
           <div key={i} className="flex-1 flex items-end gap-0.5 h-full">
             <div
-              className="flex-1  bg-ink-900/70 transition-all duration-700 ease-out motion-reduce:transition-none"
+              className="flex-1 bg-ink-900/70 transition-all duration-700 ease-out motion-reduce:transition-none"
               style={{ height: inView ? `${m.r}%` : "4%", transitionDelay: `${i * 90}ms` }}
             />
             <div
-              className="flex-1  bg-rose-500/60 transition-all duration-700 ease-out motion-reduce:transition-none"
+              className="flex-1 bg-rose-500/60 transition-all duration-700 ease-out motion-reduce:transition-none"
               style={{ height: inView ? `${m.e}%` : "4%", transitionDelay: `${i * 90 + 40}ms` }}
             />
           </div>
@@ -173,8 +174,8 @@ function TenantMockup() {
   const { t } = useTranslation();
   const [ref, inView] = useInView<HTMLDivElement>();
   return (
-    <div ref={ref} className="bg-white border border-slate-300  p-5 h-full flex flex-col gap-3">
-      <div className="bg-slate-100  p-3 flex items-center justify-between">
+    <div ref={ref} className="bg-white border border-slate-300 p-5 h-full flex flex-col gap-3">
+      <div className="bg-slate-100 p-3 flex items-center justify-between">
         <span className="text-[11px] text-slate-700">{t("landing.mock.rentMonth")}</span>
         <span className="text-[10px] font-bold text-white bg-brand-600 px-2.5 py-1 ">
           {t("landing.mock.pay")}
@@ -315,7 +316,7 @@ function BoutonHautDePage({ libelle }: { libelle: string }) {
       href="#top"
       aria-label={libelle}
       title={libelle}
-      className={`fixed bottom-20 right-4 z-40 flex h-11 w-11 lg:bottom-6 lg:right-6 items-center justify-center border-2 border-ink-900 bg-white text-ink-900 shadow-md transition-all duration-300 hover:bg-ink-900 hover:text-white motion-reduce:transition-none ${
+      className={`fixed bottom-20 right-4 z-40 flex h-11 w-11 lg:bottom-6 lg:right-6 items-center justify-center border-2 border-ink-900 bg-white text-ink-900  transition-all duration-300 hover:bg-ink-900 hover:text-white motion-reduce:transition-none ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
@@ -480,7 +481,7 @@ export default function LandingPage() {
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
-      <nav className={`fixed inset-x-0 top-0 z-50 bg-white border-b-[1.5px] border-ink-900 transition-shadow duration-500 ${defile || menuOuvert ? "shadow-md" : ""}`}>
+      <nav className={`fixed inset-x-0 top-0 z-50 bg-white border-b-[1.5px] border-ink-900 transition-shadow duration-500 ${defile || menuOuvert ? "" : ""}`}>
         <div aria-hidden="true" className="bande-motif h-1.5" />
         <div className={`max-w-7xl mx-auto px-3 sm:px-4 flex items-stretch justify-between gap-2 transition-[height] duration-500 ease-out motion-reduce:transition-none ${defile ? "h-12" : "h-14"}`}>
           <div className="flex items-center gap-3 shrink-0">
@@ -529,7 +530,7 @@ export default function LandingPage() {
             {user ? (
               <Link
                 to={homePathForRole(user.role)}
-                className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 sm:px-4 py-2 transition-colors shadow-sm"
+                className="whitespace-nowrap bg-ink-900 hover:bg-brand-600 text-white text-xs font-semibold px-3 sm:px-4 py-2 transition-colors "
               >
                 {t("landing.nav.goToSpace")}
               </Link>
@@ -543,7 +544,7 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   to="/inscription"
-                  className="whitespace-nowrap bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-2.5 sm:px-4 py-2 transition-colors shadow-sm"
+                  className="whitespace-nowrap bg-ink-900 hover:bg-brand-600 text-white text-xs font-semibold px-2.5 sm:px-4 py-2 transition-colors "
                 >
                   {telephone ? t("landing.nav.trialShort") : t("landing.nav.trial")}
                 </Link>
@@ -608,8 +609,8 @@ export default function LandingPage() {
         <div className="grid lg:grid-cols-12 gap-14 lg:gap-8 items-center">
           <div className="lg:col-span-6 text-center lg:text-left">
             <Reveal>
-              <div className="inline-flex items-center gap-2 bg-ocre/20 border border-ocre/60  px-4 py-1.5 text-xs text-slate-900 font-medium mb-7">
-                <span className="w-2 h-2  bg-brand-600"></span>
+              <div className="inline-flex items-center gap-2 bg-ocre/20 border border-ocre/60 px-4 py-1.5 text-xs text-slate-900 font-medium mb-7">
+                <span className="w-2 h-2 bg-brand-600"></span>
                 {t("landing.badge")}
               </div>
             </Reveal>
@@ -633,7 +634,7 @@ export default function LandingPage() {
               <div className="mt-9 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                 <Link
                   to="/inscription"
-                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-8 py-3.5  shadow-lg shadow-brand-600/25 transition-colors"
+                  className="w-full sm:w-auto bg-ink-900 hover:bg-brand-600 text-white font-semibold text-sm px-8 py-3.5 transition-colors"
                 >
                   {t("landing.hero.ctaTrial")}
                 </Link>
@@ -646,7 +647,7 @@ export default function LandingPage() {
                     generalement voir un visiteur qui hesite a demarrer l'essai. */}
                 <a
                   href="#pricing"
-                  className="w-full sm:w-auto text-center border-2 border-ink-900 text-slate-900 hover:bg-ink-900 hover:text-white font-semibold text-sm px-6 py-3  transition-colors"
+                  className="w-full sm:w-auto text-center border-2 border-ink-900 text-slate-900 hover:bg-ink-900 hover:text-white font-semibold text-sm px-6 py-3 transition-colors"
                 >
                   {t("landing.hero.ctaPricing")}
                 </a>
@@ -692,11 +693,11 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-left">
           {FEATURE_CARDS.map((card, i) => (
             <Reveal key={card.key} delay={(i % 3) * 100} className={`group ${PORTEES_FONCTIONS[i]}`}>
-              <div className="relative h-full bg-white/70 border border-slate-400/70 p-6  hover:border-ink-900 transition-colors">
+              <div className="relative h-full bg-white/70 border border-slate-400/70 p-6 hover:border-ink-900 transition-colors">
                 <span aria-hidden="true" className="absolute top-4 right-5 font-mono text-[11px] text-slate-600">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <div className={`w-11 h-11  ${card.color} flex items-center justify-center mb-4`}>
+                <div className={`w-11 h-11 ${card.color} flex items-center justify-center mb-4`}>
                   <card.icon size={22} strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">{t(`landing.features.${card.key}.title`)}</h3>
@@ -710,11 +711,15 @@ export default function LandingPage() {
           {extras.map((extra, i) => (
             <span
               key={i}
-              className="font-mono text-[11px] uppercase tracking-wide text-slate-800 border border-slate-400/70 px-3 py-1.5  hover:border-ink-900 transition-colors"
+              className="font-mono text-[11px] uppercase tracking-wide text-slate-800 border border-slate-400/70 px-3 py-1.5 hover:border-ink-900 transition-colors"
             >
               {extra}
             </span>
           ))}
+        </Reveal>
+
+        <Reveal delay={100}>
+          <SimulateurRelances />
         </Reveal>
       </section>
 
@@ -730,7 +735,7 @@ export default function LandingPage() {
             { m: <TenantMockup />, k: "tenant" },
           ].map((item, i) => (
             <Reveal key={item.k} delay={i * 100}>
-              <div className="h-full bg-white/50 border border-slate-400/70  p-5">
+              <div className="h-full bg-white/50 border border-slate-400/70 p-5">
                 <div className="h-44 mb-5">{item.m}</div>
                 <h3 className="text-base font-bold text-slate-900 mb-1.5">{t(`landing.productTour.${item.k}.title`)}</h3>
                 <p className="text-xs text-slate-700 leading-relaxed">{t(`landing.productTour.${item.k}.desc`)}</p>
@@ -762,7 +767,7 @@ export default function LandingPage() {
       {/* Comparison Section: Gestion Traditionnelle vs ImmoPlatform Pro */}
       <section id="compare" className="py-24 px-6 max-w-7xl mx-auto border-t border-slate-300/80">
         <Reveal className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 bg-white border border-slate-300  px-4 py-1.5 text-xs text-slate-800 font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 bg-white border border-slate-300 px-4 py-1.5 text-xs text-slate-800 font-semibold mb-4">
             <Scale size={13} aria-hidden="true" /> <span>{t("landing.compare.badge")}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
@@ -777,15 +782,15 @@ export default function LandingPage() {
 
           {/* Badges ROI */}
           <div className="mt-8 grid grid-cols-3 gap-3 max-w-lg mx-auto">
-            <div className="bg-white border border-slate-300  p-3 text-center hover:border-ink-900 transition-colors">
+            <div className="bg-white border border-slate-300 p-3 text-center hover:border-ink-900 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-ink-900">-85%</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.adminTime")}</span>
             </div>
-            <div className="bg-white border border-slate-300  p-3 text-center hover:border-brand-500/40 transition-colors">
+            <div className="bg-white border border-slate-300 p-3 text-center hover:border-brand-500/40 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-brand-700">0</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.unpaidRent")}</span>
             </div>
-            <div className="bg-white border border-slate-300  p-3 text-center hover:border-brand-500/40 transition-colors">
+            <div className="bg-white border border-slate-300 p-3 text-center hover:border-brand-500/40 transition-colors">
               <span className="block text-xl sm:text-2xl font-black text-brand-700">100%</span>
               <span className="text-[11px] text-slate-700">{t("landing.compare.roi.certified")}</span>
             </div>
@@ -794,7 +799,7 @@ export default function LandingPage() {
 
         {/* Tableau comparatif : légende de plan, la colonne ImmoPlatform Pro cernée d'un trait d'encre */}
         <Reveal delay={120}>
-          <div className="bg-white border-[1.5px] border-ink-900 shadow-md">
+          <div className="bg-white border-[1.5px] border-ink-900 ">
             {/* En-tête du tableau */}
             <div className="hidden md:grid md:grid-cols-12 bg-ink-900 text-white">
               <div className="md:col-span-4 px-6 py-4 font-mono text-[11px] uppercase tracking-[0.12em] flex items-center">
@@ -873,13 +878,13 @@ export default function LandingPage() {
 
         {/* CTA sous le comparatif */}
         <Reveal delay={200} className="mt-12 text-center">
-          <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-white border-[1.5px] border-ink-900 p-4 sm:px-8 shadow-md">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-white border-[1.5px] border-ink-900 p-4 sm:px-8 ">
             <span className="text-xs text-slate-700 font-medium">
               {t("landing.compare.cta.text")}
             </span>
             <Link
               to="/inscription"
-              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-6 py-2.5 transition-colors"
+              className="bg-ink-900 hover:bg-brand-600 text-white font-semibold text-xs px-6 py-2.5 transition-colors"
             >
               {t("landing.compare.cta.button")}
             </Link>
@@ -1137,7 +1142,7 @@ export default function LandingPage() {
               <div className="md:col-span-4 md:text-right">
                 <Link
                   to="/inscription"
-                  className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm px-8 py-3.5  shadow-lg shadow-brand-600/25 transition-colors"
+                  className="inline-block bg-ink-900 hover:bg-brand-600 text-white font-bold text-sm px-8 py-3.5 transition-colors"
                 >
                   {t("landing.finalCta.cta")}
                 </Link>
