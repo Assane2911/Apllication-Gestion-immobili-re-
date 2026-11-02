@@ -53,6 +53,8 @@ const TenantInvoicesPage = lazyWithReload(() => import("./pages/tenant/TenantInv
 const TenantIssuesPage = lazyWithReload(() => import("./pages/tenant/TenantIssuesPage"));
 const TenantMessagesPage = lazyWithReload(() => import("./pages/tenant/TenantMessagesPage"));
 const OwnerDashboardPage = lazyWithReload(() => import("./pages/owner/OwnerDashboardPage"));
+const OwnerMessagesPage = lazyWithReload(() => import("./pages/owner/OwnerMessagesPage"));
+const GestionnaireOwnerMessagesPage = lazyWithReload(() => import("./pages/manager/OwnerMessagesPage"));
 const OwnerCrgPage = lazyWithReload(() => import("./pages/owner/OwnerCrgPage"));
 const AdminDashboardPage = lazyWithReload(() => import("./pages/admin/AdminDashboardPage"));
 const AdminSubscriptionsPage = lazyWithReload(() => import("./pages/admin/AdminSubscriptionsPage"));
@@ -133,6 +135,7 @@ function AppRoutes() {
           <Route path="/assurances" element={<InsurancePage />} />
           <Route path="/bilan-fiscal" element={<FiscalPage />} />
           <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/messages/proprietaires" element={<GestionnaireOwnerMessagesPage />} />
           <Route path="/issues" element={<IssuesPage />} />
           <Route path="/prestataires" element={<VendorsPage />} />
           <Route path="/activity-log" element={<ActivityLogPage />} />
@@ -163,6 +166,7 @@ function AppRoutes() {
           }
         >
           <Route path="/proprietaire" element={<OwnerDashboardPage />} />
+          <Route path="/proprietaire/messages" element={<OwnerMessagesPage />} />
           <Route path="/proprietaire/crg" element={<OwnerCrgPage />} />
         </Route>
 

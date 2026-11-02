@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, invoices, issueReports, listingLeads, listings, messages, notificationVues, properties, tenants } from "../db/schema";
+import { contracts, invoices, issueReports, listingLeads, listings, messages, notificationVues, ownerMessages, owners, properties, tenants } from "../db/schema";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { bauxDuLocataire } from "../services/colocation.service";
 import { TEXTES_NOTIFICATION } from "../services/notification.textes";
@@ -81,6 +81,33 @@ async function calculerNotificationsGestionnaire(managerId: string, langue: Lang
       title: t.messagesDuLocataire(r.count, `${r.firstName} ${r.lastName}`),
       description: r.propertyTitle,
       link: "/messages",
+      createdAt: new Date(r.latest!).toISOString(),
+    });
+  }
+
+  // --- Messages non lus envoyés par les propriétaires (discussion de l'espace propriétaire) ---
+  const proprietairesNonLus = await db
+    .select({
+      ownerId: owners.id,
+      firstName: owners.firstName,
+      lastName: owners.lastName,
+      companyName: owners.companyName,
+      count: sql<number>`count(*)::int`,
+      latest: max(ownerMessages.createdAt),
+    })
+    .from(ownerMessages)
+    .innerJoin(owners, eq(ownerMessages.ownerId, owners.id))
+    .where(and(eq(ownerMessages.managerId, managerId), eq(ownerMessages.senderRole, "OWNER"), eq(ownerMessages.isRead, false)))
+    .groupBy(owners.id, owners.firstName, owners.lastName, owners.companyName);
+
+  for (const r of proprietairesNonLus) {
+    notifications.push({
+      id: `owner-message-${r.ownerId}`,
+      type: "message",
+      severity: "info",
+      title: t.messagesDuProprietaire(r.count, r.companyName?.trim() || `${r.firstName} ${r.lastName}`),
+      description: t.discussionProprietaire,
+      link: "/messages/proprietaires",
       createdAt: new Date(r.latest!).toISOString(),
     });
   }

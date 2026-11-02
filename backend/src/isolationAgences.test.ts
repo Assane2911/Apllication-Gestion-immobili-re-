@@ -128,6 +128,7 @@ function identifiant(route: Route, parametre: string, w: Awaited<ReturnType<type
   if (c.startsWith("/api/listings/leads")) return p === "id" ? w.demande.id : null;
   if (c.startsWith("/api/listings")) return p === "id" ? w.annonce.id : null;
   if (c.startsWith("/api/messages")) return p === "contractId" ? w.bail.id : null;
+  if (c.startsWith("/api/owner-messages")) return p === "ownerId" ? w.proprio.id : null;
   if (c.startsWith("/api/team")) return p === "id" ? w.collaborateur.id : null;
   if (c.startsWith("/api/documents")) {
     return { invoiceId: w.facture.id, contractId: w.bail.id, inspectionId: w.edl.id, revisionId: w.revision.id, noticeId: w.miseEnDemeure.id }[p] ?? null;

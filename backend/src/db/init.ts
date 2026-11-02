@@ -787,6 +787,25 @@ export async function initDb() {
       )
     `);
 
+    await creerTable("owner_messages", sql`
+      CREATE TABLE IF NOT EXISTS owner_messages (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sender_role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        audio_path TEXT,
+        audio_duration_sec INTEGER,
+        audio_mime TEXT,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex("owner_messages_owner_id_idx", sql`CREATE INDEX IF NOT EXISTS owner_messages_owner_id_idx ON owner_messages (owner_id)`);
+    await creerIndex("owner_messages_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS owner_messages_manager_id_idx ON owner_messages (manager_id)`);
+
     await creerTable("agency_settings", sql`
       CREATE TABLE IF NOT EXISTS agency_settings (
         id TEXT PRIMARY KEY,

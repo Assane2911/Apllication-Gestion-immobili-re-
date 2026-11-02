@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import FilDeMessages from "../../components/FilDeMessages";
 import Initiales from "../../components/Initiales";
+import OngletsMessagerie from "../../components/OngletsMessagerie";
 import Pagination from "../../components/Pagination";
 import PlanLogement from "../../components/PlanLogement";
 import ZoneDeSaisie from "../../components/ZoneDeSaisie";
@@ -63,6 +64,7 @@ export default function MessagesPage() {
         <h2 className="text-2xl font-semibold text-slate-900">{t("manager.messages.title")}</h2>
         <p className="mt-1 text-sm text-slate-600">{t("manager.messages.subtitle")}</p>
       </div>
+      <OngletsMessagerie />
 
       {error && (
         <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">

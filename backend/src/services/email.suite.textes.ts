@@ -30,6 +30,14 @@ export interface TextesSuite {
     intro: (bien: string) => string;
     bouton: string;
   };
+  /** Nouveau message de l'agence à un propriétaire (sans logement : la discussion est celle de l'ensemble de son patrimoine). */
+  messageProprietaire: {
+    sujet: string;
+    titre: string;
+    bonjour: (nom: string) => string;
+    intro: string;
+    bouton: string;
+  };
   revision: {
     sujet: (date: string) => string;
     bandeau: string;
@@ -93,6 +101,13 @@ const fr: TextesSuite = {
       `<strong>📅 Intervention prévue le ${date}</strong><br/>Merci de vous assurer d'être présent ou de prévoir un accès au logement.`,
     note: "Message de votre agence :",
     bouton: "Voir mes signalements →",
+  },
+  messageProprietaire: {
+    sujet: "💬 Nouveau message de votre agence",
+    titre: "💬 Nouveau message de votre agence",
+    bonjour: (nom) => `Bonjour ${nom},`,
+    intro: "Votre agence vous a écrit :",
+    bouton: "Ouvrir la discussion →",
   },
   message: {
     sujet: (bien) => `💬 Nouveau message de votre agence — ${bien}`,
@@ -171,6 +186,13 @@ const en: TextesSuite = {
     note: "Message from your agency:",
     bouton: "View my reports →",
   },
+  messageProprietaire: {
+    sujet: "💬 New message from your agency",
+    titre: "💬 New message from your agency",
+    bonjour: (nom) => `Hello ${nom},`,
+    intro: "Your agency has written to you:",
+    bouton: "Open the conversation →",
+  },
   message: {
     sujet: (bien) => `💬 New message from your agency — ${bien}`,
     titre: "💬 New message from your agency",
@@ -247,6 +269,13 @@ const es: TextesSuite = {
     note: "Mensaje de su agencia:",
     bouton: "Ver mis incidencias →",
   },
+  messageProprietaire: {
+    sujet: "💬 Nuevo mensaje de su agencia",
+    titre: "💬 Nuevo mensaje de su agencia",
+    bonjour: (nom) => `Hola ${nom},`,
+    intro: "Su agencia le ha escrito:",
+    bouton: "Abrir la conversación →",
+  },
   message: {
     sujet: (bien) => `💬 Nuevo mensaje de su agencia — ${bien}`,
     titre: "💬 Nuevo mensaje de su agencia",
@@ -322,6 +351,13 @@ const pt: TextesSuite = {
       `<strong>📅 Intervenção prevista para ${date}</strong><br/>Certifique-se de estar presente ou de providenciar o acesso ao imóvel.`,
     note: "Mensagem da sua imobiliária:",
     bouton: "Ver minhas ocorrências →",
+  },
+  messageProprietaire: {
+    sujet: "💬 Nova mensagem da sua imobiliária",
+    titre: "💬 Nova mensagem da sua imobiliária",
+    bonjour: (nom) => `Olá ${nom},`,
+    intro: "A sua imobiliária escreveu-lhe:",
+    bouton: "Abrir a conversa →",
   },
   message: {
     sujet: (bien) => `💬 Nova mensagem da sua imobiliária — ${bien}`,

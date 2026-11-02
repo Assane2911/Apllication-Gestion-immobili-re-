@@ -13,6 +13,9 @@ export interface TextesNotification {
 
   // --- Gestionnaire ---
   messagesDuLocataire(nombre: number, locataire: string): string;
+  /** Messages non lus d'un propriétaire, dans la discussion de l'espace propriétaire. */
+  messagesDuProprietaire(nombre: number, proprietaire: string): string;
+  discussionProprietaire: string;
   loyerEnRetard(locataire: string): string;
   /** Plusieurs loyers en retard du même bail, regroupés en une seule ligne. */
   loyersEnRetard(nombre: number, locataire: string): string;
@@ -41,6 +44,8 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
   fr: {
     optionsDate: {},
     messagesDuLocataire: (n, nom) => `${n} nouveau${n > 1 ? "x" : ""} message${n > 1 ? "s" : ""} de ${nom}`,
+    messagesDuProprietaire: (n, nom) => `${n} nouveau${n > 1 ? "x" : ""} message${n > 1 ? "s" : ""} du propriétaire ${nom}`,
+    discussionProprietaire: "Discussion avec le propriétaire",
     loyerEnRetard: (nom) => `Loyer en retard — ${nom}`,
     loyersEnRetard: (n, nom) => `${n} loyers en retard — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · échéance du ${date}`,
@@ -60,6 +65,8 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
   en: {
     optionsDate: { year: "numeric", month: "long", day: "numeric" },
     messagesDuLocataire: (n, nom) => `${n} new ${pluriel(n, "message", "messages")} from ${nom}`,
+    messagesDuProprietaire: (n, nom) => `${n} new ${pluriel(n, "message", "messages")} from owner ${nom}`,
+    discussionProprietaire: "Conversation with the owner",
     loyerEnRetard: (nom) => `Late rent — ${nom}`,
     loyersEnRetard: (n, nom) => `${n} late rent payments — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · due ${date}`,
@@ -79,6 +86,8 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
   es: {
     optionsDate: { year: "numeric", month: "long", day: "numeric" },
     messagesDuLocataire: (n, nom) => `${n} ${pluriel(n, "mensaje nuevo", "mensajes nuevos")} de ${nom}`,
+    messagesDuProprietaire: (n, nom) => `${n} ${pluriel(n, "mensaje nuevo", "mensajes nuevos")} del propietario ${nom}`,
+    discussionProprietaire: "Conversación con el propietario",
     loyerEnRetard: (nom) => `Alquiler atrasado — ${nom}`,
     loyersEnRetard: (n, nom) => `${n} alquileres atrasados — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · vence el ${date}`,
@@ -98,6 +107,8 @@ export const TEXTES_NOTIFICATION: Record<Langue, TextesNotification> = {
   pt: {
     optionsDate: { year: "numeric", month: "long", day: "numeric" },
     messagesDuLocataire: (n, nom) => `${n} ${pluriel(n, "nova mensagem", "novas mensagens")} de ${nom}`,
+    messagesDuProprietaire: (n, nom) => `${n} ${pluriel(n, "nova mensagem", "novas mensagens")} do proprietário ${nom}`,
+    discussionProprietaire: "Conversa com o proprietário",
     loyerEnRetard: (nom) => `Renda em atraso — ${nom}`,
     loyersEnRetard: (n, nom) => `${n} rendas em atraso — ${nom}`,
     echeanceDuBien: (bien, date) => `${bien} · vencimento em ${date}`,

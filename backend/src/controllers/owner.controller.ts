@@ -1,13 +1,14 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { and, desc, eq, gt, gte, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
-import { activityLogs, agencySettings, contracts, invoices, owners, properties, users } from "../db/schema";
+import { activityLogs, agencySettings, contracts, invoices, ownerMessages, owners, properties, users } from "../db/schema";
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
+import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { developperFactures } from "../services/encaissements.service";
 import { enregistrerChangementTaux } from "../services/tauxCommission.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -193,6 +194,15 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
   res.json(owner);
 });
 
+/** Chemins des enregistrements de la discussion d'un propriétaire, à effacer du stockage privé avec son fil. */
+async function vocauxDuProprietaire(ownerId: string): Promise<string[]> {
+  const lignes = await db
+    .select({ audioPath: ownerMessages.audioPath })
+    .from(ownerMessages)
+    .where(and(eq(ownerMessages.ownerId, ownerId), isNotNull(ownerMessages.audioPath)));
+  return lignes.map((l: { audioPath: string | null }) => l.audioPath!);
+}
+
 export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
   const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
@@ -206,7 +216,10 @@ export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
+  const vocaux = await vocauxDuProprietaire(existing.id);
   await db.delete(owners).where(eq(owners.id, req.params.id));
+  // Le fil part avec la fiche (cascade) ; ses enregistrements, dans le stockage privé, sont effacés à part.
+  await Promise.allSettled(vocaux.map((chemin) => deleteStorageObjectBestEffort(chemin)));
 
   await logActivity({
     req,
@@ -241,7 +254,8 @@ export const deleteOwner = asyncHandler(async (req: Request, res: Response) => {
  * Contrairement au locataire, un propriétaire ne signe ni bail ni état des
  * lieux dans ce Service (aucun ownerSignatureUrl n'existe sur contracts/
  * inspections) et ne dispose d'aucun document stocké (pas de pièce
- * d'identité) : rien à nettoyer côté stockage Supabase.
+ * d'identité). Seuls restent à nettoyer, côté stockage, les messages vocaux de
+ * sa discussion avec l'agence (voir vocauxDuProprietaire).
  *
  * Disponible à tout moment (pas seulement quand deleteOwner serait bloqué) :
  * même choix que anonymiserTenant, qui ne conditionne pas non plus le geste à
@@ -258,6 +272,7 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
   const nomAffiche = `${existing.firstName} ${existing.lastName}`;
   const nomAnonyme = "Propriétaire anonymisé";
   const comptePortail = existing.userId;
+  const vocaux = await vocauxDuProprietaire(existing.id);
 
   await db.transaction(async (tx: Transaction) => {
     await tx
@@ -286,6 +301,10 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
       await tx.delete(users).where(eq(users.id, comptePortail));
     }
 
+    // La discussion avec l'agence (texte et vocaux) contient ce qu'il a dit, en son nom : elle part avec lui. Les
+    // messages écrits par son compte seraient déjà partis avec lui (cascade), mais pas ceux du gestionnaire.
+    await tx.delete(ownerMessages).where(eq(ownerMessages.ownerId, existing.id));
+
     // Le journal d'activité conserve, en texte libre, le nom du propriétaire
     // dans les entrées passées le concernant (création, modification,
     // invitation au portail) — voir owner.create/update/delete/invite
@@ -296,6 +315,10 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
       .set(effacerIdentiteDuJournal(nomAffiche, nomAnonyme))
       .where(and(eq(activityLogs.entityType, "owner"), eq(activityLogs.entityId, existing.id)));
   });
+
+  // Les enregistrements vocaux, dans le stockage privé, après le commit : un stockage indisponible ne remet pas en
+  // cause l'anonymisation actée.
+  await Promise.allSettled(vocaux.map((chemin) => deleteStorageObjectBestEffort(chemin)));
 
   // Le nom réel ne doit apparaître ni ici ni dans aucune entrée passée (voir
   // le nettoyage ci-dessus), sous peine de rouvrir la fuite qu'on vient de

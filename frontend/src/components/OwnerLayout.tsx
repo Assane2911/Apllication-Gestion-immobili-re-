@@ -1,4 +1,4 @@
-import { LayoutDashboard, Menu, Receipt } from "lucide-react";
+import { LayoutDashboard, Menu, MessageSquare, Receipt } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
@@ -12,14 +12,21 @@ import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 
 // Même menu latéral que l'espace gestionnaire (colonne d'icônes qui s'ouvre au survol), rangé en deux rubriques.
 const groupes: ReadonlyArray<GroupeMenu> = [
-  { cle: "overview", items: [{ to: "/proprietaire", key: "home", icone: LayoutDashboard }] },
+  {
+    cle: "overview",
+    items: [
+      { to: "/proprietaire", key: "home", icone: LayoutDashboard },
+      { to: "/proprietaire/messages", key: "messages", icone: MessageSquare },
+    ],
+  },
   { cle: "reports", items: [{ to: "/proprietaire/crg", key: "crg", icone: Receipt }] },
 ];
 const navItems = groupes.flatMap((groupe) => groupe.items);
 
 /**
- * Coquille de l'Espace propriétaire : le même menu latéral que les espaces gestionnaire et administration. Deux entrées :
- * le résumé financier en lecture seule (périmètre initial), et le CRG mensuel (compte-rendu de gestion, ajouté ensuite).
+ * Coquille de l'Espace propriétaire : le même menu latéral que les espaces gestionnaire et administration. Trois entrées :
+ * le résumé financier en lecture seule (périmètre initial), la messagerie avec l'agence (texte et vocaux), et le CRG
+ * mensuel (compte-rendu de gestion, ajouté ensuite).
  */
 export default function OwnerLayout() {
   const { t } = useTranslation();
