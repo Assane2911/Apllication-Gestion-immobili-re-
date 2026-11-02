@@ -70,6 +70,60 @@ describe("SectionMaintenance", () => {
     expect(screen.getByText(/^Programmée : du/)).toBeInTheDocument();
   });
 
+  it("l'annonce par e-mail est décochée par défaut : sans action de l'administrateur, aucun e-mail ne part", async () => {
+    mocked.get.mockResolvedValue({ data: { maintenance: null } });
+    mocked.put.mockResolvedValue({ data: { ...etat(3 * H, 4 * H), annonce: null } });
+    const user = userEvent.setup();
+    render(<SectionMaintenance numero="03" />);
+    await screen.findByText("Aucune maintenance programmée");
+    const case_ = screen.getByRole("checkbox", { name: /Prévenir les gestionnaires par e-mail/ });
+    expect(case_).not.toBeChecked();
+    await user.type(screen.getByLabelText("Début"), versChampLocal(new Date(Date.now() + 3 * H)));
+    await user.type(screen.getByLabelText("Fin"), versChampLocal(new Date(Date.now() + 4 * H)));
+    await user.click(screen.getByRole("button", { name: "Programmer la maintenance" }));
+    await waitFor(() => expect(mocked.put).toHaveBeenCalledTimes(1));
+    expect(mocked.put.mock.calls[0][1]).not.toHaveProperty("notifier");
+  });
+
+  it("coche l'annonce : le serveur est prévenu, le bilan de l'envoi (réussites et échecs) s'affiche, et la case se décoche", async () => {
+    mocked.get.mockResolvedValue({ data: { maintenance: null } });
+    mocked.put.mockResolvedValue({ data: { ...etat(3 * H, 4 * H), annonce: { destinataires: 13, envoyes: 12, echecs: 1 } } });
+    const user = userEvent.setup();
+    render(<SectionMaintenance numero="03" />);
+    await screen.findByText("Aucune maintenance programmée");
+    await user.type(screen.getByLabelText("Début"), versChampLocal(new Date(Date.now() + 3 * H)));
+    await user.type(screen.getByLabelText("Fin"), versChampLocal(new Date(Date.now() + 4 * H)));
+    await user.click(screen.getByRole("checkbox", { name: /Prévenir les gestionnaires par e-mail/ }));
+    await user.click(screen.getByRole("button", { name: "Programmer la maintenance" }));
+
+    await waitFor(() => expect(mocked.put).toHaveBeenCalledTimes(1));
+    expect(mocked.put.mock.calls[0][1]).toMatchObject({ notifier: true });
+    const statut = await screen.findByRole("status");
+    expect(statut).toHaveTextContent("Annonce par e-mail : 12 envoyé(s) sur 13 gestionnaire(s).");
+    expect(statut).toHaveTextContent("1 envoi(s) ont échoué");
+    expect(screen.getByRole("checkbox", { name: /Prévenir les gestionnaires par e-mail/ })).not.toBeChecked();
+  });
+
+  it("une maintenance qui commence tout de suite ne peut pas être annoncée par e-mail : la case est grisée et rien n'est envoyé", async () => {
+    mocked.get.mockResolvedValue({ data: { maintenance: null } });
+    mocked.put.mockResolvedValue({ data: etat(-1000, H) });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<SectionMaintenance numero="03" />);
+    await screen.findByText("Aucune maintenance programmée");
+    await user.type(screen.getByLabelText("Début"), versChampLocal(new Date(Date.now() + 3 * H)));
+    await user.click(screen.getByRole("checkbox", { name: /Prévenir les gestionnaires par e-mail/ }));
+    await user.click(screen.getByRole("button", { name: "Commencer maintenant" }));
+    const case_ = screen.getByRole("checkbox", { name: /Prévenir les gestionnaires par e-mail/ });
+    expect(case_).toBeDisabled();
+    expect(case_).not.toBeChecked();
+    expect(screen.getByText("Disponible seulement si la maintenance commence plus tard.")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Fin"), versChampLocal(new Date(Date.now() + 2 * H)));
+    await user.click(screen.getByRole("button", { name: "Programmer la maintenance" }));
+    await waitFor(() => expect(mocked.put).toHaveBeenCalledTimes(1));
+    expect(mocked.put.mock.calls[0][1]).not.toHaveProperty("notifier");
+  });
+
   it("refuse d'envoyer une fenêtre incohérente et dit pourquoi", async () => {
     mocked.get.mockResolvedValue({ data: { maintenance: null } });
     const user = userEvent.setup();

@@ -82,6 +82,12 @@ export function versChampLocal(date: string | Date): string {
   return `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}T${deux(d.getHours())}:${deux(d.getMinutes())}`;
 }
 
+/** Le début saisi est-il encore à venir ? L'annonce par e-mail n'a de sens que pour une maintenance qui n'a pas commencé. */
+export function debutAVenir(debut: string, maintenant: number = Date.now()): boolean {
+  const d = debut ? new Date(debut).getTime() : NaN;
+  return Number.isFinite(d) && d > maintenant;
+}
+
 export type ProblemeDeFenetre = "incomplete" | "order" | "past" | "tooLong" | null;
 
 /** Contrôle de la saisie, avec les mêmes règles que le serveur (qui reste seul juge). */

@@ -603,6 +603,39 @@ export function newMessageFromManagerEmail(params: {
   };
 }
 
+/**
+ * Annonce d'une maintenance planifiée au gestionnaire (voir maintenanceAnnonce.service.ts). Les dates sont données en UTC :
+ * les gestionnaires ne sont pas tous dans le même fuseau, et une heure sans fuseau prêterait à confusion. Le message de
+ * l'administrateur est du texte libre : il est échappé.
+ */
+export function maintenanceAnnouncementEmail(params: { debut: Date; fin: Date; message?: string | null; langue?: Langue }) {
+  const { debut, fin, message, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].maintenance;
+  const debutAffiche = escapeHtml(formaterDateHeure(debut, langue));
+  const finAffichee = escapeHtml(formaterDateHeure(fin, langue));
+
+  return {
+    subject: t.sujet(formaterDateHeure(debut, langue)),
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">${t.titre}</h2>
+        <p>${TEXTES_COMPTE[langue].bonjour}</p>
+        <p>${t.intro(debutAffiche, finAffichee)}</p>
+        <p>${t.pendant}</p>
+        ${
+          message?.trim()
+            ? `<p style="background:#f8fafc; border-left:3px solid #2563eb; border-radius:4px; padding:12px 16px; color:#334155;"><strong>${t.messageEquipe}</strong><br />${escapeHtml(message.trim()).replace(/\n/g, "<br />")}</p>`
+            : ""
+        }
+        <p>${t.conseil}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          ${TEXTES_COMPTE[langue].pied}
+        </p>
+      </div>
+    `,
+  };
+}
+
 /** Email envoyé au propriétaire lorsque son agence lui écrit dans la discussion de l'espace propriétaire. */
 export function newMessageForOwnerEmail(params: { ownerName: string; content: string; frontendUrl: string; langue?: Langue }) {
   const { ownerName, content, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
