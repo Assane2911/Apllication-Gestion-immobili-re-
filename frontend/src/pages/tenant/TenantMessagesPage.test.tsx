@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -216,5 +216,27 @@ describe("TenantMessagesPage", () => {
 
     await waitFor(() => expect(screen.getByPlaceholderText("Écrivez votre message...")).toBeInTheDocument());
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
+});
+
+describe("TenantMessagesPage — réponses rapides", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+  });
+
+  it("insère le texte d'une réponse rapide sans l'envoyer, et le complète au lieu de l'écraser", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [], contract: { property: { title: "Studio Centre-ville" } } } });
+    renderPage();
+
+    const groupe = await screen.findByRole("group", { name: "Réponses rapides" });
+    const saisie = screen.getByLabelText("Écrivez votre message...");
+    await user.click(within(groupe).getByRole("button", { name: "Bonjour" }));
+    expect(saisie).toHaveValue("Bonjour,");
+    await user.click(within(groupe).getByRole("button", { name: "Demander ma quittance" }));
+    expect(saisie).toHaveValue("Bonjour, Pourriez-vous m'envoyer ma quittance de loyer ? Merci d'avance.");
+    expect(mockedApi.post).not.toHaveBeenCalled();
   });
 });

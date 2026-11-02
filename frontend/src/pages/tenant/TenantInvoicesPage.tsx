@@ -2,25 +2,29 @@ import { CheckCircle2, Clock, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import BandeauChiffres from "../../components/BandeauChiffres";
 import BankDetails from "../../components/BankDetails";
 import DocumentModal from "../../components/DocumentModal";
+import GroupeFiltres from "../../components/GroupeFiltres";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
 import type { AgencyBankInfo, Invoice, InvoiceStatus, PaymentMethod } from "../../types";
 import Bulle from "../../components/Bulle";
 import { formaterJour } from "../../utils/jourCivil";
+import { joursDeRetard } from "../../utils/syntheseLoyers";
+import { anneesDesLoyers, filtrerLoyers, situationLoyers, type FiltreLoyers } from "../../utils/syntheseLocataire";
 import { NomDuBien } from "../../components/PlanLogement";
 
 function monthLabel(locale: string, monthIndex1to12: number) {
   return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, monthIndex1to12 - 1, 1));
 }
 
-/** Filet de la ligne et étiquette de statut : le rouge signale un retard, le vert un loyer réglé, l'orange un loyer à régler. */
+/** Filet de la ligne et étiquette de statut : le rouge signale un retard, l'encre un loyer réglé, l'orange un loyer à régler. */
 const TEINTE_FACTURE: Record<InvoiceStatus, { filet: string; tag: string }> = {
   PENDING: { filet: "border-l-orange-700", tag: "border-orange-700/50 bg-orange-50 text-orange-800" },
   LATE: { filet: "border-l-rose-600", tag: "border-rose-300 bg-rose-50 text-rose-800" },
-  PAID: { filet: "border-l-emerald-600", tag: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+  PAID: { filet: "border-l-ink-900", tag: "border-ink-900 bg-slate-50 text-ink-900" },
   CANCELLED: { filet: "border-l-slate-400", tag: "border-slate-400 bg-slate-100 text-slate-700" },
 };
 
@@ -34,6 +38,8 @@ export default function TenantInvoicesPage() {
   const [bankRef, setBankRef] = useState("");
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
   const [bankInfo, setBankInfo] = useState<AgencyBankInfo | null>(null);
+  const [filtre, setFiltre] = useState<FiltreLoyers>("all");
+  const [annee, setAnnee] = useState<number | "all">("all");
 
   // La disponibilité dépend de la devise de la facture réglée : PayDunya
   // n'accepte que la devise de son compte (voir payment.service.ts). On
@@ -106,6 +112,18 @@ export default function TenantInvoicesPage() {
 
   const unpaidInvoices = invoices.filter((i) => i.status !== "PAID" && i.status !== "CANCELLED");
   const paidInvoices = invoices.filter((i) => i.status === "PAID");
+  const maintenant = new Date();
+  const situation = situationLoyers(invoices, maintenant);
+  const annees = anneesDesLoyers(invoices);
+  const visibles = filtrerLoyers(invoices, filtre, annee);
+  const montants = (liste: Array<{ devise: string; montant: number }>) => liste.map((m) => formatMoney(m.montant, m.devise || undefined)).join(" · ");
+
+  function payerLaPlusAncienne() {
+    if (!situation.prochaine) return;
+    setPayingId(situation.prochaine.id);
+    // Le panneau de règlement s'ouvre dans la ligne : on y amène la page.
+    setTimeout(() => document.getElementById(`loyer-${situation.prochaine!.id}`)?.scrollIntoView?.({ behavior: "smooth", block: "center" }), 50);
+  }
 
   return (
     <div className="space-y-6">
@@ -115,7 +133,7 @@ export default function TenantInvoicesPage() {
           <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">{t("tenant.invoices.subtitle")}</p>
         </div>
         {unpaidInvoices.length === 0 && invoices.length > 0 && (
-          <div className="inline-flex items-center gap-1.5 border border-emerald-300 bg-emerald-50 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
+          <div className="inline-flex items-center gap-1.5 border border-ink-900 bg-slate-50 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
             <CheckCircle2 size={14} />
             {t("tenant.invoices.allUpToDate")}
           </div>
@@ -136,43 +154,103 @@ export default function TenantInvoicesPage() {
       )}
 
       {message && (
-        <div role="status" className="flex items-center gap-2 border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 shadow-[inset_4px_0_0_var(--color-emerald-600)]">
+        <div role="status" className="flex items-center gap-2 border border-ink-900 bg-slate-50 px-4 py-3 text-sm text-ink-900 shadow-[inset_4px_0_0_var(--color-ink-900)]">
           <CheckCircle2 size={16} />
           <span>{message}</span>
         </div>
       )}
       {error && <div className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-[inset_4px_0_0_var(--color-rose-600)]">{error}</div>}
 
-      {/* Résumé : loyers à régler et quittances disponibles, en une bande de deux cases. */}
-      <div className="grid grid-cols-1 gap-px border border-slate-300 bg-slate-300 sm:grid-cols-2">
-        <div className="flex items-start justify-between gap-3 border-t-4 border-t-orange-700 bg-white p-4">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("tenant.invoices.pendingTitle")}</p>
-            <p className="mt-1.5 text-2xl font-bold text-slate-900">
-              {t(unpaidInvoices.length > 1 ? "tenant.invoices.pendingMany" : "tenant.invoices.pendingOne", { count: unpaidInvoices.length })}
-            </p>
-          </div>
-          <Clock size={18} aria-hidden="true" className="mt-1 text-orange-700" />
+      {/* Situation : ce qui reste à payer, les retards, la prochaine échéance et les quittances. */}
+      <BandeauChiffres
+        etiquette={t("tenant.invoices.summary.label")}
+        cases={[
+          {
+            libelle: t("tenant.invoices.pendingTitle"),
+            valeur: t(unpaidInvoices.length > 1 ? "tenant.invoices.pendingMany" : "tenant.invoices.pendingOne", { count: unpaidInvoices.length }),
+            aide: situation.resteDu.length > 0 ? `${t("tenant.invoices.summary.due")} : ${montants(situation.resteDu)}` : t("tenant.invoices.summary.dueNone"),
+          },
+          {
+            libelle: t("tenant.invoices.summary.late"),
+            valeur: situation.enRetard,
+            aide: situation.enRetard > 0 ? t("tenant.invoices.summary.lateHint", { days: situation.retardMax }) : t("tenant.invoices.summary.lateNone"),
+            ton: situation.enRetard > 0 ? "alerte" : "normal",
+          },
+          {
+            libelle: t("tenant.invoices.summary.next"),
+            valeur: situation.prochaine ? formaterJour(situation.prochaine.dueDate, i18n.language) : "—",
+            aide: !situation.prochaine
+              ? t("tenant.invoices.summary.nextNone")
+              : situation.prochaine.jours < 0
+              ? t("tenant.invoices.summary.nextOverdue", { days: -situation.prochaine.jours })
+              : situation.prochaine.jours === 0
+              ? t("tenant.invoices.summary.nextToday")
+              : t("tenant.invoices.summary.nextSoon", { days: situation.prochaine.jours }),
+            ton: situation.prochaine && situation.prochaine.jours < 0 ? "alerte" : "normal",
+          },
+          {
+            libelle: t("tenant.invoices.receiptsTitle"),
+            valeur: t(paidInvoices.length > 1 ? "tenant.invoices.receiptMany" : "tenant.invoices.receiptOne", { count: paidInvoices.length }),
+            aide: situation.regleCetteAnnee.length > 0 ? `${t("tenant.invoices.summary.paidYear", { year: maintenant.getFullYear() })} : ${montants(situation.regleCetteAnnee)}` : undefined,
+          },
+        ]}
+      />
+
+      {situation.prochaine && (
+        <div className="flex">
+          <button
+            type="button"
+            onClick={payerLaPlusAncienne}
+            className="cursor-pointer border border-ink-900 bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
+          >
+            {t("tenant.invoices.payOldest")}
+          </button>
         </div>
-        <div className="flex items-start justify-between gap-3 border-t-4 border-t-emerald-600 bg-white p-4">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600">{t("tenant.invoices.receiptsTitle")}</p>
-            <p className="mt-1.5 text-2xl font-bold text-slate-900">
-              {t(paidInvoices.length > 1 ? "tenant.invoices.receiptMany" : "tenant.invoices.receiptOne", { count: paidInvoices.length })}
-            </p>
-          </div>
-          <Download size={18} aria-hidden="true" className="mt-1 text-emerald-700" />
+      )}
+
+      {invoices.length > 3 && (
+        <div className="flex flex-wrap items-end gap-3">
+          <GroupeFiltres
+            libelle={t("tenant.invoices.filtersLabel")}
+            actif={filtre}
+            onChange={(cle) => setFiltre(cle as FiltreLoyers)}
+            filtres={[
+              { cle: "all", libelle: t("tenant.invoices.filters.all"), compte: filtrerLoyers(invoices, "all", annee).length },
+              { cle: "due", libelle: t("tenant.invoices.filters.due"), compte: filtrerLoyers(invoices, "due", annee).length },
+              { cle: "paid", libelle: t("tenant.invoices.filters.paid"), compte: filtrerLoyers(invoices, "paid", annee).length },
+            ]}
+          />
+          {annees.length > 1 && (
+            <div>
+              <label htmlFor="loyers-annee" className="sr-only">
+                {t("tenant.invoices.yearLabel")}
+              </label>
+              <select
+                id="loyers-annee"
+                value={annee}
+                onChange={(e) => setAnnee(e.target.value === "all" ? "all" : Number(e.target.value))}
+                className="border border-slate-400 bg-white px-3 py-1.5 text-sm text-slate-900"
+              >
+                <option value="all">{t("tenant.invoices.allYears")}</option>
+                {annees.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Le registre des loyers : une ligne par échéance, le mois en onglet à gauche. */}
       <div className="space-y-3">
-        {invoices.map((inv) => {
+        {visibles.map((inv) => {
           const isPaid = inv.status === "PAID";
           const teinte = TEINTE_FACTURE[inv.status] ?? TEINTE_FACTURE.CANCELLED;
           const mois = monthLabel(i18n.language, inv.periodMonth);
           return (
-            <div key={inv.id} className={`border border-l-4 border-slate-300 bg-white ${teinte.filet}`}>
+            <div key={inv.id} id={`loyer-${inv.id}`} className={`border border-l-4 border-slate-300 bg-white ${teinte.filet}`}>
               <div className="flex flex-wrap items-stretch">
                 <div className="flex w-20 shrink-0 flex-col items-center justify-center border-r border-slate-300 bg-slate-50 px-2 py-3 text-center font-mono">
                   <span aria-hidden="true" className="text-[10px] uppercase tracking-wider text-slate-600">{new Intl.DateTimeFormat(i18n.language, { month: "short" }).format(new Date(2000, inv.periodMonth - 1, 1))}</span>
@@ -191,6 +269,9 @@ export default function TenantInvoicesPage() {
                       {t("tenant.invoices.dueDate", {
                         date: formaterJour(inv.dueDate, i18n.language),
                       })}
+                      {joursDeRetard(inv, maintenant) > 0 && (
+                        <span className="ml-2 font-semibold text-rose-700">· {t("tenant.invoices.lateDays", { count: joursDeRetard(inv, maintenant) })}</span>
+                      )}
                     </p>
                   </div>
 
@@ -211,7 +292,7 @@ export default function TenantInvoicesPage() {
                       <Bulle texte={t("tenant.tips.viewReceipt")}>
                         <button
                           onClick={() => setActiveReceiptInvoice(inv)}
-                          className="flex cursor-pointer items-center gap-1.5 border border-emerald-700 bg-white px-3.5 py-2 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-50"
+                          className="flex cursor-pointer items-center gap-1.5 border border-ink-900 bg-white px-3.5 py-2 text-xs font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white"
                         >
                           <Download size={13} />
                           <span>{t("tenant.invoices.receiptPdf")}</span>
@@ -281,6 +362,11 @@ export default function TenantInvoicesPage() {
         {invoices.length === 0 && (
           <div className="border border-slate-300 bg-white p-6 py-12 text-center">
             <p className="text-sm text-slate-600">{t("tenant.invoices.noInvoices")}</p>
+          </div>
+        )}
+        {invoices.length > 0 && visibles.length === 0 && (
+          <div className="border border-slate-300 bg-white p-6 py-10 text-center">
+            <p className="text-sm text-slate-600">{t("tenant.invoices.noResult")}</p>
           </div>
         )}
       </div>
