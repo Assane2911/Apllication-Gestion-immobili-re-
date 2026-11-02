@@ -49,10 +49,15 @@ function paginated(items: Invoice[], overrides: Partial<PaginatedResponse<Invoic
   };
 }
 
-// Le <select> de filtre contient aussi des <option> avec le même libellé que les badges de
-// statut (ex: "En attente", "Réglée") — on les exclut pour ne compter que les badges affichés.
+// Les boutons du filtre de statut portent le même libellé que les badges de statut
+// (ex: "En attente", "Réglée") — on les exclut pour ne compter que les badges affichés.
 function countNonOptionMatches(text: string | RegExp) {
-  return screen.getAllByText(text).filter((el) => el.tagName !== "OPTION").length;
+  return screen.getAllByText(text).filter((el) => !el.closest('[role="group"]')).length;
+}
+
+/** Le filtre de statut : un groupe de boutons à bascule, appliqué par le serveur. */
+function filtreDeStatut() {
+  return within(screen.getByRole("group", { name: "Filtrer par statut" }));
 }
 
 function renderPage() {
@@ -90,7 +95,8 @@ describe("InvoicesPage (manager)", () => {
     expect(screen.getAllByText("Awa Diallo")).toHaveLength(4);
     expect(countNonOptionMatches("En attente")).toBe(2);
     expect(countNonOptionMatches("Réglée")).toBe(2);
-    expect(screen.getAllByText("650 €")).toHaveLength(2);
+    // Le montant figure aussi dans la synthèse des loyers : on ne compte que celui des lignes (tableau + cartes).
+    expect(screen.getAllByText("650 €").filter((el) => !el.closest("dl"))).toHaveLength(2);
     // Le bouton "Marquer réglée" n'apparaît que pour la facture PENDING (une fois par vue = 2)
     expect(screen.getAllByRole("button", { name: "Marquer réglée" })).toHaveLength(2);
     // Le bouton "Quittance PDF" n'apparaît que pour la facture PAID (une fois par vue = 2)
@@ -146,8 +152,7 @@ describe("InvoicesPage (manager)", () => {
       signal: expect.anything(),
     });
 
-    const select = screen.getByRole("combobox");
-    await user.selectOptions(select, "LATE");
+    await user.click(filtreDeStatut().getByRole("button", { name: "En retard" }));
 
     await waitFor(() => expect(getFactures).toHaveBeenCalledTimes(2));
     expect(getFactures).toHaveBeenNthCalledWith(2, "/invoices", {
@@ -181,8 +186,7 @@ describe("InvoicesPage (manager)", () => {
     renderPage();
     await waitFor(() => expect(getFactures).toHaveBeenCalledTimes(1));
 
-    const select = screen.getByRole("combobox");
-    await user.selectOptions(select, "LATE");
+    await user.click(filtreDeStatut().getByRole("button", { name: "En retard" }));
 
     // La requête filtrée aboutit et s'affiche normalement.
     await waitFor(() => expect(countNonOptionMatches("En retard")).toBeGreaterThan(0));
@@ -573,5 +577,99 @@ describe("InvoicesPage — mises en demeure à émettre", () => {
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Émettre la mise en demeure" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("rien à réclamer");
+  });
+
+  describe("synthèse, recherche, relance groupée et export", () => {
+    const tenantDe = (prenom: string, nom: string, email: string, bien: string) =>
+      ({ id: "c-" + nom, property: { id: "p-" + nom, title: bien }, tenant: { firstName: prenom, lastName: nom, email } }) as unknown as Invoice["contract"];
+    const parc = () => [
+      invoice({ id: "i1", status: "LATE", amount: 500, dueDate: "2026-05-05T00:00:00.000Z", contract: tenantDe("Awa", "Diallo", "awa@example.com", "Villa Baobab") }),
+      invoice({ id: "i2", status: "PENDING", amount: 400, contract: tenantDe("Moussa", "Ba", "moussa@example.com", "Studio Plateau") }),
+      invoice({ id: "i3", status: "PAID", amount: 300, contract: tenantDe("Élodie", "Sow", "elodie@example.com", "Atelier Mermoz") }),
+    ];
+
+    async function afficher() {
+      getFactures.mockResolvedValue(paginated(parc()));
+      renderPage();
+      await screen.findAllByText("Villa Baobab");
+    }
+
+    it("résume le reste à encaisser, le retard et le taux de recouvrement", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des loyers");
+      expect(within(synthese).getByText("900 €")).toBeInTheDocument(); // reste à encaisser (500 + 400)
+      expect(within(synthese).getByText("500 €")).toBeInTheDocument(); // dont en retard
+      expect(within(synthese).getByText("1 facture(s)")).toBeInTheDocument();
+      expect(within(synthese).getByText("300 €")).toBeInTheDocument(); // encaissé
+      expect(within(synthese).getByText("25 %")).toBeInTheDocument(); // 300 / 1200
+    });
+
+    it("indique le nombre de jours de retard d'une facture échue", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(2026, 4, 20));
+      try {
+        await afficher();
+        expect(screen.getAllByText("Retard de 15 j").length).toBeGreaterThan(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("cherche par locataire ou par bien, sans tenir compte des accents", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "elodie");
+      expect(screen.getAllByText("Atelier Mermoz").length).toBeGreaterThan(0);
+      expect(screen.queryByText("Villa Baobab")).not.toBeInTheDocument();
+    });
+
+    it("relance en une fois les factures cochées, l'une après l'autre", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      mockedApi.post.mockResolvedValue({ data: { message: "ok" } });
+
+      const tableau = screen.getByRole("table");
+      // Seules les factures dues se cochent : pas la facture réglée.
+      expect(within(tableau).getAllByRole("checkbox")).toHaveLength(3); // « tout » + 2 factures dues
+      await user.click(within(tableau).getByRole("checkbox", { name: "Tout sélectionner" }));
+      expect(screen.getByText("2 facture(s) sélectionnée(s)")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Relancer la sélection" }));
+      await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(2));
+      expect(mockedApi.post).toHaveBeenCalledWith("/invoices/i1/send-reminder");
+      expect(mockedApi.post).toHaveBeenCalledWith("/invoices/i2/send-reminder");
+      expect(await screen.findByText("2 relance(s) envoyée(s).")).toBeInTheDocument();
+      expect(screen.queryByText("2 facture(s) sélectionnée(s)")).not.toBeInTheDocument();
+    });
+
+    it("continue la relance groupée quand l'une des factures échoue, et le dit", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      mockedApi.post.mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce({ data: { message: "ok" } });
+
+      await user.click(within(screen.getByRole("table")).getByRole("checkbox", { name: "Tout sélectionner" }));
+      await user.click(screen.getByRole("button", { name: "Relancer la sélection" }));
+      expect(await screen.findByText("1 relance(s) envoyée(s), 1 en échec.")).toBeInTheDocument();
+      expect(mockedApi.post).toHaveBeenCalledTimes(2);
+    });
+
+    it("exporte les factures affichées en CSV", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "moussa");
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      const lignes = texte.split("\n");
+      expect(lignes).toHaveLength(2);
+      expect(lignes[1]).toContain('"Moussa Ba";"Studio Plateau";"EUR";400,00');
+    });
   });
 });

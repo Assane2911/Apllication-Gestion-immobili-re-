@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Banknote, Camera, CheckCircle2, Clock, Download, FileCheck, Hourglass, PenLine, RefreshCw } from "lucide-react";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
 import { preparerFichier } from "../../utils/fichiers";
+import BandeauChiffres from "../../components/BandeauChiffres";
+import BarreListe from "../../components/BarreListe";
+import SectionReglage from "../../components/SectionReglage";
 import Badge from "../../components/Badge";
 import DepositRefundModal from "../../components/DepositRefundModal";
 import DocumentModal from "../../components/DocumentModal";
@@ -32,6 +35,22 @@ import Bulle from "../../components/Bulle";
 import { ecartEnJours, formaterJour } from "../../utils/jourCivil";
 import { NomDuBien } from "../../components/PlanLogement";
 import ChampDate from "../../components/ChampDate";
+import { correspond } from "../../utils/recherche";
+import { avancementBail, csvBaux, finProche, FIN_PROCHE_JOURS, signatureEnAttente, syntheseBaux, trierBaux, type CritereTriBail } from "../../utils/syntheseLoyers";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
+import { formatByCurrency } from "../../utils/currencyFormat";
+
+// Sous ce nombre de baux, la recherche et les filtres n'apportent rien : la barre d'outils reste cachée.
+const SEUIL_OUTILS = 4;
+const CHAMP = "w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900";
+const LIBELLE = "mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600";
+const BOUTON_PLEIN = "cursor-pointer bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const BOUTON_TRAIT = "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900";
+const ACTION = "inline-flex cursor-pointer items-center gap-1.5 border px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50";
+const ACTION_TRAIT = `${ACTION} border-slate-400 bg-white text-slate-800 hover:border-ink-900 hover:bg-slate-100`;
+const ACTION_ENCRE = `${ACTION} border-ink-900 bg-white text-ink-900 hover:bg-slate-100`;
+const ACTION_PLEIN = `${ACTION} border-ink-900 bg-ink-900 text-white hover:border-orange-700 hover:bg-orange-700`;
+type Filtre = "all" | "active" | "ending" | "toSign" | "closed";
 
 /** Bail actif dont la date anniversaire approche sans révision prévue (GET /contracts/revisions-due). */
 interface BailAReviser {
@@ -165,6 +184,9 @@ export default function ContractsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [recherche, setRecherche] = useState("");
+  const [filtre, setFiltre] = useState<Filtre>("all");
+  const [tri, setTri] = useState<CritereTriBail>("recent");
 
   function load(signal?: AbortSignal) {
     Promise.all([
@@ -457,6 +479,59 @@ export default function ContractsPage() {
     }
   }
 
+  const synthese = syntheseBaux(contracts, maintenant);
+  const afficherOutils = contracts.length >= SEUIL_OUTILS;
+  const visibles = trierBaux(
+    contracts.filter((c) => {
+      if (filtre === "active" && c.status !== "ACTIVE") return false;
+      if (filtre === "ending" && !finProche(c, maintenant)) return false;
+      if (filtre === "toSign" && !signatureEnAttente(c)) return false;
+      if (filtre === "closed" && c.status === "ACTIVE") return false;
+      return correspond(recherche, c.property?.title, c.tenant?.firstName, c.tenant?.lastName, ...(c.cotenantNames ?? []));
+    }),
+    tri
+  );
+
+  /** Barre d'avancement d'un bail actif : la part de sa durée déjà écoulée. */
+  function barreAvancement(c: Contract) {
+    const { pourcentage } = avancementBail(c.startDate, c.endDate, maintenant);
+    return (
+      <span
+        role="progressbar"
+        aria-label={t("manager.contracts.progress", { pct: pourcentage })}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pourcentage}
+        className="mt-1.5 block h-1.5 w-full min-w-28 bg-slate-200"
+      >
+        <span className="block h-full bg-ink-900" style={{ width: `${pourcentage}%` }} />
+      </span>
+    );
+  }
+
+  function exporterCsv() {
+    telechargerCsv(
+      `baux-${dateDuJourPourFichier()}.csv`,
+      csvBaux(
+        visibles,
+        {
+          property: t("manager.contracts.table.property"),
+          tenant: t("manager.contracts.table.tenant"),
+          rent: t("manager.contracts.table.rent"),
+          currency: t("manager.contracts.csv.currency"),
+          start: t("manager.contracts.fields.startDate"),
+          end: t("manager.contracts.fields.endDate"),
+          status: t("manager.contracts.table.status"),
+          agencySigned: t("manager.contracts.csv.agencySigned"),
+          tenantSigned: t("manager.contracts.csv.tenantSigned"),
+          yes: t("manager.contracts.csv.yes"),
+          no: t("manager.contracts.csv.no"),
+        },
+        (st) => t(`common.status.${st}`)
+      )
+    );
+  }
+
   // En modification, le bien du contrat reste proposé même s'il est occupé (par ce contrat).
   const availableProperties = properties.filter((p) => p.status !== "OCCUPIED" || p.id === editingContract?.propertyId);
 
@@ -468,30 +543,32 @@ export default function ContractsPage() {
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.contractCreate")}>
-        <button onClick={() => { setEditingContract(null); setForm(formulaireVide()); setShowForm(true); }} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 shadow-sm transition-colors">
-          {t("manager.contracts.addBtn")}
-        </button>
+          <button onClick={() => { setEditingContract(null); setForm(formulaireVide()); setShowForm(true); }} className={BOUTON_PLEIN}>
+            {t("manager.contracts.addBtn")}
+          </button>
         </Bulle>
       </div>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
           <span>{loadError}</span>
-          <button onClick={() => load()} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load()} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
           </button>
         </div>
       )}
 
       {bauxAReviser.length > 0 && (
-        <section aria-labelledby="baux-a-reviser" className="bg-amber-50 border border-amber-300 border-l-[3px] border-l-orange-700 px-4 py-3">
-          <h3 id="baux-a-reviser" className="text-sm font-semibold text-amber-900">
-            {t("manager.contracts.revisionsDue.title", { count: bauxAReviser.length })}
-          </h3>
-          <p className="text-xs text-amber-800 mt-0.5">{t("manager.contracts.revisionsDue.hint")}</p>
-          <ul className="mt-2 divide-y divide-amber-200/70">
+        <section aria-labelledby="baux-a-reviser" className="border border-slate-300 bg-white shadow-[inset_4px_0_0_var(--color-orange-700)]">
+          <header className="border-b border-slate-300 bg-slate-50 py-3 pl-6 pr-5">
+            <h3 id="baux-a-reviser" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
+              {t("manager.contracts.revisionsDue.title", { count: bauxAReviser.length })}
+            </h3>
+            <p className="mt-1 text-xs text-slate-700">{t("manager.contracts.revisionsDue.hint")}</p>
+          </header>
+          <ul className="divide-y divide-slate-200 py-1 pl-6 pr-5">
             {bauxAReviser.map((b) => (
-              <li key={b.contractId} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+              <li key={b.contractId} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                 <span className="text-slate-800">
                   <span className="font-medium">{b.propertyTitle}</span> — {b.tenantName}
                   <span className="block text-xs text-slate-600">
@@ -504,7 +581,7 @@ export default function ContractsPage() {
                 <button
                   type="button"
                   onClick={() => setRevisingRent({ id: b.contractId, rent: b.rent, currency: b.currency, endDate: b.endDate, dateSuggeree: b.dateSuggeree })}
-                  className="inline-flex items-center px-3 py-1.5 text-xs font-semibold border border-orange-700 bg-orange-700 text-white hover:bg-orange-800 transition-colors cursor-pointer"
+                  className={`${ACTION} border-orange-700 bg-orange-700 text-white hover:bg-orange-800`}
                 >
                   {t("manager.contracts.revisionsDue.action")}
                 </button>
@@ -515,19 +592,17 @@ export default function ContractsPage() {
       )}
 
       {showForm && (
-        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 mb-1">{editingContract ? t("manager.contracts.editTitle") : t("manager.contracts.formTitle")}</h3>
-          {editingContract && <p className="text-xs text-slate-600 mb-4">{t("manager.contracts.editHint")}</p>}
-          {!editingContract && <div className="mb-3" />}
+        <SectionReglage id="fiche-bail" numero="01" titre={editingContract ? t("manager.contracts.editTitle") : t("manager.contracts.formTitle")}>
+          {editingContract && <p className="mb-4 text-xs text-slate-600">{t("manager.contracts.editHint")}</p>}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="contract-property" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.property")}</label>
+              <label htmlFor="contract-property" className={LIBELLE}>{t("manager.contracts.fields.property")}</label>
               <select id="contract-property" required value={form.propertyId} onChange={(e) => {
                 const prop = properties.find((p) => p.id === e.target.value);
                 // En modification, choisir un autre bien ne réécrit pas le loyer ni le dépôt déjà convenus.
                 if (editingContract) setForm({ ...form, propertyId: e.target.value });
                 else setForm({ ...form, propertyId: e.target.value, rent: prop ? String(prop.rent) : form.rent, deposit: prop ? String(prop.rent * 2) : form.deposit });
-              }} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              }} className={CHAMP}>
                 <option value="">{t("manager.contracts.fields.selectProperty")}</option>
                 {availableProperties.map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
@@ -535,8 +610,8 @@ export default function ContractsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="contract-tenant" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.tenant")}</label>
-              <select id="contract-tenant" required value={form.tenantId} onChange={(e) => setForm({ ...form, tenantId: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <label htmlFor="contract-tenant" className={LIBELLE}>{t("manager.contracts.fields.tenant")}</label>
+              <select id="contract-tenant" required value={form.tenantId} onChange={(e) => setForm({ ...form, tenantId: e.target.value })} className={CHAMP}>
                 <option value="">{t("manager.contracts.fields.selectTenant")}</option>
                 {tenants.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>{tenant.firstName} {tenant.lastName}</option>
@@ -544,39 +619,39 @@ export default function ContractsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="contract-rent" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.rent")}</label>
-              <input id="contract-rent" required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="contract-rent" className={LIBELLE}>{t("manager.contracts.fields.rent")}</label>
+              <input id="contract-rent" required type="number" step="0.01" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="contract-deposit" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.deposit")}</label>
-              <input id="contract-deposit" required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="contract-deposit" className={LIBELLE}>{t("manager.contracts.fields.deposit")}</label>
+              <input id="contract-deposit" required type="number" step="0.01" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="contract-agencyFee" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.agencyFee")}</label>
-              <input id="contract-agencyFee" type="number" min="0" step="0.01" value={form.agencyFee} onChange={(e) => setForm({ ...form, agencyFee: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="contract-agencyFee" className={LIBELLE}>{t("manager.contracts.fields.agencyFee")}</label>
+              <input id="contract-agencyFee" type="number" min="0" step="0.01" value={form.agencyFee} onChange={(e) => setForm({ ...form, agencyFee: e.target.value })} className={CHAMP} />
               <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.agencyFeeHint")}</p>
             </div>
             <div>
-              <label htmlFor="contract-startDate" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.startDate")}</label>
-              <ChampDate id="contract-startDate" required value={form.startDate} onChange={(e) => changerDebut(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="contract-startDate" className={LIBELLE}>{t("manager.contracts.fields.startDate")}</label>
+              <ChampDate id="contract-startDate" required value={form.startDate} onChange={(e) => changerDebut(e.target.value)} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="contract-endDate" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.endDate")}</label>
-              <ChampDate id="contract-endDate" required value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="contract-endDate" className={LIBELLE}>{t("manager.contracts.fields.endDate")}</label>
+              <ChampDate id="contract-endDate" required value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={CHAMP} />
             </div>
             {!editingContract && form.startDate !== "" && form.startDate < premierDuMoisCourant && (
               <div>
-                <label htmlFor="contract-billingFrom" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.billingFrom")}</label>
+                <label htmlFor="contract-billingFrom" className={LIBELLE}>{t("manager.contracts.fields.billingFrom")}</label>
                 <div className="flex gap-2">
-                  <ChampDate id="contract-billingFrom" min={form.startDate} max={form.endDate || undefined} value={form.billingFrom} onChange={(e) => setForm({ ...form, billingFrom: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                  <button type="button" onClick={() => setForm({ ...form, billingFrom: premierDuMoisCourant })} className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">{t("manager.contracts.fields.billingFromCurrentMonth")}</button>
+                  <ChampDate id="contract-billingFrom" min={form.startDate} max={form.endDate || undefined} value={form.billingFrom} onChange={(e) => setForm({ ...form, billingFrom: e.target.value })} className={CHAMP} />
+                  <button type="button" onClick={() => setForm({ ...form, billingFrom: premierDuMoisCourant })} className="shrink-0 cursor-pointer border border-slate-400 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:border-ink-900">{t("manager.contracts.fields.billingFromCurrentMonth")}</button>
                 </div>
                 <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.billingFromHint")}</p>
               </div>
             )}
             <div>
-              <label htmlFor="contract-paymentDay" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.paymentDay")}</label>
-              <select id="contract-paymentDay" value={form.paymentDay} onChange={(e) => setForm({ ...form, paymentDay: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <label htmlFor="contract-paymentDay" className={LIBELLE}>{t("manager.contracts.fields.paymentDay")}</label>
+              <select id="contract-paymentDay" value={form.paymentDay} onChange={(e) => setForm({ ...form, paymentDay: e.target.value })} className={CHAMP}>
                 <option value="">{t("manager.contracts.fields.paymentDayStart")}</option>
                 {JOURS_ECHEANCE.map((jour) => (
                   <option key={jour} value={jour}>
@@ -587,26 +662,26 @@ export default function ContractsPage() {
               <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.paymentDayHint")}</p>
             </div>
             <div>
-              <label htmlFor="contract-leaseType" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.leaseType")}</label>
-              <select id="contract-leaseType" value={form.leaseType} onChange={(e) => changerTypeDeBail(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <label htmlFor="contract-leaseType" className={LIBELLE}>{t("manager.contracts.fields.leaseType")}</label>
+              <select id="contract-leaseType" value={form.leaseType} onChange={(e) => changerTypeDeBail(e.target.value)} className={CHAMP}>
                 {(["HABITATION", "MEUBLE", "COMMERCIAL", "PROFESSIONNEL"] as const).map((type) => (
                   <option key={type} value={type}>{t(`manager.contracts.fields.leaseTypes.${type}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="contract-applicableLaw" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.applicableLaw")}</label>
-              <input id="contract-applicableLaw" type="text" maxLength={300} value={form.applicableLaw} onChange={(e) => setForm({ ...form, applicableLaw: e.target.value })} placeholder={t("manager.contracts.fields.applicableLawPlaceholder")} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="contract-applicableLaw" className={LIBELLE}>{t("manager.contracts.fields.applicableLaw")}</label>
+              <input id="contract-applicableLaw" type="text" maxLength={300} value={form.applicableLaw} onChange={(e) => setForm({ ...form, applicableLaw: e.target.value })} placeholder={t("manager.contracts.fields.applicableLawPlaceholder")} className={CHAMP} />
               <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.applicableLawHint")}</p>
             </div>
             {proposeMentionsLogement(pays, form.leaseType) && (
-              <fieldset className="md:col-span-2 rounded-lg border border-slate-200 px-4 py-3">
-                <legend className="px-1 text-sm font-medium text-slate-700">{t("manager.contracts.mentionsFr.titre")}</legend>
+              <fieldset className="border border-slate-300 px-4 py-3 md:col-span-2">
+                <legend className="px-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("manager.contracts.mentionsFr.titre")}</legend>
                 <p className="text-xs text-slate-600 mb-3">{t("manager.contracts.mentionsFr.hint")}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="contract-dpe" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.mentionsFr.dpe")}</label>
-                    <select id="contract-dpe" value={form.dpe} onChange={(e) => setForm({ ...form, dpe: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <label htmlFor="contract-dpe" className={LIBELLE}>{t("manager.contracts.mentionsFr.dpe")}</label>
+                    <select id="contract-dpe" value={form.dpe} onChange={(e) => setForm({ ...form, dpe: e.target.value })} className={CHAMP}>
                       <option value="">{t("manager.contracts.mentionsFr.dpeNone")}</option>
                       {CLASSES_DPE.map((classe) => (
                         <option key={classe} value={classe}>{classe}</option>
@@ -615,27 +690,27 @@ export default function ContractsPage() {
                   </div>
                   {(["identifiantFiscal", "periodeConstruction", "chauffage"] as const).map((cle) => (
                     <div key={cle}>
-                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
-                      <input id={`contract-${cle}`} type="text" maxLength={cle === "identifiantFiscal" ? 40 : cle === "periodeConstruction" ? 60 : 100} value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <label htmlFor={`contract-${cle}`} className={LIBELLE}>{t(`manager.contracts.mentionsFr.${cle}`)}</label>
+                      <input id={`contract-${cle}`} type="text" maxLength={cle === "identifiantFiscal" ? 40 : cle === "periodeConstruction" ? 60 : 100} value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className={CHAMP} />
                     </div>
                   ))}
                   {MENTIONS_MONTANTS.map((cle) => (
                     <div key={cle}>
-                      <label htmlFor={`contract-${cle}`} className="block text-sm font-medium text-slate-700 mb-1">{t(`manager.contracts.mentionsFr.${cle}`)}</label>
-                      <input id={`contract-${cle}`} type="number" min="0" step="0.01" value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <label htmlFor={`contract-${cle}`} className={LIBELLE}>{t(`manager.contracts.mentionsFr.${cle}`)}</label>
+                      <input id={`contract-${cle}`} type="number" min="0" step="0.01" value={form[cle]} onChange={(e) => setForm({ ...form, [cle]: e.target.value })} className={CHAMP} />
                     </div>
                   ))}
                 </div>
                 <p className="mt-2 text-xs text-slate-600">{t("manager.contracts.mentionsFr.montantsHint")}</p>
                 {mentionsAbsentes(form).length > 0 && (
-                  <p role="status" className="mt-2 rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <p role="status" className="mt-2 border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 shadow-[inset_3px_0_0_var(--color-orange-700)]">
                     {t("manager.contracts.mentionsFr.absentes", { liste: mentionsAbsentes(form).map((cle) => t(`manager.contracts.mentionsFr.${cle}`)).join(", ") })}
                   </p>
                 )}
               </fieldset>
             )}
             {rappels.length > 0 && pays && (
-              <div role="status" className="md:col-span-2 rounded-lg border border-amber-300/70 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              <div role="status" className="border border-slate-300 bg-white px-4 py-3 text-xs text-slate-800 shadow-[inset_4px_0_0_var(--color-orange-700)] md:col-span-2">
                 <p className="font-semibold">{t(`manager.contracts.regles.${pays}.titre`)}</p>
                 <ul className="mt-1 list-disc pl-4 space-y-1">
                   {rappels.map((r) => (
@@ -646,7 +721,7 @@ export default function ContractsPage() {
               </div>
             )}
             <div className="md:col-span-2">
-              <label htmlFor="contract-terms" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.contracts.fields.terms")}</label>
+              <label htmlFor="contract-terms" className={LIBELLE}>{t("manager.contracts.fields.terms")}</label>
               <textarea
                 id="contract-terms"
                 rows={form.terms.length > 300 ? 14 : 4}
@@ -654,14 +729,14 @@ export default function ContractsPage() {
                 value={form.terms}
                 onChange={(e) => setForm({ ...form, terms: e.target.value })}
                 placeholder={t("manager.contracts.fields.termsPlaceholder")}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={CHAMP}
               />
               <p className="mt-1 text-xs text-slate-600">{t("manager.contracts.fields.termsHint")}</p>
               <button
                 type="button"
                 onClick={() => setForm({ ...form, terms: insererClause(form.terms, CLAUSE_CAUTION) })}
                 aria-describedby="contract-terms-caution-hint"
-                className="mt-2 text-xs font-semibold text-brand-700 hover:underline"
+                className="mt-2 cursor-pointer border-b border-ink-900/40 text-xs font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700"
               >
                 {t("manager.contracts.fields.insertGuarantee")}
               </button>
@@ -669,21 +744,95 @@ export default function ContractsPage() {
             </div>
             {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
-              <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
+              <button type="submit" disabled={saving} className={BOUTON_PLEIN}>
                 {saving ? t("common.actions.saving") : editingContract ? t("manager.contracts.saveChanges") : t("manager.contracts.create")}
               </button>
-              <button type="button" onClick={fermerFormulaire} className="text-sm text-slate-600 px-4 py-2">
+              <button type="button" onClick={fermerFormulaire} className="cursor-pointer px-4 py-2 text-sm text-slate-600 hover:text-ink-900">
                 {t("common.actions.cancel")}
               </button>
             </div>
           </form>
+        </SectionReglage>
+      )}
+
+      {contracts.length > 0 && (
+        <BandeauChiffres
+          etiquette={t("manager.contracts.summary.label")}
+          cases={[
+            { libelle: t("manager.contracts.summary.active"), valeur: synthese.actifs, aide: t("manager.contracts.summary.activeHint") },
+            {
+              libelle: t("manager.contracts.summary.rents"),
+              valeur: formatByCurrency(Object.fromEntries(synthese.loyers.map((l) => [l.currency, l.total])), formatMoney),
+              aide: t("manager.contracts.summary.rentsHint"),
+            },
+            {
+              libelle: t("manager.contracts.summary.ending"),
+              valeur: synthese.finsProches,
+              aide: t("manager.contracts.summary.endingHint", { days: FIN_PROCHE_JOURS }),
+              ton: synthese.finsProches > 0 ? "alerte" : "normal",
+            },
+            {
+              libelle: t("manager.contracts.summary.signatures"),
+              valeur: synthese.signaturesEnAttente,
+              aide: t("manager.contracts.summary.signaturesHint"),
+              ton: synthese.signaturesEnAttente > 0 ? "alerte" : "normal",
+            },
+          ]}
+        />
+      )}
+
+      {afficherOutils && (
+        <>
+          <BarreListe
+            idPrefixe="baux"
+            recherche={recherche}
+            onRecherche={setRecherche}
+            placeholderRecherche={t("manager.contracts.search")}
+            libelleFiltres={t("manager.contracts.filtersLabel")}
+            filtres={[
+              { cle: "all", libelle: t("manager.liste.all"), compte: contracts.length },
+              { cle: "active", libelle: t("manager.contracts.filters.active"), compte: synthese.actifs },
+              { cle: "ending", libelle: t("manager.contracts.filters.ending"), compte: synthese.finsProches },
+              { cle: "toSign", libelle: t("manager.contracts.filters.toSign"), compte: synthese.signaturesEnAttente },
+              { cle: "closed", libelle: t("manager.contracts.filters.closed"), compte: contracts.filter((c) => c.status !== "ACTIVE").length },
+            ]}
+            filtreActif={filtre}
+            onFiltre={(cle) => setFiltre(cle as Filtre)}
+            tri={{
+              libelle: t("manager.contracts.sort.label"),
+              valeur: tri,
+              onChange: (v) => setTri(v as CritereTriBail),
+              options: [
+                { valeur: "recent", libelle: t("manager.contracts.sort.recent") },
+                { valeur: "fin", libelle: t("manager.contracts.sort.end") },
+                { valeur: "loyerDesc", libelle: t("manager.contracts.sort.rentDesc") },
+              ],
+            }}
+          >
+            <button type="button" onClick={exporterCsv} className={BOUTON_TRAIT}>
+              <Download size={13} aria-hidden="true" />
+              {t("manager.liste.exportCsv")}
+            </button>
+          </BarreListe>
+          <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-wider text-slate-600">
+            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { shown: visibles.length, total: contracts.length })}
+          </p>
+        </>
+      )}
+
+      {contracts.length > 0 && visibles.length === 0 && (
+        <div className="border border-slate-300 bg-white p-8 text-center shadow-[inset_4px_0_0_var(--color-ink-900)]">
+          <p className="text-sm text-slate-700">{t("manager.liste.noResult")}</p>
+          <button type="button" onClick={() => { setRecherche(""); setFiltre("all"); }} className={`${BOUTON_TRAIT} mt-4`}>
+            {t("manager.liste.resetFilters")}
+          </button>
         </div>
       )}
 
       {/* Vue tableau (écrans sm et plus) */}
-      <div className="hidden sm:block bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto">
+      <div className="relative hidden overflow-x-auto border border-slate-300 bg-white sm:block">
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 text-slate-700 text-left">
+          <thead className="text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.property")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.tenant")}</th>
@@ -694,12 +843,12 @@ export default function ContractsPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.contracts.table.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100">
-            {contracts.map((c) => {
+          <tbody className="divide-y divide-slate-200">
+            {visibles.map((c) => {
               const daysLeft = daysUntil(c.endDate);
               const showRenewal = c.status === "ACTIVE" && daysLeft <= RENEWAL_WINDOW_DAYS;
               return (
-              <tr key={c.id} className={`hover:bg-slate-50/50 ${showRenewal ? "bg-amber-50/50" : ""}`}>
+              <tr key={c.id} className={`hover:bg-slate-50 ${showRenewal ? "bg-orange-50/60" : ""}`}>
                 <td className="px-4 py-3 text-slate-900 font-medium"><NomDuBien titre={c.property?.title} id={c.property?.id} /></td>
                 <td className="px-4 py-3 text-slate-600">
                   {c.tenant?.firstName} {c.tenant?.lastName}
@@ -716,9 +865,10 @@ export default function ContractsPage() {
                 </td>
                 <td className="px-4 py-3 text-slate-600 text-xs">
                   {formatDate(c.startDate, i18n.language)} → {formatDate(c.endDate, i18n.language)}
+                  {c.status === "ACTIVE" && barreAvancement(c)}
                   {c.status === "ACTIVE" && echeanceLigne(c)}
                   {showRenewal && (
-                    <span className="block mt-1 inline-flex items-center gap-1 text-amber-700 font-semibold">
+                    <span className="block mt-1 inline-flex items-center gap-1 text-orange-800 font-semibold">
                       <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
                       {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                     </span>
@@ -728,7 +878,7 @@ export default function ContractsPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-600">{t("manager.contracts.agency")}</span>
                     {c.signedByManagerAt ? (
-                      <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                      <span className="text-ink-900 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                       </span>
                     ) : (
@@ -745,11 +895,11 @@ export default function ContractsPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-600">{t("manager.contracts.tenantLabel")}</span>
                     {c.signedByTenantAt ? (
-                      <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                      <span className="text-ink-900 font-semibold inline-flex items-center gap-1">
                         <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                       </span>
                     ) : (
-                      <span className="text-amber-700 inline-flex items-center gap-1">
+                      <span className="text-orange-800 inline-flex items-center gap-1">
                         <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
                       </span>
                     )}
@@ -763,7 +913,7 @@ export default function ContractsPage() {
                   <Bulle texte={t("manager.tips.contractViewLease")}>
                   <button
                     onClick={() => setViewingLeaseContract(c)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100"
+                    className={ACTION_TRAIT}
                   >
                     <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                   </button>
@@ -774,7 +924,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractViewScan")}>
                     <button
                       onClick={() => handleViewScannedContract(c)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-slate-100"
                     >
                       <FileCheck size={13} />
                       <span>{t("manager.contracts.scanContractShort")}</span>
@@ -786,7 +936,7 @@ export default function ContractsPage() {
                   <button
                     onClick={() => triggerScanUpload(c)}
                     disabled={uploadingScanContractId === c.id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50 disabled:opacity-50"
+                    className={ACTION_ENCRE}
                   >
                     <Camera size={13} />
                     <span>
@@ -804,7 +954,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractRenew")}>
                       <button
                         onClick={() => handleRenew(c)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-800"
+                        className={ACTION_PLEIN}
                       >
                         <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renew")}
                       </button>
@@ -818,7 +968,7 @@ export default function ContractsPage() {
                   )}
                   {c.status === "ACTIVE" && (
                     <Bulle texte={t("manager.tips.contractTerminate")}>
-                    <button onClick={() => handleTerminate(c)} className="text-xs font-semibold text-amber-800 border-b border-amber-700/40 hover:border-amber-800 transition-colors">
+                    <button onClick={() => handleTerminate(c)} className="text-xs font-semibold text-orange-800 border-b border-orange-700/40 hover:border-orange-800 transition-colors">
                       {t("manager.contracts.terminate")}
                     </button>
                     </Bulle>
@@ -828,7 +978,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
                       <button
                         onClick={() => handleCancelDepositRefund(c)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-slate-100"
                       >
                         <Banknote size={13} aria-hidden="true" />
                         <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
@@ -838,7 +988,7 @@ export default function ContractsPage() {
                       <Bulle texte={t("manager.tips.contractDepositRefund")}>
                       <button
                         onClick={() => setDepositRefundContract(c)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50"
+                        className={ACTION_ENCRE}
                       >
                         <Banknote size={13} aria-hidden="true" />
                         <span>{t("manager.contracts.depositRefund")}</span>
@@ -861,15 +1011,15 @@ export default function ContractsPage() {
       </div>
 
       {/* Vue cartes empilées (mobile, < sm) */}
-      <div className="sm:hidden space-y-3">
-        {contracts.map((c) => {
+      <div className="space-y-3 sm:hidden">
+        {visibles.map((c) => {
           const daysLeft = daysUntil(c.endDate);
           const showRenewal = c.status === "ACTIVE" && daysLeft <= RENEWAL_WINDOW_DAYS;
           return (
             <div
               key={c.id}
-              className={`bg-white border p-4 space-y-2.5 ${
-                showRenewal ? "border-amber-300 bg-amber-50/50" : "border-contour-200"
+              className={`space-y-2.5 border p-4 ${
+                showRenewal ? "border-orange-300 bg-orange-50/60" : "border-slate-300 bg-white"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -892,9 +1042,10 @@ export default function ContractsPage() {
                 {colocatairesLien(c)}
                 {modifierLien(c)}
               </div>
+              {c.status === "ACTIVE" && barreAvancement(c)}
               {c.status === "ACTIVE" && echeanceLigne(c)}
               {showRenewal && (
-                <p className="text-xs font-semibold text-amber-700">
+                <p className="text-xs font-semibold text-orange-800">
                   <Clock size={12} className="inline shrink-0 -mt-0.5" aria-hidden="true" />{" "}
                   {daysLeft <= 0 ? t("manager.contracts.overdue") : t("manager.contracts.endsInDays", { count: daysLeft })}
                 </p>
@@ -902,7 +1053,7 @@ export default function ContractsPage() {
               <div className="flex items-center gap-3 text-[11px] text-slate-600">
                 <span>
                   {t("manager.contracts.agency")} {c.signedByManagerAt ? (
-                    <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                    <span className="text-ink-900 font-semibold inline-flex items-center gap-1">
                       <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                     </span>
                   ) : (
@@ -915,21 +1066,21 @@ export default function ContractsPage() {
                 </span>
                 <span>
                   {t("manager.contracts.tenantLabel")} {c.signedByTenantAt ? (
-                    <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                    <span className="text-ink-900 font-semibold inline-flex items-center gap-1">
                       <CheckCircle2 size={13} aria-hidden="true" /> {t("manager.contracts.signed")}
                     </span>
                   ) : (
-                    <span className="text-amber-700 inline-flex items-center gap-1">
+                    <span className="text-orange-800 inline-flex items-center gap-1">
                       <Hourglass size={12} aria-hidden="true" /> {t("manager.contracts.pendingSignature")}
                     </span>
                   )}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-contour-100">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200">
                 <Bulle texte={t("manager.tips.contractViewLease")}>
                 <button
                   onClick={() => setViewingLeaseContract(c)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-slate-800 border-slate-400 hover:border-ink-900 hover:bg-slate-100"
+                  className={ACTION_TRAIT}
                 >
                   <Download size={12} aria-hidden="true" /> {t("manager.contracts.leasePdf")}
                 </button>
@@ -939,7 +1090,7 @@ export default function ContractsPage() {
                   <Bulle texte={t("manager.tips.contractViewScan")}>
                   <button
                     onClick={() => handleViewScannedContract(c)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-slate-100"
                   >
                     <FileCheck size={13} />
                     <span>{t("manager.contracts.scanContractShort")}</span>
@@ -951,7 +1102,7 @@ export default function ContractsPage() {
                 <button
                   onClick={() => triggerScanUpload(c)}
                   disabled={uploadingScanContractId === c.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50 disabled:opacity-50"
+                  className={ACTION_ENCRE}
                 >
                   <Camera size={13} />
                   <span>
@@ -969,7 +1120,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractRenew")}>
                     <button
                       onClick={() => handleRenew(c)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-800"
+                      className={ACTION_PLEIN}
                     >
                       <RefreshCw size={12} aria-hidden="true" /> {t("manager.contracts.renewShort")}
                     </button>
@@ -983,7 +1134,7 @@ export default function ContractsPage() {
                 )}
                 {c.status === "ACTIVE" && (
                   <Bulle texte={t("manager.tips.contractTerminate")}>
-                  <button onClick={() => handleTerminate(c)} className="text-xs font-semibold text-amber-800 border-b border-amber-700/40 hover:border-amber-800 transition-colors">
+                  <button onClick={() => handleTerminate(c)} className="text-xs font-semibold text-orange-800 border-b border-orange-700/40 hover:border-orange-800 transition-colors">
                     {t("manager.contracts.terminate")}
                   </button>
                   </Bulle>
@@ -993,7 +1144,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractCancelDepositRefund")}>
                     <button
                       onClick={() => handleCancelDepositRefund(c)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-emerald-800 border-emerald-600 hover:bg-emerald-50"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-slate-100"
                     >
                       <Banknote size={13} aria-hidden="true" />
                       <span>{t("manager.contracts.depositRefunded", { amount: formatMoney(depositRefundedAmount(c), c.currency) })}</span>
@@ -1003,7 +1154,7 @@ export default function ContractsPage() {
                     <Bulle texte={t("manager.tips.contractDepositRefund")}>
                     <button
                       onClick={() => setDepositRefundContract(c)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors cursor-pointer bg-white text-ink-900 border-ink-900 hover:bg-brand-50"
+                      className={ACTION_ENCRE}
                     >
                       <Banknote size={13} aria-hidden="true" />
                       <span>{t("manager.contracts.depositRefund")}</span>

@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 export interface FiltreListe {
   cle: string;
   libelle: string;
-  compte: number;
+  /** Effectif du filtre ; absent quand il n'est pas connu d'avance (filtre appliqué par le serveur). */
+  compte?: number;
 }
 
 interface BarreListeProps {
@@ -86,7 +87,7 @@ export default function BarreListe({ idPrefixe, recherche, onRecherche, placehol
               }`}
             >
               {f.libelle}
-              <span className={`tabular-nums ${filtreActif === f.cle ? "text-orange-300" : "text-orange-700"}`}>{f.compte}</span>
+              {f.compte !== undefined && <span className={`tabular-nums ${filtreActif === f.cle ? "text-orange-300" : "text-orange-700"}`}>{f.compte}</span>}
             </button>
           ))}
         </div>
