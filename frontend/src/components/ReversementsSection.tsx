@@ -85,13 +85,13 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
     }
   }
 
-  const champ = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
+  const champ = "w-full border border-slate-300 px-3 py-2 text-sm";
   const etiquette = "block text-xs font-semibold text-slate-700 mb-1";
   const resteDevise = reste[currency] ?? 0;
 
   return (
-    <section aria-labelledby="reversements-titre" className="bg-white rounded-xl border border-contour-200 shadow-sm">
-      <div className="p-4 border-b border-contour-100">
+    <section aria-labelledby="reversements-titre" className="bg-white border border-slate-300 ">
+      <div className="p-4 border-b border-slate-300">
         <h3 id="reversements-titre" className="font-bold text-slate-900 text-sm">
           {t("components.payouts.title")}
         </h3>
@@ -103,11 +103,11 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
             {devises.map((d) => {
               const r = reste[d] ?? 0;
               return (
-                <li key={d} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                <li key={d} className="bg-slate-50 px-3 py-2 text-sm">
                   <p className="text-xs text-slate-600">
                     {t("components.payouts.summary", { net: formatMoney(crg.totalNetByCurrency[d] ?? 0, d), paid: formatMoney(reverse[d] ?? 0, d) })}
                   </p>
-                  <p className={`font-bold ${r < 0 ? "text-red-700" : r === 0 ? "text-emerald-700" : "text-slate-900"}`}>
+                  <p className={`font-bold ${r < 0 ? "text-red-700" : r === 0 ? "text-ink-900" : "text-slate-900"}`}>
                     {r < 0
                       ? // Rien n'a été versé : le net est négatif (charges supérieures aux loyers), ce n'est pas un « trop-versé ».
                         (reverse[d] ?? 0) === 0
@@ -129,7 +129,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
         {reversements.length === 0 ? (
           <p className="text-sm text-slate-600">{t("components.payouts.none")}</p>
         ) : (
-          <ul className="divide-y divide-contour-100">
+          <ul className="divide-y divide-slate-300">
             {reversements.map((r) => (
               <li key={r.id} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span className="text-slate-800">
@@ -150,7 +150,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
         )}
 
         {edition && devises.length > 0 && (
-          <form onSubmit={enregistrer} className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-contour-100 pt-4">
+          <form onSubmit={enregistrer} className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-300 pt-4">
             <h4 className="sm:col-span-2 text-xs font-semibold text-slate-700">{t("components.payouts.formTitle")}</h4>
             {devises.length > 1 && (
               <div>
@@ -187,7 +187,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
               <button
                 type="submit"
                 disabled={saving || resteDevise <= 0 || !amount}
-                className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg"
+                className="bg-ink-900 hover:bg-brand-600 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 "
               >
                 {saving ? t("components.payouts.saving") : t("components.payouts.save")}
               </button>

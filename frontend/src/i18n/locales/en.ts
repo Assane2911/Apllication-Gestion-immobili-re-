@@ -994,6 +994,10 @@ const en: TranslationSchema = {
       errorRequired: "Please sign in the box before confirming.",
     },
     depositRefundModal: {
+      totalDeductions: "Deductions",
+      retained: "{{percent}}% of the deposit withheld",
+      quickLabel: "Common reasons",
+      quick: { cleaning: "Cleaning", painting: "Painting", repairs: "Repairs" },
       title: "Security deposit refund",
       depositAmount: "Initial deposit: {{amount}}",
       deductionsTitle: "Deductions (damage, unpaid rent...)",
@@ -1025,6 +1029,8 @@ const en: TranslationSchema = {
       deleting: "Deleting...",
     },
     twoFactorSetup: {
+      copyCodes: "Copy the codes",
+      codesCopied: "Codes copied",
       title: "Enable two-factor authentication",
       subtitle: "Scan this QR code with an authenticator app (Google Authenticator, Authy...).",
       subtitleBackupCodes: "Write down these backup codes before continuing.",
@@ -1040,6 +1046,8 @@ const en: TranslationSchema = {
       done: "I've written down my backup codes",
     },
     markPaidModal: {
+      settle: "Pay in full",
+      afterPayment: "Still due after this payment: {{amount}}",
       title: "Mark the rent as paid",
       intro: "Rent of {{name}}: {{amount}}.",
       warning: "The receipt will be emailed to the tenant straight away, and this cannot be undone: a paid invoice cannot go back to pending.",
@@ -1134,6 +1142,7 @@ const en: TranslationSchema = {
       docTitle: "Formal notice to pay",
     },
     rentRevisionModal: {
+      annualImpact: "Over twelve months: {{amount}}",
       title: "Revise the rent",
       current: "Current rent: {{rent}}",
       method: "Calculation method",
@@ -1194,6 +1203,7 @@ const en: TranslationSchema = {
       hideRead: "Hide read items",
     },
     trialBanner: {
+      progress: "Trial days left",
       expiredTitle: "Trial period expired",
       expiredDesc:
         "Your 15-day trial period has ended. Please subscribe to a plan to keep using the application.",
@@ -3418,6 +3428,7 @@ const en: TranslationSchema = {
   },
 
   suggestions: {
+    counter: "{{count}} / 4000",
     button: "Any suggestions?",
     zone: "Help and suggestions",
     title: "Your feedback shapes the platform",

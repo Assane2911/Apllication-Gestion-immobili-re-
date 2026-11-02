@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, ExternalLink, FileText, Image as ImageIcon, Printer, X } from "lucide-react";
 import { useDialogue } from "../hooks/useDialogue";
@@ -11,13 +10,6 @@ interface ScannedContractModalProps {
 
 export default function ScannedContractModal({ title, fileUrl, onClose }: ScannedContractModalProps) {
   const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
   const isPdf = /\.pdf(\?.*)?$/i.test(fileUrl) || fileUrl.includes("application/pdf");
 
   /**
@@ -37,81 +29,47 @@ export default function ScannedContractModal({ title, fileUrl, onClose }: Scanne
 
   const dialogue = useDialogue({ onClose, titreId: "scanned-contract-title" });
 
+  const BOUTON_BLANC =
+    "inline-flex cursor-pointer items-center gap-1.5 border border-white/70 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/10";
+
   return (
-    <div
-      className={`fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 transition-opacity duration-200 ${
-        visible ? "opacity-100" : "opacity-0"
-      }`}
-    >
-      <div
-        {...dialogue}
-        className={`bg-white rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-contour-200 overflow-hidden transition-all duration-200 ${
-          visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
-        }`}
-      >
-        <div className="px-6 py-4 border-b border-contour-200 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
-              {isPdf ? <FileText size={18} /> : <ImageIcon size={18} />}
-            </div>
-            <div>
-              <h3 id="scanned-contract-title" className="font-bold text-slate-900 text-base">{title}</h3>
-              <p className="text-xs text-slate-600">
-                {isPdf ? t("components.scannedContractModal.pdfSubtitle") : t("components.scannedContractModal.imageSubtitle")}
-              </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+      <div {...dialogue} className="flex h-[88vh] w-full max-w-4xl flex-col overflow-hidden border-2 border-ink-900 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-900 bg-ink-900 px-6 py-4 text-white">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/70">{isPdf ? <FileText size={18} aria-hidden="true" /> : <ImageIcon size={18} aria-hidden="true" />}</div>
+            <div className="min-w-0">
+              <h3 id="scanned-contract-title" className="text-base font-bold">
+                {title}
+              </h3>
+              <p className="text-xs text-white/85">{isPdf ? t("components.scannedContractModal.pdfSubtitle") : t("components.scannedContractModal.imageSubtitle")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrint}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Printer size={14} />
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={handlePrint} className={BOUTON_BLANC}>
+              <Printer size={14} aria-hidden="true" />
               <span>{t("components.scannedContractModal.print")}</span>
             </button>
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
-            >
-              <Download size={14} />
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer" download className={BOUTON_BLANC}>
+              <Download size={14} aria-hidden="true" />
               <span>{t("components.scannedContractModal.download")}</span>
             </a>
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors"
-            >
-              <ExternalLink size={14} />
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 border border-white bg-white px-3 py-2 text-xs font-semibold text-ink-900 transition-colors hover:bg-slate-100">
+              <ExternalLink size={14} aria-hidden="true" />
               <span>{t("components.scannedContractModal.fullscreen")}</span>
             </a>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 p-2 text-lg font-bold rounded-lg hover:bg-slate-100 transition-colors"
-              aria-label={t("common.actions.close")}
-            >
-              <X size={20} />
+            <button onClick={onClose} className="cursor-pointer p-2 text-white/80 hover:text-white" aria-label={t("common.actions.close")}>
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-100 p-4 relative overflow-hidden flex items-center justify-center">
+        <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-slate-100 p-4">
           {isPdf ? (
-            <iframe
-              src={fileUrl}
-              title={title}
-              className="w-full h-full bg-white rounded-xl shadow border border-contour-200"
-            />
+            <iframe src={fileUrl} title={title} className="h-full w-full border border-slate-400 bg-white" />
           ) : (
-            <div className="w-full h-full overflow-auto flex items-center justify-center p-2">
-              <img
-                src={fileUrl}
-                alt={title}
-                className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-contour-200 bg-white"
-              />
+            <div className="flex h-full w-full items-center justify-center overflow-auto p-2">
+              <img src={fileUrl} alt={title} className="max-h-full max-w-full border border-slate-400 bg-white object-contain" />
             </div>
           )}
         </div>

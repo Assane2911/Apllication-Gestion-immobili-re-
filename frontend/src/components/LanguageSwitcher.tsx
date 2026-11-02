@@ -23,7 +23,7 @@ export default function LanguageSwitcher({ className = "", compact = false }: La
         value={i18n.resolvedLanguage || i18n.language}
         onChange={(e) => void changerLangue(e.target.value)}
         aria-label={t("common.language.selectAria")}
-        className={`w-full min-w-0 max-w-full truncate text-xs font-semibold ${compact ? "px-1.5" : "px-2.5"} py-1.5 rounded-lg border focus:outline-hidden focus:ring-2 cursor-pointer shadow-sm transition-all ${apparence}`}
+        className={`w-full min-w-0 max-w-full truncate text-xs font-semibold ${compact ? "px-1.5" : "px-2.5"} py-1.5 border focus:outline-hidden focus:ring-2 cursor-pointer transition-all ${apparence}`}
       >
         {SUPPORTED_LANGUAGES.map((lang) => (
           <option key={lang.code} value={lang.code} className="bg-slate-900 text-white">

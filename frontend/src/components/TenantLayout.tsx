@@ -66,7 +66,7 @@ export default function TenantLayout() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setMenuMobileOuvert(true)}
-                className="sm:hidden shrink-0 w-9 h-9 rounded-xl bg-white border border-contour-200 flex items-center justify-center text-slate-600 shadow-2xs hover:bg-slate-50 transition-colors"
+                className="sm:hidden shrink-0 w-9 h-9 bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
                 aria-label={t("components.managerLayout.openMenuAria")}
               >
                 <Menu size={18} />

@@ -4,7 +4,7 @@ import { etatReversement } from "../utils/resumeCrg";
 
 const CLASSES = {
   none: "border-orange-300 bg-orange-50 text-orange-900",
-  partial: "border-amber-300 bg-amber-50 text-amber-900",
+  partial: "border-orange-700/40 bg-orange-50 text-orange-900",
   done: "border-ink-900 bg-white text-ink-900",
   over: "border-rose-300 bg-rose-50 text-rose-900",
 } as const;

@@ -101,7 +101,7 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
           </div>
           <button
             onClick={onFermerMobile}
-            className="sm:hidden shrink-0 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors"
+            className="sm:hidden shrink-0 w-8 h-8 bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors"
             aria-label={t("components.managerLayout.closeMenuAria")}
           >
             <X size={15} />
@@ -119,7 +119,7 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
                     to={item.to}
                     end={item.to === racine}
                     className={({ isActive }) =>
-                      `group flex items-center gap-3.5 h-11 px-3.5 text-sm whitespace-nowrap rounded-md transition-colors duration-150 ${
+                      `group flex items-center gap-3.5 h-11 px-3.5 text-sm whitespace-nowrap  transition-colors duration-150 ${
                         isActive ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                       }`
                     }
@@ -143,7 +143,7 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
             onClick={basculerEpingle}
             aria-pressed={epingle}
             aria-label={epingle ? t("nav.collapse") : t("nav.expand")}
-            className="hidden sm:flex w-full h-11 items-center gap-3.5 px-3.5 rounded-md text-sm text-slate-700 whitespace-nowrap hover:bg-slate-100 hover:text-ink-900 transition-colors cursor-pointer"
+            className="hidden sm:flex w-full h-11 items-center gap-3.5 px-3.5 text-sm text-slate-700 whitespace-nowrap hover:bg-slate-100 hover:text-ink-900 transition-colors cursor-pointer"
           >
             {epingle ? <ChevronsLeft size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" /> : <ChevronsRight size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />}
             <span className={`transition-opacity duration-150 ${etiquette}`}>{epingle ? t("nav.collapse") : t("nav.expand")}</span>
@@ -156,7 +156,7 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
           </div>
           <button
             onClick={onDeconnexion}
-            className="w-full h-11 flex items-center gap-3.5 px-3.5 rounded-md text-sm text-slate-700 whitespace-nowrap hover:bg-rose-500/10 hover:text-rose-700 transition-colors cursor-pointer"
+            className="w-full h-11 flex items-center gap-3.5 px-3.5 text-sm text-slate-700 whitespace-nowrap hover:bg-rose-500/10 hover:text-rose-700 transition-colors cursor-pointer"
           >
             <LogOut size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
             <span className={`transition-opacity duration-150 ${etiquette}`}>{t("nav.logout")}</span>

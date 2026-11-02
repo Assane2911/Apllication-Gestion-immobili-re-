@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
@@ -6,7 +5,8 @@ import { useAuth } from "../context/auth";
 import { useCurrency } from "../context/currency";
 import { reglesDuPays } from "../data/reglesPays";
 import type { FormalNotice, FormalNoticeDue } from "../types";
-import { useDialogue } from "../hooks/useDialogue";
+import CadreModale from "./CadreModale";
+import { AIDE, AVIS, BOUTON_ANNULER, BOUTON_DANGER, BOUTON_TRAIT, CHAMP, ERREUR, ETIQUETTE, INFO } from "./styleFormulaire";
 
 interface FormalNoticeModalProps {
   bail: FormalNoticeDue;
@@ -48,35 +48,24 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
     }
   }
 
-  const dialogue = useDialogue({ onClose, titreId: "formal-notice-title", fermable: !saving });
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-      <div
-        {...dialogue}
-        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-contour-200"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 id="formal-notice-title" className="text-lg font-bold text-slate-900">
-              {t("components.formalNoticeModal.title")}
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">
-              {t("components.formalNoticeModal.subtitle", {
-                property: bail.propertyTitle,
-                tenant: bail.tenantName,
-                total: formatMoney(bail.totalDue, bail.currency),
-              })}
-            </p>
-          </div>
-          <button type="button" onClick={onClose} disabled={saving} aria-label={t("common.actions.close")} className="text-slate-400 hover:text-slate-600">
-            <X size={18} />
-          </button>
-        </div>
-
-        {emise ? (
-          <div className="mt-4 space-y-3">
-            <p role="status" className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">
+    <CadreModale
+      titre={t("components.formalNoticeModal.title")}
+      titreId="formal-notice-title"
+      sousTitre={t("components.formalNoticeModal.subtitle", {
+        property: bail.propertyTitle,
+        tenant: bail.tenantName,
+        total: formatMoney(bail.totalDue, bail.currency),
+      })}
+      onClose={onClose}
+      fermable={!saving}
+      largeur="lg"
+      danger
+    >
+      {emise ? (
+        <div className="space-y-3">
+          <p role="status" className={INFO}>
+            <span className="text-sm">
               {t("components.formalNoticeModal.done", { reference: emise.reference })}{" "}
               {!sendEmail
                 ? t("components.formalNoticeModal.doneNoEmail")
@@ -91,70 +80,73 @@ export default function FormalNoticeModal({ bail, onOpenDocument, onIssued, onCl
                     : t("components.formalNoticeModal.doneGuarantorsNone")}
                 </>
               )}
-            </p>
-            <p className="text-xs text-slate-600">{t("components.formalNoticeModal.registeredMail")}</p>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={onClose} className="text-sm px-3 py-2 rounded-lg border border-slate-300 text-slate-700">
-                {t("common.actions.close")}
-              </button>
-              <button type="button" onClick={() => onOpenDocument(emise.id)} className="text-sm px-3 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white font-semibold">
-                {t("components.formalNoticeModal.open")}
-              </button>
-            </div>
+            </span>
+          </p>
+          <p className="text-xs text-slate-600">{t("components.formalNoticeModal.registeredMail")}</p>
+          <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+            <button type="button" onClick={onClose} className={BOUTON_TRAIT}>
+              {t("common.actions.close")}
+            </button>
+            <button type="button" onClick={() => onOpenDocument(emise.id)} className={BOUTON_DANGER}>
+              {t("components.formalNoticeModal.open")}
+            </button>
           </div>
-        ) : (
-          <form onSubmit={emettre} className="mt-4 space-y-4">
-            <p className="text-sm text-slate-700">{t("components.formalNoticeModal.intro")}</p>
-            <div>
-              <label htmlFor="formal-notice-deadline" className="block text-sm font-medium text-slate-700 mb-1">
-                {t("components.formalNoticeModal.deadline")}
-              </label>
-              <input
-                id="formal-notice-deadline"
-                type="number"
-                min={1}
-                max={60}
-                step={1}
-                required
-                value={deadlineDays}
-                onChange={(e) => setDeadlineDays(e.target.value)}
-                className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              />
-              <p className="text-xs text-slate-500 mt-1">{t("components.formalNoticeModal.deadlineHint")}</p>
-            </div>
-            <label className="flex items-start gap-2 text-sm text-slate-700">
-              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="mt-0.5" />
-              {t("components.formalNoticeModal.sendEmail")}
+        </div>
+      ) : (
+        <form onSubmit={emettre} className="space-y-4">
+          <p className="text-sm text-slate-700">{t("components.formalNoticeModal.intro")}</p>
+          <div>
+            <label htmlFor="formal-notice-deadline" className={ETIQUETTE}>
+              {t("components.formalNoticeModal.deadline")}
             </label>
-            <label className={`flex items-start gap-2 text-sm ml-6 ${sendEmail ? "text-slate-700" : "text-slate-400"}`}>
-              <input
-                type="checkbox"
-                checked={sendEmail && notifyGuarantors}
-                disabled={!sendEmail}
-                onChange={(e) => setNotifyGuarantors(e.target.checked)}
-                className="mt-0.5"
-              />
-              {t("components.formalNoticeModal.notifyGuarantors")}
-            </label>
-            <p className="text-xs text-slate-600">{t("components.formalNoticeModal.registeredMail")}</p>
-            {bail.agencyReachable === false && (
-              <p role="note" className="text-xs rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-                {t("components.formalNoticeModal.agencyUnreachable")}
-              </p>
-            )}
-            {error && (
-              <p role="alert" className="text-sm text-red-700">
-                {error}
-              </p>
-            )}
-            <div className="flex justify-end">
-              <button type="submit" disabled={saving} className="text-sm px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 disabled:opacity-60 text-white font-semibold">
-                {saving ? t("components.formalNoticeModal.submitting") : t("components.formalNoticeModal.submit")}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+            <input
+              id="formal-notice-deadline"
+              type="number"
+              min={1}
+              max={60}
+              step={1}
+              required
+              value={deadlineDays}
+              onChange={(e) => setDeadlineDays(e.target.value)}
+              className={`${CHAMP} w-28`}
+            />
+            <p className={AIDE}>{t("components.formalNoticeModal.deadlineHint")}</p>
+          </div>
+          <label className="flex items-start gap-2 text-sm text-slate-800">
+            <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="mt-0.5" />
+            {t("components.formalNoticeModal.sendEmail")}
+          </label>
+          <label className={`ml-6 flex items-start gap-2 text-sm ${sendEmail ? "text-slate-800" : "text-slate-500"}`}>
+            <input
+              type="checkbox"
+              checked={sendEmail && notifyGuarantors}
+              disabled={!sendEmail}
+              onChange={(e) => setNotifyGuarantors(e.target.checked)}
+              className="mt-0.5"
+            />
+            {t("components.formalNoticeModal.notifyGuarantors")}
+          </label>
+          <p className="text-xs text-slate-600">{t("components.formalNoticeModal.registeredMail")}</p>
+          {bail.agencyReachable === false && (
+            <p role="note" className={AVIS}>
+              {t("components.formalNoticeModal.agencyUnreachable")}
+            </p>
+          )}
+          {error && (
+            <p role="alert" className={ERREUR}>
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-3 border-t border-slate-300 pt-4">
+            <button type="button" onClick={onClose} disabled={saving} className={BOUTON_ANNULER}>
+              {t("common.actions.cancel")}
+            </button>
+            <button type="submit" disabled={saving} className={BOUTON_DANGER}>
+              {saving ? t("components.formalNoticeModal.submitting") : t("components.formalNoticeModal.submit")}
+            </button>
+          </div>
+        </form>
+      )}
+    </CadreModale>
   );
 }

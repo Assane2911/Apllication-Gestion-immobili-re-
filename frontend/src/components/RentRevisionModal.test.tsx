@@ -138,3 +138,20 @@ describe("RentRevisionModal", () => {
     expect(onOpenAvenant).toHaveBeenCalledWith("r1");
   });
 });
+
+describe("RentRevisionModal — impact annuel", () => {
+  it("chiffre l'effet de la révision sur douze mois, et le tait quand le loyer ne change pas", async () => {
+    const user = userEvent.setup();
+    afficher();
+    await user.type(screen.getByLabelText("Variation (%)"), "3");
+    expect(screen.getByRole("status")).toHaveTextContent("Sur douze mois : +180 €");
+
+    await user.clear(screen.getByLabelText("Variation (%)"));
+    await user.type(screen.getByLabelText("Variation (%)"), "-2");
+    expect(screen.getByRole("status")).toHaveTextContent("Sur douze mois : −120 €");
+
+    await user.clear(screen.getByLabelText("Variation (%)"));
+    await user.type(screen.getByLabelText("Variation (%)"), "0");
+    expect(screen.getByRole("status")).not.toHaveTextContent("Sur douze mois");
+  });
+});

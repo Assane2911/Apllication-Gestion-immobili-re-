@@ -123,3 +123,13 @@ describe("Bouton de suggestion", () => {
     }
   });
 });
+
+describe("Bouton de suggestion — compteur", () => {
+  it("compte les caractères saisis sur les 4000 permis", async () => {
+    monter();
+    await userEvent.click(screen.getByRole("button", { name: /suggestion/i }));
+    expect(screen.getByText("0 / 4000")).toBeInTheDocument();
+    await userEvent.type(screen.getByRole("textbox"), "Bonjour");
+    expect(screen.getByText("7 / 4000")).toBeInTheDocument();
+  });
+});

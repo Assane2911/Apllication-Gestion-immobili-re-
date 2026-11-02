@@ -26,7 +26,7 @@ export default function BankDetails({ info, title, ibanLabel, bicLabel, missingM
 
   if (!info || (!info.iban && !info.bic)) {
     return (
-      <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+      <p className="mt-3 text-xs text-orange-900 bg-orange-50 border border-orange-700/40 px-3 py-2">
         {missingMessage}
       </p>
     );
@@ -54,7 +54,7 @@ export default function BankDetails({ info, title, ibanLabel, bicLabel, missingM
         <button
           type="button"
           onClick={() => copier(champ, valeur)}
-          className="shrink-0 text-[10px] font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50 cursor-pointer"
+          className="shrink-0 text-[10px] font-semibold text-ink-900 hover:text-orange-700 flex items-center gap-1 px-2 py-1 hover:bg-slate-100 cursor-pointer"
         >
           <Copy size={11} />
           {copied === champ ? copiedLabel : copyLabel}
@@ -64,7 +64,7 @@ export default function BankDetails({ info, title, ibanLabel, bicLabel, missingM
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-contour-200 bg-white px-3 py-2.5">
+    <div className="mt-3 border border-slate-300 bg-white px-3 py-2.5">
       <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">{title}</p>
       {info.iban && ligne("iban", ibanLabel, info.iban)}
       {info.bic && ligne("bic", bicLabel, info.bic)}

@@ -1,14 +1,14 @@
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} />;
+  return <div className={`animate-pulse bg-slate-200/70 ${className}`} />;
 }
 
 /** Squelette d'une StatCard pendant le chargement du tableau de bord. */
 export function StatCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
+    <div className="bg-white border border-slate-300 p-5 ">
       <div className="flex items-start justify-between gap-3">
         <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-9 w-9 " />
       </div>
       <Skeleton className="h-7 w-16 mt-3" />
       <Skeleton className="h-3 w-20 mt-2" />
@@ -19,12 +19,12 @@ export function StatCardSkeleton() {
 /** Squelette d'une carte de bien immobilier pendant le chargement de la liste. */
 export function PropertyCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-300 overflow-hidden">
       <Skeleton className="h-36 w-full rounded-none" />
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-16 " />
         </div>
         <Skeleton className="h-3 w-40" />
         <div className="flex justify-between">

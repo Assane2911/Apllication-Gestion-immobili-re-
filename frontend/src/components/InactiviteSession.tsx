@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/auth";
 import Dialogue from "./Dialogue";
+import { BOUTON_PLEIN, BOUTON_TRAIT } from "./styleFormulaire";
 import { AVERTISSEMENT_MS, CLE_DERNIERE_ACTIVITE, dureeInactiviteMs, INTERVALLE_RENOUVELLEMENT_MS } from "../utils/inactivite";
 
 const GESTES = ["mousedown", "keydown", "touchstart", "wheel", "scroll"] as const;
@@ -103,19 +104,29 @@ export default function InactiviteSession() {
       <Dialogue
         onClose={resterConnecte}
         titreId="inactivite-titre"
-        className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200"
+        className="w-full max-w-sm border-2 border-ink-900 bg-white p-6"
       >
-        <h2 id="inactivite-titre" className="text-base font-bold text-slate-900">
+        <h2 id="inactivite-titre" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
           {t("components.inactivite.title")}
         </h2>
-        <p role="status" className="mt-2 text-sm text-slate-600">
+        <p role="status" className="mt-2 text-sm text-slate-700">
           {t("components.inactivite.message", { count: secondesRestantes })}
         </p>
-        <div className="mt-5 flex flex-wrap gap-2 justify-end">
+        <div
+          role="progressbar"
+          aria-hidden="true"
+          aria-valuemin={0}
+          aria-valuemax={AVERTISSEMENT_MS / 1000}
+          aria-valuenow={Math.min(secondesRestantes, AVERTISSEMENT_MS / 1000)}
+          className="mt-3 h-2 border border-slate-400 bg-white"
+        >
+          <div className="h-full bg-orange-700" style={{ width: `${Math.max(0, Math.min(100, (secondesRestantes / (AVERTISSEMENT_MS / 1000)) * 100))}%` }} />
+        </div>
+        <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-300 pt-4">
           <button
             type="button"
             onClick={() => deconnexionRef.current()}
-            className="text-sm font-semibold px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700"
+            className={BOUTON_TRAIT}
           >
             {t("components.inactivite.logout")}
           </button>
@@ -123,7 +134,7 @@ export default function InactiviteSession() {
             type="button"
             onClick={resterConnecte}
             data-autofocus
-            className="text-sm font-semibold px-3.5 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700"
+            className={BOUTON_PLEIN}
           >
             {t("components.inactivite.stay")}
           </button>

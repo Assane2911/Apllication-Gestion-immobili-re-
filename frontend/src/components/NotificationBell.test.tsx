@@ -163,13 +163,13 @@ describe("NotificationBell", () => {
       expect(screen.queryByText("1")).not.toBeInTheDocument();
       const nouveau = screen.getByText("Nouveau message").closest("li")!;
       const ancien = screen.getByText("Loyer en retard").closest("li")!;
-      expect(nouveau.className).toContain("bg-brand-50");
-      expect(ancien.className).not.toContain("bg-brand-50");
+      expect(nouveau.className).toContain("bg-orange-50");
+      expect(ancien.className).not.toContain("bg-orange-50");
 
       // Une fois le panneau refermé, plus de surlignage.
       fireEvent.click(bouton());
       fireEvent.click(bouton());
-      expect(screen.getByText("Nouveau message").closest("li")!.className).not.toContain("bg-brand-50");
+      expect(screen.getByText("Nouveau message").closest("li")!.className).not.toContain("bg-orange-50");
     });
 
     it("enregistre sur l'endpoint du portail utilisé (locataire)", async () => {
@@ -203,7 +203,7 @@ describe("NotificationBell", () => {
       fireEvent.click(bouton());
 
       await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
-      await waitFor(() => expect(screen.getByText("1", { selector: "span.rounded-full" })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText("1", { selector: "span.bg-orange-700" })).toBeInTheDocument());
     });
 
     it("un sondage parti avant l'ouverture et arrivant après ne rallume pas le badge", async () => {

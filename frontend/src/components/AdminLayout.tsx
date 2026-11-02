@@ -73,7 +73,7 @@ export default function AdminLayout() {
         <div className="max-w-5xl mx-auto">
           <button
             onClick={() => setMenuMobileOuvert(true)}
-            className="sm:hidden mb-4 w-9 h-9 rounded-xl bg-white border border-contour-200 flex items-center justify-center text-slate-600 shadow-2xs hover:bg-slate-50 transition-colors"
+            className="sm:hidden mb-4 w-9 h-9 bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
             aria-label={t("components.managerLayout.openMenuAria")}
           >
             <Menu size={18} />

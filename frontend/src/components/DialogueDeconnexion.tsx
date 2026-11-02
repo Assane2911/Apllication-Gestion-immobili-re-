@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import Dialogue from "./Dialogue";
+import { BOUTON_DANGER, BOUTON_TRAIT } from "./styleFormulaire";
 
 /**
  * Fenêtre de confirmation avant de fermer la session. Le bouton « Se déconnecter » est collé à d'autres sur
@@ -16,25 +17,25 @@ export default function DialogueDeconnexion({ onAnnuler, onConfirmer }: { onAnnu
       <Dialogue
         onClose={onAnnuler}
         titreId="deconnexion-titre"
-        className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-contour-200"
+        className="w-full max-w-sm border-2 border-ink-900 bg-white p-6"
       >
-        <h2 id="deconnexion-titre" className="text-base font-bold text-slate-900">
+        <h2 id="deconnexion-titre" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
           {t("components.deconnexion.title")}
         </h2>
         <p className="mt-2 text-sm text-slate-600">{t("components.deconnexion.message")}</p>
-        <div className="mt-5 flex flex-wrap gap-2 justify-end">
+        <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-300 pt-4">
           <button
             type="button"
             onClick={onAnnuler}
             data-autofocus
-            className="text-sm font-semibold px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+            className={BOUTON_TRAIT}
           >
             {t("components.deconnexion.cancel")}
           </button>
           <button
             type="button"
             onClick={onConfirmer}
-            className="text-sm font-semibold px-3.5 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700"
+            className={BOUTON_DANGER}
           >
             {t("nav.logout")}
           </button>
