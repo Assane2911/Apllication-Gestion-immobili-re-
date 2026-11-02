@@ -290,9 +290,10 @@ describe("TenantMessagesPage — mise à jour en direct", () => {
 
   it("affiche le message du gestionnaire arrivé après l'ouverture, sans recharger la page", async () => {
     mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
-    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ id: "m1", content: "Bonjour" })], contract: { property: { title: "Studio Centre-ville" } } } });
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ id: "m1", content: "Premier message du gestionnaire" })], contract: { property: { title: "Studio Centre-ville" } } } });
     renderPage();
-    expect(await screen.findByText("Bonjour")).toBeInTheDocument();
+    // Un texte propre au message : « Bonjour » est aussi le libellé d'une réponse rapide, présent avant même le chargement du fil.
+    expect(await screen.findByText("Premier message du gestionnaire")).toBeInTheDocument();
 
     mockedApi.get.mockResolvedValue({ data: { messages: [message({ id: "m2", content: "Votre quittance est prête" })], luesIds: [] } });
     await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
