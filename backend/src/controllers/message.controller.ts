@@ -37,7 +37,7 @@ type LigneMessage = typeof messages.$inferSelect;
  * Le message tel que le client le reçoit : le chemin de stockage de l'enregistrement ne sort jamais (il révélerait
  * l'organisation du bucket) ; il est remplacé par un lien signé à durée limitée, généré à chaque lecture du fil.
  */
-async function messagePublic<T extends LigneMessage>(message: T): Promise<Omit<T, "audioPath"> & { audioUrl: string | null }> {
+export async function messagePublic<T extends { audioPath: string | null }>(message: T): Promise<Omit<T, "audioPath"> & { audioUrl: string | null }> {
   const { audioPath, ...reste } = message;
   let audioUrl: string | null = null;
   if (audioPath) {
@@ -51,7 +51,7 @@ async function messagePublic<T extends LigneMessage>(message: T): Promise<Omit<T
 }
 
 /** Pour un aperçu (dernier message d'un fil) : pas de lien signé, seulement l'indication qu'il s'agit d'un vocal. */
-function apercuMessage(message: LigneMessage | null | undefined) {
+export function apercuMessage<T extends { audioPath: string | null }>(message: T | null | undefined) {
   if (!message) return null;
   const { audioPath, ...reste } = message;
   return { ...reste, isVoice: Boolean(audioPath) };
@@ -294,7 +294,7 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
 
 // Borné : sans plafond, un message pouvait peser jusqu'à la limite du corps JSON (10 Mo) et alourdissait la base et
 // chaque réponse qui renvoie le fil entier. Rogné avant le test de vacuité : « espaces » n'est pas un message.
-const sendMessageSchema = z.object({
+export const sendMessageSchema = z.object({
   content: z.string().trim().min(1, "Le message ne peut pas être vide").max(5000, "Le message ne peut pas dépasser 5 000 caractères"),
 });
 
@@ -346,7 +346,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(await messagePublic(newMsg));
 });
 
-const sendVoiceSchema = z.object({
+export const sendVoiceSchema = z.object({
   durationSec: z.coerce
     .number()
     .int("Durée invalide")
