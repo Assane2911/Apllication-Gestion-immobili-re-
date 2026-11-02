@@ -32,6 +32,18 @@ function authValue(user: AuthUser): AuthContextValue {
   };
 }
 
+/**
+ * La page lit les coordonnées bancaires ET l'état de la maintenance (deux sections, deux appels, dans un ordre qui ne regarde pas
+ * ces tests) : les réponses sont donc données par adresse, et non dans l'ordre des appels.
+ */
+function reglages(resultat: { data: PlatformSettings } | Error) {
+  mockedApi.get.mockImplementation(async (url: string) => {
+    if (url === "/admin/maintenance") return { data: { maintenance: null } };
+    if (resultat instanceof Error) throw resultat;
+    return resultat;
+  });
+}
+
 function renderPage(twoFactorEnabled = false) {
   const admin: AuthUser = { id: "a1", email: "admin@test.local", role: "ADMIN", twoFactorEnabled };
   return render(
@@ -58,7 +70,7 @@ describe("AdminSettingsPage", () => {
   });
 
   it("pré-remplit le formulaire avec l'IBAN et le BIC déjà configurés", async () => {
-    mockedApi.get.mockResolvedValueOnce({
+    reglages({
       data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }),
     });
     renderPage();
@@ -70,7 +82,7 @@ describe("AdminSettingsPage", () => {
   });
 
   it("laisse le formulaire vide quand rien n'est encore configuré", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     renderPage();
 
     await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
@@ -80,7 +92,7 @@ describe("AdminSettingsPage", () => {
 
   it("enregistre l'IBAN et le BIC saisis et affiche un message de succès", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     mockedApi.put.mockResolvedValueOnce({
       data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }),
     });
@@ -102,7 +114,7 @@ describe("AdminSettingsPage", () => {
 
   it("affiche l'erreur du serveur quand l'IBAN saisi est invalide", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     mockedApi.put.mockRejectedValueOnce({
       response: { data: { error: "Requête invalide : données manquantes ou incorrectes (champ concerné : iban)." } },
       isAxiosError: true,
@@ -118,7 +130,7 @@ describe("AdminSettingsPage", () => {
 
   it("affiche une erreur générique si l'enregistrement échoue", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     mockedApi.put.mockRejectedValueOnce({
       response: { data: { error: "Erreur serveur" } },
       isAxiosError: true,
@@ -135,7 +147,7 @@ describe("AdminSettingsPage", () => {
   // double authentification, comme un gestionnaire (la page n'offrait aucun moyen de le faire).
   it("propose d'activer la double authentification et lance l'enrôlement", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     mockedApi.post.mockResolvedValueOnce({ data: { secret: "ABCDEFGH", qrCodeDataUrl: "data:image/png;base64,AAAA" } });
     renderPage(false);
 
@@ -145,7 +157,7 @@ describe("AdminSettingsPage", () => {
   });
 
   it("indique que la double authentification est activée et propose de la désactiver", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     renderPage(true);
 
     expect(await screen.findByText("Double authentification activée")).toBeInTheDocument();
@@ -154,7 +166,7 @@ describe("AdminSettingsPage", () => {
   });
 
   it("garde la sécurité du compte accessible même quand les coordonnées bancaires ne se chargent pas", async () => {
-    mockedApi.get.mockRejectedValueOnce(new Error("réseau"));
+    reglages(new Error("réseau"));
     renderPage(false);
 
     expect(await screen.findByRole("button", { name: "Activer la double authentification" })).toBeInTheDocument();
@@ -162,7 +174,7 @@ describe("AdminSettingsPage", () => {
 
   it("contrôle la clé de l'IBAN et le format du BIC, sans empêcher l'enregistrement", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     renderPage();
 
     const iban = await screen.findByLabelText("IBAN de la plateforme");
@@ -181,7 +193,7 @@ describe("AdminSettingsPage", () => {
 
   it("montre l'aperçu de ce que verront les gestionnaires, IBAN groupé par quatre", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    reglages({ data: settings() });
     renderPage();
 
     const apercu = await screen.findByRole("complementary", { name: "Ce que verront les gestionnaires" });
@@ -193,7 +205,7 @@ describe("AdminSettingsPage", () => {
 
   it("signale les modifications non enregistrées puis le retour à jour après l'enregistrement", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }) });
+    reglages({ data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }) });
     mockedApi.put.mockResolvedValueOnce({ data: settings() });
     renderPage();
 

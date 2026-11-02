@@ -2,6 +2,7 @@ import { CheckCircle2, CircleAlert, ShieldCheck, ShieldOff } from "lucide-react"
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import SectionMaintenance from "../../components/SectionMaintenance";
 import SectionReglage from "../../components/SectionReglage";
 import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
 import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
@@ -215,6 +216,9 @@ export default function AdminSettingsPage() {
           )}
         </div>
       </SectionReglage>
+
+      {/* Hors du bloc des coordonnées bancaires : sa programmation n'en dépend pas. */}
+      <SectionMaintenance numero="03" />
 
       {showTwoFactorSetup && (
         <TwoFactorSetupModal

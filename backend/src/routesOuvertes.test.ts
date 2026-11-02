@@ -27,6 +27,7 @@ const PUBLIQUES: Record<string, string> = {
   "POST /api/auth/forgot-password": "demande de réinitialisation (réponse identique si l'adresse est inconnue)",
   "POST /api/auth/reset-password": "réinitialisation par le lien reçu (jeton à usage unique)",
   "POST /api/auth/logout": "déconnexion : efface le cookie de session, sans effet si aucune session",
+  "GET /api/maintenance": "état de la maintenance planifiée (dates et message), lu par l'application avant toute connexion",
   "GET /api/subscription/plans": "formules d'abonnement, affichées avant l'inscription",
   "GET /api/listings/public": "annonces publiées, visibles par les visiteurs",
   "GET /api/listings/public/countries": "pays des annonces publiées, pour le filtre public",

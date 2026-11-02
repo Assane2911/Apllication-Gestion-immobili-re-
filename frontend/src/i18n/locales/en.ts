@@ -33,6 +33,9 @@ const en: TranslationSchema = {
     },
     // Messages d'erreur du serveur (écrits en français côté API) : le serveur envoie un code, traduit ici.
     serverErrors: {
+      MAINTENANCE: "Maintenance in progress: the application will be available again when the operation is over.",
+      MAINTENANCE_WINDOW_INVALID: "The maintenance must end after it starts, and in the future.",
+      MAINTENANCE_TOO_LONG: "A maintenance cannot last more than 24 hours.",
       OWNER_NO_PORTAL_ACCESS: "This owner does not have access to their space yet: invite them from their record before writing to them.",
       AUTH_REQUIRED: "Authentication required",
       TOKEN_INVALID_OR_EXPIRED: "Invalid or expired token",
@@ -715,6 +718,33 @@ const en: TranslationSchema = {
       unknown: "Recording failed. Please try again.",
     },
   },
+  maintenance: {
+    page: {
+      docTitle: "Maintenance in progress",
+      label: "Maintenance in progress",
+      title: "We'll be back very soon",
+      body: "The application is briefly unavailable during a maintenance operation. Your data is safe: nothing is lost.",
+      messageLabel: "Message from the team",
+      returnLabel: "Expected back",
+      remainingLabel: "Time left",
+      remaining: "About {{count}} minute(s)",
+      soon: "Service is about to resume",
+      check: "Check now",
+      checking: "Checking…",
+      autoRefresh: "This page updates by itself.",
+      admin: "Administrator access",
+    },
+    banner: {
+      plannedTitle: "Scheduled maintenance",
+      activeTitle: "Maintenance in progress",
+      when: "From {{debut}} to {{fin}}",
+      hint: "The application will be unavailable during this time. Save your work before then.",
+      dismiss: "Dismiss the notice",
+      activeAdmin: "Other users see the maintenance screen: you keep access as an administrator.",
+      manage: "Manage maintenance",
+    },
+  },
+
   landing: {
       reminders: {
         title: "Simulator · Automatic reminders",
@@ -3362,6 +3392,9 @@ const en: TranslationSchema = {
         "subscription.bank_transfer.confirm": "Transfer confirmed",
         "subscription.bank_transfer.reject": "Transfer rejected",
         "platform.bank_details.update": "Bank details changed",
+        "platform.maintenance.schedule": "Maintenance scheduled",
+        "platform.maintenance.cancel": "Maintenance cancelled",
+        "platform.maintenance.end": "Maintenance ended",
         "listing.hide": "Listing hidden",
         "listing.restore": "Listing restored",
         "listing.feature": "Listing featured",
@@ -3564,6 +3597,36 @@ const en: TranslationSchema = {
       rejectPrompt: "Reject the {{amount}} transfer request from {{email}}? This does not activate any subscription and cannot be undone.",
     },
     settings: {
+        maintenance: {
+          title: "Scheduled maintenance",
+          description: "Schedule a window during which the application is unavailable (migration, database operation…). It is announced to users in the 24 hours beforehand; during the maintenance they see a waiting screen, and only the administrator keeps access. The window always has an end, 24 hours at most: a forgotten maintenance stops by itself. Online payments are still received.",
+          status: {
+            none: "No maintenance scheduled",
+            planned: "Scheduled: from {{debut}} to {{fin}}",
+            active: "In progress, until {{fin}}",
+          },
+          fields: {
+            start: "Start",
+            end: "End",
+            message: "Message shown to users (optional)",
+            messagePlaceholder: "E.g. database upgrade, expected back late morning.",
+          },
+          startNow: "Start now",
+          schedule: "Schedule the maintenance",
+          update: "Update the maintenance",
+          saving: "Saving…",
+          cancel: "Cancel the maintenance",
+          endNow: "End now",
+          scheduled: "Maintenance scheduled. Users will be informed before it starts.",
+          cancelled: "Maintenance cancelled.",
+          ended: "Maintenance ended: the application is available again.",
+          confirmSoon: "This maintenance starts in less than 15 minutes: users will barely have time to save their work. Confirm?",
+          invalid: {
+            order: "The end must be after the start.",
+            past: "The end must be in the future.",
+            tooLong: "A maintenance cannot last more than 24 hours.",
+          },
+        },
       sections: { bank: "Bank details" },
       check: {
         ibanValid: "IBAN check digits valid",

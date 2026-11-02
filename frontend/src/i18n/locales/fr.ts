@@ -31,6 +31,9 @@ const fr = {
     },
     // Messages d'erreur du serveur (écrits en français côté API) : le serveur envoie un code, traduit ici.
     serverErrors: {
+      MAINTENANCE: "Maintenance en cours : l'application sera de nouveau disponible à la fin de l'opération.",
+      MAINTENANCE_WINDOW_INVALID: "La fin de la maintenance doit être postérieure à son début et se situer dans le futur.",
+      MAINTENANCE_TOO_LONG: "Une maintenance ne peut pas durer plus de 24 heures.",
       OWNER_NO_PORTAL_ACCESS: "Ce propriétaire n'a pas encore accès à son espace : invitez-le depuis sa fiche avant de lui écrire.",
       AUTH_REQUIRED: "Authentification requise",
       TOKEN_INVALID_OR_EXPIRED: "Token invalide ou expiré",
@@ -713,6 +716,33 @@ const fr = {
       unknown: "L'enregistrement a échoué. Réessayez.",
     },
   },
+  maintenance: {
+    page: {
+      docTitle: "Maintenance en cours",
+      label: "Maintenance en cours",
+      title: "Nous revenons très vite",
+      body: "L'application est momentanément indisponible pendant une opération de maintenance. Vos données sont en sécurité : rien n'est perdu.",
+      messageLabel: "Message de l'équipe",
+      returnLabel: "Retour prévu",
+      remainingLabel: "Temps restant",
+      remaining: "Environ {{count}} minute(s)",
+      soon: "La reprise est imminente",
+      check: "Vérifier maintenant",
+      checking: "Vérification…",
+      autoRefresh: "Cette page se met à jour toute seule.",
+      admin: "Accès administrateur",
+    },
+    banner: {
+      plannedTitle: "Maintenance prévue",
+      activeTitle: "Maintenance en cours",
+      when: "Du {{debut}} au {{fin}}",
+      hint: "L'application sera indisponible pendant ce temps. Enregistrez votre travail avant l'heure.",
+      dismiss: "Fermer l'annonce",
+      activeAdmin: "Les autres utilisateurs voient l'écran de maintenance : vous gardez l'accès en tant qu'administrateur.",
+      manage: "Gérer la maintenance",
+    },
+  },
+
   landing: {
       reminders: {
         title: "Simulateur · Relances automatiques",
@@ -3363,6 +3393,9 @@ const fr = {
         "subscription.bank_transfer.confirm": "Virement confirmé",
         "subscription.bank_transfer.reject": "Virement rejeté",
         "platform.bank_details.update": "Coordonnées bancaires modifiées",
+        "platform.maintenance.schedule": "Maintenance programmée",
+        "platform.maintenance.cancel": "Maintenance annulée",
+        "platform.maintenance.end": "Maintenance terminée",
         "listing.hide": "Annonce masquée",
         "listing.restore": "Annonce rétablie",
         "listing.feature": "Annonce mise en avant",
@@ -3565,6 +3598,36 @@ const fr = {
       rejectPrompt: "Rejeter la demande de virement de {{amount}} de {{email}} ? Cette action n'active aucun abonnement et ne peut pas être annulée.",
     },
     settings: {
+        maintenance: {
+          title: "Maintenance planifiée",
+          description: "Programmez une fenêtre pendant laquelle l'application est indisponible (migration, opération sur la base…). Elle est annoncée aux utilisateurs dans les 24 heures qui précèdent ; pendant la maintenance ils voient un écran d'attente, et seul l'administrateur garde l'accès. La fenêtre a toujours une fin, 24 heures au plus : une maintenance oubliée s'arrête d'elle-même. Les paiements en ligne continuent d'être reçus.",
+          status: {
+            none: "Aucune maintenance programmée",
+            planned: "Programmée : du {{debut}} au {{fin}}",
+            active: "En cours, jusqu'au {{fin}}",
+          },
+          fields: {
+            start: "Début",
+            end: "Fin",
+            message: "Message affiché aux utilisateurs (facultatif)",
+            messagePlaceholder: "Ex. : mise à niveau de la base de données, retour prévu en fin de matinée.",
+          },
+          startNow: "Commencer maintenant",
+          schedule: "Programmer la maintenance",
+          update: "Mettre à jour la maintenance",
+          saving: "Enregistrement…",
+          cancel: "Annuler la maintenance",
+          endNow: "Terminer maintenant",
+          scheduled: "Maintenance programmée. Les utilisateurs en seront informés avant son début.",
+          cancelled: "Maintenance annulée.",
+          ended: "Maintenance terminée : l'application est de nouveau accessible.",
+          confirmSoon: "Cette maintenance commence dans moins de 15 minutes : les utilisateurs auront à peine le temps d'enregistrer leur travail. Confirmer ?",
+          invalid: {
+            order: "La fin doit être postérieure au début.",
+            past: "La fin doit être dans le futur.",
+            tooLong: "Une maintenance ne peut pas durer plus de 24 heures.",
+          },
+        },
       sections: { bank: "Coordonnées bancaires" },
       check: {
         ibanValid: "Clé IBAN valide",

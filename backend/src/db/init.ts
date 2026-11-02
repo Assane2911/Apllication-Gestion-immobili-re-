@@ -453,6 +453,11 @@ export async function initDb() {
       )
     `);
 
+    // Maintenance planifiée : trois colonnes nullables, ajoutées sans toucher à la ligne existante.
+    await ajouterColonne("platform_settings", "maintenance_start", sql`ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS maintenance_start TIMESTAMP`);
+    await ajouterColonne("platform_settings", "maintenance_end", sql`ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS maintenance_end TIMESTAMP`);
+    await ajouterColonne("platform_settings", "maintenance_message", sql`ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS maintenance_message TEXT`);
+
     // Ordre important pour PGlite/Postgres : ces CREATE TABLE portent des
     // clés étrangères vers properties/tenants/contracts, qui doivent donc
     // déjà exister. Sur une base totalement vierge (PGlite fallback local,

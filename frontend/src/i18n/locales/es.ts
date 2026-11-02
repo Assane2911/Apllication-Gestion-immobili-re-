@@ -33,6 +33,9 @@ const es: TranslationSchema = {
     },
     // Messages d'erreur du serveur (écrits en français côté API) : le serveur envoie un code, traduit ici.
     serverErrors: {
+      MAINTENANCE: "Mantenimiento en curso: la aplicación volverá a estar disponible al terminar la operación.",
+      MAINTENANCE_WINDOW_INVALID: "El mantenimiento debe terminar después de empezar, y en el futuro.",
+      MAINTENANCE_TOO_LONG: "Un mantenimiento no puede durar más de 24 horas.",
       OWNER_NO_PORTAL_ACCESS: "Este propietario aún no tiene acceso a su espacio: invítelo desde su ficha antes de escribirle.",
       AUTH_REQUIRED: "Autenticación requerida",
       TOKEN_INVALID_OR_EXPIRED: "Token no válido o caducado",
@@ -715,6 +718,33 @@ const es: TranslationSchema = {
       unknown: "La grabación falló. Inténtelo de nuevo.",
     },
   },
+  maintenance: {
+    page: {
+      docTitle: "Mantenimiento en curso",
+      label: "Mantenimiento en curso",
+      title: "Volvemos muy pronto",
+      body: "La aplicación no está disponible momentáneamente durante una operación de mantenimiento. Sus datos están a salvo: no se pierde nada.",
+      messageLabel: "Mensaje del equipo",
+      returnLabel: "Regreso previsto",
+      remainingLabel: "Tiempo restante",
+      remaining: "Unos {{count}} minuto(s)",
+      soon: "El servicio se restablecerá en breve",
+      check: "Comprobar ahora",
+      checking: "Comprobando…",
+      autoRefresh: "Esta página se actualiza sola.",
+      admin: "Acceso de administrador",
+    },
+    banner: {
+      plannedTitle: "Mantenimiento programado",
+      activeTitle: "Mantenimiento en curso",
+      when: "Del {{debut}} al {{fin}}",
+      hint: "La aplicación no estará disponible durante ese tiempo. Guarde su trabajo antes de la hora.",
+      dismiss: "Cerrar el aviso",
+      activeAdmin: "Los demás usuarios ven la pantalla de mantenimiento: usted conserva el acceso como administrador.",
+      manage: "Gestionar el mantenimiento",
+    },
+  },
+
   landing: {
       reminders: {
         title: "Simulador · Recordatorios automáticos",
@@ -3364,6 +3394,9 @@ const es: TranslationSchema = {
         "subscription.bank_transfer.confirm": "Transferencia confirmada",
         "subscription.bank_transfer.reject": "Transferencia rechazada",
         "platform.bank_details.update": "Datos bancarios modificados",
+        "platform.maintenance.schedule": "Mantenimiento programado",
+        "platform.maintenance.cancel": "Mantenimiento cancelado",
+        "platform.maintenance.end": "Mantenimiento finalizado",
         "listing.hide": "Anuncio oculto",
         "listing.restore": "Anuncio restablecido",
         "listing.feature": "Anuncio destacado",
@@ -3566,6 +3599,36 @@ const es: TranslationSchema = {
       rejectPrompt: "¿Rechazar la solicitud de transferencia de {{amount}} de {{email}}? Esto no activa ninguna suscripción y no se puede deshacer.",
     },
     settings: {
+        maintenance: {
+          title: "Mantenimiento programado",
+          description: "Programe una ventana durante la cual la aplicación no está disponible (migración, operación en la base de datos…). Se anuncia a los usuarios en las 24 horas previas; durante el mantenimiento ven una pantalla de espera y solo el administrador conserva el acceso. La ventana siempre tiene un final, de 24 horas como máximo: un mantenimiento olvidado se detiene solo. Los pagos en línea se siguen recibiendo.",
+          status: {
+            none: "Ningún mantenimiento programado",
+            planned: "Programado: del {{debut}} al {{fin}}",
+            active: "En curso, hasta el {{fin}}",
+          },
+          fields: {
+            start: "Inicio",
+            end: "Fin",
+            message: "Mensaje mostrado a los usuarios (opcional)",
+            messagePlaceholder: "Ej.: actualización de la base de datos, regreso previsto a media mañana.",
+          },
+          startNow: "Empezar ahora",
+          schedule: "Programar el mantenimiento",
+          update: "Actualizar el mantenimiento",
+          saving: "Guardando…",
+          cancel: "Cancelar el mantenimiento",
+          endNow: "Terminar ahora",
+          scheduled: "Mantenimiento programado. Los usuarios serán informados antes de que empiece.",
+          cancelled: "Mantenimiento cancelado.",
+          ended: "Mantenimiento terminado: la aplicación vuelve a estar disponible.",
+          confirmSoon: "Este mantenimiento empieza en menos de 15 minutos: los usuarios apenas tendrán tiempo de guardar su trabajo. ¿Confirmar?",
+          invalid: {
+            order: "El final debe ser posterior al inicio.",
+            past: "El final debe estar en el futuro.",
+            tooLong: "Un mantenimiento no puede durar más de 24 horas.",
+          },
+        },
       sections: { bank: "Datos bancarios" },
       check: {
         ibanValid: "Clave IBAN válida",

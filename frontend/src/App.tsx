@@ -6,6 +6,7 @@ import CookieConsentBanner from "./components/CookieConsentBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
 import InactiviteSession from "./components/InactiviteSession";
 import ManagerLayout from "./components/ManagerLayout";
+import PorteMaintenance from "./components/PorteMaintenance";
 import OwnerLayout from "./components/OwnerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
@@ -208,7 +209,9 @@ export default function App() {
           <AuthProvider>
             <CurrencyProvider>
               <BandeauNouvelleVersion />
-              <AppRoutes />
+              <PorteMaintenance>
+                <AppRoutes />
+              </PorteMaintenance>
               <RetourAndroid />
               <InactiviteSession />
               <CookieConsentBanner />
