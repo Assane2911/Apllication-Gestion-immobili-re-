@@ -3,8 +3,10 @@ import { csvEscape, csvMontant, CSV_BOM } from "../../utils/csv";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
+import BandeauChiffres from "../../components/BandeauChiffres";
+import BarreListe from "../../components/BarreListe";
 import Pagination from "../../components/Pagination";
-import StatCard from "../../components/StatCard";
+import SectionReglage from "../../components/SectionReglage";
 import { useCurrency } from "../../context/currency";
 import type { Expense, ExpenseCategory, ExpenseRecurrence, PaginatedResponse, Property } from "../../types";
 import { devisesPresentes, formatByCurrency, formatDeduction } from "../../utils/currencyFormat";
@@ -13,6 +15,14 @@ import Dialogue from "../../components/Dialogue";
 import { formaterJour } from "../../utils/jourCivil";
 import { NomDuBien } from "../../components/PlanLogement";
 import ChampDate from "../../components/ChampDate";
+import { correspond } from "../../utils/recherche";
+import { partDesDepenses, repartitionParCategorie } from "../../utils/syntheseFinances";
+
+const CHAMP = "w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900";
+const LIBELLE = "mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600";
+const BOUTON_PLEIN = "cursor-pointer bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const BOUTON_TRAIT = "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900 disabled:opacity-60";
+const CHAMP_COMPACT = "border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900";
 
 function currentYearRange() {
   const year = new Date().getFullYear();
@@ -30,11 +40,11 @@ const PAGE_SIZE = 20;
 const DROPDOWN_PAGE_SIZE = 100;
 
 const categoryColors: Record<ExpenseCategory, string> = {
-  MAINTENANCE: "border-orange-700/50 bg-orange-50 text-orange-800",
-  TAX: "border-rose-600/50 bg-rose-50 text-rose-800",
-  INSURANCE: "border-brand-600/50 bg-brand-50 text-brand-800",
-  SYNDIC: "border-ink-900/40 bg-slate-100 text-ink-900",
-  OTHER: "border-slate-400 bg-slate-50 text-slate-700",
+  MAINTENANCE: "border-orange-700 bg-orange-50 text-orange-900",
+  TAX: "border-ink-900 bg-ink-900 text-white",
+  INSURANCE: "border-ink-900 bg-white text-ink-900",
+  SYNDIC: "border-slate-400 bg-slate-100 text-ink-900",
+  OTHER: "border-slate-300 bg-white text-slate-700",
 };
 
 interface FinancialSummary {
@@ -65,6 +75,8 @@ export default function ExpensesPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [recherche, setRecherche] = useState("");
+  const [categorieFiltre, setCategorieFiltre] = useState<"all" | ExpenseCategory>("all");
 
   const categoryLabels: Record<ExpenseCategory, string> = {
     MAINTENANCE: t("manager.expenses.categories.MAINTENANCE"),
@@ -266,81 +278,112 @@ export default function ExpensesPage() {
     ? devisesPresentes(summary.totalRevenueByCurrency, summary.totalExpensesByCurrency, summary.netCashFlowByCurrency)
     : [];
 
+  const partDepenses = summary ? partDesDepenses(summary.totalRevenueByCurrency, summary.totalExpensesByCurrency) : null;
+  const repartition = summary ? repartitionParCategorie(summary.expensesByCategory ?? {}) : [];
+  const visibles = expenses.filter(
+    (e) => (categorieFiltre === "all" || e.category === categorieFiltre) && correspond(recherche, e.title, e.notes, e.property?.title, categoryLabels[e.category])
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">{t("manager.expenses.title")}</h2>
-          <p className="text-sm text-slate-600 mt-1">
-            {t("manager.expenses.subtitle")}
-          </p>
+          <p className="mt-1 text-sm text-slate-600">{t("manager.expenses.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Bulle texte={t("manager.tips.expenseExportCsv")}>
-          <button
-            onClick={exportCSV}
-            disabled={exportingCsv}
-            className="border border-slate-400 bg-white hover:border-ink-900 hover:bg-slate-100 disabled:opacity-60 text-slate-800 text-xs font-semibold px-3.5 py-2.5 flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Download size={13} aria-hidden="true" /> {exportingCsv ? t("manager.expenses.exportingCsv") : t("manager.expenses.exportCsv")}
-          </button>
+            <button onClick={exportCSV} disabled={exportingCsv} className={BOUTON_TRAIT}>
+              <Download size={13} aria-hidden="true" /> {exportingCsv ? t("manager.expenses.exportingCsv") : t("manager.expenses.exportCsv")}
+            </button>
           </Bulle>
           <Bulle texte={t("manager.tips.expenseCreate")}>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors"
-          >
-            {t("manager.expenses.addExpense")}
-          </button>
+            <button onClick={() => setShowModal(true)} className={BOUTON_PLEIN}>
+              {t("manager.expenses.addExpense")}
+            </button>
           </Bulle>
         </div>
       </div>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
           <span>{loadError}</span>
-          <button onClick={() => loadData()} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => loadData()} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
           </button>
         </div>
       )}
 
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            label={t("manager.expenses.stats.revenueCollected")}
-            value={formatByCurrency(summary.totalRevenueByCurrency, formatMoney, devisesDeLEcran)}
-            hint={t("manager.expenses.stats.revenueHint", { count: summary.paidInvoiceCount })}
-            accent="green"
+        <>
+          <BandeauChiffres
+            etiquette={t("manager.expenses.summary.label")}
+            cases={[
+              {
+                libelle: t("manager.expenses.stats.revenueCollected"),
+                valeur: formatByCurrency(summary.totalRevenueByCurrency, formatMoney, devisesDeLEcran),
+                aide: t("manager.expenses.stats.revenueHint", { count: summary.paidInvoiceCount }),
+              },
+              {
+                libelle: t("manager.expenses.stats.totalExpenses"),
+                valeur: formatByCurrency(summary.totalExpensesByCurrency, formatMoney, devisesDeLEcran),
+                aide: t("manager.expenses.stats.expensesHint", { count: summary.expenseCount }),
+              },
+              {
+                libelle: t("manager.expenses.stats.netCashFlow"),
+                valeur: formatByCurrency(summary.netCashFlowByCurrency, formatMoney, devisesDeLEcran),
+                aide: netCashFlowAllPositive(summary.netCashFlowByCurrency) ? t("manager.expenses.stats.netCashFlowPositive") : t("manager.expenses.stats.netCashFlowNegative"),
+                ton: netCashFlowAllPositive(summary.netCashFlowByCurrency) ? "normal" : "alerte",
+              },
+              {
+                libelle: t("manager.expenses.summary.share"),
+                valeur: partDepenses === null ? "—" : `${partDepenses} %`,
+                aide: t("manager.expenses.summary.shareHint"),
+              },
+            ]}
           />
-          <StatCard
-            label={t("manager.expenses.stats.totalExpenses")}
-            value={formatByCurrency(summary.totalExpensesByCurrency, formatMoney, devisesDeLEcran)}
-            hint={t("manager.expenses.stats.expensesHint", { count: summary.expenseCount })}
-            accent="red"
-          />
-          <StatCard
-            label={t("manager.expenses.stats.netCashFlow")}
-            value={formatByCurrency(summary.netCashFlowByCurrency, formatMoney, devisesDeLEcran)}
-            hint={
-              netCashFlowAllPositive(summary.netCashFlowByCurrency)
-                ? t("manager.expenses.stats.netCashFlowPositive")
-                : t("manager.expenses.stats.netCashFlowNegative")
-            }
-            accent={netCashFlowAllPositive(summary.netCashFlowByCurrency) ? "green" : "red"}
-          />
-        </div>
+
+          {repartition.length > 0 && (
+            <SectionReglage id="repartition" numero="01" titre={t("manager.expenses.breakdown.title")}>
+              <ul className="space-y-3">
+                {repartition.map((ligne) => (
+                  <li key={ligne.categorie}>
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium text-slate-800">{categoryLabels[ligne.categorie as ExpenseCategory] ?? ligne.categorie}</span>
+                      <span className="font-semibold tabular-nums text-slate-900">{formatByCurrency(ligne.parDevise, formatMoney)}</span>
+                    </div>
+                    {ligne.part !== null && (
+                      <div className="mt-1.5 flex items-center gap-2" aria-hidden="true">
+                        <div className="h-1.5 flex-1 bg-slate-200">
+                          <div className="h-full bg-ink-900" style={{ width: `${ligne.part}%` }} />
+                        </div>
+                        <span className="w-9 text-right font-mono text-[10px] text-slate-600">{ligne.part} %</span>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </SectionReglage>
+          )}
+        </>
       )}
 
-      <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <label htmlFor="expense-property-filter" className="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-700">{t("manager.expenses.filterByProperty")}</label>
-          <select
-            id="expense-property-filter"
-            value={selectedPropertyId}
-            onChange={(e) => handlePropertyFilterChange(e.target.value)}
-            className="text-xs border border-slate-300 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
-          >
+      <BarreListe
+        idPrefixe="depenses"
+        recherche={recherche}
+        onRecherche={setRecherche}
+        placeholderRecherche={t("manager.expenses.search")}
+        libelleFiltres={t("manager.expenses.filtersLabel")}
+        filtres={[
+          { cle: "all", libelle: t("manager.liste.all"), compte: expenses.length },
+          ...(["MAINTENANCE", "TAX", "INSURANCE", "SYNDIC", "OTHER"] as const).map((c) => ({ cle: c, libelle: t(`manager.expenses.categoriesShort.${c}`), compte: expenses.filter((e) => e.category === c).length })),
+        ]}
+        filtreActif={categorieFiltre}
+        onFiltre={(cle) => setCategorieFiltre(cle as "all" | ExpenseCategory)}
+      >
+        <div className="flex items-center gap-2">
+          <label htmlFor="expense-property-filter" className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.expenses.filterByProperty")}</label>
+          <select id="expense-property-filter" value={selectedPropertyId} onChange={(e) => handlePropertyFilterChange(e.target.value)} className={CHAMP_COMPACT}>
             <option value="">{t("manager.expenses.allProperties")}</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -349,31 +392,31 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <p className="font-mono text-[11px] uppercase tracking-wider text-slate-600">{t("manager.expenses.expenseLines", { count: total })}</p>
-      </div>
+      </BarreListe>
+      <p className="font-mono text-[11px] uppercase tracking-wider text-slate-600">{t("manager.expenses.expenseLines", { count: total })}</p>
 
-      <div className="bg-white rounded-xl border border-contour-200 p-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="font-mono text-[11px] uppercase tracking-wider font-semibold text-slate-700">{t("manager.expenses.fullReportLabel")}</span>
+      <div className="flex flex-wrap items-center justify-between gap-4 border border-slate-300 bg-white p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-700">{t("manager.expenses.fullReportLabel")}</span>
           <ChampDate
             aria-label={t("manager.expenses.fields.reportDateFrom")}
             value={reportRange.from}
             onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
-            className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className={CHAMP_COMPACT}
           />
           <span className="text-xs text-slate-600">{t("manager.expenses.to")}</span>
           <ChampDate
             aria-label={t("manager.expenses.fields.reportDateTo")}
             value={reportRange.to}
             onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })}
-            className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+            className={CHAMP_COMPACT}
           />
         </div>
         <Bulle texte={t("manager.tips.expenseReport")}>
         <button
           onClick={exportFinancialReport}
           disabled={exportingReport}
-          className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+          className={`${BOUTON_PLEIN} flex items-center gap-1.5`}
         >
           <BarChart3 size={13} aria-hidden="true" /> {exportingReport ? t("manager.expenses.generatingReport") : t("manager.expenses.generateReport")}
         </button>
@@ -382,11 +425,11 @@ export default function ExpensesPage() {
 
       {/* Vide, le tableau ne contient plus rien que le clavier atteigne : le cadre défilant le devient (voir structureEtCibles). */}
       <div
-        {...(expenses.length === 0 ? { role: "region", tabIndex: 0, "aria-label": t("manager.expenses.title") } : {})}
-        className="bg-white rounded-xl border border-contour-200 shadow-sm overflow-hidden overflow-x-auto focus-visible:ring-2 focus-visible:ring-brand-500"
+        {...(visibles.length === 0 ? { role: "region", tabIndex: 0, "aria-label": t("manager.expenses.title") } : {})}
+        className="relative overflow-x-auto border border-slate-300 bg-white focus-visible:ring-2 focus-visible:ring-ink-900"
       >
         <table className="w-full text-sm">
-          <thead className="bg-slate-200/70 text-slate-700 text-left">
+          <thead className="text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.date")}</th>
               <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.property")}</th>
@@ -397,16 +440,16 @@ export default function ExpensesPage() {
               <th className="px-4 py-3 font-semibold text-right">{t("manager.expenses.table.action")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-contour-100">
-            {expenses.map((exp) => (
-              <tr key={exp.id} className="hover:bg-slate-50/50">
+          <tbody className="divide-y divide-slate-200">
+            {visibles.map((exp) => (
+              <tr key={exp.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap tabular-nums">
                   {formaterJour(exp.expenseDate, i18n.language)}
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={exp.property?.title} id={exp.property?.id} /></td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-block border px-2 py-0.5 rounded-sm font-mono text-[10px] font-medium uppercase tracking-wider whitespace-nowrap ${
+                    className={`inline-block border px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider whitespace-nowrap ${
                       categoryColors[exp.category] || "border-slate-400 bg-slate-50 text-slate-700"
                     }`}
                   >
@@ -418,12 +461,12 @@ export default function ExpensesPage() {
                     {exp.title}
                     {(exp.recurrence || exp.templateId) && (
                       <Bulle texte={exp.recurrence ? t("manager.expenses.recurrenceModelHint") : t("manager.expenses.recurrenceOccurrenceHint")}>
-                        <Repeat size={12} className="text-brand-600 shrink-0" aria-hidden="true" />
+                        <Repeat size={12} className="shrink-0 text-ink-900" aria-hidden="true" />
                       </Bulle>
                     )}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-semibold tabular-nums whitespace-nowrap text-rose-700">{formatDeduction(exp.amount, exp.currency, formatMoney)}</td>
+                <td className="px-4 py-3 font-semibold tabular-nums whitespace-nowrap text-orange-800">{formatDeduction(exp.amount, exp.currency, formatMoney)}</td>
                 <td className="px-4 py-3 text-slate-600 text-xs truncate max-w-xs">{exp.notes || "—"}</td>
                 <td className="px-4 py-3 text-right">
                   <Bulle texte={t("manager.tips.expenseDelete")}>
@@ -437,10 +480,10 @@ export default function ExpensesPage() {
                 </td>
               </tr>
             ))}
-            {expenses.length === 0 && (
+            {visibles.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center text-slate-600 py-8 text-sm">
-                  {t("manager.expenses.noExpenses")}
+                  {expenses.length > 0 ? t("manager.liste.noResult") : t("manager.expenses.noExpenses")}
                 </td>
               </tr>
             )}
@@ -452,12 +495,12 @@ export default function ExpensesPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-contour-200">
+          <Dialogue onClose={() => setShowModal(false)} titreId="expense-modal-title" fermable={!saving} className="w-full max-w-lg border border-ink-900 bg-white p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 id="expense-modal-title" className="font-bold text-slate-900 text-lg">{t("manager.expenses.modalTitle")}</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-600 hover:text-slate-600"
+                className="cursor-pointer text-slate-600 hover:text-ink-900"
                 aria-label={t("common.actions.close")}
               >
                 <X size={18} />
@@ -466,13 +509,13 @@ export default function ExpensesPage() {
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label htmlFor="expense-modal-property" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.property")}</label>
+                <label htmlFor="expense-modal-property" className={LIBELLE}>{t("manager.expenses.fields.property")}</label>
                 <select
                   id="expense-modal-property"
                   required
                   value={form.propertyId}
                   onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                  className={CHAMP}
                 >
                   <option value="">{t("manager.expenses.fields.selectProperty")}</option>
                   {properties.map((p) => (
@@ -485,12 +528,12 @@ export default function ExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="expense-modal-category" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.category")}</label>
+                  <label htmlFor="expense-modal-category" className={LIBELLE}>{t("manager.expenses.fields.category")}</label>
                   <select
                     id="expense-modal-category"
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
-                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                    className={CHAMP}
                   >
                     <option value="MAINTENANCE">{t("manager.expenses.categoriesShort.MAINTENANCE")}</option>
                     <option value="TAX">{t("manager.expenses.categoriesShort.TAX")}</option>
@@ -500,20 +543,20 @@ export default function ExpensesPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="expense-modal-date" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.invoiceDate")}</label>
+                  <label htmlFor="expense-modal-date" className={LIBELLE}>{t("manager.expenses.fields.invoiceDate")}</label>
                   <ChampDate
                     id="expense-modal-date"
                     required
                     value={form.expenseDate}
                     onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                    className={CHAMP}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 sm:col-span-1">
-                  <label htmlFor="expense-modal-title" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.titleSupplier")}</label>
+                  <label htmlFor="expense-modal-title" className={LIBELLE}>{t("manager.expenses.fields.titleSupplier")}</label>
                   <input
                     id="expense-modal-title"
                     required
@@ -521,11 +564,11 @@ export default function ExpensesPage() {
                     maxLength={200}
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                    className={CHAMP}
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label htmlFor="expense-modal-amount" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.amount")}</label>
+                  <label htmlFor="expense-modal-amount" className={LIBELLE}>{t("manager.expenses.fields.amount")}</label>
                   <input
                     id="expense-modal-amount"
                     type="number"
@@ -536,13 +579,13 @@ export default function ExpensesPage() {
                     placeholder="0.00"
                     value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm font-semibold"
+                    className={`${CHAMP} font-semibold`}
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="expense-modal-notes" className="block text-xs font-semibold text-slate-700 mb-1">{t("manager.expenses.fields.notes")}</label>
+                <label htmlFor="expense-modal-notes" className={LIBELLE}>{t("manager.expenses.fields.notes")}</label>
                 <textarea
                   id="expense-modal-notes"
                   rows={2}
@@ -550,13 +593,13 @@ export default function ExpensesPage() {
                   maxLength={5000}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                  className={CHAMP}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="expense-modal-recurrence" className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="expense-modal-recurrence" className={LIBELLE}>
                     {t("manager.expenses.fields.recurrence")}
                   </label>
                   <Bulle texte={t("manager.tips.expenseRecurrence")}>
@@ -564,7 +607,7 @@ export default function ExpensesPage() {
                     id="expense-modal-recurrence"
                     value={form.recurrence}
                     onChange={(e) => setForm({ ...form, recurrence: e.target.value as "" | ExpenseRecurrence })}
-                    className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                    className={CHAMP}
                   >
                     <option value="">{t("manager.expenses.fields.recurrenceNone")}</option>
                     <option value="MONTHLY">{t("manager.expenses.fields.recurrenceMonthly")}</option>
@@ -574,14 +617,14 @@ export default function ExpensesPage() {
                 </div>
                 {form.recurrence && (
                   <div>
-                    <label htmlFor="expense-modal-recurrence-end" className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor="expense-modal-recurrence-end" className={LIBELLE}>
                       {t("manager.expenses.fields.recurrenceEndDate")}
                     </label>
                     <ChampDate
                       id="expense-modal-recurrence-end"
                       value={form.recurrenceEndDate}
                       onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
-                      className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm"
+                      className={CHAMP}
                     />
                   </div>
                 )}
@@ -593,14 +636,14 @@ export default function ExpensesPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-xs text-slate-600 hover:text-slate-700 px-3 py-2"
+                  className="cursor-pointer px-3 py-2 text-xs text-slate-600 hover:text-ink-900"
                 >
                   {t("common.actions.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm"
+                  className={BOUTON_PLEIN}
                 >
                   {saving ? t("common.actions.saving") : t("manager.expenses.saveExpense")}
                 </button>

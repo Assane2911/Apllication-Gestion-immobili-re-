@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -95,7 +95,8 @@ describe("ExpensesPage", () => {
     await waitFor(() => expect(screen.getByText("Loyers Encaissés")).toBeInTheDocument());
     expect(screen.getByText("5 000 €")).toBeInTheDocument();
     expect(screen.getByText("Total Dépenses & Travaux")).toBeInTheDocument();
-    expect(screen.getByText("250 €")).toBeInTheDocument();
+    // Le total figure aussi dans la répartition par catégorie : on lit celui de la synthèse.
+    expect(within(screen.getByLabelText("Synthèse financière")).getByText("250 €")).toBeInTheDocument();
     expect(screen.getByText("Cash-Flow Net Réel")).toBeInTheDocument();
     expect(screen.getByText("4 750 €")).toBeInTheDocument();
     expect(screen.getByText("Bénéfice net positif")).toBeInTheDocument();
@@ -129,7 +130,7 @@ describe("ExpensesPage", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
-    expect(screen.getByText("Entretien & Travaux")).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByText("Entretien & Travaux")).toBeInTheDocument();
     expect(screen.getByText("-250 €")).toBeInTheDocument();
     expect(screen.getByText("Artisan plombier")).toBeInTheDocument();
   });
@@ -478,5 +479,52 @@ describe("ExpensesPage — cadre défilant du tableau", () => {
 
     expect(screen.getByRole("table").parentElement).not.toHaveAttribute("tabindex");
     expect(screen.queryByRole("region", { name: "Dépenses & Rentabilité Réelle" })).toBeNull();
+  });
+
+  describe("répartition, recherche et filtres", () => {
+    const parc = () => [
+      expense({ id: "e1", title: "Chauffe-eau", amount: 250, category: "MAINTENANCE", notes: "Artisan plombier" }),
+      expense({ id: "e2", title: "Taxe foncière", amount: 600, category: "TAX", notes: null }),
+      expense({ id: "e3", title: "Prime habitation", amount: 150, category: "INSURANCE", notes: "AXA" }),
+    ];
+
+    it("répartit les dépenses par catégorie, de la plus lourde à la plus légère, avec leur part", async () => {
+      queueLoad(
+        [property()],
+        summary({ totalExpensesByCurrency: { EUR: 1000 }, expensesByCategory: { MAINTENANCE: { EUR: 250 }, TAX: { EUR: 600 }, INSURANCE: { EUR: 150 } }, expenseCount: 3 }),
+        parc()
+      );
+      renderPage();
+
+      const section = await screen.findByRole("region", { name: "Dépenses par catégorie" });
+      const lignes = within(section).getAllByRole("listitem").map((li) => li.textContent ?? "");
+      expect(lignes).toHaveLength(3);
+      expect(lignes[0]).toMatch(/600 €.*60 %/);
+      expect(lignes[2]).toMatch(/150 €.*15 %/);
+    });
+
+    it("indique la part des revenus absorbée par les dépenses", async () => {
+      queueLoad([property()], summary({ totalExpensesByCurrency: { EUR: 1000 } }), parc());
+      renderPage();
+      const synthese = await screen.findByLabelText("Synthèse financière");
+      expect(within(synthese).getByText("20 %")).toBeInTheDocument(); // 1000 / 5000
+    });
+
+    it("cherche dans le titre, les notes ou le bien, et filtre par catégorie", async () => {
+      const user = userEvent.setup();
+      queueLoad([property()], summary(), parc());
+      renderPage();
+      await screen.findByText("Taxe foncière");
+
+      const lignes = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+      await user.type(screen.getByRole("searchbox"), "axa");
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Prime habitation");
+
+      await user.clear(screen.getByRole("searchbox"));
+      await user.click(within(screen.getByRole("group", { name: "Filtrer par catégorie" })).getByRole("button", { name: /Taxe Foncière\s*1/ }));
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Taxe foncière");
+    });
   });
 });

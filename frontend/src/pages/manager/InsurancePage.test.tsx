@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -87,7 +87,8 @@ describe("InsurancePage", () => {
 
     await waitFor(() => expect(screen.getByText("AXA Habitat")).toBeInTheDocument());
     expect(screen.getByText("AXA-2026-001")).toBeInTheDocument();
-    expect(screen.getByText("240 €")).toBeInTheDocument();
+    // La prime figure aussi dans la synthèse des primes annuelles : on lit celle de la ligne.
+    expect(within(screen.getByRole("table")).getByText("240 €")).toBeInTheDocument();
   });
 
   it("affiche un message quand il n'y a aucune police", async () => {
@@ -257,5 +258,52 @@ describe("InsurancePage — cadre défilant du tableau", () => {
 
     expect(screen.getByRole("table").parentElement).not.toHaveAttribute("tabindex");
     expect(screen.queryByRole("region", { name: "Assurances" })).toBeNull();
+  });
+
+  describe("synthèse, filtres et recherche", () => {
+    const jours = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
+    const parc = () => [
+      insurancePolicy({ id: "p1", insurerName: "AXA Habitat", policyNumber: "AXA-1", premiumAmount: 240, expiryDate: jours(300) }),
+      insurancePolicy({ id: "p2", insurerName: "Allianz", policyNumber: "ALZ-2", premiumAmount: 100, expiryDate: jours(10) }),
+      insurancePolicy({ id: "p3", insurerName: "MAIF", policyNumber: "MAIF-3", premiumAmount: 500, expiryDate: jours(-5) }),
+    ];
+    const lignes = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+
+    it("résume les polices échues, à renouveler, et les primes des polices non échues", async () => {
+      queueLoad([property()], parc());
+      renderPage();
+      const synthese = await screen.findByLabelText("Synthèse des assurances");
+      expect(within(synthese).getByText("3")).toBeInTheDocument();
+      expect(within(synthese).getAllByText("1")).toHaveLength(2); // une échue, une à renouveler
+      expect(within(synthese).getByText("340 €")).toBeInTheDocument(); // 240 + 100, la police échue est exclue
+    });
+
+    it("filtre les polices échues, à renouveler ou en cours", async () => {
+      const user = userEvent.setup();
+      queueLoad([property()], parc());
+      renderPage();
+      await screen.findByRole("table");
+      const filtres = screen.getByRole("group", { name: "Filtrer les polices" });
+
+      await user.click(within(filtres).getByRole("button", { name: /Échues\s*1/ }));
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("MAIF");
+
+      await user.click(within(filtres).getByRole("button", { name: /À renouveler\s*1/ }));
+      expect(lignes()[0]).toContain("Allianz");
+
+      await user.click(within(filtres).getByRole("button", { name: /En cours\s*1/ }));
+      expect(lignes()[0]).toContain("AXA Habitat");
+    });
+
+    it("cherche par assureur ou par numéro de police", async () => {
+      const user = userEvent.setup();
+      queueLoad([property()], parc());
+      renderPage();
+      await screen.findByRole("table");
+      await user.type(screen.getByRole("searchbox"), "alz-2");
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Allianz");
+    });
   });
 });
