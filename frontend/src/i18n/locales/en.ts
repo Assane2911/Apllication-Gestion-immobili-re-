@@ -3201,6 +3201,11 @@ const en: TranslationSchema = {
       },
     },
     audit: {
+      search: "Search this page (admin, action, target, detail)…",
+      periodLabel: "Period",
+      periods: { all: "All", today: "Today", week: "7 days", month: "30 days" },
+      shown: "{{shown}} entry(ies) shown out of the {{total}} on this page",
+      noResult: "No entry on this page matches.",
       title: "Audit log",
       subtitle: "Sensitive administration actions, newest first",
       filterLabel: "Filter by action",
@@ -3291,6 +3296,9 @@ const en: TranslationSchema = {
       actionError: "Action failed",
     },
     suggestions: {
+      search: "Search this page (message, author, page, note)…",
+      shown: "{{shown}} suggestion(s) shown out of the {{total}} on this page",
+      noResult: "No suggestion on this page matches.",
       writeToAuthor: "Email the author",
       unreadFor: "No follow-up for {{count}} day(s)",
       tabsLabel: "Filter by status",
@@ -3335,6 +3343,7 @@ const en: TranslationSchema = {
     },
     dashboard: {
       todo: {
+        suggestions: "{{count}} unread suggestion(s)",
         title: "To do",
         subtitle: "What is waiting for a decision from you",
         allClear: "Nothing is waiting for you: all up to date.",
@@ -3390,6 +3399,13 @@ const en: TranslationSchema = {
       },
     },
     subscriptions: {
+      search: "Search a transfer (email, reference)…",
+      filtersLabel: "Filter transfers",
+      filters: { all: "All", late: "Waiting {{days}} days or more" },
+      exportCsv: "Export the list (CSV)",
+      csv: { manager: "Manager", plan: "Plan", cycle: "Cycle", amount: "Amount", currency: "Currency", reference: "Reference", since: "Announced on", waiting: "Days waiting" },
+      shown: "{{shown}} transfer(s) shown out of {{total}}",
+      noResult: "No transfer matches.",
       pendingCount: "{{count}} transfer(s) pending",
       toCollect: "To collect",
       period: "from {{from}} to {{to}}",

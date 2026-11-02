@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import AdminAuditPage from "./AdminAuditPage";
 
@@ -169,5 +169,58 @@ describe("AdminAuditPage", () => {
         responseType: "blob",
       })
     );
+  });
+});
+
+describe("AdminAuditPage — recherche et période", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 12, 10, 0, 0));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const journal = () =>
+    page([
+      entree({ id: "a", details: "Virement PRO de 29 EUR confirmé", createdAt: "2026-10-12T08:00:00.000Z" }),
+      entree({ id: "b", action: "manager.suspend", adminEmail: "autre@test.local", targetLabel: "Agence du Port", details: "Impayés répétés", createdAt: "2026-10-03T08:00:00.000Z" }),
+      entree({ id: "c", action: "listing.hide", targetUserId: "mgr-3", targetLabel: "Villa Baobab", details: null, createdAt: "2026-09-01T08:00:00.000Z" }),
+    ]);
+
+  it("cherche dans l'administrateur, l'action, la cible et le détail de la page chargée", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(journal());
+    renderPage();
+    await attendreFrise();
+
+    await user.type(screen.getByRole("searchbox"), "impayes");
+    expect(screen.getByText("Impayés répétés")).toBeInTheDocument();
+    expect(screen.queryByText("Virement PRO de 29 EUR confirmé")).not.toBeInTheDocument();
+    expect(screen.getByText("1 entrée(s) affichée(s) sur les 3 de cette page")).toBeInTheDocument();
+
+    await user.clear(screen.getByRole("searchbox"));
+    await user.type(screen.getByRole("searchbox"), "villa");
+    expect(screen.getByText("Villa Baobab")).toBeInTheDocument();
+    expect(screen.queryByText("Impayés répétés")).not.toBeInTheDocument();
+
+    await user.clear(screen.getByRole("searchbox"));
+    await user.type(screen.getByRole("searchbox"), "zzz");
+    expect(screen.getByText("Aucune entrée de cette page ne correspond.")).toBeInTheDocument();
+  });
+
+  it("filtre par période", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(journal());
+    renderPage();
+    await attendreFrise();
+
+    const groupe = screen.getByRole("group", { name: "Période" });
+    await user.click(within(groupe).getByRole("button", { name: "Aujourd'hui" }));
+    expect(screen.getByText("Virement PRO de 29 EUR confirmé")).toBeInTheDocument();
+    expect(screen.queryByText("Impayés répétés")).not.toBeInTheDocument();
+
+    await user.click(within(groupe).getByRole("button", { name: "30 jours" }));
+    expect(screen.getByText("Impayés répétés")).toBeInTheDocument();
+    expect(screen.queryByText("Villa Baobab")).not.toBeInTheDocument();
   });
 });

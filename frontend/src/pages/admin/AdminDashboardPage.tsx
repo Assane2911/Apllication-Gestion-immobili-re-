@@ -42,6 +42,8 @@ export default function AdminDashboardPage() {
   // s'il manque (réseau, serveur plus ancien), la zone « À traiter » se passe de cette ligne au lieu de faire échouer
   // tout le tableau de bord.
   const [virementsEnAttente, setVirementsEnAttente] = useState<number | null>(null);
+  // Idem pour les suggestions restées « Nouvelles » : un complément de la zone « À traiter », jamais une condition.
+  const [suggestionsNonLues, setSuggestionsNonLues] = useState<number | null>(null);
 
   function load() {
     setLoading(true);
@@ -54,18 +56,21 @@ export default function AdminDashboardPage() {
     Promise.resolve(api.get<unknown>("/admin/subscriptions/pending-bank-transfers"))
       .then((res) => setVirementsEnAttente(res?.data === undefined ? null : liste<unknown>(res.data).length))
       .catch(() => setVirementsEnAttente(null));
+    Promise.resolve(api.get<{ counts?: { NEW?: number } }>("/admin/suggestions", { params: { page: 1, status: "NEW" } }))
+      .then((res) => setSuggestionsNonLues(typeof res?.data?.counts?.NEW === "number" ? res.data.counts.NEW : null))
+      .catch(() => setSuggestionsNonLues(null));
   }
 
   useEffect(load, []);
 
   if (error) {
     return (
-      <div className="border border-red-200 bg-red-50 p-6 text-red-700">
+      <div className="border border-rose-300 bg-rose-50 p-6 text-rose-800">
         <h3 className="mb-1 text-base font-bold">{t("admin.dashboard.errorTitle")}</h3>
         <p className="text-sm">{error}</p>
         <button
           onClick={load}
-          className="mt-4 cursor-pointer bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+          className="mt-4 cursor-pointer bg-rose-700 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-800"
         >
           {t("common.actions.retry")}
         </button>
@@ -103,6 +108,7 @@ export default function AdminDashboardPage() {
   const suspendus = managers.suspended ?? 0;
   const aTraiter = [
     virementsEnAttente ? { cle: "transfers", to: "/admin/virements", icone: Landmark, texte: t("admin.dashboard.todo.transfers", { count: virementsEnAttente }), urgent: true } : null,
+    suggestionsNonLues ? { cle: "suggestions", to: "/admin/suggestions", icone: Mail, texte: t("admin.dashboard.todo.suggestions", { count: suggestionsNonLues }), urgent: false } : null,
     trialsEndingSoon.length > 0 ? { cle: "trials", to: "/admin/gestionnaires", icone: Clock3, texte: t("admin.dashboard.todo.trials", { count: trialsEndingSoon.length }), urgent: true } : null,
     managers.expired > 0 ? { cle: "expired", to: "/admin/gestionnaires", icone: Users, texte: t("admin.dashboard.todo.expired", { count: managers.expired }), urgent: false } : null,
     suspendus > 0 ? { cle: "suspended", to: "/admin/gestionnaires", icone: Users, texte: t("admin.dashboard.todo.suspended", { count: suspendus }), urgent: false } : null,
@@ -110,8 +116,8 @@ export default function AdminDashboardPage() {
 
   // ── Répartition des comptes : trois états qui se partagent le total (les résiliés, s'il y en a, forment le reste).
   const segments = [
-    { cle: "ACTIVE", nombre: managers.subscriptionActive, barre: "bg-emerald-700" },
-    { cle: "TRIAL", nombre: managers.trialActive, barre: "bg-ink-900" },
+    { cle: "ACTIVE", nombre: managers.subscriptionActive, barre: "bg-ink-900" },
+    { cle: "TRIAL", nombre: managers.trialActive, barre: "bg-slate-500" },
     { cle: "EXPIRED", nombre: managers.expired, barre: "bg-orange-700" },
   ];
   const autres = Math.max(0, managers.total - segments.reduce((somme, s) => somme + s.nombre, 0));
@@ -128,7 +134,7 @@ export default function AdminDashboardPage() {
       {/* 01 — À traiter : le seul bloc qui demande une action, donc le premier. */}
       <Rubrique numero="01" titre={t("admin.dashboard.todo.title")} aide={t("admin.dashboard.todo.subtitle")}>
         {aTraiter.length === 0 ? (
-          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+          <p className="flex items-center gap-2 text-sm font-semibold text-ink-900">
             <CheckCircle2 size={16} aria-hidden="true" />
             {t("admin.dashboard.todo.allClear")}
           </p>
@@ -313,7 +319,7 @@ export default function AdminDashboardPage() {
                         <td className="px-3 py-3 text-right">
                           <span
                             className={`inline-flex items-center border px-2 py-1 font-mono text-[11px] font-semibold ${
-                              trial.daysRemaining === 0 ? "border-rose-300 bg-rose-50 text-rose-800" : "border-amber-300 bg-amber-50 text-amber-900"
+                              trial.daysRemaining === 0 ? "border-rose-300 bg-rose-50 text-rose-800" : "border-orange-700/40 bg-orange-50 text-orange-900"
                             }`}
                           >
                             {trial.daysRemaining === 0

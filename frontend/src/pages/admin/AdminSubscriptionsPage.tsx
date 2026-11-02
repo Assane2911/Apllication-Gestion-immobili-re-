@@ -1,11 +1,14 @@
-import { Check, Copy, Landmark } from "lucide-react";
+import { Check, Copy, Download, Landmark } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, liste } from "../../api/client";
 import { useCurrency } from "../../context/currency";
+import BarreListe from "../../components/BarreListe";
 import EmptyState from "../../components/EmptyState";
 import { formaterJour } from "../../utils/jourCivil";
+import { csvVirements, filtrerVirements, SEUIL_ATTENTE_VIREMENT_JOURS, type FiltreVirements } from "../../utils/syntheseAdmin";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
 import { PLAN_CLASSES, type ManagerPlan } from "./managerStatus";
 
 interface PendingBankTransfer {
@@ -24,7 +27,7 @@ interface PendingBankTransfer {
 
 const JOUR_MS = 86_400_000;
 /** Au-delà de ce délai, un virement annoncé et toujours non traité est signalé : le gestionnaire attend son accès. */
-const SEUIL_ATTENTE_JOURS = 3;
+const SEUIL_ATTENTE_JOURS = SEUIL_ATTENTE_VIREMENT_JOURS;
 
 export default function AdminSubscriptionsPage() {
   const { t, i18n } = useTranslation();
@@ -37,6 +40,8 @@ export default function AdminSubscriptionsPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [copiee, setCopiee] = useState<string | null>(null);
+  const [recherche, setRecherche] = useState("");
+  const [filtre, setFiltre] = useState<FiltreVirements>("all");
 
   function load() {
     setLoadError(null);
@@ -95,7 +100,29 @@ export default function AdminSubscriptionsPage() {
   }
 
   // Les plus anciens d'abord : ce sont ceux dont le gestionnaire attend l'accès depuis le plus longtemps.
-  const lignes = [...rows].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const lignes = filtrerVirements(
+    [...rows].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+    recherche,
+    filtre
+  );
+
+  function exporter() {
+    const csv = csvVirements(
+      lignes,
+      {
+        manager: t("admin.subscriptions.csv.manager"),
+        plan: t("admin.subscriptions.csv.plan"),
+        cycle: t("admin.subscriptions.csv.cycle"),
+        amount: t("admin.subscriptions.csv.amount"),
+        currency: t("admin.subscriptions.csv.currency"),
+        reference: t("admin.subscriptions.csv.reference"),
+        since: t("admin.subscriptions.csv.since"),
+        waiting: t("admin.subscriptions.csv.waiting"),
+      },
+      (iso) => new Date(iso).toLocaleDateString(i18n.language)
+    );
+    telechargerCsv(`virements-en-attente-${dateDuJourPourFichier()}.csv`, csv);
+  }
   // À encaisser, devise par devise : on n'additionne jamais des euros et des francs CFA.
   const totaux = new Map<string, number>();
   for (const row of rows) totaux.set(row.currency, (totaux.get(row.currency) ?? 0) + row.amount);
@@ -109,7 +136,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {loadError && (
-        <div className="flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+        <div className="flex items-center justify-between gap-3 border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800">
           <span>{loadError}</span>
           <button onClick={load} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
@@ -139,7 +166,34 @@ export default function AdminSubscriptionsPage() {
             ))}
           </div>
 
-          <div className="relative overflow-x-auto border border-slate-300 bg-white">
+          <BarreListe
+            idPrefixe="virements"
+            recherche={recherche}
+            onRecherche={setRecherche}
+            placeholderRecherche={t("admin.subscriptions.search")}
+            libelleFiltres={t("admin.subscriptions.filtersLabel")}
+            filtreActif={filtre}
+            onFiltre={(cle) => setFiltre(cle as FiltreVirements)}
+            filtres={[
+              { cle: "all", libelle: t("admin.subscriptions.filters.all"), compte: rows.length },
+              { cle: "late", libelle: t("admin.subscriptions.filters.late", { days: SEUIL_ATTENTE_JOURS }), compte: filtrerVirements(rows, recherche, "late").length },
+            ]}
+          >
+            <button
+              type="button"
+              onClick={exporter}
+              disabled={lignes.length === 0}
+              className="inline-flex cursor-pointer items-center gap-1.5 border border-ink-900 bg-white px-3 py-2 text-xs font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download size={13} aria-hidden="true" /> {t("admin.subscriptions.exportCsv")}
+            </button>
+          </BarreListe>
+          {(recherche.trim() !== "" || filtre !== "all") && (
+            <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.subscriptions.shown", { shown: lignes.length, total: rows.length })}</p>
+          )}
+          {lignes.length === 0 && <p className="border border-slate-300 bg-white py-10 text-center text-sm text-slate-600">{t("admin.subscriptions.noResult")}</p>}
+
+          <div className={`relative overflow-x-auto border border-slate-300 bg-white ${lignes.length === 0 ? "hidden" : ""}`}>
             <table className="w-full text-left text-xs">
               <thead>
                 <tr>
@@ -188,7 +242,7 @@ export default function AdminSubscriptionsPage() {
                               aria-label={t("admin.subscriptions.copyReference", { reference: row.paymentRef })}
                               className="inline-flex size-5 cursor-pointer items-center justify-center text-slate-500 hover:text-orange-700"
                             >
-                              {copiee === row.paymentRef ? <Check size={12} aria-hidden="true" className="text-emerald-700" /> : <Copy size={12} aria-hidden="true" />}
+                              {copiee === row.paymentRef ? <Check size={12} aria-hidden="true" className="text-ink-900" /> : <Copy size={12} aria-hidden="true" />}
                             </button>
                           </span>
                         ) : (

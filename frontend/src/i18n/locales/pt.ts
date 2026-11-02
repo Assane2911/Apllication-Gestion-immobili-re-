@@ -3201,6 +3201,11 @@ const pt: TranslationSchema = {
       },
     },
     audit: {
+      search: "Pesquisar nesta página (admin, ação, alvo, detalhe)…",
+      periodLabel: "Período",
+      periods: { all: "Tudo", today: "Hoje", week: "7 dias", month: "30 dias" },
+      shown: "{{shown}} entrada(s) mostrada(s) das {{total}} desta página",
+      noResult: "Nenhuma entrada desta página corresponde.",
       title: "Registo de auditoria",
       subtitle: "As ações sensíveis da administração, da mais recente à mais antiga",
       filterLabel: "Filtrar por ação",
@@ -3291,6 +3296,9 @@ const pt: TranslationSchema = {
       actionError: "Ação impossível",
     },
     suggestions: {
+      search: "Pesquisar nesta página (mensagem, autor, página, nota)…",
+      shown: "{{shown}} sugestão(ões) mostrada(s) das {{total}} desta página",
+      noResult: "Nenhuma sugestão desta página corresponde.",
       writeToAuthor: "Escrever ao autor",
       unreadFor: "Sem seguimento há {{count}} dia(s)",
       tabsLabel: "Filtrar por estado",
@@ -3335,6 +3343,7 @@ const pt: TranslationSchema = {
     },
     dashboard: {
       todo: {
+        suggestions: "{{count}} sugestão(ões) por ler",
         title: "A tratar",
         subtitle: "O que aguarda uma decisão sua",
         allClear: "Nada o aguarda: tudo em dia.",
@@ -3390,6 +3399,13 @@ const pt: TranslationSchema = {
       },
     },
     subscriptions: {
+      search: "Pesquisar uma transferência (e-mail, referência)…",
+      filtersLabel: "Filtrar transferências",
+      filters: { all: "Todas", late: "Espera de {{days}} dias ou mais" },
+      exportCsv: "Exportar a lista (CSV)",
+      csv: { manager: "Gestor", plan: "Plano", cycle: "Ciclo", amount: "Montante", currency: "Moeda", reference: "Referência", since: "Anunciada em", waiting: "Dias de espera" },
+      shown: "{{shown}} transferência(s) mostrada(s) de {{total}}",
+      noResult: "Nenhuma transferência corresponde.",
       pendingCount: "{{count}} transferência(s) pendente(s)",
       toCollect: "A receber",
       period: "de {{from}} a {{to}}",

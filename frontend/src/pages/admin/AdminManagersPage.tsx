@@ -210,9 +210,9 @@ export default function AdminManagersPage() {
       </div>
 
       {erreur && (
-        <div className="border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800">{t("admin.managers.errorTitle")}</p>
-          <p role="alert" className="mt-0.5 text-xs text-red-700">{erreur}</p>
+        <div className="border border-rose-300 bg-rose-50 px-4 py-3">
+          <p className="text-sm font-semibold text-rose-800">{t("admin.managers.errorTitle")}</p>
+          <p role="alert" className="mt-0.5 text-xs text-rose-800">{erreur}</p>
         </div>
       )}
 
@@ -259,7 +259,7 @@ export default function AdminManagersPage() {
                                 aria-label={t("admin.managers.copyEmail", { email: m.email })}
                                 className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center text-slate-500 hover:text-orange-700"
                               >
-                                {copie === m.email ? <Check size={12} aria-hidden="true" className="text-emerald-700" /> : <Copy size={12} aria-hidden="true" />}
+                                {copie === m.email ? <Check size={12} aria-hidden="true" className="text-ink-900" /> : <Copy size={12} aria-hidden="true" />}
                               </button>
                               <a
                                 href={`mailto:${m.email}`}

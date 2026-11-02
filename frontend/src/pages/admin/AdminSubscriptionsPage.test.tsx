@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import AdminSubscriptionsPage from "./AdminSubscriptionsPage";
 import { AuthProvider } from "../../context/AuthContext";
@@ -304,5 +304,83 @@ describe("AdminSubscriptionsPage", () => {
     expect(await screen.findByRole("link", { name: "agence@test.local" })).toHaveAttribute("href", "/admin/gestionnaires/mgr-1");
     await userEvent.click(screen.getByRole("button", { name: "Copier la référence VIR-2026-001" }));
     expect(ecrire).toHaveBeenCalledWith("VIR-2026-001");
+  });
+});
+
+describe("AdminSubscriptionsPage — recherche, attente et export", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-16T10:00:00.000Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const parc = () => [
+    pendingTransfer({ id: "a", managerEmail: "recent@test.local", paymentRef: "VIR-NEW", createdAt: "2026-06-15T10:00:00.000Z" }),
+    pendingTransfer({ id: "b", userId: "mgr-2", managerEmail: "ancien@test.local", paymentRef: "VIR-OLD", createdAt: "2026-06-08T10:00:00.000Z" }),
+  ];
+
+  function afficher() {
+    mockedApi.get.mockResolvedValueOnce({ data: parc() });
+    render(
+      <AuthProvider>
+        <CurrencyProvider>
+          <MemoryRouter>
+            <AdminSubscriptionsPage />
+          </MemoryRouter>
+        </CurrencyProvider>
+      </AuthProvider>
+    );
+  }
+
+  it("cherche par e-mail ou référence", async () => {
+    const user = userEvent.setup();
+    afficher();
+    await screen.findByText("ancien@test.local");
+
+    await user.type(screen.getByRole("searchbox"), "VIR-NEW");
+    expect(screen.getByText("recent@test.local")).toBeInTheDocument();
+    expect(screen.queryByText("ancien@test.local")).not.toBeInTheDocument();
+    expect(screen.getByText("1 virement(s) affiché(s) sur 2")).toBeInTheDocument();
+
+    await user.clear(screen.getByRole("searchbox"));
+    await user.type(screen.getByRole("searchbox"), "introuvable");
+    expect(screen.getByText("Aucun virement ne correspond.")).toBeInTheDocument();
+  });
+
+  it("isole les virements qui attendent depuis trois jours ou plus", async () => {
+    const user = userEvent.setup();
+    afficher();
+    await screen.findByText("ancien@test.local");
+    await user.click(screen.getByRole("button", { name: /Attente de 3 j ou plus/ }));
+    expect(screen.getByText("ancien@test.local")).toBeInTheDocument();
+    expect(screen.queryByText("recent@test.local")).not.toBeInTheDocument();
+  });
+
+  it("exporte la liste affichée en CSV", async () => {
+    const user = userEvent.setup();
+    let blob: Blob | undefined;
+    let nom = "";
+    Object.defineProperty(URL, "createObjectURL", { value: vi.fn((b: Blob) => { blob = b; return "blob:x"; }), configurable: true, writable: true });
+    Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true, writable: true });
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { nom = this.download; });
+    afficher();
+    await screen.findByText("ancien@test.local");
+    await user.type(screen.getByRole("searchbox"), "ancien");
+    await user.click(screen.getByRole("button", { name: "Exporter la liste (CSV)" }));
+
+    const texte = await new Promise<string>((resolve) => {
+      const lecteur = new FileReader();
+      lecteur.onload = () => resolve(String(lecteur.result));
+      lecteur.readAsText(blob as Blob);
+    });
+    clic.mockRestore();
+    expect(nom).toMatch(/^virements-en-attente-\d{4}-\d{2}-\d{2}\.csv$/);
+    const lignes = texte.replace("﻿", "").split("\n");
+    expect(lignes).toHaveLength(2);
+    expect(lignes[1]).toContain('"ancien@test.local"');
+    expect(lignes[1]).toContain('"VIR-OLD"');
+    expect(lignes[1]).toMatch(/"8"$/);
   });
 });

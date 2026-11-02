@@ -3202,6 +3202,11 @@ const fr = {
       },
     },
     audit: {
+      search: "Rechercher dans cette page (admin, action, cible, détail)…",
+      periodLabel: "Période",
+      periods: { all: "Tout", today: "Aujourd'hui", week: "7 jours", month: "30 jours" },
+      shown: "{{shown}} entrée(s) affichée(s) sur les {{total}} de cette page",
+      noResult: "Aucune entrée de cette page ne correspond.",
       title: "Journal d'audit",
       subtitle: "Les actions sensibles de l'administration, de la plus récente à la plus ancienne",
       filterLabel: "Filtrer par action",
@@ -3292,6 +3297,9 @@ const fr = {
       actionError: "Action impossible",
     },
     suggestions: {
+      search: "Rechercher dans cette page (message, auteur, page, note)…",
+      shown: "{{shown}} suggestion(s) affichée(s) sur les {{total}} de cette page",
+      noResult: "Aucune suggestion de cette page ne correspond.",
       writeToAuthor: "Écrire à l'auteur",
       unreadFor: "Sans suite depuis {{count}} jour(s)",
       tabsLabel: "Filtrer par statut",
@@ -3336,6 +3344,7 @@ const fr = {
     },
     dashboard: {
       todo: {
+        suggestions: "{{count}} suggestion(s) non lue(s)",
         title: "À traiter",
         subtitle: "Ce qui attend une décision de votre part",
         allClear: "Rien ne vous attend : tout est à jour.",
@@ -3391,6 +3400,13 @@ const fr = {
       },
     },
     subscriptions: {
+      search: "Rechercher un virement (e-mail, référence)…",
+      filtersLabel: "Filtrer les virements",
+      filters: { all: "Tous", late: "Attente de {{days}} j ou plus" },
+      exportCsv: "Exporter la liste (CSV)",
+      csv: { manager: "Gestionnaire", plan: "Formule", cycle: "Cycle", amount: "Montant", currency: "Devise", reference: "Référence", since: "Annoncé le", waiting: "Jours d'attente" },
+      shown: "{{shown}} virement(s) affiché(s) sur {{total}}",
+      noResult: "Aucun virement ne correspond.",
       pendingCount: "{{count}} virement(s) en attente",
       toCollect: "À encaisser",
       period: "du {{from}} au {{to}}",

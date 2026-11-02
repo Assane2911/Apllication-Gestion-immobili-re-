@@ -3,9 +3,9 @@ export type ManagerPlan = "STARTER" | "PRO" | "ENTERPRISE";
 
 /** Étiquette du statut d'abonnement (filet + fond teinté, angles droits), partagée par la liste et la fiche gestionnaire. */
 export const STATUS_CLASSES: Record<ManagerStatus, string> = {
-  TRIAL: "border border-sky-300 bg-sky-50 text-sky-900",
-  ACTIVE: "border border-emerald-300 bg-emerald-50 text-emerald-900",
-  CANCELLED: "border border-amber-300 bg-amber-50 text-amber-900",
+  TRIAL: "border border-slate-400 bg-slate-100 text-slate-900",
+  ACTIVE: "border border-ink-900 bg-white text-ink-900",
+  CANCELLED: "border border-orange-700/40 bg-orange-50 text-orange-900",
   EXPIRED: "border border-rose-300 bg-rose-50 text-rose-900",
 };
 
