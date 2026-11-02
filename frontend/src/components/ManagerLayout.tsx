@@ -26,6 +26,8 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import CartouchePlan from "./CartouchePlan";
+import { NonLusContext } from "../context/nonLus";
+import { useNonLus } from "../hooks/useNonLus";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
@@ -101,6 +103,8 @@ export default function ManagerLayout() {
   const sub = user?.subscription;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const fermerMenuMobile = useCallback(() => setMobileNavOpen(false), []);
+  // Messages non lus des locataires et des propriétaires : une pastille sur « Messagerie », et le détail pour ses onglets.
+  const nonLus = useNonLus("/messages/unread-count");
   // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>) : sans lui, les vingt pages de
   // l'espace s'appelaient pareil, et un lecteur d'écran n'annonçait aucun changement de page. L'entrée de
   // navigation la plus précise gagne ; le compte-rendu de gestion d'un propriétaire a son propre libellé.
@@ -125,6 +129,7 @@ export default function ManagerLayout() {
         ouvertMobile={mobileNavOpen}
         onFermerMobile={fermerMenuMobile}
         onDeconnexion={demanderDeconnexion}
+        pastilles={{ "/messages": nonLus.count }}
         enPied={
           <>
             {sub?.isTrialActive && (
@@ -171,7 +176,9 @@ export default function ManagerLayout() {
           />
         )}
         <TrialBanner />
-        <Outlet />
+        <NonLusContext.Provider value={nonLus}>
+          <Outlet />
+        </NonLusContext.Provider>
         {/* Cartouche de feuille, en pied de plan : repère décoratif (espace, page, date, numéro de l'entrée du menu). */}
         {rangFeuille >= 0 && entree && (
           <CartouchePlan espace={t("nav.managerSpace")} page={t(`nav.manager.${entree.key}`)} rang={rangFeuille + 1} total={navItems.length} />

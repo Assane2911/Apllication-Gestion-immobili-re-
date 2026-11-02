@@ -195,6 +195,24 @@ export default function OwnersPage() {
    * et l'historique de gestion (même principe que handleAnonymize côté
    * locataire, voir TenantsPage.tsx).
    */
+  /**
+   * Droit d'accès et portabilité : le propriétaire adresse sa demande à l'agence, responsable de traitement ; c'est d'ici que le
+   * dossier complet se récupère, en un fichier.
+   */
+  async function handleExport(owner: Owner) {
+    try {
+      const res = await api.get(`/owners/${owner.id}/export`, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `donnees-${owner.firstName}-${owner.lastName}.json`.toLowerCase();
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    }
+  }
+
   async function handleAnonymize(owner: Owner) {
     if (!confirm(t("manager.owners.confirmAnonymize", { name: `${owner.firstName} ${owner.lastName}` }))) return;
     try {
@@ -551,6 +569,9 @@ export default function OwnersPage() {
                   {owner.anonymizedAt ? (
                     <span className="text-xs text-slate-600">{t("manager.owners.anonymized")}</span>
                   ) : (
+                    <Bulle texte={t("manager.tips.ownerExport")}><button onClick={() => handleExport(owner)} className={LIEN_ACTION}>{t("manager.owners.exportData")}</button></Bulle>
+                  )}
+                  {!owner.anonymizedAt && (
                     <Bulle texte={t("manager.tips.ownerAnonymize")}><button onClick={() => handleAnonymize(owner)} className="cursor-pointer border-b border-orange-700/40 text-xs font-semibold text-orange-800 transition-colors hover:border-orange-800">{t("manager.owners.anonymize")}</button></Bulle>
                   )}
                   <Bulle texte={t("manager.tips.ownerDelete")}><button onClick={() => handleDelete(owner)} className="cursor-pointer border-b border-rose-700/40 text-xs font-semibold text-rose-700 transition-colors hover:border-rose-700">{t("common.actions.delete")}</button></Bulle>

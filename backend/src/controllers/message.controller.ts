@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, inArray, isNull, ne, or, sql, SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne, or, sql, SQL, SQLWrapper } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contractCotenants, contracts, messages, properties, tenants, users } from "../db/schema";
+import { contractCotenants, contracts, messages, ownerMessages, properties, tenants, users } from "../db/schema";
 import { bauxDuLocataire, estColocataire } from "../services/colocation.service";
 import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -242,11 +242,25 @@ async function resoudreFil(req: Request, contractId: string, ecriture: boolean) 
   throw new ApiError(404, "Conversation introuvable", "CONVERSATION_NOT_FOUND");
 }
 
+/**
+ * Lecture incrémentale d'un fil (`?apresId=<dernier message connu>`) : seuls les messages POSTÉRIEURS à celui-là sont renvoyés
+ * (et signés), avec les identifiants de mes messages que l'autre partie a lus depuis. L'écran ouvert interroge ainsi le serveur
+ * toutes les quelques secondes sans retélécharger ni re-signer tout le fil. La comparaison se fait en SQL, à la précision de
+ * la base : une date passée par le client, tronquée à la milliseconde, renverrait chaque fois le dernier message. Un repère
+ * inconnu ou étranger à ce fil (message supprimé, fil changé) rend le fil entier.
+ */
+export const apresMessage = (colonneDate: SQLWrapper, depuisLeRepere: SQL): SQL =>
+  sql`${colonneDate} > COALESCE((${depuisLeRepere}), '-infinity'::timestamp)`;
+
 export const getMessagesByContract = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
   const { contractId } = req.params;
   const fil = await resoudreFil(req, contractId, false);
   const condition = conditionDuFil(contractId, fil.tenant.id, fil.contract.tenantId);
+  const apresId = typeof req.query.apresId === "string" && req.query.apresId ? req.query.apresId : null;
+  const filtre = apresId
+    ? and(condition, apresMessage(messages.createdAt, sql`SELECT m.created_at FROM messages m WHERE m.id = ${apresId} AND m.contract_id = ${contractId}`))!
+    : condition;
 
   const msgList = await db
     .select({
@@ -259,7 +273,7 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
     })
     .from(messages)
     .innerJoin(users, eq(messages.senderId, users.id))
-    .where(condition)
+    .where(filtre)
     .orderBy(asc(messages.createdAt));
 
   // Marquer comme lus seulement les messages reçus, pas ceux envoyés par
@@ -271,6 +285,13 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
     .set({ isRead: true })
     .where(and(condition, ne(messages.senderId, req.user.userId)));
 
+  // En lecture incrémentale : lesquels de MES messages ont été lus par l'autre partie (pour l'état « Lu » à l'écran).
+  const luesIds = apresId
+    ? (await db.select({ id: messages.id }).from(messages).where(and(condition, eq(messages.senderId, req.user.userId), eq(messages.isRead, true)))).map(
+        (m: { id: string }) => m.id
+      )
+    : undefined;
+
   res.json({
     contract: {
       ...fil.contract,
@@ -280,6 +301,7 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
     },
     tenantId: fil.tenant.id,
     qualite: fil.qualite,
+    luesIds,
     // L'auteur (id et adresse de connexion) n'est renvoyé qu'au gestionnaire : l'écran du locataire ne s'appuie que sur
     // `senderRole`, et l'adresse de connexion du gestionnaire — ou du propriétaire de l'agence, pour un message écrit
     // par un collaborateur — n'a pas à quitter l'espace gestionnaire.
@@ -290,6 +312,50 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
       })
     ),
   });
+});
+
+/**
+ * Nombre de messages non lus, pour la pastille du menu « Messagerie ». Un seul calcul par rôle, sans rien charger d'autre que des
+ * décomptes :
+ *  - locataire : les messages de l'agence qu'il n'a pas lus, dans tous ses fils (titulaire ou colocataire) ;
+ *  - gestionnaire : ceux de ses locataires (`tenants`) et de ses propriétaires (`owners`), distingués pour les onglets.
+ * Mêmes règles que la cloche (notification.controller.ts) : « non lu » = envoyé par l'autre partie et pas encore ouvert.
+ */
+export const nonLusMessagerie = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
+
+  if (req.user.role === "TENANT") {
+    const moi = await idLocataireDuCompte(req);
+    if (!moi) return res.json({ count: 0 });
+    const [{ n }] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(messages)
+      .innerJoin(contracts, eq(messages.contractId, contracts.id))
+      .where(
+        and(
+          // Son fil : rattaché à sa fiche, ou ancienne ligne non rattachée d'un bail dont il est titulaire.
+          or(eq(messages.tenantId, moi), and(isNull(messages.tenantId), eq(contracts.tenantId, moi))),
+          eq(messages.senderRole, "MANAGER"),
+          eq(messages.isRead, false)
+        )
+      );
+    return res.json({ count: n });
+  }
+
+  if (req.user.role !== "MANAGER") throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  const [[locataires], [proprietaires]] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(messages)
+      .innerJoin(contracts, eq(messages.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(and(eq(properties.managerId, req.user.userId), eq(messages.senderRole, "TENANT"), eq(messages.isRead, false))),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(ownerMessages)
+      .where(and(eq(ownerMessages.managerId, req.user.userId), eq(ownerMessages.senderRole, "OWNER"), eq(ownerMessages.isRead, false))),
+  ]);
+  res.json({ count: locataires.n + proprietaires.n, tenants: locataires.n, owners: proprietaires.n });
 });
 
 // Borné : sans plafond, un message pouvait peser jusqu'à la limite du corps JSON (10 Mo) et alourdissait la base et

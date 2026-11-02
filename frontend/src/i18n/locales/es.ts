@@ -429,6 +429,7 @@ const es: TranslationSchema = {
   },
 
   nav: {
+    unread: "{{count}} mensaje(s) sin leer",
     tips: {
       dashboard: "Visión general: alquileres cobrados, impagos y vencimientos del mes.",
       properties: "Sus inmuebles: crear una ficha, fijar el alquiler, seguir la ocupación.",
@@ -1501,6 +1502,7 @@ const es: TranslationSchema = {
       confirmDelete: '¿Eliminar la propiedad "{{title}}"?',
     },
     tips: {
+      ownerExport: "Descarga todo lo que el Servicio guarda sobre este propietario (derecho de acceso RGPD).",
       contractSign: "Abre el panel de firma: su rúbrica se añade al contrato y queda fechada.",
       contractViewLease: "Muestra el contrato generado, listo para imprimir o enviar.",
       contractScan: "Adjunta al contrato la foto o el PDF del documento firmado en papel.",
@@ -1646,6 +1648,7 @@ const es: TranslationSchema = {
       portalSuccess: "Acceso al portal creado con éxito. Comunica el correo y la contraseña al inquilino.",
     },
     owners: {
+      exportData: "Exportar datos",
       summary: {
         label: "Resumen de propietarios",
         total: "Propietarios",
@@ -3097,6 +3100,12 @@ const es: TranslationSchema = {
       crgExport: "Muestra el informe de gestión del mes, para imprimir o conservar.",
     },
     dashboard: {
+      privacy: {
+        title: "Mis datos personales",
+        description: "Puede obtener en cualquier momento una copia de todos los datos que se conservan sobre usted: su ficha, sus inmuebles, sus transferencias y sus mensajes. Para corregir o borrar estos datos, diríjase a su agencia, que es la responsable.",
+        download: "Descargar mis datos",
+        downloading: "Preparando el archivo…",
+      },
       exportCsv: "Exportar en CSV",
       address: "Dirección",
       currency: "Moneda",

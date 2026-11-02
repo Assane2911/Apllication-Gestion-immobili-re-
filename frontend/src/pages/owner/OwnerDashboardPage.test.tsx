@@ -263,4 +263,42 @@ describe("OwnerDashboardPage", () => {
       clic.mockRestore();
     });
   });
+
+  it("propose de télécharger ses données personnelles (droit d'accès et portabilité)", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: dashboard() });
+    renderPage();
+    await screen.findByText("Mes données personnelles");
+
+    mockedApi.get.mockResolvedValueOnce({ data: new Blob(["{}"], { type: "application/json" }) });
+    const creerUrl = vi.fn().mockReturnValue("blob:faux");
+    const revoquerUrl = vi.fn();
+    URL.createObjectURL = creerUrl;
+    URL.revokeObjectURL = revoquerUrl;
+    await userEvent.setup().click(screen.getByRole("button", { name: "Télécharger mes données" }));
+
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/owners/mine/export", { responseType: "blob" }));
+    await waitFor(() => expect(creerUrl).toHaveBeenCalled());
+    expect(revoquerUrl).toHaveBeenCalled();
+  });
+
+  it("garde ce droit à portée de main même quand le tableau de bord n'a pas pu se charger", async () => {
+    mockedApi.get.mockRejectedValueOnce(Object.assign(new Error("boom"), { isAxiosError: true, response: { data: { error: "Erreur serveur de test" } } }));
+    renderPage();
+    expect(await screen.findByText("Erreur serveur de test")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Télécharger mes données" })).toBeInTheDocument();
+  });
+
+  it("affiche l'erreur du serveur si l'export échoue, sans rien télécharger", async () => {
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+    mockedApi.get.mockResolvedValueOnce({ data: dashboard() });
+    renderPage();
+    await screen.findByText("Mes données personnelles");
+    mockedApi.get.mockRejectedValueOnce(Object.assign(new Error("boom"), { isAxiosError: true, response: { data: { error: "Export impossible" } } }));
+    const creerUrl = vi.fn();
+    URL.createObjectURL = creerUrl;
+    await userEvent.setup().click(screen.getByRole("button", { name: "Télécharger mes données" }));
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith("Export impossible"));
+    expect(creerUrl).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Télécharger mes données" })).toBeEnabled();
+  });
 });

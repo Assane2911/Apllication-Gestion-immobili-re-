@@ -3,7 +3,10 @@ import type { FormEvent } from "react";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../api/client";
 import { useAuth } from "../context/auth";
 import type { ConversationProprietaire, Message, PaginatedResponse } from "../types";
+import { ajouterSiAbsent, fusionnerFil } from "../utils/fusionFil";
+import { signalerFilLu } from "../utils/nonLus";
 import { extensionEnregistrement } from "../utils/messageVocal";
+import { useActualisationFil, useRafraichissementPeriodique } from "./useActualisationFil";
 import type { EnregistrementVocal } from "./useEnregistreurVocal";
 
 const PAGE_SIZE = 20;
@@ -81,6 +84,8 @@ export function useDiscussionProprietaire(role: "MANAGER" | "OWNER") {
         setMessages(liste<Message>(res.data, "messages"));
         setActiveOwner(res.data.owner ?? null);
         setLoadingMessages(false);
+        // Ouvrir le fil marque ses messages reçus comme lus : la pastille du menu se recompte.
+        signalerFilLu();
         if (gestionnaire) {
           // Ouvrir le fil marque ses messages lus côté serveur : la pastille de la liste suit sans recharger.
           setConversations((prev) => prev.map((c) => (c.id === selectedOwnerId ? { ...c, unreadCount: 0 } : c)));
@@ -110,7 +115,7 @@ export function useDiscussionProprietaire(role: "MANAGER" | "OWNER") {
     setSending(true);
     try {
       const res = await api.post(adresse, { content: newText.trim() });
-      setMessages((prev) => [...prev, { ...res.data, sender: auteur() }]);
+      setMessages((prev) => ajouterSiAbsent(prev, { ...res.data, sender: auteur() }));
       setNewText("");
       if (gestionnaire) loadConversations();
     } catch (err) {
@@ -127,9 +132,19 @@ export function useDiscussionProprietaire(role: "MANAGER" | "OWNER") {
     donnees.append("audio", enregistrement.blob, `vocal.${extensionEnregistrement(enregistrement.type)}`);
     donnees.append("durationSec", String(enregistrement.duree));
     const res = await api.post(`${adresse}/audio`, donnees, { timeout: DELAI_UPLOAD_MS });
-    setMessages((prev) => [...prev, { ...res.data, sender: auteur() }]);
+    setMessages((prev) => ajouterSiAbsent(prev, { ...res.data, sender: auteur() }));
     if (gestionnaire) loadConversations();
   }
+
+  // Le fil ouvert se met à jour tout seul (nouveaux messages, état « Lu »), sans rechargement de la page.
+  useActualisationFil({
+    adresse,
+    dernierId: messages.length > 0 ? messages[messages.length - 1].id : null,
+    actif: !loadingMessages,
+    surReponse: ({ messages: recus, luesIds }) => setMessages((prev) => fusionnerFil(prev, recus, luesIds)),
+    surNouveau: gestionnaire ? () => void loadConversations() : undefined,
+  });
+  useRafraichissementPeriodique(() => loadConversations(), gestionnaire);
 
   return {
     conversations,

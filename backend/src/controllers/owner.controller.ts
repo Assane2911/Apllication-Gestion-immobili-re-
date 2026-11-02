@@ -8,6 +8,7 @@ import { db, Transaction } from "../db/client";
 import { activityLogs, agencySettings, contracts, invoices, ownerMessages, owners, properties, users } from "../db/schema";
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
+import { construireExportProprietaire, nomFichierExport } from "../services/exportDonnees.service";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { developperFactures } from "../services/encaissements.service";
 import { enregistrerChangementTaux } from "../services/tauxCommission.service";
@@ -462,6 +463,31 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
   });
 
   res.json({ message: "Invitation envoyée", userId: targetUserId });
+});
+
+/** Remet l'export en pièce jointe : un document qu'on conserve et qu'on rouvre ailleurs, c'est le sens même de la portabilité. */
+async function envoyerExportProprietaire(res: Response, ownerId: string) {
+  const donnees = await construireExportProprietaire(ownerId);
+  if (!donnees) throw new ApiError(404, "Propriétaire introuvable", "OWNER_NOT_FOUND");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${nomFichierExport(donnees.proprietaire)}"`);
+  res.send(JSON.stringify(donnees, null, 2));
+}
+
+/** Le gestionnaire répond à une demande d'accès d'un de SES propriétaires. */
+export const exporterOwner = asyncHandler(async (req: Request, res: Response) => {
+  const [existing] = await db.select().from(owners).where(eq(owners.id, req.params.id));
+  assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
+  await envoyerExportProprietaire(res, existing.id);
+});
+
+/**
+ * Le même droit, exercé par le propriétaire lui-même. La fiche est résolue par le COMPTE (`chargerProprietaireDuCompte`), jamais
+ * par un identifiant du jeton ou de l'adresse : la base tranche.
+ */
+export const exporterMesDonneesProprietaire = asyncHandler(async (req: Request, res: Response) => {
+  const owner = await chargerProprietaireDuCompte(req);
+  await envoyerExportProprietaire(res, owner.id);
 });
 
 /**

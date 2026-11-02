@@ -234,7 +234,9 @@ export default function PolitiqueConfidentialitePage() {
           à votre Gestionnaire, qui dispose de la même fonction d'effacement pour vos propres données
           identifiantes (nom, raison sociale, email, téléphone, adresse, IBAN/BIC et accès au portail), tandis
           que les biens qui vous sont associés et l'historique de vos comptes-rendus de gestion sont conservés
-          pour les mêmes raisons comptables. En tant que <strong className="text-slate-900">Gestionnaire</strong>,
+          pour les mêmes raisons comptables. L'espace Propriétaire vous permet de télécharger, à tout moment et
+          sans demande préalable, une copie complète des données détenues à votre sujet (fiche, biens,
+          versements, discussion avec votre agence), dans un format lisible par machine. En tant que <strong className="text-slate-900">Gestionnaire</strong>,
           vous pouvez rectifier vos données à tout moment depuis votre espace, et supprimer définitivement votre
           compte et l'ensemble des données associées depuis les paramètres du Service.
         </p>

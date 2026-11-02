@@ -8,6 +8,10 @@ import {
   invoices,
   issueReports,
   messages,
+  ownerFeeRates,
+  ownerMessages,
+  ownerPayouts,
+  owners,
   properties,
   tenants,
   users,
@@ -199,4 +203,83 @@ export function nomFichierExport(tenant: { firstName: string; lastName: string }
     .replace(/[^a-zA-Z0-9-]/g, "-")
     .toLowerCase();
   return `donnees-${sansAccent}-${new Date().toISOString().slice(0, 10)}.json`;
+}
+
+/**
+ * Tout ce que le Service détient au sujet d'un PROPRIÉTAIRE, pour l'exercice du droit d'accès (RGPD art. 15) et de la
+ * portabilité (art. 20) : même principe que `construireExportLocataire`.
+ *
+ *  - On ne choisit pas ce qu'on montre : les notes internes de l'agence sur le propriétaire parlent de lui, elles relèvent du
+ *    droit d'accès.
+ *  - On ne montre QUE cette personne : ses biens, ses versements, sa discussion. Les locataires de ses biens (leurs noms, leurs
+ *    coordonnées) sont des tiers : ils n'y figurent pas, pas plus que dans son tableau de bord.
+ *  - Les comptes-rendus de gestion ne sont pas des données stockées : ils se calculent à la demande à partir des loyers
+ *    encaissés, et se consultent en ligne dans l'espace propriétaire. L'export le dit.
+ *  - Les messages vocaux sont signalés (date, durée, type) sans exposer le chemin de stockage de l'enregistrement.
+ */
+export async function construireExportProprietaire(ownerId: string) {
+  const [proprietaire] = await db.select().from(owners).where(eq(owners.id, ownerId));
+  if (!proprietaire) return null;
+
+  const [gestionnaire] = await db.select().from(users).where(eq(users.id, proprietaire.managerId));
+  const [agence] = await db.select().from(agencySettings).where(eq(agencySettings.userId, proprietaire.managerId));
+
+  const [biens, versements, historiqueTaux, discussion] = await Promise.all([
+    db.select().from(properties).where(eq(properties.ownerId, ownerId)),
+    db.select().from(ownerPayouts).where(eq(ownerPayouts.ownerId, ownerId)),
+    db.select().from(ownerFeeRates).where(eq(ownerFeeRates.ownerId, ownerId)),
+    db.select().from(ownerMessages).where(eq(ownerMessages.ownerId, ownerId)),
+  ]);
+
+  // Le journal d'activité parle aussi du propriétaire (création et modification de sa fiche, invitation à l'espace) : même
+  // règle que pour le locataire, l'omettre rendrait « l'ensemble des données » incomplet.
+  const journal = await db
+    .select()
+    .from(activityLogs)
+    .where(and(eq(activityLogs.entityType, "owner"), eq(activityLogs.entityId, ownerId)));
+
+  return {
+    exportGenereLe: new Date().toISOString(),
+    aProposDeCetExport:
+      "Ce document rassemble l'ensemble des données détenues à votre sujet par le service de gestion locative, " +
+      "au titre du droit d'accès et du droit à la portabilité (articles 15 et 20 du RGPD). " +
+      "Il est au format JSON afin de pouvoir être relu par un autre logiciel. " +
+      "Vos comptes-rendus de gestion ne sont pas conservés sous forme de fichier : ils se calculent à la demande à partir des loyers " +
+      "encaissés et se consultent en ligne dans votre espace propriétaire. Les données des locataires de vos biens ne figurent pas ici : " +
+      "elles concernent d'autres personnes.",
+    responsableDuTraitement: {
+      // C'est l'agence, et non l'éditeur du Service, qui est responsable des données de ses propriétaires : c'est à elle que se
+      // formule une demande de rectification ou d'effacement.
+      agencyName: agence?.agencyName ?? null,
+      email: gestionnaire?.email ?? null,
+      telephone: agence?.phone ?? null,
+      adresse: agence?.address ?? null,
+    },
+    proprietaire: {
+      id: proprietaire.id,
+      civility: proprietaire.civility,
+      firstName: proprietaire.firstName,
+      lastName: proprietaire.lastName,
+      companyName: proprietaire.companyName,
+      email: proprietaire.email,
+      phone: proprietaire.phone,
+      address: proprietaire.address,
+      iban: proprietaire.iban,
+      bic: proprietaire.bic,
+      managementFeeRate: proprietaire.managementFeeRate,
+      notes: proprietaire.notes,
+      language: proprietaire.language,
+      compteDePortail: Boolean(proprietaire.userId),
+      anonymizedAt: proprietaire.anonymizedAt,
+      ficheCreeeLe: proprietaire.createdAt,
+    },
+    biens,
+    historiqueDuTauxDeCommission: historiqueTaux,
+    versements,
+    discussionAvecLAgence: discussion.map((m: typeof ownerMessages.$inferSelect) => {
+      const { audioPath, senderId, managerId, ...reste } = m;
+      return { ...reste, vocal: Boolean(audioPath) || m.audioDurationSec !== null };
+    }),
+    journalActivite: journal,
+  };
 }

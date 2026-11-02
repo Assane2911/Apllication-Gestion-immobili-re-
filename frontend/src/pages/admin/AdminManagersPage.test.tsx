@@ -177,17 +177,21 @@ describe("AdminManagersPage", () => {
     await userEvent.selectOptions(screen.getByRole("combobox", { name: /formule/i }), "PRO");
     await userEvent.click(within(screen.getByRole("group", { name: /statut/i })).getByRole("button", { name: "Suspendu" }));
     await userEvent.type(screen.getByRole("searchbox", { name: /rechercher/i }), "alpha");
-    // La recherche est temporisée (300 ms) : le bouton doit porter la valeur validée.
-    await waitFor(() =>
-      expect(mockedApi.get).toHaveBeenCalledWith("/admin/managers", expect.objectContaining({ params: expect.objectContaining({ search: "alpha" }) }))
+    // La recherche est temporisée (300 ms) : le bouton doit porter la valeur validée. Le délai d'attente par défaut (1 s) ne laisse
+    // aucune marge sur un serveur chargé, où la saisie touche par touche et la temporisation s'additionnent (échec constaté en CI).
+    await waitFor(
+      () => expect(mockedApi.get).toHaveBeenCalledWith("/admin/managers", expect.objectContaining({ params: expect.objectContaining({ search: "alpha" }) })),
+      { timeout: 4000 }
     );
     await userEvent.click(screen.getByRole("button", { name: "Exporter en CSV" }));
 
-    await waitFor(() =>
-      expect(mockedApi.get).toHaveBeenCalledWith("/admin/exports/managers.csv", {
-        params: { search: "alpha", plan: "PRO", status: "SUSPENDED" },
-        responseType: "blob",
-      })
+    await waitFor(
+      () =>
+        expect(mockedApi.get).toHaveBeenCalledWith("/admin/exports/managers.csv", {
+          params: { search: "alpha", plan: "PRO", status: "SUSPENDED" },
+          responseType: "blob",
+        }),
+      { timeout: 4000 }
     );
   });
 

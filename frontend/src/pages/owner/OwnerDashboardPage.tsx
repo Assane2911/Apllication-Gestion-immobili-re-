@@ -25,6 +25,7 @@ export default function OwnerDashboardPage() {
   const { formatMoney } = useCurrency();
   const [data, setData] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exportingData, setExportingData] = useState(false);
   // Tri du tableau des biens : `null` = l'ordre du serveur.
   const [tri, setTri] = useState<{ colonne: ColonneTri; sens: "asc" | "desc" } | null>(null);
 
@@ -57,6 +58,24 @@ export default function OwnerDashboardPage() {
     URL.revokeObjectURL(url);
   }
 
+  /** Droit d'accès et portabilité : le propriétaire emporte tout ce que le Service détient à son sujet, en un fichier. */
+  async function handleExportMyData() {
+    setExportingData(true);
+    try {
+      const res = await api.get("/owners/mine/export", { responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "mes-donnees.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(apiErrorMessage(err));
+    } finally {
+      setExportingData(false);
+    }
+  }
+
   function load() {
     api
       .get<OwnerDashboard>("/owners/mine/dashboard")
@@ -71,16 +90,34 @@ export default function OwnerDashboardPage() {
     load();
   }, []);
 
+  const sectionDonneesPersonnelles = (
+    <SectionReglage id="donnees" numero={data ? "04" : "01"} titre={t("owner.dashboard.privacy.title")}>
+      <p className="max-w-prose text-sm text-slate-600">{t("owner.dashboard.privacy.description")}</p>
+      <button
+        type="button"
+        onClick={handleExportMyData}
+        disabled={exportingData}
+        className="mt-4 inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900 disabled:opacity-60"
+      >
+        <Download size={14} aria-hidden="true" />
+        {exportingData ? t("owner.dashboard.privacy.downloading") : t("owner.dashboard.privacy.download")}
+      </button>
+    </SectionReglage>
+  );
+
   if (error) {
     return (
-      <div className="border border-rose-200 bg-rose-50 p-6 text-rose-700">
-        <p className="text-sm">{error}</p>
-        <button
-          onClick={load}
-          className="mt-4 cursor-pointer bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-rose-700"
-        >
-          {t("common.actions.retry")}
-        </button>
+      <div className="space-y-6">
+        <div className="border border-rose-200 bg-rose-50 p-6 text-rose-700">
+          <p className="text-sm">{error}</p>
+          <button
+            onClick={load}
+            className="mt-4 cursor-pointer bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-rose-700"
+          >
+            {t("common.actions.retry")}
+          </button>
+        </div>
+        {sectionDonneesPersonnelles}
       </div>
     );
   }
@@ -338,6 +375,9 @@ export default function OwnerDashboardPage() {
           </div>
         )}
       </SectionReglage>
+
+      {/* Droit d'accès (RGPD) : indépendant du tableau de bord, il est aussi proposé quand celui-ci n'a pas pu se charger. */}
+      {sectionDonneesPersonnelles}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { langueOuDefaut } from "../utils/langue";
 import { libelleMessageVocal } from "../utils/messageVocal";
 import { nomAvecCivilite } from "../utils/nom";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { apercuMessage, messagePublic, sendMessageSchema, sendVoiceSchema } from "./message.controller";
+import { apercuMessage, apresMessage, messagePublic, sendMessageSchema, sendVoiceSchema } from "./message.controller";
 
 /**
  * Discussion agence ↔ propriétaire. Un fil unique par propriétaire (voir la table `owner_messages`) : le propriétaire
@@ -36,13 +36,25 @@ function interlocuteur(owner: Fiche) {
   };
 }
 
-/** Lire le fil et marquer lus les messages REÇUS (pas ceux que l'on a soi-même écrits). */
-async function lireFil(owner: Fiche, lecteurId: string, voitLesAuteurs: boolean) {
+/** Le repère de lecture incrémentale demandé (`?apresId=`), voir `apresMessage` (message.controller.ts). */
+const repereDeLaRequete = (req: Request): string | null => (typeof req.query.apresId === "string" && req.query.apresId ? req.query.apresId : null);
+
+/**
+ * Lire le fil et marquer lus les messages REÇUS (pas ceux que l'on a soi-même écrits). Avec un repère (`apresId`), seuls les
+ * messages postérieurs sont renvoyés, accompagnés de la liste de mes messages que l'autre partie a lus (`luesIds`).
+ */
+async function lireFil(owner: Fiche, lecteurId: string, voitLesAuteurs: boolean, apresId: string | null = null) {
+  const filtre = apresId
+    ? and(
+        eq(ownerMessages.ownerId, owner.id),
+        apresMessage(ownerMessages.createdAt, sql`SELECT m.created_at FROM owner_messages m WHERE m.id = ${apresId} AND m.owner_id = ${owner.id}`)
+      )!
+    : eq(ownerMessages.ownerId, owner.id);
   const lignes = await db
     .select({ message: ownerMessages, sender: { id: users.id, email: users.email, role: users.role } })
     .from(ownerMessages)
     .innerJoin(users, eq(ownerMessages.senderId, users.id))
-    .where(eq(ownerMessages.ownerId, owner.id))
+    .where(filtre)
     .orderBy(asc(ownerMessages.createdAt));
 
   await db
@@ -50,13 +62,23 @@ async function lireFil(owner: Fiche, lecteurId: string, voitLesAuteurs: boolean)
     .set({ isRead: true })
     .where(and(eq(ownerMessages.ownerId, owner.id), ne(ownerMessages.senderId, lecteurId), eq(ownerMessages.isRead, false)));
 
-  return Promise.all(
+  const luesIds = apresId
+    ? (
+        await db
+          .select({ id: ownerMessages.id })
+          .from(ownerMessages)
+          .where(and(eq(ownerMessages.ownerId, owner.id), eq(ownerMessages.senderId, lecteurId), eq(ownerMessages.isRead, true)))
+      ).map((m: { id: string }) => m.id)
+    : undefined;
+
+  const messages = await Promise.all(
     lignes.map(async (l: { message: typeof ownerMessages.$inferSelect; sender: { id: string; email: string; role: string } }) => {
       const message = await messagePublic(l.message);
       // Comme la messagerie des locataires : l'adresse de connexion de l'auteur ne sort pas de l'espace gestionnaire.
       return voitLesAuteurs ? { ...message, sender: l.sender } : { ...message, senderId: undefined };
     })
   );
+  return { messages, luesIds };
 }
 
 interface Contenu {
@@ -101,7 +123,17 @@ async function enregistrer(req: Request, owner: Fiche, contenu: Contenu) {
 
 export const getMyOwnerThread = asyncHandler(async (req: Request, res: Response) => {
   const owner = await chargerProprietaireDuCompte(req);
-  res.json({ messages: await lireFil(owner, req.user!.userId, false) });
+  res.json(await lireFil(owner, req.user!.userId, false, repereDeLaRequete(req)));
+});
+
+/** Messages de l'agence que le propriétaire n'a pas encore lus : la pastille de son menu « Messagerie ». */
+export const countMyUnreadOwnerMessages = asyncHandler(async (req: Request, res: Response) => {
+  const owner = await chargerProprietaireDuCompte(req);
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(ownerMessages)
+    .where(and(eq(ownerMessages.ownerId, owner.id), eq(ownerMessages.senderRole, "MANAGER"), eq(ownerMessages.isRead, false)));
+  res.json({ count: n });
 });
 
 export const sendMyOwnerMessage = asyncHandler(async (req: Request, res: Response) => {
@@ -193,7 +225,7 @@ function assertPeutRecevoir(owner: Fiche) {
 
 export const getOwnerThread = asyncHandler(async (req: Request, res: Response) => {
   const owner = await proprietaireDeLAgence(req);
-  res.json({ owner: interlocuteur(owner), messages: await lireFil(owner, req.user!.userId, true) });
+  res.json({ owner: interlocuteur(owner), ...(await lireFil(owner, req.user!.userId, true, repereDeLaRequete(req))) });
 });
 
 export const sendOwnerMessage = asyncHandler(async (req: Request, res: Response) => {
