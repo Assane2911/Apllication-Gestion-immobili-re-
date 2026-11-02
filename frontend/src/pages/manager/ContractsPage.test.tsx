@@ -888,4 +888,93 @@ describe("changementsDuContrat", () => {
     expect(changementsDuContrat(base, { ...base, agencyFee: "" })).toEqual({ agencyFee: null });
     expect(formulaireDepuisContrat(contract({})).agencyFee).toBe("");
   });
+
+  describe("synthèse, filtres, recherche et export", () => {
+    const parc = () => [
+      contract({ id: "a", rent: 800, property: { title: "Villa Baobab" } as never, tenant: { firstName: "Awa", lastName: "Diallo" } as never, signedByManagerAt: "2026-01-01T00:00:00.000Z", signedByTenantAt: "2026-01-02T00:00:00.000Z", endDate: new Date(Date.now() + 300 * DAY_MS).toISOString() }),
+      contract({ id: "b", rent: 400, property: { title: "Studio Plateau" } as never, tenant: { firstName: "Moussa", lastName: "Ba" } as never, signedByManagerAt: "2026-01-01T00:00:00.000Z", signedByTenantAt: null, endDate: new Date(Date.now() + 30 * DAY_MS).toISOString() }),
+      contract({ id: "c", rent: 600, property: { title: "Atelier Mermoz" } as never, tenant: { firstName: "Élodie", lastName: "Sow" } as never, signedByManagerAt: "2026-01-01T00:00:00.000Z", signedByTenantAt: "2026-01-02T00:00:00.000Z", endDate: new Date(Date.now() + 250 * DAY_MS).toISOString() }),
+      contract({ id: "d", rent: 700, status: "ENDED", property: { title: "Loft Sacré-Cœur" } as never, tenant: { firstName: "Ibrahima", lastName: "Fall" } as never, endDate: new Date(Date.now() - 20 * DAY_MS).toISOString() }),
+    ];
+
+    async function afficher() {
+      queueLoad(parc());
+      renderPage();
+      await screen.findByRole("table");
+    }
+
+    const lignes = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+
+    it("résume les baux actifs, les loyers, les fins proches et les signatures en attente", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des baux");
+      expect(within(synthese).getByText("3")).toBeInTheDocument(); // actifs
+      expect(within(synthese).getByText("1 800 €")).toBeInTheDocument(); // 800 + 400 + 600
+      expect(within(synthese).getAllByText("1")).toHaveLength(2); // une fin proche, une signature en attente
+    });
+
+    it("filtre les baux à signer, à la fin proche ou terminés", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      const filtres = screen.getByRole("group", { name: "Filtrer les baux" });
+
+      await user.click(within(filtres).getByRole("button", { name: /À signer\s*1/ }));
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Studio Plateau");
+
+      await user.click(within(filtres).getByRole("button", { name: /Terminés\s*1/ }));
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Loft Sacré-Cœur");
+
+      await user.click(within(filtres).getByRole("button", { name: /Fin proche\s*1/ }));
+      expect(lignes()[0]).toContain("Studio Plateau");
+    });
+
+    it("cherche par bien ou par locataire, sans tenir compte des accents", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "elodie");
+      expect(lignes()).toHaveLength(1);
+      expect(lignes()[0]).toContain("Atelier Mermoz");
+    });
+
+    it("trie par fin la plus proche, les baux actifs d'abord", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.selectOptions(screen.getByLabelText("Trier par"), "Fin la plus proche");
+      expect(lignes().map((l) => ["Studio Plateau", "Atelier Mermoz", "Villa Baobab", "Loft Sacré-Cœur"].find((b) => l.includes(b)))).toEqual([
+        "Studio Plateau",
+        "Atelier Mermoz",
+        "Villa Baobab",
+        "Loft Sacré-Cœur",
+      ]);
+    });
+
+    it("trace l'avancement de chaque bail actif", async () => {
+      await afficher();
+      const barres = within(screen.getByRole("table")).getAllByRole("progressbar");
+      expect(barres).toHaveLength(3); // pas pour le bail terminé
+      expect(barres[0]).toHaveAttribute("aria-label", expect.stringMatching(/^Avancement du bail : \d+ %$/));
+    });
+
+    it("exporte les baux affichés en CSV, avec les signatures", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "moussa");
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      const l = texte.split("\n");
+      expect(l).toHaveLength(2);
+      expect(l[1]).toContain('"Studio Plateau";"Moussa Ba";400,00;"EUR"');
+      expect(l[1]).toMatch(/"Oui";"Non"$/);
+    });
+  });
 });
