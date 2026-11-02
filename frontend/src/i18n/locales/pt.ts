@@ -1501,6 +1501,7 @@ const pt: TranslationSchema = {
       confirmDelete: 'Eliminar o imóvel "{{title}}"?',
     },
     tips: {
+      ownerExport: "Descarrega tudo o que o Serviço guarda sobre este proprietário (direito de acesso RGPD).",
       contractSign: "Abre o painel de assinatura: a sua rubrica é aposta ao contrato e datada.",
       contractViewLease: "Mostra o contrato gerado, pronto a imprimir ou a enviar.",
       contractScan: "Junta ao contrato a fotografia ou o PDF do documento assinado em papel.",
@@ -1645,6 +1646,7 @@ const pt: TranslationSchema = {
       portalSuccess: "Acesso ao portal criado com sucesso. Comunique o email e a palavra-passe ao inquilino.",
     },
     owners: {
+      exportData: "Exportar dados",
       summary: {
         label: "Resumo dos proprietários",
         total: "Proprietários",
@@ -3096,6 +3098,12 @@ const pt: TranslationSchema = {
       crgExport: "Mostra o relatório de gestão do mês, para imprimir ou guardar.",
     },
     dashboard: {
+      privacy: {
+        title: "Os meus dados pessoais",
+        description: "Pode obter a qualquer momento uma cópia de todos os dados conservados sobre si: a sua ficha, os seus imóveis, as suas transferências e as suas mensagens. Para corrigir ou apagar estes dados, dirija-se à sua agência, que é a responsável.",
+        download: "Descarregar os meus dados",
+        downloading: "A preparar o ficheiro…",
+      },
       exportCsv: "Exportar em CSV",
       address: "Morada",
       currency: "Moeda",

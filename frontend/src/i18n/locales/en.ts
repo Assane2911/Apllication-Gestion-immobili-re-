@@ -1501,6 +1501,7 @@ const en: TranslationSchema = {
       confirmDelete: 'Delete the property "{{title}}"?',
     },
     tips: {
+      ownerExport: "Downloads everything the Service holds about this owner (GDPR right of access).",
       contractSign: "Opens the signature pad: your signature is added to the lease and time-stamped.",
       contractViewLease: "Shows the generated lease, ready to print or send.",
       contractScan: "Attaches the photo or PDF of the paper-signed contract to the lease.",
@@ -1645,6 +1646,7 @@ const en: TranslationSchema = {
       portalSuccess: "Portal access created successfully. Share the email and password with the tenant.",
     },
     owners: {
+      exportData: "Export data",
       summary: {
         label: "Owner summary",
         total: "Owners",
@@ -3096,6 +3098,12 @@ const en: TranslationSchema = {
       crgExport: "Shows this month's management report, to print or keep.",
     },
     dashboard: {
+      privacy: {
+        title: "My personal data",
+        description: "You can obtain a copy of all the data held about you at any time: your record, your properties, your payouts and your messages. To have this data corrected or erased, contact your agency, which is responsible for it.",
+        download: "Download my data",
+        downloading: "Preparing the file…",
+      },
       exportCsv: "Export as CSV",
       address: "Address",
       currency: "Currency",

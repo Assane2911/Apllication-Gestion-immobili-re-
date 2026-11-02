@@ -3,6 +3,8 @@ import {
   anonymiserOwner,
   createOwner,
   deleteOwner,
+  exporterMesDonneesProprietaire,
+  exporterOwner,
   getOwner,
   getOwnerDashboard,
   inviteOwnerPortalAccount,
@@ -17,10 +19,13 @@ const router = Router();
 // router.use ci-dessous, réservé au gestionnaire (même pattern que
 // contract.routes.ts pour GET /mine côté locataire).
 router.get("/mine/dashboard", authenticate, requireRole("OWNER"), getOwnerDashboard);
+// Droit d'accès et portabilité (RGPD art. 15 et 20) : le propriétaire emporte ses données.
+router.get("/mine/export", authenticate, requireRole("OWNER"), exporterMesDonneesProprietaire);
 
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 
 router.get("/", listOwners);
+router.get("/:id/export", exporterOwner);
 router.get("/:id", getOwner);
 router.post("/", createOwner);
 router.put("/:id", updateOwner);

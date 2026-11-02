@@ -289,6 +289,29 @@ describe("OwnersPage (manager)", () => {
     expect(screen.queryAllByRole("button", { name: "Anonymiser" })).toHaveLength(0);
   });
 
+  it("exporte les données d'un propriétaire (droit d'accès), sauf s'il est anonymisé", async () => {
+    const user = userEvent.setup();
+    queueOwners([owner({ id: "own-1" })]);
+    mockedApi.get.mockResolvedValueOnce({ data: new Blob(["{}"], { type: "application/json" }) });
+    const creerUrl = vi.fn().mockReturnValue("blob:faux");
+    URL.createObjectURL = creerUrl;
+    URL.revokeObjectURL = vi.fn();
+
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Exporter les données" }).length).toBeGreaterThan(0));
+    await user.click(screen.getAllByRole("button", { name: "Exporter les données" })[0]);
+
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/owners/own-1/export", { responseType: "blob" }));
+    await waitFor(() => expect(creerUrl).toHaveBeenCalled());
+  });
+
+  it("ne propose plus l'export pour un propriétaire déjà anonymisé", async () => {
+    queueOwners([owner({ id: "own-1", anonymizedAt: "2026-10-04T00:00:00.000Z" })]);
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Anonymisé").length).toBeGreaterThan(0));
+    expect(screen.queryAllByRole("button", { name: "Exporter les données" })).toHaveLength(0);
+  });
+
   it("rappelle les reversements du mois écoulé restant à faire, avec un lien vers le CRG de ce mois", async () => {
     queueOwners(
       [owner({ id: "own-1" }), owner({ id: "own-2", firstName: "Moussa" })],

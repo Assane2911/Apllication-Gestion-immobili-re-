@@ -1500,6 +1500,7 @@ const fr = {
       confirmDelete: 'Supprimer le bien "{{title}}" ?',
     },
     tips: {
+      ownerExport: "Télécharge tout ce que le Service détient sur ce propriétaire (droit d'accès RGPD).",
       contractSign: "Ouvre le pavé de signature : votre paraphe est apposé au bail et horodaté.",
       contractViewLease: "Affiche le bail généré, prêt à imprimer ou à transmettre.",
       contractScan: "Joint au bail la photo ou le PDF du contrat signé sur papier.",
@@ -1645,6 +1646,7 @@ const fr = {
       portalSuccess: "Accès portail créé avec succès. Communiquez l'email et le mot de passe au locataire.",
     },
     owners: {
+      exportData: "Exporter les données",
       summary: {
         label: "Synthèse des propriétaires",
         total: "Propriétaires",
@@ -3097,6 +3099,12 @@ const fr = {
       crgExport: "Affiche le compte-rendu de gestion du mois, à imprimer ou à conserver.",
     },
     dashboard: {
+      privacy: {
+        title: "Mes données personnelles",
+        description: "Vous pouvez à tout moment obtenir une copie de l'ensemble des données détenues à votre sujet : votre fiche, vos biens, vos versements et vos messages. Pour faire corriger ou effacer ces données, adressez-vous à votre agence, qui en est responsable.",
+        download: "Télécharger mes données",
+        downloading: "Préparation du fichier…",
+      },
       exportCsv: "Exporter en CSV",
       address: "Adresse",
       currency: "Devise",
