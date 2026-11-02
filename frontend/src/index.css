@@ -154,6 +154,19 @@
     color: var(--color-gray-400);
   }
 
+  /* Chrome ignore `line-height` sur un menu déroulant : à classes égales, il est plus bas que le champ de saisie voisin
+     (35 px contre 38 px). On lui donne la hauteur qu'aurait un champ de saisie avec les mêmes classes. */
+  select:where(.py-2.text-sm) {
+    min-height: 2.375rem;
+  }
+  select:where(.py-1\.5.text-sm),
+  select:where(.py-2.text-xs) {
+    min-height: 2.125rem;
+  }
+  select:where(.py-1\.5.text-xs) {
+    min-height: 1.875rem;
+  }
+
   /* Remplissages par défaut du navigateur que Tailwind 4 remet à 0 (options de liste,
      cellules de tableau sans classe de remplissage), et champ de recherche. */
   option {
