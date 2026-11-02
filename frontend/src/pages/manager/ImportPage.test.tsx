@@ -240,3 +240,74 @@ describe("ImportPage", () => {
     expect(screen.getByText("biens.csv")).toBeInTheDocument();
   });
 });
+
+describe("ImportPage — filtre des lignes et rapport à corriger", () => {
+  async function afficherAnalyse(donnees = analyse()) {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: donnees });
+    renderPage();
+    await deposer(user);
+    await screen.findByText("Studio A — 1 rue X");
+    return user;
+  }
+
+  it("isole les erreurs, les doublons ou les lignes prêtes, avec leur nombre", async () => {
+    const user = await afficherAnalyse();
+    const groupe = screen.getByRole("group", { name: "Filtrer les lignes" });
+    expect(within(groupe).getByRole("button", { name: "Toutes 3" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("row")).toHaveLength(4);
+
+    await user.click(within(groupe).getByRole("button", { name: "Erreurs 1" }));
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByText("Villa B")).toBeInTheDocument();
+    expect(screen.queryByText("Studio A — 1 rue X")).not.toBeInTheDocument();
+    expect(screen.getByText("1 ligne(s) affichée(s) sur 3")).toBeInTheDocument();
+
+    await user.click(within(groupe).getByRole("button", { name: "Doublons 1" }));
+    expect(screen.getByText("Loft C — 8 quai")).toBeInTheDocument();
+    await user.click(within(groupe).getByRole("button", { name: "Prêtes 1" }));
+    expect(screen.getByText("Studio A — 1 rue X")).toBeInTheDocument();
+    await user.click(within(groupe).getByRole("button", { name: "Toutes 3" }));
+    expect(screen.getAllByRole("row")).toHaveLength(4);
+  });
+
+  it("n'affiche pas le filtre quand toutes les lignes sont valides", async () => {
+    await afficherAnalyse(
+      analyse({ resume: { total: 1, valides: 1, doublons: 0, erreurs: 0 }, lignes: [{ ligne: 2, statut: "OK", messages: [], donnees: { title: "Studio A", address: "1 rue X" } }] })
+    );
+    expect(screen.queryByRole("group", { name: "Filtrer les lignes" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Télécharger les lignes à corriger/ })).not.toBeInTheDocument();
+  });
+
+  it("télécharge le rapport des seules lignes à corriger, avec leurs motifs", async () => {
+    let blob: Blob | undefined;
+    let nom = "";
+    Object.defineProperty(URL, "createObjectURL", { value: vi.fn((b: Blob) => { blob = b; return "blob:x"; }), configurable: true, writable: true });
+    Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true, writable: true });
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { nom = this.download; });
+    const user = await afficherAnalyse();
+
+    await user.click(screen.getByRole("button", { name: "Télécharger les lignes à corriger (CSV)" }));
+    const texte = await new Promise<string>((resolve) => {
+      const lecteur = new FileReader();
+      lecteur.onload = () => resolve(String(lecteur.result));
+      lecteur.readAsText(blob as Blob);
+    });
+    clic.mockRestore();
+    expect(nom).toMatch(/^rapport-import-biens-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(texte.replace("﻿", "").split("\n")).toEqual([
+      '"Ligne";"Statut";"Données";"Motif"',
+      '"3";"Erreur";"Villa B";"Adresse manquante ou trop courte (2 caractères minimum)."',
+      '"4";"Doublon";"Loft C — 8 quai";"Un bien avec ce titre et cette adresse existe déjà."',
+    ]);
+  });
+
+  it("revient à toutes les lignes pour un nouveau fichier", async () => {
+    const user = await afficherAnalyse();
+    await user.click(within(screen.getByRole("group", { name: "Filtrer les lignes" })).getByRole("button", { name: "Erreurs 1" }));
+    mockedApi.post.mockResolvedValueOnce({ data: analyse() });
+    await deposer(user, CSV, "autre.csv");
+    await screen.findByText("Studio A — 1 rue X");
+    expect(screen.getAllByRole("row")).toHaveLength(4);
+  });
+});

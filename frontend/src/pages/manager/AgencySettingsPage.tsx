@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
 import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
 import { useAuth } from "../../context/auth";
 import type { AgencySettings, RetentionEcheances, TeamMember, TeamRole } from "../../types";
+import { avertissementsBancaires, completudeProfil, formulaireModifie } from "../../utils/syntheseCompte";
 
 const ROLES_EQUIPE: TeamRole[] = ["FULL", "AGENT", "ACCOUNTANT", "READ_ONLY"];
 import Bulle from "../../components/Bulle";
@@ -24,6 +25,21 @@ export function calendrierRelances(grace: string, intervalle: string): { first: 
   const i = Math.max(1, Number(intervalle) || 0);
   return { first: g, second: g + i, third: g + 2 * i };
 }
+
+const FORMULAIRE_INITIAL = {
+  agencyName: "",
+  siretOrId: "",
+  address: "",
+  phone: "",
+  email: "",
+  legalNotice: "",
+  iban: "",
+  bic: "",
+  overdueRemindersEnabled: false,
+  overdueGraceDays: "5",
+  overdueIntervalDays: "10",
+  overdueNotifyGuarantors: false,
+};
 
 export default function AgencySettingsPage() {
   const { t } = useTranslation();
@@ -71,20 +87,10 @@ export default function AgencySettingsPage() {
     }
   }
 
-  const [form, setForm] = useState({
-    agencyName: "",
-    siretOrId: "",
-    address: "",
-    phone: "",
-    email: "",
-    legalNotice: "",
-    iban: "",
-    bic: "",
-    overdueRemindersEnabled: false,
-    overdueGraceDays: "5",
-    overdueIntervalDays: "10",
-    overdueNotifyGuarantors: false,
-  });
+  const [form, setForm] = useState(FORMULAIRE_INITIAL);
+  // Dernier état connu du serveur (lu au chargement, puis après chaque enregistrement) : sert à repérer les
+  // modifications en attente et à les annuler.
+  const [enregistre, setEnregistre] = useState(FORMULAIRE_INITIAL);
 
   // Logo et tampon de l'agence : ils s'envoient à part du formulaire (fichiers), et le formulaire ne les renvoie jamais.
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -99,7 +105,7 @@ export default function AgencySettingsPage() {
     api
       .get<AgencySettings>("/agency")
       .then((res) => {
-        setForm({
+        const lu = {
           agencyName: res.data.agencyName || "",
           siretOrId: res.data.siretOrId || "",
           address: res.data.address || "",
@@ -112,7 +118,9 @@ export default function AgencySettingsPage() {
           overdueGraceDays: String(res.data.overdueGraceDays ?? 5),
           overdueIntervalDays: String(res.data.overdueIntervalDays ?? 10),
           overdueNotifyGuarantors: Boolean(res.data.overdueNotifyGuarantors),
-        });
+        };
+        setForm(lu);
+        setEnregistre(lu);
         setLogoUrl(res.data.logoUrl ?? null);
         setStampUrl(res.data.stampOrSignatureUrl ?? null);
         setLoadError(null);
@@ -226,6 +234,7 @@ export default function AgencySettingsPage() {
         overdueGraceDays: Number(form.overdueGraceDays),
         overdueIntervalDays: Number(form.overdueIntervalDays),
       });
+      setEnregistre(form);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
     } catch (err) {
@@ -234,6 +243,21 @@ export default function AgencySettingsPage() {
       setSaving(false);
     }
   }
+
+  const modifie = formulaireModifie(form, enregistre);
+  const profil = completudeProfil(form, logoUrl, stampUrl);
+  const bancaire = avertissementsBancaires(form.iban, form.bic);
+
+  // Quitter la page (fermeture, rechargement, lien externe) avec des modifications non enregistrées : le navigateur demande confirmation.
+  useEffect(() => {
+    if (!modifie) return;
+    const avertir = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", avertir);
+    return () => window.removeEventListener("beforeunload", avertir);
+  }, [modifie]);
 
   // Sommaire des rubriques (le numéro de chaque entrée est celui de sa section) ; l'équipe n'existe que pour le propriétaire.
   const rubriques = [
@@ -298,7 +322,7 @@ export default function AgencySettingsPage() {
 
           <div className="min-w-0 space-y-6">
             {success && (
-              <div role="status" className="flex items-center gap-2 border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 shadow-[inset_4px_0_0_var(--color-emerald-600)]">
+              <div role="status" className="flex items-center gap-2 border border-ink-900 bg-slate-50 px-4 py-3 text-sm text-ink-900 shadow-[inset_4px_0_0_var(--color-ink-900)]">
                 <CheckCircle2 size={15} aria-hidden="true" /> {t("manager.agencySettings.success")}
               </div>
             )}
@@ -308,6 +332,39 @@ export default function AgencySettingsPage() {
                 {error}
               </div>
             )}
+
+            <section aria-label={t("manager.agencySettings.profile.label")} className="border border-slate-300 bg-white p-5 shadow-[inset_4px_0_0_var(--color-orange-700)]">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("manager.agencySettings.profile.title")}</h3>
+                <p className="font-mono text-xs text-slate-700">{t("manager.agencySettings.profile.count", { done: profil.faits, total: profil.total })}</p>
+              </div>
+              <div
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={profil.total}
+                aria-valuenow={profil.faits}
+                aria-label={t("manager.agencySettings.profile.label")}
+                className="mt-3 h-2 border border-slate-400 bg-white"
+              >
+                <div className={`h-full ${profil.complet ? "bg-ink-900" : "bg-orange-700"}`} style={{ width: `${Math.round((profil.faits / profil.total) * 100)}%` }} />
+              </div>
+              {profil.complet ? (
+                <p className="mt-3 text-sm text-slate-700">{t("manager.agencySettings.profile.complete")}</p>
+              ) : (
+                <>
+                  <p className="mt-3 text-sm text-slate-700">{t("manager.agencySettings.profile.hint")}</p>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {profil.manquants.map((m) => (
+                      <li key={m.cle}>
+                        <a href={`#${m.ancre}`} className="inline-block border border-slate-400 bg-white px-2.5 py-1 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
+                          + {t(`manager.agencySettings.profile.items.${m.cle}`)}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
 
             <SectionImageAgence ressource="logo" numero={numero("agency-logo")} url={logoUrl} onChange={setLogoUrl} />
             <SectionImageAgence ressource="stamp" numero={numero("agency-stamp")} url={stampUrl} onChange={setStampUrl} />
@@ -407,8 +464,14 @@ export default function AgencySettingsPage() {
                       value={form.iban}
                       onChange={(e) => setForm({ ...form, iban: e.target.value })}
                       placeholder={t("manager.agencySettings.fields.ibanPlaceholder")}
+                      aria-describedby={bancaire.iban ? "agency-iban-alerte" : undefined}
                       className={`${CHAMP} font-mono`}
                     />
+                    {bancaire.iban && (
+                      <p id="agency-iban-alerte" aria-live="polite" className="mt-1 flex items-start gap-1.5 text-xs text-orange-800">
+                        <AlertTriangle size={13} className="mt-px shrink-0" aria-hidden="true" /> {t("manager.agencySettings.ibanWarning")}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="agency-bic" className={ETIQUETTE}>
@@ -419,8 +482,14 @@ export default function AgencySettingsPage() {
                       value={form.bic}
                       onChange={(e) => setForm({ ...form, bic: e.target.value })}
                       placeholder={t("manager.agencySettings.fields.bicPlaceholder")}
+                      aria-describedby={bancaire.bic ? "agency-bic-alerte" : undefined}
                       className={`${CHAMP} font-mono`}
                     />
+                    {bancaire.bic && (
+                      <p id="agency-bic-alerte" aria-live="polite" className="mt-1 flex items-start gap-1.5 text-xs text-orange-800">
+                        <AlertTriangle size={13} className="mt-px shrink-0" aria-hidden="true" /> {t("manager.agencySettings.bicWarning")}
+                      </p>
+                    )}
                   </div>
                 </div>
               </SectionReglage>
@@ -487,7 +556,17 @@ export default function AgencySettingsPage() {
               </SectionReglage>
 
               {/* Barre d'enregistrement collée en bas de l'écran tant que le formulaire est à l'écran. */}
-              <div className="sticky bottom-0 z-10 flex justify-end border border-slate-300 bg-white px-5 py-3">
+              <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-4 border border-slate-300 bg-white px-5 py-3">
+                {modifie && (
+                  <>
+                    <p aria-live="polite" className="mr-auto font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-700">
+                      {t("manager.agencySettings.unsaved")}
+                    </p>
+                    <button type="button" onClick={() => setForm(enregistre)} className="cursor-pointer border-b border-ink-900/40 text-xs font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700">
+                      {t("manager.agencySettings.discard")}
+                    </button>
+                  </>
+                )}
                 <button
                   type="submit"
                   disabled={saving}
@@ -585,7 +664,7 @@ export default function AgencySettingsPage() {
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {user?.twoFactorEnabled ? (
                   <>
-                    <span className="inline-flex items-center gap-1.5 border border-emerald-300 bg-emerald-50 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
+                    <span className="inline-flex items-center gap-1.5 border border-ink-900 bg-slate-50 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
                       <CheckCircle2 size={14} /> {t("manager.agencySettings.twoFactor.enabled")}
                     </span>
                     <Bulle texte={t("manager.tips.agencyTwoFactorDisable")}>
@@ -676,7 +755,7 @@ export default function AgencySettingsPage() {
                       </p>
                     )}
                     {inviteSuccess && (
-                      <p role="status" className="mt-2 text-sm text-emerald-700">
+                      <p role="status" className="mt-2 text-sm text-ink-900">
                         {inviteSuccess}
                       </p>
                     )}

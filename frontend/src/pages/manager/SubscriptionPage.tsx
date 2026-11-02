@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
 import { api, apiErrorMessage } from "../../api/client";
+import BandeauChiffres from "../../components/BandeauChiffres";
 import BankDetails from "../../components/BankDetails";
 import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
@@ -13,6 +14,8 @@ import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { FORMULE_REPRISE } from "../../data/lignesFormules";
 import { formaterDateHeureLongue } from "../../utils/dateHeure";
+import { csvHistoriqueAbonnement, economieAnnuelle, formuleSuperieure, syntheseHistorique } from "../../utils/syntheseCompte";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
 
 interface SubscriptionHistoryRecord {
   id: string;
@@ -210,6 +213,27 @@ export default function SubscriptionPage() {
       : null;
 
   const nomFormule = (plan: SubscriptionPlanDetail) => t(`common.plans.${plan.id}`, { defaultValue: plan.name });
+  const synthesePaiements = syntheseHistorique(history);
+  const suggestion = formuleSuperieure(plans, sub?.plan, propertyUsage);
+
+  function exporterHistorique() {
+    const csv = csvHistoriqueAbonnement(
+      history,
+      {
+        date: t("manager.subscription.historyTable.date"),
+        plan: t("manager.subscription.historyTable.plan"),
+        cycle: t("manager.subscription.historyTable.cycle"),
+        amount: t("manager.subscription.historyTable.amount"),
+        currency: t("manager.subscription.csv.currency"),
+        method: t("manager.subscription.historyTable.method"),
+        reference: t("manager.subscription.csv.reference"),
+        status: t("manager.subscription.historyTable.status"),
+      },
+      (iso) => new Date(iso).toLocaleDateString(i18n.language)
+    );
+    telechargerCsv(`abonnement-historique-${dateDuJourPourFichier()}.csv`, csv);
+  }
+
   const pctBiens = propertyUsage && propertyUsage.max ? Math.min(100, Math.round((propertyUsage.count / propertyUsage.max) * 100)) : 0;
 
   return (
@@ -237,7 +261,7 @@ export default function SubscriptionPage() {
         </div>
       )}
       {successMessage && (
-        <div role="status" className="flex items-center gap-2 border border-emerald-300 bg-emerald-50 px-4 py-3 text-emerald-800 shadow-[inset_4px_0_0_var(--color-emerald-600)]">
+        <div role="status" className="flex items-center gap-2 border border-ink-900 bg-slate-50 px-4 py-3 text-ink-900 shadow-[inset_4px_0_0_var(--color-ink-900)]">
           <CheckCircle2 size={16} className="shrink-0" aria-hidden="true" />
           <span className="text-sm font-medium">{successMessage}</span>
         </div>
@@ -297,7 +321,7 @@ export default function SubscriptionPage() {
             <span
               className={`mt-2 inline-block border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${
                 sub?.status === "ACTIVE"
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                  ? "border-ink-900 bg-slate-50 text-ink-900"
                   : sub?.isTrialActive
                   ? "border-orange-700/50 bg-orange-50 text-orange-800"
                   : "border-rose-300 bg-rose-50 text-rose-800"
@@ -364,6 +388,29 @@ export default function SubscriptionPage() {
         </div>
       </section>
 
+      {/* Le parc approche du plafond : la formule suivante qui le loge, en un clic. */}
+      {suggestion && propertyUsage && propertyUsage.max !== null && !isNativeApp && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-slate-300 bg-white px-4 py-3 shadow-[inset_4px_0_0_var(--color-orange-700)]">
+          <p className="text-sm text-slate-800">
+            {t("manager.subscription.upgrade.text", {
+              count: propertyUsage.count,
+              max: propertyUsage.max,
+              plan: nomFormule(suggestion),
+            })}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedPlan(suggestion);
+              setAutoRenew(false);
+            }}
+            className="cursor-pointer border border-ink-900 bg-ink-900 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-600"
+          >
+            {t("manager.subscription.upgrade.cta", { plan: nomFormule(suggestion) })}
+          </button>
+        </div>
+      )}
+
       {/* Switch Mensuel / Annuel */}
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-stretch border border-slate-400 bg-white">
@@ -383,7 +430,7 @@ export default function SubscriptionPage() {
           >
             <span>{t("manager.subscription.annualBilling")}</span>
             {remiseAnnuelle !== null && remiseAnnuelle > 0 && (
-              <span className={`px-1.5 py-0.5 text-[10px] font-bold ${billingCycle === "ANNUAL" ? "bg-orange-700 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+              <span className={`px-1.5 py-0.5 text-[10px] font-bold ${billingCycle === "ANNUAL" ? "bg-orange-700 text-white" : "bg-orange-100 text-orange-800"}`}>
                 -{remiseAnnuelle}%
               </span>
             )}
@@ -436,14 +483,19 @@ export default function SubscriptionPage() {
                         {t("manager.subscription.billedAnnually", { amount: formatMoney(plan.annualPrice, plan.currency) })}
                       </span>
                     )}
+                    {billingCycle === "ANNUAL" && economieAnnuelle(plan) > 0 && (
+                      <span className="mt-1 w-full font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-700">
+                        {t("manager.subscription.annualSaving", { amount: formatMoney(economieAnnuelle(plan), plan.currency) })}
+                      </span>
+                    )}
                   </div>
 
                   <div className="mb-6 flex-1 space-y-2.5 border-t border-slate-300 pt-4 text-xs text-slate-700">
                     <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("manager.subscription.includedInPlan")}</p>
                     {plan.features.map((_feat, idx) => (
                       <div key={idx} className="flex items-start gap-2.5">
-                        <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-emerald-600 bg-emerald-50">
-                          <Check size={11} strokeWidth={3} className="text-emerald-700" aria-hidden="true" />
+                        <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-ink-900 bg-white">
+                          <Check size={11} strokeWidth={3} className="text-ink-900" aria-hidden="true" />
                         </span>
                         <span>{libelleLigne(plan, idx)}</span>
                       </div>
@@ -610,10 +662,30 @@ export default function SubscriptionPage() {
       {/* Historique des paiements de la plateforme */}
       {history.length > 0 && (
         <div className="space-y-3">
-          <h3 className="flex items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
-            {t("manager.subscription.historyTitle")}
-            <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="flex flex-1 items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
+              {t("manager.subscription.historyTitle")}
+              <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
+            </h3>
+            <button
+              type="button"
+              onClick={exporterHistorique}
+              className="cursor-pointer border border-ink-900 bg-white px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900 transition-colors hover:bg-ink-900 hover:text-white"
+            >
+              {t("manager.subscription.exportHistory")}
+            </button>
+          </div>
+          <BandeauChiffres
+            etiquette={t("manager.subscription.historySummary.label")}
+            cases={[
+              { libelle: t("manager.subscription.historySummary.payments"), valeur: synthesePaiements.paiements },
+              ...synthesePaiements.totaux.map((tot) => ({ libelle: synthesePaiements.totaux.length > 1 ? `${t("manager.subscription.historySummary.total")} (${tot.devise})` : t("manager.subscription.historySummary.total"), valeur: formatMoney(tot.montant, tot.devise) })),
+              {
+                libelle: t("manager.subscription.historySummary.last"),
+                valeur: synthesePaiements.dernier ? new Date(synthesePaiements.dernier).toLocaleDateString(i18n.language) : t("manager.subscription.historySummary.lastNone"),
+              },
+            ]}
+          />
           <div className="overflow-x-auto border border-slate-300 bg-white">
             <table className="w-full text-left text-xs">
               <thead>
@@ -638,7 +710,7 @@ export default function SubscriptionPage() {
                     <td className="px-4 py-3 font-bold tabular-nums">{formatMoney(h.amount, h.currency)}</td>
                     <td className="px-4 py-3 font-mono text-[11px]">{h.paymentMethod}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-block border border-emerald-300 bg-emerald-50 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-800">
+                      <span className="inline-block border border-ink-900 bg-slate-50 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
                         {h.status}
                       </span>
                     </td>

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -657,5 +657,97 @@ describe("AgencySettingsPage — tampon de l'agence", () => {
 
     await waitFor(() => expect(mockedApi.put).toHaveBeenCalled());
     expect(mockedApi.put.mock.calls[0][1]).not.toHaveProperty("stampOrSignatureUrl");
+  });
+});
+
+describe("AgencySettingsPage — profil, saisie bancaire et modifications en attente", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.put.mockReset();
+    mockedApi.get.mockResolvedValue({ data: echeancesVides() });
+    localStorage.clear();
+  });
+
+  it("mesure la complétude du profil et propose d'ajouter ce qui manque, en lien vers la rubrique", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+
+    const profil = await screen.findByRole("region", { name: "Complétude du profil" });
+    expect(within(profil).getByText("5 / 8 éléments renseignés")).toBeInTheDocument();
+    expect(within(profil).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "5");
+    expect(within(profil).getByRole("link", { name: "+ IBAN pour les virements" })).toHaveAttribute("href", "#agency-banque");
+    expect(within(profil).getByRole("link", { name: "+ Logo" })).toHaveAttribute("href", "#agency-logo");
+    expect(within(profil).getByRole("link", { name: "+ Tampon ou signature" })).toHaveAttribute("href", "#agency-stamp");
+    expect(within(profil).queryByRole("link", { name: /Mentions légales/ })).not.toBeInTheDocument();
+  });
+
+  it("met le profil à jour au fil de la saisie", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+    const profil = await screen.findByRole("region", { name: "Complétude du profil" });
+
+    await user.type(screen.getByLabelText("IBAN"), "FR7630006000011234567890189");
+    expect(within(profil).getByText("6 / 8 éléments renseignés")).toBeInTheDocument();
+    expect(within(profil).queryByRole("link", { name: "+ IBAN pour les virements" })).not.toBeInTheDocument();
+  });
+
+  it("signale un IBAN à clé fausse et un BIC mal formé sans empêcher d'enregistrer", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+    await screen.findByRole("region", { name: "Complétude du profil" });
+
+    await user.type(screen.getByLabelText("IBAN"), "FR7630006000011234567890188");
+    expect(screen.getByText(/La clé de cet IBAN semble incorrecte/)).toBeInTheDocument();
+    await user.clear(screen.getByLabelText("IBAN"));
+    await user.type(screen.getByLabelText("IBAN"), "FR7630006000011234567890189");
+    expect(screen.queryByText(/La clé de cet IBAN semble incorrecte/)).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("BIC / SWIFT"), "XX");
+    expect(screen.getByText(/Ce BIC semble mal formé/)).toBeInTheDocument();
+
+    mockedApi.put.mockResolvedValueOnce({ data: {} });
+    await user.click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
+    await waitFor(() => expect(mockedApi.put).toHaveBeenCalled());
+  });
+
+  it("signale les modifications non enregistrées, les annule, et s'éteint après l'enregistrement", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+    const nom = await screen.findByLabelText("Nom commercial de l'agence *");
+    await waitFor(() => expect(nom).toHaveValue("Agence du Port"));
+    expect(screen.queryByText("Modifications non enregistrées")).not.toBeInTheDocument();
+
+    await user.type(nom, " Plus");
+    expect(screen.getByText("Modifications non enregistrées")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Annuler les modifications" }));
+    expect(nom).toHaveValue("Agence du Port");
+    expect(screen.queryByText("Modifications non enregistrées")).not.toBeInTheDocument();
+
+    await user.type(nom, " Plus");
+    mockedApi.put.mockResolvedValueOnce({ data: {} });
+    await user.click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
+    await waitFor(() => expect(screen.queryByText("Modifications non enregistrées")).not.toBeInTheDocument());
+    expect(nom).toHaveValue("Agence du Port Plus");
+  });
+
+  it("demande confirmation au navigateur quand on quitte avec des modifications en attente", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+    const nom = await screen.findByLabelText("Nom commercial de l'agence *");
+    await waitFor(() => expect(nom).toHaveValue("Agence du Port"));
+
+    const propre = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(propre);
+    expect(propre.defaultPrevented).toBe(false);
+
+    await user.type(nom, "!");
+    const sale = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(sale);
+    expect(sale.defaultPrevented).toBe(true);
   });
 });

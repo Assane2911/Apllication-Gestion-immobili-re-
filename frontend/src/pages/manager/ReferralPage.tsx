@@ -1,16 +1,17 @@
-import { Check, Copy, Gift } from "lucide-react";
+import { Check, Copy, Gift, Mail, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import BoutonPartager from "../../components/BoutonPartager";
 import { Skeleton } from "../../components/Skeleton";
 import type { ReferralInfo } from "../../types";
+import { lienMailParrainage, lienWhatsappParrainage, messageParrainage, placesRestantes } from "../../utils/syntheseCompte";
 
 export default function ReferralPage() {
   const { t } = useTranslation();
   const [info, setInfo] = useState<ReferralInfo | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | "message" | null>(null);
 
   function load() {
     setLoadError(null);
@@ -22,7 +23,7 @@ export default function ReferralPage() {
 
   useEffect(load, []);
 
-  async function copier(champ: "code" | "link", valeur: string) {
+  async function copier(champ: "code" | "link" | "message", valeur: string) {
     try {
       await navigator.clipboard.writeText(valeur);
       setCopied(champ);
@@ -35,6 +36,8 @@ export default function ReferralPage() {
 
   const plafondAtteint = info ? info.rewardedReferrals >= info.maxRewardedReferrals : false;
   const pctPlafond = info && info.maxRewardedReferrals > 0 ? Math.min(100, Math.round((info.rewardedReferrals / info.maxRewardedReferrals) * 100)) : 0;
+  const message = info ? messageParrainage(t("manager.referral.shareText"), info.referralUrl) : "";
+  const restant = info ? placesRestantes(info) : { places: 0, jours: 0 };
   const BOUTON_COPIE =
     "inline-flex shrink-0 cursor-pointer items-center gap-1.5 border border-ink-900 bg-white px-3 py-1.5 text-xs font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white";
 
@@ -89,6 +92,22 @@ export default function ReferralPage() {
                   {copied === "link" ? t("common.actions.copied") : t("common.actions.copy")}
                 </button>
               </div>
+
+              {/* Un message déjà rédigé : WhatsApp ou e-mail s'ouvrent avec le texte et le lien en place. */}
+              <p className="mb-2 mt-6 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.referral.share.message")}</p>
+              <p className="border-l-2 border-orange-700 bg-slate-50 px-3 py-2.5 text-sm leading-relaxed text-slate-800">{message}</p>
+              <div role="group" aria-label={t("manager.referral.share.channels")} className="mt-3 flex flex-wrap gap-2">
+                <a href={lienWhatsappParrainage(message)} target="_blank" rel="noopener noreferrer" className={BOUTON_COPIE}>
+                  <MessageCircle size={14} aria-hidden="true" /> {t("manager.referral.share.whatsapp")}
+                </a>
+                <a href={lienMailParrainage(t("manager.referral.share.subject"), message)} className={BOUTON_COPIE}>
+                  <Mail size={14} aria-hidden="true" /> {t("manager.referral.share.email")}
+                </a>
+                <button type="button" onClick={() => copier("message", message)} className={BOUTON_COPIE}>
+                  {copied === "message" ? <Check size={14} /> : <Copy size={14} />}
+                  {copied === "message" ? t("common.actions.copied") : t("manager.referral.share.copyMessage")}
+                </button>
+              </div>
             </div>
 
             <div className="relative flex flex-col items-center justify-center gap-1 border-t-2 border-dashed border-ink-900 bg-orange-700 px-6 py-6 text-center text-white md:border-l-2 md:border-t-0">
@@ -140,6 +159,10 @@ export default function ReferralPage() {
               ? t("manager.referral.rewardCapReached")
               : t("manager.referral.rewardCap", { used: info.rewardedReferrals, max: info.maxRewardedReferrals })}
           </p>
+
+          {!plafondAtteint && restant.places > 0 && (
+            <p className="-mt-3 font-mono text-xs text-slate-700">{t("manager.referral.remaining", { places: restant.places, days: restant.jours })}</p>
+          )}
 
           {/* Comment ça marche : trois étapes numérotées. */}
           <ol className="grid grid-cols-1 gap-3 md:grid-cols-3">

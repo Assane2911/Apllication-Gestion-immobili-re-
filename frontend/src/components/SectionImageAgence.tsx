@@ -102,7 +102,7 @@ export default function SectionImageAgence({
         </p>
       )}
       {saved && (
-        <p role="status" className="mt-3 text-sm text-emerald-700">
+        <p role="status" className="mt-3 text-sm text-ink-900">
           {t(`${cle}.saved`)}
         </p>
       )}

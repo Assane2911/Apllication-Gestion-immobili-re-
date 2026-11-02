@@ -3,6 +3,8 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, messageDuServeur } from "../../api/client";
+import { csvRapportImport, filtrerLignesImport, type FiltreImport } from "../../utils/syntheseCompte";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
 
 type TypeImport = "properties" | "tenants" | "contracts";
 type StatutLigne = "OK" | "DOUBLON" | "ERREUR";
@@ -25,7 +27,7 @@ interface Analyse {
 }
 
 const STYLES_STATUT: Record<StatutLigne, string> = {
-  OK: "border-emerald-300 bg-emerald-50 text-emerald-800",
+  OK: "border-ink-900 bg-slate-50 text-ink-900",
   DOUBLON: "border-orange-700/50 bg-orange-50 text-orange-800",
   ERREUR: "border-rose-300 bg-rose-50 text-rose-800",
 };
@@ -33,7 +35,7 @@ const STYLES_STATUT: Record<StatutLigne, string> = {
 /** Filet de couleur de chaque case du résumé. */
 const FILETS_RESUME: Record<string, string> = {
   total: "border-t-slate-400",
-  valid: "border-t-emerald-600",
+  valid: "border-t-ink-900",
   duplicates: "border-t-orange-700",
   errors: "border-t-rose-600",
 };
@@ -77,6 +79,7 @@ export default function ImportPage() {
   const [chargement, setChargement] = useState(false);
   const [import_, setImport] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filtre, setFiltre] = useState<FiltreImport>("all");
   const champFichier = useRef<HTMLInputElement>(null);
 
   function reinitialiser() {
@@ -85,6 +88,7 @@ export default function ImportPage() {
     setAnalyse(null);
     setResultat(null);
     setEncodageSuspect(false);
+    setFiltre("all");
     setError(null);
     if (champFichier.current) champFichier.current.value = "";
   }
@@ -127,6 +131,7 @@ export default function ImportPage() {
     setError(null);
     setResultat(null);
     setAnalyse(null);
+    setFiltre("all");
     setNomFichier(fichier.name);
     setChargement(true);
     try {
@@ -159,6 +164,28 @@ export default function ImportPage() {
     } finally {
       setImport(false);
     }
+  }
+
+  const lignesVisibles = analyse ? filtrerLignesImport(analyse.lignes, filtre) : [];
+
+  function telechargerRapport() {
+    if (!analyse) return;
+    const csv = csvRapportImport(
+      analyse.lignes.map((l) => ({
+        ligne: l.ligne,
+        statut: l.statut,
+        resume: libelleLigne(analyse.type, l.donnees),
+        messages: l.messages.map((m, i) => messageDuServeur(l.details?.[i]?.code, l.details?.[i]?.params, m)),
+      })),
+      {
+        line: t("manager.import.reportColumns.line"),
+        status: t("manager.import.reportColumns.status"),
+        data: t("manager.import.reportColumns.data"),
+        reason: t("manager.import.reportColumns.reason"),
+        statuts: { OK: t("manager.import.status.OK"), DOUBLON: t("manager.import.status.DOUBLON"), ERREUR: t("manager.import.status.ERREUR") },
+      }
+    );
+    telechargerCsv(`rapport-import-${NOMS_FICHIER[analyse.type]}-${dateDuJourPourFichier()}.csv`, csv);
   }
 
   const libelleType = t(`manager.import.types.${type}`).toLowerCase();
@@ -262,7 +289,7 @@ export default function ImportPage() {
       )}
 
       {resultat && (
-        <div role="status" className="space-y-2 border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm text-emerald-900 shadow-[inset_4px_0_0_var(--color-emerald-600)]">
+        <div role="status" className="space-y-2 border border-ink-900 bg-slate-50 px-4 py-4 text-sm text-ink-900 shadow-[inset_4px_0_0_var(--color-ink-900)]">
           <p className="font-semibold">{t("manager.import.done", { count: resultat.importees ?? 0, type: libelleType })}</p>
           {(resultat.resume.doublons > 0 || resultat.resume.erreurs > 0) && (
             <p>{t("manager.import.skipped", { duplicates: resultat.resume.doublons, errors: resultat.resume.erreurs })}</p>
@@ -301,6 +328,40 @@ export default function ImportPage() {
             </p>
           )}
 
+          {/* Les lignes à corriger d'abord : on isole les erreurs ou les doublons, et on les emporte dans un rapport pour le tableur. */}
+          {(analyse.resume.erreurs > 0 || analyse.resume.doublons > 0) && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div role="group" aria-label={t("manager.import.filtersLabel")} className="flex items-stretch border border-slate-400 bg-white">
+                {(["all", "OK", "DOUBLON", "ERREUR"] as const).map((valeur) => {
+                  const compte = valeur === "all" ? analyse.resume.total : valeur === "OK" ? analyse.resume.valides : valeur === "DOUBLON" ? analyse.resume.doublons : analyse.resume.erreurs;
+                  return (
+                    <button
+                      key={valeur}
+                      type="button"
+                      aria-pressed={filtre === valeur}
+                      onClick={() => setFiltre(valeur)}
+                      className={`cursor-pointer border-r border-slate-400 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors last:border-r-0 ${
+                        filtre === valeur ? "bg-ink-900 text-white" : "text-slate-800 hover:bg-slate-100"
+                      }`}
+                    >
+                      {t(`manager.import.filters.${valeur}`)} <span className={filtre === valeur ? "text-white/80" : "text-orange-700"}>{compte}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={telechargerRapport}
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-ink-900 bg-white px-3 py-1.5 text-xs font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white"
+              >
+                <Download size={13} aria-hidden="true" /> {t("manager.import.report")}
+              </button>
+            </div>
+          )}
+          {filtre !== "all" && (
+            <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.import.shown", { shown: lignesVisibles.length, total: analyse.lignes.length })}</p>
+          )}
+
           <div className="max-h-112 overflow-x-auto overflow-y-auto border border-slate-300 bg-white">
             <table className="w-full text-sm">
               <thead className="sticky top-0 text-left">
@@ -311,7 +372,7 @@ export default function ImportPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300">
-                {analyse.lignes.map((l) => (
+                {lignesVisibles.map((l) => (
                   <tr
                     key={l.ligne}
                     className={l.statut === "ERREUR" ? "shadow-[inset_3px_0_0_var(--color-rose-600)]" : l.statut === "DOUBLON" ? "shadow-[inset_3px_0_0_var(--color-orange-700)]" : ""}
