@@ -31,6 +31,7 @@ import invoiceRoutes from "./routes/invoice.routes";
 import issueRoutes from "./routes/issue.routes";
 import listingRoutes from "./routes/listing.routes";
 import messageRoutes from "./routes/message.routes";
+import maintenanceRoutes from "./routes/maintenance.routes";
 import ownerMessageRoutes from "./routes/ownerMessage.routes";
 import notificationRoutes from "./routes/notification.routes";
 import ownerRoutes from "./routes/owner.routes";
@@ -46,6 +47,7 @@ import tenantRoutes from "./routes/tenant.routes";
 import vendorRoutes from "./routes/vendor.routes";
 import { pasDeCache } from "./middleware/pasDeCache";
 import { sansCaractereNul } from "./middleware/sansCaractereNul";
+import { bloquerPendantMaintenance } from "./middleware/maintenance";
 import { baseRepond } from "./services/sante.service";
 
 export const app = express();
@@ -188,6 +190,11 @@ app.get("/api/health/ready", async (_req, res) => {
   const ok = await baseRepond();
   res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "degraded" });
 });
+
+// Maintenance planifiée : pendant la fenêtre programmée par l'administrateur, l'API répond 503 (sauf sondes, paiements, tâches
+// planifiées, ouverture de session et administrateur). Avant TOUTES les routes métier ; fenêtre périmée = aucun effet.
+app.use(bloquerPendantMaintenance);
+app.use("/api/maintenance", maintenanceRoutes);
 
 app.use("/api/csp-report", cspRoutes);
 app.use("/api/auth", authRoutes);

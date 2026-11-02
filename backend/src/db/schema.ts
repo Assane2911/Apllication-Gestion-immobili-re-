@@ -1223,6 +1223,12 @@ export const platformSettings = pgTable("platform_settings", {
   id: text("id").primaryKey(),
   iban: text("iban"),
   bic: text("bic"),
+  // Maintenance planifiée : une fenêtre [début, fin[ pendant laquelle l'API répond « 503 maintenance » (voir
+  // middleware/maintenance.ts). Les trois champs sont nuls ou posés ensemble (le message est facultatif). La fenêtre a toujours
+  // une fin : une maintenance oubliée se termine d'elle-même.
+  maintenanceStart: timestamp("maintenance_start", { mode: "date" }),
+  maintenanceEnd: timestamp("maintenance_end", { mode: "date" }),
+  maintenanceMessage: text("maintenance_message"),
   ...timestamps,
 });
 

@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import axios from "axios";
 import i18n from "../i18n";
+import { definirEtat, lireEtatDepuisErreur } from "../utils/maintenance";
 import { SESSION_HINT_KEY } from "../utils/sessionLocale";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
@@ -87,6 +88,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     await lireCorpsBlobEnJson(error);
+    // Maintenance en cours : n'importe quel appel peut l'apprendre avant la prochaine interrogation régulière ; l'écran de
+    // maintenance s'affiche alors tout de suite (voir PorteMaintenance).
+    if (error.response?.status === 503) {
+      const maintenance = lireEtatDepuisErreur(error.response.data);
+      if (maintenance) definirEtat(maintenance);
+    }
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");

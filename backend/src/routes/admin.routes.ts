@@ -14,6 +14,7 @@ import { exportAuditCsv, exportManagersCsv } from "../controllers/adminExport.co
 import { deleteManager } from "../controllers/adminSuppression.controller";
 import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
 import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeUnlimitedAccess } from "../controllers/adminSubscription.controller";
+import { annulerMaintenance, etatMaintenance, programmerMaintenance } from "../controllers/maintenance.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -44,6 +45,9 @@ router.get("/listings", listAdminListings);
 router.post("/listings/:id/hide", hideListing);
 router.post("/listings/:id/restore", restoreListing);
 router.post("/listings/:id/featured", setListingFeatured);
+router.get("/maintenance", etatMaintenance);
+router.put("/maintenance", programmerMaintenance);
+router.delete("/maintenance", annulerMaintenance);
 router.get("/settings", getPlatformSettings);
 router.put("/settings", updatePlatformSettings);
 router.get("/suggestions", listSuggestions);

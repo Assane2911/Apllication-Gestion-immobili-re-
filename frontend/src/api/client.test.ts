@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { AxiosError, AxiosHeaders } from "axios";
 import { describe, expect, it } from "vitest";
 import { api, apiErrorCode, apiErrorMessage, fileUrl, liste } from "./client";
+import { lireEtatCourant, reinitialiserEtat } from "../utils/maintenance";
 import { afterEach, beforeEach, vi } from "vitest";
 
 describe("fileUrl", () => {
@@ -374,5 +375,35 @@ describe("apiErrorMessage — code d'erreur du serveur", () => {
   it("retombe sur le message du serveur quand le code est inconnu ou absent", async () => {
     expect(await dans("en", { error: "Message du serveur", code: "CODE_QUI_NEXISTE_PAS" })).toBe("Message du serveur");
     expect(await dans("en", { error: "Message du serveur" })).toBe("Message du serveur");
+  });
+});
+
+describe("intercepteur de réponse 503 « maintenance »", () => {
+  type Rejeteur = (error: unknown) => Promise<never>;
+  const rejeteur = (): Rejeteur =>
+    (api.interceptors.response as unknown as { handlers: Array<{ rejected: Rejeteur }> }).handlers[0].rejected;
+  const params = { debut: new Date(Date.now() - 1000).toISOString(), fin: new Date(Date.now() + 3_600_000).toISOString(), message: "Migration" };
+
+  afterEach(() => reinitialiserEtat());
+
+  it("apprend la maintenance de n'importe quel appel qui reçoit un 503 MAINTENANCE, et laisse l'erreur suivre son cours", async () => {
+    expect(lireEtatCourant()).toBeNull();
+    await expect(rejeteur()(axiosErrorWithResponse({ error: "Maintenance en cours", code: "MAINTENANCE", params }, 503))).rejects.toBeDefined();
+    expect(lireEtatCourant()).toEqual(params);
+  });
+
+  it("ignore les autres 503 (passerelle, base injoignable) et les réponses mal formées : ce n'est pas une maintenance", async () => {
+    await expect(rejeteur()(axiosErrorWithResponse({ error: "Service indisponible" }, 503))).rejects.toBeDefined();
+    await expect(rejeteur()(axiosErrorWithResponse({ code: "MAINTENANCE" }, 503))).rejects.toBeDefined();
+    await expect(rejeteur()(axiosErrorWithResponse({ code: "MAINTENANCE", params: { debut: "x", fin: "y" } }, 503))).rejects.toBeDefined();
+    await expect(rejeteur()(axiosErrorWithResponse({ code: "MAINTENANCE", params }, 500))).rejects.toBeDefined();
+    expect(lireEtatCourant()).toBeNull();
+  });
+
+  it("ne touche pas à la session : un 503 n'est pas un 401", async () => {
+    localStorage.setItem("hasSession", "1");
+    await expect(rejeteur()(axiosErrorWithResponse({ code: "MAINTENANCE", params }, 503))).rejects.toBeDefined();
+    expect(localStorage.getItem("hasSession")).toBe("1");
+    localStorage.removeItem("hasSession");
   });
 });
