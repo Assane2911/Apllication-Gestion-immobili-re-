@@ -681,6 +681,19 @@ const es: TranslationSchema = {
   },
 
   landing: {
+      reminders: {
+        title: "Simulador · Recordatorios automáticos",
+        subtitle: "Ajuste el plazo y el intervalo, como en los parámetros de su agencia.",
+        grace: "Plazo antes del primer recordatorio",
+        interval: "Intervalo entre dos recordatorios",
+        days: "{{count}} día(s)",
+        day: "D+{{day}}",
+        timeline: "Calendario de recordatorios de un alquiler impagado",
+        steps: { due: "Vencimiento del alquiler", first: "Recordatorio amistoso", second: "Segundo recordatorio", third: "Último recordatorio", end: "Fin de los recordatorios automáticos: el resto le corresponde" },
+        summary: "Recordatorio amistoso a D+{{first}}, segundo a D+{{second}}, último a D+{{third}}.",
+        note: "Cada recordatorio sale por correo al titular y a los coinquilinos; WhatsApp con el plan Profesional. También puede avisar a los avalistas.",
+        cta: "Activar los recordatorios durante la prueba",
+      },
     stickyCta: "Pruébelo gratis",
     steps: {
       title: "Del registro al primer recibo",

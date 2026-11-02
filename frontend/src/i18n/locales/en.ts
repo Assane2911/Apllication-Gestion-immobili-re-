@@ -681,6 +681,19 @@ const en: TranslationSchema = {
   },
 
   landing: {
+      reminders: {
+        title: "Simulator · Automatic reminders",
+        subtitle: "Set the delay and the interval, as in your agency settings.",
+        grace: "Delay before the first reminder",
+        interval: "Interval between two reminders",
+        days: "{{count}} day(s)",
+        day: "D+{{day}}",
+        timeline: "Reminder schedule for an unpaid rent",
+        steps: { due: "Rent due date", first: "Friendly reminder", second: "Second reminder", third: "Final reminder", end: "End of automatic reminders: the rest is up to you" },
+        summary: "Friendly reminder at D+{{first}}, second reminder at D+{{second}}, final reminder at D+{{third}}.",
+        note: "Each reminder goes out by email to the tenant and co-tenants; WhatsApp with the Professional plan. You can also notify guarantors.",
+        cta: "Turn on reminders during the trial",
+      },
     stickyCta: "Try it for free",
     steps: {
       title: "From sign-up to your first receipt",

@@ -681,6 +681,19 @@ const pt: TranslationSchema = {
   },
 
   landing: {
+      reminders: {
+        title: "Simulador · Lembretes automáticos",
+        subtitle: "Defina o prazo e o intervalo, como nas definições da sua agência.",
+        grace: "Prazo antes do primeiro lembrete",
+        interval: "Intervalo entre dois lembretes",
+        days: "{{count}} dia(s)",
+        day: "D+{{day}}",
+        timeline: "Calendário dos lembretes de uma renda por pagar",
+        steps: { due: "Vencimento da renda", first: "Lembrete amigável", second: "Segundo lembrete", third: "Último lembrete", end: "Fim dos lembretes automáticos: o resto fica consigo" },
+        summary: "Lembrete amigável em D+{{first}}, segundo em D+{{second}}, último em D+{{third}}.",
+        note: "Cada lembrete segue por e-mail para o titular e os coarrendatários; WhatsApp com o plano Profissional. Pode também avisar os fiadores.",
+        cta: "Ativar os lembretes durante o teste",
+      },
     stickyCta: "Experimente grátis",
     steps: {
       title: "Do registo ao primeiro recibo",
