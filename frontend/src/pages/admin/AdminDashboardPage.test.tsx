@@ -176,3 +176,34 @@ describe("AdminDashboardPage", () => {
     expect(screen.getByRole("link", { name: "Écrire à agence-port@test.local" })).toHaveAttribute("href", "mailto:agence-port@test.local");
   });
 });
+
+describe("AdminDashboardPage — suggestions non lues", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+  });
+
+  it("ajoute à la zone « À traiter » un raccourci vers les suggestions restées nouvelles", async () => {
+    mockedApi.get.mockImplementation((url: string) => {
+      if (url === "/admin/dashboard/stats") return Promise.resolve({ data: stats() }) as never;
+      if (url === "/admin/subscriptions/pending-bank-transfers") return Promise.resolve({ data: [] }) as never;
+      if (url === "/admin/suggestions") return Promise.resolve({ data: { items: [], counts: { NEW: 4, total: 9 } } }) as never;
+      return Promise.resolve({ data: {} }) as never;
+    });
+    renderPage();
+
+    const lien = await screen.findByRole("link", { name: /4 suggestion\(s\) non lue\(s\)/ });
+    expect(lien).toHaveAttribute("href", "/admin/suggestions");
+  });
+
+  it("n'ajoute rien quand toutes les suggestions ont été lues, ou quand leur compte est inconnu", async () => {
+    mockedApi.get.mockImplementation((url: string) => {
+      if (url === "/admin/dashboard/stats") return Promise.resolve({ data: stats() }) as never;
+      if (url === "/admin/subscriptions/pending-bank-transfers") return Promise.resolve({ data: [] }) as never;
+      if (url === "/admin/suggestions") return Promise.resolve({ data: { items: [], counts: { NEW: 0, total: 9 } } }) as never;
+      return Promise.resolve({ data: {} }) as never;
+    });
+    renderPage();
+    await screen.findByText("Agence du Port");
+    expect(screen.queryByText(/suggestion\(s\) non lue\(s\)/)).not.toBeInTheDocument();
+  });
+});

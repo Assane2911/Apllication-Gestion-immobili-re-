@@ -3,10 +3,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
+import BarreListe from "../../components/BarreListe";
 import BoutonExportCsv from "../../components/BoutonExportCsv";
 import EmptyState from "../../components/EmptyState";
 import FriseJournal from "../../components/FriseJournal";
 import Pagination from "../../components/Pagination";
+import { filtrerAudit } from "../../utils/syntheseAdmin";
+import type { PeriodeJournal } from "../../utils/syntheseExploitation";
 
 const ACTIONS = [
   "subscription.bank_transfer.confirm",
@@ -68,6 +71,9 @@ export default function AdminAuditPage() {
   const [donnees, setDonnees] = useState<Page | null>(null);
   const [page, setPage] = useState(1);
   const [action, setAction] = useState("");
+  // Recherche et période agissent sur la page chargée ; le filtre d'action, lui, est appliqué par le serveur.
+  const [recherche, setRecherche] = useState("");
+  const [periode, setPeriode] = useState<PeriodeJournal>("all");
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -94,6 +100,9 @@ export default function AdminAuditPage() {
   const libelleAction = (valeur: string) =>
     (ACTIONS as readonly string[]).includes(valeur) ? t(`admin.audit.actions.${valeur}`) : valeur;
 
+  const visibles = donnees ? filtrerAudit(donnees.items, recherche, periode, libelleAction) : [];
+  const filtre = recherche.trim() !== "" || periode !== "all";
+
   return (
     <div className="space-y-6">
       <div>
@@ -104,7 +113,16 @@ export default function AdminAuditPage() {
         )}
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <BarreListe
+        idPrefixe="audit"
+        recherche={recherche}
+        onRecherche={setRecherche}
+        placeholderRecherche={t("admin.audit.search")}
+        libelleFiltres={t("admin.audit.periodLabel")}
+        filtreActif={periode}
+        onFiltre={(cle) => setPeriode(cle as PeriodeJournal)}
+        filtres={(["all", "today", "week", "month"] as const).map((cle) => ({ cle, libelle: t(`admin.audit.periods.${cle}`) }))}
+      >
         <select
           value={action}
           onChange={(e) => {
@@ -122,12 +140,15 @@ export default function AdminAuditPage() {
           ))}
         </select>
         <BoutonExportCsv chemin="/admin/exports/audit-logs.csv" params={action ? { action } : undefined} prefixeFichier="journal-audit" />
-      </div>
+      </BarreListe>
+      {donnees && filtre && donnees.items.length > 0 && (
+        <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.audit.shown", { shown: visibles.length, total: donnees.items.length })}</p>
+      )}
 
       {erreur && (
-        <div className="border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800">{t("admin.audit.errorTitle")}</p>
-          <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
+        <div className="border border-rose-300 bg-rose-50 px-4 py-3">
+          <p className="text-sm font-semibold text-rose-800">{t("admin.audit.errorTitle")}</p>
+          <p role="alert" className="text-xs text-rose-800 mt-0.5">{erreur}</p>
         </div>
       )}
 
@@ -139,8 +160,9 @@ export default function AdminAuditPage() {
 
       {donnees && donnees.items.length > 0 && (
         <>
+          {visibles.length === 0 && <p className="border border-slate-300 bg-white py-10 text-center text-sm text-slate-600">{t("admin.audit.noResult")}</p>}
           <FriseJournal
-            entrees={donnees.items.map((e) => ({
+            entrees={visibles.map((e) => ({
               id: e.id,
               date: e.createdAt,
               icone: ICONE_PAR_FAMILLE[e.action.split(".")[0]] ?? ScrollText,

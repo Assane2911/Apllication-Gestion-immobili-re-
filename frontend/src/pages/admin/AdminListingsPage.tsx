@@ -39,7 +39,7 @@ interface Page {
 }
 
 const CLASSES_STATUT: Record<string, string> = {
-  PUBLISHED: "border border-emerald-300 bg-emerald-50 text-emerald-900",
+  PUBLISHED: "border border-ink-900 bg-slate-50 text-ink-900",
   DRAFT: "border border-slate-300 bg-slate-100 text-slate-700",
   ARCHIVED: "border border-slate-300 bg-slate-100 text-slate-700",
 };
@@ -204,15 +204,15 @@ export default function AdminListingsPage() {
       </div>
 
       {erreurAction && (
-        <p role="alert" className="text-xs text-red-700">
+        <p role="alert" className="text-xs text-rose-800">
           {t("admin.listings.actionError")} — {erreurAction}
         </p>
       )}
 
       {erreur && (
-        <div className="border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800">{t("admin.listings.errorTitle")}</p>
-          <p role="alert" className="mt-0.5 text-xs text-red-700">{erreur}</p>
+        <div className="border border-rose-300 bg-rose-50 px-4 py-3">
+          <p className="text-sm font-semibold text-rose-800">{t("admin.listings.errorTitle")}</p>
+          <p role="alert" className="mt-0.5 text-xs text-rose-800">{erreur}</p>
         </div>
       )}
 
@@ -271,7 +271,7 @@ export default function AdminListingsPage() {
                           </span>
                         )}
                         {a.featured && (
-                          <span className={`${etiquette} inline-flex items-center gap-1 border border-amber-300 bg-amber-50 text-amber-900`}>
+                          <span className={`${etiquette} inline-flex items-center gap-1 border border-orange-700/40 bg-orange-50 text-orange-900`}>
                             <Star size={12} aria-hidden="true" />
                             {t("admin.listings.featuredBadge")}
                           </span>
@@ -279,7 +279,7 @@ export default function AdminListingsPage() {
                         {masquee && <span className={`${etiquette} border border-rose-300 bg-rose-50 text-rose-900`}>{t("admin.listings.hiddenBadge")}</span>}
                         {a.managerSuspendedAt && <span className={`${etiquette} border border-ink-900 bg-ink-900 text-white`}>{t("admin.listings.suspendedBadge")}</span>}
                         {!a.managerSuspendedAt && a.managerSubscriptionExpired && (
-                          <span className={`${etiquette} border border-amber-300 bg-amber-50 text-amber-900`}>{t("admin.listings.expiredBadge")}</span>
+                          <span className={`${etiquette} border border-orange-700/40 bg-orange-50 text-orange-900`}>{t("admin.listings.expiredBadge")}</span>
                         )}
                       </div>
 
@@ -376,7 +376,7 @@ export default function AdminListingsPage() {
                             <button
                               type="submit"
                               disabled={occupe || motif.trim().length < 3}
-                              className="cursor-pointer bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+                              className="cursor-pointer bg-rose-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-800 disabled:opacity-50"
                             >
                               {occupe ? t("admin.listings.working") : t("admin.listings.confirmHide")}
                             </button>

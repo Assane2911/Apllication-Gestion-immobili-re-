@@ -66,7 +66,7 @@ export default function AdminSettingsPage() {
   function verdict(saisi: boolean, ok: boolean, valide: string, invalide: string) {
     if (!saisi) return null;
     return (
-      <p className={`mt-1.5 flex items-center gap-1.5 font-mono text-[11px] ${ok ? "text-emerald-800" : "text-orange-700"}`}>
+      <p className={`mt-1.5 flex items-center gap-1.5 font-mono text-[11px] ${ok ? "text-ink-900" : "text-orange-700"}`}>
         {ok ? <CheckCircle2 size={12} aria-hidden="true" /> : <CircleAlert size={12} aria-hidden="true" />}
         {ok ? valide : invalide}
       </p>
@@ -84,7 +84,7 @@ export default function AdminSettingsPage() {
         // Le formulaire n'est PAS rendu tant que l'état initial est inconnu :
         // c'est ce qui empêche d'enregistrer du vide par-dessus des données
         // qu'on n'a simplement pas réussi à lire.
-        <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <p>{loadError}</p>
           <button type="button" onClick={() => window.location.reload()} className="mt-2 cursor-pointer text-xs font-semibold underline">
             {t("common.actions.retry")}
@@ -93,13 +93,13 @@ export default function AdminSettingsPage() {
       ) : (
         <SectionReglage id="coordonnees" numero="01" titre={t("admin.settings.sections.bank")}>
           {success && (
-            <div role="status" className="mb-5 flex items-center gap-2 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <div role="status" className="mb-5 flex items-center gap-2 border border-ink-900 bg-slate-50 px-4 py-3 text-sm text-ink-900">
               <CheckCircle2 size={15} aria-hidden="true" /> {t("admin.settings.success")}
             </div>
           )}
 
           {error && (
-            <div role="alert" className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div role="alert" className="mb-5 border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
               {error}
             </div>
           )}
@@ -188,13 +188,13 @@ export default function AdminSettingsPage() {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {user?.twoFactorEnabled ? (
             <>
-              <span className="inline-flex items-center gap-1.5 border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-900">
+              <span className="inline-flex items-center gap-1.5 border border-ink-900 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-ink-900">
                 <ShieldCheck size={14} aria-hidden="true" /> {t("admin.settings.twoFactor.enabled")}
               </span>
               <button
                 type="button"
                 onClick={() => setShowTwoFactorDisable(true)}
-                className="cursor-pointer border border-red-300 px-4 py-2.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                className="cursor-pointer border border-rose-300 px-4 py-2.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-50"
               >
                 {t("admin.settings.twoFactor.disableButton")}
               </button>

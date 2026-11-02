@@ -3203,6 +3203,11 @@ const es: TranslationSchema = {
       },
     },
     audit: {
+      search: "Buscar en esta página (admin, acción, destino, detalle)…",
+      periodLabel: "Periodo",
+      periods: { all: "Todo", today: "Hoy", week: "7 días", month: "30 días" },
+      shown: "{{shown}} entrada(s) mostrada(s) de las {{total}} de esta página",
+      noResult: "Ninguna entrada de esta página coincide.",
       title: "Registro de auditoría",
       subtitle: "Las acciones sensibles de la administración, de la más reciente a la más antigua",
       filterLabel: "Filtrar por acción",
@@ -3293,6 +3298,9 @@ const es: TranslationSchema = {
       actionError: "Acción imposible",
     },
     suggestions: {
+      search: "Buscar en esta página (mensaje, autor, página, nota)…",
+      shown: "{{shown}} sugerencia(s) mostrada(s) de las {{total}} de esta página",
+      noResult: "Ninguna sugerencia de esta página coincide.",
       writeToAuthor: "Escribir al autor",
       unreadFor: "Sin seguimiento desde hace {{count}} día(s)",
       tabsLabel: "Filtrar por estado",
@@ -3337,6 +3345,7 @@ const es: TranslationSchema = {
     },
     dashboard: {
       todo: {
+        suggestions: "{{count}} sugerencia(s) sin leer",
         title: "Pendiente",
         subtitle: "Lo que espera una decisión suya",
         allClear: "Nada le espera: todo está al día.",
@@ -3392,6 +3401,13 @@ const es: TranslationSchema = {
       },
     },
     subscriptions: {
+      search: "Buscar una transferencia (correo, referencia)…",
+      filtersLabel: "Filtrar transferencias",
+      filters: { all: "Todas", late: "Espera de {{days}} días o más" },
+      exportCsv: "Exportar la lista (CSV)",
+      csv: { manager: "Gestor", plan: "Plan", cycle: "Ciclo", amount: "Importe", currency: "Divisa", reference: "Referencia", since: "Anunciada el", waiting: "Días de espera" },
+      shown: "{{shown}} transferencia(s) mostrada(s) de {{total}}",
+      noResult: "Ninguna transferencia coincide.",
       pendingCount: "{{count}} transferencia(s) pendiente(s)",
       toCollect: "Por cobrar",
       period: "del {{from}} al {{to}}",

@@ -229,9 +229,9 @@ export default function AdminManagerDetailPage() {
       {chargement && <p className="text-xs text-slate-600">{t("admin.managerDetail.loading")}</p>}
 
       {erreur && (
-        <div className="border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800">{t("admin.managerDetail.errorTitle")}</p>
-          <p role="alert" className="text-xs text-red-700 mt-0.5">{erreur}</p>
+        <div className="border border-rose-300 bg-rose-50 px-4 py-3">
+          <p className="text-sm font-semibold text-rose-800">{t("admin.managerDetail.errorTitle")}</p>
+          <p role="alert" className="text-xs text-rose-800 mt-0.5">{erreur}</p>
         </div>
       )}
 
@@ -251,7 +251,7 @@ export default function AdminManagerDetailPage() {
                       aria-label={t("admin.managers.copyEmail", { email: manager.email })}
                       className="inline-flex size-5 cursor-pointer items-center justify-center text-slate-500 hover:text-orange-700"
                     >
-                      {copie ? <Check size={12} aria-hidden="true" className="text-emerald-700" /> : <Copy size={12} aria-hidden="true" />}
+                      {copie ? <Check size={12} aria-hidden="true" className="text-ink-900" /> : <Copy size={12} aria-hidden="true" />}
                     </button>
                     <a
                       href={`mailto:${manager.email}`}
@@ -410,7 +410,7 @@ export default function AdminManagerDetailPage() {
                   type="button"
                   onClick={reactiver}
                   disabled={enCours}
-                  className="mt-3 cursor-pointer text-xs font-semibold px-3 py-1.5 bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-50"
+                  className="mt-3 cursor-pointer text-xs font-semibold px-3 py-1.5 bg-ink-900 text-white hover:bg-brand-600 disabled:opacity-50"
                 >
                   {enCours ? t("admin.managerDetail.suspension.reactivating") : t("admin.managerDetail.suspension.reactivate")}
                 </button>
@@ -433,7 +433,7 @@ export default function AdminManagerDetailPage() {
                   <button
                     type="submit"
                     disabled={enCours || motif.trim().length < 3}
-                    className="cursor-pointer text-xs font-semibold px-3 py-1.5 bg-red-700 text-white hover:bg-red-800 disabled:opacity-50"
+                    className="cursor-pointer text-xs font-semibold px-3 py-1.5 bg-rose-700 text-white hover:bg-rose-800 disabled:opacity-50"
                   >
                     {enCours ? t("admin.managerDetail.suspension.suspending") : t("admin.managerDetail.suspension.confirm")}
                   </button>
@@ -455,19 +455,19 @@ export default function AdminManagerDetailPage() {
                 <button
                   type="button"
                   onClick={() => setFormulaireOuvert(true)}
-                  className="mt-3 cursor-pointer text-xs font-semibold px-3 py-1.5 border border-red-300 text-red-700 hover:bg-red-50"
+                  className="mt-3 cursor-pointer text-xs font-semibold px-3 py-1.5 border border-rose-300 text-rose-800 hover:bg-rose-50"
                 >
                   {t("admin.managerDetail.suspension.suspend")}
                 </button>
               </>
             )}
             {infoFacturation && (
-              <p role="status" className="mt-2 text-xs text-emerald-700">
+              <p role="status" className="mt-2 text-xs text-ink-900">
                 {infoFacturation}
               </p>
             )}
             {erreurAction && (
-              <p role="alert" className="mt-2 text-xs text-red-700">
+              <p role="alert" className="mt-2 text-xs text-rose-800">
                 {erreurAction}
               </p>
             )}
@@ -478,7 +478,7 @@ export default function AdminManagerDetailPage() {
               <p className="text-xs text-slate-600">{t("admin.managerDetail.deletion.description")}</p>
               {suppressionOuverte ? (
                 <form onSubmit={supprimerDefinitivement} className="mt-3 space-y-3">
-                  <p className="text-xs font-semibold text-red-700">{t("admin.managerDetail.deletion.warning")}</p>
+                  <p className="text-xs font-semibold text-rose-800">{t("admin.managerDetail.deletion.warning")}</p>
                   <label className="block text-xs font-semibold text-slate-700">
                     {t("admin.managerDetail.deletion.emailField", { email: manager.email })}
                     <input
@@ -507,7 +507,7 @@ export default function AdminManagerDetailPage() {
                         emailSaisi.trim().toLowerCase() !== manager.email.trim().toLowerCase() ||
                         motifSuppression.trim().length < 3
                       }
-                      className="cursor-pointer text-xs font-semibold px-3 py-1.5 bg-red-700 text-white hover:bg-red-800 disabled:opacity-50"
+                      className="cursor-pointer text-xs font-semibold px-3 py-1.5 bg-rose-700 text-white hover:bg-rose-800 disabled:opacity-50"
                     >
                       {suppressionEnCours ? t("admin.managerDetail.deletion.deleting") : t("admin.managerDetail.deletion.confirm")}
                     </button>
@@ -529,13 +529,13 @@ export default function AdminManagerDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSuppressionOuverte(true)}
-                  className="mt-3 cursor-pointer text-xs font-semibold px-3 py-1.5 border border-red-300 text-red-700 hover:bg-red-50"
+                  className="mt-3 cursor-pointer text-xs font-semibold px-3 py-1.5 border border-rose-300 text-rose-800 hover:bg-rose-50"
                 >
                   {t("admin.managerDetail.deletion.button")}
                 </button>
               )}
               {erreurSuppression && (
-                <p role="alert" className="mt-2 text-xs text-red-700">
+                <p role="alert" className="mt-2 text-xs text-rose-800">
                   {erreurSuppression}
                 </p>
               )}
@@ -679,7 +679,7 @@ export default function AdminManagerDetailPage() {
               <p
                 role={ajustementMessage.type === "erreur" ? "alert" : "status"}
                 className={`mt-3 text-xs ${
-                  ajustementMessage.type === "erreur" ? "text-red-700" : "text-emerald-700"
+                  ajustementMessage.type === "erreur" ? "text-rose-800" : "text-ink-900"
                 }`}
               >
                 {ajustementMessage.texte}

@@ -4,16 +4,18 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import Initiales from "../../components/Initiales";
+import BarreListe from "../../components/BarreListe";
 import Pagination from "../../components/Pagination";
+import { filtrerSuggestions } from "../../utils/syntheseAdmin";
 
 const STATUTS = ["NEW", "PLANNED", "DONE", "DECLINED"] as const;
 type Statut = (typeof STATUTS)[number];
 
-/** Filet de couleur de la fiche : l'orange signale ce qui n'a pas encore été lu, le vert ce qui est livré. */
+/** Filet de couleur de la fiche : l'orange signale ce qui n'a pas encore été lu, le gris foncé ce qui est livré. */
 const FILET_STATUT: Record<Statut, string> = {
   NEW: "shadow-[inset_4px_0_0_var(--color-orange-700)]",
   PLANNED: "shadow-[inset_4px_0_0_var(--color-ink-900)]",
-  DONE: "shadow-[inset_4px_0_0_var(--color-emerald-600)]",
+  DONE: "shadow-[inset_4px_0_0_var(--color-slate-500)]",
   DECLINED: "shadow-[inset_4px_0_0_var(--color-slate-300)]",
 };
 
@@ -67,6 +69,8 @@ export default function AdminSuggestionsPage() {
   const [page, setPage] = useState(1);
   const [filtre, setFiltre] = useState<"" | Statut>("");
   const [version, setVersion] = useState(0);
+  // La recherche agit sur la page chargée ; les onglets de statut, eux, sont appliqués par le serveur.
+  const [recherche, setRecherche] = useState("");
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
   const [erreurSuivi, setErreurSuivi] = useState<string | null>(null);
@@ -113,6 +117,8 @@ export default function AdminSuggestionsPage() {
     return t(`admin.suggestions.roles.${valeur && cles.includes(valeur) ? valeur : "unknown"}`);
   }
 
+  const visibles = donnees ? filtrerSuggestions(donnees.items, recherche) : [];
+
   return (
     <div className="space-y-6">
       <div>
@@ -144,16 +150,23 @@ export default function AdminSuggestionsPage() {
         })}
       </div>
 
+      {donnees && donnees.items.length > 0 && (
+        <BarreListe idPrefixe="suggestions" recherche={recherche} onRecherche={setRecherche} placeholderRecherche={t("admin.suggestions.search")} />
+      )}
+      {donnees && recherche.trim() !== "" && donnees.items.length > 0 && (
+        <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.suggestions.shown", { shown: visibles.length, total: donnees.items.length })}</p>
+      )}
+
       {erreurSuivi && (
-        <p role="alert" className="text-xs text-red-700">
+        <p role="alert" className="text-xs text-rose-800">
           {erreurSuivi}
         </p>
       )}
 
       {erreur && (
-        <div className="border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-800">{t("admin.suggestions.errorTitle")}</p>
-          <p role="alert" className="mt-0.5 text-xs text-red-700">{erreur}</p>
+        <div className="border border-rose-300 bg-rose-50 px-4 py-3">
+          <p className="text-sm font-semibold text-rose-800">{t("admin.suggestions.errorTitle")}</p>
+          <p role="alert" className="mt-0.5 text-xs text-rose-800">{erreur}</p>
         </div>
       )}
 
@@ -172,7 +185,8 @@ export default function AdminSuggestionsPage() {
       {donnees && donnees.items.length > 0 && (
         <>
           <ul className="space-y-5">
-            {donnees.items.map((s) => {
+            {visibles.length === 0 && <li className="border border-slate-300 bg-white py-10 text-center text-sm text-slate-600">{t("admin.suggestions.noResult")}</li>}
+            {visibles.map((s) => {
               const statut = statutDe(s.status);
               const jours = Math.max(0, Math.floor((Date.now() - new Date(s.createdAt).getTime()) / JOUR_MS));
               const sansSuite = statut === "NEW" && jours >= SEUIL_SANS_SUITE_JOURS;
@@ -191,7 +205,7 @@ export default function AdminSuggestionsPage() {
                         </div>
                       </div>
                       {s.authorId === null && (
-                        <p className="mt-3 border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">{t("admin.suggestions.deletedAuthor")}</p>
+                        <p className="mt-3 border border-orange-700/40 bg-orange-50 px-2 py-1 text-xs text-orange-900">{t("admin.suggestions.deletedAuthor")}</p>
                       )}
                       <p className="mt-4 font-mono text-[11px] tabular-nums text-slate-600">{new Date(s.createdAt).toLocaleString(i18n.language)}</p>
                       <p className="mt-1 break-words font-mono text-[11px] text-slate-600">

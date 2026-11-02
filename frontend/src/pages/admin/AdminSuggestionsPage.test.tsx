@@ -255,3 +255,31 @@ describe("AdminSuggestionsPage", () => {
     });
   });
 });
+describe("AdminSuggestionsPage — recherche", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+  });
+
+  const suggestion = (o: Record<string, unknown>) => ({ authorId: "u", authorRole: "MANAGER", page: "/factures", createdAt: "2026-09-20T10:00:00.000Z", ...o });
+
+  it("cherche dans le message, l'auteur, la page et la note, sur la page chargée", async () => {
+    const user = userEvent.setup();
+    mockedApi.get.mockResolvedValueOnce(
+      page([
+        suggestion({ id: "s1", authorLabel: "awa@test.local", message: "Filtrer les factures par bien" }),
+        suggestion({ id: "s2", authorLabel: "moussa@test.local", page: "/biens", message: "Exporter les biens", adminNote: "déjà prévu en décembre" }),
+      ])
+    );
+    render(<AdminSuggestionsPage />);
+    await screen.findByText(/Filtrer les factures par bien/);
+
+    await user.type(screen.getByRole("searchbox"), "decembre");
+    expect(screen.getByText(/Exporter les biens/)).toBeInTheDocument();
+    expect(screen.queryByText(/Filtrer les factures/)).not.toBeInTheDocument();
+    expect(screen.getByText("1 suggestion(s) affichée(s) sur les 2 de cette page")).toBeInTheDocument();
+
+    await user.clear(screen.getByRole("searchbox"));
+    await user.type(screen.getByRole("searchbox"), "introuvable");
+    expect(screen.getByText("Aucune suggestion de cette page ne correspond.")).toBeInTheDocument();
+  });
+});
