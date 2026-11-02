@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import type { Message } from "../../types";
@@ -107,5 +107,52 @@ describe("OwnerMessagesPage (espace propriétaire)", () => {
     renderPage();
     expect(await screen.findByText("Aucune fiche propriétaire n'est rattachée à ce compte.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Réessayer" })).toBeInTheDocument();
+  });
+});
+
+describe("OwnerMessagesPage — mise à jour en direct", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("affiche seul le message de l'agence arrivé après l'ouverture, sans recharger ni dupliquer", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ id: "m1", content: "Premier" })] } });
+    renderPage();
+    expect(await screen.findByText("Premier")).toBeInTheDocument();
+
+    mockedApi.get.mockResolvedValue({ data: { messages: [message({ id: "m2", content: "Nouveau de l'agence" })], luesIds: [] } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+
+    expect(await screen.findByText("Nouveau de l'agence")).toBeInTheDocument();
+    expect(mockedApi.get).toHaveBeenLastCalledWith("/owner-messages/mine", { params: { apresId: "m1" } });
+
+    // Le serveur renvoie par erreur un message déjà affiché : il n'apparaît pas deux fois.
+    mockedApi.get.mockResolvedValue({ data: { messages: [message({ id: "m2", content: "Nouveau de l'agence" })] } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    expect(screen.getAllByText("Nouveau de l'agence")).toHaveLength(1);
+  });
+
+  it("passe un message envoyé à « Lu » quand l'agence l'a lu", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ id: "m1", senderRole: "OWNER", content: "Ma question", isRead: false })] } });
+    renderPage();
+    await screen.findByText("Ma question");
+    expect(screen.getByText(/· Envoyé/)).toBeInTheDocument();
+
+    mockedApi.get.mockResolvedValue({ data: { messages: [], luesIds: ["m1"] } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    expect(await screen.findByText(/· Lu/)).toBeInTheDocument();
+  });
+
+  it("une erreur passagère de l'actualisation n'affiche rien et ne vide pas le fil", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ id: "m1", content: "Toujours là" })] } });
+    renderPage();
+    await screen.findByText("Toujours là");
+    mockedApi.get.mockRejectedValue(new Error("réseau coupé"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    expect(screen.getByText("Toujours là")).toBeInTheDocument();
+    expect(screen.queryByText(/réseau coupé|Réessayer/)).not.toBeInTheDocument();
   });
 });

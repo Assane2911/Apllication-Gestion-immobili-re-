@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import type { Conversation, Message, PaginatedResponse } from "../../types";
@@ -277,5 +277,39 @@ describe("TenantMessagesPage — message vocal", () => {
     } finally {
       micro.restaurer();
     }
+  });
+});
+
+describe("TenantMessagesPage — mise à jour en direct", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("affiche le message du gestionnaire arrivé après l'ouverture, sans recharger la page", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    mockedApi.get.mockResolvedValueOnce({ data: { messages: [message({ id: "m1", content: "Bonjour" })], contract: { property: { title: "Studio Centre-ville" } } } });
+    renderPage();
+    expect(await screen.findByText("Bonjour")).toBeInTheDocument();
+
+    mockedApi.get.mockResolvedValue({ data: { messages: [message({ id: "m2", content: "Votre quittance est prête" })], luesIds: [] } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+
+    expect(await screen.findByText("Votre quittance est prête")).toBeInTheDocument();
+    expect(mockedApi.get).toHaveBeenLastCalledWith("/messages/c1", { params: { apresId: "m1" } });
+  });
+
+  it("ne mélange pas deux fils : tant que le nouveau fil se charge, l'actualisation de l'ancien est suspendue", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([conversation()]));
+    let finir: (v: unknown) => void = () => {};
+    mockedApi.get.mockReturnValueOnce(new Promise((r) => { finir = r; }) as never);
+    renderPage();
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+    // Le fil n'est pas encore chargé : aucune actualisation n'est partie (seulement la liste puis le fil).
+    expect(mockedApi.get).toHaveBeenCalledTimes(2);
+    await act(async () => { finir({ data: { messages: [message({ id: "m1", content: "Chargé" })], contract: { property: { title: "X" } } } }); });
+    expect(await screen.findByText("Chargé")).toBeInTheDocument();
   });
 });

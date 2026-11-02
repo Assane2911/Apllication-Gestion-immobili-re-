@@ -64,14 +64,25 @@ export default function FilDeMessages({
 }: Props) {
   const { i18n } = useTranslation();
   const defilement = useRef<HTMLDivElement>(null);
+  // Le fil s'ouvre sur le message le plus récent. Quand une actualisation en apporte un nouveau, il ne défile que si le lecteur est
+  // déjà en bas (ou si le message est le sien) : quelqu'un qui relit l'historique ne doit pas être ramené en bas à chaque message.
+  // Un changement d'état (« Lu », lien d'un vocal) ne fait jamais défiler.
+  const dernierAffiche = useRef<{ id: string | null; nombre: number }>({ id: null, nombre: 0 });
   useEffect(() => {
     const zone = defilement.current;
-    if (zone) zone.scrollTop = zone.scrollHeight;
-  }, [messages]);
+    const dernier = messages.length > 0 ? messages[messages.length - 1] : null;
+    const avant = dernierAffiche.current;
+    dernierAffiche.current = { id: dernier?.id ?? null, nombre: messages.length };
+    if (!zone) return;
+    const ouverture = avant.nombre === 0 || messages.length < avant.nombre;
+    const nouveau = dernier !== null && dernier.id !== avant.id;
+    const presDuBas = zone.scrollHeight - zone.scrollTop - zone.clientHeight < 120;
+    if (ouverture || (nouveau && (presDuBas || dernier.senderRole === roleMoi))) zone.scrollTop = zone.scrollHeight;
+  }, [messages, roleMoi]);
   const lignes = useMemo(() => composerLignes(messages, i18n.language), [messages, i18n.language]);
 
   return (
-    <div ref={defilement} className={`flex-1 overflow-y-auto bg-slate-50 px-4 py-5 md:px-6 ${className}`}>
+    <div ref={defilement} role="log" className={`flex-1 overflow-y-auto bg-slate-50 px-4 py-5 md:px-6 ${className}`}>
       {chargement && <p className="py-4 text-center text-xs text-slate-600">{libelleChargement}</p>}
       {lignes.map((ligne) => {
         if (ligne.genre === "jour") {

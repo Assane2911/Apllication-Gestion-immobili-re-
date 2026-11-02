@@ -3,7 +3,9 @@ import type { FormEvent } from "react";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from "../api/client";
 import { useAuth } from "../context/auth";
 import type { Conversation, Message, PaginatedResponse, Role } from "../types";
+import { ajouterSiAbsent, fusionnerFil } from "../utils/fusionFil";
 import { extensionEnregistrement } from "../utils/messageVocal";
+import { useActualisationFil, useRafraichissementPeriodique } from "./useActualisationFil";
 import type { EnregistrementVocal } from "./useEnregistreurVocal";
 
 const CONVERSATIONS_PAGE_SIZE = 20;
@@ -124,13 +126,7 @@ export function useConversationThread(role: Role, options: UseConversationThread
       const res = params
         ? await api.post(`/messages/${contractId}`, { content: newText.trim() }, { params })
         : await api.post(`/messages/${contractId}`, { content: newText.trim() });
-      setMessages((prev) => [
-        ...prev,
-        {
-          ...res.data,
-          sender: { id: user?.id || "", email: user?.email || "", role },
-        },
-      ]);
+      setMessages((prev) => ajouterSiAbsent(prev, { ...res.data, sender: { id: user?.id || "", email: user?.email || "", role } }));
       setNewText("");
       if (refreshOnSend) loadConversations();
     } catch (err) {
@@ -151,9 +147,23 @@ export function useConversationThread(role: Role, options: UseConversationThread
     donnees.append("audio", enregistrement.blob, `vocal.${extensionEnregistrement(enregistrement.type)}`);
     donnees.append("durationSec", String(enregistrement.duree));
     const res = await api.post(`/messages/${contractId}/audio`, donnees, { timeout: DELAI_UPLOAD_MS, ...(params ? { params } : {}) });
-    setMessages((prev) => [...prev, { ...res.data, sender: { id: user?.id || "", email: user?.email || "", role } }]);
+    setMessages((prev) => ajouterSiAbsent(prev, { ...res.data, sender: { id: user?.id || "", email: user?.email || "", role } }));
     if (refreshOnSend) loadConversations();
   }
+
+  // Le fil ouvert se met à jour tout seul (nouveaux messages, état « Lu »), sans rechargement de la page.
+  const cible = selectedThreadId ? cibleDuFil(selectedThreadId) : null;
+  useActualisationFil({
+    adresse: cible ? `/messages/${cible.contractId}` : null,
+    params: cible?.params,
+    dernierId: messages.length > 0 ? messages[messages.length - 1].id : null,
+    actif: !loadingMessages,
+    surReponse: ({ messages: recus, luesIds }) => setMessages((prev) => fusionnerFil(prev, recus, luesIds)),
+    // Du nouveau dans le fil : l'aperçu et le tri de la liste (côté gestionnaire) doivent suivre.
+    surNouveau: refreshOnSend ? () => void loadConversations() : undefined,
+  });
+  // Côté gestionnaire, la liste des fils suit aussi : un message arrivé dans un autre fil y apparaît sans recharger.
+  useRafraichissementPeriodique(() => loadConversations(), refreshOnSend);
 
   return {
     conversations,

@@ -1,7 +1,7 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import type { ConversationProprietaire, Message, PaginatedResponse } from "../../types";
@@ -138,5 +138,46 @@ describe("OwnerMessagesPage (espace gestionnaire)", () => {
     mockedApi.get.mockRejectedValueOnce(Object.assign(new Error("boom"), { isAxiosError: true, response: { data: { error: "Erreur serveur de test" } } }));
     renderPage();
     expect(await screen.findByText("Erreur serveur de test")).toBeInTheDocument();
+  });
+});
+
+describe("OwnerMessagesPage (gestionnaire) — mise à jour en direct", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("affiche le message d'un propriétaire dans le fil ouvert, et met la liste à jour avec lui", async () => {
+    let appels = 0;
+    mockedApi.get.mockImplementation(async (url: string, config?: { params?: { apresId?: string } }) => {
+      if (url === "/owner-messages/conversations") {
+        appels++;
+        return liste([fil("o1", "Fatou", "Diop", appels > 1 ? { lastMessage: message({ id: "m2", content: "Où est mon virement ?" }) } : {})]);
+      }
+      if (url === "/owner-messages/o1" && config?.params?.apresId) return { data: { owner: fil("o1", "Fatou", "Diop").owner, messages: [message({ id: "m2", content: "Où est mon virement ?" })], luesIds: [] } };
+      if (url === "/owner-messages/o1") return { data: { owner: fil("o1", "Fatou", "Diop").owner, messages: [message({ id: "m1", senderRole: "MANAGER", content: "Bonjour" })] } };
+      throw new Error(`inattendu : ${url}`);
+    });
+    renderPage();
+    expect(await screen.findByText("Bonjour")).toBeInTheDocument();
+    expect(screen.queryByText("Où est mon virement ?")).not.toBeInTheDocument();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    // Dans le fil, et dans l'aperçu de la liste (rafraîchie parce qu'il y a du nouveau).
+    await waitFor(() => expect(screen.getAllByText("Où est mon virement ?").length).toBe(2));
+    expect(mockedApi.get).toHaveBeenCalledWith("/owner-messages/o1", { params: { apresId: "m1" } });
+  });
+
+  it("recharge aussi la liste des fils toutes les trente secondes (un message arrivé dans un autre fil)", async () => {
+    mockedApi.get.mockImplementation(async (url: string) =>
+      url === "/owner-messages/conversations" ? liste([fil("o1", "Fatou", "Diop")]) : { data: { owner: fil("o1", "Fatou", "Diop").owner, messages: [] } }
+    );
+    renderPage();
+    await screen.findByRole("button", { name: /Fatou Diop/ });
+    const avant = mockedApi.get.mock.calls.filter((c) => c[0] === "/owner-messages/conversations").length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+    expect(mockedApi.get.mock.calls.filter((c) => c[0] === "/owner-messages/conversations").length).toBeGreaterThan(avant);
   });
 });
