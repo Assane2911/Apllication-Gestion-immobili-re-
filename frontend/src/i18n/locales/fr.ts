@@ -996,6 +996,12 @@ const fr = {
   },
 
   components: {
+    newVersion: {
+      title: "Une nouvelle version de l'application est disponible.",
+      hint: "Actualisez pour en profiter ; les saisies non enregistrées seront perdues.",
+      refresh: "Actualiser",
+      later: "Plus tard",
+    },
     deconnexion: {
       title: "Se déconnecter ?",
       message: "Votre session sera fermée sur cet appareil. Vous devrez vous reconnecter pour revenir.",

@@ -998,6 +998,12 @@ const en: TranslationSchema = {
   },
 
   components: {
+    newVersion: {
+      title: "A new version of the app is available.",
+      hint: "Refresh to get it; unsaved input will be lost.",
+      refresh: "Refresh",
+      later: "Later",
+    },
     deconnexion: {
       title: "Log out?",
       message: "Your session will be closed on this device. You will need to sign in again to come back.",
