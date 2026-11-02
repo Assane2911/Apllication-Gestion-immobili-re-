@@ -133,7 +133,7 @@ export default function AdminAuditPage() {
             setPage(1);
           }}
           aria-label={t("admin.audit.filterLabel")}
-          className="border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900"
+          className="h-[38px] border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900"
         >
           <option value="">{t("admin.audit.allActions")}</option>
           {ACTIONS.map((a) => (
