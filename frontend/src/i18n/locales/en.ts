@@ -429,6 +429,7 @@ const en: TranslationSchema = {
   },
 
   nav: {
+    unread: "{{count}} unread message(s)",
     tips: {
       dashboard: "Overview: rent collected, arrears and this month's due dates.",
       properties: "Your properties: create a record, set the rent, track occupancy.",

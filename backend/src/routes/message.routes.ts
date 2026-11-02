@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getMessagesByContract,
   listConversations,
+  nonLusMessagerie,
   sendMessage,
   sendVoiceMessage,
 } from "../controllers/message.controller";
@@ -16,6 +17,8 @@ const router = Router();
 router.use(authenticate, requireActiveSubscription);
 
 router.get("/conversations", listConversations);
+// Avant /:contractId, qui l'avalerait.
+router.get("/unread-count", nonLusMessagerie);
 router.get("/:contractId", getMessagesByContract);
 router.post("/:contractId", sendMessage);
 router.post("/:contractId/audio", uploadMessageAudio.single("audio"), sendVoiceMessage);

@@ -429,6 +429,7 @@ const pt: TranslationSchema = {
   },
 
   nav: {
+    unread: "{{count}} mensagem(ns) por ler",
     tips: {
       dashboard: "Visão geral: rendas recebidas, dívidas e vencimentos do mês.",
       properties: "Os seus imóveis: criar uma ficha, definir a renda, seguir a ocupação.",

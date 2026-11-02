@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { api } from "../api/client";
 import type { Message } from "../types";
+import { signalerFilLu } from "../utils/nonLus";
 
 /** Intervalle entre deux actualisations d'un fil ouvert sur un onglet visible. */
 export const INTERVALLE_FIL_MS = 10_000;
@@ -61,7 +62,11 @@ export function useActualisationFil({ adresse, params, dernierId, surReponse, su
         if (complete) derniereLectureComplete = Date.now();
         const messages = Array.isArray(res.data?.messages) ? res.data.messages : [];
         rappels.current.surReponse({ messages, luesIds: res.data?.luesIds });
-        if (messages.length > 0 && !complete) rappels.current.surNouveau?.();
+        if (messages.length > 0 && !complete) {
+          rappels.current.surNouveau?.();
+          // Lire le fil marque ses messages reçus comme lus : la pastille du menu se recompte.
+          signalerFilLu();
+        }
       } catch {
         // Passager : le prochain tour réessaie.
       } finally {

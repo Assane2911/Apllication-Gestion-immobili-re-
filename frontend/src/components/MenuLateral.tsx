@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { enregistrerCoucheRetour } from "../utils/couchesRetour";
+import { libellePastille } from "../utils/nonLus";
 import Logo from "./Logo";
 
 export interface EntreeMenu {
@@ -32,6 +33,8 @@ interface Props {
   onDeconnexion: () => void;
   /** Blocs du pied de menu (essai, monnaie, langue…) : ils n'apparaissent que menu ouvert. */
   enPied?: ReactNode;
+  /** Nombre d'éléments en attente par entrée (adresse de l'entrée → nombre) : une pastille sur l'icône quand il est positif. */
+  pastilles?: Readonly<Record<string, number>>;
 }
 
 const lireEpingle = (cle: string) => {
@@ -48,7 +51,7 @@ const lireEpingle = (cle: string) => {
  * quitte. « Garder le menu déployé » l'épingle ouvert. Sur téléphone, c'est un tiroir toujours déployé.
  * Rend aussi la réserve de place de la colonne et le voile du tiroir : le parent n'a qu'à poser le contenu à côté.
  */
-export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques, racine, sousTitre, cleStockage, email, ouvertMobile, onFermerMobile, onDeconnexion, enPied }: Props) {
+export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques, racine, sousTitre, cleStockage, email, ouvertMobile, onFermerMobile, onDeconnexion, enPied, pastilles }: Props) {
   const { t } = useTranslation();
   const [epingle, setEpingle] = useState(() => lireEpingle(cleStockage));
   const [survol, setSurvol] = useState(false);
@@ -124,12 +127,29 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
                       }`
                     }
                   >
-                    {({ isActive }) => (
-                      <>
-                        <item.icone size={20} strokeWidth={isActive ? 1.9 : 1.6} aria-hidden="true" className={`shrink-0 ${isActive ? "text-ink-900" : "text-slate-600 group-hover:text-ink-900"}`} />
-                        <span className={`truncate transition-opacity duration-150 ${etiquette}`}>{t(`${prefixeLibelles}.${item.key}`)}</span>
-                      </>
-                    )}
+                    {({ isActive }) => {
+                      const enAttente = pastilles?.[item.to] ?? 0;
+                      return (
+                        <>
+                          {/* La pastille est sur l'icône, visible menu fermé comme menu ouvert. */}
+                          <span className="relative shrink-0">
+                            <item.icone size={20} strokeWidth={isActive ? 1.9 : 1.6} aria-hidden="true" className={isActive ? "text-ink-900" : "text-slate-600 group-hover:text-ink-900"} />
+                            {enAttente > 0 && (
+                              <span
+                                aria-hidden="true"
+                                data-testid="pastille-menu"
+                                className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center bg-orange-700 px-1 font-mono text-[10px] font-semibold leading-none text-white"
+                              >
+                                {libellePastille(enAttente)}
+                              </span>
+                            )}
+                          </span>
+                          <span className={`truncate transition-opacity duration-150 ${etiquette}`}>{t(`${prefixeLibelles}.${item.key}`)}</span>
+                          {/* Pour les lecteurs d'écran : le nombre fait partie du nom du lien. */}
+                          {enAttente > 0 && <span className="sr-only">, {t("nav.unread", { count: enAttente })}</span>}
+                        </>
+                      );
+                    }}
                   </NavLink>
                 ))}
               </div>

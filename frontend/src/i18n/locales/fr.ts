@@ -427,6 +427,7 @@ const fr = {
   },
 
   nav: {
+    unread: "{{count}} message(s) non lu(s)",
     tips: {
       dashboard: "Vue d'ensemble : loyers encaissés, impayés et échéances du mois.",
       properties: "Vos biens : créer une fiche, fixer le loyer, suivre l'occupation.",

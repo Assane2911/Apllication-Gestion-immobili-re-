@@ -8,6 +8,7 @@ import BoutonSuggestion from "./BoutonSuggestion";
 import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CartouchePlan from "./CartouchePlan";
+import { useNonLus } from "../hooks/useNonLus";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 
 // Même menu latéral que l'espace gestionnaire (colonne d'icônes qui s'ouvre au survol), rangé en deux rubriques.
@@ -34,6 +35,8 @@ export default function OwnerLayout() {
   const { demanderDeconnexion, dialogue: dialogueDeconnexion } = useConfirmationDeconnexion();
   const [menuMobileOuvert, setMenuMobileOuvert] = useState(false);
   const fermerMenuMobile = useCallback(() => setMenuMobileOuvert(false), []);
+  // Messages de l'agence pas encore lus : une pastille sur « Messagerie ».
+  const nonLus = useNonLus("/owner-messages/unread-count");
   // Titre d'onglet propre à la page : voir TenantLayout.
   const { pathname } = useLocation();
   const entree = navItems.find((item) => item.to === pathname.replace(/\/+$/, ""));
@@ -53,6 +56,7 @@ export default function OwnerLayout() {
         ouvertMobile={menuMobileOuvert}
         onFermerMobile={fermerMenuMobile}
         onDeconnexion={demanderDeconnexion}
+        pastilles={{ "/proprietaire/messages": nonLus.count }}
         enPied={
           <div className="mb-2 mx-1 w-full">
             <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("common.language.label")}</span>

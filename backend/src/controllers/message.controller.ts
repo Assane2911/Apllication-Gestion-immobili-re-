@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contractCotenants, contracts, messages, properties, tenants, users } from "../db/schema";
+import { contractCotenants, contracts, messages, ownerMessages, properties, tenants, users } from "../db/schema";
 import { bauxDuLocataire, estColocataire } from "../services/colocation.service";
 import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -312,6 +312,50 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
       })
     ),
   });
+});
+
+/**
+ * Nombre de messages non lus, pour la pastille du menu « Messagerie ». Un seul calcul par rôle, sans rien charger d'autre que des
+ * décomptes :
+ *  - locataire : les messages de l'agence qu'il n'a pas lus, dans tous ses fils (titulaire ou colocataire) ;
+ *  - gestionnaire : ceux de ses locataires (`tenants`) et de ses propriétaires (`owners`), distingués pour les onglets.
+ * Mêmes règles que la cloche (notification.controller.ts) : « non lu » = envoyé par l'autre partie et pas encore ouvert.
+ */
+export const nonLusMessagerie = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Authentification requise", "AUTH_REQUIRED");
+
+  if (req.user.role === "TENANT") {
+    const moi = await idLocataireDuCompte(req);
+    if (!moi) return res.json({ count: 0 });
+    const [{ n }] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(messages)
+      .innerJoin(contracts, eq(messages.contractId, contracts.id))
+      .where(
+        and(
+          // Son fil : rattaché à sa fiche, ou ancienne ligne non rattachée d'un bail dont il est titulaire.
+          or(eq(messages.tenantId, moi), and(isNull(messages.tenantId), eq(contracts.tenantId, moi))),
+          eq(messages.senderRole, "MANAGER"),
+          eq(messages.isRead, false)
+        )
+      );
+    return res.json({ count: n });
+  }
+
+  if (req.user.role !== "MANAGER") throw new ApiError(403, "Accès refusé", "ACCESS_DENIED");
+  const [[locataires], [proprietaires]] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(messages)
+      .innerJoin(contracts, eq(messages.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(and(eq(properties.managerId, req.user.userId), eq(messages.senderRole, "TENANT"), eq(messages.isRead, false))),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(ownerMessages)
+      .where(and(eq(ownerMessages.managerId, req.user.userId), eq(ownerMessages.senderRole, "OWNER"), eq(ownerMessages.isRead, false))),
+  ]);
+  res.json({ count: locataires.n + proprietaires.n, tenants: locataires.n, owners: proprietaires.n });
 });
 
 // Borné : sans plafond, un message pouvait peser jusqu'à la limite du corps JSON (10 Mo) et alourdissait la base et

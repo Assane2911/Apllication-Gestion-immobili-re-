@@ -126,6 +126,16 @@ export const getMyOwnerThread = asyncHandler(async (req: Request, res: Response)
   res.json(await lireFil(owner, req.user!.userId, false, repereDeLaRequete(req)));
 });
 
+/** Messages de l'agence que le propriétaire n'a pas encore lus : la pastille de son menu « Messagerie ». */
+export const countMyUnreadOwnerMessages = asyncHandler(async (req: Request, res: Response) => {
+  const owner = await chargerProprietaireDuCompte(req);
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(ownerMessages)
+    .where(and(eq(ownerMessages.ownerId, owner.id), eq(ownerMessages.senderRole, "MANAGER"), eq(ownerMessages.isRead, false)));
+  res.json({ count: n });
+});
+
 export const sendMyOwnerMessage = asyncHandler(async (req: Request, res: Response) => {
   const owner = await chargerProprietaireDuCompte(req);
   const { content } = sendMessageSchema.parse(req.body);

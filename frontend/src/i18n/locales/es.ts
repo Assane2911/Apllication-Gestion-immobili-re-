@@ -429,6 +429,7 @@ const es: TranslationSchema = {
   },
 
   nav: {
+    unread: "{{count}} mensaje(s) sin leer",
     tips: {
       dashboard: "Visión general: alquileres cobrados, impagos y vencimientos del mes.",
       properties: "Sus inmuebles: crear una ficha, fijar el alquiler, seguir la ocupación.",

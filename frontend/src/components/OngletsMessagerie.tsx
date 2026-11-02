@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
+import { useNonLusGestionnaire } from "../context/nonLus";
+import { libellePastille } from "../utils/nonLus";
 
 const ONGLETS = [
   { cle: "tenants", vers: "/messages" },
@@ -13,6 +15,7 @@ const ONGLETS = [
  */
 export default function OngletsMessagerie() {
   const { t } = useTranslation();
+  const nonLus = useNonLusGestionnaire();
   return (
     <nav aria-label={t("manager.messages.tabs.label")} className="flex w-fit border border-ink-900">
       {ONGLETS.map((onglet) => (
@@ -27,6 +30,14 @@ export default function OngletsMessagerie() {
           }
         >
           {t(`manager.messages.tabs.${onglet.cle}`)}
+          {nonLus[onglet.cle] > 0 && (
+            <>
+              <span aria-hidden="true" className="ml-2 bg-orange-700 px-1.5 py-0.5 text-[10px] leading-none text-white">
+                {libellePastille(nonLus[onglet.cle])}
+              </span>
+              <span className="sr-only">, {t("nav.unread", { count: nonLus[onglet.cle] })}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>

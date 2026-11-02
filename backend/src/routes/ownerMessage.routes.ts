@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  countMyUnreadOwnerMessages,
   getMyOwnerThread,
   getOwnerThread,
   listOwnerConversations,
@@ -15,6 +16,7 @@ const router = Router();
 
 // Côté propriétaire : son fil unique avec l'agence, résolu par son compte. Avant le router.use ci-dessous, réservé au
 // gestionnaire ; un propriétaire garde l'accès quel que soit l'abonnement de son agence (comme un locataire).
+router.get("/unread-count", authenticate, requireRole("OWNER"), countMyUnreadOwnerMessages);
 router.get("/mine", authenticate, requireRole("OWNER"), getMyOwnerThread);
 router.post("/mine", authenticate, requireRole("OWNER"), sendMyOwnerMessage);
 router.post("/mine/audio", authenticate, requireRole("OWNER"), uploadMessageAudio.single("audio"), sendMyOwnerVoice);

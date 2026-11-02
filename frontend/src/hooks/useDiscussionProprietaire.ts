@@ -4,6 +4,7 @@ import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from
 import { useAuth } from "../context/auth";
 import type { ConversationProprietaire, Message, PaginatedResponse } from "../types";
 import { ajouterSiAbsent, fusionnerFil } from "../utils/fusionFil";
+import { signalerFilLu } from "../utils/nonLus";
 import { extensionEnregistrement } from "../utils/messageVocal";
 import { useActualisationFil, useRafraichissementPeriodique } from "./useActualisationFil";
 import type { EnregistrementVocal } from "./useEnregistreurVocal";
@@ -83,6 +84,8 @@ export function useDiscussionProprietaire(role: "MANAGER" | "OWNER") {
         setMessages(liste<Message>(res.data, "messages"));
         setActiveOwner(res.data.owner ?? null);
         setLoadingMessages(false);
+        // Ouvrir le fil marque ses messages reçus comme lus : la pastille du menu se recompte.
+        signalerFilLu();
         if (gestionnaire) {
           // Ouvrir le fil marque ses messages lus côté serveur : la pastille de la liste suit sans recharger.
           setConversations((prev) => prev.map((c) => (c.id === selectedOwnerId ? { ...c, unreadCount: 0 } : c)));

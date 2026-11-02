@@ -4,6 +4,7 @@ import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste } from
 import { useAuth } from "../context/auth";
 import type { Conversation, Message, PaginatedResponse, Role } from "../types";
 import { ajouterSiAbsent, fusionnerFil } from "../utils/fusionFil";
+import { signalerFilLu } from "../utils/nonLus";
 import { extensionEnregistrement } from "../utils/messageVocal";
 import { useActualisationFil, useRafraichissementPeriodique } from "./useActualisationFil";
 import type { EnregistrementVocal } from "./useEnregistreurVocal";
@@ -107,6 +108,8 @@ export function useConversationThread(role: Role, options: UseConversationThread
         setMessages(liste<Message>(res.data, "messages"));
         setActiveContract(res.data.contract);
         setLoadingMessages(false);
+        // Ouvrir le fil marque ses messages reçus comme lus : la pastille du menu se recompte.
+        signalerFilLu();
       })
       .catch((err) => {
         if (isRequestCancelled(err)) return;

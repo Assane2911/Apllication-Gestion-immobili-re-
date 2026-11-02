@@ -8,6 +8,7 @@ import BoutonSuggestion from "./BoutonSuggestion";
 import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CartouchePlan from "./CartouchePlan";
+import { useNonLus } from "../hooks/useNonLus";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 import NotificationBell from "./NotificationBell";
 
@@ -31,6 +32,8 @@ export default function TenantLayout() {
   const { demanderDeconnexion, dialogue: dialogueDeconnexion } = useConfirmationDeconnexion();
   const [menuMobileOuvert, setMenuMobileOuvert] = useState(false);
   const fermerMenuMobile = useCallback(() => setMenuMobileOuvert(false), []);
+  // Messages de l'agence pas encore lus : une pastille sur « Messagerie ».
+  const nonLus = useNonLus("/messages/unread-count");
   // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>) : sans lui, toutes les pages
   // du portail s'appelaient pareil, et un lecteur d'écran n'annonçait aucun changement de page.
   const { pathname } = useLocation();
@@ -51,6 +54,7 @@ export default function TenantLayout() {
         ouvertMobile={menuMobileOuvert}
         onFermerMobile={fermerMenuMobile}
         onDeconnexion={demanderDeconnexion}
+        pastilles={{ "/portail/messages": nonLus.count }}
         enPied={
           <div className="mb-2 mx-1 w-full">
             <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600 font-semibold block mb-1">{t("common.language.label")}</span>
