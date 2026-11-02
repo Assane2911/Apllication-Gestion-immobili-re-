@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
@@ -104,5 +104,50 @@ describe("ReferralPage (manager)", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
 
     await waitFor(() => expect(screen.getByText("A1B2C3D4")).toBeInTheDocument());
+  });
+});
+
+describe("ReferralPage — message prêt à envoyer et places restantes", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+  });
+
+  it("propose un message rédigé avec les liens WhatsApp et e-mail", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: referralInfo() });
+    renderPage();
+
+    const message = "Essayez ImmoPlatform Pro, la plateforme de gestion locative : 15 jours d'essai gratuit, sans carte bancaire. https://app.test/inscription?ref=A1B2C3D4";
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    const groupe = screen.getByRole("group", { name: "Envoyer à un confrère" });
+    expect(within(groupe).getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", `https://wa.me/?text=${encodeURIComponent(message)}`);
+    expect(within(groupe).getByRole("link", { name: "WhatsApp" })).toHaveAttribute("rel", "noopener noreferrer");
+    expect(within(groupe).getByRole("link", { name: "E-mail" })).toHaveAttribute(
+      "href",
+      `mailto:?subject=${encodeURIComponent("Une plateforme de gestion locative pour vous")}&body=${encodeURIComponent(message)}`
+    );
+  });
+
+  it("copie le message complet", async () => {
+    const user = userEvent.setup();
+    const ecrire = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
+    mockedApi.get.mockResolvedValueOnce({ data: referralInfo() });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Copier le message" }));
+    expect(ecrire).toHaveBeenCalledWith(expect.stringContaining("https://app.test/inscription?ref=A1B2C3D4"));
+    expect(ecrire.mock.calls[0][0]).toContain("15 jours d'essai gratuit");
+  });
+
+  it("annonce les places restantes sous le plafond, et se tait une fois le plafond atteint", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: referralInfo({ rewardedReferrals: 3, maxRewardedReferrals: 10, rewardDays: 15 }) });
+    const { unmount } = renderPage();
+    expect(await screen.findByText("Encore 7 filleul(s) peuvent prolonger votre accès, soit jusqu'à 105 jours supplémentaires.")).toBeInTheDocument();
+    unmount();
+
+    mockedApi.get.mockResolvedValueOnce({ data: referralInfo({ rewardedReferrals: 10, maxRewardedReferrals: 10 }) });
+    renderPage();
+    await screen.findByText(/Plafond atteint/);
+    expect(screen.queryByText(/peuvent prolonger votre accès/)).not.toBeInTheDocument();
   });
 });

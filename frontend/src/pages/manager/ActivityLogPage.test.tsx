@@ -124,4 +124,50 @@ describe("ActivityLogPage", () => {
     expect(within(jourAncien).getByText("Action de la veille")).toBeInTheDocument();
     expect(screen.getByText("3 action(s) enregistrée(s)")).toBeInTheDocument();
   });
+
+  describe("recherche, période et export", () => {
+    const il_y_a = (j: number) => new Date(Date.now() - j * 86_400_000).toISOString();
+    const parc = () => [
+      entry({ id: "e1", actorLabel: "Awa Diallo", entityLabel: "Facture 6/2026", details: "Facture marquée réglée", createdAt: il_y_a(0) }),
+      entry({ id: "e2", actorLabel: "Moussa Ba", entityLabel: "Villa Baobab", details: "Bien modifié", createdAt: il_y_a(3) }),
+      entry({ id: "e3", actorLabel: "Awa Diallo", entityLabel: "Studio Plateau", details: "Bail signé", createdAt: il_y_a(20) }),
+    ];
+
+    it("cherche par auteur ou par objet, et filtre par période", async () => {
+      const user = userEvent.setup();
+      mockedApi.get.mockResolvedValueOnce(reponse(parc()));
+      render(<ActivityLogPage />);
+      await screen.findByText("Facture marquée réglée");
+
+      await user.click(within(screen.getByRole("group", { name: "Période" })).getByRole("button", { name: "7 jours" }));
+      expect(screen.queryByText("Bail signé")).not.toBeInTheDocument();
+      expect(screen.getByText("Bien modifié")).toBeInTheDocument();
+
+      await user.click(within(screen.getByRole("group", { name: "Période" })).getByRole("button", { name: "Tout" }));
+      await user.type(screen.getByRole("searchbox"), "baobab");
+      expect(screen.getByText("Bien modifié")).toBeInTheDocument();
+      expect(screen.queryByText("Facture marquée réglée")).not.toBeInTheDocument();
+    });
+
+    it("exporte les entrées affichées en CSV", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      mockedApi.get.mockResolvedValueOnce(reponse(parc()));
+      render(<ActivityLogPage />);
+      await screen.findByText("Facture marquée réglée");
+      await user.type(screen.getByRole("searchbox"), "moussa");
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      const lignes = texte.split("\n");
+      expect(lignes).toHaveLength(2);
+      expect(lignes[1]).toContain('"Moussa Ba"');
+    });
+  });
 });

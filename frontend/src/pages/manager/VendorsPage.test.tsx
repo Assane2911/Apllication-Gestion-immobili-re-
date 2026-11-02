@@ -172,4 +172,53 @@ describe("VendorsPage (manager)", () => {
     expect(window.confirm).toHaveBeenCalled();
     await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/vendors/ven-1"));
   });
+
+  describe("synthèse, WhatsApp et export", () => {
+    const parc = () => [
+      vendor({ id: "v1", name: "Plomberie Fall", trade: "Plombier", phone: "+221 77 000 11 22", email: "fall@example.com" }),
+      vendor({ id: "v2", name: "Élec Ndoye", trade: "Électricien", phone: "0771234567", email: null }),
+      vendor({ id: "v3", name: "Peinture Sow", trade: "plombier", phone: "+221 76 000 33 44", email: null }),
+    ];
+
+    it("résume le carnet : prestataires, métiers, sans email, sur WhatsApp", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: parc() });
+      renderPage();
+      const synthese = await screen.findByLabelText("Synthèse du carnet");
+      const valeur = (libelle: string) => within(synthese).getByText(libelle).nextElementSibling;
+      expect(valeur("Prestataires")).toHaveTextContent("3");
+      expect(valeur("Métiers")).toHaveTextContent("2");
+      expect(valeur("Sans email")).toHaveTextContent("2");
+      expect(valeur("Sur WhatsApp")).toHaveTextContent("2");
+    });
+
+    it("propose WhatsApp seulement pour un numéro au format international", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: parc() });
+      renderPage();
+      const fall = (await screen.findByRole("heading", { level: 3, name: "Plomberie Fall" })).closest("article") as HTMLElement;
+      expect(within(fall).getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/221770001122");
+      const ndoye = screen.getByRole("heading", { level: 3, name: "Élec Ndoye" }).closest("article") as HTMLElement;
+      expect(within(ndoye).queryByRole("link", { name: "WhatsApp" })).not.toBeInTheDocument();
+    });
+
+    it("exporte les prestataires affichés en CSV", async () => {
+      const user = userEvent.setup();
+      let blob: Blob | undefined;
+      Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
+      Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true });
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      mockedApi.get.mockResolvedValueOnce({ data: parc() });
+      renderPage();
+      await screen.findByLabelText("Synthèse du carnet");
+      await user.type(screen.getByRole("searchbox"), "ndoye");
+      await user.click(screen.getByRole("button", { name: "Exporter en CSV" }));
+      const texte = await new Promise<string>((resolve) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result));
+        lecteur.readAsText(blob!);
+      });
+      const lignes = texte.split("\n");
+      expect(lignes).toHaveLength(2);
+      expect(lignes[1]).toContain('"Élec Ndoye";"Électricien"');
+    });
+  });
 });

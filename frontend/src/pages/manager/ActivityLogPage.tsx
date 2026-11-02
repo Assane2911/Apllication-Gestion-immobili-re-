@@ -1,12 +1,16 @@
-import { Banknote, Building2, Clock, FileText, LayoutGrid, Receipt, Settings, ShieldCheck, Wrench, Users } from "lucide-react";
+import { Banknote, Building2, Clock, Download, FileText, LayoutGrid, Receipt, Settings, ShieldCheck, Wrench, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
+import BarreListe from "../../components/BarreListe";
 import EmptyState from "../../components/EmptyState";
 import FriseJournal from "../../components/FriseJournal";
 import Pagination from "../../components/Pagination";
 import { Skeleton } from "../../components/Skeleton";
 import type { ActivityLogEntry, PaginatedResponse } from "../../types";
+import { correspond } from "../../utils/recherche";
+import { csvJournal, dansLaPeriode, type PeriodeJournal } from "../../utils/syntheseExploitation";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
 
 const PAGE_SIZE = 20;
 
@@ -32,6 +36,8 @@ export default function ActivityLogPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [recherche, setRecherche] = useState("");
+  const [periode, setPeriode] = useState<PeriodeJournal>("all");
 
   function load(type: string, pageToLoad: number, signal?: AbortSignal) {
     setLoading(true);
@@ -67,6 +73,21 @@ export default function ActivityLogPage() {
     return () => controller.abort();
   }, [entityType, page]);
 
+  const visibles = logs.filter((l) => dansLaPeriode(l, periode) && correspond(recherche, l.actorLabel, l.entityLabel, l.details, l.action));
+
+  function exporterCsv() {
+    telechargerCsv(
+      `journal-${dateDuJourPourFichier()}.csv`,
+      csvJournal(visibles, {
+        date: t("manager.activityLog.csv.date"),
+        actor: t("manager.activityLog.csv.actor"),
+        category: t("manager.activityLog.csv.category"),
+        subject: t("manager.activityLog.csv.subject"),
+        details: t("manager.activityLog.csv.details"),
+      })
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -76,6 +97,29 @@ export default function ActivityLogPage() {
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.activityLog.count", { count: total })}</p>
         )}
       </div>
+
+      {/* Recherche et période portent sur les entrées chargées ; la catégorie ci-dessous est appliquée par le serveur. */}
+      <BarreListe
+        idPrefixe="journal"
+        recherche={recherche}
+        onRecherche={setRecherche}
+        placeholderRecherche={t("manager.activityLog.search")}
+        libelleFiltres={t("manager.activityLog.periodLabel")}
+        filtres={(["all", "today", "week", "month"] as const).map((p) => ({ cle: p, libelle: t(`manager.activityLog.periods.${p}`) }))}
+        filtreActif={periode}
+        onFiltre={(cle) => setPeriode(cle as PeriodeJournal)}
+      >
+        {visibles.length > 0 && (
+          <button
+            type="button"
+            onClick={exporterCsv}
+            className="inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900"
+          >
+            <Download size={13} aria-hidden="true" />
+            {t("manager.liste.exportCsv")}
+          </button>
+        )}
+      </BarreListe>
 
       {/* Filtre par catégorie : une réglette d'onglets avec le pictogramme de chaque catégorie. */}
       <div role="group" aria-label={t("manager.activityLog.filterByType")} className="flex flex-wrap border border-slate-400 bg-white sm:inline-flex">
@@ -103,9 +147,9 @@ export default function ActivityLogPage() {
       </div>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-xs flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
           <span>{loadError}</span>
-          <button onClick={() => load(entityType, page)} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={() => load(entityType, page)} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
           </button>
         </div>
@@ -126,7 +170,7 @@ export default function ActivityLogPage() {
       ) : (
         <div className="space-y-8">
           <FriseJournal
-            entrees={logs.map((log) => ({
+            entrees={visibles.map((log) => ({
               id: log.id,
               date: log.createdAt,
               icone: iconByEntityType[log.entityType] ?? Clock,
@@ -136,12 +180,12 @@ export default function ActivityLogPage() {
             }))}
           />
 
-          {!loadError && logs.length === 0 && (
+          {!loadError && visibles.length === 0 && (
             <div className="border border-slate-300 bg-white">
               <EmptyState
                 icon={Clock}
-                title={t("manager.activityLog.emptyTitle")}
-                description={t("manager.activityLog.emptyDesc")}
+                title={logs.length > 0 ? t("manager.liste.noResult") : t("manager.activityLog.emptyTitle")}
+                description={logs.length > 0 ? "" : t("manager.activityLog.emptyDesc")}
               />
             </div>
           )}

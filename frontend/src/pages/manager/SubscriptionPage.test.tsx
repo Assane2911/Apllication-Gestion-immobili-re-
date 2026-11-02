@@ -1009,3 +1009,107 @@ describe("SubscriptionPage", () => {
     });
   });
 });
+
+describe("SubscriptionPage — historique, économie annuelle et formule suivante", () => {
+  const paiement = (o: Record<string, unknown> = {}) => ({
+    id: "h1", plan: "STARTER", amount: 19, currency: "EUR", billingCycle: "MONTHLY", status: "PAID", paymentMethod: "DEMO", paymentRef: "ref-1",
+    startDate: "2026-08-01T00:00:00.000Z", endDate: "2026-09-01T00:00:00.000Z", createdAt: "2026-08-01T00:00:00.000Z", ...o,
+  });
+
+  beforeEach(() => {
+    window.history.replaceState({}, "", "/");
+    fileGet.length = 0;
+    mockedApi.get.mockReset();
+    installerGet();
+    mockedApi.post.mockReset();
+    mockedIsNativePlatform.mockReturnValue(false);
+  });
+
+  it("résume les paiements : nombre, total par devise, dernier paiement", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [paiement(), paiement({ id: "h2", amount: 38, createdAt: "2026-09-01T00:00:00.000Z" })] } });
+    renderPage();
+
+    const synthese = await screen.findByLabelText("Synthèse des paiements");
+    const valeur = (libelle: string) => within(synthese).getByText(libelle).nextElementSibling;
+    expect(valeur("Paiements")).toHaveTextContent("2");
+    expect(valeur("Total réglé")).toHaveTextContent("57 €");
+    expect(valeur("Dernier paiement")).toHaveTextContent(new Date("2026-09-01T00:00:00.000Z").toLocaleDateString("fr"));
+  });
+
+  it("ne mélange pas deux devises dans le total", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [paiement(), paiement({ id: "h2", amount: 12000, currency: "XOF" })] } });
+    renderPage();
+
+    const synthese = await screen.findByLabelText("Synthèse des paiements");
+    expect(within(synthese).getByText("Total réglé (EUR)")).toBeInTheDocument();
+    expect(within(synthese).getByText("Total réglé (XOF)")).toBeInTheDocument();
+  });
+
+  it("exporte l'historique en CSV", async () => {
+    const user = userEvent.setup();
+    let blob: Blob | undefined;
+    let nom = "";
+    Object.defineProperty(URL, "createObjectURL", { value: vi.fn((b: Blob) => { blob = b; return "blob:x"; }), configurable: true, writable: true });
+    Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), configurable: true, writable: true });
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { nom = this.download; });
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [paiement()] } });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Exporter l'historique (CSV)" }));
+    const texte = await new Promise<string>((resolve) => {
+      const lecteur = new FileReader();
+      lecteur.onload = () => resolve(String(lecteur.result));
+      lecteur.readAsText(blob as Blob);
+    });
+    clic.mockRestore();
+    expect(nom).toMatch(/^abonnement-historique-\d{4}-\d{2}-\d{2}\.csv$/);
+    const lignes = texte.replace("﻿", "").split("\n");
+    expect(lignes[0]).toContain('"Montant"');
+    expect(lignes[1]).toContain('"19,00";"EUR";"DEMO";"ref-1";"PAID"');
+  });
+
+  it("annonce ce que l'annuel fait économiser", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER", monthlyPrice: 19, annualPrice: 182 })] });
+    queueGet({ data: { history: [] } });
+    renderPage();
+
+    await screen.findByRole("button", { name: /^Choisir/ });
+    expect(screen.queryByText(/Vous économisez/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Facturation Annuelle/ }));
+    expect(screen.getByText("Vous économisez 46 € par an")).toBeInTheDocument();
+  });
+
+  it("propose la formule suivante quand le parc approche du plafond, et l'ouvre en un clic", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser({ subscription: subscription({ status: "ACTIVE", plan: "STARTER", isTrialActive: false, isSubscriptionActive: true, subscriptionEndsAt: "2027-01-01T00:00:00.000Z" }) }));
+    queueGet({ data: [plan({ id: "STARTER", monthlyPrice: 19, maxProperties: 5 }), plan({ id: "PRO", name: "Professionnel", monthlyPrice: 49, annualPrice: 470, maxProperties: 25 })] });
+    queueGet({ data: { history: [], propertyUsage: { count: 5, max: 5, exceeded: false } } });
+    renderPage();
+
+    expect(await screen.findByText(/Vous utilisez 5 bien\(s\) sur 5/)).toBeInTheDocument();
+    // Le bouton de la proposition précède le tableau des formules, qui a le même libellé sur la carte de la formule.
+    const boutons = screen.getAllByRole("button", { name: /^Choisir Professionnel/ });
+    expect(boutons).toHaveLength(2);
+    await user.click(boutons[0]);
+    expect(await screen.findByRole("radiogroup")).toBeInTheDocument();
+  });
+
+  it("ne propose rien quand le parc est loin du plafond", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER", maxProperties: 5 }), plan({ id: "PRO", name: "Professionnel", monthlyPrice: 49, maxProperties: 25 })] });
+    queueGet({ data: { history: [], propertyUsage: { count: 1, max: 5, exceeded: false } } });
+    renderPage();
+
+    await screen.findByText("1 / 5");
+    expect(screen.queryByText(/vous laisse de la marge/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Choisir Professionnel/ })).toHaveLength(1);
+  });
+});

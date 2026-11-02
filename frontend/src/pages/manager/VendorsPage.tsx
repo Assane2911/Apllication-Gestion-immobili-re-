@@ -1,13 +1,23 @@
-import { HardHat, Mail, Pencil, Phone, Search, Trash2 } from "lucide-react";
+import { Download, HardHat, Mail, MessageCircle, Pencil, Phone, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import BandeauChiffres from "../../components/BandeauChiffres";
 import ChampTelephone from "../../components/ChampTelephone";
+import SectionReglage from "../../components/SectionReglage";
 import EmptyState from "../../components/EmptyState";
 import Initiales from "../../components/Initiales";
 import { Skeleton } from "../../components/Skeleton";
 import type { Vendor } from "../../types";
 import Bulle from "../../components/Bulle";
+import { csvPrestataires, synthesePrestataires } from "../../utils/syntheseExploitation";
+import { lienWhatsapp } from "../../utils/syntheseLocation";
+import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
+
+const CHAMP = "w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900";
+const LIBELLE = "mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600";
+const BOUTON_PLEIN = "cursor-pointer bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const BOUTON_TRAIT = "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900";
 
 const emptyForm = { name: "", trade: "", phone: "", email: "", notes: "" };
 
@@ -113,6 +123,21 @@ export default function VendorsPage() {
       (!metierActif || v.trade?.trim() === metierActif) &&
       (!termes || [v.name, v.trade, v.phone, v.email].some((c) => c?.toLocaleLowerCase(i18n.language).includes(termes)))
   );
+  const synthese = synthesePrestataires(vendors);
+
+  function exporterCsv() {
+    telechargerCsv(
+      `prestataires-${dateDuJourPourFichier()}.csv`,
+      csvPrestataires(visibles, {
+        name: t("manager.vendors.fields.name"),
+        trade: t("manager.vendors.fields.trade"),
+        phone: t("manager.vendors.fields.phone"),
+        email: t("manager.vendors.fields.email"),
+        notes: t("manager.vendors.fields.notes"),
+      })
+    );
+  }
+
   const lienContact = "border-b border-ink-900/40 text-slate-900 hover:border-orange-700 hover:text-orange-700";
 
   return (
@@ -123,56 +148,67 @@ export default function VendorsPage() {
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.vendors.count", { count: vendors.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.vendorCreate")}>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 transition-colors">
+        <button onClick={openCreate} className={BOUTON_PLEIN}>
           {t("manager.vendors.addBtn")}
         </button>
         </Bulle>
       </div>
 
       {loadError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-xs flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
           <span>{loadError}</span>
-          <button onClick={load} className="underline font-semibold shrink-0 whitespace-nowrap">
+          <button onClick={load} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
             {t("common.actions.retry")}
           </button>
         </div>
       )}
 
       {showForm && (
-        <div className="bg-white rounded-xl border border-contour-200 p-5 shadow-sm">
-          <h3 className="font-medium text-slate-900 mb-4">{editing ? t("manager.vendors.formTitleEdit") : t("manager.vendors.formTitleNew")}</h3>
+        <SectionReglage id="fiche-prestataire" numero="01" titre={editing ? t("manager.vendors.formTitleEdit") : t("manager.vendors.formTitleNew")}>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="vendor-name" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.name")}</label>
-              <input id="vendor-name" required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-name" className={LIBELLE}>{t("manager.vendors.fields.name")}</label>
+              <input id="vendor-name" required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="vendor-trade" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.trade")}</label>
-              <input id="vendor-trade" maxLength={100} value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} placeholder={t("manager.vendors.fields.tradePlaceholder")} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-trade" className={LIBELLE}>{t("manager.vendors.fields.trade")}</label>
+              <input id="vendor-trade" maxLength={100} value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} placeholder={t("manager.vendors.fields.tradePlaceholder")} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="vendor-phone" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.phone")}</label>
+              <label htmlFor="vendor-phone" className={LIBELLE}>{t("manager.vendors.fields.phone")}</label>
               <ChampTelephone id="vendor-phone" required value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             </div>
             <div>
-              <label htmlFor="vendor-email" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.email")}</label>
-              <input id="vendor-email" type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-email" className={LIBELLE}>{t("manager.vendors.fields.email")}</label>
+              <input id="vendor-email" type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={CHAMP} />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="vendor-notes" className="block text-sm font-medium text-slate-700 mb-1">{t("manager.vendors.fields.notes")}</label>
-              <textarea id="vendor-notes" maxLength={5000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <label htmlFor="vendor-notes" className={LIBELLE}>{t("manager.vendors.fields.notes")}</label>
+              <textarea id="vendor-notes" maxLength={5000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className={CHAMP} />
             </div>
             {error && <p role="alert" className="md:col-span-2 text-sm text-red-600">{error}</p>}
             <div className="md:col-span-2 flex gap-2">
-              <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg">
+              <button type="submit" disabled={saving} className={BOUTON_PLEIN}>
                 {saving ? t("common.actions.saving") : t("common.actions.save")}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-600 px-4 py-2">
+              <button type="button" onClick={() => setShowForm(false)} className="cursor-pointer px-4 py-2 text-sm text-slate-600 hover:text-ink-900">
                 {t("common.actions.cancel")}
               </button>
             </div>
           </form>
-        </div>
+        </SectionReglage>
+      )}
+
+      {!loading && vendors.length > 0 && (
+        <BandeauChiffres
+          etiquette={t("manager.vendors.summary.label")}
+          cases={[
+            { libelle: t("manager.vendors.summary.total"), valeur: synthese.total, aide: t("manager.vendors.summary.totalHint") },
+            { libelle: t("manager.vendors.summary.trades"), valeur: synthese.metiers, aide: t("manager.vendors.summary.tradesHint") },
+            { libelle: t("manager.vendors.summary.noEmail"), valeur: synthese.sansEmail, aide: t("manager.vendors.summary.noEmailHint"), ton: synthese.sansEmail > 0 ? "alerte" : "normal" },
+            { libelle: t("manager.vendors.summary.whatsapp"), valeur: vendors.filter((v) => lienWhatsapp(v.phone)).length, aide: t("manager.vendors.summary.whatsappHint") },
+          ]}
+        />
       )}
 
       {!loading && vendors.length > 0 && (
@@ -202,6 +238,11 @@ export default function VendorsPage() {
               </button>
             ))}
           </div>
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+          <button type="button" onClick={exporterCsv} className={BOUTON_TRAIT}>
+            <Download size={13} aria-hidden="true" />
+            {t("manager.liste.exportCsv")}
+          </button>
           <div className="relative w-full lg:w-72">
             <Search size={14} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
@@ -212,6 +253,7 @@ export default function VendorsPage() {
               onChange={(e) => setRecherche(e.target.value)}
               className="w-full border border-slate-400 bg-white py-2 pl-9 pr-3 text-xs text-slate-900"
             />
+          </div>
           </div>
         </div>
       )}
@@ -245,7 +287,7 @@ export default function VendorsPage() {
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base font-bold leading-snug text-slate-900">{vendor.name}</h3>
                     {vendor.trade ? (
-                      <span className="mt-1 inline-block border border-orange-700/50 bg-orange-50 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-800">
+                      <span className="mt-1 inline-block border border-orange-300 bg-orange-50 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-900">
                         {vendor.trade}
                       </span>
                     ) : null}
@@ -261,6 +303,14 @@ export default function VendorsPage() {
                       {vendor.phone}
                     </a>
                   </li>
+                  {lienWhatsapp(vendor.phone) && (
+                    <li className="flex items-center gap-2">
+                      <MessageCircle size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
+                      <a href={lienWhatsapp(vendor.phone) ?? undefined} target="_blank" rel="noopener noreferrer" className={`font-semibold ${lienContact}`}>
+                        {t("manager.vendors.whatsapp")}
+                      </a>
+                    </li>
+                  )}
                   <li className="flex items-center gap-2">
                     <Mail size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
                     {vendor.email ? (

@@ -210,4 +210,52 @@ describe("IssuesPage (gestionnaire)", () => {
       );
     });
   });
+
+  describe("synthèse, ancienneté, recherche et sans prestataire", () => {
+    const il_y_a = (j: number) => new Date(Date.now() - j * 86_400_000).toISOString();
+    const parc = () => [
+      issue({ id: "a", title: "Fuite d'eau", createdAt: il_y_a(10) }),
+      issue({ id: "b", title: "Porte bloquée", createdAt: il_y_a(1), vendor: { id: "ven-1", name: "Plomberie Fall", trade: "Plombier" } }),
+      issue({ id: "c", title: "Ampoule grillée", createdAt: il_y_a(0), tenant: tenant({ firstName: "Moussa", lastName: "Ba" }) }),
+      issue({ id: "d", title: "Volet cassé", status: "RESOLVED", createdAt: il_y_a(20) }),
+    ];
+    const titres = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 3 }).textContent);
+
+    async function afficher() {
+      mockedApi.get.mockResolvedValueOnce(paginated(parc()));
+      renderWithVendors([vendor()]);
+      await screen.findByText("Fuite d'eau");
+    }
+
+    it("résume les incidents ouverts, sans prestataire, anciens et planifiés", async () => {
+      await afficher();
+      const synthese = screen.getByLabelText("Synthèse des incidents");
+      const valeur = (libelle: string) => within(synthese).getByText(libelle).nextElementSibling;
+      expect(valeur("Ouverts")).toHaveTextContent("3");
+      expect(valeur("Sans prestataire")).toHaveTextContent("2");
+      expect(valeur("Anciens")).toHaveTextContent("1");
+      expect(valeur("Interventions planifiées")).toHaveTextContent("0");
+    });
+
+    it("indique l'ancienneté de chaque incident à traiter, et marque l'ancien", async () => {
+      await afficher();
+      const fuite = screen.getByRole("heading", { level: 3, name: "Fuite d'eau" }).closest("article") as HTMLElement;
+      expect(within(fuite).getByText(/Signalé il y a 10 j · Ancien/)).toBeInTheDocument();
+      const ampoule = screen.getByRole("heading", { level: 3, name: "Ampoule grillée" }).closest("article") as HTMLElement;
+      expect(within(ampoule).getByText(/Signalé aujourd'hui/)).toBeInTheDocument();
+      const volet = screen.getByRole("heading", { level: 3, name: "Volet cassé" }).closest("article") as HTMLElement;
+      expect(within(volet).queryByText(/Signalé il y a|Signalé aujourd/)).not.toBeInTheDocument();
+    });
+
+    it("cherche par titre ou locataire, et isole les incidents sans prestataire", async () => {
+      const user = userEvent.setup();
+      await afficher();
+      await user.type(screen.getByRole("searchbox"), "moussa");
+      expect(titres()).toEqual(["Ampoule grillée"]);
+      await user.clear(screen.getByRole("searchbox"));
+
+      await user.click(screen.getByRole("button", { name: "Sans prestataire" }));
+      expect(titres()).toEqual(["Fuite d'eau", "Ampoule grillée"]);
+    });
+  });
 });
