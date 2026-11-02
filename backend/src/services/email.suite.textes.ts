@@ -38,6 +38,15 @@ export interface TextesSuite {
     intro: string;
     bouton: string;
   };
+  /** Annonce d'une maintenance planifiée aux gestionnaires (dates déjà mises en forme, en UTC). */
+  maintenance: {
+    sujet: (debut: string) => string;
+    titre: string;
+    intro: (debut: string, fin: string) => string;
+    pendant: string;
+    conseil: string;
+    messageEquipe: string;
+  };
   revision: {
     sujet: (date: string) => string;
     bandeau: string;
@@ -115,6 +124,15 @@ const fr: TextesSuite = {
     bonjour: (nom) => `Bonjour ${nom},`,
     intro: (bien) => `Vous avez reçu un nouveau message concernant le logement <strong>${bien}</strong> :`,
     bouton: "Répondre au message →",
+  },
+  maintenance: {
+    sujet: (debut) => `🛠️ Maintenance prévue le ${debut}`,
+    titre: "🛠️ Maintenance planifiée",
+    intro: (debut, fin) => `Une maintenance de la plateforme est prévue du <strong>${debut}</strong> au <strong>${fin}</strong>.`,
+    pendant:
+      "Pendant ce temps, l'application sera indisponible pour vous, vos locataires et vos propriétaires : ils verront un écran d'attente, et l'application reviendra d'elle-même à la fin.",
+    conseil: "Vos données ne sont pas touchées. Pensez à enregistrer vos saisies en cours avant l'heure de début.",
+    messageEquipe: "Message de l'équipe :",
   },
   revision: {
     sujet: (date) => `Révision de votre loyer à compter du ${date}`,
@@ -200,6 +218,15 @@ const en: TextesSuite = {
     intro: (bien) => `You have received a new message about the property <strong>${bien}</strong>:`,
     bouton: "Reply to the message →",
   },
+  maintenance: {
+    sujet: (debut) => `🛠️ Scheduled maintenance on ${debut}`,
+    titre: "🛠️ Scheduled maintenance",
+    intro: (debut, fin) => `A platform maintenance is scheduled from <strong>${debut}</strong> to <strong>${fin}</strong>.`,
+    pendant:
+      "During this time the application will be unavailable to you, your tenants and your owners: they will see a waiting screen, and the application will come back on its own once it is over.",
+    conseil: "Your data is not affected. Please save any work in progress before the start time.",
+    messageEquipe: "Message from the team:",
+  },
   revision: {
     sujet: (date) => `Your rent is being revised as of ${date}`,
     bandeau: "Rent Revision",
@@ -283,6 +310,15 @@ const es: TextesSuite = {
     intro: (bien) => `Ha recibido un nuevo mensaje sobre el inmueble <strong>${bien}</strong>:`,
     bouton: "Responder al mensaje →",
   },
+  maintenance: {
+    sujet: (debut) => `🛠️ Mantenimiento previsto el ${debut}`,
+    titre: "🛠️ Mantenimiento programado",
+    intro: (debut, fin) => `Está previsto un mantenimiento de la plataforma del <strong>${debut}</strong> al <strong>${fin}</strong>.`,
+    pendant:
+      "Durante ese tiempo la aplicación no estará disponible para ti, tus inquilinos ni tus propietarios: verán una pantalla de espera y la aplicación volverá por sí sola al terminar.",
+    conseil: "Tus datos no se ven afectados. Guarda lo que tengas en curso antes de la hora de inicio.",
+    messageEquipe: "Mensaje del equipo:",
+  },
   revision: {
     sujet: (date) => `Revisión de su alquiler a partir del ${date}`,
     bandeau: "Revisión del alquiler",
@@ -365,6 +401,15 @@ const pt: TextesSuite = {
     bonjour: (nom) => `Olá ${nom},`,
     intro: (bien) => `Você recebeu uma nova mensagem sobre o imóvel <strong>${bien}</strong>:`,
     bouton: "Responder à mensagem →",
+  },
+  maintenance: {
+    sujet: (debut) => `🛠️ Manutenção prevista em ${debut}`,
+    titre: "🛠️ Manutenção programada",
+    intro: (debut, fin) => `Está prevista uma manutenção da plataforma de <strong>${debut}</strong> a <strong>${fin}</strong>.`,
+    pendant:
+      "Durante esse período o aplicativo ficará indisponível para você, seus inquilinos e seus proprietários: eles verão uma tela de espera, e o aplicativo voltará sozinho ao final.",
+    conseil: "Seus dados não são afetados. Salve o que estiver em andamento antes do horário de início.",
+    messageEquipe: "Mensagem da equipe:",
   },
   revision: {
     sujet: (date) => `Revisão do seu aluguel a partir de ${date}`,

@@ -2,7 +2,7 @@ import { CheckCircle2, Wrench } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
-import { type EtatMaintenance, enCours, lireEtat, problemeDeFenetre, versChampLocal } from "../utils/maintenance";
+import { debutAVenir, type EtatMaintenance, enCours, lireEtat, problemeDeFenetre, versChampLocal } from "../utils/maintenance";
 import SectionReglage from "./SectionReglage";
 
 /** En deçà, une maintenance qui démarre « presque tout de suite » mérite une confirmation : personne n'aura le temps d'enregistrer. */
@@ -19,6 +19,7 @@ export default function SectionMaintenance({ numero }: { numero: string }) {
   const [chargeOk, setChargeOk] = useState(false);
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
   const [form, setForm] = useState({ debut: "", fin: "", message: "" });
+  const [prevenir, setPrevenir] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -40,21 +41,38 @@ export default function SectionMaintenance({ numero }: { numero: string }) {
   }, []);
 
   const probleme = problemeDeFenetre(form.debut, form.fin);
+  // L'annonce par e-mail n'a de sens que pour une maintenance qui n'a pas encore commencé.
+  const annonceDisponible = debutAVenir(form.debut);
   const enCoursMaintenant = enCours(etat);
   const quand = (iso: string) => new Date(iso).toLocaleString(i18n.language, { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 
   async function programmer(e: FormEvent) {
     e.preventDefault();
     if (probleme) return;
-    const debutMs = new Date(form.debut).getTime();
-    if (debutMs - Date.now() < PREAVIS_MIN_MS && !window.confirm(t("admin.settings.maintenance.confirmSoon"))) return;
+    if (new Date(form.debut).getTime() - Date.now() < PREAVIS_MIN_MS && !window.confirm(t("admin.settings.maintenance.confirmSoon"))) return;
     setEnvoi(true);
     setErreur(null);
     setInfo(null);
     try {
-      const res = await api.put("/admin/maintenance", { debut: new Date(form.debut).toISOString(), fin: new Date(form.fin).toISOString(), message: form.message.trim() });
+      const notifier = prevenir && annonceDisponible;
+      const res = await api.put("/admin/maintenance", {
+        debut: new Date(form.debut).toISOString(),
+        fin: new Date(form.fin).toISOString(),
+        message: form.message.trim(),
+        ...(notifier && { notifier: true }),
+      });
       appliquer(res.data);
-      setInfo(t("admin.settings.maintenance.scheduled"));
+      const annonce = (res.data as { annonce?: { destinataires: number; envoyes: number; echecs: number } | null }).annonce;
+      setPrevenir(false);
+      setInfo(
+        [
+          t("admin.settings.maintenance.scheduled"),
+          annonce && t("admin.settings.maintenance.notify.sent", { envoyes: annonce.envoyes, destinataires: annonce.destinataires }),
+          annonce && annonce.echecs > 0 && t("admin.settings.maintenance.notify.failed", { echecs: annonce.echecs }),
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
     } catch (err) {
       setErreur(apiErrorMessage(err));
     } finally {
@@ -153,6 +171,24 @@ export default function SectionMaintenance({ numero }: { numero: string }) {
                   className={champ}
                 />
                 <p className="mt-1 text-right font-mono text-[11px] text-slate-500">{form.message.length} / 500</p>
+              </div>
+
+              <div>
+                <label className={`flex items-start gap-2.5 text-sm ${annonceDisponible ? "cursor-pointer text-slate-800" : "cursor-not-allowed text-slate-500"}`}>
+                  <input
+                    type="checkbox"
+                    checked={prevenir && annonceDisponible}
+                    disabled={!annonceDisponible}
+                    onChange={(e) => setPrevenir(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-ink-900"
+                  />
+                  <span>
+                    <span className="font-semibold">{t("admin.settings.maintenance.notify.label")}</span>
+                    <span className="mt-0.5 block text-xs text-slate-600">
+                      {annonceDisponible ? t("admin.settings.maintenance.notify.hint") : t("admin.settings.maintenance.notify.late")}
+                    </span>
+                  </span>
+                </label>
               </div>
 
               {probleme && probleme !== "incomplete" && (
