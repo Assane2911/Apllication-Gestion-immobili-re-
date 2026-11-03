@@ -427,7 +427,7 @@ export default function ExpensesPage() {
       {/* Vide, le tableau ne contient plus rien que le clavier atteigne : le cadre défilant le devient (voir structureEtCibles). */}
       <div
         {...(visibles.length === 0 ? { role: "region", tabIndex: 0, "aria-label": t("manager.expenses.title") } : {})}
-        className="relative overflow-x-auto border border-slate-300 bg-white focus-visible:ring-2 focus-visible:ring-ink-900"
+        className="relative hidden overflow-x-auto border border-slate-300 bg-white focus-visible:ring-2 focus-visible:ring-ink-900 sm:block"
       >
         <table className="w-full text-sm">
           <thead className="text-left">
@@ -490,6 +490,57 @@ export default function ExpensesPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Vue cartes empilées (mobile, < sm) : le tableau à sept colonnes obligeait à faire défiler pour lire le montant. */}
+      <div className="space-y-3 sm:hidden">
+        {visibles.length === 0 ? (
+          <p className="border border-slate-300 bg-white py-8 text-center text-sm text-slate-600">
+            {expenses.length > 0 ? t("manager.liste.noResult") : t("manager.expenses.noExpenses")}
+          </p>
+        ) : (
+          visibles.map((exp) => (
+            <div key={exp.id} className="space-y-2.5 border border-slate-300 bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="inline-flex items-start gap-1.5 break-words font-medium text-slate-900">
+                    {exp.title}
+                    {(exp.recurrence || exp.templateId) && (
+                      <Bulle texte={exp.recurrence ? t("manager.expenses.recurrenceModelHint") : t("manager.expenses.recurrenceOccurrenceHint")}>
+                        <Repeat size={12} className="mt-1 shrink-0 text-ink-900" aria-hidden="true" />
+                      </Bulle>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-600">
+                    <NomDuBien titre={exp.property?.title} id={exp.property?.id} />
+                  </p>
+                </div>
+                <p className="shrink-0 text-right font-semibold tabular-nums text-orange-800">{formatDeduction(exp.amount, exp.currency, formatMoney)}</p>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span
+                  className={`inline-block border px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${
+                    categoryColors[exp.category] || "border-slate-400 bg-slate-50 text-slate-700"
+                  }`}
+                >
+                  {categoryLabels[exp.category] || exp.category}
+                </span>
+                <span className="text-xs tabular-nums text-slate-600">{formaterJour(exp.expenseDate, i18n.language)}</span>
+              </div>
+              {exp.notes && <p className="break-words text-xs text-slate-600">{exp.notes}</p>}
+              <div className="flex justify-end border-t border-slate-200 pt-2">
+                <Bulle texte={t("manager.tips.expenseDelete")}>
+                  <button
+                    onClick={() => handleDelete(exp)}
+                    className="cursor-pointer border-b border-rose-700/40 text-xs font-semibold text-rose-700 transition-colors hover:border-rose-700"
+                  >
+                    {t("common.actions.delete")}
+                  </button>
+                </Bulle>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />

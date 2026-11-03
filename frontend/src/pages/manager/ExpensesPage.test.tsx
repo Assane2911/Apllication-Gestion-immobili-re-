@@ -79,6 +79,13 @@ function renderPage() {
   );
 }
 
+/**
+ * Le tableau (à partir de sm) et les cartes (en dessous) sont tous deux dans le DOM : un écran n'en montre qu'un, mais jsdom
+ * ignore les classes responsives. Chaque vue se lit donc à part.
+ */
+const tableau = () => within(screen.getByRole("table"));
+const cartes = () => within(document.querySelector("div.space-y-3.sm\\:hidden") as HTMLElement);
+
 describe("ExpensesPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
@@ -129,10 +136,10 @@ describe("ExpensesPage", () => {
     queueLoad([property()], summary(), [expense()]);
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
+    await waitFor(() => expect(tableau().getByText("Remplacement chauffe-eau")).toBeInTheDocument());
     expect(within(screen.getByRole("table")).getByText("Entretien & Travaux")).toBeInTheDocument();
-    expect(screen.getByText("-250 €")).toBeInTheDocument();
-    expect(screen.getByText("Artisan plombier")).toBeInTheDocument();
+    expect(tableau().getByText("-250 €")).toBeInTheDocument();
+    expect(tableau().getByText("Artisan plombier")).toBeInTheDocument();
   });
 
   it("affiche un message quand il n'y a aucune dépense", async () => {
@@ -144,7 +151,7 @@ describe("ExpensesPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Aucune dépense enregistrée pour le moment.")).toBeInTheDocument());
+    await waitFor(() => expect(tableau().getByText("Aucune dépense enregistrée pour le moment.")).toBeInTheDocument());
 
     await user.click(screen.getByRole("button", { name: /Export Comptable CSV/ }));
     expect(window.alert).toHaveBeenCalledWith("Aucune dépense à exporter.");
@@ -156,7 +163,7 @@ describe("ExpensesPage", () => {
     queueLoad([property({ id: "prop-1" })], summary(), [expense({ id: "exp-1" })]);
 
     renderPage();
-    await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
+    await waitFor(() => expect(tableau().getByText("Remplacement chauffe-eau")).toBeInTheDocument());
 
     const filterSelect = screen.getAllByRole("combobox")[0];
     await user.selectOptions(filterSelect, "prop-1");
@@ -325,11 +332,11 @@ describe("ExpensesPage", () => {
       );
 
       renderPage();
-      await waitFor(() => expect(screen.getByText("Assurance habitation")).toBeInTheDocument());
+      await waitFor(() => expect(tableau().getByText("Assurance habitation")).toBeInTheDocument());
 
-      const ligneModele = screen.getByText("Assurance habitation").closest("tr")!;
-      const ligneOccurrence = screen.getByText("Taxe foncière").closest("tr")!;
-      const ligneOrdinaire = screen.getByText("Plomberie ponctuelle").closest("tr")!;
+      const ligneModele = tableau().getByText("Assurance habitation").closest("tr")!;
+      const ligneOccurrence = tableau().getByText("Taxe foncière").closest("tr")!;
+      const ligneOrdinaire = tableau().getByText("Plomberie ponctuelle").closest("tr")!;
 
       expect(ligneModele.querySelector("svg.lucide-repeat")).not.toBeNull();
       expect(ligneOccurrence.querySelector("svg.lucide-repeat")).not.toBeNull();
@@ -344,8 +351,8 @@ describe("ExpensesPage", () => {
     queueLoad([property()], summary({ totalExpensesByCurrency: { EUR: 0 }, expenseCount: 0 }), []);
 
     renderPage();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Supprimer" })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Supprimer" }));
+    await waitFor(() => expect(tableau().getByRole("button", { name: "Supprimer" })).toBeInTheDocument());
+    await user.click(tableau().getByRole("button", { name: "Supprimer" }));
 
     expect(window.confirm).toHaveBeenCalled();
     await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/expenses/exp-1"));
@@ -373,7 +380,7 @@ describe("ExpensesPage", () => {
       data: { items: [visible], page: 1, pageSize: 1, total: 2, totalPages: 2 },
     });
     renderPage();
-    await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
+    await waitFor(() => expect(tableau().getByText("Remplacement chauffe-eau")).toBeInTheDocument());
 
     // Ce que l'export va chercher lui-même.
     mockedApi.get.mockResolvedValueOnce(paginated([visible, horsPage]));
@@ -423,7 +430,7 @@ describe("ExpensesPage", () => {
 
     queueLoad([property()], summary(), [expense()]);
     await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
-    await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
+    await waitFor(() => expect(tableau().getByText("Remplacement chauffe-eau")).toBeInTheDocument());
   });
 
   it("exprime un total nul dans la devise des autres tuiles", async () => {
@@ -465,7 +472,7 @@ describe("ExpensesPage — cadre défilant du tableau", () => {
   it("vide, le cadre défilant est atteignable au clavier et porte le nom de la page", async () => {
     queueLoad([property()], summary({ totalExpensesByCurrency: { EUR: 0 }, expenseCount: 0, netCashFlowByCurrency: { EUR: 5000 } }), []);
     renderPage();
-    await waitFor(() => expect(screen.getByText("Aucune dépense enregistrée pour le moment.")).toBeInTheDocument());
+    await waitFor(() => expect(tableau().getByText("Aucune dépense enregistrée pour le moment.")).toBeInTheDocument());
 
     const cadre = screen.getByRole("region", { name: "Dépenses & Rentabilité Réelle" });
     expect(cadre).toHaveAttribute("tabindex", "0");
@@ -475,7 +482,7 @@ describe("ExpensesPage — cadre défilant du tableau", () => {
   it("rempli, le cadre n'ajoute pas d'arrêt de tabulation : les boutons du tableau suffisent", async () => {
     queueLoad([property()], summary(), [expense()]);
     renderPage();
-    await waitFor(() => expect(screen.getByText("Remplacement chauffe-eau")).toBeInTheDocument());
+    await waitFor(() => expect(tableau().getByText("Remplacement chauffe-eau")).toBeInTheDocument());
 
     expect(screen.getByRole("table").parentElement).not.toHaveAttribute("tabindex");
     expect(screen.queryByRole("region", { name: "Dépenses & Rentabilité Réelle" })).toBeNull();
@@ -514,7 +521,7 @@ describe("ExpensesPage — cadre défilant du tableau", () => {
       const user = userEvent.setup();
       queueLoad([property()], summary(), parc());
       renderPage();
-      await screen.findByText("Taxe foncière");
+      await tableau().findByText("Taxe foncière");
 
       const lignes = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
       await user.type(screen.getByRole("searchbox"), "axa");
@@ -526,5 +533,84 @@ describe("ExpensesPage — cadre défilant du tableau", () => {
       expect(lignes()).toHaveLength(1);
       expect(lignes()[0]).toContain("Taxe foncière");
     });
+  });
+});
+
+describe("ExpensesPage — cartes mobiles (< sm)", () => {
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.delete.mockReset();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+
+  it("montre, par dépense, l'intitulé, le bien, le montant, la catégorie, la date et les notes, sans faire défiler", async () => {
+    queueLoad([property()], summary(), [expense()]);
+    renderPage();
+    await tableau().findByText("Remplacement chauffe-eau");
+
+    expect(cartes().getByText("Remplacement chauffe-eau")).toBeInTheDocument();
+    expect(cartes().getByText("-250 €")).toBeInTheDocument();
+    expect(cartes().getByText("Entretien & Travaux")).toBeInTheDocument();
+    expect(cartes().getByText("Studio Centre-ville")).toBeInTheDocument();
+    expect(cartes().getByText("Artisan plombier")).toBeInTheDocument();
+    expect(cartes().getByText("15/06/2026")).toBeInTheDocument();
+  });
+
+  it("signale la récurrence d'un modèle et d'une occurrence, pas d'une dépense ordinaire", async () => {
+    queueLoad([property()], summary(), [
+      expense({ id: "a", title: "Assurance habitation", recurrence: "ANNUAL", templateId: null }),
+      expense({ id: "b", title: "Taxe foncière", recurrence: null, templateId: "autre-modele" }),
+      expense({ id: "c", title: "Plomberie ponctuelle", recurrence: null, templateId: null }),
+    ]);
+    renderPage();
+    await tableau().findByText("Assurance habitation");
+
+    const carte = (titre: string) => cartes().getByText(titre).closest("div.border")!;
+    expect(carte("Assurance habitation").querySelector("svg.lucide-repeat")).not.toBeNull();
+    expect(carte("Taxe foncière").querySelector("svg.lucide-repeat")).not.toBeNull();
+    expect(carte("Plomberie ponctuelle").querySelector("svg.lucide-repeat")).toBeNull();
+  });
+
+  it("supprime une dépense depuis sa carte, après confirmation", async () => {
+    const user = userEvent.setup();
+    queueLoad([property()], summary(), [expense({ id: "exp-1" })]);
+    mockedApi.delete.mockResolvedValueOnce({ data: {} });
+    queueLoad([property()], summary({ totalExpensesByCurrency: { EUR: 0 }, expenseCount: 0 }), []);
+    renderPage();
+    await tableau().findByText("Remplacement chauffe-eau");
+
+    await user.click(cartes().getByRole("button", { name: "Supprimer" }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith("/expenses/exp-1"));
+  });
+
+  it("sans dépense, dit pourquoi : rien d'enregistré, ou rien ne correspond à la recherche", async () => {
+    const user = userEvent.setup();
+    queueLoad([property()], summary({ totalExpensesByCurrency: { EUR: 0 }, expenseCount: 0 }), []);
+    const { unmount } = renderPage();
+    expect(await cartes().findByText("Aucune dépense enregistrée pour le moment.")).toBeInTheDocument();
+    unmount();
+
+    queueLoad([property()], summary(), [expense()]);
+    renderPage();
+    await tableau().findByText("Remplacement chauffe-eau");
+    await user.type(screen.getByRole("searchbox"), "introuvable");
+    expect(cartes().queryByText("Remplacement chauffe-eau")).toBeNull();
+    expect(cartes().getByText("Aucun résultat pour ces critères.")).toBeInTheDocument();
+  });
+
+  it("suit la recherche et le filtre de catégorie, comme le tableau", async () => {
+    const user = userEvent.setup();
+    queueLoad([property()], summary(), [
+      expense({ id: "e1", title: "Chauffe-eau", category: "MAINTENANCE", notes: "Artisan plombier" }),
+      expense({ id: "e2", title: "Taxe foncière", category: "TAX", notes: null }),
+    ]);
+    renderPage();
+    await tableau().findByText("Taxe foncière");
+
+    await user.type(screen.getByRole("searchbox"), "plombier");
+    expect(cartes().getByText("Chauffe-eau")).toBeInTheDocument();
+    expect(cartes().queryByText("Taxe foncière")).toBeNull();
   });
 });
