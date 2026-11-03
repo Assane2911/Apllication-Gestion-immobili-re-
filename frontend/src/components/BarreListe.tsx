@@ -72,7 +72,7 @@ export default function BarreListe({ idPrefixe, recherche, onRecherche, placehol
             </select>
           </div>
         )}
-        {children && <div className="flex flex-wrap items-center gap-2 [&>*]:min-h-[38px]">{children}</div>}
+        {children && <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 [&>*]:min-h-[38px]">{children}</div>}
       </div>
       {filtres && filtres.length > 0 && onFiltre && (
         <div role="group" aria-label={libelleFiltres} className="flex flex-wrap border border-slate-400 sm:inline-flex">
