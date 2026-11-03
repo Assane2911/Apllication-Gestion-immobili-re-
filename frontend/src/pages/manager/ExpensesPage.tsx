@@ -20,7 +20,7 @@ import { partDesDepenses, repartitionParCategorie } from "../../utils/syntheseFi
 
 const CHAMP = "w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900";
 const LIBELLE = "mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600";
-const BOUTON_PLEIN = "cursor-pointer bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
+const BOUTON_PLEIN = "cursor-pointer border border-ink-900 bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
 const BOUTON_TRAIT = "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900 disabled:opacity-60";
 const CHAMP_COMPACT = "border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900";
 
@@ -381,9 +381,10 @@ export default function ExpensesPage() {
         filtreActif={categorieFiltre}
         onFiltre={(cle) => setCategorieFiltre(cle as "all" | ExpenseCategory)}
       >
-        <div className="flex items-center gap-2">
-          <label htmlFor="expense-property-filter" className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.expenses.filterByProperty")}</label>
-          <select id="expense-property-filter" value={selectedPropertyId} onChange={(e) => handlePropertyFilterChange(e.target.value)} className={CHAMP_COMPACT}>
+        {/* min-w-0 et max-w-full : sans eux, le titre d'un bien très long élargissait le menu au-delà de l'écran (mobile). */}
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+          <label htmlFor="expense-property-filter" className="shrink-0 whitespace-nowrap font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.expenses.filterByProperty")}</label>
+          <select id="expense-property-filter" value={selectedPropertyId} onChange={(e) => handlePropertyFilterChange(e.target.value)} className={`${CHAMP_COMPACT} min-w-0 max-w-full flex-1 sm:flex-none`}>
             <option value="">{t("manager.expenses.allProperties")}</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
