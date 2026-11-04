@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,6 +25,10 @@ vi.mock("../../api/client", async () => {
 });
 
 const mockedApi = vi.mocked(api, { deep: true });
+
+// La vue WhatsApp charge ses propres données (WhatsappPlateforme.test.tsx) : un appel de plus décalerait les réponses
+// simulées, servies dans l'ordre. Ici on vérifie seulement qu'elle figure au tableau de bord.
+vi.mock("../../components/WhatsappPlateforme", () => ({ default: () => <p>vue-whatsapp-plateforme</p> }));
 
 function stats(overrides: Record<string, unknown> = {}) {
   return {
@@ -60,6 +64,13 @@ describe("AdminDashboardPage", () => {
     renderPage();
     expect(await screen.findByText(/4 en essai · 2 sans accès/)).toBeInTheDocument();
     expect(screen.queryByText(/suspendu/)).not.toBeInTheDocument();
+  });
+
+  it("réserve une rubrique à la consommation WhatsApp de la plateforme", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: stats() });
+    renderPage();
+    const rubrique = await screen.findByRole("region", { name: "WhatsApp" });
+    expect(within(rubrique).getByText("vue-whatsapp-plateforme")).toBeInTheDocument();
   });
 
   it("affiche les indicateurs clés de la plateforme", async () => {

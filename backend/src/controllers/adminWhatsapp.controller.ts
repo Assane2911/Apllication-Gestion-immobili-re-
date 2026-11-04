@@ -4,7 +4,7 @@ import { env } from "../config/env";
 import { db } from "../db/client";
 import { users } from "../db/schema";
 import { planAuMoins } from "../middleware/auth";
-import { lireUsageWhatsapp } from "../services/whatsappUsage.service";
+import { derniersMois, lireUsagePlateformeWhatsapp, lireUsageWhatsapp } from "../services/whatsappUsage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 
 /** Nombre de mois renvoyés, le mois courant compris. */
@@ -31,5 +31,23 @@ export const getManagerWhatsappUsage = asyncHandler(async (req: Request, res: Re
     configure: Boolean(env.whatsapp.accessToken && env.whatsapp.phoneNumberId),
     tarifUsd: env.whatsapp.coutMessageUtilityUsd,
     mois,
+  });
+});
+
+/**
+ * Vue d'ensemble WhatsApp de toute la plateforme : le total mois par mois (de quoi rapprocher la facture de Meta) et,
+ * pour un mois (`?mois=AAAA-MM`, le mois courant par défaut), la part de chaque agence. Le mois doit figurer parmi les six
+ * derniers : au-delà, le compteur ne renvoie rien d'utile et une valeur mal formée est refusée plutôt que ignorée.
+ */
+export const getPlatformWhatsappUsage = asyncHandler(async (req: Request, res: Response) => {
+  const demande = typeof req.query.mois === "string" ? req.query.mois : undefined;
+  if (demande !== undefined && !derniersMois(NB_MOIS).includes(demande)) {
+    throw new ApiError(400, "Mois invalide : choisissez l'un des six derniers mois (AAAA-MM).", "WHATSAPP_MONTH_INVALID");
+  }
+  const usage = await lireUsagePlateformeWhatsapp(demande, NB_MOIS);
+  res.json({
+    configure: Boolean(env.whatsapp.accessToken && env.whatsapp.phoneNumberId),
+    tarifUsd: env.whatsapp.coutMessageUtilityUsd,
+    ...usage,
   });
 });
