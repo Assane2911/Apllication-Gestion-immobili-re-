@@ -166,6 +166,15 @@ describe("Programmation par l'administrateur (PUT/DELETE /api/admin/maintenance)
     expect(journal.map((j: { action: string }) => j.action)).toEqual(["platform.maintenance.schedule"]);
   });
 
+  it("écrit les dates du journal en toutes lettres, en UTC, et non en date ISO brute", async () => {
+    const { entete } = await admin();
+    await request(app).put("/api/admin/maintenance").set(entete).send({ debut: iso(HEURE), fin: iso(2 * HEURE), message: "Sauvegarde" });
+    const [entree] = await testDb.select().from(adminAuditLogs);
+    // « Maintenance programmée du 4 novembre 2026 à 11:57 UTC au 4 novembre 2026 à 12:57 UTC (message joint) »
+    expect(entree.details).toMatch(/^Maintenance programmée du \d{1,2} \p{L}+ \d{4} à \d{2}:\d{2} UTC au \d{1,2} \p{L}+ \d{4} à \d{2}:\d{2} UTC \(message joint\)$/u);
+    expect(entree.details).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+  });
+
   it("remplace la maintenance précédente plutôt que d'en empiler une seconde", async () => {
     const { entete } = await admin();
     await request(app).put("/api/admin/maintenance").set(entete).send({ debut: iso(HEURE), fin: iso(2 * HEURE), message: "première" });

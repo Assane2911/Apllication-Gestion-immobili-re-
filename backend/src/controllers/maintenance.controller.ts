@@ -14,6 +14,7 @@ import {
   PLATFORM_SETTINGS_ID,
 } from "../services/maintenance.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { formaterDateHeure } from "../utils/langue";
 
 const publique = (fenetre: FenetreMaintenance | null) =>
   fenetre
@@ -74,7 +75,8 @@ export const programmerMaintenance = asyncHandler(async (req: Request, res: Resp
     req,
     action: "platform.maintenance.schedule",
     details:
-      `Maintenance programmée du ${debut.toISOString()} au ${fin.toISOString()}${valeurs.maintenanceMessage ? " (message joint)" : ""}` +
+      // Lisible dans le journal (« 4 novembre 2026 à 11:57 UTC »), comme le reste de ses entrées : pas de date ISO brute.
+      `Maintenance programmée du ${formaterDateHeure(debut)} au ${formaterDateHeure(fin)}${valeurs.maintenanceMessage ? " (message joint)" : ""}` +
       (annonce ? ` ; annonce par e-mail : ${annonce.envoyes} envoyé(s) sur ${annonce.destinataires}, ${annonce.echecs} échec(s)` : ""),
   });
   res.json({ maintenance: publique(await lireMaintenance()), annonce });

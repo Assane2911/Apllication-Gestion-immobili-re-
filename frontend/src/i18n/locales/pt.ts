@@ -3662,6 +3662,7 @@ const pt: TranslationSchema = {
           endNow: "Terminar agora",
           scheduled: "Manutenção programada. Os utilizadores serão informados antes de começar.",
           notify: {
+            confirm: "Enviar agora o e-mail de aviso a todos os gestores com a conta ativa? O envio é imediato e não pode ser retirado.",
             label: "Avisar os gestores por e-mail",
             hint: "O e-mail sai logo para todos os gestores com a conta ativa, no seu idioma, com as datas (em UTC) e a mensagem acima. Não pode ser retirado.",
             late: "Disponível apenas se a manutenção começar mais tarde.",
