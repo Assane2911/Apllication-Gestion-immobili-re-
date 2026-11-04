@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
-import { activityLogs, agencySettings, contractCotenants, invoices, tenants } from "../db/schema";
+import { activityLogs, agencySettings, contractCotenants, invoices, tenants, whatsappUsage } from "../db/schema";
 import { createContract, createInvoice, createManager, createProperty, createTenant } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 import * as emailService from "./email.service";
@@ -229,5 +229,83 @@ describe("relance d'impayé sur WhatsApp", () => {
     expect(traces).toHaveLength(1);
     // Le titulaire et le colocataire : deux messages non délivrés.
     expect(traces[0].details).toContain("2 messages");
+  });
+});
+
+describe("compteur d'envois par agence", () => {
+  const compteur = async (managerId: string) => {
+    const lignes = await testDb.select().from(whatsappUsage).where(eq(whatsappUsage.managerId, managerId));
+    return Object.fromEntries(lignes.map((l: typeof whatsappUsage.$inferSelect) => [`${l.type}`, { sent: l.sent, failed: l.failed, month: l.month }]));
+  };
+
+  it("l'avis d'échéance compte un message par destinataire : le titulaire et chaque colocataire", async () => {
+    const { manager, contract } = await colocation();
+    await createInvoice(contract.id, { periodMonth: 10, periodYear: 2026, amount: 600, status: "PENDING", dueDate: new Date(2026, 9, 20) });
+
+    await runRentDueReminders(manager.id);
+
+    expect(await compteur(manager.id)).toEqual({ avis_echeance: { sent: 2, failed: 0, month: "2026-10" } });
+  });
+
+  it("le rappel avant échéance et le rappel manuel sont comptés chacun sous leur type", async () => {
+    const { manager, contract } = await colocation();
+    await createInvoice(contract.id, { periodMonth: 10, periodYear: 2026, amount: 600, status: "PENDING", dueDate: new Date(2026, 9, 15) });
+    await runUpcomingRentDueReminders();
+    expect(await compteur(manager.id)).toEqual({ echeance_proche: { sent: 2, failed: 0, month: "2026-10" } });
+
+    const autre = await colocation();
+    const facture = await createInvoice(autre.contract.id, { periodMonth: 10, periodYear: 2026, amount: 600, status: "PENDING", dueDate: new Date(2026, 9, 20) });
+    await sendSingleInvoiceReminder(facture.id, autre.manager.id);
+    expect(await compteur(autre.manager.id)).toEqual({ avis_echeance: { sent: 2, failed: 0, month: "2026-10" } });
+  });
+
+  it("la relance d'impayé est comptée sous son type, titulaire et colocataire", async () => {
+    const { manager, contract } = await colocation();
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence Teranga", overdueRemindersEnabled: true });
+    await createInvoice(contract.id, { periodMonth: 10, periodYear: 2026, amount: 500, status: "LATE", dueDate: new Date(2026, 9, 5) });
+
+    await runOverdueReminders();
+
+    expect(await compteur(manager.id)).toEqual({ relance_impaye: { sent: 2, failed: 0, month: "2026-10" } });
+  });
+
+  it("chaque agence a son propre compteur", async () => {
+    const a = await colocation();
+    const b = await colocation();
+    await createInvoice(a.contract.id, { periodMonth: 10, periodYear: 2026, amount: 600, status: "PENDING", dueDate: new Date(2026, 9, 20) });
+    await runRentDueReminders(a.manager.id);
+
+    expect(await compteur(a.manager.id)).toEqual({ avis_echeance: { sent: 2, failed: 0, month: "2026-10" } });
+    expect(await compteur(b.manager.id)).toEqual({});
+  });
+
+  it("formule Starter : aucun WhatsApp n'est envoyé, donc rien n'est compté", async () => {
+    const { manager, contract } = await colocation("STARTER");
+    await createInvoice(contract.id, { periodMonth: 10, periodYear: 2026, amount: 600, status: "PENDING", dueDate: new Date(2026, 9, 20) });
+
+    await runRentDueReminders(manager.id);
+
+    expect(await compteur(manager.id)).toEqual({});
+  });
+
+  it("un refus de l'API de Meta est compté comme échec, pas comme envoi", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 400, text: async () => "numéro non autorisé" });
+    const { manager, contract } = await colocation();
+    await createInvoice(contract.id, { periodMonth: 10, periodYear: 2026, amount: 600, status: "PENDING", dueDate: new Date(2026, 9, 20) });
+
+    await runRentDueReminders(manager.id);
+
+    expect(await compteur(manager.id)).toEqual({ avis_echeance: { sent: 0, failed: 2, month: "2026-10" } });
+  });
+
+  it("WhatsApp non configuré (simulation) : rien n'est compté", async () => {
+    env.whatsapp.accessToken = "";
+    const { manager, contract } = await colocation();
+    await createInvoice(contract.id, { periodMonth: 10, periodYear: 2026, amount: 600, status: "PENDING", dueDate: new Date(2026, 9, 20) });
+
+    await runRentDueReminders(manager.id);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await compteur(manager.id)).toEqual({});
   });
 });

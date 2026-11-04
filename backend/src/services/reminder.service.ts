@@ -54,9 +54,9 @@ function noterEchecsWhatsapp(
  * Avis d'échéance WhatsApp : le modèle (daté, ou l'ancien « le 5 » seulement
  * quand il dit vrai) est choisi par avisEcheanceWhatsapp — voir whatsapp.service.ts.
  */
-function envoyerAvisEcheance(telephone: string, params: Parameters<typeof avisEcheanceWhatsapp>[0]) {
+function envoyerAvisEcheance(managerId: string, telephone: string, params: Parameters<typeof avisEcheanceWhatsapp>[0]) {
   const { templateName, variables } = avisEcheanceWhatsapp(params);
-  return envoyerMessageWhatsapp(telephone, templateName, variables);
+  return envoyerMessageWhatsapp(telephone, templateName, variables, { managerId, type: "avis_echeance" });
 }
 
 /**
@@ -571,7 +571,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
     // boucle pour les autres locataires. Voir managersEligiblesPro :
     // un gestionnaire sous Pro ne déclenche pas cet envoi.
     const whatsappResult = managersWhatsappEligibles.has(row.property.managerId)
-      ? await envoyerAvisEcheance(row.tenant.phone, {
+      ? await envoyerAvisEcheance(row.property.managerId, row.tenant.phone, {
         tenantName: nomAvecCivilite(row.tenant),
         propertyTitle: row.property.title,
         amount: resteDu(row.invoice),
@@ -618,7 +618,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       })
     );
     if (managersWhatsappEligibles.has(row.property.managerId)) {
-      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, (colocataire) =>
+      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, { managerId: row.property.managerId, type: "avis_echeance" }, (colocataire) =>
         avisEcheanceWhatsapp({
           tenantName: nomAvecCivilite(colocataire),
           propertyTitle: row.property.title,
@@ -757,7 +757,8 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
             periodYear: row.invoice.periodYear,
             daysLeft: joursRestants,
             frontendUrl: env.frontendUrl,
-          })
+          }),
+          { managerId: row.property.managerId, type: "echeance_proche" }
         )
       : WHATSAPP_NON_ELIGIBLE;
 
@@ -797,7 +798,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       })
     );
     if (managersWhatsappEligibles.has(row.property.managerId)) {
-      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, (colocataire) => ({
+      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, { managerId: row.property.managerId, type: "echeance_proche" }, (colocataire) => ({
         templateName: env.whatsapp.templateNameRentDueSoon,
         variables: rentDueSoonReminderWhatsappVariables({
           tenantName: nomAvecCivilite(colocataire),
@@ -914,7 +915,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
   // pas cet envoi, l'email seul (promis à sa formule) part quand même.
   const managersWhatsappEligibles = await managersEligiblesPro([managerId]);
   const whatsappResult = managersWhatsappEligibles.has(managerId)
-    ? await envoyerAvisEcheance(row.tenant.phone, {
+    ? await envoyerAvisEcheance(managerId, row.tenant.phone, {
       tenantName: nomAvecCivilite(row.tenant),
       propertyTitle: row.property.title,
       amount: resteDu(row.invoice),
@@ -950,7 +951,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
       })
     );
     if (managersWhatsappEligibles.has(managerId)) {
-      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, (colocataire) =>
+      const copies = await envoyerCopieWhatsappAuxColocataires(row.invoice.contractId, { managerId, type: "avis_echeance" }, (colocataire) =>
         avisEcheanceWhatsapp({
           tenantName: nomAvecCivilite(colocataire),
           propertyTitle: row.property.title,

@@ -138,6 +138,7 @@ const TABLES = [
   "formal_notices",
   "owner_payouts",
   "owner_fee_rates",
+  "whatsapp_usage",
   "contract_guarantors",
   "contract_cotenants",
 ];

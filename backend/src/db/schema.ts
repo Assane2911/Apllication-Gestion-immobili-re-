@@ -1155,6 +1155,30 @@ export const notificationVues = pgTable(
   })
 );
 
+// --- Messages WhatsApp envoyés, par agence ---
+// Meta facture chaque message modèle délivré (voir services/whatsappUsage.service.ts) : ce compteur donne, par agence,
+// par mois et par type de message, ce que l'application a réellement envoyé. `sent` = acceptés par l'API de Meta,
+// `failed` = refusés (numéro invalide, erreur de l'API ou du réseau) ; un modèle ou un service non configuré
+// (simulation) ne compte pas. Aucune donnée personnelle : ni numéro ni contenu.
+export const whatsappUsage = pgTable(
+  "whatsapp_usage",
+  {
+    managerId: text("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Mois civil en UTC, « AAAA-MM ».
+    month: text("month").notNull(),
+    // avis_echeance | echeance_proche | relance_impaye (TypeMessageWhatsapp).
+    type: text("type").notNull(),
+    sent: integer("sent").notNull().default(0),
+    failed: integer("failed").notNull().default(0),
+    updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.managerId, table.month, table.type] }),
+  })
+);
+
 // --- Compteurs de limitation de fréquence (routes d'authentification) ---
 // Les limiteurs de tentatives de connexion comptaient en MÉMOIRE, dans chaque
 // instance de la fonction serverless : les compteurs n'étaient pas partagés
