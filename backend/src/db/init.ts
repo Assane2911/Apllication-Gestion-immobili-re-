@@ -650,6 +650,23 @@ export async function initDb() {
       )
     `);
 
+    // Identifiants PayDunya (chiffrés) de l'agence, pour encaisser les loyers sur son compte (voir services/comptePaiementAgence.service.ts).
+    await creerTable("agency_payment_accounts", sql`
+      CREATE TABLE IF NOT EXISTS agency_payment_accounts (
+        manager_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        provider TEXT NOT NULL DEFAULT 'PAYDUNYA',
+        master_key_enc TEXT NOT NULL,
+        private_key_enc TEXT NOT NULL,
+        token_enc TEXT NOT NULL,
+        mode TEXT NOT NULL DEFAULT 'test',
+        currency TEXT NOT NULL DEFAULT 'XOF',
+        token_last4 TEXT NOT NULL DEFAULT '',
+        enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Historique des révisions de loyer d'un bail (après contracts : FK).
     await creerTable("rent_revisions", sql`
       CREATE TABLE IF NOT EXISTS rent_revisions (

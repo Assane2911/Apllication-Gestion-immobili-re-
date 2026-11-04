@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { env } from "../config/env";
 import { ApiError } from "../utils/asyncHandler";
 import { fetchAvecDelai } from "../utils/fetchAvecDelai";
+import type { CompteAgenceEncaissant } from "./comptePaiementAgence.service";
 
 export type PaymentMethodKey = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO";
 
@@ -55,13 +56,20 @@ export async function initiatePayment(params: {
   autoRenew?: boolean;
   /** Périodicité de l'abonnement — nécessaire à `autoRenew` pour fixer l'intervalle de reconduction Stripe (mois/an). */
   billingCycle?: "MONTHLY" | "ANNUAL";
+  /**
+   * Compte PayDunya de l'AGENCE qui encaisse le loyer (voir services/comptePaiementAgence.service.ts). Obligatoire pour
+   * payer un loyer par PayDunya : le paiement part alors avec les identifiants de l'agence et arrive sur son compte,
+   * jamais sur celui de la plateforme. Ignoré pour un abonnement.
+   */
+  compteAgence?: CompteAgenceEncaissant | null;
 }): Promise<PaymentIntentResult> {
   const { method, amount, currency, invoiceId: reference, usage, payerEmail, bankReference, returnPath, autoRenew, billingCycle } =
     params;
+  const compteAgence = usage === "LOYER" ? (params.compteAgence ?? null) : null;
 
   // Porte unique : le refus est décidé AVANT tout appel réseau, par la même
   // règle que celle consultée par l'interface.
-  const refus = indisponibiliteSelonUsage(method, currency, usage);
+  const refus = indisponibiliteSelonUsage(method, currency, usage, compteAgence);
   if (refus) {
     console.error(`[paiement] ${method} refusé : ${refus.cause}.`);
     throw new ApiError(refus.status, refus.message, refus.code, refus.params);
@@ -79,7 +87,7 @@ export async function initiatePayment(params: {
         billingCycle ?? "MONTHLY"
       );
     case "PAYDUNYA":
-      return initiatePaydunyaPayment(amount, currency, reference, payerEmail, returnPath);
+      return initiatePaydunyaPayment(amount, currency, reference, payerEmail, returnPath, compteAgence);
     case "BANK_TRANSFER":
       return initiateBankTransferDeclaration(amount, currency, reference, bankReference);
     case "DEMO":
@@ -253,18 +261,45 @@ export function indisponibilite(method: PaymentMethodKey, currency: string): Ind
 export type UsagePaiement = "ABONNEMENT" | "LOYER";
 
 /**
- * Stripe et PayDunya sont le compte de la plateforme : ils servent à encaisser SES abonnements. Un loyer
- * payé par carte ou Mobile Money arriverait sur ce même compte avant d'être reversé à l'agence — la
- * plateforme détiendrait alors de l'argent qui n'est pas le sien. Tant que RENT_ONLINE_PAYMENTS n'est pas
- * activé, un loyer ne se règle que par virement vers le compte de l'agence (le virement est une
- * déclaration : aucun argent ne passe par nous).
+ * Stripe et PayDunya de la plateforme servent à encaisser SES abonnements. Un loyer payé avec eux arriverait sur ce
+ * même compte avant d'être reversé à l'agence — la plateforme détiendrait alors de l'argent qui n'est pas le sien.
+ *
+ *  - PayDunya : un loyer ne se règle que sur le compte PayDunya de l'AGENCE, avec ses propres identifiants
+ *    (`compteAgence`). Sans compte d'agence, le moyen est refusé ; les clés de la plateforme ne servent jamais ici.
+ *  - Stripe : pas de compte par agence pour l'instant ; refusé tant que RENT_ONLINE_PAYMENTS n'est pas activé.
+ *  - Virement : une déclaration, aucun argent ne passe par nous.
  */
-export function indisponibiliteSelonUsage(method: PaymentMethodKey, currency: string, usage: UsagePaiement): Indisponibilite | null {
-  if (usage === "LOYER" && (method === "STRIPE" || method === "PAYDUNYA") && !env.payments.rentOnline) {
+export function indisponibiliteSelonUsage(
+  method: PaymentMethodKey,
+  currency: string,
+  usage: UsagePaiement,
+  compteAgence: CompteAgenceEncaissant | null = null
+): Indisponibilite | null {
+  if (usage === "LOYER" && method === "PAYDUNYA") {
+    if (!compteAgence) {
+      return {
+        status: 400,
+        message: "Le paiement du loyer par Mobile Money ou carte n'est pas activé par votre agence. Réglez par virement sur son compte, puis déclarez-le ici.",
+        cause: "l'agence n'a pas de compte PayDunya actif",
+        code: "RENT_ONLINE_PAYMENT_DISABLED",
+      };
+    }
+    if (currency.toUpperCase() !== compteAgence.identifiants.currency.toUpperCase()) {
+      return {
+        status: 503,
+        message: `Ce moyen de paiement n'accepte pas les règlements en ${currency}. Merci d'en choisir un autre.`,
+        cause: `loyer libellé en ${currency} alors que le compte PayDunya de l'agence encaisse en ${compteAgence.identifiants.currency}`,
+        code: "PAYMENT_CURRENCY_UNSUPPORTED",
+        params: { currency },
+      };
+    }
+    return null;
+  }
+  if (usage === "LOYER" && method === "STRIPE" && !env.payments.rentOnline) {
     return {
       status: 400,
-      message: "Le paiement du loyer par carte ou Mobile Money n'est pas disponible. Réglez par virement sur le compte de votre agence, puis déclarez-le ici.",
-      cause: "paiement du loyer en ligne désactivé (RENT_ONLINE_PAYMENTS)",
+      message: "Le paiement du loyer par carte n'est pas disponible. Réglez par virement sur le compte de votre agence, puis déclarez-le ici.",
+      cause: "paiement du loyer par Stripe désactivé (RENT_ONLINE_PAYMENTS)",
       code: "RENT_ONLINE_PAYMENT_DISABLED",
     };
   }
@@ -278,8 +313,12 @@ export const MOYENS_DE_PAIEMENT: PaymentMethodKey[] = ["PAYDUNYA", "STRIPE", "BA
  * Les moyens réellement utilisables pour un montant dans cette devise.
  * L'interface n'a ainsi plus à deviner, ni à masquer un moyen « en dur ».
  */
-export function moyensDePaiementDisponibles(currency: string, usage: UsagePaiement = "ABONNEMENT"): PaymentMethodKey[] {
-  return MOYENS_DE_PAIEMENT.filter((method) => indisponibiliteSelonUsage(method, currency, usage) === null);
+export function moyensDePaiementDisponibles(
+  currency: string,
+  usage: UsagePaiement = "ABONNEMENT",
+  compteAgence: CompteAgenceEncaissant | null = null
+): PaymentMethodKey[] {
+  return MOYENS_DE_PAIEMENT.filter((method) => indisponibiliteSelonUsage(method, currency, usage, compteAgence) === null);
 }
 
 /**
@@ -578,10 +617,13 @@ async function initiatePaydunyaPayment(
   currency: string,
   reference: string,
   payerEmail: string,
-  returnPath?: string
+  returnPath?: string,
+  compteAgence: CompteAgenceEncaissant | null = null
 ): Promise<PaymentIntentResult> {
-  const { masterKey, privateKey, token, mode } = env.payments.paydunya;
-  const { storeName } = env.payments;
+  // Un loyer part avec les identifiants de l'AGENCE (l'argent arrive sur son compte), un abonnement avec ceux de la plateforme.
+  const { masterKey, privateKey, token, mode } = compteAgence ? compteAgence.identifiants : env.payments.paydunya;
+  // La page de paiement porte le nom de l'agence qui encaisse : le locataire voit à qui il paie.
+  const storeName = compteAgence ? compteAgence.nomAgence : env.payments.storeName;
 
   // indisponibilite() garantit ici la présence des trois clés et la
   // correspondance de la devise ; il ne reste que le cas du mode démo.
@@ -592,7 +634,10 @@ async function initiatePaydunyaPayment(
   const baseUrl =
     mode === "live" ? "https://app.paydunya.com/api/v1" : "https://app.paydunya.com/sandbox-api/v1";
 
-  const callbackUrl = `${env.publicBackendUrl}/api/payments/paydunya/ipn`;
+  // Chaque agence a sa propre adresse de notification : c'est elle qui dit quelles clés vérifient la confirmation.
+  const callbackUrl = compteAgence
+    ? `${env.publicBackendUrl}/api/payments/paydunya/ipn/agence/${compteAgence.managerId}`
+    : `${env.publicBackendUrl}/api/payments/paydunya/ipn`;
   const redirectBase = `${env.frontendUrl}${returnPath ?? "/"}`;
 
   let response: Response;

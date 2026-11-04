@@ -2,7 +2,8 @@ import crypto from "crypto";
 import { Request, Response } from "express";
 import { and, eq } from "drizzle-orm";
 import { db } from "../db/client";
-import { invoices, platformSubscriptions } from "../db/schema";
+import { contracts, invoices, platformSubscriptions, properties } from "../db/schema";
+import { lireIdentifiantsAgence } from "../services/comptePaiementAgence.service";
 import { ETATS_MODIFIABLES } from "./invoice.controller";
 import { env } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -43,9 +44,10 @@ interface PaydunyaConfirmResponse {
  * retomber sur le corps POSTé, non fiable à lui seul).
  */
 async function confirmerAupresDePaydunya(
-  token: string
+  token: string,
+  identifiants: { masterKey: string; privateKey: string; token: string; mode: "test" | "live" }
 ): Promise<{ status: string; totalAmount: number; reference?: string } | null> {
-  const { masterKey, privateKey, token: apiToken, mode } = env.payments.paydunya;
+  const { masterKey, privateKey, token: apiToken, mode } = identifiants;
   const baseUrl = mode === "live" ? "https://app.paydunya.com/api/v1" : "https://app.paydunya.com/sandbox-api/v1";
 
   let response: globalThis.Response;
@@ -96,6 +98,31 @@ async function confirmerAupresDePaydunya(
  * imbriqués par leur client HTTP — on gère les deux cas.
  */
 export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response) => {
+  await traiterIpnPaydunya(req, res, { identifiants: env.payments.paydunya, managerId: null });
+});
+
+/**
+ * Notification d'un loyer payé sur le compte PayDunya d'une AGENCE (voir comptePaiementAgence.service.ts). Même
+ * traitement que ci-dessus, mais avec les clés de cette agence pour vérifier le hash et confirmer le paiement, et
+ * limité à SES factures : une agence ne peut ni solder la facture d'une autre, ni toucher à un abonnement.
+ */
+export const handlePaydunyaIpnAgence = asyncHandler(async (req: Request, res: Response) => {
+  const managerId = req.params.managerId;
+  const identifiants = await lireIdentifiantsAgence(managerId);
+  if (!identifiants) {
+    console.warn(`[paydunya] IPN reçue pour l'agence ${managerId}, qui n'a pas de compte de paiement actif.`);
+    return res.status(404).json({ error: "Compte introuvable" });
+  }
+  await traiterIpnPaydunya(req, res, { identifiants, managerId });
+});
+
+interface PorteeIpn {
+  identifiants: { masterKey: string; privateKey: string; token: string; mode: "test" | "live" };
+  /** Agence dont les clés servent ; `null` : le compte de la plateforme. */
+  managerId: string | null;
+}
+
+async function traiterIpnPaydunya(req: Request, res: Response, portee: PorteeIpn) {
   const raw = req.body?.data;
   const data: PaydunyaIpnPayload | undefined = typeof raw === "string" ? safeJsonParse(raw) : raw;
 
@@ -104,7 +131,7 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
     return res.status(400).json({ error: "Requête invalide" });
   }
 
-  if (!isAuthentic(data.hash)) {
+  if (!isAuthentic(data.hash, portee.identifiants.masterKey)) {
     console.warn("[paydunya] IPN rejetée : hash invalide (mauvaise master key ou tentative frauduleuse).");
     return res.status(401).json({ error: "Signature invalide" });
   }
@@ -128,7 +155,13 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
   // confirmerAupresDePaydunya ci-dessus). On revérifie donc directement
   // auprès de PayDunya, avec nos propres clés, avant de faire confiance à
   // quoi que ce soit du corps pour créditer une facture ou un abonnement.
-  const confirmation = await confirmerAupresDePaydunya(paydunyaToken);
+  // Le compte d'une agence ne sert qu'à ses loyers : jamais un abonnement de la plateforme.
+  if (portee.managerId && ourReference.startsWith("sub_")) {
+    console.warn(`[paydunya] IPN de l'agence ${portee.managerId} portant une référence d'abonnement : ignorée.`);
+    return res.json({ success: true });
+  }
+
+  const confirmation = await confirmerAupresDePaydunya(paydunyaToken, portee.identifiants);
   if (!confirmation) {
     // Impossible de confirmer : ne rien créditer sur la seule foi du corps
     // POSTé. 502 fait rejouer l'IPN plus tard par PayDunya, comme pour tout
@@ -183,10 +216,21 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
     // librement par le locataire (payInvoice) et n'a aucune contrainte
     // d'unicité — sans ce filtre, une IPN authentique pouvait solder une
     // facture déclarée en virement portant le même texte.
-    const [invoiceRow] = await db
-      .select()
+    // Sur le compte d'une agence, la facture doit être l'une des SIENNES (bail d'un de ses biens) : un jeton rejoué ou
+    // fabriqué ne peut pas solder la facture d'une autre agence.
+    const [trouvee] = await db
+      .select({ invoice: invoices })
       .from(invoices)
-      .where(and(eq(invoices.paymentRef, paydunyaToken), eq(invoices.paymentMethod, "PAYDUNYA")));
+      .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(
+        and(
+          eq(invoices.paymentRef, paydunyaToken),
+          eq(invoices.paymentMethod, "PAYDUNYA"),
+          portee.managerId ? eq(properties.managerId, portee.managerId) : undefined
+        )
+      );
+    const invoiceRow = trouvee?.invoice;
 
     // Un paiement réellement encaissé par PayDunya que la facture ne peut plus recevoir ne doit pas disparaître en
     // silence : le gestionnaire est prévenu (voir paiementNonRapproche.service.ts) pour rembourser ou régulariser.
@@ -233,18 +277,18 @@ export const handlePaydunyaIpn = asyncHandler(async (req: Request, res: Response
   }
 
   res.json({ success: true });
-});
+}
 
 /** Tolère un léger écart d'arrondi (montants en `doublePrecision`). */
 function amountMatches(paidAmount: number, expectedAmount: number): boolean {
   return Number.isFinite(paidAmount) && Math.abs(paidAmount - expectedAmount) < 0.01;
 }
 
-function isAuthentic(receivedHash: unknown): boolean {
+function isAuthentic(receivedHash: unknown, masterKey: string): boolean {
   if (typeof receivedHash !== "string" || !receivedHash) return false;
-  if (!env.payments.paydunya.masterKey) return false;
+  if (!masterKey) return false;
 
-  const expected = crypto.createHash("sha512").update(env.payments.paydunya.masterKey).digest("hex");
+  const expected = crypto.createHash("sha512").update(masterKey).digest("hex");
   const expectedBuf = Buffer.from(expected, "utf8");
   const receivedBuf = Buffer.from(receivedHash, "utf8");
   return expectedBuf.length === receivedBuf.length && crypto.timingSafeEqual(expectedBuf, receivedBuf);

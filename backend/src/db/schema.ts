@@ -1155,6 +1155,28 @@ export const notificationVues = pgTable(
   })
 );
 
+// --- Compte de paiement en ligne d'une agence (PayDunya) ---
+// Les loyers payés en ligne doivent arriver sur le compte de l'agence, jamais sur celui de la plateforme : chaque
+// agence enregistre ses PROPRES identifiants PayDunya. Ils sont chiffrés (AES-256-GCM, clé PAYMENT_KEYS_ENCRYPTION_KEY)
+// et ne sont jamais renvoyés à l'interface (voir services/comptePaiementAgence.service.ts).
+export const agencyPaymentAccounts = pgTable("agency_payment_accounts", {
+  managerId: text("manager_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull().default("PAYDUNYA"),
+  masterKeyEnc: text("master_key_enc").notNull(),
+  privateKeyEnc: text("private_key_enc").notNull(),
+  tokenEnc: text("token_enc").notNull(),
+  // « test » : bac à sable PayDunya, aucun vrai paiement. « live » : production.
+  mode: text("mode").notNull().default("test"),
+  // Devise du compte marchand PayDunya : l'API n'en transporte pas (voir config/env.ts), le montant est lu dans celle-ci.
+  currency: text("currency").notNull().default("XOF"),
+  // Quatre derniers caractères du jeton, en clair : de quoi reconnaître le compte dans l'interface sans le déchiffrer.
+  tokenLast4: text("token_last4").notNull().default(""),
+  enabled: boolean("enabled").notNull().default(true),
+  ...timestamps,
+});
+
 // --- Messages WhatsApp envoyés, par agence ---
 // Meta facture chaque message modèle délivré (voir services/whatsappUsage.service.ts) : ce compteur donne, par agence,
 // par mois et par type de message, ce que l'application a réellement envoyé. `sent` = acceptés par l'API de Meta,
