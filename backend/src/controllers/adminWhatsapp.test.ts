@@ -72,3 +72,47 @@ describe("Consommation WhatsApp d'une agence (GET /api/admin/managers/:id/whatsa
     expect((await lire(admin.id, tokenFor(admin))).status).toBe(404);
   });
 });
+
+describe("Vue d'ensemble WhatsApp de la plateforme (GET /api/admin/whatsapp-usage)", () => {
+  const vue = (jeton: string, mois?: string) => request(app).get("/api/admin/whatsapp-usage").query(mois ? { mois } : {}).set(authHeader(jeton));
+
+  it("renvoie le total des agences par mois et le détail du mois courant, avec le tarif", async () => {
+    const admin = await createAdmin();
+    const a = await createManager({ email: "a@test.local" });
+    const b = await createManager({ email: "b@test.local" });
+    const courant = moisUtc();
+    await testDb.insert(whatsappUsage).values([
+      { managerId: a.id, month: courant, type: "avis_echeance", sent: 30, failed: 0 },
+      { managerId: b.id, month: courant, type: "relance_impaye", sent: 12, failed: 2 },
+    ]);
+
+    const res = await vue(tokenFor(admin));
+
+    expect(res.status).toBe(200);
+    expect(res.body.moisChoisi).toBe(courant);
+    expect(res.body.mois).toHaveLength(6);
+    expect(res.body.mois[0]).toMatchObject({ mois: courant, envoyes: 42, echecs: 2 });
+    expect(res.body.agences.map((x: { nom: string; envoyes: number }) => [x.nom, x.envoyes])).toEqual([["a@test.local", 30], ["b@test.local", 12]]);
+    expect(res.body.tarifUsd).toBe(env.whatsapp.coutMessageUtilityUsd);
+    expect(typeof res.body.configure).toBe("boolean");
+  });
+
+  it("accepte l'un des six derniers mois, et refuse un mois mal formé, trop ancien ou à venir", async () => {
+    const admin = await createAdmin();
+    const jeton = tokenFor(admin);
+    const precedent = (await vue(jeton)).body.mois[1].mois as string;
+    expect((await vue(jeton, precedent)).body.moisChoisi).toBe(precedent);
+
+    for (const mauvais of ["2020-01", "novembre", "2026-13", "2999-01", "2026-1"]) {
+      const res = await vue(jeton, mauvais);
+      expect(res.status, mauvais).toBe(400);
+      expect(res.body.code).toBe("WHATSAPP_MONTH_INVALID");
+    }
+  });
+
+  it("réservé à l'administrateur : le coût de la plateforme n'est pas celui d'une agence", async () => {
+    const manager = await createManager();
+    expect((await vue(tokenFor(manager))).status).toBe(403);
+    expect((await request(app).get("/api/admin/whatsapp-usage")).status).toBe(401);
+  });
+});

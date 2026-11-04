@@ -6,6 +6,7 @@ import { api, apiErrorMessage, liste } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
+import WhatsappPlateforme from "../../components/WhatsappPlateforme";
 import { useCurrency } from "../../context/currency";
 import type { AdminDashboardStats } from "../../types";
 
@@ -346,6 +347,11 @@ export default function AdminDashboardPage() {
           </Rubrique>
         </div>
       </div>
+
+      {/* 05 — Ce que coûtent les messages WhatsApp, agence par agence : Meta facture la plateforme. */}
+      <Rubrique numero="05" titre={t("admin.dashboard.whatsapp.title")} aide={t("admin.dashboard.whatsapp.subtitle")}>
+        <WhatsappPlateforme />
+      </Rubrique>
     </div>
   );
 }

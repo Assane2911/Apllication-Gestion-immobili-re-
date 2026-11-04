@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
-import { whatsappUsage } from "../db/schema";
+import { agencySettings, whatsappUsage } from "../db/schema";
 import { createManager } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
-import { enregistrerEnvoiWhatsapp, lireUsageWhatsapp, moisUtc } from "./whatsappUsage.service";
+import { derniersMois, enregistrerEnvoiWhatsapp, lireUsagePlateformeWhatsapp, lireUsageWhatsapp, moisUtc } from "./whatsappUsage.service";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -135,5 +135,69 @@ describe("lireUsageWhatsapp", () => {
     } finally {
       env.whatsapp.coutMessageUtilityUsd = tarif;
     }
+  });
+});
+
+describe("derniersMois", () => {
+  it("liste les mois du plus récent au plus ancien, en franchissant l'année", () => {
+    expect(derniersMois(4, new Date("2027-02-10T00:00:00Z"))).toEqual(["2027-02", "2027-01", "2026-12", "2026-11"]);
+  });
+});
+
+describe("lireUsagePlateformeWhatsapp", () => {
+  const maintenant = new Date("2026-11-04T10:00:00Z");
+
+  it("sans aucun envoi : six mois à zéro et aucune agence", async () => {
+    const usage = await lireUsagePlateformeWhatsapp(undefined, 6, maintenant);
+    expect(usage.moisChoisi).toBe("2026-11");
+    expect(usage.agences).toEqual([]);
+    expect(usage.mois.map((m) => m.mois)).toEqual(["2026-11", "2026-10", "2026-09", "2026-08", "2026-07", "2026-06"]);
+    expect(usage.mois.every((m) => m.envoyes === 0 && m.coutEstimeUsd === 0)).toBe(true);
+  });
+
+  it("additionne toutes les agences mois par mois, et détaille le mois choisi agence par agence, la plus gourmande d'abord", async () => {
+    const a = await createManager({ email: "a@test.local" });
+    const b = await createManager({ email: "b@test.local" });
+    const c = await createManager({ email: "c@test.local" });
+    await testDb.insert(agencySettings).values({ userId: a.id, agencyName: "Agence Teranga" });
+    await testDb.insert(whatsappUsage).values([
+      { managerId: a.id, month: "2026-11", type: "avis_echeance", sent: 30, failed: 1 },
+      { managerId: a.id, month: "2026-11", type: "relance_impaye", sent: 10, failed: 0 },
+      { managerId: b.id, month: "2026-11", type: "avis_echeance", sent: 100, failed: 4 },
+      { managerId: c.id, month: "2026-10", type: "echeance_proche", sent: 7, failed: 0 },
+      { managerId: a.id, month: "2025-01", type: "avis_echeance", sent: 999, failed: 0 },
+    ]);
+
+    const usage = await lireUsagePlateformeWhatsapp(undefined, 6, maintenant);
+
+    expect(usage.mois[0]).toMatchObject({ mois: "2026-11", envoyes: 140, echecs: 5, parType: { avis_echeance: 130, echeance_proche: 0, relance_impaye: 10 } });
+    expect(usage.mois[0].coutEstimeUsd).toBeCloseTo(140 * env.whatsapp.coutMessageUtilityUsd, 6);
+    expect(usage.mois[1]).toMatchObject({ mois: "2026-10", envoyes: 7 });
+    expect(usage.mois.reduce((total, m) => total + m.envoyes, 0)).toBe(147); // ce qui date de 2025 est hors fenêtre
+    // Détail du mois courant : b (100) avant a (40), c n'a rien envoyé ce mois-ci ; le nom est celui de l'agence, à défaut l'e-mail.
+    expect(usage.agences.map((x) => [x.nom, x.envoyes, x.echecs])).toEqual([
+      ["b@test.local", 100, 4],
+      ["Agence Teranga", 40, 1],
+    ]);
+    expect(usage.agences[1]).toMatchObject({ managerId: a.id, parType: { avis_echeance: 30, echeance_proche: 0, relance_impaye: 10 } });
+  });
+
+  it("détaille un autre mois quand on le demande, sans toucher aux totaux", async () => {
+    const c = await createManager({ email: "c@test.local" });
+    await testDb.insert(whatsappUsage).values([
+      { managerId: c.id, month: "2026-10", type: "echeance_proche", sent: 7, failed: 0 },
+      { managerId: c.id, month: "2026-11", type: "echeance_proche", sent: 3, failed: 0 },
+    ]);
+    const usage = await lireUsagePlateformeWhatsapp("2026-10", 6, maintenant);
+    expect(usage.moisChoisi).toBe("2026-10");
+    expect(usage.agences.map((x) => [x.nom, x.envoyes])).toEqual([["c@test.local", 7]]);
+    expect(usage.mois[0].envoyes).toBe(3);
+  });
+
+  it("une agence qui n'a que des échecs apparaît (elle coûte du travail, pas de l'argent)", async () => {
+    const a = await createManager({ email: "a@test.local" });
+    await testDb.insert(whatsappUsage).values({ managerId: a.id, month: "2026-11", type: "avis_echeance", sent: 0, failed: 5 });
+    const usage = await lireUsagePlateformeWhatsapp(undefined, 6, maintenant);
+    expect(usage.agences).toMatchObject([{ envoyes: 0, echecs: 5, coutEstimeUsd: 0 }]);
   });
 });

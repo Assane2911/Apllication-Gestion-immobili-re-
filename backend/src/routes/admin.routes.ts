@@ -11,7 +11,7 @@ import {
   suspendManager,
 } from "../controllers/admin.controller";
 import { exportAuditCsv, exportManagersCsv } from "../controllers/adminExport.controller";
-import { getManagerWhatsappUsage } from "../controllers/adminWhatsapp.controller";
+import { getManagerWhatsappUsage, getPlatformWhatsappUsage } from "../controllers/adminWhatsapp.controller";
 import { deleteManager } from "../controllers/adminSuppression.controller";
 import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
 import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeUnlimitedAccess } from "../controllers/adminSubscription.controller";
@@ -31,6 +31,7 @@ router.get("/subscriptions/pending-bank-transfers", listPendingBankTransfers);
 router.post("/subscriptions/:id/confirm-bank-transfer", confirmBankTransfer);
 router.post("/subscriptions/:id/reject-bank-transfer", rejectBankTransfer);
 router.get("/managers", listManagers);
+router.get("/whatsapp-usage", getPlatformWhatsappUsage);
 router.get("/managers/:id", getManagerDetail);
 router.get("/managers/:id/whatsapp-usage", getManagerWhatsappUsage);
 router.post("/managers/:id/suspend", suspendManager);
