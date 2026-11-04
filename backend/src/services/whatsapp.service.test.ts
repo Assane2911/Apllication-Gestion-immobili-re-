@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
+import { enregistrerEnvoiWhatsapp } from "./whatsappUsage.service";
 import {
   avisEcheanceWhatsapp,
   envoyerMessageWhatsapp,
   rentDueReminderWhatsappVariables,
   rentDueSoonReminderWhatsappVariables,
 } from "./whatsapp.service";
+
+// Le compteur d'envois a ses propres tests (whatsappUsage.test.ts) : ici on vérifie seulement qu'il est appelé.
+vi.mock("./whatsappUsage.service", () => ({ enregistrerEnvoiWhatsapp: vi.fn().mockResolvedValue(undefined) }));
+const CONTEXTE = { managerId: "agence-test", type: "avis_echeance" } as const;
 
 describe("envoyerMessageWhatsapp", () => {
   const original = { ...env.whatsapp };
@@ -23,7 +28,7 @@ describe("envoyerMessageWhatsapp", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Bonjour" });
+    const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Bonjour" }, CONTEXTE);
 
     expect(resultat).toEqual({ simulated: true, raison: "non_configure" });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -40,7 +45,7 @@ describe("envoyerMessageWhatsapp", () => {
       const fetchMock = vi.fn();
       vi.stubGlobal("fetch", fetchMock);
 
-      const resultat = await envoyerMessageWhatsapp("+221771234567", "", { "1": "Bonjour" });
+      const resultat = await envoyerMessageWhatsapp("+221771234567", "", { "1": "Bonjour" }, CONTEXTE);
 
       expect(resultat).toEqual({ simulated: true, raison: "modele_non_configure" });
       expect(fetchMock).not.toHaveBeenCalled();
@@ -50,7 +55,7 @@ describe("envoyerMessageWhatsapp", () => {
       const fetchMock = vi.fn();
       vi.stubGlobal("fetch", fetchMock);
 
-      const resultat = await envoyerMessageWhatsapp("0600000000", "avis_echeance_loyer", { "1": "Bonjour" });
+      const resultat = await envoyerMessageWhatsapp("0600000000", "avis_echeance_loyer", { "1": "Bonjour" }, CONTEXTE);
 
       expect(resultat).toEqual({ simulated: true, error: true, raison: "numero_invalide" });
       expect(fetchMock).not.toHaveBeenCalled();
@@ -67,7 +72,7 @@ describe("envoyerMessageWhatsapp", () => {
       const resultat = await envoyerMessageWhatsapp("+221 77 123 45 67", "avis_echeance_loyer", {
         "1": "Amine",
         "2": "septembre 2026",
-      });
+      }, CONTEXTE);
 
       expect(resultat).toEqual({ simulated: false });
       expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -114,7 +119,7 @@ describe("envoyerMessageWhatsapp", () => {
       );
       vi.spyOn(AbortSignal, "timeout").mockImplementation(() => AbortSignal.abort(new Error("délai dépassé")));
 
-      const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Amine" });
+      const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Amine" }, CONTEXTE);
 
       expect(resultat).toEqual({ simulated: false, error: true, raison: "erreur_reseau" });
       vi.restoreAllMocks();
@@ -132,7 +137,7 @@ describe("envoyerMessageWhatsapp", () => {
         "2": "Studio\t\tCentre      ville",
         "3": "   ",
         "4": "x".repeat(2000),
-      });
+      }, CONTEXTE);
 
       const corps = JSON.parse(fetchMock.mock.calls[0][1].body as string);
       const textes: string[] = corps.template.components[0].parameters.map((p: { text: string }) => p.text);
@@ -150,7 +155,7 @@ describe("envoyerMessageWhatsapp", () => {
         "3": "Studio meublé",
         "1": "Amine",
         "2": "septembre 2026",
-      });
+      }, CONTEXTE);
 
       const corps = JSON.parse(fetchMock.mock.calls[0][1].body as string);
       expect(corps.template.components[0].parameters.map((p: { text: string }) => p.text)).toEqual([
@@ -166,7 +171,7 @@ describe("envoyerMessageWhatsapp", () => {
         .mockResolvedValue({ ok: false, status: 400, text: async () => '{"error":{"message":"Template not found"}}' });
       vi.stubGlobal("fetch", fetchMock);
 
-      const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Bonjour" });
+      const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Bonjour" }, CONTEXTE);
 
       expect(resultat).toEqual({ simulated: false, error: true, raison: "erreur_api" });
     });
@@ -175,7 +180,7 @@ describe("envoyerMessageWhatsapp", () => {
       const fetchMock = vi.fn().mockRejectedValue(new Error("ECONNRESET"));
       vi.stubGlobal("fetch", fetchMock);
 
-      const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Bonjour" });
+      const resultat = await envoyerMessageWhatsapp("+221771234567", "avis_echeance_loyer", { "1": "Bonjour" }, CONTEXTE);
 
       expect(resultat).toEqual({ simulated: false, error: true, raison: "erreur_reseau" });
     });
@@ -304,7 +309,7 @@ describe("avisEcheanceWhatsapp — la date annoncée est celle de la facture", (
 
     try {
       const { templateName, variables } = avisEcheanceWhatsapp(avis(new Date(2026, 9, 24)));
-      const resultat = await envoyerMessageWhatsapp("+221771234567", templateName, variables);
+      const resultat = await envoyerMessageWhatsapp("+221771234567", templateName, variables, CONTEXTE);
 
       expect(resultat).toEqual({ simulated: true, raison: "modele_non_configure" });
       expect(fetchMock).not.toHaveBeenCalled();

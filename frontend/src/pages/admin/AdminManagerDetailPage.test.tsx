@@ -14,6 +14,12 @@ vi.mock("../../api/client", async () => {
 
 const mockedApi = vi.mocked(api, { deep: true });
 
+// La section WhatsApp charge ses propres données (SectionWhatsapp.test.tsx) : un appel de plus décalerait les réponses
+// simulées, servies dans l'ordre. Ici on vérifie seulement qu'elle est branchée sur la bonne agence.
+vi.mock("../../components/SectionWhatsapp", () => ({
+  default: ({ managerId, numero }: { managerId: string; numero: string }) => <p>{`section-whatsapp ${managerId} ${numero}`}</p>,
+}));
+
 function fiche(overrides: Record<string, unknown> = {}) {
   return {
     id: "mgr-1",
@@ -76,6 +82,12 @@ describe("AdminManagerDetailPage", () => {
     mockedApi.post.mockReset();
     mockedApi.delete.mockReset();
     vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+
+  it("affiche la consommation WhatsApp de l'agence consultée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: fiche() });
+    renderPage();
+    expect(await screen.findByText(/^section-whatsapp mgr-1 05$/)).toBeInTheDocument();
   });
 
   it("indique la date ET l'heure de fin d'essai et d'échéance de l'abonnement", async () => {

@@ -637,6 +637,19 @@ export async function initDb() {
       sql`CREATE UNIQUE INDEX IF NOT EXISTS owner_fee_rates_owner_period_unique ON owner_fee_rates (owner_id, effective_year, effective_month)`
     );
 
+    // Messages WhatsApp envoyés, par agence, par mois et par type (voir services/whatsappUsage.service.ts).
+    await creerTable("whatsapp_usage", sql`
+      CREATE TABLE IF NOT EXISTS whatsapp_usage (
+        manager_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        month TEXT NOT NULL,
+        type TEXT NOT NULL,
+        sent INTEGER NOT NULL DEFAULT 0,
+        failed INTEGER NOT NULL DEFAULT 0,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (manager_id, month, type)
+      )
+    `);
+
     // Historique des révisions de loyer d'un bail (après contracts : FK).
     await creerTable("rent_revisions", sql`
       CREATE TABLE IF NOT EXISTS rent_revisions (

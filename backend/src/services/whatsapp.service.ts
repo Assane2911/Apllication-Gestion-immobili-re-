@@ -27,6 +27,7 @@ import { env } from "../config/env";
 import { formaterMontant } from "../utils/montant";
 import { versE164 } from "../utils/phone";
 import { fetchAvecDelai } from "../utils/fetchAvecDelai";
+import { type ContexteEnvoiWhatsapp, enregistrerEnvoiWhatsapp } from "./whatsappUsage.service";
 
 /**
  * Version de l'API Graph de Meta utilisée pour l'envoi (WhatsApp Cloud API).
@@ -79,12 +80,22 @@ function texteAcceptableParMeta(valeur: string): string {
  * @param variables Valeurs des variables `{{1}}`, `{{2}}`... du modèle,
  * indexées par leur numéro sous forme de chaîne (ex: `{ "1": "Jean Dupont" }`)
  * — converties ci-dessous en tableau ordonné de paramètres pour l'API Meta.
+ * @param contexte Agence et type du message, pour le compteur d'envois (whatsappUsage.service.ts).
  */
 export async function envoyerMessageWhatsapp(
   numeroBrut: string,
   templateName: string,
-  variables: Record<string, string>
+  variables: Record<string, string>,
+  contexte: ContexteEnvoiWhatsapp
 ): Promise<ResultatEnvoiWhatsapp> {
+  const resultat = await envoyerSansCompter(numeroBrut, templateName, variables);
+  // Chaque envoi est compté pour son agence (voir whatsappUsage.service.ts) ; le contexte est obligatoire pour qu'aucun
+  // appel ne passe sans l'être. enregistrerEnvoiWhatsapp ne lève jamais.
+  await enregistrerEnvoiWhatsapp(contexte, resultat);
+  return resultat;
+}
+
+async function envoyerSansCompter(numeroBrut: string, templateName: string, variables: Record<string, string>): Promise<ResultatEnvoiWhatsapp> {
   const { accessToken, phoneNumberId, templateLanguage } = env.whatsapp;
 
   if (!accessToken || !phoneNumberId) {

@@ -116,7 +116,10 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
         frontendUrl: env.frontendUrl,
       });
     const whatsappResultat = whatsappEligible
-      ? await envoyerMessageWhatsapp(ligne.tenant.phone, env.whatsapp.templateNameOverdue, variablesWhatsapp(nomAvecCivilite(ligne.tenant)))
+      ? await envoyerMessageWhatsapp(ligne.tenant.phone, env.whatsapp.templateNameOverdue, variablesWhatsapp(nomAvecCivilite(ligne.tenant)), {
+          managerId: ligne.property.managerId,
+          type: "relance_impaye",
+        })
       : WHATSAPP_NON_ELIGIBLE;
     if (!aEteJoint(resultat, whatsappResultat)) {
       // Relâché : la relance repartira à la prochaine exécution plutôt que d'être perdue.
@@ -133,7 +136,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
 
     await envoyerCopieAuxColocataires(ligne.contract.id, (colocataire) => overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(colocataire), langue: langueOuDefaut(colocataire.language) }));
     if (whatsappEligible) {
-      const copies = await envoyerCopieWhatsappAuxColocataires(ligne.contract.id, (colocataire) => ({
+      const copies = await envoyerCopieWhatsappAuxColocataires(ligne.contract.id, { managerId: ligne.property.managerId, type: "relance_impaye" }, (colocataire) => ({
         templateName: env.whatsapp.templateNameOverdue,
         variables: variablesWhatsapp(nomAvecCivilite(colocataire)),
       }));

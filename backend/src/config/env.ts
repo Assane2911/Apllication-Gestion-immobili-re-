@@ -98,6 +98,10 @@ export const env = {
     // Code langue du modèle tel que déclaré dans le WhatsApp Manager (ex:
     // "fr" pour un modèle rédigé et approuvé en français).
     templateLanguage: process.env.META_WHATSAPP_TEMPLATE_LANGUAGE ?? "fr",
+    // Tarif d'un message modèle de catégorie « utility » (rappels de loyer), en dollars : ne sert qu'à ESTIMER le coût
+    // affiché dans la fiche d'une agence (voir services/whatsappUsage.service.ts). 0,004 $ = « Reste de l'Afrique » (dont
+    // le Sénégal), grille Meta d'octobre 2026 : à vérifier dans la facturation du compte WhatsApp Business.
+    coutMessageUtilityUsd: Number.isFinite(parseFloat(process.env.META_WHATSAPP_COST_UTILITY_USD ?? "")) ? parseFloat(process.env.META_WHATSAPP_COST_UTILITY_USD as string) : 0.004,
   },
 
   reminder: {

@@ -107,7 +107,8 @@ describe("runRentDueReminders", () => {
     expect(whatsappSpy).toHaveBeenCalledWith(
       tenant.phone,
       expect.any(String),
-      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) })
+      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) }),
+      { managerId: manager.id, type: "avis_echeance" }
     );
     // API Meta WhatsApp non configurée dans l'environnement de test => simulation, comme sendEmail sans SMTP.
     expect(result.details[0].whatsappSimulated).toBe(true);
@@ -372,7 +373,8 @@ describe("sendSingleInvoiceReminder", () => {
     expect(whatsappSpy).toHaveBeenCalledWith(
       tenant.phone,
       expect.any(String),
-      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) })
+      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) }),
+      { managerId: manager.id, type: "avis_echeance" }
     );
     expect(result.whatsappSimulated).toBe(true);
 
@@ -401,7 +403,8 @@ describe("sendSingleInvoiceReminder", () => {
       expect(whatsappSpy).toHaveBeenCalledWith(
         tenant.phone,
         "avis_echeance_loyer_date",
-        expect.objectContaining({ "5": "20 août 2026" })
+        expect.objectContaining({ "5": "20 août 2026" }),
+        { managerId: manager.id, type: "avis_echeance" }
       );
       whatsappSpy.mockRestore();
     } finally {
@@ -431,8 +434,8 @@ describe("sendSingleInvoiceReminder", () => {
       const result = await sendSingleInvoiceReminder(invoice.id, manager.id);
 
       expect(result.success).toBe(true);
-      expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, "", expect.anything());
-      expect(whatsappSpy).not.toHaveBeenCalledWith(tenant.phone, "avis_echeance_loyer", expect.anything());
+      expect(whatsappSpy).toHaveBeenCalledWith(tenant.phone, "", expect.anything(), expect.anything());
+      expect(whatsappSpy).not.toHaveBeenCalledWith(tenant.phone, "avis_echeance_loyer", expect.anything(), expect.anything());
       whatsappSpy.mockRestore();
     } finally {
       env.whatsapp.templateNameRentDue = original.templateNameRentDue;
@@ -533,7 +536,8 @@ describe("runUpcomingRentDueReminders", () => {
     expect(whatsappSpy).toHaveBeenCalledWith(
       tenant.phone,
       expect.any(String),
-      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) })
+      expect.objectContaining({ "1": expect.stringContaining(tenant.firstName) }),
+      { managerId: manager.id, type: "echeance_proche" }
     );
     expect(result.details[0].whatsappSimulated).toBe(true);
 

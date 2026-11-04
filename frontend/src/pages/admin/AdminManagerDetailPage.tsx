@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import Initiales from "../../components/Initiales";
 import SectionReglage from "../../components/SectionReglage";
+import SectionWhatsapp from "../../components/SectionWhatsapp";
 import StatCard from "../../components/StatCard";
 import { useCurrency } from "../../context/currency";
 import { formaterDateHeure } from "../../utils/dateHeure";
@@ -391,11 +392,12 @@ export default function AdminManagerDetailPage() {
               </div>
             )}
           </SectionReglage>
+          <SectionWhatsapp managerId={manager.id} numero="05" />
             </div>
 
             {/* À droite, ce que l'administrateur peut faire : suspendre, ajuster l'abonnement, supprimer. */}
             <div className="space-y-6">
-          <SectionReglage id="suspension" numero="05" danger={Boolean(manager.suspendedAt)} titre={manager.suspendedAt ? t("admin.managerDetail.suspension.suspendedTitle") : t("admin.managerDetail.suspension.title")}>
+          <SectionReglage id="suspension" numero="06" danger={Boolean(manager.suspendedAt)} titre={manager.suspendedAt ? t("admin.managerDetail.suspension.suspendedTitle") : t("admin.managerDetail.suspension.title")}>
             {manager.suspendedAt ? (
               <>
                 <p className="text-xs text-slate-700">
@@ -474,7 +476,7 @@ export default function AdminManagerDetailPage() {
           </SectionReglage>
 
           {manager.suspendedAt && (
-            <SectionReglage id="suppression" numero="07" danger titre={t("admin.managerDetail.deletion.title")}>
+            <SectionReglage id="suppression" numero="08" danger titre={t("admin.managerDetail.deletion.title")}>
               <p className="text-xs text-slate-600">{t("admin.managerDetail.deletion.description")}</p>
               {suppressionOuverte ? (
                 <form onSubmit={supprimerDefinitivement} className="mt-3 space-y-3">
@@ -542,7 +544,7 @@ export default function AdminManagerDetailPage() {
             </SectionReglage>
           )}
 
-          <SectionReglage id="ajustement" numero="06" titre={t("admin.managerDetail.adjust.title")}>
+          <SectionReglage id="ajustement" numero="07" titre={t("admin.managerDetail.adjust.title")}>
             {manager.subscription.autoRenew ? (
               <p className="text-xs text-slate-600">{t("admin.managerDetail.adjust.stripe")}</p>
             ) : (
