@@ -3663,6 +3663,7 @@ const fr = {
           endNow: "Terminer maintenant",
           scheduled: "Maintenance programmée. Les utilisateurs en seront informés avant son début.",
           notify: {
+            confirm: "Envoyer maintenant l'e-mail d'annonce à tous les gestionnaires dont le compte est actif ? L'envoi est immédiat et ne peut pas être annulé.",
             label: "Prévenir les gestionnaires par e-mail",
             hint: "L'e-mail part tout de suite à tous les gestionnaires dont le compte est actif, dans leur langue, avec les dates (en UTC) et le message ci-dessus. Il ne peut pas être rappelé.",
             late: "Disponible seulement si la maintenance commence plus tard.",

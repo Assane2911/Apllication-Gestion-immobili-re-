@@ -50,6 +50,9 @@ export default function SectionMaintenance({ numero }: { numero: string }) {
     e.preventDefault();
     if (probleme) return;
     if (new Date(form.debut).getTime() - Date.now() < PREAVIS_MIN_MS && !window.confirm(t("admin.settings.maintenance.confirmSoon"))) return;
+    // L'e-mail part tout de suite à tous les gestionnaires et ne se rattrape pas : un second enregistrement, case cochée, l'enverrait
+    // une seconde fois. Annuler ici n'enregistre ni n'envoie rien, et le formulaire reste tel quel.
+    if (prevenir && annonceDisponible && !window.confirm(t("admin.settings.maintenance.notify.confirm"))) return;
     setEnvoi(true);
     setErreur(null);
     setInfo(null);
