@@ -125,14 +125,16 @@ describe("paiement du loyer en ligne — réservé aux abonnements par défaut",
     expect(res.status).toBe(400);
   });
 
-  it("rétablit le paiement du loyer en ligne quand l'interrupteur est activé", async () => {
+  it("l'interrupteur ne rouvre que Stripe : PayDunya exige le compte de l'agence (voir comptePaiementAgence.test.ts)", async () => {
     prestatairesConfigures();
     env.payments.rentOnline = true;
+    env.payments.stripeCurrencies = ["EUR", "XOF"];
     const manager = await createManager();
 
     const res = await request(app).get("/api/payments/methods?currency=XOF&usage=loyer").set(authHeader(tokenFor(manager)));
 
-    expect(res.body.methods).toContain("PAYDUNYA");
+    expect(res.body.methods).not.toContain("PAYDUNYA");
+    expect(res.body.methods).toContain("STRIPE");
     expect(res.body.methods).toContain("BANK_TRANSFER");
   });
 });

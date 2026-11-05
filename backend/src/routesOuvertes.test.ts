@@ -34,6 +34,7 @@ const PUBLIQUES: Record<string, string> = {
   "GET /api/listings/public/:p": "détail d'une annonce publiée",
   "POST /api/listings/public/:p/leads": "demande de contact d'un visiteur sur une annonce (limitée en fréquence)",
   "POST /api/payments/paydunya/ipn": "notification de paiement de PayDunya, authentifiée par sa signature et sa confirmation côté serveur",
+  "POST /api/payments/paydunya/ipn/agence/:p": "notification d'un loyer payé sur le compte PayDunya d'une agence, authentifiée par la signature et la confirmation faites avec les clés de CETTE agence",
 };
 
 interface Route {

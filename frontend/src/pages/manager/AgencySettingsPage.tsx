@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import ChampTelephone from "../../components/ChampTelephone";
 import SectionImageAgence from "../../components/SectionImageAgence";
+import SectionPaiementEnLigne from "../../components/SectionPaiementEnLigne";
 import SectionReglage from "../../components/SectionReglage";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
@@ -260,6 +261,7 @@ export default function AgencySettingsPage() {
     { id: "agency-identite", cle: "identity" },
     { id: "agency-banque", cle: "bank" },
     { id: "agency-relances", cle: "reminders" },
+    { id: "agency-paiement", cle: "onlinePayment" },
     { id: "agency-conservation", cle: "retention" },
     { id: "agency-securite", cle: "security" },
     { id: "agency-2fa", cle: "twoFactor" },
@@ -570,6 +572,8 @@ export default function AgencySettingsPage() {
                 </button>
               </div>
             </form>
+
+            <SectionPaiementEnLigne numero={numero("agency-paiement")} lectureSeule={!estProprietaire} />
 
             <SectionReglage id="agency-conservation" numero={numero("agency-conservation")} titre={t("manager.agencySettings.retention.title")}>
               <p className="text-sm text-slate-600">{t("manager.agencySettings.retention.description")}</p>

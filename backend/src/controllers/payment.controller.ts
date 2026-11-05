@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { z } from "zod";
+import { chargerCompteEncaissant, type CompteAgenceEncaissant } from "../services/comptePaiementAgence.service";
 import { moyensDePaiementDisponibles } from "../services/payment.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { ficheLocataireDuCompte } from "../utils/authorization";
 
 /**
  * Moyens de paiement réellement utilisables pour un montant dans la devise
@@ -28,9 +30,19 @@ const methodesQuerySchema = z.object({
 export const getAvailableMethods = asyncHandler(async (req: Request, res: Response) => {
   const query = methodesQuerySchema.parse(req.query);
   const currency = (query.currency ?? "EUR").toUpperCase();
+  const usage = query.usage === "loyer" ? "LOYER" : "ABONNEMENT";
+
+  // Un loyer se règle sur le compte PayDunya de l'agence : ce qu'on propose dépend donc de l'agence du demandeur
+  // (celle de son bail pour un locataire, la sienne pour un gestionnaire).
+  let compteAgence: CompteAgenceEncaissant | null = null;
+  if (usage === "LOYER") {
+    const fiche = await ficheLocataireDuCompte(req);
+    const managerId = fiche?.managerId ?? (req.user?.role === "MANAGER" ? req.user.userId : null);
+    compteAgence = managerId ? await chargerCompteEncaissant(managerId) : null;
+  }
 
   res.json({
     currency,
-    methods: moyensDePaiementDisponibles(currency, query.usage === "loyer" ? "LOYER" : "ABONNEMENT"),
+    methods: moyensDePaiementDisponibles(currency, usage, compteAgence),
   });
 });

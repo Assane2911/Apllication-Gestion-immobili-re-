@@ -158,6 +158,10 @@ export const env = {
     // payment.service.ts::indisponibilitePourLoyer). Désactivé tant qu'un montage dédié (un compte par
     // agence, ou virement direct) n'a pas été mis en place ; il faut le demander EXPLICITEMENT.
     rentOnline: process.env.RENT_ONLINE_PAYMENTS === "true",
+    // Clé qui chiffre les identifiants PayDunya que chaque agence enregistre pour encaisser SES loyers sur SON compte
+    // (voir services/comptePaiementAgence.service.ts). 32 octets en hexadécimal (64 caractères) ou en base64. Absente :
+    // aucune agence ne peut enregistrer de compte, et le paiement du loyer en ligne reste indisponible.
+    keysEncryptionKey: process.env.PAYMENT_KEYS_ENCRYPTION_KEY ?? "",
     stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
     // Devises que ton compte Stripe accepte réellement. Déclarées plutôt que

@@ -7,6 +7,9 @@ import { AuthProvider } from "../../context/AuthContext";
 import type { TeamMember } from "../../types";
 import AgencySettingsPage from "./AgencySettingsPage";
 
+// La section du paiement en ligne charge sa propre ressource (voir SectionPaiementEnLigne.test.tsx) : ici, elle volerait la première réponse simulée de la page.
+vi.mock("../../components/SectionPaiementEnLigne", () => ({ default: () => null }));
+
 vi.mock("../../api/client", async () => {
   const actual = await vi.importActual<typeof import("../../api/client")>("../../api/client");
   return { ...actual, api: { get: vi.fn(), put: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } };

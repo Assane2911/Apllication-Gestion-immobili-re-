@@ -15,6 +15,7 @@ import {
   tokenFor,
   tokenLocataire,
 } from "../test/authHelpers";
+import { enregistrerCompteAgence } from "../services/comptePaiementAgence.service";
 import { testDb } from "../test/setupTestDb";
 
 /**
@@ -31,11 +32,12 @@ import { testDb } from "../test/setupTestDb";
  * payable, sans qu'aucune des deux ne solde jamais l'autre.
  */
 describe("payInvoice — idempotence PayDunya", () => {
-  const original = { paydunya: { ...env.payments.paydunya }, rentOnline: env.payments.rentOnline };
+  const original = { paydunya: { ...env.payments.paydunya }, rentOnline: env.payments.rentOnline, cle: env.payments.keysEncryptionKey };
 
   afterEach(() => {
     env.payments.demoMode = true;
     env.payments.rentOnline = original.rentOnline;
+    env.payments.keysEncryptionKey = original.cle;
     env.payments.paydunya = { ...original.paydunya };
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -54,9 +56,9 @@ describe("payInvoice — idempotence PayDunya", () => {
     const tenantToken = await tokenLocataire(tenant.id);
 
     env.payments.demoMode = false;
-    // Ce fichier teste le comportement du paiement en ligne QUAND il est activé (voir loyerEnLigne.test.ts).
-    env.payments.rentOnline = true;
-    env.payments.paydunya = { ...original.paydunya, masterKey: "mk", privateKey: "pk", token: "tk" };
+    // Un loyer se règle sur le compte PayDunya de l'AGENCE : on lui en enregistre un (voir comptePaiementAgence.test.ts).
+    env.payments.keysEncryptionKey = "ab".repeat(32);
+    await enregistrerCompteAgence(manager.id, { masterKey: "mk-agence-1", privateKey: "pk-agence-1", token: "tk-agence-1", mode: "test", currency: "XOF", enabled: true });
 
     return { manager, property, tenant, contract, invoice, tenantToken };
   }

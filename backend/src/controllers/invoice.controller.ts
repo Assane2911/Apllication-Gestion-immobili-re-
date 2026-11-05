@@ -7,6 +7,7 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { contracts, invoicePayments, invoices, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { initiatePayment, PaymentIntentResult, PaymentMethodKey } from "../services/payment.service";
+import { chargerCompteEncaissant } from "../services/comptePaiementAgence.service";
 import { sendPartialPaymentReceiptEmail, sendPaymentReceiptEmail } from "../services/receipt.service";
 import { runRentDueReminders, sendSingleInvoiceReminder } from "../services/reminder.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -388,7 +389,10 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
 
   let result: PaymentIntentResult;
   try {
+    // Le loyer se règle sur le compte PayDunya de l'AGENCE du locataire (jamais sur celui de la plateforme).
+    const compteAgence = body.method === "PAYDUNYA" ? await chargerCompteEncaissant(row.tenant.managerId) : null;
     result = await initiatePayment({
+      compteAgence,
       method: body.method as PaymentMethodKey,
       // Le RESTE DÛ : sur une facture déjà réglée en partie par le gestionnaire,
       // le locataire ne repaie pas la part déjà versée.
