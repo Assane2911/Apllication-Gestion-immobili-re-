@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { _resetAnalyticsStateForTests, isAnalyticsConfigured, loadGoogleAnalytics, trackPageView } from "./analytics";
+import { _resetAnalyticsStateForTests, isAnalyticsConfigured, loadGoogleAnalytics, trackEvent, trackPageView } from "./analytics";
 
 /** Les appels poussés dans dataLayer sont des objets Arguments : on les relit comme des tableaux pour les comparer. */
 function lireAppels(): unknown[][] {
@@ -90,5 +90,26 @@ describe("analytics", () => {
     for (const appel of window.dataLayer!) {
       expect(Object.prototype.toString.call(appel)).toBe("[object Arguments]");
     }
+  });
+
+  it("trackEvent n'a aucun effet tant que le visiteur n'a pas accepté la mesure", () => {
+    vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+    trackEvent({ nom: "sign_up", params: { method: "email" } });
+    expect(window.gtag).toBeUndefined();
+    expect(window.dataLayer ?? []).toHaveLength(0);
+  });
+
+  it("trackEvent envoie l'événement recommandé par Google avec ses seuls paramètres, sans donnée personnelle", () => {
+    vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+    loadGoogleAnalytics();
+    const avant = window.dataLayer!.length;
+
+    trackEvent({ nom: "generate_lead", params: { lead_type: "visit" } });
+    trackEvent({ nom: "login", params: { method: "google" } });
+
+    expect(lireAppels().slice(avant)).toEqual([
+      ["event", "generate_lead", { lead_type: "visit" }],
+      ["event", "login", { method: "google" }],
+    ]);
   });
 });
