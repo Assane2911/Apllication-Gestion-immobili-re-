@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetAnalyticsStateForTests, isAnalyticsConfigured, loadGoogleAnalytics, trackPageView } from "./analytics";
 
+/** Les appels poussés dans dataLayer sont des objets Arguments : on les relit comme des tableaux pour les comparer. */
+function lireAppels(): unknown[][] {
+  return (window.dataLayer ?? []).map((appel) => Array.from(appel as ArrayLike<unknown>));
+}
+
 describe("analytics", () => {
   beforeEach(() => {
     _resetAnalyticsStateForTests();
@@ -44,7 +49,7 @@ describe("analytics", () => {
     vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
     loadGoogleAnalytics();
 
-    const appels = window.dataLayer!;
+    const appels = lireAppels();
     const indexConsent = appels.findIndex((appel) => (appel as unknown[])[0] === "consent");
     const indexConfig = appels.findIndex((appel) => (appel as unknown[])[0] === "config");
 
@@ -74,6 +79,16 @@ describe("analytics", () => {
     trackPageView("/vitrine/annonces/abc");
 
     expect(window.dataLayer!.length).toBe(appels + 1);
-    expect(window.dataLayer![appels]).toEqual(["event", "page_view", { page_path: "/vitrine/annonces/abc" }]);
+    expect(lireAppels()[appels]).toEqual(["event", "page_view", { page_path: "/vitrine/annonces/abc" }]);
+  });
+
+  it("pousse dans dataLayer des objets Arguments, seuls reconnus par gtag.js (un tableau est ignoré en silence)", () => {
+    vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+    loadGoogleAnalytics();
+
+    expect(window.dataLayer!.length).toBeGreaterThan(0);
+    for (const appel of window.dataLayer!) {
+      expect(Object.prototype.toString.call(appel)).toBe("[object Arguments]");
+    }
   });
 });
