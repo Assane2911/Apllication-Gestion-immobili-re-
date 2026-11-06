@@ -18,6 +18,31 @@ export function isAnalyticsConfigured(): boolean {
 let chargee = false;
 
 /**
+ * Pages sur lesquelles la mesure d'audience s'applique : le site public (accueil, annonces, connexion, inscription, pages
+ * légales). Tout le reste — tableau de bord, biens, locataires, factures, portails, administration — est l'usage de
+ * l'application par ses utilisateurs, et rien n'en part vers Google. C'est ce que dit la politique de confidentialité
+ * (mesure d'audience du site public) ; les pages de réinitialisation du mot de passe et de vérification d'e-mail, dont
+ * l'adresse porte un jeton, n'en font pas partie.
+ */
+const PAGES_PUBLIQUES = ["/", "/landing", "/login", "/inscription", "/mot-de-passe-oublie", "/mentions-legales", "/cgu", "/confidentialite", "/vitrine"];
+
+/** Cette adresse (chemin seul) fait-elle partie du site public ? Une page de l'application, non. */
+export function estPagePublique(chemin: string): boolean {
+  return PAGES_PUBLIQUES.some((page) => chemin === page || (page !== "/" && chemin.startsWith(`${page}/`)));
+}
+
+/**
+ * Coupe (ou rétablit) TOUTE la mesure de Google pour la page affichée, y compris ses mesures automatiques (défilement,
+ * engagement, formulaires) que gtag.js envoie de lui-même, sans passer par notre code. C'est le mécanisme prévu par
+ * Google pour cela : `window['ga-disable-<ID>']`, relu à chaque envoi.
+ */
+function reglerMesurePour(chemin: string): void {
+  const id = idMesure();
+  if (!id) return;
+  (window as unknown as Record<string, unknown>)[`ga-disable-${id}`] = !estPagePublique(chemin);
+}
+
+/**
  * Charge gtag.js et initialise GA4 — appelé uniquement après consentement
  * explicite (CookieConsentBanner) et seulement si un ID de mesure est
  * configuré. Idempotent : un second appel (ex. l'utilisateur rouvre un onglet
@@ -27,6 +52,8 @@ export function loadGoogleAnalytics(): void {
   const id = idMesure();
   if (chargee || !id) return;
   chargee = true;
+  // Avant même de charger gtag.js : sur une page de l'application, rien ne doit partir, pas même les mesures automatiques.
+  reglerMesurePour(window.location.pathname);
 
   const script = document.createElement("script");
   script.async = true;
@@ -85,5 +112,7 @@ export function trackEvent(evenement: EvenementAnalytics): void {
 /** Signale une vue de page à GA4 — sans effet tant que loadGoogleAnalytics() n'a pas chargé le script. */
 export function trackPageView(path: string): void {
   if (!chargee || !window.gtag) return;
+  reglerMesurePour(path);
+  if (!estPagePublique(path)) return;
   window.gtag("event", "page_view", { page_path: path });
 }
