@@ -13,6 +13,7 @@ import BoutonPartager from "../components/BoutonPartager";
 import Seo from "../components/Seo";
 import VitrineHeader from "../components/VitrineHeader";
 import type { Listing, LeadRequestType, PaginatedResponse } from "../types";
+import { trackEvent } from "../utils/analytics";
 import { countryLabel } from "../utils/countries";
 import { buildListingJsonLd } from "../utils/structuredData";
 import ChampDate from "../components/ChampDate";
@@ -102,6 +103,7 @@ export default function VitrineListingPage() {
         ...(leadForm.preferredDate ? { preferredDate: leadForm.preferredDate } : {}),
         ...(leadForm.message ? { message: leadForm.message } : {}),
       });
+      trackEvent({ nom: "generate_lead", params: { lead_type: leadForm.requestType.toLowerCase() } });
       setLeadSuccess(true);
     } catch (err) {
       setLeadError(apiErrorMessage(err));

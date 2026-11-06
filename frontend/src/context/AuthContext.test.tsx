@@ -3,12 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
+import { trackEvent } from "../utils/analytics";
 import { AuthProvider } from "./AuthContext";
 import { useAuth } from "./auth";
 
 vi.mock("../api/client", () => ({
   api: { get: vi.fn(), post: vi.fn() },
 }));
+
+// Les événements de conversion ne partent que si le visiteur a accepté la mesure : on vérifie ici ce que le contexte demande d'envoyer.
+vi.mock("../utils/analytics", async (importOriginal) => ({ ...(await importOriginal<typeof import("../utils/analytics")>()), trackEvent: vi.fn() }));
 
 const mockedApi = vi.mocked(api, { deep: true });
 
@@ -67,6 +71,30 @@ describe("AuthProvider", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();
+    vi.mocked(trackEvent).mockClear();
+  });
+
+  it("register : signale une inscription par e-mail, sans aucune donnée personnelle", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { pendingVerification: true } });
+    function Inscription() {
+      const { register } = useAuth();
+      return (
+        <button type="button" onClick={() => register("nouveau@test.local", "Password123!", "SN")}>
+          s'inscrire
+        </button>
+      );
+    }
+    render(
+      <AuthProvider>
+        <Inscription />
+      </AuthProvider>
+    );
+
+    await user.click(screen.getByRole("button", { name: "s'inscrire" }));
+
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith({ nom: "sign_up", params: { method: "email" } }));
+    expect(JSON.stringify(vi.mocked(trackEvent).mock.calls)).not.toContain("nouveau@test.local");
   });
 
   it("démarre sans utilisateur et sans appel réseau quand localStorage est vide", async () => {
@@ -97,6 +125,29 @@ describe("AuthProvider", () => {
     expect(localStorage.getItem("token")).toBeNull();
     expect(JSON.parse(localStorage.getItem("user")!).email).toBe("alice@test.local");
     expect(localStorage.getItem("hasSession")).toBe("1");
+    expect(trackEvent).toHaveBeenCalledWith({ nom: "login", params: { method: "password" } });
+  });
+
+  it("login : un compte soumis à la 2FA n'est pas compté comme connecté avant le code", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, pendingToken: "pending-1" } });
+    renderAuth();
+
+    await user.click(screen.getByTestId("login-btn"));
+
+    await waitFor(() => expect(screen.getByTestId("pending-token").textContent).toBe("pending-1"));
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("login : un échec n'envoie aucun événement", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockRejectedValueOnce(new Error("Identifiants invalides"));
+    renderAuth();
+
+    await user.click(screen.getByTestId("login-btn"));
+
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("false"));
+    expect(trackEvent).not.toHaveBeenCalled();
   });
 
   it("login : en cas d'échec, n'enregistre rien et repasse loading à false", async () => {

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AuthUser, TwoFactorRequired } from "../types";
+import { trackEvent } from "../utils/analytics";
 import { SESSION_HINT_KEY } from "../utils/sessionLocale";
 import { AuthContext } from "./auth";
 
@@ -106,7 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await api.post("/auth/login", { email, password });
       if (data.twoFactorRequired) return data as TwoFactorRequired;
-      return installSession(data);
+      const connecte = installSession(data);
+      trackEvent({ nom: "login", params: { method: "password" } });
+      return connecte;
     } finally {
       setLoading(false);
     }
@@ -116,7 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/2fa/verify-login", { pendingToken, code });
-      return installSession(data);
+      const connecte = installSession(data);
+      trackEvent({ nom: "login", params: { method: "password" } });
+      return connecte;
     } finally {
       setLoading(false);
     }
@@ -136,7 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Le code de parrainage n'a d'effet qu'à la création du compte (voir loginWithGoogle côté serveur).
       const { data } = await api.post("/auth/google", referralCode ? { credential, referralCode } : { credential });
       if (data.twoFactorRequired) return data as TwoFactorRequired;
-      return installSession(data);
+      const connecte = installSession(data);
+      trackEvent({ nom: "login", params: { method: "google" } });
+      return connecte;
     } finally {
       setLoading(false);
     }
@@ -149,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // `email` ne fait plus partie de la réponse : le renvoyer permettait de
       // distinguer une adresse libre d'une adresse déjà prise, et donc de
       // tester qui a un compte (voir registerManager côté serveur).
+      trackEvent({ nom: "sign_up", params: { method: "email" } });
       return data as { pendingVerification: boolean };
     } finally {
       setLoading(false);

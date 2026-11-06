@@ -67,6 +67,21 @@ export function _resetAnalyticsStateForTests(): void {
   chargee = false;
 }
 
+/**
+ * Événements de conversion envoyés à GA4, avec les noms RECOMMANDÉS par Google (reconnus tels quels dans ses rapports).
+ * Aucun ne porte de donnée personnelle : ni e-mail, ni nom, ni téléphone, ni identifiant de compte.
+ */
+export type EvenementAnalytics =
+  | { nom: "sign_up"; params: { method: "email" } }
+  | { nom: "login"; params: { method: "password" | "google" } }
+  | { nom: "generate_lead"; params: { lead_type: string } };
+
+/** Signale une conversion à GA4 — sans effet tant que le visiteur n'a pas accepté la mesure (script non chargé). */
+export function trackEvent(evenement: EvenementAnalytics): void {
+  if (!chargee || !window.gtag) return;
+  window.gtag("event", evenement.nom, evenement.params);
+}
+
 /** Signale une vue de page à GA4 — sans effet tant que loadGoogleAnalytics() n'a pas chargé le script. */
 export function trackPageView(path: string): void {
   if (!chargee || !window.gtag) return;

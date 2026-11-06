@@ -4,12 +4,16 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import type { Listing } from "../types";
+import { trackEvent } from "../utils/analytics";
 import VitrineListingPage from "./VitrineListingPage";
 
 vi.mock("../api/client", async () => {
   const actual = await vi.importActual<typeof import("../api/client")>("../api/client");
   return { ...actual, api: { get: vi.fn(), post: vi.fn() } };
 });
+
+// Le suivi ne part qu'avec le consentement du visiteur : on vérifie ici ce que la page demande d'envoyer.
+vi.mock("../utils/analytics", async (importOriginal) => ({ ...(await importOriginal<typeof import("../utils/analytics")>()), trackEvent: vi.fn() }));
 
 const mockedApi = vi.mocked(api, { deep: true });
 
@@ -52,6 +56,7 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();
+    vi.mocked(trackEvent).mockClear();
     localStorage.removeItem("immo.favoris-vitrine");
   });
 
@@ -114,6 +119,9 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
     });
 
     await waitFor(() => expect(screen.getByText(/Votre demande a bien été envoyée/)).toBeInTheDocument());
+    // Une conversion est signalée, avec le seul type de demande : ni nom, ni e-mail, ni téléphone du prospect.
+    expect(trackEvent).toHaveBeenCalledWith({ nom: "generate_lead", params: { lead_type: "visit" } });
+    expect(JSON.stringify(vi.mocked(trackEvent).mock.calls)).not.toContain("moussa@example.com");
   });
 
   it("propose de joindre l'agence directement, seulement par les moyens qu'elle a renseignés", async () => {
