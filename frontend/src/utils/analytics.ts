@@ -34,8 +34,12 @@ export function loadGoogleAnalytics(): void {
   document.head.appendChild(script);
 
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = function gtag(...args: unknown[]) {
-    window.dataLayer!.push(args);
+  // `arguments` et NON un tableau (`...args`) : gtag.js ne reconnaît dans dataLayer que l'objet `Arguments` que pousse le
+  // snippet officiel de Google. Un tableau est ignoré en silence : le script se charge, mais « js », « consent »,
+  // « config » et « event » ne sont jamais exécutés, et GA4 ne reçoit aucune visite.
+  window.gtag = function gtag() {
+    // oxlint-disable-next-line prefer-rest-params
+    window.dataLayer!.push(arguments);
   };
   window.gtag("js", new Date());
   // Sans signal explicite, le Consent Mode de Google considère par défaut la
