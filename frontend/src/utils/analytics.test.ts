@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { _resetAnalyticsStateForTests, isAnalyticsConfigured, loadGoogleAnalytics, trackEvent, trackPageView } from "./analytics";
+import { _resetAnalyticsStateForTests, estPagePublique, isAnalyticsConfigured, loadGoogleAnalytics, trackEvent, trackPageView } from "./analytics";
 
 /** Les appels poussés dans dataLayer sont des objets Arguments : on les relit comme des tableaux pour les comparer. */
 function lireAppels(): unknown[][] {
@@ -12,6 +12,7 @@ describe("analytics", () => {
     document.head.querySelectorAll("script[src*='googletagmanager']").forEach((el) => el.remove());
     delete window.gtag;
     delete window.dataLayer;
+    delete (window as unknown as Record<string, unknown>)["ga-disable-G-TEST123"];
   });
 
   afterEach(() => {
@@ -111,5 +112,68 @@ describe("analytics", () => {
       ["event", "generate_lead", { lead_type: "visit" }],
       ["event", "login", { method: "google" }],
     ]);
+  });
+
+  describe("site public seulement", () => {
+    it("distingue le site public des pages de l'application", () => {
+      for (const chemin of ["/", "/landing", "/login", "/inscription", "/mot-de-passe-oublie", "/mentions-legales", "/cgu", "/confidentialite", "/vitrine", "/vitrine/annonces/abc"]) {
+        expect(estPagePublique(chemin), chemin).toBe(true);
+      }
+      for (const chemin of [
+        "/dashboard",
+        "/properties",
+        "/tenants",
+        "/invoices",
+        "/annonces",
+        "/agency",
+        "/portail",
+        "/portail/paiements",
+        "/proprietaire/crg",
+        "/proprietaires/abc/crg",
+        "/admin/gestionnaires/abc",
+        "/pays",
+        "/reinitialiser-mot-de-passe",
+        "/verifier-email",
+        "/vitrine-privee",
+        "/loginx",
+      ]) {
+        expect(estPagePublique(chemin), chemin).toBe(false);
+      }
+    });
+
+    it("n'envoie aucune vue de page de l'application, et coupe toute la mesure de Google pour cette page", () => {
+      vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+      loadGoogleAnalytics();
+      const avant = window.dataLayer!.length;
+
+      trackPageView("/dashboard");
+
+      expect(window.dataLayer!.length).toBe(avant);
+      expect((window as unknown as Record<string, unknown>)["ga-disable-G-TEST123"]).toBe(true);
+    });
+
+    it("rétablit la mesure en revenant sur une page publique", () => {
+      vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+      loadGoogleAnalytics();
+      trackPageView("/dashboard");
+      const avant = window.dataLayer!.length;
+
+      trackPageView("/vitrine");
+
+      expect((window as unknown as Record<string, unknown>)["ga-disable-G-TEST123"]).toBe(false);
+      expect(lireAppels().slice(avant)).toEqual([["event", "page_view", { page_path: "/vitrine" }]]);
+    });
+
+    it("démarre coupé quand la première page affichée est une page de l'application", () => {
+      vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+      window.history.pushState({}, "", "/dashboard");
+      try {
+        loadGoogleAnalytics();
+        expect((window as unknown as Record<string, unknown>)["ga-disable-G-TEST123"]).toBe(true);
+        expect(lireAppels().some((appel) => appel[0] === "event")).toBe(false);
+      } finally {
+        window.history.pushState({}, "", "/");
+      }
+    });
   });
 });
