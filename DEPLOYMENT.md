@@ -111,6 +111,7 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
 1. **Add New → Project** → même dépôt GitHub, mais **Root Directory** : `frontend`.
 2. Vercel détecte automatiquement Vite (zero-config).
 3. Variable d'environnement : `VITE_API_URL` = l'URL du backend déployé à l'étape 3.1 (ex: `https://gestion-immo-api.vercel.app`).
+   **Production : mettez le backend sur un sous-domaine du site** (ex. `https://api.immoplatformpro.com`, à ajouter au projet backend dans *Settings → Domains*), et non sur son adresse `*.vercel.app`. La session voyage dans un cookie ; sur un autre domaine que le site, ce cookie est un cookie « tiers » que la navigation privée, Safari (donc tous les iPhone), Firefox en protection stricte et Brave refusent : la connexion semble réussir puis renvoie à la page de connexion. Sur un sous-domaine du même site, le cookie est accepté partout. Gardez l'adresse `*.vercel.app` pour les aperçus (variable `VITE_API_URL` limitée à *Preview*) et pour l'application mobile.
 4. Déployez. Notez l'URL générée (ex: `https://gestion-immo.vercel.app`).
 
 ### 3.3 Boucler la boucle CORS
