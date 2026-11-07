@@ -344,7 +344,11 @@ async function main() {
     fs.rmSync(fichierCompte, { force: true });
     lancer(process.execPath, [path.join(__dirname, "smtp-sink.js")], { env: { ...process.env, DELAI_MS: String(DELAI_SMTP_MS), SINK_COMPTE: fichierCompte, SINK_PORT: "2525" } });
     await dormir(800);
-    await sql.unsafe("UPDATE invoices SET due_soon_reminder_sent_at = NULL WHERE status IN ('PENDING','LATE')");
+    // La tâche n'envoie un avis qu'aux factures dont l'échéance tombe dans les prochains jours (RENT_DUE_SOON_DAYS) : selon le
+    // jour du mois où l'on lance la simulation, les échéances du jeu de données sont déjà passées ou encore lointaines, et le
+    // test ne trouvait rien à envoyer (0 e-mail le 7 du mois). On place donc toutes les échéances impayées à demain, pour
+    // que la mesure ne dépende pas de la date du jour.
+    await sql.unsafe("UPDATE invoices SET due_soon_reminder_sent_at = NULL, due_date = date_trunc('day', now()) + interval '1 day 12 hours' WHERE status IN ('PENDING','LATE')");
     const [{ eligibles }] = await sql`SELECT count(*)::int AS eligibles FROM invoices WHERE status IN ('PENDING','LATE')`;
     const portCron = 4150;
     demarrerInstance(portCron, {
