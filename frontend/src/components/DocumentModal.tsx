@@ -79,20 +79,22 @@ export default function DocumentModal({ title, docUrl, onClose }: DocumentModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
       <div {...dialogue} className="flex h-[85vh] w-full max-w-3xl flex-col overflow-hidden border-2 border-ink-900 bg-white">
-        <div className="flex items-center justify-between gap-3 border-b border-ink-900 bg-ink-900 px-6 py-4 text-white">
+        <div className="flex items-center justify-between gap-3 border-b border-ink-900 bg-ink-900 px-4 py-3 text-white sm:px-6 sm:py-4">
           <div className="min-w-0">
-            <h3 id="document-title" className="text-base font-bold">
+            <h3 id="document-title" className="break-words text-sm font-bold sm:text-base">
               {title}
             </h3>
-            <p className="text-xs text-white/85">{erreurImpression ? t("components.documentModal.printFailed") : t("components.documentModal.subtitle")}</p>
+            {/* Sur téléphone le sous-titre est masqué : il mangeait la moitié de l'écran. Le message d'échec d'impression, lui, reste toujours visible. */}
+            <p className={`text-xs text-white/85 ${erreurImpression ? "" : "hidden sm:block"}`}>{erreurImpression ? t("components.documentModal.printFailed") : t("components.documentModal.subtitle")}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={handlePrint}
               disabled={!htmlContent}
-              className="inline-flex cursor-pointer items-center gap-1.5 border border-white bg-white px-3.5 py-2 text-xs font-semibold text-ink-900 transition-colors hover:bg-slate-100 disabled:opacity-50"
+              aria-label={t("components.documentModal.print")}
+              className="inline-flex cursor-pointer items-center gap-1.5 border border-white bg-white px-2.5 py-2 text-xs font-semibold text-ink-900 transition-colors hover:bg-slate-100 disabled:opacity-50 sm:px-3.5"
             >
-              <Printer size={14} aria-hidden="true" /> {t("components.documentModal.print")}
+              <Printer size={14} aria-hidden="true" /> <span className="hidden sm:inline">{t("components.documentModal.print")}</span>
             </button>
             <button onClick={onClose} className="cursor-pointer p-2 text-white/80 hover:text-white" aria-label={t("common.actions.close")}>
               <X size={18} aria-hidden="true" />
