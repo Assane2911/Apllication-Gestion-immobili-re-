@@ -255,6 +255,8 @@ export interface Contract {
   depositDeductions?: DepositDeduction[] | null;
   /** Date à laquelle la restitution du dépôt a été enregistrée, ou `null`/absent. */
   depositRefundedAt?: string | null;
+  /** Congé en cours sur ce bail (voir LeaseNotice), ou `null`/absent. */
+  activeNotice?: ActiveNotice | null;
   property?: Property;
   tenant?: Tenant;
   invoices?: Invoice[];
@@ -579,6 +581,8 @@ export interface DashboardStats {
   monthlyExpectedByCurrency: Record<string, number>;
   openIssues: number;
   lateInvoices: number;
+  /** Congés en cours sur des baux en cours : les sorties à préparer. Absent sur une ancienne réponse. */
+  upcomingExits?: number;
   // Mois (YYYY-MM) -> devise -> montant, même raison.
   revenueByMonth: Record<string, Record<string, number>>;
   expensesByMonth: Record<string, Record<string, number>>;
@@ -817,4 +821,52 @@ export interface FormalNotice {
   guarantorsNotified: number;
   createdAt: string;
   emailEnvoye?: boolean;
+}
+
+/** Qui donne le congé, et comment il a été remis : la plateforme enregistre, elle ne notifie pas. */
+export type LeaseNoticeGivenBy = "TENANT" | "LANDLORD";
+export type LeaseNoticeDeliveryMode = "BAILIFF" | "REGISTERED_MAIL" | "HAND_DELIVERY" | "EMAIL" | "OTHER";
+export type LeaseNoticePeriodUnit = "DAYS" | "MONTHS";
+
+/** Résumé du congé en cours, joint à la liste et au détail des baux. */
+export interface ActiveNotice {
+  id: string;
+  givenBy: LeaseNoticeGivenBy;
+  deliveryMode: LeaseNoticeDeliveryMode;
+  servedAt: string;
+  exitDate: string;
+}
+
+/** Un congé enregistré sur un bail (GET /contracts/:id/notices). */
+export interface LeaseNotice {
+  id: string;
+  contractId: string;
+  givenBy: LeaseNoticeGivenBy;
+  deliveryMode: LeaseNoticeDeliveryMode;
+  /** Date de signification ou de réception : le point de départ du préavis. */
+  servedAt: string;
+  periodValue: number;
+  periodUnit: LeaseNoticePeriodUnit;
+  exitDate: string;
+  bailiffName: string | null;
+  actReference: string | null;
+  reason: string | null;
+  /** Lien temporaire vers le scan du document remis au locataire, ou `null`. */
+  documentUrl: string | null;
+  status: "ACTIVE" | "WITHDRAWN";
+  withdrawnAt: string | null;
+  createdAt: string;
+}
+
+/** Où en est la sortie : états des lieux de sortie et restitution du dépôt. */
+export interface ExitSteps {
+  etatDesLieuxDeSortie: "NONE" | "DRAFT" | "COMPLETED";
+  depotRestitue: boolean;
+}
+
+export interface LeaseNoticesResponse {
+  conges: LeaseNotice[];
+  etapes: ExitSteps | null;
+  /** Factures non annulées déjà émises après le mois de la sortie prévue. */
+  facturesApresSortie: number;
 }

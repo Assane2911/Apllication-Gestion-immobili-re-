@@ -4,9 +4,10 @@ import { z } from "zod";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { contractCotenants, contractGuarantors, contracts, inspections, invoices, issueReports, properties, tenants } from "../db/schema";
+import { contractCotenants, contractGuarantors, contracts, inspections, invoices, issueReports, leaseNotices, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { depositRefundEmail, sendEmail } from "../services/email.service";
+import { congesActifsParBail } from "../services/conge.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
 import { colocatairesDuBail } from "./cotenant.controller";
 import { bauxDuLocataire } from "../services/colocation.service";
@@ -160,8 +161,10 @@ async function withRelations(contractId: string) {
   const scannedContractUrl = await resolveScannedUrl(row.contract.scannedContractUrl);
   const guarantors = await db.select().from(contractGuarantors).where(eq(contractGuarantors.contractId, contractId));
   const cotenants = await colocatairesDuBail(contractId);
+  const activeNotice = (await congesActifsParBail([contractId])).get(contractId) ?? null;
   return {
     ...parseDepositDeductions(row.contract),
+    activeNotice,
     scannedContractUrl,
     property: row.property,
     tenant: row.tenant,
@@ -213,9 +216,12 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
           .where(inArray(contractCotenants.contractId, ids))
       : [];
 
+  const congesParContrat = await congesActifsParBail(ids);
+
   const items = await Promise.all(
     rows.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
       ...parseDepositDeductions(r.contract),
+      activeNotice: congesParContrat.get(r.contract.id) ?? null,
       scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
       property: r.property,
       tenant: r.tenant,
@@ -579,6 +585,9 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
     .where(eq(issueReports.contractId, req.params.id));
 
   const fichiersANettoyer: (string | null | undefined)[] = [existing.scannedContractUrl];
+  // Les congés disparaissent aussi en cascade : leurs scans (acte d'huissier, lettre) suivent.
+  const conges = await db.select({ documentUrl: leaseNotices.documentUrl }).from(leaseNotices).where(eq(leaseNotices.contractId, req.params.id));
+  for (const conge of conges) fichiersANettoyer.push(conge.documentUrl);
   for (const signalement of signalements) {
     fichiersANettoyer.push(signalement.photoUrl);
     // additionalPhotos est un tableau JSON stocké en texte : une valeur

@@ -42,6 +42,13 @@ describe("actionsATraiter", () => {
     expect(actionsATraiter(stats())).toEqual([]);
   });
 
+  it("signale les sorties à préparer (congés en cours), sans les dire urgentes, après les impayés et les incidents", () => {
+    const actions = actionsATraiter(stats({ lateInvoices: 1, openIssues: 1, upcomingExits: 2 }));
+    expect(actions.map((a) => a.cle)).toEqual(["late", "issues", "exits"]);
+    expect(actions[2]).toEqual({ cle: "exits", compte: 2, lien: "/contracts", urgent: false });
+    expect(actionsATraiter(stats({ upcomingExits: 0 }))).toEqual([]);
+  });
+
   it("range les urgences avant les informations", () => {
     const actions = actionsATraiter(
       stats({
