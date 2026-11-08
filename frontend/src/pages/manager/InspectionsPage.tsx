@@ -621,6 +621,7 @@ export default function InspectionsPage() {
       {signingInspection && (
         <SignatureModal
           signUrl={`/inspections/${signingInspection.id}/sign`}
+          objet="etatDesLieux"
           title={t("manager.inspections.title") + " - " + (signingInspection.property?.title || "")}
           onSuccess={() => {
             setSigningInspection(null);

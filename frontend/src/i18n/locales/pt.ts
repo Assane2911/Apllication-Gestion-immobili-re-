@@ -1086,6 +1086,8 @@ const pt: TranslationSchema = {
       title: "Assinatura eletrónica do contrato",
       instructions:
         "Trace a sua assinatura com o dedo ou o rato no quadro abaixo. Ao confirmar, atesta a exatidão e a assinatura legal do contrato de arrendamento.",
+      titleInspection: "Assinatura eletrónica da vistoria",
+      instructionsInspection: "Trace a sua assinatura com o dedo ou o rato na caixa abaixo. Ao validar, atesta que a vistoria é exata e assina-a.",
       signHere: "Assine aqui",
       clear: "Limpar",
       validate: "Confirmar a minha assinatura",

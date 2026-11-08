@@ -1086,6 +1086,8 @@ const es: TranslationSchema = {
       title: "Firma electrónica del contrato",
       instructions:
         "Traza tu firma con el dedo o el ratón en el recuadro de abajo. Al validar, certificas la exactitud y la firma legal del contrato de alquiler.",
+      titleInspection: "Firma electrónica del inventario",
+      instructionsInspection: "Trace su firma con el dedo o el ratón en el recuadro de abajo. Al validar, certifica que el inventario es exacto y lo firma.",
       signHere: "Firma aquí",
       clear: "Borrar",
       validate: "Validar mi firma",

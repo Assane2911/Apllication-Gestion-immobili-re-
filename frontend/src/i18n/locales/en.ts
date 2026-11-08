@@ -1086,6 +1086,8 @@ const en: TranslationSchema = {
       title: "Electronic lease signature",
       instructions:
         "Draw your signature with your finger or mouse in the box below. By confirming, you attest to the accuracy and legal signature of the lease agreement.",
+      titleInspection: "Electronic signature of the inspection report",
+      instructionsInspection: "Draw your signature with your finger or mouse in the box below. By confirming, you attest that the inspection report is accurate and you sign it.",
       signHere: "Sign here",
       clear: "Clear",
       validate: "Confirm my signature",

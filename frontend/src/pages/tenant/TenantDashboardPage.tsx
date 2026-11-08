@@ -294,14 +294,15 @@ export default function TenantDashboardPage() {
                   <p className="mt-1 font-mono text-[11px] text-slate-600">{t("tenant.dashboard.progress.elapsed", { pct })}</p>
                 </div>
 
-                {/* La prochaine échéance de loyer, et l'historique des règlements. */}
+                {/* La prochaine échéance de loyer, et l'historique des règlements. Le montant est ce qu'il RESTE à payer : la liste des
+                    baux ne porte pas `resteDu` (seule celle des factures le calcule), donc un loyer déjà réglé en partie se déduit ici. */}
                 <div className="mt-5 flex flex-wrap items-stretch gap-px border border-slate-300 bg-slate-300">
                   <div className="min-w-48 flex-1 bg-slate-50 p-3.5">
                     <p className={ETIQUETTE}>{t("tenant.dashboard.nextRent.title")}</p>
                     {prochaine && ecartEcheance !== null ? (
                       <>
                         <p className="mt-1.5 text-sm font-bold tabular-nums text-slate-900">
-                          {`${formaterJour(prochaine.dueDate, i18n.language, { day: "numeric", month: "long", year: "numeric" })} · ${formatMoney(prochaine.resteDu ?? prochaine.amount, prochaine.currency ?? c.currency)}`}
+                          {`${formaterJour(prochaine.dueDate, i18n.language, { day: "numeric", month: "long", year: "numeric" })} · ${formatMoney(prochaine.resteDu ?? Math.round(Math.max(0, prochaine.amount - (prochaine.amountPaid ?? 0)) * 100) / 100, prochaine.currency ?? c.currency)}`}
                         </p>
                         <p className={`mt-0.5 font-mono text-[11px] font-semibold ${ecartEcheance < 0 ? "text-orange-700" : "text-slate-700"}`}>
                           {ecartEcheance < 0
@@ -516,6 +517,7 @@ export default function TenantDashboardPage() {
       {signingInspection && (
         <SignatureModal
           signUrl={`/inspections/${signingInspection.id}/sign`}
+          objet="etatDesLieux"
           title={t("tenant.dashboard.inspectionDocTitle", { property: signingInspection.property?.title })}
           onSuccess={() => {
             setSigningInspection(null);

@@ -320,6 +320,21 @@ describe("TenantDashboardPage", () => {
       expect(await screen.findByText("en retard de 5 jour(s)")).toBeInTheDocument();
     });
 
+    it("annonce le reste à payer d'un loyer réglé en partie, pas son montant complet", async () => {
+      // La liste des baux ne porte pas `resteDu` : seul `amountPaid` permet de savoir ce qu'il reste.
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ dueDate: "2026-07-27T00:00:00.000Z", status: "LATE", amountPaid: 200 })] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+      expect(await screen.findByText(/27 juillet 2026 · 300 €/)).toBeInTheDocument();
+    });
+
+    it("annonce le montant complet d'un loyer sans aucun paiement", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ dueDate: "2026-07-27T00:00:00.000Z", status: "LATE" })] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+      expect(await screen.findByText(/27 juillet 2026 · 500 €/)).toBeInTheDocument();
+    });
+
     it("résume les loyers réglés, sans compter les factures annulées", async () => {
       mockedApi.get.mockResolvedValueOnce({
         data: [
