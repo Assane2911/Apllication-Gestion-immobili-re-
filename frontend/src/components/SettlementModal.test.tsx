@@ -9,7 +9,7 @@ vi.mock("../api/client", async () => {
   const actual = await vi.importActual<typeof import("../api/client")>("../api/client");
   return { ...actual, api: { get: vi.fn(), post: vi.fn(), put: vi.fn() } };
 });
-vi.mock("../context/CurrencyContext", () => ({
+vi.mock("../context/currency", () => ({
   useCurrency: () => ({ formatMoney: (m: number, d?: string | null) => `${m} ${d ?? ""}`.trim() }),
 }));
 const mockedApi = vi.mocked(api, { deep: true });

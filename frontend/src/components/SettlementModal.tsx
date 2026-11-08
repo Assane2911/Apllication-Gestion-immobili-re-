@@ -2,7 +2,7 @@ import { FileText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled } from "../api/client";
-import { useCurrency } from "../context/CurrencyContext";
+import { useCurrency } from "../context/currency";
 import type { Contract, LeaseSettlement, SettlementLastMonthMode, SettlementPreview } from "../types";
 import CadreModale from "./CadreModale";
 import DocumentModal from "./DocumentModal";
