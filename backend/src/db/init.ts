@@ -175,9 +175,28 @@ function estUnDelaiDeVerrou(err: unknown): boolean {
   );
 }
 
-/** Exécute des instructions de schéma dans UNE transaction, avec une attente de verrou bornée. */
+/**
+ * Clé du verrou consultatif qui fait passer les instances « une à la fois » pour toute instruction de schéma.
+ *
+ * Deux instances serverless qui démarrent ensemble lisent le même état du schéma (« cette table manque »), puis
+ * exécutent toutes les deux le même CREATE : la seconde échoue, soit en 23505 sur le catalogue (`pg_type_typname_nsp_index`,
+ * constaté en production au déploiement qui a ajouté la table des congés : une requête en erreur pour tout le démarrage),
+ * soit en « tuple concurrently updated ». Les migrations non essentielles absorbent cette erreur (voir
+ * estUneCourseDeDemarrage), mais la création d'une table interrompt le démarrage, et la requête en cours échoue avec elle.
+ *
+ * Avec ce verrou, la seconde instance attend la fin de la transaction de la première, puis rejoue son
+ * `CREATE … IF NOT EXISTS` qui, la table existant désormais, ne fait plus rien : il n'y a plus de course à absorber.
+ * C'est un verrou de TRANSACTION (`pg_advisory_xact_lock`) : libéré au COMMIT ou au ROLLBACK, jamais tenu par une
+ * connexion que le pooler garderait, donc sans effet sur les requêtes de l'application. L'attente est celle de
+ * `lock_timeout` (voir avecVerrouBorne) : si une autre instance tient le verrou trop longtemps, on abandonne comme pour une
+ * table verrouillée, et la migration est retentée au démarrage suivant.
+ */
+const CLE_VERROU_SCHEMA = "immoplatform:initDb:schema";
+
+/** Exécute des instructions de schéma dans UNE transaction, avec une attente de verrou bornée, une instance à la fois. */
 async function executerDdl(...requetes: SQL[]): Promise<void> {
   await avecVerrouBorne(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${CLE_VERROU_SCHEMA}))`);
     for (const requete of requetes) await tx.execute(requete);
   });
 }
