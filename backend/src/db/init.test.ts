@@ -392,3 +392,74 @@ describe("initDb : démarrages simultanés de plusieurs instances", () => {
     expect(erreurs.mock.calls.filter((a) => String(a[0]).includes("migration additive"))).toHaveLength(1);
   });
 });
+
+describe("initDb : verrou de démarrage entre instances", () => {
+  /** Les instructions émises, dans l'ordre, qui touchent au verrou consultatif ou au schéma. */
+  const pertinentes = (emises: string[]) => emises.filter((q) => /pg_advisory_xact_lock|SET LOCAL lock_timeout|\b(ALTER|CREATE|DROP)\b/i.test(q));
+
+  it("prend le verrou consultatif, dans la même transaction, avant chaque instruction de schéma", async () => {
+    await initDb();
+    await testDb.execute(sql`ALTER TABLE users DROP COLUMN suspension_reason`);
+    const emises = enregistrerInstructions();
+
+    await initDb();
+
+    const suite = pertinentes(emises);
+    const indexAjout = suite.findIndex((q) => /ADD COLUMN IF NOT EXISTS suspension_reason/i.test(q));
+    expect(indexAjout).toBeGreaterThan(1);
+    // Le délai de verrou d'abord (il borne aussi l'attente du verrou consultatif), le verrou, puis l'instruction.
+    expect(suite[indexAjout - 2]).toMatch(/SET LOCAL lock_timeout/i);
+    expect(suite[indexAjout - 1]).toMatch(/pg_advisory_xact_lock/i);
+  });
+
+  it("protège aussi la création d'une table, l'instruction qui interrompait le démarrage", async () => {
+    await initDb();
+    await testDb.execute(sql`DROP TABLE lease_notices`);
+    const emises = enregistrerInstructions();
+
+    await initDb();
+
+    const suite = pertinentes(emises);
+    const indexCreation = suite.findIndex((q) => /CREATE TABLE IF NOT EXISTS lease_notices/i.test(q));
+    expect(indexCreation).toBeGreaterThan(0);
+    expect(suite[indexCreation - 1]).toMatch(/pg_advisory_xact_lock/i);
+    const table = await testDb.execute(sql`SELECT to_regclass('public.lease_notices') AS t`);
+    const lignes = Array.isArray(table) ? table : ((table as { rows: Array<{ t: string | null }> }).rows ?? []);
+    expect((lignes as Array<{ t: string | null }>)[0].t).toBe("lease_notices");
+  });
+
+  it("ne prend aucun verrou quand le schéma est déjà à jour : un démarrage ordinaire ne fait la queue derrière personne", async () => {
+    await initDb();
+    const emises = enregistrerInstructions();
+
+    await initDb();
+
+    expect(emises.filter((q) => /pg_advisory_xact_lock/i.test(q))).toEqual([]);
+  });
+
+  it("une migration non essentielle absorbe toujours une course du catalogue, verrou ou non", async () => {
+    await initDb();
+    await testDb.execute(sql`DROP INDEX IF EXISTS users_team_owner_id_idx`);
+    const db = testDb as unknown as {
+      transaction: (fn: (tx: { execute: (q: unknown) => Promise<unknown> }) => Promise<unknown>) => Promise<unknown>;
+    };
+    const transaction = db.transaction.bind(db);
+    vi.spyOn(db, "transaction").mockImplementation((fn) =>
+      transaction((tx) =>
+        fn({
+          ...tx,
+          execute: (q: unknown) => {
+            if (texte(q).includes("CREATE INDEX IF NOT EXISTS users_team_owner_id_idx")) {
+              throw Object.assign(new Error("Failed query"), { cause: Object.assign(new Error("duplicate key"), { code: "23505", constraint_name: "pg_class_relname_nsp_index" }) });
+            }
+            return tx.execute(q);
+          },
+        })
+      )
+    );
+    const avertissement = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    await expect(initDb()).resolves.toBeUndefined();
+    expect(avertissement).toHaveBeenCalledWith(expect.stringContaining("déjà jouée par une autre instance"));
+  });
+});
