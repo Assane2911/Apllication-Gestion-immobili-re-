@@ -880,6 +880,41 @@ export const leaseNotices = pgTable(
   })
 );
 
+// --- Soldes de tout compte (état de sortie financier d'un bail) ---
+// Instantané figé à l'émission, comme une mise en demeure : le document reste celui qui a été remis, même si les factures ou le
+// dépôt changent ensuite. `balance` est signé : positif, la somme à restituer au locataire ; négatif, ce qu'il doit encore ;
+// nul, le compte est soldé. `details` (JSON) porte les lignes de loyer et les retenues sur le dépôt.
+export const leaseSettlements = pgTable(
+  "lease_settlements",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    managerId: text("manager_id").notNull(),
+    currency: text("currency").notNull().default("EUR"),
+    exitDate: timestamp("exit_date", { mode: "date" }).notNull(),
+    // "FULL" : le mois de la sortie est dû en entier ; "PRORATA" : seulement les jours occupés — contrainte CHECK en base
+    lastMonthMode: text("last_month_mode").notNull().default("FULL"),
+    depositAmount: doublePrecision("deposit_amount").notNull(),
+    deductionsTotal: doublePrecision("deductions_total").notNull().default(0),
+    // Part du dépôt déjà restituée au locataire quand l'émission a lieu (restitution enregistrée avant le solde).
+    depositRefunded: doublePrecision("deposit_refunded").notNull().default(0),
+    unpaidTotal: doublePrecision("unpaid_total").notNull().default(0),
+    creditTotal: doublePrecision("credit_total").notNull().default(0),
+    balance: doublePrecision("balance").notNull(),
+    details: text("details").notNull(),
+    emailSentAt: timestamp("email_sent_at", { mode: "date" }),
+    settledAt: timestamp("settled_at", { mode: "date" }),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    contractIdIdx: index("lease_settlements_contract_id_idx").on(table.contractId),
+    managerIdIdx: index("lease_settlements_manager_id_idx").on(table.managerId),
+  })
+);
+
 // --- Issue reports (signalements d'incidents avec photo) ---
 export const issueReports = pgTable(
   "issue_reports",

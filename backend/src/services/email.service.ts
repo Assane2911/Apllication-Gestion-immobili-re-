@@ -987,6 +987,46 @@ export function formalNoticeEmail(params: {
   };
 }
 
+/** Solde de tout compte adressé au locataire (le document est en pièce jointe). */
+export function settlementEmail(params: {
+  tenantName: string;
+  propertyTitle: string;
+  balance: number;
+  currency: string;
+  agencyName: string;
+  reference: string;
+}) {
+  const montant = escapeHtml(formaterMontant(Math.abs(params.balance), params.currency));
+  const sens = params.balance > 0 ? "restituer" : params.balance < 0 ? "devoir" : "solde";
+  const libelle = sens === "restituer" ? "Somme à vous restituer" : sens === "devoir" ? "Reste à régler" : "Compte soldé";
+  const phrase =
+    sens === "restituer"
+      ? "Après déduction de ce qui était dû, une somme vous revient."
+      : sens === "devoir"
+        ? "Après imputation du dépôt de garantie, il reste une somme à régler à l'agence."
+        : "Aucune somme n'est due de part ni d'autre.";
+  return {
+    subject: `Solde de tout compte — ${params.propertyTitle} (réf. ${params.reference})`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 580px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Solde de tout compte</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #cbd5e1;">${escapeHtml(params.agencyName)} • ${escapeHtml(params.propertyTitle)}</p>
+        </div>
+        <div style="padding: 24px 28px; color: #334155; line-height: 1.6;">
+          <p style="font-size: 15px; margin-top: 0;">Bonjour <strong>${escapeHtml(params.tenantName)}</strong>,</p>
+          <p>Vous trouverez en pièce jointe le solde de tout compte de votre bail (réf. ${escapeHtml(params.reference)}), qui détaille les loyers, le dépôt de garantie et les retenues éventuelles.</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">${libelle}</span><br>
+            <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${montant}</span><br>
+            <span style="font-size: 12px; color: #64748b;">${phrase}</span>
+          </div>
+          <p style="font-size: 13px; color: #475569;">Pour toute question sur ce décompte, contactez votre agence.</p>
+        </div>
+      </div>`,
+  };
+}
+
 /** Copie de la mise en demeure adressée au garant du locataire. */
 export function guarantorFormalNoticeEmail(params: {
   guarantorName: string;
