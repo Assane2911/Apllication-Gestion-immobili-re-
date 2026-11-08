@@ -1240,6 +1240,7 @@ const fr = {
       lineDue: "{{month}} : {{amount}} restant dus",
       lineCredit: "{{month}} : {{amount}} de trop-perçu",
       depositNotRefunded: "La restitution du dépôt n'est pas encore enregistrée : aucune retenue n'est comptée. Enregistrez-la d'abord pour que les retenues figurent au solde.",
+      depositAlreadyRefunded: "Le dépôt a déjà été rendu au locataire : les loyers impayés restent donc dus en totalité. Pour les compenser avec le dépôt, ils doivent être enregistrés comme retenue au moment de la restitution.",
       noExitInspection: "Aucun état des lieux de sortie finalisé pour ce bail.",
       invoicesAfterExit: "{{count}} facture(s) postérieure(s) au mois de sortie sont ignorées : annulez-les si elles ne sont pas dues.",
       sendEmail: "Envoyer le document par e-mail au locataire (PDF joint)",

@@ -1242,6 +1242,7 @@ const pt: TranslationSchema = {
       lineDue: "{{month}}: {{amount}} em dívida",
       lineCredit: "{{month}}: {{amount}} pagos a mais",
       depositNotRefunded: "A devolução da caução ainda não está registada: nenhuma retenção é contada. Registe-a primeiro para que as retenções constem do saldo.",
+      depositAlreadyRefunded: "A caução já foi devolvida ao inquilino, pelo que as rendas em falta continuam devidas na totalidade. Para as compensar com a caução, têm de ser registadas como retenção no momento da devolução.",
       noExitInspection: "Nenhuma vistoria de saída finalizada para este contrato.",
       invoicesAfterExit: "{{count}} fatura(s) posterior(es) ao mês da saída são ignoradas: anule-as se não forem devidas.",
       sendEmail: "Enviar o documento por e-mail ao inquilino (PDF anexado)",
