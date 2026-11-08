@@ -82,6 +82,19 @@ describe("SettlementModal", () => {
     expect(screen.getByText(/restitution du dépôt n'est pas encore enregistrée/)).toBeInTheDocument();
   });
 
+  it("explique que les loyers impayés ne se compensent avec le dépôt que s'ils sont saisis comme retenue, quand le dépôt est déjà rendu", async () => {
+    brancher({ preview: apercu({ depositRefunded: 850, deductionsTotal: 150, balance: -500 }) });
+    render(<SettlementModal contract={bail} onChange={vi.fn()} onClose={vi.fn()} />);
+    expect(await screen.findByText(/Le dépôt a déjà été rendu au locataire/)).toBeInTheDocument();
+  });
+
+  it("n'affiche pas cette explication tant que le dépôt n'a pas été rendu", async () => {
+    brancher();
+    render(<SettlementModal contract={bail} onChange={vi.fn()} onClose={vi.fn()} />);
+    await screen.findByText("500 EUR à restituer au locataire");
+    expect(screen.queryByText(/Le dépôt a déjà été rendu au locataire/)).not.toBeInTheDocument();
+  });
+
   it("recalcule avec le prorata quand le gestionnaire le choisit", async () => {
     const user = userEvent.setup();
     brancher();

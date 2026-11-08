@@ -1242,6 +1242,7 @@ const es: TranslationSchema = {
       lineDue: "{{month}}: {{amount}} pendientes",
       lineCredit: "{{month}}: {{amount}} pagados de más",
       depositNotRefunded: "La devolución de la fianza aún no está registrada: no se cuenta ninguna retención. Regístrela primero para que las retenciones figuren en el saldo.",
+      depositAlreadyRefunded: "La fianza ya se ha devuelto al inquilino, por lo que los alquileres impagados siguen debiéndose por completo. Para compensarlos con la fianza, deben registrarse como retención en el momento de la devolución.",
       noExitInspection: "Ningún inventario de salida finalizado para este contrato.",
       invoicesAfterExit: "{{count}} factura(s) posterior(es) al mes de salida se ignoran: anúlelas si no se deben.",
       sendEmail: "Enviar el documento por correo al inquilino (PDF adjunto)",

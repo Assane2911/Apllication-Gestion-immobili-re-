@@ -1242,6 +1242,7 @@ const en: TranslationSchema = {
       lineDue: "{{month}}: {{amount}} still due",
       lineCredit: "{{month}}: {{amount}} overpaid",
       depositNotRefunded: "The deposit refund is not recorded yet: no deduction is counted. Record it first so deductions appear in the balance.",
+      depositAlreadyRefunded: "The deposit has already been returned to the tenant, so the unpaid rent remains due in full. To offset it against the deposit, it must be recorded as a deduction when the deposit is refunded.",
       noExitInspection: "No finalised exit inspection for this lease.",
       invoicesAfterExit: "{{count}} invoice(s) after the exit month are ignored: cancel them if they are not due.",
       sendEmail: "Email the document to the tenant (PDF attached)",

@@ -227,6 +227,11 @@ export default function SettlementModal({ contract, onChange, onClose }: Settlem
                   {t("components.settlementModal.depositNotRefunded")}
                 </p>
               )}
+              {apercu.depositRefunded > 0 && apercu.unpaidTotal > 0 && (
+                <p role="note" className={AVIS}>
+                  {t("components.settlementModal.depositAlreadyRefunded")}
+                </p>
+              )}
               {!apercu.etatDesLieuxDeSortie && (
                 <p role="note" className={AVIS}>
                   {t("components.settlementModal.noExitInspection")}
