@@ -1084,6 +1084,8 @@ const fr = {
       title: "Signature électronique du bail",
       instructions:
         "Tracez votre signature au doigt ou à la souris dans le cadre ci-dessous. En validant, vous attestez l'exactitude et la signature légale du contrat de bail.",
+      titleInspection: "Signature électronique de l'état des lieux",
+      instructionsInspection: "Tracez votre signature au doigt ou à la souris dans le cadre ci-dessous. En validant, vous attestez l'exactitude de l'état des lieux et vous le signez.",
       signHere: "Signez ici",
       clear: "Effacer",
       validate: "Valider ma signature",

@@ -8,11 +8,13 @@ interface SignatureModalProps {
   /** Chemin complet de l'endpoint de signature (ex: `/contracts/${id}/sign`, `/inspections/${id}/sign`). */
   signUrl: string;
   title: string;
+  /** Ce qui est signé : le bail (par défaut) ou un état des lieux. Choisit le titre et le texte de la fenêtre. */
+  objet?: "bail" | "etatDesLieux";
   onSuccess: () => void;
   onClose: () => void;
 }
 
-export default function SignatureModal({ signUrl, title, onSuccess, onClose }: SignatureModalProps) {
+export default function SignatureModal({ signUrl, title, objet = "bail", onSuccess, onClose }: SignatureModalProps) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -111,8 +113,8 @@ export default function SignatureModal({ signUrl, title, onSuccess, onClose }: S
   }
 
   return (
-    <CadreModale titre={t("components.signatureModal.title")} titreId="signature-title" sousTitre={title} onClose={onClose} fermable={!saving} largeur="lg">
-      <p className="text-xs text-slate-600">{t("components.signatureModal.instructions")}</p>
+    <CadreModale titre={t(objet === "etatDesLieux" ? "components.signatureModal.titleInspection" : "components.signatureModal.title")} titreId="signature-title" sousTitre={title} onClose={onClose} fermable={!saving} largeur="lg">
+      <p className="text-xs text-slate-600">{t(objet === "etatDesLieux" ? "components.signatureModal.instructionsInspection" : "components.signatureModal.instructions")}</p>
 
       <div className="relative mt-3 flex touch-none items-center justify-center overflow-hidden border-2 border-dashed border-slate-400 bg-slate-50">
         <canvas
