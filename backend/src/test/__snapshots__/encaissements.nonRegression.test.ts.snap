@@ -467,6 +467,7 @@ exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > 
   },
   "totalProperties": 2,
   "totalTenants": 2,
+  "upcomingExits": 0,
 }
 `;
 

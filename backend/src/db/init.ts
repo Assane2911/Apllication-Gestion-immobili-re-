@@ -708,6 +708,37 @@ export async function initDb() {
     `);
     await creerIndex("formal_notices_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS formal_notices_contract_id_idx ON formal_notices (contract_id)`);
 
+    // Congés : préavis de départ d'un bail (après contracts : FK). Le congé est ENREGISTRÉ par le gestionnaire, il n'est
+    // pas notifié par l'application (voir schema.ts).
+    await creerTable("lease_notices", sql`
+      CREATE TABLE IF NOT EXISTS lease_notices (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        manager_id TEXT NOT NULL,
+        given_by TEXT NOT NULL CHECK (given_by IN ('TENANT', 'LANDLORD')),
+        delivery_mode TEXT NOT NULL CHECK (delivery_mode IN ('BAILIFF', 'REGISTERED_MAIL', 'HAND_DELIVERY', 'EMAIL', 'OTHER')),
+        served_at TIMESTAMP NOT NULL,
+        period_value INTEGER NOT NULL CHECK (period_value > 0),
+        period_unit TEXT NOT NULL CHECK (period_unit IN ('DAYS', 'MONTHS')),
+        exit_date TIMESTAMP NOT NULL,
+        bailiff_name TEXT,
+        act_reference TEXT,
+        reason TEXT,
+        document_url TEXT,
+        status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'WITHDRAWN')),
+        withdrawn_at TIMESTAMP,
+        created_by TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex("lease_notices_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS lease_notices_contract_id_idx ON lease_notices (contract_id)`);
+    await creerIndex("lease_notices_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS lease_notices_manager_id_idx ON lease_notices (manager_id)`);
+    await creerIndex("lease_notices_active_contract_unique", sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS lease_notices_active_contract_unique
+      ON lease_notices (contract_id) WHERE status = 'ACTIVE'
+    `);
+
     await creerIndex("invoices_contract_period_unique", sql`
       CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique
       ON invoices (contract_id, period_month, period_year)

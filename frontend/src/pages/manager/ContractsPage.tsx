@@ -13,6 +13,7 @@ import Pagination from "../../components/Pagination";
 import PaymentDayModal, { JOURS_ECHEANCE } from "../../components/PaymentDayModal";
 import CotenantsModal from "../../components/CotenantsModal";
 import GuarantorsModal from "../../components/GuarantorsModal";
+import LeaseNoticeModal from "../../components/LeaseNoticeModal";
 import { CLAUSE_CAUTION, clauseCautionIncomplete, insererClause } from "../../data/clauseCaution";
 import RentRevisionModal from "../../components/RentRevisionModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
@@ -175,6 +176,7 @@ export default function ContractsPage() {
   const [viewingAvenant, setViewingAvenant] = useState<string | null>(null);
   const [guarantorsContract, setGuarantorsContract] = useState<Contract | null>(null);
   const [cotenantsContract, setCotenantsContract] = useState<Contract | null>(null);
+  const [noticeContract, setNoticeContract] = useState<Contract | null>(null);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
@@ -256,6 +258,28 @@ export default function ContractsPage() {
     return (
       <button type="button" onClick={() => setRevisingRent({ id: c.id, rent: c.rent, currency: c.currency, endDate: c.endDate })} className="inline-block whitespace-nowrap text-left text-[11px] font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">
         {t("manager.contracts.reviseRent")}
+      </button>
+    );
+  }
+
+  /**
+   * Lien « Congé » sous le loyer d'un bail actif : ouvre l'enregistrement du congé (acte d'huissier, lettre…), ou, quand un congé
+   * est en cours, rappelle la date de sortie prévue.
+   */
+  function congeLien(c: Contract) {
+    if (c.status !== "ACTIVE") return null;
+    const enCours = c.activeNotice;
+    return (
+      <button
+        type="button"
+        onClick={() => setNoticeContract(c)}
+        className={`inline-block whitespace-nowrap text-left text-[11px] font-semibold border-b transition-colors ${
+          enCours ? "text-orange-800 border-orange-700/60 hover:border-orange-800" : "text-ink-900 border-ink-900/40 hover:border-orange-700 hover:text-orange-700"
+        }`}
+      >
+        {enCours
+          ? t("manager.contracts.noticeLinkActive", { date: new Date(enCours.exitDate).toLocaleDateString(i18n.language, { timeZone: "UTC" }) })
+          : t("manager.contracts.noticeLink")}
       </button>
     );
   }
@@ -858,6 +882,7 @@ export default function ContractsPage() {
                   <span className="whitespace-nowrap">{formatMoney(c.rent, c.currency)}</span>
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1.5 font-normal">
                     {revisionLien(c)}
+                    {congeLien(c)}
                     {garantsLien(c)}
                     {colocatairesLien(c)}
                     {modifierLien(c)}
@@ -1038,6 +1063,7 @@ export default function ContractsPage() {
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                 {revisionLien(c)}
+                    {congeLien(c)}
                 {garantsLien(c)}
                 {colocatairesLien(c)}
                 {modifierLien(c)}
@@ -1241,6 +1267,10 @@ export default function ContractsPage() {
           onChange={() => load()}
           onClose={() => setGuarantorsContract(null)}
         />
+      )}
+
+      {noticeContract && (
+        <LeaseNoticeModal contract={noticeContract} onChange={() => load()} onClose={() => setNoticeContract(null)} />
       )}
 
       {cotenantsContract && (

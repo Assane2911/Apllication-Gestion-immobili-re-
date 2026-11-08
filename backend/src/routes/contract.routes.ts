@@ -13,10 +13,18 @@ import {
 } from "../controllers/contract.controller";
 import { cancelRentRevision, createRentRevision, listRentRevisions, listRevisionsDue } from "../controllers/rentRevision.controller";
 import { createFormalNotice, listFormalNotices, listFormalNoticesDue } from "../controllers/formalNotice.controller";
+import {
+  createLeaseNotice,
+  listLeaseNotices,
+  listUpcomingExits,
+  updateLeaseNotice,
+  uploadLeaseNoticeDocument as envoyerDocumentDuConge,
+  withdrawLeaseNotice,
+} from "../controllers/leaseNotice.controller";
 import { addCotenant, listCotenants, removeCotenant } from "../controllers/cotenant.controller";
 import { createGuarantor, deleteGuarantor, listGuarantors, updateGuarantor } from "../controllers/guarantor.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
-import { uploadContractScan } from "../middleware/upload";
+import { uploadContractScan, uploadLeaseNoticeDocument } from "../middleware/upload";
 
 const router = Router();
 
@@ -28,6 +36,7 @@ router.get("/", listContracts);
 // Avant "/:id" : sinon « revisions-due » serait lu comme un identifiant de contrat.
 router.get("/revisions-due", listRevisionsDue);
 router.get("/formal-notices-due", listFormalNoticesDue);
+router.get("/exits", listUpcomingExits);
 router.get("/:id", getContract);
 router.post("/", createContract);
 router.post("/:id/scan", uploadContractScan.single("scan"), uploadScannedContract);
@@ -37,6 +46,11 @@ router.post("/:id/rent-revisions", createRentRevision);
 router.delete("/:id/rent-revisions/:revisionId", cancelRentRevision);
 router.get("/:id/formal-notices", listFormalNotices);
 router.post("/:id/formal-notices", createFormalNotice);
+router.get("/:id/notices", listLeaseNotices);
+router.post("/:id/notices", createLeaseNotice);
+router.put("/:id/notices/:noticeId", updateLeaseNotice);
+router.post("/:id/notices/:noticeId/withdraw", withdrawLeaseNotice);
+router.post("/:id/notices/:noticeId/document", uploadLeaseNoticeDocument.single("document"), envoyerDocumentDuConge);
 router.get("/:id/cotenants", listCotenants);
 router.post("/:id/cotenants", addCotenant);
 router.delete("/:id/cotenants/:cotenantId", removeCotenant);

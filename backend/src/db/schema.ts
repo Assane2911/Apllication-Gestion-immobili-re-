@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
@@ -834,6 +834,49 @@ export const formalNotices = pgTable(
   },
   (table) => ({
     contractIdIdx: index("formal_notices_contract_id_idx").on(table.contractId),
+  })
+);
+
+// --- Congés (préavis de départ d'un bail) ---
+// L'application ENREGISTRE un congé donné par un autre moyen (acte d'huissier, lettre recommandée, remise en main propre…) :
+// elle ne le notifie pas elle-même et ne fournit aucun acte. `servedAt` est la date de signification ou de réception, point
+// de départ du préavis ; `documentUrl` est le scan du document remis au locataire (stockage privé).
+export const leaseNotices = pgTable(
+  "lease_notices",
+  {
+    id: id(),
+    contractId: text("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    managerId: text("manager_id").notNull(),
+    // "TENANT" (congé du locataire) | "LANDLORD" (congé du bailleur) — contrainte CHECK en base, non modélisée ici
+    givenBy: text("given_by").notNull(),
+    // "BAILIFF" | "REGISTERED_MAIL" | "HAND_DELIVERY" | "EMAIL" | "OTHER" — contrainte CHECK en base
+    deliveryMode: text("delivery_mode").notNull(),
+    servedAt: timestamp("served_at", { mode: "date" }).notNull(),
+    // Durée du préavis saisie par le gestionnaire (aucune valeur par défaut : le droit applicable varie).
+    periodValue: integer("period_value").notNull(),
+    // "DAYS" | "MONTHS" — contrainte CHECK en base
+    periodUnit: text("period_unit").notNull(),
+    // Date de sortie prévue : calculée à partir des trois champs ci-dessus, puis modifiable par le gestionnaire.
+    exitDate: timestamp("exit_date", { mode: "date" }).notNull(),
+    bailiffName: text("bailiff_name"),
+    actReference: text("act_reference"),
+    reason: text("reason"),
+    documentUrl: text("document_url"),
+    // "ACTIVE" | "WITHDRAWN" — contrainte CHECK en base
+    status: text("status").notNull().default("ACTIVE"),
+    withdrawnAt: timestamp("withdrawn_at", { mode: "date" }),
+    createdBy: text("created_by"),
+    ...timestamps,
+  },
+  (table) => ({
+    contractIdIdx: index("lease_notices_contract_id_idx").on(table.contractId),
+    managerIdIdx: index("lease_notices_manager_id_idx").on(table.managerId),
+    // Un seul congé en cours par bail : retiré ou corrigé, jamais deux en parallèle.
+    oneActivePerContract: uniqueIndex("lease_notices_active_contract_unique")
+      .on(table.contractId)
+      .where(sql`${table.status} = 'ACTIVE'`),
   })
 );
 

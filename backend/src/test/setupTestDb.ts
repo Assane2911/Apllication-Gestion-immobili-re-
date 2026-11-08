@@ -136,6 +136,7 @@ const TABLES = [
   "invoice_payments",
   "rent_revisions",
   "formal_notices",
+  "lease_notices",
   "owner_payouts",
   "owner_fee_rates",
   "whatsapp_usage",

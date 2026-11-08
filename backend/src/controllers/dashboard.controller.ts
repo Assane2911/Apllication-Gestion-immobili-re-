@@ -1,7 +1,7 @@
 import { and, eq, gt, gte, inArray, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
-import { expenses, invoices, issueReports, properties, contracts as contractsTable, tenants } from "../db/schema";
+import { expenses, invoices, issueReports, leaseNotices, properties, contracts as contractsTable, tenants } from "../db/schema";
 import { developperFactures } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
@@ -110,6 +110,18 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
       : 0;
   const lateInvoices = lateInvoicesRows.length;
 
+  // Congés en cours sur des baux en cours : les sorties à préparer (état des lieux de sortie, solde, dépôt).
+  const upcomingExits =
+    managerContractIds.length > 0
+      ? (
+          await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(leaseNotices)
+            .innerJoin(contractsTable, eq(leaseNotices.contractId, contractsTable.id))
+            .where(and(eq(leaseNotices.status, "ACTIVE"), eq(contractsTable.status, "ACTIVE"), inArray(leaseNotices.contractId, managerContractIds)))
+        )[0].count
+      : 0;
+
   // Même principe que ci-dessus : regroupé par devise (mois -> devise -> montant)
   // plutôt que sommé à travers des devises différentes.
   const revenueByMonth: Record<string, Record<string, number>> = {};
@@ -149,6 +161,7 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     monthlyExpectedByCurrency,
     openIssues,
     lateInvoices,
+    upcomingExits,
     revenueByMonth,
     expensesByMonth,
   });

@@ -1,6 +1,7 @@
 import { and, eq, lt } from "drizzle-orm";
 import { db, DbClient } from "../db/client";
 import { contracts, invoices } from "../db/schema";
+import { dernierMoisFacturable } from "./conge.service";
 import { debutDeLaJournee } from "../utils/dates";
 import { echeanceDuMois, jourEcheanceDuContrat } from "../utils/jourEcheance";
 
@@ -165,9 +166,14 @@ export async function generateInvoicesForContract(
       .map((i: LigneExistante) => `${i.periodMonth}-${i.periodYear}`)
   );
 
+  // Congé en cours : plus aucun loyer après le mois de la sortie prévue (le mois de la sortie reste facturé en entier). Le
+  // gestionnaire retire le congé, ou repousse la sortie, si le locataire reste.
+  const dernierMois = await dernierMoisFacturable(contract.id, dbClient);
+
   while (cursor <= cutoff) {
     const periodMonth = cursor.getMonth() + 1;
     const periodYear = cursor.getFullYear();
+    if (dernierMois !== null && periodYear * 12 + (periodMonth - 1) > dernierMois) break;
     // new Date(year, month, day) déborde silencieusement sur le mois suivant
     // quand `day` dépasse le nombre de jours du mois visé (ex: un bail
     // démarrant le 31 janvier produisait une échéance "Février" au 3 mars).

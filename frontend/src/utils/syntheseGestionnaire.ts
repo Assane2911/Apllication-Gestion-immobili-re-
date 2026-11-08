@@ -6,7 +6,7 @@ import { csvEscape, csvMontant, CSV_BOM } from "./csv";
  * devise par devise, et l'export des six mois. Aucune addition entre devises : chaque monnaie reste sur sa ligne.
  */
 
-export type CleAction = "late" | "issues" | "vacant" | "maintenance" | "remaining";
+export type CleAction = "late" | "issues" | "vacant" | "maintenance" | "remaining" | "exits";
 
 export interface ActionATraiter {
   cle: CleAction;
@@ -33,6 +33,8 @@ export function actionsATraiter(stats: DashboardStats): ActionATraiter[] {
   if ((stats.lateInvoices ?? 0) > 0) actions.push({ cle: "late", compte: stats.lateInvoices, lien: "/invoices", urgent: true });
   if ((stats.openIssues ?? 0) > 0) actions.push({ cle: "issues", compte: stats.openIssues, lien: "/issues", urgent: true });
   if (Object.keys(resteAEncaisser(stats)).length > 0) actions.push({ cle: "remaining", compte: 0, lien: "/invoices", urgent: false });
+  // Un congé en cours : état des lieux de sortie, solde et restitution du dépôt à préparer.
+  if ((stats.upcomingExits ?? 0) > 0) actions.push({ cle: "exits", compte: stats.upcomingExits ?? 0, lien: "/contracts", urgent: false });
   const vacants = stats.propertiesByStatus?.AVAILABLE ?? 0;
   if (vacants > 0) actions.push({ cle: "vacant", compte: vacants, lien: "/annonces", urgent: false });
   const travaux = stats.propertiesByStatus?.MAINTENANCE ?? 0;
