@@ -38,9 +38,48 @@ describe("metaPixel", () => {
     expect(script).not.toBeNull();
     expect(window.fbq).toBeTypeOf("function");
     expect(window.fbq!.queue).toEqual([
+      ["consent", "grant"],
       ["init", "123456789"],
       ["track", "PageView"],
     ]);
+  });
+
+  // Même règle que Google Analytics : le site public est mesuré, l'application ne l'est pas. Le pixel envoie aussi des
+  // mesures automatiques (clics sur les boutons, correspondance avancée) : seul « consent » les coupe.
+  it("sur une page de l'application : mesure coupée avant l'initialisation, aucune vue de page", () => {
+    vi.stubEnv("VITE_META_PIXEL_ID", "123456789");
+    loadMetaPixel("/dashboard");
+    expect(window.fbq!.queue).toEqual([
+      ["consent", "revoke"],
+      ["init", "123456789"],
+    ]);
+  });
+
+  it("rétablit la mesure en revenant sur une page publique, et la coupe en entrant dans l'application", () => {
+    vi.stubEnv("VITE_META_PIXEL_ID", "123456789");
+    loadMetaPixel("/login");
+    const depart = window.fbq!.queue!.length;
+
+    trackMetaPageView("/dashboard");
+    trackMetaPageView("/tenants");
+    trackMetaPageView("/landing");
+
+    expect(window.fbq!.queue!.slice(depart)).toEqual([
+      ["consent", "revoke"],
+      ["consent", "revoke"],
+      ["consent", "grant"],
+      ["track", "PageView"],
+    ]);
+  });
+
+  it("ne mesure ni les pages à jeton (réinitialisation du mot de passe, vérification d'e-mail) ni les portails", () => {
+    vi.stubEnv("VITE_META_PIXEL_ID", "123456789");
+    loadMetaPixel("/");
+    const depart = window.fbq!.queue!.length;
+
+    for (const chemin of ["/reinitialiser-mot-de-passe/abc", "/portail/paiements", "/admin"]) trackMetaPageView(chemin);
+
+    expect(window.fbq!.queue!.slice(depart).filter((a) => (a as unknown[])[0] === "track")).toEqual([]);
   });
 
   it("ne charge le script qu'une seule fois même appelé plusieurs fois", () => {
@@ -63,7 +102,9 @@ describe("metaPixel", () => {
 
     trackMetaPageView();
 
-    expect(window.fbq!.queue!.length).toBe(appels + 1);
-    expect(window.fbq!.queue![appels]).toEqual(["track", "PageView"]);
+    expect(window.fbq!.queue!.slice(appels)).toEqual([
+      ["consent", "grant"],
+      ["track", "PageView"],
+    ]);
   });
 });

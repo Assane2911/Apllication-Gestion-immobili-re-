@@ -7,9 +7,11 @@ import { _resetLinkedInStateForTests } from "../utils/linkedinInsight";
 import { _resetMetaPixelStateForTests } from "../utils/metaPixel";
 import CookieConsentBanner from "./CookieConsentBanner";
 
-function renderBanner() {
+function renderBanner(chemin = "/landing") {
+  // MemoryRouter ne touche pas à l'adresse du navigateur, que les traceurs lisent au chargement : on les aligne.
+  window.history.pushState({}, "", chemin);
   return render(
-    <MemoryRouter initialEntries={["/landing"]}>
+    <MemoryRouter initialEntries={[chemin]}>
       <CookieConsentBanner />
     </MemoryRouter>
   );
@@ -105,5 +107,19 @@ describe("CookieConsentBanner", () => {
     expect(document.head.querySelector("script[src*='fbevents']")).not.toBeNull();
     expect(document.head.querySelector("script[src*='licdn']")).not.toBeNull();
     expect(screen.queryByText(/Google Analytics/)).not.toBeInTheDocument();
+  });
+
+  it("sur une page de l'application : GA4 et Meta coupés, LinkedIn non chargé", () => {
+    vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+    vi.stubEnv("VITE_META_PIXEL_ID", "123456789");
+    vi.stubEnv("VITE_LINKEDIN_PARTNER_ID", "1234567");
+    localStorage.setItem("cookie_consent", "accepted");
+
+    renderBanner("/dashboard");
+
+    expect((window as unknown as Record<string, unknown>)["ga-disable-G-TEST123"]).toBe(true);
+    expect(window.fbq!.queue!.filter((a) => (a as unknown[])[0] === "track")).toEqual([]);
+    expect(window.fbq!.queue![window.fbq!.queue!.length - 1]).toEqual(["consent", "revoke"]);
+    expect(document.head.querySelector("script[src*='licdn']")).toBeNull();
   });
 });

@@ -101,7 +101,7 @@ export const SUBPROCESSORS = {
    */
   metaPixel: {
     name: "Meta Platforms (Pixel Meta)",
-    role: "Mesure et reciblage publicitaire sur Facebook/Instagram (ex. revisiter le site après avoir vu une publicité), uniquement avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
+    role: "Mesure et reciblage publicitaire sur Facebook/Instagram (ex. revisiter le site après avoir vu une publicité), uniquement sur les pages du site public (jamais dans l'application) et avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
   },
   /**
    * N'est chargé qu'après consentement explicite via la bannière cookies
@@ -109,6 +109,6 @@ export const SUBPROCESSORS = {
    */
   linkedinInsight: {
     name: "LinkedIn (LinkedIn Corporation)",
-    role: "Mesure et reciblage publicitaire sur LinkedIn, uniquement avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
+    role: "Mesure et reciblage publicitaire sur LinkedIn, uniquement sur les pages du site public (jamais dans l'application) et avec le consentement préalable du visiteur. Aucune collecte si le consentement est refusé ou non donné.",
   },
 };
