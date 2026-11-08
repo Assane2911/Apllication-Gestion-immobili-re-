@@ -1,3 +1,5 @@
+import { estPagePublique } from "./analytics";
+
 declare global {
   interface Window {
     _linkedin_partner_id?: string;
@@ -24,10 +26,17 @@ let chargee = false;
  * configuré. Contrairement à GA4, LinkedIn n'offre pas d'événement
  * "page_view" manuel par route : le tag lui-même comptabilise la visite dès
  * son chargement, donc un seul appel suffit (pas d'équivalent trackPageView).
+ *
+ * Le tag n'a pas non plus d'interrupteur (ni « consent », ni « disable ») : la seule façon de ne rien envoyer depuis
+ * l'application est de ne pas le charger. Il n'est donc chargé que sur une page du site public ; un visiteur qui
+ * arrive directement dans l'application ne le charge pas, et il le sera à sa première page publique. Un tag déjà chargé
+ * ne peut pas être retiré : la mesure s'arrête à la page suivante rechargée (le tag ne suit pas les changements de
+ * page internes, il ne compte que le chargement).
  */
-export function loadLinkedInInsightTag(): void {
+export function loadLinkedInInsightTag(chemin: string = window.location.pathname): void {
   const id = idPartenaire();
   if (chargee || !id) return;
+  if (!estPagePublique(chemin)) return;
   chargee = true;
 
   window._linkedin_partner_id = id;

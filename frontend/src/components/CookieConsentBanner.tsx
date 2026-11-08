@@ -33,14 +33,16 @@ export default function CookieConsentBanner() {
     if (consentement === "accepted") {
       loadGoogleAnalytics();
       loadMetaPixel();
-      loadLinkedInInsightTag();
     }
   }, [consentement]);
 
+  // Les trois traceurs ne mesurent que le site public (voir estPagePublique) : à chaque page, GA4 et Meta ajustent leur
+  // interrupteur, et LinkedIn, qui n'en a pas, n'est chargé que sur une page publique.
   useEffect(() => {
     if (consentement === "accepted") {
       trackPageView(location.pathname);
-      trackMetaPageView();
+      trackMetaPageView(location.pathname);
+      loadLinkedInInsightTag(location.pathname);
     }
   }, [consentement, location.pathname]);
 

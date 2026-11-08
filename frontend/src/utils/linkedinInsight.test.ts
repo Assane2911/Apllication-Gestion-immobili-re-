@@ -49,4 +49,22 @@ describe("linkedinInsight", () => {
     expect(document.head.querySelectorAll("script[src*='licdn']").length).toBe(1);
     expect(window._linkedin_data_partner_ids).toEqual(["1234567"]);
   });
+
+  // Le tag n'a ni « consent » ni « disable » : sur une page de l'application, la seule façon de ne rien envoyer est de ne
+  // pas le charger.
+  it("ne charge pas le tag sur une page de l'application", () => {
+    vi.stubEnv("VITE_LINKEDIN_PARTNER_ID", "1234567");
+    loadLinkedInInsightTag("/dashboard");
+    expect(document.head.querySelector("script[src*='licdn']")).toBeNull();
+    expect(window.lintrk).toBeUndefined();
+  });
+
+  it("le charge à la première page publique visitée, même si la session a commencé dans l'application", () => {
+    vi.stubEnv("VITE_LINKEDIN_PARTNER_ID", "1234567");
+    loadLinkedInInsightTag("/dashboard");
+    loadLinkedInInsightTag("/tenants");
+    loadLinkedInInsightTag("/landing");
+    expect(document.head.querySelectorAll("script[src*='licdn']").length).toBe(1);
+    expect(window._linkedin_data_partner_ids).toEqual(["1234567"]);
+  });
 });
