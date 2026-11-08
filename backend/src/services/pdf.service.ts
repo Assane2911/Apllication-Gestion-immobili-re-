@@ -1674,6 +1674,17 @@ export function generateSettlementHtml(d: SettlementData): string {
     .resultat { margin: 16px 0; padding: 14px 16px; border: 2px solid ${couleur}; color: ${couleur}; display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; }
     .note { font-size: 12px; color: #64748b; }
     .signature { margin-top: 32px; margin-left: auto; width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; min-height: 80px; }
+    /* Aperçu sur téléphone : le tableau des loyers et l'en-tête doivent tenir dans un cadre étroit (n'agit pas à l'impression). */
+    @media screen and (max-width: 520px) {
+      body { padding: 12px; font-size: 12px; }
+      .entete { flex-direction: column; gap: 8px; }
+      .entete > div:last-child { text-align: left !important; }
+      .destinataire { width: auto; margin-left: 0; }
+      .signature { width: auto; }
+      th, td { padding: 4px 5px; }
+      th { font-size: 9px; }
+      .resultat { flex-wrap: wrap; gap: 4px; font-size: 14px; }
+    }
   </style>
 </head>
 <body>

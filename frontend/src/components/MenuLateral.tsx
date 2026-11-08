@@ -91,7 +91,7 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false);
         }}
         className={`fixed inset-y-0 left-0 z-40 w-64 ${ouvert ? "sm:w-64" : "sm:w-16"} h-dvh bg-white text-slate-900 border-r border-slate-300 flex flex-col overflow-hidden transform transition-[transform,width,box-shadow] duration-200 ease-in-out ${
-          ouvert && !epingle ? "sm:shadow-xl" : "shadow-xl sm:shadow-none"
+          ouvert && !epingle ? "sm:shadow-xl" : ouvertMobile ? "shadow-xl sm:shadow-none" : "sm:shadow-none"
         } ${ouvertMobile ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0`}
       >
         <div className="shrink-0 h-16 px-3.5 flex items-center justify-between gap-3 border-b border-slate-300">
