@@ -21,6 +21,12 @@ import {
   uploadLeaseNoticeDocument as envoyerDocumentDuConge,
   withdrawLeaseNotice,
 } from "../controllers/leaseNotice.controller";
+import {
+  createSettlement,
+  listSettlements,
+  previewSettlement,
+  settleSettlement,
+} from "../controllers/settlement.controller";
 import { addCotenant, listCotenants, removeCotenant } from "../controllers/cotenant.controller";
 import { createGuarantor, deleteGuarantor, listGuarantors, updateGuarantor } from "../controllers/guarantor.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
@@ -51,6 +57,10 @@ router.post("/:id/notices", createLeaseNotice);
 router.put("/:id/notices/:noticeId", updateLeaseNotice);
 router.post("/:id/notices/:noticeId/withdraw", withdrawLeaseNotice);
 router.post("/:id/notices/:noticeId/document", uploadLeaseNoticeDocument.single("document"), envoyerDocumentDuConge);
+router.get("/:id/settlement/preview", previewSettlement);
+router.get("/:id/settlements", listSettlements);
+router.post("/:id/settlements", createSettlement);
+router.post("/:id/settlements/:settlementId/settle", settleSettlement);
 router.get("/:id/cotenants", listCotenants);
 router.post("/:id/cotenants", addCotenant);
 router.delete("/:id/cotenants/:cotenantId", removeCotenant);

@@ -870,3 +870,62 @@ export interface LeaseNoticesResponse {
   /** Factures non annulées déjà émises après le mois de la sortie prévue. */
   facturesApresSortie: number;
 }
+
+/** Mode de calcul du dernier mois du solde de tout compte. */
+export type SettlementLastMonthMode = "FULL" | "PRORATA";
+
+export interface SettlementLine {
+  periodMonth: number;
+  periodYear: number;
+  amount: number;
+  retenu: number;
+  paid: number;
+  due: number;
+  credit: number;
+}
+
+export interface SettlementDeduction {
+  label: string;
+  amount: number;
+}
+
+/** Le calcul à l'écran (GET /contracts/:id/settlement/preview) : rien n'est enregistré. */
+export interface SettlementPreview {
+  currency: string;
+  exitDate: string;
+  lastMonthMode: SettlementLastMonthMode;
+  depositAmount: number;
+  deductions: SettlementDeduction[];
+  deductionsTotal: number;
+  restitutionEnregistree: boolean;
+  depositRefunded: number;
+  lignes: SettlementLine[];
+  unpaidTotal: number;
+  creditTotal: number;
+  facturesApresSortie: number;
+  /** Positif : à restituer au locataire. Négatif : reste dû par le locataire. */
+  balance: number;
+  etatDesLieuxDeSortie: boolean;
+  contractStatus: ContractStatus;
+}
+
+/** Un solde de tout compte émis (figé). */
+export interface LeaseSettlement {
+  id: string;
+  contractId: string;
+  reference: string;
+  currency: string;
+  exitDate: string;
+  lastMonthMode: SettlementLastMonthMode;
+  depositAmount: number;
+  deductionsTotal: number;
+  depositRefunded: number;
+  unpaidTotal: number;
+  creditTotal: number;
+  balance: number;
+  emailSentAt: string | null;
+  settledAt: string | null;
+  createdAt: string;
+  emailEnvoye?: boolean;
+  colocatairesPrevenus?: number;
+}

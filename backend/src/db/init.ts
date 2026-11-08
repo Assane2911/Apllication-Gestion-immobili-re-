@@ -758,6 +758,31 @@ export async function initDb() {
       ON lease_notices (contract_id) WHERE status = 'ACTIVE'
     `);
 
+    // Soldes de tout compte : instantané figé à l'émission (après contracts : FK).
+    await creerTable("lease_settlements", sql`
+      CREATE TABLE IF NOT EXISTS lease_settlements (
+        id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        manager_id TEXT NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'EUR',
+        exit_date TIMESTAMP NOT NULL,
+        last_month_mode TEXT NOT NULL DEFAULT 'FULL' CHECK (last_month_mode IN ('FULL', 'PRORATA')),
+        deposit_amount DOUBLE PRECISION NOT NULL,
+        deductions_total DOUBLE PRECISION NOT NULL DEFAULT 0,
+        deposit_refunded DOUBLE PRECISION NOT NULL DEFAULT 0,
+        unpaid_total DOUBLE PRECISION NOT NULL DEFAULT 0,
+        credit_total DOUBLE PRECISION NOT NULL DEFAULT 0,
+        balance DOUBLE PRECISION NOT NULL,
+        details TEXT NOT NULL,
+        email_sent_at TIMESTAMP,
+        settled_at TIMESTAMP,
+        created_by TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex("lease_settlements_contract_id_idx", sql`CREATE INDEX IF NOT EXISTS lease_settlements_contract_id_idx ON lease_settlements (contract_id)`);
+    await creerIndex("lease_settlements_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS lease_settlements_manager_id_idx ON lease_settlements (manager_id)`);
+
     await creerIndex("invoices_contract_period_unique", sql`
       CREATE UNIQUE INDEX IF NOT EXISTS invoices_contract_period_unique
       ON invoices (contract_id, period_month, period_year)

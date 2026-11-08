@@ -1557,3 +1557,247 @@ export function generateFormalNoticePdfBuffer(d: FormalNoticeData): Promise<Buff
     }
   });
 }
+
+/** Données du solde de tout compte (voir donneesDuSolde, soldeDeToutCompte.service.ts). */
+export interface SettlementData {
+  reference: string;
+  createdAt: Date;
+  exitDate: Date;
+  lastMonthMode: "FULL" | "PRORATA";
+  currency: string;
+  depositAmount: number;
+  deductions: Array<{ label: string; amount: number }>;
+  deductionsTotal: number;
+  depositRefunded: number;
+  lignes: Array<{ periodMonth: number; periodYear: number; amount: number; retenu: number; paid: number; due: number; credit: number }>;
+  unpaidTotal: number;
+  creditTotal: number;
+  balance: number;
+  destinataires: string;
+  adresse: string;
+  propertyTitle: string;
+  contractStartDate: Date;
+  agency: { name: string; address: string | null; phone: string | null; email: string | null; siretOrId: string | null };
+}
+
+/**
+ * Textes du solde de tout compte. Comme les autres écrits à portée juridique de l'application (quittance, bail, mise en
+ * demeure), il est en français : voir document.crg.textes.ts.
+ */
+export function texteSolde(d: SettlementData) {
+  const date = (v: Date | string) =>
+    new Date(v).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }).replace(/^1 /, "1er ");
+  const montant = (n: number) => formaterMontant(n, d.currency);
+  const resultat =
+    d.balance > 0
+      ? { libelle: "Somme à restituer au locataire", montant: montant(d.balance), sens: "restituer" as const }
+      : d.balance < 0
+        ? { libelle: "Reste dû par le locataire", montant: montant(-d.balance), sens: "devoir" as const }
+        : { libelle: "Compte soldé", montant: montant(0), sens: "solde" as const };
+  return {
+    titre: "SOLDE DE TOUT COMPTE",
+    lieuEtDate: `Le ${date(d.createdAt)}`,
+    objet:
+      `Objet : solde de tout compte — logement « ${d.propertyTitle} »${d.adresse ? `, ${d.adresse}` : ""} — ` +
+      `bail du ${date(d.contractStartDate)}, sortie du ${date(d.exitDate)}`,
+    salutation: "Madame, Monsieur,",
+    intro: `Nous avons arrêté le compte de votre bail à la date de votre sortie, le ${date(d.exitDate)}. Il récapitule les sommes enregistrées par l'agence au ${date(d.createdAt)}.`,
+    sectionLoyers: "Loyers",
+    colonnesLoyers: ["Période", "Montant retenu", "Réglé", "Reste dû"],
+    lignes: d.lignes.map((l) => ({
+      periode: `${MOIS_COURRIER[l.periodMonth - 1] ?? l.periodMonth} ${l.periodYear}`,
+      retenu: montant(l.retenu),
+      regle: montant(l.paid),
+      reste: montant(l.due),
+    })),
+    aucunLoyer: "Aucun loyer n'a été facturé jusqu'à la sortie.",
+    noteProrata:
+      d.lastMonthMode === "PRORATA"
+        ? "Le loyer du mois de la sortie est calculé au prorata des jours occupés."
+        : "Le loyer du mois de la sortie est dû en entier.",
+    totalLoyers: montant(d.unpaidTotal),
+    sectionDepot: "Dépôt de garantie",
+    depot: `Dépôt de garantie versé : ${montant(d.depositAmount)}`,
+    retenues: d.deductions.map((r) => ({ libelle: r.label, montant: montant(r.amount) })),
+    aucuneRetenue: "Aucune retenue enregistrée sur le dépôt.",
+    dejaRestitue: d.depositRefunded > 0 ? `Dépôt déjà restitué : ${montant(d.depositRefunded)}` : null,
+    sectionRecap: "Récapitulatif",
+    recap: [
+      { libelle: "Dépôt de garantie", montant: montant(d.depositAmount), signe: "+" },
+      ...(d.deductionsTotal > 0 ? [{ libelle: "Retenues sur le dépôt", montant: montant(d.deductionsTotal), signe: "−" }] : []),
+      ...(d.unpaidTotal > 0 ? [{ libelle: "Loyers restant dus", montant: montant(d.unpaidTotal), signe: "−" }] : []),
+      ...(d.creditTotal > 0 ? [{ libelle: "Trop-perçu de loyer", montant: montant(d.creditTotal), signe: "+" }] : []),
+      ...(d.depositRefunded > 0 ? [{ libelle: "Dépôt déjà restitué", montant: montant(d.depositRefunded), signe: "−" }] : []),
+    ],
+    resultat,
+    consigne:
+      resultat.sens === "restituer"
+        ? "Cette somme vous est restituée par l'agence."
+        : resultat.sens === "devoir"
+          ? "Cette somme reste à régler à l'agence : merci de la verser dans les meilleurs délais."
+          : "Aucune somme n'est due de part ni d'autre.",
+    contact: "Pour toute question sur ce décompte, contactez l'agence aux coordonnées ci-dessus.",
+    formule: "Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.",
+    signature: `Pour ${d.agency.name}`,
+  };
+}
+
+export function generateSettlementHtml(d: SettlementData): string {
+  const t = texteSolde(d);
+  const lignes = t.lignes
+    .map((l) => `<tr><td>${escapeHtml(l.periode)}</td><td class="num">${escapeHtml(l.retenu)}</td><td class="num">${escapeHtml(l.regle)}</td><td class="num">${escapeHtml(l.reste)}</td></tr>`)
+    .join("");
+  const retenues = t.retenues.length
+    ? t.retenues.map((r) => `<tr><td>${escapeHtml(r.libelle)}</td><td class="num">- ${escapeHtml(r.montant)}</td></tr>`).join("")
+    : `<tr><td colspan="2">${escapeHtml(t.aucuneRetenue)}</td></tr>`;
+  const recap = t.recap.map((r) => `<tr><td>${escapeHtml(r.libelle)}</td><td class="num">${r.signe} ${escapeHtml(r.montant)}</td></tr>`).join("");
+  const couleur = t.resultat.sens === "devoir" ? "#7f1d1d" : t.resultat.sens === "restituer" ? "#14532d" : "#0f172a";
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Solde de tout compte ${escapeHtml(d.reference)} - ${escapeHtml(d.propertyTitle)}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; line-height: 1.6; padding: 24px; font-size: 13px; }
+    .entete { display: flex; justify-content: space-between; gap: 24px; }
+    .agence strong { font-size: 15px; color: #0f172a; }
+    .destinataire { margin: 28px 0 0 auto; width: 50%; }
+    h1 { color: #0f172a; font-size: 18px; text-align: center; margin: 28px 0 20px; letter-spacing: 1px; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin: 22px 0 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+    th { background: #f8fafc; font-size: 11px; text-transform: uppercase; color: #64748b; }
+    .num { text-align: right; white-space: nowrap; }
+    tfoot td { font-weight: bold; background: #f8fafc; }
+    .resultat { margin: 16px 0; padding: 14px 16px; border: 2px solid ${couleur}; color: ${couleur}; display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; }
+    .note { font-size: 12px; color: #64748b; }
+    .signature { margin-top: 32px; margin-left: auto; width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; min-height: 80px; }
+  </style>
+</head>
+<body>
+  <div class="entete">
+    <div class="agence">
+      <strong>${escapeHtml(d.agency.name)}</strong><br>
+      ${d.agency.address ? `${escapeHtml(d.agency.address)}<br>` : ""}
+      ${d.agency.phone ? `Tél : ${escapeHtml(d.agency.phone)}<br>` : ""}
+      ${d.agency.email ? `${escapeHtml(d.agency.email)}<br>` : ""}
+      ${d.agency.siretOrId ? `Identifiants légaux : ${escapeHtml(d.agency.siretOrId)}` : ""}
+    </div>
+    <div style="text-align:right; color:#64748b;">Réf : ${escapeHtml(d.reference)}<br>${escapeHtml(t.lieuEtDate)}</div>
+  </div>
+  <div class="destinataire">
+    <strong>${escapeHtml(d.destinataires)}</strong><br>
+    ${escapeHtml(d.adresse)}
+  </div>
+
+  <h1>${t.titre}</h1>
+  <p><strong>${escapeHtml(t.objet)}</strong></p>
+  <p>${escapeHtml(t.salutation)}</p>
+  <p>${escapeHtml(t.intro)}</p>
+
+  <h2>${t.sectionLoyers}</h2>
+  ${
+    t.lignes.length
+      ? `<table><thead><tr><th>${t.colonnesLoyers[0]}</th><th class="num">${t.colonnesLoyers[1]}</th><th class="num">${t.colonnesLoyers[2]}</th><th class="num">${t.colonnesLoyers[3]}</th></tr></thead>
+    <tbody>${lignes}</tbody>
+    <tfoot><tr><td colspan="3">Total restant dû</td><td class="num">${escapeHtml(t.totalLoyers)}</td></tr></tfoot></table>`
+      : `<p>${t.aucunLoyer}</p>`
+  }
+  <p class="note">${escapeHtml(t.noteProrata)}</p>
+
+  <h2>${t.sectionDepot}</h2>
+  <p>${escapeHtml(t.depot)}</p>
+  <table><tbody>${retenues}</tbody></table>
+  ${t.dejaRestitue ? `<p>${escapeHtml(t.dejaRestitue)}</p>` : ""}
+
+  <h2>${t.sectionRecap}</h2>
+  <table><tbody>${recap}</tbody></table>
+  <div class="resultat"><span>${escapeHtml(t.resultat.libelle)}</span><span>${escapeHtml(t.resultat.montant)}</span></div>
+  <p>${escapeHtml(t.consigne)}</p>
+  <p>${escapeHtml(t.contact)}</p>
+  <p>${escapeHtml(t.formule)}</p>
+  <div class="signature"><strong>${escapeHtml(t.signature)}</strong></div>
+</body>
+</html>
+  `.trim();
+}
+
+export function generateSettlementPdfBuffer(d: SettlementData): Promise<Buffer> {
+  const t = texteSolde(d);
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = documentPdf({ size: "A4", margin: 56 });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const gauche = doc.page.margins.left;
+      const largeur = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const dark = "#0f172a";
+      const gray = "#64748b";
+
+      const haut = doc.y;
+      doc.fillColor(dark).font("Helvetica-Bold").fontSize(12).text(d.agency.name, gauche, haut, { width: largeur * 0.6 });
+      doc.font("Helvetica").fontSize(9).fillColor(gray);
+      for (const ligne of [d.agency.address, d.agency.phone && `Tél : ${d.agency.phone}`, d.agency.email, d.agency.siretOrId && `Identifiants légaux : ${d.agency.siretOrId}`]) {
+        if (ligne) doc.text(ligne, { width: largeur * 0.6 });
+      }
+      const basGauche = doc.y;
+      doc.text(`Réf : ${d.reference}`, gauche, haut, { width: largeur, align: "right" }).text(t.lieuEtDate, { width: largeur, align: "right" });
+      doc.y = Math.max(basGauche, doc.y) + 20;
+
+      doc.fillColor(dark).font("Helvetica-Bold").fontSize(10).text(d.destinataires, gauche + largeur / 2, doc.y, { width: largeur / 2 });
+      doc.font("Helvetica").text(d.adresse, { width: largeur / 2 });
+      doc.moveDown(1.5);
+
+      doc.fillColor(dark).font("Helvetica-Bold").fontSize(15).text(t.titre, gauche, doc.y, { width: largeur, align: "center" });
+      doc.moveDown(0.8);
+      doc.font("Helvetica-Bold").fontSize(10).text(t.objet, gauche, doc.y, { width: largeur });
+      doc.moveDown(0.5);
+      doc.font("Helvetica").text(t.salutation).moveDown(0.3).text(t.intro, { width: largeur });
+
+      const titreSection = (texte: string) => {
+        doc.moveDown(0.9).fillColor(gray).font("Helvetica-Bold").fontSize(9).text(texte.toUpperCase(), gauche, doc.y, { width: largeur });
+        doc.fillColor(dark).font("Helvetica").fontSize(10).moveDown(0.3);
+      };
+      const ligneMontant = (libelle: string, valeur: string, gras = false) => {
+        const y = doc.y;
+        doc.font(gras ? "Helvetica-Bold" : "Helvetica").text(libelle, gauche, y, { width: largeur * 0.65 });
+        const bas = doc.y;
+        doc.text(valeur, gauche, y, { width: largeur, align: "right" });
+        doc.y = Math.max(bas, doc.y) + 2;
+      };
+
+      titreSection(t.sectionLoyers);
+      if (t.lignes.length === 0) {
+        doc.text(t.aucunLoyer, gauche, doc.y, { width: largeur });
+      } else {
+        for (const l of t.lignes) ligneMontant(`${l.periode} — retenu ${l.retenu}, réglé ${l.regle}`, l.reste);
+        ligneMontant("Total restant dû", t.totalLoyers, true);
+      }
+      doc.fillColor(gray).fontSize(9).text(t.noteProrata, gauche, doc.y + 2, { width: largeur });
+      doc.fillColor(dark).fontSize(10);
+
+      titreSection(t.sectionDepot);
+      ligneMontant("Dépôt de garantie versé", t.recap[0].montant);
+      if (t.retenues.length === 0) doc.text(t.aucuneRetenue, gauche, doc.y, { width: largeur });
+      for (const r of t.retenues) ligneMontant(`Retenue : ${r.libelle}`, `- ${r.montant}`);
+      if (t.dejaRestitue) doc.text(t.dejaRestitue, gauche, doc.y, { width: largeur });
+
+      titreSection(t.sectionRecap);
+      for (const r of t.recap) ligneMontant(r.libelle, `${r.signe} ${r.montant}`);
+      doc.moveDown(0.4);
+      ligneMontant(t.resultat.libelle, t.resultat.montant, true);
+
+      doc.moveDown(0.8).font("Helvetica").text(t.consigne, gauche, doc.y, { width: largeur }).moveDown(0.4);
+      doc.text(t.contact, { width: largeur }).moveDown(0.4).text(t.formule, { width: largeur }).moveDown(1.2);
+      doc.font("Helvetica-Bold").text(t.signature, gauche + largeur * 0.55, doc.y, { width: largeur * 0.45 });
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}

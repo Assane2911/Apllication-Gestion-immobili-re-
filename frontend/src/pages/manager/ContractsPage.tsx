@@ -14,6 +14,7 @@ import PaymentDayModal, { JOURS_ECHEANCE } from "../../components/PaymentDayModa
 import CotenantsModal from "../../components/CotenantsModal";
 import GuarantorsModal from "../../components/GuarantorsModal";
 import LeaseNoticeModal from "../../components/LeaseNoticeModal";
+import SettlementModal from "../../components/SettlementModal";
 import { CLAUSE_CAUTION, clauseCautionIncomplete, insererClause } from "../../data/clauseCaution";
 import RentRevisionModal from "../../components/RentRevisionModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
@@ -177,6 +178,7 @@ export default function ContractsPage() {
   const [guarantorsContract, setGuarantorsContract] = useState<Contract | null>(null);
   const [cotenantsContract, setCotenantsContract] = useState<Contract | null>(null);
   const [noticeContract, setNoticeContract] = useState<Contract | null>(null);
+  const [settlementContract, setSettlementContract] = useState<Contract | null>(null);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
@@ -267,9 +269,11 @@ export default function ContractsPage() {
    * est en cours, rappelle la date de sortie prévue.
    */
   function congeLien(c: Contract) {
-    if (c.status !== "ACTIVE") return null;
+    // Hors bail en cours : le congé n'a plus lieu d'être, seul le solde de tout compte reste à faire.
+    if (c.status !== "ACTIVE") return soldeLien(c);
     const enCours = c.activeNotice;
     return (
+      <span className="inline-flex flex-col items-start gap-0.5">
       <button
         type="button"
         onClick={() => setNoticeContract(c)}
@@ -280,6 +284,17 @@ export default function ContractsPage() {
         {enCours
           ? t("manager.contracts.noticeLinkActive", { date: new Date(enCours.exitDate).toLocaleDateString(i18n.language, { timeZone: "UTC" }) })
           : t("manager.contracts.noticeLink")}
+      </button>
+      {enCours && soldeLien(c)}
+      </span>
+    );
+  }
+
+  /** Lien « Solde de tout compte » : le bail est terminé, ou un congé en cours prévoit la sortie. */
+  function soldeLien(c: Contract) {
+    return (
+      <button type="button" onClick={() => setSettlementContract(c)} className="inline-block whitespace-nowrap text-left text-[11px] font-semibold text-ink-900 border-b border-ink-900/40 hover:border-orange-700 hover:text-orange-700 transition-colors">
+        {t("manager.contracts.settlementLink")}
       </button>
     );
   }
@@ -1272,6 +1287,8 @@ export default function ContractsPage() {
       {noticeContract && (
         <LeaseNoticeModal contract={noticeContract} onChange={() => load()} onClose={() => setNoticeContract(null)} />
       )}
+
+      {settlementContract && <SettlementModal contract={settlementContract} onChange={() => load()} onClose={() => setSettlementContract(null)} />}
 
       {cotenantsContract && (
         <CotenantsModal
