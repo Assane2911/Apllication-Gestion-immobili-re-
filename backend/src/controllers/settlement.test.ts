@@ -309,7 +309,7 @@ describe("document du solde de tout compte", () => {
     expect(solde).toContain("au prorata des jours occupés");
 
     // Aperçu sur téléphone : le tableau des loyers et l'en-tête se resserrent, mais seulement à l'écran (jamais à l'impression).
-    expect(solde).toMatch(/@media screen and \(max-width: 520px\)[\s\S]*th, td \{ padding: 4px 5px; \}/);
+    expect(solde).toMatch(/@media screen and \(max-width: 520px\)[\s\S]*th, td \{ padding: 4px 3px; \}/);
     expect(solde).not.toMatch(/@media print/);
   });
 });

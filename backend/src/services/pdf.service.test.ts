@@ -741,3 +741,45 @@ describe("tampon de l'agence sur la quittance", () => {
     expect(deux.toString("latin1").match(/\/Subtype \/Image/g)?.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe("aperçu sur téléphone des documents à tableaux", () => {
+  // Ces documents s'affichent dans un cadre d'environ 320 px (DocumentModal) : sans règle d'aperçu, leurs tableaux dépassaient
+  // (quittance 380 px, compte rendu de gestion 448, mise en demeure 409). La règle est limitée à l'écran : jamais à l'impression.
+  const REGLE = /@media screen and \(max-width: 520px\)[\s\S]*th, td \{ padding: 4px 3px; \}/;
+
+  it("la quittance, le compte rendu de gestion et la mise en demeure resserrent leurs tableaux à l'écran (règle limitée à screen)", () => {
+    const documents = {
+      quittance: generateReceiptHtml(baseReceipt),
+      "compte rendu": generateCrgHtml({
+        agencyName: "Agence Teranga",
+        ownerName: "Fatou Diop",
+        managementFeeRate: 10,
+        month: 6,
+        year: 2026,
+        properties: [{ propertyId: "p1", propertyTitle: "Villa Ngor", currency: "EUR", loyersEncaisses: 250000, chargesDeduites: 0, commission: 25000, netAReverser: 225000 }],
+        totalLoyersByCurrency: { EUR: 250000 },
+        totalChargesByCurrency: { EUR: 0 },
+        totalCommissionByCurrency: { EUR: 25000 },
+        totalNetByCurrency: { EUR: 225000 },
+      }),
+      "mise en demeure": generateFormalNoticeHtml({
+        reference: "MED-2026-ABC123",
+        createdAt: new Date(2026, 9, 12),
+        deadlineDays: 8,
+        currency: "XOF",
+        totalDue: 250000,
+        factures: [{ periodMonth: 9, periodYear: 2026, dueDate: "2026-09-05T00:00:00.000Z", amount: 250000, resteDu: 250000 }],
+        destinataires: "Madame Aminata BA",
+        adresse: "3 rue des Almadies, Dakar",
+        propertyTitle: "Villa Ngor",
+        contractStartDate: new Date(2025, 0, 1),
+        applicableLaw: null,
+        garants: [],
+        agency: { name: "Agence Teranga", address: null, phone: null, email: null, siretOrId: null },
+      } as any),
+    };
+    for (const [nom, html] of Object.entries(documents)) {
+      expect(html, nom).toMatch(REGLE);
+    }
+  });
+});

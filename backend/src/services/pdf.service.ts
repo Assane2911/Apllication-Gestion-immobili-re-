@@ -29,6 +29,25 @@ function escapeHtml(value: unknown): string {
 }
 
 /**
+ * Aperçu sur téléphone : ces documents sont affichés dans un cadre d'environ 320 px (voir DocumentModal) et leurs tableaux
+ * débordaient (quittance 380 px, compte rendu de gestion 448, mise en demeure 409). On resserre les marges, les cellules et
+ * les en-têtes, et on empile l'en-tête. La règle est limitée à l'écran : l'impression et le PDF gardent la mise en page A4.
+ */
+const APERCU_MOBILE = `
+    @media screen and (max-width: 520px) {
+      body { padding: 12px; font-size: 12px; }
+      .entete, .header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .entete > div:last-child { text-align: left !important; }
+      .destinataire { width: auto; margin-left: 0; }
+      .signature { width: auto; }
+      table { font-size: 11px; }
+      th, td { padding: 4px 3px; }
+      th { font-size: 9px; letter-spacing: 0; }
+      .num { white-space: normal; }
+      .resultat { flex-wrap: wrap; gap: 4px; font-size: 14px; }
+    }`;
+
+/**
  * Mention de pied de la quittance quand l'agence n'a saisi aucune mention légale. Elle dit seulement qui a émis le
  * document : la plateforme n'atteste la conformité d'aucun document (voir le bail).
  */
@@ -263,6 +282,7 @@ export function generateReceiptHtml(data: ReceiptData): string {
       body { padding: 0; }
       .no-print { display: none; }
     }
+    ${APERCU_MOBILE}
   </style>
 </head>
 <body>
@@ -1138,6 +1158,7 @@ export function generateCrgHtml(data: CrgExportData): string {
     tr { break-inside: avoid; }
     .total-row td { font-weight: 700; background: #f1f5f9; border-top: 2px solid #0f172a; }
     .footer-legal { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; }
+    ${APERCU_MOBILE}
   </style>
 </head>
 <body>
@@ -1424,6 +1445,7 @@ export function generateFormalNoticeHtml(d: FormalNoticeData): string {
     .num { text-align: right; white-space: nowrap; }
     tfoot td { font-weight: bold; background: #fef2f2; }
     .signature { margin-top: 32px; margin-left: auto; width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; min-height: 80px; }
+    ${APERCU_MOBILE}
   </style>
 </head>
 <body>
@@ -1674,17 +1696,7 @@ export function generateSettlementHtml(d: SettlementData): string {
     .resultat { margin: 16px 0; padding: 14px 16px; border: 2px solid ${couleur}; color: ${couleur}; display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; }
     .note { font-size: 12px; color: #64748b; }
     .signature { margin-top: 32px; margin-left: auto; width: 45%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; min-height: 80px; }
-    /* Aperçu sur téléphone : le tableau des loyers et l'en-tête doivent tenir dans un cadre étroit (n'agit pas à l'impression). */
-    @media screen and (max-width: 520px) {
-      body { padding: 12px; font-size: 12px; }
-      .entete { flex-direction: column; gap: 8px; }
-      .entete > div:last-child { text-align: left !important; }
-      .destinataire { width: auto; margin-left: 0; }
-      .signature { width: auto; }
-      th, td { padding: 4px 5px; }
-      th { font-size: 9px; }
-      .resultat { flex-wrap: wrap; gap: 4px; font-size: 14px; }
-    }
+    ${APERCU_MOBILE}
   </style>
 </head>
 <body>
