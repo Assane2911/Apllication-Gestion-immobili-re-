@@ -396,4 +396,26 @@ describe("TenantIssuesPage — suivi, filtres, motifs courants", () => {
     await user.type(screen.getByLabelText(/Description/), "Plus de courant");
     expect(screen.getByText("15 / 5000")).toBeInTheDocument();
   });
+
+  describe("plafond de 10 photos par incident (la principale comprise)", () => {
+    const photos = (n: number) => JSON.stringify(Array.from({ length: n }, (_, i) => `/uploads/extra${i}.jpg`));
+
+    it("propose encore d'ajouter une photo avec 9 photos au total", async () => {
+      // 1 photo principale + 8 supplémentaires.
+      mockedApi.get.mockResolvedValueOnce({ data: [issue({ additionalPhotos: photos(8) })] });
+      mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+      renderPage();
+      expect(await screen.findByRole("button", { name: /Ajouter une photo à cet incident/ })).toBeInTheDocument();
+      expect(screen.queryByText(/Maximum de 10 photos atteint/)).not.toBeInTheDocument();
+    });
+
+    it("remplace le bouton par une note quand les 10 photos sont atteintes", async () => {
+      // 1 photo principale + 9 supplémentaires.
+      mockedApi.get.mockResolvedValueOnce({ data: [issue({ additionalPhotos: photos(9) })] });
+      mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+      renderPage();
+      expect(await screen.findByText("Maximum de 10 photos atteint pour cet incident.")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Ajouter une photo à cet incident/ })).not.toBeInTheDocument();
+    });
+  });
 });
