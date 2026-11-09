@@ -43,6 +43,10 @@ interface Props {
  * égale le net à reverser. En dessous, la répartition des loyers en une barre quand une seule devise est en jeu (des
  * euros et des francs CFA ne se mettent pas dans la même barre), puis le détail bien par bien.
  */
+/** Une valeur du tableau devenue ligne de carte sur téléphone : libellé de la colonne à gauche, valeur à droite. */
+const CELLULE_CARTE =
+  "max-sm:flex max-sm:items-baseline max-sm:justify-between max-sm:gap-3 max-sm:p-0 max-sm:before:font-mono max-sm:before:text-[10px] max-sm:before:font-normal max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-slate-600 max-sm:before:content-[attr(data-label)]";
+
 export default function DecompteCrg({ crg, ns, periode }: Props) {
   const { t } = useTranslation();
   const { formatMoney } = useCurrency();
@@ -139,9 +143,12 @@ export default function DecompteCrg({ crg, ns, periode }: Props) {
           <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">02</span>
           <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t(`${ns}.table.title`)}</h3>
         </header>
-        <div className="relative overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
+        {/* Sur téléphone, le tableau de 6 colonnes (708 px) obligeait à défiler de côté, sans indice, pour atteindre le net à
+            reverser de chaque bien : chaque ligne devient une carte (libellé de la colonne devant chaque valeur, via data-label).
+            Même contenu, un seul DOM. À partir de `sm`, le tableau reste celui d'origine. */}
+        <div className="relative sm:overflow-x-auto">
+          <table className="w-full text-sm max-sm:block">
+            <thead className="max-sm:sr-only">
               <tr className="text-left">
                 <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.property`)}</th>
                 <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.currency`)}</th>
@@ -152,25 +159,25 @@ export default function DecompteCrg({ crg, ns, periode }: Props) {
                 <th scope="col" className="px-4 py-3 font-semibold"><span className="sr-only">{t("common.crgReleve.share")}</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-slate-200 max-sm:block">
               {crg.properties.map((row) => (
-                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-600">{row.currency}</td>
-                  <td className="px-4 py-3 font-semibold tabular-nums text-slate-900">{formatMoney(row.loyersEncaisses, row.currency)}</td>
-                  <td className="px-4 py-3 font-semibold tabular-nums text-slate-700">{formatDeduction(row.chargesDeduites, row.currency, formatMoney)}</td>
-                  <td className="px-4 py-3 font-semibold tabular-nums text-orange-800">{formatDeduction(row.commission, row.currency, formatMoney)}</td>
-                  <td className={`px-4 py-3 font-bold tabular-nums ${row.netAReverser >= 0 ? "text-ink-900" : "text-orange-700"}`}>
+                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50 max-sm:block max-sm:space-y-1 max-sm:p-4">
+                  <td className="px-4 py-3 font-medium text-slate-900 max-sm:block max-sm:p-0 max-sm:pb-1 max-sm:text-base"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></td>
+                  <td data-label={t(`${ns}.table.currency`)} className={`${CELLULE_CARTE} px-4 py-3 font-mono text-xs text-slate-600`}>{row.currency}</td>
+                  <td data-label={t(`${ns}.table.loyers`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-slate-900`}>{formatMoney(row.loyersEncaisses, row.currency)}</td>
+                  <td data-label={t(`${ns}.table.charges`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-slate-700`}>{formatDeduction(row.chargesDeduites, row.currency, formatMoney)}</td>
+                  <td data-label={t(`${ns}.table.commission`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-orange-800`}>{formatDeduction(row.commission, row.currency, formatMoney)}</td>
+                  <td data-label={t(`${ns}.table.net`)} className={`${CELLULE_CARTE} px-4 py-3 font-bold tabular-nums ${row.netAReverser >= 0 ? "text-ink-900" : "text-orange-700"}`}>
                     {formatMoney(row.netAReverser, row.currency)}
                   </td>
-                  <td className="w-32 px-4 py-3">
+                  <td className="w-32 px-4 py-3 max-sm:block max-sm:w-full max-sm:px-0 max-sm:pb-0 max-sm:pt-2">
                     <BarreRepartition loyers={row.loyersEncaisses} charges={row.chargesDeduites} commission={row.commission} net={row.netAReverser} hauteur="h-1.5" />
                   </td>
                 </tr>
               ))}
               {crg.properties.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-sm text-slate-600">
+                <tr className="max-sm:block">
+                  <td colSpan={7} className="py-8 text-center text-sm text-slate-600 max-sm:block">
                     {t(`${ns}.empty`)}
                   </td>
                 </tr>
