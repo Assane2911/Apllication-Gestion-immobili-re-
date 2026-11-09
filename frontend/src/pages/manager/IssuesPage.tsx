@@ -215,22 +215,28 @@ export default function IssuesPage() {
             >
               {/* Les photos du signalement : une grande, les autres en vignettes. */}
               <div className="border-b border-slate-300 bg-slate-50 p-3 lg:border-b-0 lg:border-r">
-                <button
-                  type="button"
-                  onClick={() => setLightbox(fileUrl(allPhotos[rangPhoto]))}
-                  aria-label={t("manager.issues.enlargedPhotoAlt")}
-                  className="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden border border-slate-300 bg-slate-200"
-                >
-                  <img
-                    src={fileUrl(allPhotos[rangPhoto]) ?? undefined}
-                    alt={t("manager.issues.photoAlt", { index: rangPhoto + 1 })}
-                    className="h-full w-full object-cover"
-                  />
-                  <span className="absolute bottom-0 left-0 inline-flex items-center gap-1.5 bg-ink-900 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white">
-                    <Camera size={11} aria-hidden="true" />
-                    {t("manager.issues.photoCount", { current: rangPhoto + 1, total: allPhotos.length })}
-                  </span>
-                </button>
+                {allPhotos.length === 0 ? (
+                  <div className="flex aspect-[4/3] w-full items-center justify-center border border-dashed border-slate-400 bg-slate-100 px-3 text-center text-xs text-slate-600">
+                    {t("common.photoUnavailable")}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox(fileUrl(allPhotos[rangPhoto]))}
+                    aria-label={t("manager.issues.enlargedPhotoAlt")}
+                    className="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden border border-slate-300 bg-slate-200"
+                  >
+                    <img
+                      src={fileUrl(allPhotos[rangPhoto]) ?? undefined}
+                      alt={t("manager.issues.photoAlt", { index: rangPhoto + 1 })}
+                      className="h-full w-full object-cover"
+                    />
+                    <span className="absolute bottom-0 left-0 inline-flex items-center gap-1.5 bg-ink-900 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white">
+                      <Camera size={11} aria-hidden="true" />
+                      {t("manager.issues.photoCount", { current: rangPhoto + 1, total: allPhotos.length })}
+                    </span>
+                  </button>
+                )}
                 {allPhotos.length > 1 && (
                   <div className="mt-2 flex gap-2 overflow-x-auto">
                     {allPhotos.map((url, idx) => (

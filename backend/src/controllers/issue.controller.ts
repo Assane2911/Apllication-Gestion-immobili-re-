@@ -32,17 +32,35 @@ async function resolvePhotoUrl(value: string | null | undefined): Promise<string
   return getSignedUrl(value);
 }
 
-/** Signe `photoUrl` et chaque entrée de `additionalPhotos` (JSON stringifié) avant de renvoyer un incident au client. */
+/**
+ * Signe un chemin de photo, ou renvoie `null` si c'est impossible (objet supprimé du stockage, stockage indisponible).
+ * Une photo qui ne se signe pas ne doit PAS faire échouer la liste entière : tous les incidents du locataire, ou de
+ * l'agence, disparaîtraient derrière un seul fichier manquant. L'incident reste listé sans l'image, et l'échec est consigné.
+ */
+async function signerSansEchec(value: string | null | undefined): Promise<string | null> {
+  try {
+    return (await resolvePhotoUrl(value)) || null;
+  } catch (err) {
+    console.error(`[issues] Photo non signable, ignorée (${value}) :`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/**
+ * Signe `photoUrl` et chaque entrée de `additionalPhotos` (JSON stringifié) avant de renvoyer un incident au client.
+ * Une photo qui ne se signe pas est écartée : `photoUrl` devient une chaîne vide, et elle disparaît de `additionalPhotos`
+ * (le site n'affiche alors qu'un message « photo indisponible » à sa place).
+ */
 async function withSignedPhotos<T extends { photoUrl: string; additionalPhotos?: string | null }>(
   issue: T
 ): Promise<T> {
-  const photoUrl = (await resolvePhotoUrl(issue.photoUrl)) as string;
+  const photoUrl = (await signerSansEchec(issue.photoUrl)) ?? "";
 
   let additionalPhotos = issue.additionalPhotos ?? null;
   if (additionalPhotos) {
     try {
       const paths: string[] = JSON.parse(additionalPhotos);
-      const signed = await Promise.all(paths.map((p) => resolvePhotoUrl(p)));
+      const signed = (await Promise.all(paths.map((p) => signerSansEchec(p)))).filter((url): url is string => url !== null);
       additionalPhotos = JSON.stringify(signed);
     } catch {
       // Champ illisible : on le laisse tel quel plutôt que de faire échouer la réponse.

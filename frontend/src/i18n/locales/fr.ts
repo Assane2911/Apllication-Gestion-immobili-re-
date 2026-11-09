@@ -353,6 +353,7 @@ const fr = {
     },
     appName: "ImmoPlatform Pro",
     sheet: "Feuille",
+    photoUnavailable: "Photo momentanément indisponible",
     cartouche: {
       project: "Projet",
       space: "Espace",

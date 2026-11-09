@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { app } from "../app";
 import { issueReports, users } from "../db/schema";
 import * as storageService from "../services/storage.service";
+import { ApiError } from "../utils/asyncHandler";
 import {
   authHeader,
   createAdmin,
@@ -932,5 +933,56 @@ describe("Incidents : textes bornés et abonnement du gestionnaire", () => {
       .attach("photo", fakeJpegBuffer("autre-photo"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(200);
+  });
+});
+
+describe("photos non signables : l'incident reste listé", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Un fichier supprimé du stockage faisait échouer TOUTE la liste (locataire comme gestionnaire) : getSignedUrl levait,
+  // et un seul incident suffisait à masquer tous les autres.
+  async function monde() {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id);
+    const [sain] = await testDb.insert(issueReports).values({ contractId: contract.id, tenantId: tenant.id, title: "Incident sain", description: "d", photoUrl: "issues/ok.jpg", additionalPhotos: JSON.stringify(["issues/ok2.jpg"]) }).returning();
+    const [casse] = await testDb.insert(issueReports).values({ contractId: contract.id, tenantId: tenant.id, title: "Photo manquante", description: "d", photoUrl: "issues/missing.jpg", additionalPhotos: JSON.stringify(["issues/ok3.jpg", "issues/missing2.jpg"]) }).returning();
+    vi.spyOn(storageService, "getSignedUrl").mockImplementation(async (chemin: string) => {
+      if (chemin.includes("missing")) throw new ApiError(500, "Object not found", "STORAGE_SIGNED_URL_FAILED");
+      return `https://signed.test/${chemin}`;
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    return { manager, tenant, sain, casse };
+  }
+
+  it("liste du locataire : tous les incidents reviennent, la photo manquante est vide", async () => {
+    const { tenant, sain, casse } = await monde();
+    const res = await request(app).get("/api/issues/mine").set(await tenantToken(tenant.id));
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    const parId = Object.fromEntries(res.body.map((i: { id: string }) => [i.id, i]));
+    expect(parId[sain.id].photoUrl).toBe("https://signed.test/issues/ok.jpg");
+    expect(JSON.parse(parId[sain.id].additionalPhotos)).toEqual(["https://signed.test/issues/ok2.jpg"]);
+    expect(parId[casse.id].photoUrl).toBe("");
+    // La photo supplémentaire saine est conservée, la manquante écartée (jamais un chemin brut renvoyé tel quel).
+    expect(JSON.parse(parId[casse.id].additionalPhotos)).toEqual(["https://signed.test/issues/ok3.jpg"]);
+  });
+
+  it("liste du gestionnaire : même comportement", async () => {
+    const { manager } = await monde();
+    const res = await request(app).get("/api/issues").set(authHeader(tokenFor(manager)));
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(2);
+    const manquante = res.body.items.find((i: { title: string }) => i.title === "Photo manquante");
+    expect(manquante.photoUrl).toBe("");
+  });
+
+  it("consigne l'échec au lieu de le taire", async () => {
+    const { tenant } = await monde();
+    await request(app).get("/api/issues/mine").set(await tenantToken(tenant.id));
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("issues/missing.jpg"), expect.any(String));
   });
 });

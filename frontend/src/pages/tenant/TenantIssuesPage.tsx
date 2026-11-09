@@ -326,6 +326,11 @@ export default function TenantIssuesPage() {
               <article key={issue.id} className={`border border-l-4 border-slate-300 bg-white md:grid md:grid-cols-[16rem_1fr] ${teinte.filet}`}>
                 {/* Les photos du signalement : toutes visibles, un clic les agrandit. */}
                 <div className="border-b border-slate-300 bg-slate-50 p-3 md:border-b-0 md:border-r">
+                  {allPhotos.length === 0 && (
+                    <div className="flex aspect-4/3 items-center justify-center border border-dashed border-slate-400 bg-slate-100 px-3 text-center text-xs text-slate-600">
+                      {t("common.photoUnavailable")}
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     {allPhotos.map((url, idx) => (
                       <div
