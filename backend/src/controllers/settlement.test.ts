@@ -313,3 +313,51 @@ describe("document du solde de tout compte", () => {
     expect(solde).not.toMatch(/@media print/);
   });
 });
+
+describe("le locataire retrouve ses soldes de tout compte via /api/contracts/mine", () => {
+  async function bailAvecSolde() {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED", endDate: new Date(Date.UTC(2025, 2, 31)) });
+    await createInvoice(contract.id, { periodMonth: 3, periodYear: 2025, amount: 500, status: "LATE", dueDate: new Date(Date.UTC(2025, 2, 5)) });
+    const res = await request(app)
+      .post(`/api/contracts/${contract.id}/settlements`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ exitDate: "2025-03-31", lastMonthMode: "FULL" });
+    expect(res.status).toBe(201);
+    return { manager, tenant, contract, solde: res.body };
+  }
+
+  it("renvoie le résumé du solde, sans le détail ni les données internes de l'agence", async () => {
+    const { tenant, contract, solde } = await bailAvecSolde();
+    const res = await request(app).get("/api/contracts/mine").set(authHeader(await tokenLocataire(tenant.id)));
+
+    expect(res.status).toBe(200);
+    const bail = res.body.find((c: { id: string }) => c.id === contract.id);
+    expect(bail.settlements).toHaveLength(1);
+    const resume = bail.settlements[0];
+    expect(resume).toMatchObject({ id: solde.id, reference: solde.reference, currency: "EUR", balance: solde.balance, settledAt: null });
+    // Le locataire peut retrouver le document ; il n'a pas à voir l'auteur, le gestionnaire ni le détail figé.
+    expect(Object.keys(resume).sort()).toEqual(["balance", "createdAt", "currency", "exitDate", "id", "reference", "settledAt"]);
+  });
+
+  it("renvoie une liste vide quand aucun solde n'a été émis", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id);
+    const res = await request(app).get("/api/contracts/mine").set(authHeader(await tokenLocataire(tenant.id)));
+    expect(res.body[0].settlements).toEqual([]);
+  });
+
+  it("ne montre pas le solde d'un autre bail à un autre locataire", async () => {
+    const { manager } = await bailAvecSolde();
+    const property = await createProperty(manager.id);
+    const autre = await createTenant(manager.id);
+    await createContract(property.id, autre.id);
+    const res = await request(app).get("/api/contracts/mine").set(authHeader(await tokenLocataire(autre.id)));
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].settlements).toEqual([]);
+  });
+});

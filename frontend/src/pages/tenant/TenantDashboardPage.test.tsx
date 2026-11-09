@@ -82,6 +82,50 @@ describe("TenantDashboardPage", () => {
     expect(screen.getByText("1 000 €")).toBeInTheDocument();
   });
 
+  describe("solde de tout compte", () => {
+    const solde = (extra: Record<string, unknown> = {}) => ({
+      id: "sol-1",
+      reference: "SOLDE-2026-ABCD1234",
+      currency: "EUR",
+      exitDate: "2026-06-30T00:00:00.000Z",
+      balance: 350,
+      createdAt: "2026-07-02T00:00:00.000Z",
+      settledAt: null,
+      ...extra,
+    });
+
+    it("montre la somme à restituer, la référence, et ouvre le document du solde", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ settlements: [solde()] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      mockedApi.get.mockResolvedValue({ data: "<html>Solde de tout compte</html>" });
+      const user = userEvent.setup();
+      renderPage();
+
+      expect(await screen.findByText("350 € vous seront restitués")).toBeInTheDocument();
+      expect(screen.getByText("SOLDE-2026-ABCD1234")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: /Voir le document/ }));
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/documents/settlement/sol-1", expect.anything()));
+    });
+
+    it("dit ce qui reste dû à l'agence quand le solde est négatif, et la date de règlement", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ settlements: [solde({ balance: -120, settledAt: "2026-07-10T00:00:00.000Z" })] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      expect(await screen.findByText("120 € restent dus à l'agence")).toBeInTheDocument();
+      expect(screen.getByText(/réglé le/)).toBeInTheDocument();
+    });
+
+    it("n'affiche aucune section quand aucun solde n'a été émis", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract({ settlements: [] })] });
+      mockedApi.get.mockResolvedValueOnce(emptyInspections());
+      renderPage();
+
+      await screen.findByText("Studio Centre-ville");
+      expect(screen.queryByText("Solde de tout compte")).not.toBeInTheDocument();
+    });
+  });
+
   it("propose de signer le bail tant qu'il n'est pas signé, puis affiche la date de signature", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: null })] });
     mockedApi.get.mockResolvedValueOnce(emptyInspections());

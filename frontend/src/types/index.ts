@@ -257,6 +257,8 @@ export interface Contract {
   depositRefundedAt?: string | null;
   /** Congé en cours sur ce bail (voir LeaseNotice), ou `null`/absent. */
   activeNotice?: ActiveNotice | null;
+  /** Soldes de tout compte émis sur ce bail (résumé : de quoi retrouver et ouvrir le document), côté locataire. */
+  settlements?: ContractSettlementSummary[];
   property?: Property;
   tenant?: Tenant;
   invoices?: Invoice[];
@@ -928,4 +930,16 @@ export interface LeaseSettlement {
   createdAt: string;
   emailEnvoye?: boolean;
   colocatairesPrevenus?: number;
+}
+
+/** Un solde de tout compte vu par le locataire (GET /contracts/mine) : le résumé, sans le détail interne de l'agence. */
+export interface ContractSettlementSummary {
+  id: string;
+  reference: string;
+  currency: string;
+  exitDate: string;
+  /** Positif : à restituer au locataire. Négatif : reste dû par le locataire. */
+  balance: number;
+  createdAt: string;
+  settledAt: string | null;
 }

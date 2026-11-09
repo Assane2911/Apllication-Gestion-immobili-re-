@@ -4,13 +4,14 @@ import { z } from "zod";
 import { env } from "../config/env";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { contractCotenants, contractGuarantors, contracts, inspections, invoices, issueReports, leaseNotices, properties, tenants } from "../db/schema";
+import { contractCotenants, contractGuarantors, contracts, inspections, invoices, issueReports, leaseNotices, leaseSettlements, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { depositRefundEmail, sendEmail } from "../services/email.service";
 import { congesActifsParBail } from "../services/conge.service";
 import { generateInvoicesForContract } from "../services/invoice.service";
 import { colocatairesDuBail } from "./cotenant.controller";
 import { bauxDuLocataire } from "../services/colocation.service";
+import { referenceSolde } from "../services/soldeDeToutCompte.service";
 import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
@@ -664,12 +665,28 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
+  // Soldes de tout compte émis sur ces baux, en une passe. Le locataire n'en voit que le résumé (de quoi retrouver et
+  // ouvrir le document) : ni le détail JSON, ni le gestionnaire, ni l'auteur de l'émission.
+  const soldes = await db
+    .select()
+    .from(leaseSettlements)
+    .where(inArray(leaseSettlements.contractId, contractIds))
+    .orderBy(desc(leaseSettlements.createdAt));
+  const soldesParBail = new Map<string, Array<{ id: string; reference: string; currency: string; exitDate: Date; balance: number; createdAt: Date; settledAt: Date | null }>>();
+  for (const solde of soldes) {
+    const resume = { id: solde.id, reference: referenceSolde(solde), currency: solde.currency, exitDate: solde.exitDate, balance: solde.balance, createdAt: solde.createdAt, settledAt: solde.settledAt };
+    const liste = soldesParBail.get(solde.contractId);
+    if (liste) liste.push(resume);
+    else soldesParBail.set(solde.contractId, [resume]);
+  }
+
   const result = await Promise.all(
     rows.map(async (row) => ({
       ...parseDepositDeductions(row.contract),
       scannedContractUrl: await resolveScannedUrl(row.contract.scannedContractUrl),
       property: row.property,
       invoices: invoicesByContract.get(row.contract.id) ?? [],
+      settlements: soldesParBail.get(row.contract.id) ?? [],
       // Le portail n'offre la signature électronique qu'au titulaire.
       qualite: baux.get(row.contract.id) ?? "TITULAIRE",
     }))
