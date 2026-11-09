@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Download,
   FileCheck,
+  FileText,
   Home,
   MapPin,
   PenLine,
@@ -46,6 +47,7 @@ export default function TenantDashboardPage() {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingLeaseContract, setViewingLeaseContract] = useState<Contract | null>(null);
+  const [viewingSettlement, setViewingSettlement] = useState<{ id: string; reference: string } | null>(null);
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [signingInspection, setSigningInspection] = useState<Inspection | null>(null);
   const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
@@ -422,6 +424,35 @@ export default function TenantDashboardPage() {
                 </div>
               )}
 
+              {/* Solde de tout compte émis sur ce bail : le locataire le retrouve ici, pas seulement dans l'e-mail reçu. */}
+              {(c.settlements ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-slate-900">{t("tenant.dashboard.settlement.title")}</p>
+                  {(c.settlements ?? []).map((solde) => (
+                    <div key={solde.id} className="flex flex-wrap items-center justify-between gap-3 border border-slate-300 bg-slate-50 p-3.5">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-800">
+                          {solde.balance > 0
+                            ? t("tenant.dashboard.settlement.toRefund", { amount: formatMoney(solde.balance, solde.currency) })
+                            : solde.balance < 0
+                              ? t("tenant.dashboard.settlement.due", { amount: formatMoney(-solde.balance, solde.currency) })
+                              : t("tenant.dashboard.settlement.zero")}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-600">
+                          <span className="font-mono">{solde.reference}</span>
+                          {" · "}
+                          {t("tenant.dashboard.settlement.issuedOn", { date: new Date(solde.createdAt).toLocaleDateString(i18n.language) })}
+                          {solde.settledAt && ` · ${t("tenant.dashboard.settlement.settledOn", { date: new Date(solde.settledAt).toLocaleDateString(i18n.language) })}`}
+                        </p>
+                      </div>
+                      <button onClick={() => setViewingSettlement({ id: solde.id, reference: solde.reference })} className={BOUTON_CONTOUR}>
+                        <FileText size={13} aria-hidden="true" /> {t("tenant.dashboard.settlement.view")}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* États des lieux (entrée/sortie) rattachés à ce contrat */}
               {inspections.filter((insp) => insp.contractId === c.id).length > 0 && (
                 <div className="space-y-2">
@@ -524,6 +555,14 @@ export default function TenantDashboardPage() {
             load();
           }}
           onClose={() => setSigningInspection(null)}
+        />
+      )}
+
+      {viewingSettlement && (
+        <DocumentModal
+          title={t("tenant.dashboard.settlement.docTitle", { reference: viewingSettlement.reference })}
+          docUrl={`/documents/settlement/${viewingSettlement.id}`}
+          onClose={() => setViewingSettlement(null)}
         />
       )}
 
