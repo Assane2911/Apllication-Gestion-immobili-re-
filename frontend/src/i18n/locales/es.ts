@@ -355,6 +355,7 @@ const es: TranslationSchema = {
     },
     appName: "ImmoPlatform Pro",
     sheet: "Hoja",
+    photoUnavailable: "Foto no disponible temporalmente",
     cartouche: {
       project: "Proyecto",
       space: "Espacio",

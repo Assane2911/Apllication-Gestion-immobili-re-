@@ -81,6 +81,14 @@ describe("IssuesPage (gestionnaire)", () => {
     expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument();
   });
 
+  it("affiche « photo indisponible » quand la photo n'a pas pu être signée, et l'incident reste listé", async () => {
+    mockedApi.get.mockResolvedValueOnce(paginated([issue({ photoUrl: "" })]));
+    renderWithVendors();
+    expect(await screen.findByText("Photo momentanément indisponible")).toBeInTheDocument();
+    expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument();
+    expect(screen.queryByAltText(/Photo incident/)).not.toBeInTheDocument();
+  });
+
   it("affiche un message dédié quand aucun incident ne correspond au filtre", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([]));
     renderWithVendors();

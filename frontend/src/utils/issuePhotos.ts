@@ -8,12 +8,14 @@ import type { IssueReport } from "../types";
  * deux cette même galerie.
  */
 export function getAllIssuePhotos(issue: IssueReport): string[] {
-  const list = [issue.photoUrl];
+  // Le serveur renvoie une chaîne vide pour une photo qu'il n'a pas pu signer (fichier introuvable) : on l'écarte, la page
+  // affiche alors un message « photo indisponible » plutôt qu'une image cassée.
+  const list = issue.photoUrl ? [issue.photoUrl] : [];
   if (issue.additionalPhotos) {
     try {
       const extra = JSON.parse(issue.additionalPhotos);
       if (Array.isArray(extra)) {
-        list.push(...extra);
+        list.push(...extra.filter((url): url is string => typeof url === "string" && url !== ""));
       }
     } catch {}
   }

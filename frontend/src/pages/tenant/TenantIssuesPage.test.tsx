@@ -418,4 +418,13 @@ describe("TenantIssuesPage — suivi, filtres, motifs courants", () => {
       expect(screen.queryByRole("button", { name: /Ajouter une photo à cet incident/ })).not.toBeInTheDocument();
     });
   });
+
+  it("affiche « photo indisponible » quand la photo n'a pas pu être signée par le serveur, sans image cassée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [issue({ photoUrl: "" })] });
+    mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+    renderPage();
+    expect(await screen.findByText("Photo momentanément indisponible")).toBeInTheDocument();
+    expect(screen.getByText("Fuite d'eau sous l'évier")).toBeInTheDocument();
+    expect(screen.queryByAltText(/Photo incident/)).not.toBeInTheDocument();
+  });
 });
