@@ -78,6 +78,17 @@ describe("OwnerCrgPage", () => {
     expect(screen.getByText("AGRIFRPP")).toBeInTheDocument();
   });
 
+  it("chaque valeur du détail par bien porte son libellé de colonne (le tableau devient des cartes sur téléphone)", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: crg() });
+    renderPage();
+    await screen.findByText("Villa Ngor");
+    // Sur téléphone, le tableau de 6 colonnes (708 px) devient une carte par bien : sans ces libellés, les chiffres seraient
+    // anonymes. Le net à reverser de chaque bien ne doit plus exiger de défiler de côté.
+    const cellules = Array.from(document.querySelectorAll("tbody td[data-label]"));
+    expect(cellules.map((c) => c.getAttribute("data-label"))).toEqual(["Devise", "Loyers encaissés", "Charges déduites", "Commission", "Net à reverser"]);
+    expect(cellules.find((c) => c.getAttribute("data-label") === "Net à reverser")?.textContent).toContain("800");
+  });
+
   it("affiche un message dédié quand aucune coordonnée bancaire n'est enregistrée", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: crg({ iban: null, bic: null }) });
     renderPage();
