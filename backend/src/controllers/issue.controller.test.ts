@@ -813,8 +813,8 @@ describe("POST /api/issues/:id/photo — plafond de photos", () => {
     return { tenant, id: createRes.body.id as string };
   }
 
-  it("refuse une photo de plus une fois le plafond atteint, sans rien téléverser", async () => {
-    const { tenant, id } = await signalementAvecPhotos(10);
+  it("refuse une photo de plus une fois le plafond de 10 photos atteint (la principale comprise), sans rien téléverser", async () => {
+    const { tenant, id } = await signalementAvecPhotos(9);
     const upload = vi.spyOn(storageService, "uploadPrivateFile");
     upload.mockClear();
 
@@ -824,11 +824,13 @@ describe("POST /api/issues/:id/photo — plafond de photos", () => {
       .attach("photo", fakeJpegBuffer("de-trop"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(409);
+    expect(res.body.code).toBe("ISSUE_PHOTO_LIMIT");
+    expect(res.body.params).toEqual({ max: 10 });
     expect(upload).not.toHaveBeenCalled();
   });
 
-  it("accepte la dernière photo permise", async () => {
-    const { tenant, id } = await signalementAvecPhotos(9);
+  it("accepte la dernière photo permise : la dixième, la principale comprise", async () => {
+    const { tenant, id } = await signalementAvecPhotos(8);
 
     const res = await request(app)
       .post(`/api/issues/${id}/photo`)
@@ -836,7 +838,8 @@ describe("POST /api/issues/:id/photo — plafond de photos", () => {
       .attach("photo", fakeJpegBuffer("derniere"), { filename: "b.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(200);
-    expect(JSON.parse(res.body.additionalPhotos)).toHaveLength(10);
+    // 1 photo principale + 9 supplémentaires = 10 au total.
+    expect(JSON.parse(res.body.additionalPhotos)).toHaveLength(9);
   });
 });
 

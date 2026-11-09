@@ -7,7 +7,7 @@ import GroupeFiltres from "../../components/GroupeFiltres";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport, IssueStatus } from "../../types";
 import { preparerFichier } from "../../utils/fichiers";
-import { getAllIssuePhotos } from "../../utils/issuePhotos";
+import { getAllIssuePhotos, MAX_PHOTOS_PAR_INCIDENT, peutAjouterUnePhoto } from "../../utils/issuePhotos";
 import { ancienneteSignalement, estEnCours, filtrerSignalements, MOTIFS_SIGNALEMENT, situationSignalements, type FiltreSignalements } from "../../utils/syntheseLocataire";
 import Bulle from "../../components/Bulle";
 
@@ -441,6 +441,8 @@ export default function TenantIssuesPage() {
                           </button>
                         </div>
                       </div>
+                    ) : !peutAjouterUnePhoto(issue) ? (
+                      <p className="text-xs text-slate-600">{t("tenant.issues.photoLimitReached", { max: MAX_PHOTOS_PAR_INCIDENT })}</p>
                     ) : (
                       <Bulle texte={t("tenant.tips.addPhoto")}>
                         <button

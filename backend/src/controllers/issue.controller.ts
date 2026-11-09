@@ -260,7 +260,8 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(await withSignedPhotos(issue));
 });
 
-const MAX_PHOTOS_SUPPLEMENTAIRES = 10;
+/** Photos d'un même incident, la photo principale comprise : 1 à la création + 9 ajoutées après coup. */
+export const MAX_PHOTOS_PAR_INCIDENT = 10;
 
 /** Le locataire ou le gestionnaire ajoute une nouvelle photo à un incident déjà signalé. */
 export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) => {
@@ -288,8 +289,8 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
   // simultanées peuvent dépasser le plafond d'une photo ; l'enjeu est de
   // borner le volume, pas de le garantir à l'unité près.)
   const dejaAjoutees = issue.additionalPhotos ? (JSON.parse(issue.additionalPhotos) as unknown[]).length : 0;
-  if (dejaAjoutees >= MAX_PHOTOS_SUPPLEMENTAIRES) {
-    throw new ApiError(409, `Ce signalement a déjà ${MAX_PHOTOS_SUPPLEMENTAIRES} photos supplémentaires`, "ISSUE_PHOTO_LIMIT", { max: MAX_PHOTOS_SUPPLEMENTAIRES });
+  if (1 + dejaAjoutees >= MAX_PHOTOS_PAR_INCIDENT) {
+    throw new ApiError(409, `Ce signalement a déjà atteint le maximum de ${MAX_PHOTOS_PAR_INCIDENT} photos`, "ISSUE_PHOTO_LIMIT", { max: MAX_PHOTOS_PAR_INCIDENT });
   }
 
   assertFileContentMatchesDeclaredType(req.file);

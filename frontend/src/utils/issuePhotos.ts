@@ -19,3 +19,11 @@ export function getAllIssuePhotos(issue: IssueReport): string[] {
   }
   return list;
 }
+
+/** Photos d'un même incident, la photo principale comprise (même plafond que le serveur : voir issue.controller.ts). */
+export const MAX_PHOTOS_PAR_INCIDENT = 10;
+
+/** Vrai tant que l'incident peut recevoir une photo de plus. */
+export function peutAjouterUnePhoto(issue: IssueReport): boolean {
+  return getAllIssuePhotos(issue).length < MAX_PHOTOS_PAR_INCIDENT;
+}
