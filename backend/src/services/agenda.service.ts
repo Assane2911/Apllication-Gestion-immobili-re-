@@ -39,6 +39,14 @@ const MAX_EVENEMENTS = 1000;
 export const JOURS_AGENDA_PAR_DEFAUT = 180;
 export const JOURS_AGENDA_MAX = 366;
 
+/**
+ * Les requêtes de l'agenda ne rapatrient QUE les colonnes dont elles se servent. Les lignes entières de contrats, de biens et
+ * de locataires portent des textes libres (clauses du bail, mentions, signatures) : mesuré sur 500 biens, la requête des
+ * loyers ramenait 7,5 Mo pour 170 Ko utiles, à chaque affichage du menu (le décompte est relu toutes les cinq minutes par
+ * onglet ouvert). Ajouter un champ à une échéance suppose de l'ajouter ici.
+ */
+const NOM_LOCATAIRE = { firstName: tenants.firstName, lastName: tenants.lastName };
+
 export async function chargerAgenda(managerId: string, jours: number, maintenant: Date = new Date()): Promise<EvenementAgenda[]> {
   const aujourdhui = debutDeLaJournee(maintenant);
   const horizon = jourDecale(jours, aujourdhui);
@@ -47,39 +55,61 @@ export async function chargerAgenda(managerId: string, jours: number, maintenant
 
   const [loyers, baux, conges, revisions, assurances, documents] = await Promise.all([
     db
-      .select({ i: invoices, c: contracts, p: properties, t: tenants })
+      .select({
+        i: { id: invoices.id, dueDate: invoices.dueDate, status: invoices.status, amount: invoices.amount, amountPaid: invoices.amountPaid, currency: invoices.currency },
+        c: { id: contracts.id },
+        p: { id: properties.id, title: properties.title },
+        t: NOM_LOCATAIRE,
+      })
       .from(invoices)
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .where(and(eq(properties.managerId, managerId), inArray(invoices.status, ["PENDING", "LATE"]), lte(invoices.dueDate, horizon))),
     db
-      .select({ c: contracts, p: properties, t: tenants })
+      .select({ c: { id: contracts.id, endDate: contracts.endDate }, p: { id: properties.id, title: properties.title }, t: NOM_LOCATAIRE })
       .from(contracts)
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .where(and(eq(properties.managerId, managerId), eq(contracts.status, "ACTIVE"), lte(contracts.endDate, horizon))),
     db
-      .select({ n: leaseNotices, c: contracts, p: properties, t: tenants })
+      .select({
+        n: { id: leaseNotices.id, exitDate: leaseNotices.exitDate, reason: leaseNotices.reason },
+        c: { id: contracts.id },
+        p: { id: properties.id, title: properties.title },
+        t: NOM_LOCATAIRE,
+      })
       .from(leaseNotices)
       .innerJoin(contracts, eq(leaseNotices.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .where(and(eq(properties.managerId, managerId), eq(leaseNotices.status, "ACTIVE"), eq(contracts.status, "ACTIVE"), lte(leaseNotices.exitDate, horizon))),
     db
-      .select({ r: rentRevisions, c: contracts, p: properties, t: tenants })
+      .select({
+        r: { id: rentRevisions.id, effectiveDate: rentRevisions.effectiveDate, newRent: rentRevisions.newRent },
+        c: { id: contracts.id, currency: contracts.currency },
+        p: { id: properties.id, title: properties.title },
+        t: NOM_LOCATAIRE,
+      })
       .from(rentRevisions)
       .innerJoin(contracts, eq(rentRevisions.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .where(and(eq(properties.managerId, managerId), eq(rentRevisions.status, "PENDING"), lte(rentRevisions.effectiveDate, horizon))),
     db
-      .select({ a: insurancePolicies, p: properties })
+      .select({
+        a: { id: insurancePolicies.id, expiryDate: insurancePolicies.expiryDate, insurerName: insurancePolicies.insurerName },
+        p: { id: properties.id, title: properties.title },
+      })
       .from(insurancePolicies)
       .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
       .where(and(eq(properties.managerId, managerId), lte(insurancePolicies.expiryDate, horizon))),
     db
-      .select({ d: storedDocuments, bien: properties, t: tenants })
+      .select({
+        d: { id: storedDocuments.id, expiresAt: storedDocuments.expiresAt, title: storedDocuments.title },
+        bien: { id: properties.id, title: properties.title },
+        t: NOM_LOCATAIRE,
+      })
       .from(storedDocuments)
       .leftJoin(properties, eq(storedDocuments.propertyId, properties.id))
       .leftJoin(tenants, eq(storedDocuments.tenantId, tenants.id))
