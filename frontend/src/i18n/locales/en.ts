@@ -1451,6 +1451,7 @@ const en: TranslationSchema = {
       trialFree: "Free trial",
       closeMenuAria: "Close menu",
       openMenuAria: "Open menu",
+      openMenuPending: "Open menu, {{count}} item(s) pending",
     },
     tenantLayout: {
       title: "Tenant area",

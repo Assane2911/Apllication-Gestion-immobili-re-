@@ -14,7 +14,6 @@ import {
   Inbox,
   LayoutDashboard,
   Megaphone,
-  Menu,
   MessageSquare,
   Receipt,
   Settings,
@@ -31,6 +30,7 @@ import CartouchePlan from "./CartouchePlan";
 import { NonLusContext } from "../context/nonLus";
 import { useNonLus } from "../hooks/useNonLus";
 import { useResumeAgenda } from "../hooks/useResumeAgenda";
+import BoutonOuvrirMenu from "./BoutonOuvrirMenu";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
@@ -168,13 +168,11 @@ export default function ManagerLayout() {
       {dialogueDeconnexion}
       <main data-surface="app" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between gap-3 mb-6">
-          <button
+          <BoutonOuvrirMenu
             onClick={() => setMobileNavOpen(true)}
+            enAttente={nonLus.count + agenda.overdue}
             className="sm:hidden shrink-0 w-9 h-9 bg-white border border-slate-400 flex items-center justify-center text-ink-900 hover:border-ink-900 transition-colors"
-            aria-label={t("components.managerLayout.openMenuAria")}
-          >
-            <Menu size={18} />
-          </button>
+          />
           <BoutonsHistorique />
           <GlobalSearch />
           <NotificationBell />

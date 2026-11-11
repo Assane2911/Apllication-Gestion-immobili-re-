@@ -1451,6 +1451,7 @@ const pt: TranslationSchema = {
       trialFree: "Teste grátis",
       closeMenuAria: "Fechar o menu",
       openMenuAria: "Abrir o menu",
+      openMenuPending: "Abrir o menu, {{count}} item(ns) pendente(s)",
     },
     tenantLayout: {
       title: "Área do inquilino",
