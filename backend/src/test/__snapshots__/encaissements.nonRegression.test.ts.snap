@@ -425,6 +425,8 @@ Bien;Revenus;Dépenses;Résultat net;Devise
 exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > tableau de bord du gestionnaire 1`] = `
 {
   "activeContracts": 2,
+  "agendaOverdueOther": 0,
+  "agendaSoon": 0,
   "expensesByMonth": {
     "2026-09": {
       "EUR": 120,
