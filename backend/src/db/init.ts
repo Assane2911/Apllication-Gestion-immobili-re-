@@ -686,6 +686,18 @@ export async function initDb() {
       )
     `);
 
+    // Lien d'abonnement au calendrier de l'agenda : l'empreinte du jeton, jamais le jeton (voir agendaFeeds dans schema.ts).
+    await creerTable("agenda_feeds", sql`
+      CREATE TABLE IF NOT EXISTS agenda_feeds (
+        manager_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
+        last_used_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await creerIndex("agenda_feeds_token_hash_unique", sql`CREATE UNIQUE INDEX IF NOT EXISTS agenda_feeds_token_hash_unique ON agenda_feeds (token_hash)`);
+
     // Historique des révisions de loyer d'un bail (après contracts : FK).
     await creerTable("rent_revisions", sql`
       CREATE TABLE IF NOT EXISTS rent_revisions (

@@ -193,6 +193,30 @@ export function requireRole(...roles: Array<AuthPayload["role"]>) {
 }
 
 /**
+ * Le compte a-t-il aujourd'hui un droit d'accès : essai en cours, abonnement actif, ou abonnement résilié dont la période déjà
+ * payée n'est pas échue ? Seule règle, partagée par le middleware ci-dessous et par le flux de calendrier (sans session).
+ */
+export function abonnementEnCours(user: typeof users.$inferSelect, now: Date = new Date()): boolean {
+  const trialEnds = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+  const subEnds = user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
+
+  const isTrialValid = user.subscriptionStatus === "TRIAL" && trialEnds !== null && trialEnds > now;
+  // Un abonnement résilié garde ses droits jusqu'au terme de la période déjà
+  // payée : résilier arrête la RECONDUCTION, pas le temps acheté — c'est la
+  // règle qu'énonce subscriptionPeriod.service.ts et que cancelSubscription
+  // applique en laissant subscriptionEndsAt intact. Sans ce cas, une année
+  // réglée d'avance était perdue au clic sur « annuler le renouvellement ».
+  // L'absence de date de fin ne vaut en revanche accès que pour un abonnement
+  // ACTIVE (accès à vie) : résilié sans période payée connue, il n'y a aucun
+  // jour à honorer.
+  const isSubscriptionValid =
+    (user.subscriptionStatus === "ACTIVE" && (subEnds === null || subEnds > now)) ||
+    (user.subscriptionStatus === "CANCELLED" && subEnds !== null && subEnds > now);
+
+  return isTrialValid || isSubscriptionValid;
+}
+
+/**
  * Middleware qui vérifie qu'un gestionnaire dispose d'une période d'essai valide (15 jours)
  * ou d'un abonnement payant actif. Si expiré, bloque l'accès aux opérations de gestion.
  */
@@ -213,24 +237,9 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
     return next(new ApiError(401, "Ce compte n'existe plus. Veuillez vous reconnecter.", "ACCOUNT_GONE"));
   }
 
-  const now = new Date();
-  const trialEnds = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
-  const subEnds = user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
+  const accesOuvert = abonnementEnCours(user);
 
-  const isTrialValid = user.subscriptionStatus === "TRIAL" && trialEnds !== null && trialEnds > now;
-  // Un abonnement résilié garde ses droits jusqu'au terme de la période déjà
-  // payée : résilier arrête la RECONDUCTION, pas le temps acheté — c'est la
-  // règle qu'énonce subscriptionPeriod.service.ts et que cancelSubscription
-  // applique en laissant subscriptionEndsAt intact. Sans ce cas, une année
-  // réglée d'avance était perdue au clic sur « annuler le renouvellement ».
-  // L'absence de date de fin ne vaut en revanche accès que pour un abonnement
-  // ACTIVE (accès à vie) : résilié sans période payée connue, il n'y a aucun
-  // jour à honorer.
-  const isSubscriptionValid =
-    (user.subscriptionStatus === "ACTIVE" && (subEnds === null || subEnds > now)) ||
-    (user.subscriptionStatus === "CANCELLED" && subEnds !== null && subEnds > now);
-
-  if (!isTrialValid && !isSubscriptionValid) {
+  if (!accesOuvert) {
     return next(
       new ApiError(
         402,

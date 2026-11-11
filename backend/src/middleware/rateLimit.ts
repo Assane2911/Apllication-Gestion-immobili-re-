@@ -119,6 +119,23 @@ export const cronLimiter = rateLimit({
 });
 
 /**
+ * Limite par adresse IP sur le flux de calendrier public (GET /api/agenda/ics/:jeton.ics). Seuls les échecs comptent : un
+ * calendrier légitime qui relit son lien toutes les heures n'use jamais ce quota, qui vise les essais de jetons au hasard.
+ * Le store est exporté pour que les tests remettent le compteur à zéro.
+ */
+export const agendaFeedLimiterStore = new MemoryStore();
+
+export const agendaFeedLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  store: agendaFeedLimiterStore,
+  message: "Too many attempts. Try again later.",
+});
+
+/**
  * Limite par adresse IP sur POST /api/csp-report, le point de collecte des violations de la politique de sécurité de
  * contenu (voir csp.controller.ts). Public, donc sans authentification possible : sans limite, n'importe qui pouvait
  * remplir les journaux. Une page légitime envoie une poignée de rapports, tous les 60 s au plus : 60 par minute et par
