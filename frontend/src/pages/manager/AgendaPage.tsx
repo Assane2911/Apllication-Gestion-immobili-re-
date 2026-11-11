@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, isRequestCancelled } from "../../api/client";
+import AbonnementCalendrier from "../../components/AbonnementCalendrier";
 import BarreListe from "../../components/BarreListe";
 import EmptyState from "../../components/EmptyState";
 import { useCurrency } from "../../context/currency";
@@ -123,6 +124,8 @@ export default function AgendaPage() {
           </select>
         </div>
       </div>
+
+      <AbonnementCalendrier />
 
       {loadError && (
         <div className="flex items-center justify-between gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">

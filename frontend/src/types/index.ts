@@ -1002,3 +1002,15 @@ export interface ContractSettlementSummary {
   createdAt: string;
   settledAt: string | null;
 }
+
+/** État du lien d'abonnement au calendrier de l'agenda (jamais le jeton : il n'est donné qu'à la création). */
+export interface LienCalendrier {
+  active: boolean;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+}
+/** Réponse de la création du lien : `path` est relatif à la racine de l'API et contient le jeton, à montrer une seule fois. */
+export interface LienCalendrierCree extends LienCalendrier {
+  token: string;
+  path: string;
+}
