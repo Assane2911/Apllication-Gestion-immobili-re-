@@ -1,6 +1,6 @@
-import { and, eq, inArray, lte } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 import { db } from "../db/client";
-import { contracts, insurancePolicies, invoices, leaseNotices, properties, rentRevisions, tenants } from "../db/schema";
+import { contracts, insurancePolicies, invoices, leaseNotices, properties, rentRevisions, storedDocuments, tenants } from "../db/schema";
 import { debutDeLaJournee, jourDecale, joursEntre } from "../utils/dates";
 
 /**
@@ -11,7 +11,7 @@ import { debutDeLaJournee, jourDecale, joursEntre } from "../utils/dates";
  * échéance dépassée est marquée `enRetard` ; les autres sont à venir, dans la fenêtre demandée.
  */
 
-export type TypeEvenement = "RENT_DUE" | "LEASE_END" | "EXIT" | "RENT_REVISION" | "INSURANCE_EXPIRY";
+export type TypeEvenement = "RENT_DUE" | "LEASE_END" | "EXIT" | "RENT_REVISION" | "INSURANCE_EXPIRY" | "DOCUMENT_EXPIRY";
 
 export interface EvenementAgenda {
   /** Stable d'un appel à l'autre : « type:identifiant de l'objet ». */
@@ -19,19 +19,20 @@ export interface EvenementAgenda {
   type: TypeEvenement;
   date: Date;
   enRetard: boolean;
-  propertyId: string;
-  propertyTitle: string;
+  /** Null pour un document rangé au seul nom d'un locataire. */
+  propertyId: string | null;
+  propertyTitle: string | null;
   contractId: string | null;
   tenantName: string | null;
   /** Loyer dû (RENT_DUE) ou nouveau loyer (RENT_REVISION) ; null sinon. */
   amount: number | null;
   currency: string | null;
-  /** Libellé libre : assureur pour une assurance, motif pour un congé. */
+  /** Libellé libre : assureur pour une assurance, motif pour un congé, intitulé pour un document. */
   label: string | null;
 }
 
-/** Au-delà, une police échue et jamais supprimée n'est plus une urgence, seulement du bruit. */
-const JOURS_ASSURANCE_ECHUE = 90;
+/** Au-delà, une police ou un document échu et jamais supprimé n'est plus une urgence, seulement du bruit. */
+const JOURS_ECHEANCE_PASSEE_CONSERVEE = 90;
 /** Garde-fou : une agence très chargée ne doit pas renvoyer une réponse sans limite. */
 const MAX_EVENEMENTS = 1000;
 
@@ -44,7 +45,7 @@ export async function chargerAgenda(managerId: string, jours: number, maintenant
   const enRetard = (date: Date) => joursEntre(aujourdhui, date) < 0;
   const nom = (t: { firstName: string; lastName: string } | null) => (t ? `${t.firstName} ${t.lastName}`.trim() : null);
 
-  const [loyers, baux, conges, revisions, assurances] = await Promise.all([
+  const [loyers, baux, conges, revisions, assurances, documents] = await Promise.all([
     db
       .select({ i: invoices, c: contracts, p: properties, t: tenants })
       .from(invoices)
@@ -77,6 +78,12 @@ export async function chargerAgenda(managerId: string, jours: number, maintenant
       .from(insurancePolicies)
       .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
       .where(and(eq(properties.managerId, managerId), lte(insurancePolicies.expiryDate, horizon))),
+    db
+      .select({ d: storedDocuments, bien: properties, t: tenants })
+      .from(storedDocuments)
+      .leftJoin(properties, eq(storedDocuments.propertyId, properties.id))
+      .leftJoin(tenants, eq(storedDocuments.tenantId, tenants.id))
+      .where(and(eq(storedDocuments.managerId, managerId), isNotNull(storedDocuments.expiresAt), lte(storedDocuments.expiresAt, horizon))),
   ]);
 
   // Un congé en cours remplace la fin de bail : on ne montre pas deux dates de sortie pour un même bail.
@@ -146,7 +153,7 @@ export async function chargerAgenda(managerId: string, jours: number, maintenant
   }
   for (const { a, p } of assurances) {
     // Une police échue depuis longtemps n'est plus une échéance : on ne garde que les récentes.
-    if (joursEntre(a.expiryDate, aujourdhui) > JOURS_ASSURANCE_ECHUE) continue;
+    if (joursEntre(a.expiryDate, aujourdhui) > JOURS_ECHEANCE_PASSEE_CONSERVEE) continue;
     evenements.push({
       id: `INSURANCE_EXPIRY:${a.id}`,
       type: "INSURANCE_EXPIRY",
@@ -159,6 +166,25 @@ export async function chargerAgenda(managerId: string, jours: number, maintenant
       amount: null,
       currency: null,
       label: a.insurerName,
+    });
+  }
+
+  for (const { d, bien, t } of documents) {
+    const echeance = d.expiresAt!;
+    // Un document périmé depuis longtemps n'est plus une échéance : on ne garde que les récents.
+    if (joursEntre(echeance, aujourdhui) > JOURS_ECHEANCE_PASSEE_CONSERVEE) continue;
+    evenements.push({
+      id: `DOCUMENT_EXPIRY:${d.id}`,
+      type: "DOCUMENT_EXPIRY",
+      date: echeance,
+      enRetard: enRetard(echeance),
+      propertyId: bien?.id ?? null,
+      propertyTitle: bien?.title ?? null,
+      contractId: null,
+      tenantName: nom(t),
+      amount: null,
+      currency: null,
+      label: d.title,
     });
   }
 

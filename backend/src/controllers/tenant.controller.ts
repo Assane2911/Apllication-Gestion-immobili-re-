@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { db, Transaction } from "../db/client";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { activityLogs, contracts, inspections, invoices, issueReports, messages, properties, tenants, users, contractGuarantors, contractCotenants } from "../db/schema";
+import { activityLogs, contracts, inspections, invoices, issueReports, messages, properties, storedDocuments, tenants, users, contractGuarantors, contractCotenants } from "../db/schema";
 import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
 import { construireExportLocataire, nomFichierExport } from "../services/exportDonnees.service";
 import { fetchFiabiliteParLocataire } from "../services/reliability.service";
@@ -12,6 +12,7 @@ import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
+import { cheminsDocumentsDuLocataire, documentsDuLocataire, supprimerFichiers } from "../services/storedDocument.service";
 import { assertOwnership } from "../utils/authorization";
 import { remplacerDansTexte } from "../utils/effacementTexte";
 import { LANGUES, langueDeLaRequete } from "../utils/langue";
@@ -298,6 +299,9 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
   const nomAnonyme = "Locataire anonymisé";
   const pieceIdentite = existing.idDocument;
   const comptePortail = existing.userId;
+  // Les documents rangés à son nom (pièces, justificatifs) : lus avant l'effacement, purgés du stockage ensuite.
+  const documentsAnonymises = await documentsDuLocataire(existing.id);
+  const documentsRanges = documentsAnonymises.map((d) => d.chemin);
   // Les enregistrements de sa voix, lus avant la transaction pour les retirer du stockage une fois l'effacement acté.
   const voix = await db
     .select({ audioPath: messages.audioPath })
@@ -318,6 +322,9 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
         anonymizedAt: new Date(),
       })
       .where(eq(tenants.id, existing.id));
+
+    // La fiche reste (anonymisée) : ses documents, eux, ne doivent pas lui survivre.
+    await tx.delete(storedDocuments).where(eq(storedDocuments.tenantId, existing.id));
 
     // Le compte d'accès au portail porte lui aussi une adresse email, et
     // permet de se connecter : le laisser viderait l'anonymisation de son
@@ -411,6 +418,10 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
     if (issueIds.length > 0) {
       entitesConcernees.push(and(eq(activityLogs.entityType, "issue"), inArray(activityLogs.entityId, issueIds))!);
     }
+    // Les entrées du journal sur ses documents rangés citent son nom (« Document ajouté : … — Awa Sow »).
+    if (documentsAnonymises.length > 0) {
+      entitesConcernees.push(and(eq(activityLogs.entityType, "document"), inArray(activityLogs.entityId, documentsAnonymises.map((d) => d.id)))!);
+    }
 
     await tx
       .update(activityLogs)
@@ -425,6 +436,7 @@ export const anonymiserTenant = asyncHandler(async (req: Request, res: Response)
     await deleteStorageObjectBestEffort(pieceIdentite).catch(() => undefined);
   }
   await Promise.allSettled(voix.map((v: { audioPath: string | null }) => deleteStorageObjectBestEffort(v.audioPath)));
+  await supprimerFichiers(documentsRanges);
 
   // Le nom réel ne doit apparaître ni ici ni dans aucune entrée passée (voir
   // le nettoyage ci-dessus) : cette entrée elle-même reste consultable dans
@@ -479,6 +491,8 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
     );
   }
 
+  // Ses documents rangés partent avec la fiche (cascade en base) : on relève leurs fichiers avant.
+  const documentsRanges = await cheminsDocumentsDuLocataire(req.params.id);
   await db.delete(tenants).where(eq(tenants.id, req.params.id));
 
   // Le fichier doit partir avec la ligne qui le référence : une fois celle-ci
@@ -490,6 +504,7 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
   // signifie que la suppression déjà enregistrée en base doit répondre
   // succès même si le stockage est indisponible.
   await deleteStorageObjectBestEffort(existing.idDocument).catch(() => undefined);
+  await supprimerFichiers(documentsRanges);
 
   await logActivity({
     req,

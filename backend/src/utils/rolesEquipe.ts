@@ -95,6 +95,9 @@ const ECRITURES_AUTORISEES: readonly Regle[] = [
   { methodes: ["POST"], chemin: /^\/insurance-policies$/, roles: ["AGENT"] },
   { methodes: ["PUT"], chemin: new RegExp(`^/insurance-policies/${ID}$`), roles: ["AGENT"] },
   { methodes: ["POST"], chemin: new RegExp(`^/messages/${ID}$`), roles: ["AGENT"] },
+  // Documents rangés : l'agent dépose et corrige les métadonnées ; la suppression reste au rôle complet.
+  { methodes: ["POST"], chemin: /^\/stored-documents$/, roles: ["AGENT"] },
+  { methodes: ["PUT"], chemin: new RegExp(`^/stored-documents/${ID}$`), roles: ["AGENT"] },
 
   // Import CSV de biens et de locataires : création en masse, donc réservée à l'agent
   // (qui peut créer un bien et un locataire un par un).

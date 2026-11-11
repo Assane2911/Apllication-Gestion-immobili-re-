@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
-import { agencySettings, contracts, invoices, issueReports, listings, messages, ownerMessages, properties, tenants, users } from "../db/schema";
+import { agencySettings, contracts, invoices, issueReports, listings, messages, ownerMessages, properties, storedDocuments, tenants, users } from "../db/schema";
 import { cancelStripeSubscriptionNow } from "./payment.service";
 import { deleteStorageObjectBestEffort } from "./storage.service";
 
@@ -38,7 +38,7 @@ import { deleteStorageObjectBestEffort } from "./storage.service";
 export async function supprimerCompteGestionnaire(user: typeof users.$inferSelect) {
   if (user.stripeSubscriptionId) await cancelStripeSubscriptionNow(user.stripeSubscriptionId);
 
-  const [managerAudios, ownerAudios, managerProperties, managerListings, managerTenants, managerContracts, managerIssues, [reglagesAgence]] = await Promise.all([
+  const [managerAudios, ownerAudios, managerProperties, managerListings, managerTenants, managerContracts, managerIssues, [reglagesAgence], managerDocuments] = await Promise.all([
     // Les messages vocaux : leurs fichiers vivent dans le stockage privé, hors de portée des suppressions en cascade.
     db
       .select({ audioPath: messages.audioPath })
@@ -65,6 +65,8 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
     // Le logo et le tampon de l'agence vivent dans le bucket PUBLIC : sans nettoyage, ils resteraient accessibles par
     // leur adresse, sans plus aucune ligne en base pour les retrouver.
     db.select({ logoUrl: agencySettings.logoUrl, stampOrSignatureUrl: agencySettings.stampOrSignatureUrl }).from(agencySettings).where(eq(agencySettings.userId, user.id)),
+    // Les documents rangés (diagnostics, pièces, justificatifs) : privés, donc hors de portée des cascades.
+    db.select({ filePath: storedDocuments.filePath }).from(storedDocuments).where(eq(storedDocuments.managerId, user.id)),
   ]);
   const [{ collaborateurs }] = await db
     .select({ collaborateurs: sql<number>`count(*)::int` })
@@ -98,6 +100,9 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
       }
     }
 
+    // Le rattachement à users.id n'est pas une clé étrangère : les documents rangés sont supprimés explicitement.
+    await tx.delete(storedDocuments).where(eq(storedDocuments.managerId, user.id));
+
     // Le reste (biens, locataires, propriétaires, annonces + leurs demandes,
     // états des lieux, messages, journal d'activité, paramètres d'agence,
     // historique des abonnements SaaS, collaborateurs) est nettoyé par les
@@ -112,6 +117,7 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
     ...managerListings.map((l) => l.imageUrl),
     ...managerTenants.map((t) => t.idDocument),
     ...managerContracts.map((c) => c.scannedContractUrl),
+    ...managerDocuments.map((d: { filePath: string }) => d.filePath),
     ...managerAudios.map((m: { audioPath: string | null }) => m.audioPath),
     ...ownerAudios.map((m: { audioPath: string | null }) => m.audioPath),
     ...managerIssues.flatMap((i) => {

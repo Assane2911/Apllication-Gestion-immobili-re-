@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   CreditCard,
   FileText,
+  FolderOpen,
   Gift,
   HardHat,
   History,
@@ -63,6 +64,7 @@ const groupes: ReadonlyArray<GroupeMenu> = [
       { to: "/tenants", key: "tenants", icone: Users },
       { to: "/contracts", key: "contracts", icone: FileText },
       { to: "/etats-des-lieux", key: "inspections", icone: ClipboardCheck },
+      { to: "/documents", key: "documents", icone: FolderOpen },
     ],
   },
   {

@@ -1,7 +1,7 @@
 import type { EvenementAgenda, TypeEvenementAgenda } from "../types";
 import { correspond } from "./recherche";
 
-export const TYPES_AGENDA: readonly TypeEvenementAgenda[] = ["RENT_DUE", "LEASE_END", "EXIT", "RENT_REVISION", "INSURANCE_EXPIRY"];
+export const TYPES_AGENDA: readonly TypeEvenementAgenda[] = ["RENT_DUE", "LEASE_END", "EXIT", "RENT_REVISION", "INSURANCE_EXPIRY", "DOCUMENT_EXPIRY"];
 
 /** Écran où l'on traite chaque type d'échéance. */
 export const LIEN_AGENDA: Record<TypeEvenementAgenda, string> = {
@@ -10,6 +10,7 @@ export const LIEN_AGENDA: Record<TypeEvenementAgenda, string> = {
   EXIT: "/contracts",
   RENT_REVISION: "/contracts",
   INSURANCE_EXPIRY: "/assurances",
+  DOCUMENT_EXPIRY: "/documents",
 };
 
 export interface JourAgenda {
@@ -33,7 +34,7 @@ export const jourDe = (e: Pick<EvenementAgenda, "date">) => new Date(e.date).toI
 /** Effectif de chaque type, sur la liste déjà filtrée par la recherche (pour les onglets de filtre). */
 export function comptesParType(evenements: EvenementAgenda[], recherche: string): Record<TypeEvenementAgenda, number> {
   const comptes = Object.fromEntries(TYPES_AGENDA.map((t) => [t, 0])) as Record<TypeEvenementAgenda, number>;
-  for (const e of evenements) if (correspond(recherche, e.propertyTitle, e.tenantName ?? "", e.label ?? "")) comptes[e.type] += 1;
+  for (const e of evenements) if (correspond(recherche, e.propertyTitle ?? "", e.tenantName ?? "", e.label ?? "")) comptes[e.type] += 1;
   return comptes;
 }
 
@@ -42,7 +43,7 @@ export function comptesParType(evenements: EvenementAgenda[], recherche: string)
  * échéances à venir par mois et par jour. L'ordre d'entrée (déjà trié par le serveur) est conservé dans chaque jour.
  */
 export function grouperAgenda(evenements: EvenementAgenda[], filtre: "all" | TypeEvenementAgenda, recherche: string): AgendaGroupe {
-  const gardes = evenements.filter((e) => (filtre === "all" || e.type === filtre) && correspond(recherche, e.propertyTitle, e.tenantName ?? "", e.label ?? ""));
+  const gardes = evenements.filter((e) => (filtre === "all" || e.type === filtre) && correspond(recherche, e.propertyTitle ?? "", e.tenantName ?? "", e.label ?? ""));
   const enRetard = gardes.filter((e) => e.enRetard).sort((a, b) => a.date.localeCompare(b.date));
   const mois = new Map<string, Map<string, EvenementAgenda[]>>();
   for (const e of gardes.filter((x) => !x.enRetard).sort((a, b) => a.date.localeCompare(b.date))) {

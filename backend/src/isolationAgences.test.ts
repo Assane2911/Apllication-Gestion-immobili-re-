@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "./app";
-import { contractCotenants, contractGuarantors, formalNotices, issueReports, leaseNotices, leaseSettlements, listingLeads, listings, ownerPayouts, rentRevisions } from "./db/schema";
+import { contractCotenants, contractGuarantors, formalNotices, issueReports, leaseNotices, leaseSettlements, listingLeads, listings, ownerPayouts, rentRevisions, storedDocuments } from "./db/schema";
 import {
   authHeader,
   createContract,
@@ -100,7 +100,8 @@ async function monde() {
   await createContract(bienB.id, locataireB.id);
   const proprioB = await createOwner(b.id);
 
-  const ids = { bien, locataire, proprio, bail, facture, edl, prestataire, depense, police, revision, miseEnDemeure, conge, solde, coloc, garant, versement, incident, annonce, demande, collaborateur, a };
+  const [document] = await testDb.insert(storedDocuments).values({ managerId: a.id, propertyId: bien.id, title: "Diagnostic", filePath: "documents/a.pdf", fileName: "a.pdf", mimeType: "application/pdf", sizeBytes: 10 }).returning();
+  const ids = { document, bien, locataire, proprio, bail, facture, edl, prestataire, depense, police, revision, miseEnDemeure, conge, solde, coloc, garant, versement, incident, annonce, demande, collaborateur, a };
   const intrus = {
     "gestionnaire de B": authHeader(tokenFor(b)),
     "locataire de B": authHeader(await tokenLocataire(locataireB.id)),
@@ -123,6 +124,7 @@ function identifiant(route: Route, parametre: string, w: Awaited<ReturnType<type
   }
   if (c.startsWith("/api/invoices")) return p === "id" ? w.facture.id : null;
   if (c.startsWith("/api/inspections")) return p === "id" ? w.edl.id : null;
+  if (c.startsWith("/api/stored-documents")) return p === "id" ? w.document.id : null;
   if (c.startsWith("/api/expenses")) return p === "id" ? w.depense.id : null;
   if (c.startsWith("/api/insurance-policies")) return p === "id" ? w.police.id : null;
   if (c.startsWith("/api/vendors")) return p === "id" ? w.prestataire.id : null;

@@ -36,7 +36,7 @@ describe("grouperAgenda", () => {
 
 describe("comptesParType", () => {
   it("compte chaque type sur ce que la recherche laisse", () => {
-    expect(comptesParType(liste, "")).toEqual({ RENT_DUE: 3, LEASE_END: 1, EXIT: 0, RENT_REVISION: 0, INSURANCE_EXPIRY: 1 });
+    expect(comptesParType(liste, "")).toEqual({ RENT_DUE: 3, LEASE_END: 1, EXIT: 0, RENT_REVISION: 0, INSURANCE_EXPIRY: 1, DOCUMENT_EXPIRY: 0 });
     expect(comptesParType(liste, "awa").LEASE_END).toBe(1);
   });
 });
