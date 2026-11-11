@@ -359,6 +359,23 @@ export interface ComparaisonEdl {
   summary: { degraded: number; improved: number; unchanged: number; added: number; removed: number; missingKeys: number };
 }
 
+export type TypeEvenementAgenda = "RENT_DUE" | "LEASE_END" | "EXIT" | "RENT_REVISION" | "INSURANCE_EXPIRY";
+
+/** Échéance de l'agenda du gestionnaire — voir agenda.service.ts. */
+export interface EvenementAgenda {
+  id: string;
+  type: TypeEvenementAgenda;
+  date: string;
+  enRetard: boolean;
+  propertyId: string;
+  propertyTitle: string;
+  contractId: string | null;
+  tenantName: string | null;
+  amount: number | null;
+  currency: string | null;
+  label: string | null;
+}
+
 export type ExpenseCategory = "MAINTENANCE" | "TAX" | "INSURANCE" | "SYNDIC" | "OTHER";
 
 export type ExpenseRecurrence = "MONTHLY" | "ANNUAL";
