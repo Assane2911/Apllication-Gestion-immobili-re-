@@ -116,6 +116,9 @@ export const env = {
     // souvent de comparer plusieurs devis, ce qui prend plus de temps qu'un
     // simple contact avec le locataire.
     insuranceReminderDays: parseInt(process.env.INSURANCE_REMINDER_DAYS ?? "30", 10),
+    // Idem pour les documents rangés avec une date d'expiration (diagnostics, attestations, pièces d'identité…) :
+    // voir runStoredDocumentExpiryReminders.
+    documentReminderDays: parseInt(process.env.DOCUMENT_REMINDER_DAYS ?? "30", 10),
   },
 
   // Secret partagé avec Vercel (variable d'env CRON_SECRET sur le projet)

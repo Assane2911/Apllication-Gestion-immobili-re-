@@ -196,6 +196,27 @@ describe("PUT /api/stored-documents/:id", () => {
     expect(uploadPrivateFile).not.toHaveBeenCalled();
   });
 
+  it("remet le rappel d'expiration à zéro quand la date change, pas quand la même date est renvoyée", async () => {
+    const { manager, property } = await setup();
+    const envoye = new Date(2026, 4, 1);
+    const doc = await poser(manager.id, property.id, null, { expiresAt: new Date(2026, 5, 1), reminderSentAt: envoye });
+    const modifier = (corps: Record<string, unknown>) =>
+      request(app).put(`/api/stored-documents/${doc.id}`).set(authHeader(tokenFor(manager))).send(corps);
+    const marqueur = async () => (await testDb.select().from(storedDocuments).where(eq(storedDocuments.id, doc.id)))[0].reminderSentAt;
+
+    // Même jour renvoyé par le formulaire rouvert : le rappel déjà parti ne repart pas.
+    expect((await modifier({ title: "Titre", expiresAt: new Date(2026, 5, 1).toISOString() })).status).toBe(200);
+    expect(await marqueur()).not.toBeNull();
+
+    // Un autre titre seul ne touche pas non plus au marqueur.
+    expect((await modifier({ title: "Autre titre" })).status).toBe(200);
+    expect(await marqueur()).not.toBeNull();
+
+    // Document renouvelé : nouvelle date, donc de nouveau suivi.
+    expect((await modifier({ expiresAt: new Date(2027, 5, 1).toISOString() })).status).toBe(200);
+    expect(await marqueur()).toBeNull();
+  });
+
   it("refuse le document d'une autre agence", async () => {
     const { property, manager } = await setup();
     const doc = await poser(manager.id, property.id, null);

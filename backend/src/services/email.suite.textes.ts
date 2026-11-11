@@ -87,6 +87,17 @@ export interface TextesSuite {
     intro: (police: string, assureur: string, bien: string, date: string, jours: number) => string;
     conseil: string;
   };
+  /** Résumé adressé au gestionnaire : un seul e-mail pour tous les documents qui arrivent à échéance. */
+  documents: {
+    sujet: (nombre: number) => string;
+    titre: string;
+    intro: (nombre: number, jours: number) => string;
+    /** « aujourd'hui », « demain », « dans 12 jours » */
+    delai: (jours: number) => string;
+    /** Une ligne de la liste : titre du document, bien ou locataire concerné, date et délai (déjà échappés). */
+    ligne: (titre: string, rattachement: string, date: string, delai: string) => string;
+    conseil: string;
+  };
   parrainage: {
     sujet: (jours: number) => string;
     titre: string;
@@ -180,6 +191,17 @@ const fr: TextesSuite = {
       `La police d'assurance <strong>${police}</strong> souscrite auprès de <strong>${assureur}</strong> pour le bien <strong>${bien}</strong> arrive à échéance le <strong>${date}</strong> (dans ${jours} jours).`,
     conseil: "Pensez à contacter votre assureur pour renouveler le contrat ou en souscrire un nouveau avant cette date.",
   },
+  documents: {
+    sujet: (n) => (n === 1 ? "Rappel : un document arrive à échéance" : `Rappel : ${n} documents arrivent à échéance`),
+    titre: "Documents à renouveler",
+    intro: (n, jours) =>
+      n === 1
+        ? `Un document rangé dans votre espace arrive à échéance dans les ${jours} prochains jours :`
+        : `<strong>${n} documents</strong> rangés dans votre espace arrivent à échéance dans les ${jours} prochains jours :`,
+    delai: (j) => (j <= 0 ? "aujourd'hui" : j === 1 ? "demain" : `dans ${j} jours`),
+    ligne: (titre, rattachement, date, delai) => `<strong>${titre}</strong> — ${rattachement} — échéance le ${date} (${delai})`,
+    conseil: "Demandez le document à jour, déposez-le dans « Documents » et indiquez sa nouvelle date d'expiration : le suivi repart alors de zéro.",
+  },
   parrainage: {
     sujet: (jours) => `🎁 +${jours} jours offerts — votre filleul a rejoint ImmoPlatform Pro`,
     titre: "🎁 Merci pour votre parrainage !",
@@ -271,6 +293,17 @@ const en: TextesSuite = {
     intro: (police, assureur, bien, date, jours) =>
       `The insurance policy <strong>${police}</strong> taken out with <strong>${assureur}</strong> for the property <strong>${bien}</strong> expires on <strong>${date}</strong> (in ${jours} days).`,
     conseil: "Remember to contact your insurer to renew the contract or take out a new one before that date.",
+  },
+  documents: {
+    sujet: (n) => (n === 1 ? "Reminder: a document is about to expire" : `Reminder: ${n} documents are about to expire`),
+    titre: "Documents to renew",
+    intro: (n, jours) =>
+      n === 1
+        ? `A document stored in your workspace expires within the next ${jours} days:`
+        : `<strong>${n} documents</strong> stored in your workspace expire within the next ${jours} days:`,
+    delai: (j) => (j <= 0 ? "today" : j === 1 ? "tomorrow" : `in ${j} days`),
+    ligne: (titre, rattachement, date, delai) => `<strong>${titre}</strong> — ${rattachement} — expires on ${date} (${delai})`,
+    conseil: "Ask for the up-to-date document, upload it under “Documents” and enter its new expiry date: tracking then starts afresh.",
   },
   parrainage: {
     sujet: (jours) => `🎁 +${jours} free days — your referral has joined ImmoPlatform Pro`,
@@ -364,6 +397,17 @@ const es: TextesSuite = {
       `La póliza de seguro <strong>${police}</strong> contratada con <strong>${assureur}</strong> para el inmueble <strong>${bien}</strong> vence el <strong>${date}</strong> (dentro de ${jours} días).`,
     conseil: "Recuerda ponerte en contacto con tu aseguradora para renovar el contrato o contratar uno nuevo antes de esa fecha.",
   },
+  documents: {
+    sujet: (n) => (n === 1 ? "Recordatorio: un documento está a punto de caducar" : `Recordatorio: ${n} documentos están a punto de caducar`),
+    titre: "Documentos por renovar",
+    intro: (n, jours) =>
+      n === 1
+        ? `Un documento guardado en tu espacio caduca en los próximos ${jours} días:`
+        : `<strong>${n} documentos</strong> guardados en tu espacio caducan en los próximos ${jours} días:`,
+    delai: (j) => (j <= 0 ? "hoy" : j === 1 ? "mañana" : `dentro de ${j} días`),
+    ligne: (titre, rattachement, date, delai) => `<strong>${titre}</strong> — ${rattachement} — caduca el ${date} (${delai})`,
+    conseil: "Pide el documento actualizado, súbelo en «Documentos» e indica su nueva fecha de caducidad: el seguimiento empieza de nuevo.",
+  },
   parrainage: {
     sujet: (jours) => `🎁 +${jours} días de regalo — tu referido se ha unido a ImmoPlatform Pro`,
     titre: "🎁 ¡Gracias por recomendarnos!",
@@ -455,6 +499,17 @@ const pt: TextesSuite = {
     intro: (police, assureur, bien, date, jours) =>
       `A apólice de seguro <strong>${police}</strong> contratada com <strong>${assureur}</strong> para o imóvel <strong>${bien}</strong> vence em <strong>${date}</strong> (em ${jours} dias).`,
     conseil: "Lembre-se de entrar em contato com a sua seguradora para renovar o contrato ou contratar um novo antes dessa data.",
+  },
+  documents: {
+    sujet: (n) => (n === 1 ? "Lembrete: um documento está prestes a vencer" : `Lembrete: ${n} documentos estão prestes a vencer`),
+    titre: "Documentos a renovar",
+    intro: (n, jours) =>
+      n === 1
+        ? `Um documento guardado no seu espaço vence nos próximos ${jours} dias:`
+        : `<strong>${n} documentos</strong> guardados no seu espaço vencem nos próximos ${jours} dias:`,
+    delai: (j) => (j <= 0 ? "hoje" : j === 1 ? "amanhã" : `em ${j} dias`),
+    ligne: (titre, rattachement, date, delai) => `<strong>${titre}</strong> — ${rattachement} — vence em ${date} (${delai})`,
+    conseil: "Peça o documento atualizado, envie-o em «Documentos» e informe a nova data de validade: o acompanhamento recomeça do zero.",
   },
   parrainage: {
     sujet: (jours) => `🎁 +${jours} dias de presente — a pessoa que você indicou entrou no ImmoPlatform Pro`,

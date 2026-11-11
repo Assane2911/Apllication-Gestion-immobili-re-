@@ -3,6 +3,7 @@ import { formaterDateHeure } from "../utils/langue";
 import type { Langue } from "../utils/langue";
 import {
   contractEndingReminderEmail,
+  documentExpiryReminderEmail,
   guarantorUnpaidNoticeEmail,
   insurancePolicyExpiryReminderEmail,
   issueStatusUpdateEmail,
@@ -51,6 +52,18 @@ const modeles: Array<{ nom: string; fabrique: (l?: Langue) => { subject: string;
   },
   { nom: "fin de contrat", fabrique: (langue) => contractEndingReminderEmail({ tenantName: "Awa <b>Sow</b>", propertyTitle: "Studio <u>A</u>", endDate: D, daysLeft: 14, langue }) },
   { nom: "échéance d'assurance", fabrique: (langue) => insurancePolicyExpiryReminderEmail({ propertyTitle: "Studio <u>A</u>", insurerName: "AXA <b>X</b>", policyNumber: "POL-<b>1</b>", expiryDate: D, daysLeft: 30, langue }) },
+  {
+    nom: "documents à renouveler",
+    fabrique: (langue) =>
+      documentExpiryReminderEmail({
+        documents: [
+          { title: "Diagnostic <b>1</b>", target: "Studio <u>A</u>", expiryDate: D, daysLeft: 12 },
+          { title: "Attestation <i>cuisine</i>", target: "Awa <b>Sow</b>", expiryDate: D, daysLeft: 0 },
+        ],
+        windowDays: 30,
+        langue,
+      }),
+  },
   { nom: "récompense de parrainage", fabrique: (langue) => referralRewardEmail({ days: 30, newEndDate: D, frontendUrl: "https://app.test", langue }) },
 ];
 

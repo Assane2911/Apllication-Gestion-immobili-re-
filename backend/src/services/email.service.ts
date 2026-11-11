@@ -416,6 +416,37 @@ export function insurancePolicyExpiryReminderEmail(params: {
   };
 }
 
+/**
+ * Résumé des documents qui arrivent à échéance, adressé au gestionnaire : UN e-mail par gestionnaire et par passage,
+ * quel que soit le nombre de documents (un renouvellement de diagnostics en compte facilement plusieurs d'un coup).
+ */
+export function documentExpiryReminderEmail(params: {
+  documents: { title: string; target: string; expiryDate: Date; daysLeft: number }[];
+  windowDays: number;
+  langue?: Langue;
+}) {
+  const { documents, windowDays, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].documents;
+  const lignes = documents
+    .map((d) => `<li style="margin-bottom:6px;">${t.ligne(escapeHtml(d.title), escapeHtml(d.target), escapeHtml(formaterDate(d.expiryDate, langue)), t.delai(d.daysLeft))}</li>`)
+    .join("");
+  return {
+    subject: t.sujet(documents.length),
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#1f2937;">${t.titre}</h2>
+        <p>${TEXTES_COMPTE[langue].bonjour}</p>
+        <p>${t.intro(documents.length, windowDays)}</p>
+        <ul style="padding-left:20px;">${lignes}</ul>
+        <p>${t.conseil}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          ${TEXTES_COMPTE[langue].pied}
+        </p>
+      </div>
+    `,
+  };
+}
+
 /** Couleur et pictogramme de chaque statut (le libellé, lui, est traduit : voir TEXTES_SUITE). */
 const issueStatusStyles: Record<string, { color: string; emoji: string }> = {
   OPEN: { color: "#2563eb", emoji: "📋" },

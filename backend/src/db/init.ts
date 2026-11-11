@@ -772,6 +772,7 @@ export async function initDb() {
         mime_type TEXT NOT NULL,
         size_bytes INTEGER NOT NULL,
         expires_at TIMESTAMP,
+        reminder_sent_at TIMESTAMP,
         notes TEXT,
         created_by TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -779,6 +780,7 @@ export async function initDb() {
         CONSTRAINT stored_documents_target_check CHECK (property_id IS NOT NULL OR tenant_id IS NOT NULL)
       )
     `);
+    await ajouterColonne("stored_documents", "reminder_sent_at", sql`ALTER TABLE stored_documents ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP`);
     await creerIndex("stored_documents_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS stored_documents_manager_id_idx ON stored_documents (manager_id)`);
     await creerIndex("stored_documents_property_id_idx", sql`CREATE INDEX IF NOT EXISTS stored_documents_property_id_idx ON stored_documents (property_id)`);
     await creerIndex("stored_documents_tenant_id_idx", sql`CREATE INDEX IF NOT EXISTS stored_documents_tenant_id_idx ON stored_documents (tenant_id)`);

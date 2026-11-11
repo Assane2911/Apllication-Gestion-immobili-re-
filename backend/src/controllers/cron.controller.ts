@@ -6,6 +6,7 @@ import {
   runContractEndingReminders,
   runInsurancePolicyExpiryReminders,
   runRentDueReminders,
+  runStoredDocumentExpiryReminders,
   runUpcomingRentDueReminders,
 } from "../services/reminder.service";
 import { purgerDonneesDeLaPlateforme } from "../services/conservation.service";
@@ -169,6 +170,7 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   const rentDue = await executerEtape("avis d'échéance et facturation du mois", etapesEnEchec, () => runRentDueReminders(undefined, budget));
   const recurringExpenses = await executerEtape("dépenses récurrentes", etapesEnEchec, () => runRecurringExpenseGeneration(budget));
   const insurance = await executerEtape("rappels d'assurance", etapesEnEchec, () => runInsurancePolicyExpiryReminders(budget));
+  const documents = await executerEtape("rappels d'expiration des documents", etapesEnEchec, () => runStoredDocumentExpiryReminders(budget));
 
   // Un échec reste visible : 500, pour que Vercel marque l'exécution en erreur,
   // mais seulement APRÈS que toutes les autres étapes ont tourné. Les étapes
@@ -184,11 +186,12 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
     rentDueRemindersSent: rentDue?.sent ?? 0,
     recurringExpensesGenerated: recurringExpenses?.generees ?? 0,
     insuranceRemindersSent: insurance?.sent ?? 0,
+    documentRemindersSent: documents?.sent ?? 0,
     // Les envois qui ont VRAIMENT échoué. Leur marqueur a été relâché, donc
     // ils repartiront demain — mais un cron qui annonce « 40 envoyés » sans
     // dire que 40 ont échoué ne se distingue pas d'un cron qui a réussi.
     echecs:
-      (contractEnding?.echecs ?? 0) + (upcoming?.echecs ?? 0) + (relances?.echecs ?? 0) + (rentDue?.echecs ?? 0) + (insurance?.echecs ?? 0),
+      (contractEnding?.echecs ?? 0) + (upcoming?.echecs ?? 0) + (relances?.echecs ?? 0) + (rentDue?.echecs ?? 0) + (insurance?.echecs ?? 0) + (documents?.echecs ?? 0),
     // Vrai dès qu'un des travaux s'est arrêté faute de temps : le reliquat
     // n'est pas perdu, il sera traité à la prochaine exécution.
     interrompu:
@@ -197,7 +200,8 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
       !!relances?.interrompu ||
       !!rentDue?.interrompu ||
       !!recurringExpenses?.interrompu ||
-      !!insurance?.interrompu,
+      !!insurance?.interrompu ||
+      !!documents?.interrompu,
     details: upcoming?.details ?? [],
   };
 
@@ -228,6 +232,7 @@ export function ligneDeResume(corps: {
   rentDueRemindersSent: number;
   recurringExpensesGenerated: number;
   insuranceRemindersSent: number;
+  documentRemindersSent: number;
   echecs: number;
   interrompu: boolean;
 }): string {
@@ -248,6 +253,7 @@ export function ligneDeResume(corps: {
       `avis d'échéance : ${corps.rentDueRemindersSent}`,
       `dépenses récurrentes : ${corps.recurringExpensesGenerated}`,
       `rappels d'assurance : ${corps.insuranceRemindersSent}`,
+      `rappels de documents : ${corps.documentRemindersSent}`,
       `envois en échec : ${corps.echecs}`,
       `interrompu faute de temps : ${corps.interrompu ? "oui" : "non"}`,
     ].join(" | ")

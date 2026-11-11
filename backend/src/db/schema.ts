@@ -903,6 +903,9 @@ export const storedDocuments = pgTable(
     mimeType: text("mime_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
     expiresAt: timestamp("expires_at", { mode: "date" }),
+    // Date d'envoi du rappel d'expiration au gestionnaire (voir runStoredDocumentExpiryReminders) :
+    // remise à zéro quand la date d'expiration change, pour que le document renouvelé soit de nouveau suivi.
+    reminderSentAt: timestamp("reminder_sent_at", { mode: "date" }),
     notes: text("notes"),
     createdBy: text("created_by"),
     ...timestamps,

@@ -158,7 +158,14 @@ export const updateStoredDocument = asyncHandler(async (req: Request, res: Respo
   const valeurs: Partial<typeof storedDocuments.$inferInsert> = {};
   if (body.title !== undefined) valeurs.title = body.title;
   if (body.category !== undefined) valeurs.category = body.category;
-  if (body.expiresAt !== undefined) valeurs.expiresAt = body.expiresAt;
+  if (body.expiresAt !== undefined) {
+    valeurs.expiresAt = body.expiresAt;
+    // Nouvelle date = document renouvelé : il redevient éligible au rappel d'expiration. Renvoyer la même date
+    // (formulaire rouvert puis enregistré) ne doit pas, lui, relancer un rappel déjà envoyé.
+    const avant = existant.expiresAt?.getTime() ?? null;
+    const apres = body.expiresAt?.getTime() ?? null;
+    if (avant !== apres) valeurs.reminderSentAt = null;
+  }
   if (body.notes !== undefined) valeurs.notes = body.notes;
 
   if (Object.keys(valeurs).length === 0) {
