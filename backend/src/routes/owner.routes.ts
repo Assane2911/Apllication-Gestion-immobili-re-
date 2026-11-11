@@ -6,6 +6,7 @@ import {
   exporterMesDonneesProprietaire,
   exporterOwner,
   getOwner,
+  getOwnerAgenda,
   getOwnerDashboard,
   inviteOwnerPortalAccount,
   listOwners,
@@ -19,6 +20,8 @@ const router = Router();
 // router.use ci-dessous, réservé au gestionnaire (même pattern que
 // contract.routes.ts pour GET /mine côté locataire).
 router.get("/mine/dashboard", authenticate, requireRole("OWNER"), getOwnerDashboard);
+// Échéances de ses biens (fins de bail, sorties, assurances), sans donnée des locataires.
+router.get("/mine/agenda", authenticate, requireRole("OWNER"), getOwnerAgenda);
 // Droit d'accès et portabilité (RGPD art. 15 et 20) : le propriétaire emporte ses données.
 router.get("/mine/export", authenticate, requireRole("OWNER"), exporterMesDonneesProprietaire);
 

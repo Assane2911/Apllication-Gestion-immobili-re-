@@ -223,6 +223,60 @@ export async function chargerAgenda(managerId: string, jours: number, maintenant
   return evenements.slice(0, MAX_EVENEMENTS);
 }
 
+/**
+ * Agenda du PROPRIÉTAIRE (espace propriétaire, lecture seule) : les échéances de ses seuls biens.
+ *
+ * Périmètre volontairement étroit, celui de l'espace propriétaire : fins de bail, sorties annoncées et assurances. Ni loyers
+ * (le résumé financier les porte déjà), ni révisions, ni documents rangés par l'agence. Et aucune donnée du locataire : son nom
+ * et le motif de son congé ne sont pas sélectionnés du tout, ils ne peuvent donc figurer dans la réponse sous aucune forme.
+ * Mêmes règles que l'agenda de l'agence pour le reste : un congé en cours remplace la fin de bail, une date passée n'apparaît que
+ * si rien ne l'a soldée, une assurance échue depuis longtemps est laissée de côté.
+ */
+export async function chargerAgendaProprietaire(ownerId: string, jours: number, maintenant: Date = new Date()): Promise<EvenementAgenda[]> {
+  const aujourdhui = debutDeLaJournee(maintenant);
+  const horizon = jourDecale(jours, aujourdhui);
+  const enRetard = (date: Date) => joursEntre(aujourdhui, date) < 0;
+  const bien = { id: properties.id, title: properties.title };
+
+  const [baux, conges, assurances] = await Promise.all([
+    db
+      .select({ c: { id: contracts.id, endDate: contracts.endDate }, p: bien })
+      .from(contracts)
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(and(eq(properties.ownerId, ownerId), eq(contracts.status, "ACTIVE"), lte(contracts.endDate, horizon))),
+    db
+      .select({ n: { id: leaseNotices.id, exitDate: leaseNotices.exitDate }, c: { id: contracts.id }, p: bien })
+      .from(leaseNotices)
+      .innerJoin(contracts, eq(leaseNotices.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(and(eq(properties.ownerId, ownerId), eq(leaseNotices.status, "ACTIVE"), eq(contracts.status, "ACTIVE"), lte(leaseNotices.exitDate, horizon))),
+    db
+      .select({ a: { id: insurancePolicies.id, expiryDate: insurancePolicies.expiryDate, insurerName: insurancePolicies.insurerName }, p: bien })
+      .from(insurancePolicies)
+      .innerJoin(properties, eq(insurancePolicies.propertyId, properties.id))
+      .where(and(eq(properties.ownerId, ownerId), lte(insurancePolicies.expiryDate, horizon))),
+  ]);
+
+  const commun = { contractId: null, tenantName: null, amount: null, currency: null };
+  const bauxEnConge = new Set(conges.map((r: { c: { id: string } }) => r.c.id));
+  const evenements: EvenementAgenda[] = [];
+
+  for (const { c, p } of baux) {
+    if (bauxEnConge.has(c.id)) continue;
+    evenements.push({ ...commun, id: `LEASE_END:${c.id}`, type: "LEASE_END", date: c.endDate, enRetard: enRetard(c.endDate), propertyId: p.id, propertyTitle: p.title, label: null });
+  }
+  for (const { n, p } of conges) {
+    evenements.push({ ...commun, id: `EXIT:${n.id}`, type: "EXIT", date: n.exitDate, enRetard: enRetard(n.exitDate), propertyId: p.id, propertyTitle: p.title, label: null });
+  }
+  for (const { a, p } of assurances) {
+    if (joursEntre(a.expiryDate, aujourdhui) > JOURS_ECHEANCE_PASSEE_CONSERVEE) continue;
+    evenements.push({ ...commun, id: `INSURANCE_EXPIRY:${a.id}`, type: "INSURANCE_EXPIRY", date: a.expiryDate, enRetard: enRetard(a.expiryDate), propertyId: p.id, propertyTitle: p.title, label: a.insurerName });
+  }
+
+  evenements.sort((x, y) => Number(y.enRetard) - Number(x.enRetard) || x.date.getTime() - y.date.getTime() || x.id.localeCompare(y.id));
+  return evenements.slice(0, MAX_EVENEMENTS);
+}
+
 /** Fenêtre de l'« à venir » du tableau de bord : la semaine qui vient. */
 export const JOURS_AGENDA_RESUME = 7;
 

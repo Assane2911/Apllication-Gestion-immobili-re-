@@ -525,6 +525,7 @@ const en: TranslationSchema = {
     owner: {
       messages: "Messages",
       home: "Dashboard",
+      agenda: "Calendar",
       crg: "Management report",
     },
     ownerShort: {
@@ -3399,6 +3400,14 @@ const en: TranslationSchema = {
     },
   },
   owner: {
+    agenda: {
+      title: "Calendar",
+      subtitle: "Upcoming dates for your properties: lease ends, announced tenant move-outs, insurance to renew. Your agency handles them; this page keeps you informed.",
+      loading: "Loading…",
+      emptyTitle: "No upcoming dates",
+      emptyDesc: "Nothing is scheduled for your properties during this period.",
+      count: "{{count}} date(s)",
+    },
     messages: {
       title: "Messages",
       subtitle: "Write to your agency by message or voice note. They reply here and let you know by email.",

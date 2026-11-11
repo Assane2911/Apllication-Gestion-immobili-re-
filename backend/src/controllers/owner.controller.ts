@@ -8,6 +8,7 @@ import { db, Transaction } from "../db/client";
 import { activityLogs, agencySettings, contracts, invoices, ownerMessages, owners, properties, users } from "../db/schema";
 import { ownerInvitationEmail, sendEmail } from "../services/email.service";
 import { effacerIdentiteDuJournal, logActivity } from "../services/activity.service";
+import { chargerAgendaProprietaire, JOURS_AGENDA_MAX, JOURS_AGENDA_PAR_DEFAUT } from "../services/agenda.service";
 import { construireExportProprietaire, nomFichierExport } from "../services/exportDonnees.service";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { developperFactures } from "../services/encaissements.service";
@@ -619,4 +620,18 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
     pendingThisMonthByCurrency,
     revenueByMonth,
   });
+});
+
+const agendaProprietaireSchema = z.object({
+  days: z.coerce.number().int().min(1).max(JOURS_AGENDA_MAX).default(JOURS_AGENDA_PAR_DEFAUT),
+});
+
+/**
+ * Les échéances des biens du propriétaire connecté (fins de bail, sorties annoncées, assurances), en lecture seule et sans
+ * aucune donnée des locataires. La fiche est résolue par le COMPTE, jamais par un identifiant de la requête.
+ */
+export const getOwnerAgenda = asyncHandler(async (req: Request, res: Response) => {
+  const { days } = agendaProprietaireSchema.parse(req.query);
+  const owner = await chargerProprietaireDuCompte(req);
+  res.json(await chargerAgendaProprietaire(owner.id, days));
 });

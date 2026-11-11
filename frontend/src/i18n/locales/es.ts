@@ -525,6 +525,7 @@ const es: TranslationSchema = {
     owner: {
       messages: "Mensajería",
       home: "Panel",
+      agenda: "Agenda",
       crg: "Informe de gestión",
     },
     ownerShort: {
@@ -3401,6 +3402,14 @@ const es: TranslationSchema = {
     },
   },
   owner: {
+    agenda: {
+      title: "Agenda",
+      subtitle: "Los próximos vencimientos de sus inmuebles: fines de contrato, salidas anunciadas de inquilinos, seguros por renovar. Su agencia se encarga; esta página le mantiene informado.",
+      loading: "Cargando…",
+      emptyTitle: "Ningún vencimiento próximo",
+      emptyDesc: "No hay nada previsto en sus inmuebles durante este periodo.",
+      count: "{{count}} vencimiento(s)",
+    },
     messages: {
       title: "Mensajería",
       subtitle: "Escriba a su agencia por mensaje o nota de voz. Le responde aquí y le avisa por correo.",
