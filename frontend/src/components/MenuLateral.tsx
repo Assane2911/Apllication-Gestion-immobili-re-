@@ -35,6 +35,8 @@ interface Props {
   enPied?: ReactNode;
   /** Nombre d'éléments en attente par entrée (adresse de l'entrée → nombre) : une pastille sur l'icône quand il est positif. */
   pastilles?: Readonly<Record<string, number>>;
+  /** Clé de traduction du texte lu par les lecteurs d'écran pour une pastille (« {{count}} … ») ; par défaut, les messages non lus. */
+  libellesPastilles?: Readonly<Record<string, string>>;
 }
 
 const lireEpingle = (cle: string) => {
@@ -51,7 +53,7 @@ const lireEpingle = (cle: string) => {
  * quitte. « Garder le menu déployé » l'épingle ouvert. Sur téléphone, c'est un tiroir toujours déployé.
  * Rend aussi la réserve de place de la colonne et le voile du tiroir : le parent n'a qu'à poser le contenu à côté.
  */
-export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques, racine, sousTitre, cleStockage, email, ouvertMobile, onFermerMobile, onDeconnexion, enPied, pastilles }: Props) {
+export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques, racine, sousTitre, cleStockage, email, ouvertMobile, onFermerMobile, onDeconnexion, enPied, pastilles, libellesPastilles }: Props) {
   const { t } = useTranslation();
   const [epingle, setEpingle] = useState(() => lireEpingle(cleStockage));
   const [survol, setSurvol] = useState(false);
@@ -146,7 +148,7 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
                           </span>
                           <span className={`truncate transition-opacity duration-150 ${etiquette}`}>{t(`${prefixeLibelles}.${item.key}`)}</span>
                           {/* Pour les lecteurs d'écran : le nombre fait partie du nom du lien. */}
-                          {enAttente > 0 && <span className="sr-only">, {t("nav.unread", { count: enAttente })}</span>}
+                          {enAttente > 0 && <span className="sr-only">, {t(libellesPastilles?.[item.to] ?? "nav.unread", { count: enAttente })}</span>}
                         </>
                       );
                     }}

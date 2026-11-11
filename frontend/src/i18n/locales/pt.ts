@@ -455,6 +455,7 @@ const pt: TranslationSchema = {
 
   nav: {
     unread: "{{count}} mensagem(ns) por ler",
+    overdue: "{{count}} prazo(s) em atraso",
     tips: {
       dashboard: "Visão geral: rendas recebidas, dívidas e vencimentos do mês.",
       properties: "Os seus imóveis: criar uma ficha, definir a renda, seguir a ocupação.",
@@ -1608,6 +1609,10 @@ const pt: TranslationSchema = {
         lateCta: "Enviar lembretes",
         issues: "{{count}} incidente(s) aberto(s)",
         issuesCta: "Tratar",
+        agendaOverdue: "{{count}} prazo(s) em atraso (seguros, documentos, contratos…)",
+        agendaOverdueCta: "Abrir a agenda",
+        agendaSoon: "{{count}} prazo(s) em 7 dias",
+        agendaSoonCta: "Ver a agenda",
         remaining: "Ainda por cobrar este mês: {{amount}}",
         remainingCta: "Ver as faturas",
         vacant: "{{count}} imóvel(is) para arrendar",

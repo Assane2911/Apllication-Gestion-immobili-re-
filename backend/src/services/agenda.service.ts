@@ -192,3 +192,26 @@ export async function chargerAgenda(managerId: string, jours: number, maintenant
   evenements.sort((x, y) => Number(y.enRetard) - Number(x.enRetard) || x.date.getTime() - y.date.getTime() || x.id.localeCompare(y.id));
   return evenements.slice(0, MAX_EVENEMENTS);
 }
+
+/** Fenêtre de l'« à venir » du tableau de bord : la semaine qui vient. */
+export const JOURS_AGENDA_RESUME = 7;
+
+export interface ResumeAgenda {
+  /** Toutes les échéances dépassées, loyers compris (la pastille du menu et le titre « En retard » de la page). */
+  overdue: number;
+  /** Les dépassées hors loyers : les impayés ont déjà leur propre ligne au tableau de bord, on ne les compte pas deux fois. */
+  overdueOther: number;
+  /** Les échéances des prochains jours, retard exclu. */
+  soon: number;
+}
+
+/** Les seuls chiffres de l'agenda dont le tableau de bord et le menu ont besoin, calculés comme la liste elle-même. */
+export async function resumeAgenda(managerId: string, maintenant: Date = new Date()): Promise<ResumeAgenda> {
+  const evenements = await chargerAgenda(managerId, JOURS_AGENDA_RESUME, maintenant);
+  const enRetard = evenements.filter((e) => e.enRetard);
+  return {
+    overdue: enRetard.length,
+    overdueOther: enRetard.filter((e) => e.type !== "RENT_DUE").length,
+    soon: evenements.length - enRetard.length,
+  };
+}

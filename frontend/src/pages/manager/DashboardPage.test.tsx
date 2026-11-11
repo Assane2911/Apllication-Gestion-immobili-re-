@@ -128,6 +128,22 @@ describe("DashboardPage", () => {
       expect(within(zone).getByText("1 bien(s) en travaux")).toBeInTheDocument();
     });
 
+    it("reprend les échéances de l'agenda : les dépassées en urgence, celles de la semaine en information, toutes vers l'agenda", async () => {
+      mockedApi.get.mockResolvedValueOnce({
+        data: stats({ lateInvoices: 0, openIssues: 0, agendaOverdueOther: 2, agendaSoon: 5, propertiesByStatus: { AVAILABLE: 0, OCCUPIED: 8, MAINTENANCE: 0 } }),
+      });
+      renderPage();
+
+      const zone = await screen.findByRole("region", { name: "À traiter" });
+      const lignes = within(zone).getAllByRole("listitem");
+      expect(lignes[0]).toHaveTextContent("2 échéance(s) dépassée(s) (assurances, documents, baux…)");
+      expect(lignes[0]).toHaveTextContent("Urgent");
+      expect(within(lignes[0]).getByRole("link", { name: "Ouvrir l'agenda" })).toHaveAttribute("href", "/agenda");
+      const semaine = within(zone).getByText("5 échéance(s) dans les 7 jours").closest("li") as HTMLElement;
+      expect(within(semaine).getByRole("link", { name: "Voir l'agenda" })).toHaveAttribute("href", "/agenda");
+      expect(semaine).not.toHaveTextContent("Urgent");
+    });
+
     it("annonce que tout est à jour quand il n'y a rien à faire", async () => {
       mockedApi.get.mockResolvedValueOnce({
         data: stats({ lateInvoices: 0, openIssues: 0, monthlyRevenueByCurrency: { EUR: 2500 }, propertiesByStatus: { AVAILABLE: 0, OCCUPIED: 8, MAINTENANCE: 0 } }),
