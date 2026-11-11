@@ -308,4 +308,35 @@ describe("InspectionsPage (manager)", () => {
       expect(screen.getByText(/3 en bon état · 0 moyen\(s\) · 0 en mauvais état/)).toBeInTheDocument();
     });
   });
+  it("propose la comparaison uniquement sur un état des lieux de sortie finalisé", async () => {
+    queueLoad([
+      inspection({ id: "entree", type: "ENTRY", status: "COMPLETED" }),
+      inspection({ id: "sortie-brouillon", type: "EXIT", status: "DRAFT" }),
+    ]);
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Studio Centre-ville").length).toBeGreaterThan(0));
+    expect(screen.queryByRole("button", { name: "Comparer avec l'entrée" })).not.toBeInTheDocument();
+  });
+
+  it("ouvre la comparaison d'un état des lieux de sortie finalisé", async () => {
+    queueLoad([inspection({ id: "sortie", type: "EXIT", status: "COMPLETED" })]);
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Comparer avec l'entrée" }).length).toBeGreaterThan(0));
+
+    mockedApi.get.mockResolvedValueOnce({
+      data: {
+        property: { id: "prop-1", title: "Studio Centre-ville" },
+        entry: { id: "e", inspectionDate: "2026-01-10T00:00:00.000Z" },
+        exit: { id: "sortie", inspectionDate: "2026-11-02T00:00:00.000Z" },
+        rooms: [],
+        meters: [],
+        keys: [],
+        summary: { degraded: 0, improved: 0, unchanged: 0, added: 0, removed: 0, missingKeys: 0 },
+      },
+    });
+    await userEvent.setup().click(screen.getAllByRole("button", { name: "Comparer avec l'entrée" })[0]);
+
+    expect(await screen.findByRole("dialog", { name: "Comparaison entrée / sortie" })).toBeInTheDocument();
+    expect(mockedApi.get).toHaveBeenLastCalledWith("/inspections/sortie/comparison", expect.anything());
+  });
 });

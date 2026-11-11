@@ -262,3 +262,81 @@ describe("GET /api/inspections/mine", () => {
     expect(res.body).toHaveLength(1);
   });
 });
+
+describe("GET /api/inspections/:id/comparison", () => {
+  const entree = {
+    type: "ENTRY" as const,
+    status: "COMPLETED" as const,
+    roomsData: JSON.stringify([{ name: "Salon", condition: "BON", notes: "" }, { name: "Cuisine", condition: "BON", notes: "" }]),
+    metersData: JSON.stringify({ electricity: "100", water: "", gas: "" }),
+    keysData: JSON.stringify([{ label: "Porte", quantity: 2 }]),
+  };
+  const sortie = {
+    type: "EXIT" as const,
+    status: "COMPLETED" as const,
+    roomsData: JSON.stringify([{ name: "Salon", condition: "MAUVAIS", notes: "tache" }, { name: "Cuisine", condition: "BON", notes: "" }]),
+    metersData: JSON.stringify({ electricity: "180", water: "", gas: "" }),
+    keysData: JSON.stringify([{ label: "Porte", quantity: 1 }]),
+  };
+
+  it("compare la sortie avec l'entrée du même bail", async () => {
+    const { manager, contract } = await setup();
+    await createInspection(contract, manager.id, entree);
+    const exit = await createInspection(contract, manager.id, sortie);
+
+    const res = await request(app).get(`/api/inspections/${exit.id}/comparison`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.rooms[0]).toMatchObject({ name: "Salon", variation: "DEGRADE" });
+    expect(res.body.meters).toEqual([{ type: "electricity", entry: "100", exit: "180", consumption: 80 }]);
+    expect(res.body.keys[0]).toMatchObject({ label: "Porte", missing: 1 });
+    expect(res.body.summary).toMatchObject({ degraded: 1, unchanged: 1, missingKeys: 1 });
+  });
+
+  it("refuse un état des lieux d'entrée (400) et un brouillon de sortie (409)", async () => {
+    const { manager, contract } = await setup();
+    const ent = await createInspection(contract, manager.id, entree);
+    const brouillon = await createInspection(contract, manager.id, { ...sortie, status: "DRAFT" });
+
+    const a = await request(app).get(`/api/inspections/${ent.id}/comparison`).set(authHeader(tokenFor(manager)));
+    const b = await request(app).get(`/api/inspections/${brouillon.id}/comparison`).set(authHeader(tokenFor(manager)));
+
+    expect(a.status).toBe(400);
+    expect(a.body.code).toBe("INSPECTION_COMPARE_NEEDS_EXIT");
+    expect(b.status).toBe(409);
+    expect(b.body.code).toBe("INSPECTION_COMPARE_EXIT_NOT_FINALIZED");
+  });
+
+  it("répond 404 sans état des lieux d'entrée finalisé", async () => {
+    const { manager, contract } = await setup();
+    await createInspection(contract, manager.id, { ...entree, status: "DRAFT" });
+    const exit = await createInspection(contract, manager.id, sortie);
+
+    const res = await request(app).get(`/api/inspections/${exit.id}/comparison`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("INSPECTION_COMPARE_NO_ENTRY");
+  });
+
+  it("n'utilise pas l'entrée d'un autre bail", async () => {
+    const { manager, contract } = await setup();
+    const autre = await setup();
+    await createInspection(autre.contract, autre.manager.id, entree);
+    const exit = await createInspection(contract, manager.id, sortie);
+
+    const res = await request(app).get(`/api/inspections/${exit.id}/comparison`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(404);
+  });
+
+  it("refuse l'état des lieux d'un autre gestionnaire", async () => {
+    const { manager, contract } = await setup();
+    await createInspection(contract, manager.id, entree);
+    const exit = await createInspection(contract, manager.id, sortie);
+    const intrus = await createManager();
+
+    const res = await request(app).get(`/api/inspections/${exit.id}/comparison`).set(authHeader(tokenFor(intrus)));
+
+    expect(res.status).toBe(404);
+  });
+});

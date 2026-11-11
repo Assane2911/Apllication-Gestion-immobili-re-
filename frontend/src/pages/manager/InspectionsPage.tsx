@@ -11,6 +11,7 @@ import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { TableRowSkeleton } from "../../components/Skeleton";
 import Bulle from "../../components/Bulle";
+import ComparaisonEdlModal from "../../components/ComparaisonEdlModal";
 import SignatureModal from "../../components/SignatureModal";
 import type {
   Contract,
@@ -71,6 +72,7 @@ export default function InspectionsPage() {
 
   const [signingInspection, setSigningInspection] = useState<Inspection | null>(null);
   const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
+  const [comparingInspection, setComparingInspection] = useState<Inspection | null>(null);
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<Filtre>("all");
 
@@ -551,6 +553,11 @@ export default function InspectionsPage() {
                     </button>
                     </Bulle>
                   )}
+                  {insp.status === "COMPLETED" && insp.type === "EXIT" && (
+                    <button onClick={() => setComparingInspection(insp)} className={ACTION_TRAIT}>
+                      {t("manager.inspections.compare.button")}
+                    </button>
+                  )}
                   {insp.status === "DRAFT" && (
                     <Bulle texte={t("manager.tips.inspectionDelete")}>
                     <button onClick={() => handleDelete(insp)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">
@@ -602,6 +609,11 @@ export default function InspectionsPage() {
                 </button>
                 </Bulle>
               )}
+              {insp.status === "COMPLETED" && insp.type === "EXIT" && (
+                <button onClick={() => setComparingInspection(insp)} className={ACTION_TRAIT}>
+                  {t("manager.inspections.compare.button")}
+                </button>
+              )}
               {insp.status === "DRAFT" && (
                 <Bulle texte={t("manager.tips.inspectionDelete")}>
                 <button onClick={() => handleDelete(insp)} className="text-xs font-semibold text-rose-700 border-b border-rose-700/40 hover:border-rose-700 transition-colors">
@@ -628,6 +640,14 @@ export default function InspectionsPage() {
             load();
           }}
           onClose={() => setSigningInspection(null)}
+        />
+      )}
+
+      {comparingInspection && (
+        <ComparaisonEdlModal
+          inspectionId={comparingInspection.id}
+          titre={comparingInspection.property?.title || ""}
+          onClose={() => setComparingInspection(null)}
         />
       )}
 

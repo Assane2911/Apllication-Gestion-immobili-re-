@@ -341,6 +341,24 @@ export interface Inspection {
   tenant?: Tenant;
 }
 
+export type VariationPiece = "INCHANGE" | "DEGRADE" | "AMELIORE" | "AJOUTEE" | "SUPPRIMEE";
+
+interface ConstatPiece {
+  condition: RoomCondition;
+  notes: string;
+}
+
+/** Comparaison d'un état des lieux de sortie avec celui d'entrée — voir comparaisonEdl.service.ts. */
+export interface ComparaisonEdl {
+  property: { id: string; title: string } | null;
+  entry: { id: string; inspectionDate: string };
+  exit: { id: string; inspectionDate: string };
+  rooms: { name: string; variation: VariationPiece; entry: ConstatPiece | null; exit: ConstatPiece | null }[];
+  meters: { type: "electricity" | "water" | "gas"; entry: string; exit: string; consumption: number | null }[];
+  keys: { label: string; entry: number; exit: number; missing: number }[];
+  summary: { degraded: number; improved: number; unchanged: number; added: number; removed: number; missingKeys: number };
+}
+
 export type ExpenseCategory = "MAINTENANCE" | "TAX" | "INSURANCE" | "SYNDIC" | "OTHER";
 
 export type ExpenseRecurrence = "MONTHLY" | "ANNUAL";

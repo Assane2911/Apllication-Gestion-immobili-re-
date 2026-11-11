@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  compareInspection,
   createInspection,
   deleteInspection,
   getInspection,
@@ -18,6 +19,7 @@ router.post("/:id/sign", authenticate, signInspection);
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 router.get("/", listInspections);
 router.get("/:id", getInspection);
+router.get("/:id/comparison", compareInspection);
 router.post("/", createInspection);
 router.put("/:id", updateInspection);
 router.delete("/:id", deleteInspection);

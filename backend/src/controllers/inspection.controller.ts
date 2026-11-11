@@ -5,6 +5,7 @@ import { db } from "../db/client";
 import { contracts, inspections, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { bauxDuLocataire } from "../services/colocation.service";
+import { comparerEtatsDesLieux } from "../services/comparaisonEdl.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership, chargerCompteCourant, chargerLocataireDuCompte, estLocataireDuBail, idLocataireDuCompte } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
@@ -110,6 +111,51 @@ export const getInspection = asyncHandler(async (req: Request, res: Response) =>
   assertOwnership(row, (r) => r.inspection.managerId, req.user!.userId, "État des lieux introuvable", 404, "INSPECTION_NOT_FOUND");
 
   res.json({ ...parseInspection(row.inspection), property: row.property, tenant: row.tenant });
+});
+
+/**
+ * Compare un état des lieux de sortie finalisé avec l'état des lieux d'entrée finalisé du même bail
+ * (le plus récent s'il y en a plusieurs) : pièces dégradées, relevés de compteurs, clés manquantes.
+ * Lecture seule et sans chiffrage : la retenue éventuelle sur le dépôt reste saisie par le gestionnaire.
+ */
+export const compareInspection = asyncHandler(async (req: Request, res: Response) => {
+  const [sortie] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
+  assertOwnership(sortie, (e) => e.managerId, req.user!.userId, "État des lieux introuvable", 404, "INSPECTION_NOT_FOUND");
+
+  if (sortie.type !== "EXIT") {
+    throw new ApiError(400, "La comparaison se fait à partir d'un état des lieux de sortie", "INSPECTION_COMPARE_NEEDS_EXIT");
+  }
+  if (sortie.status !== "COMPLETED") {
+    throw new ApiError(409, "L'état des lieux de sortie doit être finalisé avant d'être comparé", "INSPECTION_COMPARE_EXIT_NOT_FINALIZED");
+  }
+
+  const [entree] = await db
+    .select()
+    .from(inspections)
+    .where(and(eq(inspections.contractId, sortie.contractId), eq(inspections.type, "ENTRY"), eq(inspections.status, "COMPLETED")))
+    .orderBy(desc(inspections.createdAt))
+    .limit(1);
+  if (!entree) {
+    throw new ApiError(404, "Aucun état des lieux d'entrée finalisé pour ce bail : rien à comparer", "INSPECTION_COMPARE_NO_ENTRY");
+  }
+
+  const [bien] = await db.select().from(properties).where(eq(properties.id, sortie.propertyId));
+  const resume = (r: typeof inspections.$inferSelect) => ({
+    id: r.id,
+    inspectionDate: r.inspectionDate,
+    signedByManagerAt: r.signedByManagerAt,
+    signedByTenantAt: r.signedByTenantAt,
+    generalComments: r.generalComments ?? "",
+  });
+  const e = parseInspection(entree);
+  const s = parseInspection(sortie);
+
+  res.json({
+    property: bien ? { id: bien.id, title: bien.title } : null,
+    entry: resume(entree),
+    exit: resume(sortie),
+    ...comparerEtatsDesLieux({ rooms: e.rooms, meters: e.meters, keys: e.keys }, { rooms: s.rooms, meters: s.meters, keys: s.keys }),
+  });
 });
 
 /**
