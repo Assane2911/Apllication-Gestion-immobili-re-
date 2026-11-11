@@ -525,6 +525,7 @@ const pt: TranslationSchema = {
     owner: {
       messages: "Mensagens",
       home: "Painel",
+      agenda: "Agenda",
       crg: "Relatório de gestão",
     },
     ownerShort: {
@@ -3399,6 +3400,14 @@ const pt: TranslationSchema = {
     },
   },
   owner: {
+    agenda: {
+      title: "Agenda",
+      subtitle: "Os próximos prazos dos seus imóveis: fins de contrato, saídas anunciadas de inquilinos, seguros a renovar. A sua agência trata deles; esta página mantém-no informado.",
+      loading: "A carregar…",
+      emptyTitle: "Nenhum prazo próximo",
+      emptyDesc: "Não há nada previsto nos seus imóveis durante este período.",
+      count: "{{count}} prazo(s)",
+    },
     messages: {
       title: "Mensagens",
       subtitle: "Escreva à sua imobiliária por mensagem ou nota de voz. Ela responde aqui e avisa-o por e-mail.",

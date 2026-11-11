@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Receipt } from "lucide-react";
+import { CalendarDays, LayoutDashboard, MessageSquare, Receipt } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
@@ -18,6 +18,7 @@ const groupes: ReadonlyArray<GroupeMenu> = [
     cle: "overview",
     items: [
       { to: "/proprietaire", key: "home", icone: LayoutDashboard },
+      { to: "/proprietaire/agenda", key: "agenda", icone: CalendarDays },
       { to: "/proprietaire/messages", key: "messages", icone: MessageSquare },
     ],
   },

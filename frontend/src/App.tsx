@@ -60,6 +60,7 @@ const OwnerDashboardPage = lazyWithReload(() => import("./pages/owner/OwnerDashb
 const OwnerMessagesPage = lazyWithReload(() => import("./pages/owner/OwnerMessagesPage"));
 const GestionnaireOwnerMessagesPage = lazyWithReload(() => import("./pages/manager/OwnerMessagesPage"));
 const OwnerCrgPage = lazyWithReload(() => import("./pages/owner/OwnerCrgPage"));
+const OwnerAgendaPage = lazyWithReload(() => import("./pages/owner/OwnerAgendaPage"));
 const AdminDashboardPage = lazyWithReload(() => import("./pages/admin/AdminDashboardPage"));
 const AdminSubscriptionsPage = lazyWithReload(() => import("./pages/admin/AdminSubscriptionsPage"));
 const AdminSettingsPage = lazyWithReload(() => import("./pages/admin/AdminSettingsPage"));
@@ -174,6 +175,7 @@ function AppRoutes() {
           <Route path="/proprietaire" element={<OwnerDashboardPage />} />
           <Route path="/proprietaire/messages" element={<OwnerMessagesPage />} />
           <Route path="/proprietaire/crg" element={<OwnerCrgPage />} />
+          <Route path="/proprietaire/agenda" element={<OwnerAgendaPage />} />
         </Route>
 
         <Route

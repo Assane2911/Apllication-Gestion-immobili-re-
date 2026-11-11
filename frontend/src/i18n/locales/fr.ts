@@ -523,6 +523,7 @@ const fr = {
     owner: {
       messages: "Messagerie",
       home: "Tableau de bord",
+      agenda: "Agenda",
       crg: "Compte-rendu de gestion",
     },
     ownerShort: {
@@ -3400,6 +3401,14 @@ const fr = {
     },
   },
   owner: {
+    agenda: {
+      title: "Agenda",
+      subtitle: "Les prochaines échéances de vos biens : fins de bail, départs annoncés des locataires, assurances à renouveler. Votre agence s'en occupe ; cette page vous tient informé.",
+      loading: "Chargement…",
+      emptyTitle: "Aucune échéance à venir",
+      emptyDesc: "Rien n'est prévu sur vos biens pendant cette période.",
+      count: "{{count}} échéance(s)",
+    },
     messages: {
       title: "Messagerie",
       subtitle: "Écrivez à votre agence, par message ou par vocal. Elle vous répond ici et vous prévient par e-mail.",

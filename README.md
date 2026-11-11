@@ -31,6 +31,8 @@ Application complète de gestion immobilière : tableau de bord, biens, locatair
 - **Compte et sécurité** : double authentification (TOTP), collaborateurs avec rôles, journal d'activité, import de données, abonnement (Stripe, PayDunya), notifications dans la langue de l'interface.
 - **Administration de la plateforme** : rôle `ADMIN`, avec journal d'audit.
 
+- **Espace propriétaire** : un agenda en lecture seule des échéances de ses seuls biens (fins de bail, départs annoncés, assurances), sans aucune donnée des locataires.
+
 ### Portail locataire
 
 - Consultation du logement loué et du contrat en cours.
