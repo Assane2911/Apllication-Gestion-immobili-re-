@@ -2026,6 +2026,7 @@ const es: TranslationSchema = {
         notComputable: "no calculable",
         noNote: "sin observaciones",
         disclaimer: "Esta comparación señala las diferencias sin valorarlas: el desgaste normal no da lugar a retención. El importe, si procede, se introduce en la liquidación final.",
+        disclaimerTenant: "Esta comparación pone el inventario de entrada junto al de salida, estancia por estancia. No valora nada: cualquier retención de su fianza se detalla en su liquidación final.",
       },
       viewReport: "Ver informe",
       confirmDelete: "¿Eliminar este borrador de estado de bien?",
@@ -3245,6 +3246,7 @@ const es: TranslationSchema = {
       inspectionSignedByYouOn: "Firmado por ti el {{date}}",
       inspectionSignMine: "Firmar el estado",
       inspectionViewReport: "Ver informe",
+      inspectionCompare: "Comparar con la entrada",
       inspectionDocTitle: "Estado de Bien - {{property}}",
     },
     invoices: {

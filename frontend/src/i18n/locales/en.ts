@@ -2024,6 +2024,7 @@ const en: TranslationSchema = {
         notComputable: "cannot be calculated",
         noNote: "no remark",
         disclaimer: "This comparison flags differences without putting a price on them: normal wear and tear does not justify a deduction. Any amount is entered in the final settlement.",
+        disclaimerTenant: "This comparison sets the move-in report next to the move-out report, room by room. It puts no price on anything: any deduction from your deposit is itemised in your final settlement.",
       },
       viewReport: "View report",
       confirmDelete: "Delete this draft report?",
@@ -3243,6 +3244,7 @@ const en: TranslationSchema = {
       inspectionSignedByYouOn: "Signed by you on {{date}}",
       inspectionSignMine: "Sign the report",
       inspectionViewReport: "View report",
+      inspectionCompare: "Compare with move-in",
       inspectionDocTitle: "Move-in/Move-out Report - {{property}}",
     },
     invoices: {

@@ -20,6 +20,7 @@ import Badge from "../../components/Badge";
 import SectionReglage from "../../components/SectionReglage";
 import DocumentModal from "../../components/DocumentModal";
 import ScannedContractModal from "../../components/ScannedContractModal";
+import ComparaisonEdlModal from "../../components/ComparaisonEdlModal";
 import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, Inspection } from "../../types";
@@ -51,6 +52,7 @@ export default function TenantDashboardPage() {
   const [viewingScannedContract, setViewingScannedContract] = useState<{ title: string; url: string } | null>(null);
   const [signingInspection, setSigningInspection] = useState<Inspection | null>(null);
   const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
+  const [comparingInspection, setComparingInspection] = useState<Inspection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exportingData, setExportingData] = useState(false);
 
@@ -491,6 +493,11 @@ export default function TenantDashboardPage() {
                                 <ClipboardList size={13} aria-hidden="true" /> {t("tenant.dashboard.inspectionViewReport")}
                               </button>
                             </Bulle>
+                            {insp.type === "EXIT" && (
+                              <button onClick={() => setComparingInspection(insp)} className={BOUTON_CONTOUR}>
+                                {t("tenant.dashboard.inspectionCompare")}
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -563,6 +570,15 @@ export default function TenantDashboardPage() {
           title={t("tenant.dashboard.settlement.docTitle", { reference: viewingSettlement.reference })}
           docUrl={`/documents/settlement/${viewingSettlement.id}`}
           onClose={() => setViewingSettlement(null)}
+        />
+      )}
+
+      {comparingInspection && (
+        <ComparaisonEdlModal
+          pourLocataire
+          inspectionId={comparingInspection.id}
+          titre={t("tenant.dashboard.inspectionDocTitle", { property: comparingInspection.property?.title })}
+          onClose={() => setComparingInspection(null)}
         />
       )}
 

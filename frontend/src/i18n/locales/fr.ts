@@ -2025,6 +2025,7 @@ const fr = {
         notComputable: "non calculable",
         noNote: "aucune remarque",
         disclaimer: "Cette comparaison signale les écarts, elle ne les chiffre pas : l'usure normale et la vétusté ne donnent pas lieu à retenue. Le montant éventuel se saisit dans le solde de tout compte.",
+        disclaimerTenant: "Cette comparaison met en regard l'état des lieux d'entrée et celui de sortie, pièce par pièce. Elle ne chiffre rien : toute retenue éventuelle sur votre dépôt de garantie vous est détaillée dans votre solde de tout compte.",
       },
       viewReport: "Voir le rapport",
       confirmDelete: "Supprimer ce brouillon d'état des lieux ?",
@@ -3244,6 +3245,7 @@ const fr = {
       inspectionSignedByYouOn: "Signé par vous le {{date}}",
       inspectionSignMine: "Signer l'état des lieux",
       inspectionViewReport: "Voir le rapport",
+      inspectionCompare: "Comparer avec l'entrée",
       inspectionDocTitle: "État des Lieux - {{property}}",
     },
     invoices: {

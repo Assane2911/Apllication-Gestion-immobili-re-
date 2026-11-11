@@ -29,12 +29,15 @@ export default function ComparaisonEdlModal({
   titre,
   onClose,
   onPrepareRefund,
+  pourLocataire = false,
 }: {
   inspectionId: string;
   titre: string;
   onClose: () => void;
   /** Absent quand le dépôt est déjà restitué ou que le bail n'est pas disponible : le bouton n'est alors pas proposé. */
   onPrepareRefund?: () => void;
+  /** Lecture par le locataire : route dédiée (mêmes droits que sa liste d'états des lieux) et texte qui ne parle pas à l'agence. */
+  pourLocataire?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<ComparaisonEdl | null>(null);
@@ -43,14 +46,14 @@ export default function ComparaisonEdlModal({
   useEffect(() => {
     const controller = new AbortController();
     api
-      .get<ComparaisonEdl>(`/inspections/${inspectionId}/comparison`, { signal: controller.signal })
+      .get<ComparaisonEdl>(`/inspections/${pourLocataire ? "mine/" : ""}${inspectionId}/comparison`, { signal: controller.signal })
       .then((res) => setData(res.data))
       .catch((err) => {
         if (isRequestCancelled(err)) return;
         setErreur(apiErrorMessage(err));
       });
     return () => controller.abort();
-  }, [inspectionId]);
+  }, [inspectionId, pourLocataire]);
 
   const etat = (c: RoomCondition) => t(`manager.inspections.${ETAT_CLE[c]}`);
   const remarque = (notes: string) => notes.trim() || t("manager.inspections.compare.noNote");
@@ -171,8 +174,8 @@ export default function ComparaisonEdlModal({
               )}
             </section>
 
-            <p className="border-t border-slate-200 pt-4 text-xs text-slate-600">{t("manager.inspections.compare.disclaimer")}</p>
-            {onPrepareRefund && (
+            <p className="border-t border-slate-200 pt-4 text-xs text-slate-600">{t(pourLocataire ? "manager.inspections.compare.disclaimerTenant" : "manager.inspections.compare.disclaimer")}</p>
+            {!pourLocataire && onPrepareRefund && (
               <div className="flex justify-end">
                 <button type="button" onClick={onPrepareRefund} className={BOUTON_PLEIN}>
                   {t("manager.inspections.compare.prepareRefund")}

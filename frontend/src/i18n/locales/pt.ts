@@ -2024,6 +2024,7 @@ const pt: TranslationSchema = {
         notComputable: "não calculável",
         noNote: "sem observações",
         disclaimer: "Esta comparação assinala as diferenças sem as valorizar: o desgaste normal não dá lugar a retenção. O valor, se houver, é indicado no acerto final.",
+        disclaimerTenant: "Esta comparação coloca a vistoria de entrada ao lado da de saída, divisão a divisão. Não valoriza nada: qualquer retenção da sua caução é detalhada no seu acerto final.",
       },
       viewReport: "Ver relatório",
       confirmDelete: "Excluir este rascunho de vistoria?",
@@ -3243,6 +3244,7 @@ const pt: TranslationSchema = {
       inspectionSignedByYouOn: "Assinado por você em {{date}}",
       inspectionSignMine: "Assinar a vistoria",
       inspectionViewReport: "Ver relatório",
+      inspectionCompare: "Comparar com a entrada",
       inspectionDocTitle: "Vistoria - {{property}}",
     },
     invoices: {
