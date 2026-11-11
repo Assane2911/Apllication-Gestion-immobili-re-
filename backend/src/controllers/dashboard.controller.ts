@@ -26,14 +26,24 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     .from(tenants)
     .where(eq(tenants.managerId, managerId));
 
+  // Le périmètre de l'agence est exprimé par des SOUS-REQUÊTES, pas par la liste des identifiants renvoyée à la base :
+  // sur un grand portefeuille, chaque requête de cette page transportait un paramètre par bien ou par bail (5 000 biens,
+  // 5 000 paramètres, six fois), ce qui coûte cher à préparer et bute sur le plafond de 65 535 paramètres de PostgreSQL.
+  const biensDeLAgence = db.select({ id: properties.id }).from(properties).where(eq(properties.managerId, managerId));
+  const bauxDeLAgence = db
+    .select({ id: contractsTable.id })
+    .from(contractsTable)
+    .innerJoin(properties, eq(contractsTable.propertyId, properties.id))
+    .where(eq(properties.managerId, managerId));
+
   const managerContractRows =
     propertyIds.length > 0
       ? await db
           .select({ id: contractsTable.id, status: contractsTable.status })
           .from(contractsTable)
-          .where(inArray(contractsTable.propertyId, propertyIds))
+          .where(inArray(contractsTable.propertyId, biensDeLAgence))
       : [];
-  const managerContractIds = managerContractRows.map((c: { id: string }) => c.id);
+  const nombreDeBaux = managerContractRows.length;
   const activeContracts = managerContractRows.filter((c: { status: string }) => c.status === "ACTIVE").length;
 
   const sixMonthsAgo = new Date(year, month - 6, 1);
@@ -42,14 +52,14 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
   // en mémoire pour filtrer en JS, on cible précisément en base les factures
   // du mois, les factures en retard et les règlements récents.
   const [monthlyInvoices, [lateCount], recentPaidInvoices] =
-    managerContractIds.length > 0
+    nombreDeBaux > 0
       ? await Promise.all([
           db
             .select({ amount: invoices.amount, currency: invoices.currency })
             .from(invoices)
             .where(
               and(
-                inArray(invoices.contractId, managerContractIds),
+                inArray(invoices.contractId, bauxDeLAgence),
                 eq(invoices.periodMonth, month),
                 eq(invoices.periodYear, year),
                 // Une facture annulée n'est plus due : elle ne fait pas partie du loyer « attendu ».
@@ -60,7 +70,7 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
           db
             .select({ count: sql<number>`count(*)::int` })
             .from(invoices)
-            .where(and(inArray(invoices.contractId, managerContractIds), eq(invoices.status, "LATE"))),
+            .where(and(inArray(invoices.contractId, bauxDeLAgence), eq(invoices.status, "LATE"))),
           db
             .select({
               id: invoices.id,
@@ -74,7 +84,7 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
             .from(invoices)
             .where(
               and(
-                inArray(invoices.contractId, managerContractIds),
+                inArray(invoices.contractId, bauxDeLAgence),
                 // Ce qui peut avoir encaissé de l'argent depuis six mois (le tri par date se fait ensuite, paiement par
                 // paiement). Auparavant `amountPaid > 0` ramenait TOUT l'historique des loyers payés, à chaque ouverture de
                 // la page, pour n'en garder que six mois. Le filtre est strictement équivalent : une facture soldée dont la
@@ -123,25 +133,25 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
   const occupancyRate = totalProperties > 0 ? Math.round((statusCounts.OCCUPIED / totalProperties) * 100) : 0;
 
   const openIssues =
-    managerContractIds.length > 0
+    nombreDeBaux > 0
       ? (
           await db
             .select({ count: sql<number>`count(*)::int` })
             .from(issueReports)
-            .where(and(inArray(issueReports.status, ["OPEN", "IN_PROGRESS"]), inArray(issueReports.contractId, managerContractIds)))
+            .where(and(inArray(issueReports.status, ["OPEN", "IN_PROGRESS"]), inArray(issueReports.contractId, bauxDeLAgence)))
         )[0].count
       : 0;
   const lateInvoices = lateCount.count;
 
   // Congés en cours sur des baux en cours : les sorties à préparer (état des lieux de sortie, solde, dépôt).
   const upcomingExits =
-    managerContractIds.length > 0
+    nombreDeBaux > 0
       ? (
           await db
             .select({ count: sql<number>`count(*)::int` })
             .from(leaseNotices)
             .innerJoin(contractsTable, eq(leaseNotices.contractId, contractsTable.id))
-            .where(and(eq(leaseNotices.status, "ACTIVE"), eq(contractsTable.status, "ACTIVE"), inArray(leaseNotices.contractId, managerContractIds)))
+            .where(and(eq(leaseNotices.status, "ACTIVE"), eq(contractsTable.status, "ACTIVE"), inArray(leaseNotices.contractId, bauxDeLAgence)))
         )[0].count
       : 0;
 
@@ -166,7 +176,7 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
       ? await db
           .select({ amount: expenses.amount, currency: expenses.currency, expenseDate: expenses.expenseDate })
           .from(expenses)
-          .where(and(gte(expenses.expenseDate, sixMonthsAgo), inArray(expenses.propertyId, propertyIds)))
+          .where(and(gte(expenses.expenseDate, sixMonthsAgo), inArray(expenses.propertyId, biensDeLAgence)))
       : [];
   const expensesByMonth: Record<string, Record<string, number>> = {};
   for (const exp of recentExpenses) {

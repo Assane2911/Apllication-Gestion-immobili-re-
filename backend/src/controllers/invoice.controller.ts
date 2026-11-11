@@ -44,16 +44,38 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
   if (isInvoiceStatus(status)) conditions.push(eq(invoices.status, status));
   const whereClause = and(...conditions);
 
+  // Colonnes lues : celles que l'écran affiche, pas les lignes entières. Le bail porte les clauses et les mentions
+  // légales (plusieurs ko), le bien sa description, le locataire sa pièce d'identité : une page de 20 factures en
+  // renvoyait plus de 250 Ko dont l'écran ne lit que le nom, l'e-mail et le titre du bien.
+  const colonnesBail = {
+    id: contracts.id,
+    propertyId: contracts.propertyId,
+    tenantId: contracts.tenantId,
+    rent: contracts.rent,
+    currency: contracts.currency,
+    startDate: contracts.startDate,
+    endDate: contracts.endDate,
+    status: contracts.status,
+  };
+  const colonnesLocataire = {
+    id: tenants.id,
+    firstName: tenants.firstName,
+    lastName: tenants.lastName,
+    email: tenants.email,
+    phone: tenants.phone,
+  };
+  const colonnesBien = { id: properties.id, title: properties.title, address: properties.address };
+
   type InvoiceRow = {
     invoice: typeof invoices.$inferSelect;
-    contract: typeof contracts.$inferSelect;
-    tenant: typeof tenants.$inferSelect;
-    property: typeof properties.$inferSelect;
+    contract: { [K in keyof typeof colonnesBail]: unknown };
+    tenant: { [K in keyof typeof colonnesLocataire]: unknown };
+    property: { [K in keyof typeof colonnesBien]: unknown };
   };
 
   const [rows, [{ count }]] = await Promise.all([
     db
-      .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+      .select({ invoice: invoices, contract: colonnesBail, tenant: colonnesLocataire, property: colonnesBien })
       .from(invoices)
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
