@@ -1526,6 +1526,8 @@ const en: TranslationSchema = {
         howGoogle: "Google Calendar: “Other calendars” → “+” → “From URL”, then paste the link.",
         howOutlook: "Outlook: “Add calendar” → “Subscribe from web”, then paste the link.",
         howPhone: "iPhone: tap “Open in my calendar”. Android: add it from Google Calendar on a computer.",
+        hideTenants: "Do not show tenant names in my calendar",
+        hideTenantsHint: "Only the tenant's name is removed: the property, the type of deadline, the amount and the titles you typed (documents, reasons) remain visible.",
         regenerate: "Generate a new link",
         regenerateWarn: "The old link will stop working: calendars using it will not update until you paste the new one.",
         disable: "Turn off the link",

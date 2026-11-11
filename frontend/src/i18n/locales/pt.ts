@@ -1526,6 +1526,8 @@ const pt: TranslationSchema = {
         howGoogle: "Google Agenda: «Outras agendas» → «+» → «A partir do URL» e cole a ligação.",
         howOutlook: "Outlook: «Adicionar calendário» → «Subscrever a partir da Web» e cole a ligação.",
         howPhone: "iPhone: toque em «Abrir no meu calendário». Android: adicione-a a partir do Google Agenda num computador.",
+        hideTenants: "Não mostrar o nome dos inquilinos no meu calendário",
+        hideTenantsHint: "Só o nome do inquilino é retirado: o imóvel, o tipo de prazo, o valor e os títulos que escreveu (documentos, motivos) continuam visíveis.",
         regenerate: "Gerar uma nova ligação",
         regenerateWarn: "A ligação antiga deixará de funcionar: os calendários que a usam não serão atualizados até colar a nova.",
         disable: "Desativar a ligação",

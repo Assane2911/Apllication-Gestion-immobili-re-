@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { chargerAgenda, JOURS_AGENDA_MAX, JOURS_AGENDA_PAR_DEFAUT, resumeAgenda } from "../services/agenda.service";
-import { calendrierDuJeton, etatDuLien, genererLien, supprimerLien } from "../services/agendaFeed.service";
+import { calendrierDuJeton, definirMasquageLocataires, etatDuLien, genererLien, supprimerLien } from "../services/agendaFeed.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
 const querySchema = z.object({
@@ -26,8 +26,16 @@ export const getAgendaFeed = asyncHandler(async (req: Request, res: Response) =>
 
 /** Crée le lien d'abonnement, ou le régénère (l'ancien cesse de fonctionner). Le jeton n'est renvoyé que cette fois. */
 export const createAgendaFeed = asyncHandler(async (req: Request, res: Response) => {
-  const { token, createdAt } = await genererLien(req.user!.userId);
-  res.status(201).json({ token, path: `/agenda/ics/${token}.ics`, active: true, createdAt, lastUsedAt: null });
+  const { token, createdAt, hideTenantNames } = await genererLien(req.user!.userId);
+  res.status(201).json({ token, path: `/agenda/ics/${token}.ics`, active: true, createdAt, lastUsedAt: null, hideTenantNames });
+});
+
+const reglageLienSchema = z.object({ hideTenantNames: z.boolean() });
+
+/** Retire (ou remet) le nom des locataires dans le calendrier externe. Sans lien, ne fait rien et renvoie l'état inactif. */
+export const updateAgendaFeed = asyncHandler(async (req: Request, res: Response) => {
+  const { hideTenantNames } = reglageLienSchema.parse(req.body);
+  res.json(await definirMasquageLocataires(req.user!.userId, hideTenantNames));
 });
 
 /** Désactive le lien : les calendriers abonnés ne reçoivent plus rien. */

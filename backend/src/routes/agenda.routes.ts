@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createAgendaFeed, deleteAgendaFeed, getAgenda, getAgendaFeed, getAgendaIcs, getAgendaSummary } from "../controllers/agenda.controller";
+import { createAgendaFeed, deleteAgendaFeed, getAgenda, getAgendaFeed, getAgendaIcs, getAgendaSummary, updateAgendaFeed } from "../controllers/agenda.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
 import { agendaFeedLimiter } from "../middleware/rateLimit";
 
@@ -13,6 +13,7 @@ router.get("/", getAgenda);
 router.get("/summary", getAgendaSummary);
 router.get("/feed", getAgendaFeed);
 router.post("/feed", createAgendaFeed);
+router.put("/feed", updateAgendaFeed);
 router.delete("/feed", deleteAgendaFeed);
 
 export default router;

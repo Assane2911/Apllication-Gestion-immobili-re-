@@ -1526,6 +1526,8 @@ const es: TranslationSchema = {
         howGoogle: "Google Calendar: «Otros calendarios» → «+» → «Desde URL», y pegue el enlace.",
         howOutlook: "Outlook: «Agregar calendario» → «Suscribirse desde la web», y pegue el enlace.",
         howPhone: "iPhone: toque «Abrir en mi calendario». Android: añádalo desde Google Calendar en un ordenador.",
+        hideTenants: "No mostrar el nombre de los inquilinos en mi calendario",
+        hideTenantsHint: "Solo se quita el nombre del inquilino: el inmueble, el tipo de vencimiento, el importe y los títulos que usted escribió (documentos, motivos) siguen visibles.",
         regenerate: "Generar un enlace nuevo",
         regenerateWarn: "El enlace anterior dejará de funcionar: los calendarios que lo usan no se actualizarán hasta que pegue el nuevo.",
         disable: "Desactivar el enlace",
