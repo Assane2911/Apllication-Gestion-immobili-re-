@@ -138,6 +138,10 @@ En résumé :
 - Un locataire ne peut voir/payer que ses propres factures et signaler des incidents que sur ses propres contrats.
 - Note de dépendance : `drizzle-kit` (outil CLI utilisé uniquement en développement local pour appliquer le schéma) dépend d'une version d'`esbuild` avec un avis de sécurité concernant son serveur de développement. Cet outil n'est jamais exécuté en production ni exposé publiquement — le risque ne s'applique donc pas à l'application déployée.
 
+## Performances
+
+Les écrans relus en boucle (menu, tableau de bord, agenda, cloche de notifications) ne ramènent que les colonnes dont ils se servent : les lignes entières de contrats, de biens ou de locataires portent des textes libres (clauses de bail, mentions, signatures) et pèsent des mégaoctets sur un grand portefeuille. Mesuré en local sur 500 biens et 12 000 factures : tableau de bord 350 → 80 ms, décompte de l'agenda 64 → 24 ms, avec des chiffres identiques. Deux tests de garde (`agenda.colonnes.test.ts`, `dashboard.colonnes.test.ts`) échouent dès qu'une de ces requêtes sélectionne de nouveau une ligne entière ; pour ajouter un champ à un de ces écrans, ajoutez-le à la sélection.
+
 ## Structure du projet
 
 ```
