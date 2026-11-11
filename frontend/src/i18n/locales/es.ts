@@ -1099,6 +1099,17 @@ const es: TranslationSchema = {
       errorRequired: "Por favor, coloca tu firma en el recuadro antes de validar.",
     },
     depositRefundModal: {
+      exitFindings: {
+        title: "Constatación de salida",
+        intro: "Estancias que han empeorado desde el inventario de entrada y llaves que faltan. El importe de cada retención queda a su criterio.",
+        none: "Ningún deterioro ni llave que falte entre la entrada y la salida.",
+        states: "{{from}} → {{to}}",
+        add: "Añadir una retención",
+        roomLabel: "Reparación: {{room}}",
+        keyLabel: "Llave que falta: {{label}}",
+        missing: "{{count}} faltan",
+        noNote: "sin observaciones",
+      },
       totalDeductions: "Retenciones",
       retained: "{{percent}} % de la fianza retenida",
       quickLabel: "Motivos habituales",
@@ -1931,6 +1942,7 @@ const es: TranslationSchema = {
       finalize: "Finalizar",
       confirmFinalize: "¿Finalizar este estado de bien? Su contenido (habitaciones, contadores, llaves) ya no podrá modificarse después.",
       compare: {
+        prepareRefund: "Preparar la devolución de la fianza",
         button: "Comparar con la entrada",
         title: "Comparación entrada / salida",
         dates: "Entrada {{entry}} · salida {{exit}}",

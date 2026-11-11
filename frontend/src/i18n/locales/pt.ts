@@ -1099,6 +1099,17 @@ const pt: TranslationSchema = {
       errorRequired: "Por favor, assine no quadro antes de confirmar.",
     },
     depositRefundModal: {
+      exitFindings: {
+        title: "Constatação de saída",
+        intro: "Divisões que pioraram desde a vistoria de entrada e chaves em falta. O valor de cada retenção fica ao seu critério.",
+        none: "Nenhuma degradação nem chave em falta entre a entrada e a saída.",
+        states: "{{from}} → {{to}}",
+        add: "Adicionar uma retenção",
+        roomLabel: "Reparação: {{room}}",
+        keyLabel: "Chave em falta: {{label}}",
+        missing: "{{count}} em falta",
+        noNote: "sem observações",
+      },
       totalDeductions: "Retenções",
       retained: "{{percent}} % da caução retida",
       quickLabel: "Motivos habituais",
@@ -1929,6 +1940,7 @@ const pt: TranslationSchema = {
       finalize: "Finalizar",
       confirmFinalize: "Finalizar esta vistoria? O conteúdo (cômodos, medidores, chaves) não poderá mais ser editado depois.",
       compare: {
+        prepareRefund: "Preparar a devolução da caução",
         button: "Comparar com a entrada",
         title: "Comparação entrada / saída",
         dates: "Entrada {{entry}} · saída {{exit}}",

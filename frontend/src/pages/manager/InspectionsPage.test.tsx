@@ -339,4 +339,40 @@ describe("InspectionsPage (manager)", () => {
     expect(await screen.findByRole("dialog", { name: "Comparaison entrée / sortie" })).toBeInTheDocument();
     expect(mockedApi.get).toHaveBeenLastCalledWith("/inspections/sortie/comparison", expect.anything());
   });
+  it("enchaîne de la comparaison à la restitution du dépôt, sauf si le dépôt est déjà restitué", async () => {
+    const comparaison = {
+      property: { id: "prop-1", title: "Studio Centre-ville" },
+      entry: { id: "e", inspectionDate: "2026-01-10T00:00:00.000Z" },
+      exit: { id: "sortie", inspectionDate: "2026-11-02T00:00:00.000Z" },
+      rooms: [],
+      meters: [],
+      keys: [],
+      summary: { degraded: 0, improved: 0, unchanged: 0, added: 0, removed: 0, missingKeys: 0 },
+    };
+    queueLoad([inspection({ id: "sortie", type: "EXIT", status: "COMPLETED" })], [contract()]);
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Comparer avec l'entrée" }).length).toBeGreaterThan(0));
+
+    mockedApi.get.mockImplementation(async (url: string) => ({ data: url.endsWith("/comparison") ? comparaison : null }));
+    const user = userEvent.setup();
+    await user.click(screen.getAllByRole("button", { name: "Comparer avec l'entrée" })[0]);
+    await user.click(await screen.findByRole("button", { name: "Préparer la restitution du dépôt" }));
+
+    expect(await screen.findByRole("dialog", { name: "Restitution du dépôt de garantie" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Comparaison entrée / sortie" })).not.toBeInTheDocument();
+  });
+
+  it("ne propose pas la restitution quand le dépôt du bail est déjà restitué", async () => {
+    queueLoad([inspection({ id: "sortie", type: "EXIT", status: "COMPLETED" })], [contract({ depositRefundedAt: "2026-11-05T00:00:00.000Z" })]);
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Comparer avec l'entrée" }).length).toBeGreaterThan(0));
+
+    mockedApi.get.mockResolvedValueOnce({
+      data: { property: null, entry: { id: "e", inspectionDate: "2026-01-10T00:00:00.000Z" }, exit: { id: "s", inspectionDate: "2026-11-02T00:00:00.000Z" }, rooms: [], meters: [], keys: [], summary: { degraded: 0, improved: 0, unchanged: 0, added: 0, removed: 0, missingKeys: 0 } },
+    });
+    await userEvent.setup().click(screen.getAllByRole("button", { name: "Comparer avec l'entrée" })[0]);
+    await screen.findByRole("dialog", { name: "Comparaison entrée / sortie" });
+    await waitFor(() => expect(screen.queryByText("Chargement de la comparaison…")).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Préparer la restitution du dépôt" })).not.toBeInTheDocument();
+  });
 });

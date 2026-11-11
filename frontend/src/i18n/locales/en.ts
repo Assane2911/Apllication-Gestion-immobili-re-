@@ -1099,6 +1099,17 @@ const en: TranslationSchema = {
       errorRequired: "Please sign in the box before confirming.",
     },
     depositRefundModal: {
+      exitFindings: {
+        title: "Move-out findings",
+        intro: "Rooms that got worse since the move-in report, and missing keys. The amount of each deduction is for you to decide.",
+        none: "No deterioration or missing key between move-in and move-out.",
+        states: "{{from}} → {{to}}",
+        add: "Add a deduction",
+        roomLabel: "Restoration: {{room}}",
+        keyLabel: "Missing key: {{label}}",
+        missing: "{{count}} missing",
+        noNote: "no remark",
+      },
       totalDeductions: "Deductions",
       retained: "{{percent}}% of the deposit withheld",
       quickLabel: "Common reasons",
@@ -1929,6 +1940,7 @@ const en: TranslationSchema = {
       finalize: "Finalize",
       confirmFinalize: "Finalize this report? Its content (rooms, meters, keys) can no longer be edited afterwards.",
       compare: {
+        prepareRefund: "Prepare the deposit refund",
         button: "Compare with move-in",
         title: "Move-in / move-out comparison",
         dates: "Move-in {{entry}} · move-out {{exit}}",
