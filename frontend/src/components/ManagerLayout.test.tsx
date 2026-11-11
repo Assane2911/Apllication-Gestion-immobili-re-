@@ -246,4 +246,25 @@ describe("ManagerLayout — pastille de l'agenda", () => {
     expect(within(agenda).queryByTestId("pastille-menu")).not.toBeInTheDocument();
     mockedApi.get.mockResolvedValue(reponseParDefaut as never);
   });
+
+  it("reprend le total des messages non lus et des échéances en retard sur le bouton qui ouvre le menu (téléphone)", async () => {
+    mockedApi.get.mockImplementation((async (url: string) => {
+      if (url === "/agenda/summary") return { data: { overdue: 3, overdueOther: 0, soon: 0 } };
+      if (url === "/messages/unread-count") return { data: { count: 2 } };
+      return reponseParDefaut;
+    }) as never);
+    renderManagerLayout("/dashboard");
+
+    expect(await screen.findByRole("button", { name: "Ouvrir le menu, 5 élément(s) en attente" })).toHaveTextContent("5");
+    mockedApi.get.mockResolvedValue(reponseParDefaut as never);
+  });
+
+  it("n'ajoute rien au bouton du menu quand rien n'est en attente", async () => {
+    mockedApi.get.mockResolvedValue(reponseParDefaut as never);
+    renderManagerLayout("/dashboard");
+
+    await screen.findByRole("link", { name: /Agenda/ });
+    expect(screen.getByRole("button", { name: "Ouvrir le menu" })).toBeInTheDocument();
+    expect(screen.queryByTestId("pastille-bouton-menu")).not.toBeInTheDocument();
+  });
 });

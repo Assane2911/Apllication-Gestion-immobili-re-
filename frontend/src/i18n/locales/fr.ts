@@ -1449,6 +1449,7 @@ const fr = {
       trialFree: "Essai gratuit",
       closeMenuAria: "Fermer le menu",
       openMenuAria: "Ouvrir le menu",
+      openMenuPending: "Ouvrir le menu, {{count}} élément(s) en attente",
     },
     tenantLayout: {
       title: "Espace locataire",

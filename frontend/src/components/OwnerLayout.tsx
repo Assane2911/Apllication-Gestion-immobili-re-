@@ -1,4 +1,4 @@
-import { LayoutDashboard, Menu, MessageSquare, Receipt } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Receipt } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
@@ -9,6 +9,7 @@ import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CartouchePlan from "./CartouchePlan";
 import { useNonLus } from "../hooks/useNonLus";
+import BoutonOuvrirMenu from "./BoutonOuvrirMenu";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 
 // Même menu latéral que l'espace gestionnaire (colonne d'icônes qui s'ouvre au survol), rangé en deux rubriques.
@@ -69,13 +70,11 @@ export default function OwnerLayout() {
       <main data-surface="app" className="flex-1 min-w-0 px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-5xl mx-auto">
           <div className="mb-6 flex items-center gap-3">
-            <button
+            <BoutonOuvrirMenu
               onClick={() => setMenuMobileOuvert(true)}
+              enAttente={nonLus.count}
               className="sm:hidden shrink-0 w-9 h-9 bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
-              aria-label={t("components.managerLayout.openMenuAria")}
-            >
-              <Menu size={18} />
-            </button>
+            />
             <BoutonsHistorique />
           </div>
           {/* Fil d'Ariane décoratif (rubrique / page) : le texte vient d'attributs, il ne double ni le titre ni le menu. */}
