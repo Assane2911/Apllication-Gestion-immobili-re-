@@ -173,3 +173,74 @@ describe("GET /api/agenda/ics/:jeton.ics", () => {
     expect((await lireFlux(inconnu)).status).toBe(429);
   });
 });
+
+describe("PUT /api/agenda/feed — sans noms de locataires", () => {
+  const regler = (manager: Compte, corps: unknown) => request(app).put("/api/agenda/feed").set(authHeader(tokenFor(manager))).send(corps as object);
+
+  it("retire le nom du locataire du calendrier, en gardant le bien et le type d'échéance, et le remet à la demande", async () => {
+    const { manager } = await agenceAvecLoyer();
+    const token = (await creerLien(manager)).body.token as string;
+    expect((await lireFlux(token)).text).toContain("Awa Sow");
+
+    const masque = await regler(manager, { hideTenantNames: true });
+    expect(masque.status).toBe(200);
+    expect(masque.body).toMatchObject({ active: true, hideTenantNames: true });
+    const sans = (await lireFlux(token)).text;
+    expect(sans).not.toContain("Awa");
+    expect(sans).not.toContain("Sow");
+    expect(sans).toContain("SUMMARY:Loyer dû — Villa Baobab");
+
+    expect((await regler(manager, { hideTenantNames: false })).body.hideTenantNames).toBe(false);
+    expect((await lireFlux(token)).text).toContain("Awa Sow");
+  });
+
+  it("garde le réglage quand on régénère le lien, et l'annonce dans la réponse et dans l'état", async () => {
+    const { manager } = await agenceAvecLoyer();
+    await creerLien(manager);
+    await regler(manager, { hideTenantNames: true });
+
+    const nouveau = await creerLien(manager);
+
+    expect(nouveau.body.hideTenantNames).toBe(true);
+    expect((await lireEtat(manager)).body.hideTenantNames).toBe(true);
+    expect((await lireFlux(nouveau.body.token)).text).not.toContain("Awa Sow");
+  });
+
+  it("par défaut, les noms figurent au calendrier", async () => {
+    const { manager } = await agenceAvecLoyer();
+    const res = await creerLien(manager);
+    expect(res.body.hideTenantNames).toBe(false);
+    expect((await lireFlux(res.body.token)).text).toContain("Awa Sow");
+  });
+
+  it("ne crée aucun lien quand il n'y en a pas, et renvoie l'état inactif", async () => {
+    const { manager } = await agenceAvecLoyer();
+
+    const res = await regler(manager, { hideTenantNames: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ active: false, hideTenantNames: false });
+    expect(await testDb.select().from(agendaFeeds)).toHaveLength(0);
+  });
+
+  it("refuse une valeur qui n'est pas un booléen, et l'absence de session", async () => {
+    const { manager } = await agenceAvecLoyer();
+    await creerLien(manager);
+    expect((await regler(manager, { hideTenantNames: "oui" })).status).toBe(400);
+    expect((await regler(manager, {})).status).toBe(400);
+    expect((await request(app).put("/api/agenda/feed").send({ hideTenantNames: true })).status).toBe(401);
+  });
+
+  it("ne touche que le lien de sa propre agence", async () => {
+    const a = await agenceAvecLoyer("Bien de A");
+    const b = await agenceAvecLoyer("Bien de B");
+    const tokenB = (await creerLien(b.manager)).body.token as string;
+    await creerLien(a.manager);
+
+    await regler(a.manager, { hideTenantNames: true });
+
+    expect((await lireEtat(b.manager)).body.hideTenantNames).toBe(false);
+    expect((await lireFlux(tokenB)).text).toContain("Awa Sow");
+  });
+});
+

@@ -1008,6 +1008,8 @@ export interface LienCalendrier {
   active: boolean;
   createdAt: string | null;
   lastUsedAt: string | null;
+  /** Le calendrier externe n'affiche pas le nom des locataires. */
+  hideTenantNames: boolean;
 }
 /** Réponse de la création du lien : `path` est relatif à la racine de l'API et contient le jeton, à montrer une seule fois. */
 export interface LienCalendrierCree extends LienCalendrier {

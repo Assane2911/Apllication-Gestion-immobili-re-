@@ -692,10 +692,13 @@ export async function initDb() {
         manager_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
         token_hash TEXT NOT NULL,
         last_used_at TIMESTAMP,
+        hide_tenant_names BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    // Table déjà créée en production avant ce réglage : ajout non destructif de la colonne.
+    await ajouterColonne("agenda_feeds", "hide_tenant_names", sql`ALTER TABLE agenda_feeds ADD COLUMN IF NOT EXISTS hide_tenant_names BOOLEAN NOT NULL DEFAULT FALSE`);
     await creerIndex("agenda_feeds_token_hash_unique", sql`CREATE UNIQUE INDEX IF NOT EXISTS agenda_feeds_token_hash_unique ON agenda_feeds (token_hash)`);
 
     // Historique des révisions de loyer d'un bail (après contracts : FK).

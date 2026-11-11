@@ -1524,6 +1524,8 @@ const fr = {
         howGoogle: "Google Agenda : « Autres agendas » → « + » → « À partir de l'URL », puis collez le lien.",
         howOutlook: "Outlook : « Ajouter un calendrier » → « S'abonner à partir du web », puis collez le lien.",
         howPhone: "iPhone : touchez « Ouvrir dans mon calendrier ». Android : ajoutez-le depuis Google Agenda sur ordinateur.",
+        hideTenants: "Ne pas afficher le nom des locataires dans mon calendrier",
+        hideTenantsHint: "Seul le nom du locataire est retiré : le bien, le type d'échéance, le montant et les intitulés que vous avez saisis (documents, motifs) restent visibles.",
         regenerate: "Générer un nouveau lien",
         regenerateWarn: "L'ancien lien cessera de fonctionner : les calendriers qui l'utilisent ne seront plus mis à jour tant que vous n'aurez pas collé le nouveau.",
         disable: "Désactiver le lien",

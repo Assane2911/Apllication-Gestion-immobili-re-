@@ -24,15 +24,28 @@ export interface EtatLien {
   active: boolean;
   createdAt: Date | null;
   lastUsedAt: Date | null;
+  /** Le calendrier externe n'affiche pas le nom des locataires. Faux tant qu'il n'y a pas de lien. */
+  hideTenantNames: boolean;
 }
 
 export async function etatDuLien(managerId: string): Promise<EtatLien> {
   const [ligne] = await db.select().from(agendaFeeds).where(eq(agendaFeeds.managerId, managerId));
-  return ligne ? { active: true, createdAt: ligne.createdAt, lastUsedAt: ligne.lastUsedAt } : { active: false, createdAt: null, lastUsedAt: null };
+  return ligne
+    ? { active: true, createdAt: ligne.createdAt, lastUsedAt: ligne.lastUsedAt, hideTenantNames: ligne.hideTenantNames }
+    : { active: false, createdAt: null, lastUsedAt: null, hideTenantNames: false };
+}
+
+/**
+ * Règle le masquage des noms de locataires du calendrier. Sans lien, rien n'est écrit (le réglage appartient au lien) et l'état
+ * « inactif » est simplement renvoyé. Le réglage est conservé quand on régénère le lien.
+ */
+export async function definirMasquageLocataires(managerId: string, masquer: boolean): Promise<EtatLien> {
+  await db.update(agendaFeeds).set({ hideTenantNames: masquer, updatedAt: new Date() }).where(eq(agendaFeeds.managerId, managerId));
+  return etatDuLien(managerId);
 }
 
 /** Crée le lien de l'agence, ou en génère un nouveau qui remplace (et invalide) le précédent. Renvoie le jeton, à ne montrer qu'une fois. */
-export async function genererLien(managerId: string): Promise<{ token: string; createdAt: Date }> {
+export async function genererLien(managerId: string): Promise<{ token: string; createdAt: Date; hideTenantNames: boolean }> {
   const token = crypto.randomBytes(32).toString("base64url");
   const maintenant = new Date();
   await db
@@ -42,7 +55,9 @@ export async function genererLien(managerId: string): Promise<{ token: string; c
       target: agendaFeeds.managerId,
       set: { tokenHash: hashToken(token), lastUsedAt: null, createdAt: maintenant, updatedAt: maintenant },
     });
-  return { token, createdAt: maintenant };
+  // Le réglage de masquage n'est pas touché par l'upsert : on relit la valeur conservée.
+  const [ligne] = await db.select({ hideTenantNames: agendaFeeds.hideTenantNames }).from(agendaFeeds).where(eq(agendaFeeds.managerId, managerId));
+  return { token, createdAt: maintenant, hideTenantNames: ligne?.hideTenantNames ?? false };
 }
 
 export async function supprimerLien(managerId: string): Promise<void> {
@@ -75,6 +90,8 @@ export async function calendrierDuJeton(token: string, maintenant: Date = new Da
       .catch(() => undefined);
   }
 
-  const evenements = await chargerAgenda(ligne.feed.managerId, JOURS_AGENDA_MAX, maintenant);
+  const chargees = await chargerAgenda(ligne.feed.managerId, JOURS_AGENDA_MAX, maintenant);
+  // Le nom du locataire est retiré à la source, avant la mise en forme : il ne peut alors figurer nulle part dans le fichier.
+  const evenements = ligne.feed.hideTenantNames ? chargees.map((e) => ({ ...e, tenantName: null })) : chargees;
   return genererIcs(evenements, { langue: langueOuDefaut(ligne.manager.language), maintenant });
 }

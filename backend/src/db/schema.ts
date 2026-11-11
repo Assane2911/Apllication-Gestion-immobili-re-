@@ -1301,6 +1301,8 @@ export const agendaFeeds = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull(),
     lastUsedAt: timestamp("last_used_at", { mode: "date" }),
+    // Le calendrier externe n'affiche pas le nom du locataire (le bien et le type d'échéance restent) : le réglage survit à la régénération du lien.
+    hideTenantNames: boolean("hide_tenant_names").notNull().default(false),
     ...timestamps,
   },
   (table) => ({

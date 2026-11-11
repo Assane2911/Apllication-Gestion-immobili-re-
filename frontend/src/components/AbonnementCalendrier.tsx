@@ -53,7 +53,7 @@ export default function AbonnementCalendrier() {
     try {
       const res = await api.post<LienCalendrierCree>("/agenda/feed");
       setLien(adresseDuFlux(res.data.path));
-      setEtat({ active: true, createdAt: res.data.createdAt, lastUsedAt: null });
+      setEtat({ active: true, createdAt: res.data.createdAt, lastUsedAt: null, hideTenantNames: res.data.hideTenantNames });
       setConfirmation(null);
       setCopie(false);
     } catch (err) {
@@ -68,13 +68,27 @@ export default function AbonnementCalendrier() {
     setErreur(null);
     try {
       await api.delete("/agenda/feed");
-      setEtat({ active: false, createdAt: null, lastUsedAt: null });
+      setEtat({ active: false, createdAt: null, lastUsedAt: null, hideTenantNames: false });
       setLien(null);
       setConfirmation(null);
     } catch (err) {
       setErreur(apiErrorMessage(err));
     } finally {
       setOccupe(false);
+    }
+  }
+
+  async function changerMasquage(masquer: boolean) {
+    // Affichage immédiat, retour à l'état précédent si le serveur refuse : la case ne doit jamais mentir sur ce que voit le calendrier.
+    const avant = etat;
+    setEtat((e) => (e ? { ...e, hideTenantNames: masquer } : e));
+    setErreur(null);
+    try {
+      const res = await api.put<LienCalendrier>("/agenda/feed", { hideTenantNames: masquer });
+      setEtat(res.data);
+    } catch (err) {
+      setEtat(avant);
+      setErreur(apiErrorMessage(err));
     }
   }
 
@@ -152,6 +166,19 @@ export default function AbonnementCalendrier() {
               )}
 
               <p className={AVIS}>{t("manager.agenda.sync.privacy")}</p>
+
+              <div>
+                <label className="flex cursor-pointer items-start gap-2.5 text-sm text-slate-900">
+                  <input
+                    type="checkbox"
+                    checked={etat.hideTenantNames}
+                    onChange={(e) => void changerMasquage(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-ink-900"
+                  />
+                  <span>{t("manager.agenda.sync.hideTenants")}</span>
+                </label>
+                <p className="mt-1 pl-[1.625rem] text-xs text-slate-600">{t("manager.agenda.sync.hideTenantsHint")}</p>
+              </div>
 
               <div>
                 <p className={ETIQUETTE}>{t("manager.agenda.sync.howTitle")}</p>
