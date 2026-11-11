@@ -141,7 +141,8 @@ function identifiant(route: Route, parametre: string, w: Awaited<ReturnType<type
 }
 
 // Paramètres qui ne désignent pas une ressource d'une agence.
-const NEUTRES = /^\/api\/import\/modele\/:type$/;
+// Le flux de calendrier public : son paramètre est le jeton secret du lien, pas l'identifiant d'une ressource (voir agendaFeed.controller.test.ts).
+const NEUTRES = /^\/api\/(import\/modele\/:type|agenda\/ics\/:fichier)$/;
 
 describe("isolement entre agences : aucune route ne livre ni ne modifie les données d'une autre agence", () => {
   it("le parcours trouve bien les routes de l'application", () => {

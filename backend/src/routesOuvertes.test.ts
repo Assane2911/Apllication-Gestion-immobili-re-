@@ -33,6 +33,7 @@ const PUBLIQUES: Record<string, string> = {
   "GET /api/listings/public/countries": "pays des annonces publiées, pour le filtre public",
   "GET /api/listings/public/:p": "détail d'une annonce publiée",
   "POST /api/listings/public/:p/leads": "demande de contact d'un visiteur sur une annonce (limitée en fréquence)",
+  "GET /api/agenda/ics/:p": "flux de calendrier (iCal) lu par Google Agenda, Outlook ou l'iPhone : le jeton secret du lien tient lieu de session, il est révocable et limité en fréquence sur les échecs",
   "POST /api/payments/paydunya/ipn": "notification de paiement de PayDunya, authentifiée par sa signature et sa confirmation côté serveur",
   "POST /api/payments/paydunya/ipn/agence/:p": "notification d'un loyer payé sur le compte PayDunya d'une agence, authentifiée par la signature et la confirmation faites avec les clés de CETTE agence",
 };

@@ -1289,6 +1289,25 @@ export const agencyPaymentAccounts = pgTable("agency_payment_accounts", {
   ...timestamps,
 });
 
+// --- Lien d'abonnement au calendrier de l'agenda (iCal), un par agence ---
+// Un calendrier (Google Agenda, Outlook, iPhone) lit le flux sans se connecter : le lien porte donc lui-même le secret. On ne
+// garde que son empreinte SHA-256 (comme un jeton de réinitialisation) : le lien complet n'est montré qu'à sa création, et le
+// régénérer coupe l'ancien. `lastUsedAt` dit à l'agence si un calendrier lit encore le lien.
+export const agendaFeeds = pgTable(
+  "agenda_feeds",
+  {
+    managerId: text("manager_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    lastUsedAt: timestamp("last_used_at", { mode: "date" }),
+    ...timestamps,
+  },
+  (table) => ({
+    tokenHashUnique: uniqueIndex("agenda_feeds_token_hash_unique").on(table.tokenHash),
+  })
+);
+
 // --- Messages WhatsApp envoyés, par agence ---
 // Meta facture chaque message modèle délivré (voir services/whatsappUsage.service.ts) : ce compteur donne, par agence,
 // par mois et par type de message, ce que l'application a réellement envoyé. `sent` = acceptés par l'API de Meta,
