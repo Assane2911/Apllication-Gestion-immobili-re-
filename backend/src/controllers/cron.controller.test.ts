@@ -194,6 +194,7 @@ describe("GET /api/cron/daily", () => {
     expect(typeof res.body.upcomingRentDueRemindersSent).toBe("number");
     expect(typeof res.body.recurringExpensesGenerated).toBe("number");
     expect(typeof res.body.insuranceRemindersSent).toBe("number");
+    expect(typeof res.body.documentRemindersSent).toBe("number");
   });
 
   /**

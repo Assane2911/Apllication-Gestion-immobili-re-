@@ -2,7 +2,7 @@ import { SQL, and, desc, eq, gte, inArray, isNull, lt, lte, or } from "drizzle-o
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contracts, insurancePolicies, invoices, properties, tenants, users } from "../db/schema";
+import { contracts, insurancePolicies, invoices, properties, storedDocuments, tenants, users } from "../db/schema";
 import { logActivity } from "./activity.service";
 import { planAuMoins } from "../middleware/auth";
 import { ApiError } from "../utils/asyncHandler";
@@ -10,6 +10,7 @@ import { BudgetTemps, SANS_LIMITE, traiterParLots } from "../utils/budgetTemps";
 import { debutDeLaJournee, finDeLaJournee, joursEntre, jourDecale } from "../utils/dates";
 import {
   contractEndingReminderEmail,
+  documentExpiryReminderEmail,
   insurancePolicyExpiryReminderEmail,
   rentDueReminderEmail,
   rentDueSoonReminderEmail,
@@ -363,6 +364,113 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
       `[reminder] Budget de temps épuisé : ${rows.length - sent} rappel(s) d'échéance d'assurance reportés à la prochaine exécution.`
     );
   }
+  return { sent, echecs, interrompu };
+}
+
+/**
+ * Prévient les gestionnaires des documents rangés (diagnostics, attestations, pièces d'identité…) dont la date
+ * d'expiration approche : UN SEUL e-mail par gestionnaire et par passage, qui liste tous ses documents concernés.
+ *
+ * Même principe que les rappels d'assurance : fenêtre glissante (une exécution manquée ne fait jamais sortir un
+ * document de la fenêtre avant son rappel), réclamation atomique du marqueur AVANT l'envoi (deux exécutions qui se
+ * chevauchent ne l'envoient qu'une fois), marqueur relâché si l'envoi échoue (le rappel repart au passage suivant).
+ * Un document déjà expiré n'est pas relancé : c'est l'agenda qui le signale tant qu'il reste utile. Une agence
+ * suspendue ne reçoit rien et garde ses marqueurs vierges, donc retrouve ses rappels à la réactivation.
+ *
+ * Changer la date d'expiration d'un document remet son marqueur à zéro (voir updateStoredDocument) : le document
+ * renouvelé est de nouveau suivi. Aucun palier d'abonnement : la validité des pièces est une donnée de base.
+ */
+export async function runStoredDocumentExpiryReminders(budget: BudgetTemps = SANS_LIMITE) {
+  const daysBefore = env.reminder.documentReminderDays;
+
+  const now = new Date();
+  const targetStart = debutDeLaJournee(now);
+  const targetEnd = finDeLaJournee(jourDecale(daysBefore, now));
+
+  const rows = await db
+    .select({
+      doc: storedDocuments,
+      managerEmail: users.email,
+      managerLanguage: users.language,
+      propertyTitle: properties.title,
+      tenant: tenants,
+    })
+    .from(storedDocuments)
+    .innerJoin(users, eq(storedDocuments.managerId, users.id))
+    .leftJoin(properties, eq(storedDocuments.propertyId, properties.id))
+    .leftJoin(tenants, eq(storedDocuments.tenantId, tenants.id))
+    .where(
+      and(
+        AGENCE_ACTIVE,
+        isNull(storedDocuments.reminderSentAt),
+        gte(storedDocuments.expiresAt, targetStart),
+        lte(storedDocuments.expiresAt, targetEnd)
+      )
+    );
+
+  // Un gestionnaire = un e-mail : on regroupe ses documents, du plus proche échéance au plus lointain.
+  const parGestionnaire = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const liste = parGestionnaire.get(row.doc.managerId) ?? [];
+    liste.push(row);
+    parGestionnaire.set(row.doc.managerId, liste);
+  }
+  const groupes = [...parGestionnaire.values()].map((liste) =>
+    liste.sort((a, b) => new Date(a.doc.expiresAt as Date).getTime() - new Date(b.doc.expiresAt as Date).getTime())
+  );
+
+  let sent = 0;
+  let echecs = 0;
+  const parLots = await traiterParLots(groupes, env.cronConcurrence, budget, async (groupe) => {
+    // Réclamation atomique : seuls les documents encore sans marqueur sont à nous.
+    const reclames = await db
+      .update(storedDocuments)
+      .set({ reminderSentAt: new Date() })
+      .where(
+        and(
+          inArray(
+            storedDocuments.id,
+            groupe.map((r) => r.doc.id)
+          ),
+          isNull(storedDocuments.reminderSentAt)
+        )
+      )
+      .returning({ id: storedDocuments.id });
+    const idsReclames = new Set(reclames.map((r) => r.id));
+    const aEnvoyer = groupe.filter((r) => idsReclames.has(r.doc.id));
+    if (aEnvoyer.length === 0) return;
+
+    const { subject, html } = documentExpiryReminderEmail({
+      documents: aEnvoyer.map((r) => ({
+        title: r.doc.title,
+        target: r.propertyTitle ?? (r.tenant ? nomComplet(r.tenant) : ""),
+        expiryDate: new Date(r.doc.expiresAt as Date),
+        daysLeft: joursEntre(now, new Date(r.doc.expiresAt as Date)),
+      })),
+      windowDays: daysBefore,
+      langue: langueOuDefaut(groupe[0].managerLanguage),
+    });
+
+    const emailResult = await sendEmail(groupe[0].managerEmail, subject, html);
+    if (emailResult.error) {
+      await db
+        .update(storedDocuments)
+        .set({ reminderSentAt: null })
+        .where(inArray(storedDocuments.id, [...idsReclames]));
+      echecs += 1;
+      return;
+    }
+    sent += aEnvoyer.length;
+  });
+  const interrompu = parLots.interrompu;
+
+  if (sent > 0) {
+    console.log(`[reminder] 📄 ${sent} document(s) arrivant à échéance signalé(s).`);
+  }
+  if (interrompu) {
+    console.warn("[reminder] Budget de temps épuisé : des rappels d'expiration de documents sont reportés à la prochaine exécution.");
+  }
+  // `sent` compte les documents signalés ; `echecs` les e-mails (un par gestionnaire) qui n'ont pas pu partir.
   return { sent, echecs, interrompu };
 }
 
@@ -1030,6 +1138,13 @@ export function scheduleContractEndingReminders() {
   console.log(`[reminder] 🛡️ Job rappel d'échéance d'assurance planifié avec "${insuranceReminderCron}"`);
   cron.schedule(insuranceReminderCron, () => {
     runInsurancePolicyExpiryReminders().catch((err) => console.error("[reminder] erreur rappel assurance:", err));
+  });
+
+  // Même créneau pour les documents rangés qui arrivent à échéance (voir runStoredDocumentExpiryReminders).
+  const documentReminderCron = "35 8 * * *";
+  console.log(`[reminder] 📄 Job rappel d'expiration des documents planifié avec "${documentReminderCron}"`);
+  cron.schedule(documentReminderCron, () => {
+    runStoredDocumentExpiryReminders().catch((err) => console.error("[reminder] erreur rappel documents:", err));
   });
 }
 

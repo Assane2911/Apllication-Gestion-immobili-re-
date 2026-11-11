@@ -26,7 +26,7 @@ Application complète de gestion immobilière : tableau de bord, biens, locatair
 - **Impayés** : relances graduées par e-mail et WhatsApp, mise en demeure, garants et colocataires prévenus, paiements partiels, quittances et reçus.
 - **Baux** : colocation, garants, révision de loyer, avenants, état des lieux d'entrée et de sortie (avec **comparaison entrée/sortie** rappelée à la restitution du dépôt), congé et solde de tout compte, assurances, dépenses (dont récurrentes), prestataires.
 - **Agenda** : une seule vue des échéances à traiter (loyers, fins de bail, sorties, révisions, assurances, documents), le retard en tête.
-- **Documents** : diagnostics, attestations, pièces d'identité et justificatifs rangés par bien et par locataire (stockage privé, lien temporaire), avec date d'expiration signalée dans l'agenda ; effacés avec le bien, le locataire (anonymisation comprise) ou le compte.
+- **Documents** : diagnostics, attestations, pièces d'identité et justificatifs rangés par bien et par locataire (stockage privé, lien temporaire), avec date d'expiration signalée dans l'agenda et par un e-mail récapitulatif 30 jours avant (`DOCUMENT_REMINDER_DAYS`) ; effacés avec le bien, le locataire (anonymisation comprise) ou le compte.
 - **Vitrine** : annonces publiques et demandes de visite reçues dans un CRM.
 - **Compte et sécurité** : double authentification (TOTP), collaborateurs avec rôles, journal d'activité, import de données, abonnement (Stripe, PayDunya), notifications dans la langue de l'interface.
 - **Administration de la plateforme** : rôle `ADMIN`, avec journal d'audit.
