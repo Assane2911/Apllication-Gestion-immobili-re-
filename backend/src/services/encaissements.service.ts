@@ -20,6 +20,12 @@ import { invoicePayments, invoices } from "../db/schema";
 
 type Facture = typeof invoices.$inferSelect;
 
+/**
+ * Ce que le développement des encaissements lit d'une facture, et remplace par les données du paiement : un appelant qui ne
+ * lit rien d'autre (le tableau de bord) peut ne sélectionner que ces colonnes, plutôt que la ligne entière.
+ */
+type FactureMinimale = Pick<Facture, "id" | "status" | "amount" | "paidAt" | "paymentMethod" | "paymentRef">;
+
 /** Factures dont de l'argent a été reçu : réglées, ou ayant reçu au moins un acompte. */
 export const factureEncaissee = or(eq(invoices.status, "PAID"), gt(invoices.amountPaid, 0));
 
@@ -32,7 +38,7 @@ const TAILLE_LOT = 5000;
  * consommateurs n'ont donc rien à changer : ils lisent `invoice.amount` et
  * `invoice.paidAt` comme avant.
  */
-export async function developperEncaissements<R extends { invoice: Facture }>(lignes: R[]): Promise<R[]> {
+export async function developperEncaissements<R extends { invoice: FactureMinimale }>(lignes: R[]): Promise<R[]> {
   if (lignes.length === 0) return [];
 
   const ids = Array.from(new Set(lignes.map((l) => l.invoice.id)));
@@ -69,6 +75,6 @@ export async function developperEncaissements<R extends { invoice: Facture }>(li
 }
 
 /** Variante pour une liste de factures « nues » (sans jointure). */
-export async function developperFactures(factures: Facture[]): Promise<Facture[]> {
+export async function developperFactures<F extends FactureMinimale>(factures: F[]): Promise<F[]> {
   return (await developperEncaissements(factures.map((invoice) => ({ invoice })))).map((l) => l.invoice);
 }
