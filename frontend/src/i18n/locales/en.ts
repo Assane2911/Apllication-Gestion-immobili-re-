@@ -455,6 +455,7 @@ const en: TranslationSchema = {
 
   nav: {
     unread: "{{count}} unread message(s)",
+    overdue: "{{count}} overdue deadline(s)",
     tips: {
       dashboard: "Overview: rent collected, arrears and this month's due dates.",
       properties: "Your properties: create a record, set the rent, track occupancy.",
@@ -1608,6 +1609,10 @@ const en: TranslationSchema = {
         lateCta: "Send reminders",
         issues: "{{count}} open incident(s)",
         issuesCta: "Handle",
+        agendaOverdue: "{{count}} overdue deadline(s) (insurance, documents, leases…)",
+        agendaOverdueCta: "Open the agenda",
+        agendaSoon: "{{count}} deadline(s) within 7 days",
+        agendaSoonCta: "See the agenda",
         remaining: "Still to collect this month: {{amount}}",
         remainingCta: "See invoices",
         vacant: "{{count}} propert(ies) to let",

@@ -6,6 +6,7 @@ import { AuthContext } from "../context/auth";
 import type { AuthContextValue } from "../context/auth";
 import { CurrencyProvider } from "../context/CurrencyContext";
 import type { AuthUser } from "../types";
+import { api } from "../api/client";
 import { traiterRetourSurCouche } from "../utils/couchesRetour";
 import ManagerLayout from "./ManagerLayout";
 
@@ -219,3 +220,30 @@ describe("ManagerLayout — confirmation de déconnexion", () => {
   });
 });
 
+
+describe("ManagerLayout — pastille de l'agenda", () => {
+  const mockedApi = vi.mocked(api, { deep: true });
+  const reponseParDefaut = { data: { notifications: [], count: 0, unseenCount: 0, unreadCount: 0, results: [] } };
+
+  it("signale les échéances dépassées sur l'entrée « Agenda » du menu, annoncées comme telles aux lecteurs d'écran", async () => {
+    mockedApi.get.mockImplementation((async (url: string) =>
+      url === "/agenda/summary" ? { data: { overdue: 3, overdueOther: 1, soon: 2 } } : reponseParDefaut) as never);
+    renderManagerLayout("/dashboard");
+
+    const agenda = await screen.findByRole("link", { name: /Agenda/ });
+    expect(await within(agenda).findByTestId("pastille-menu")).toHaveTextContent("3");
+    expect(agenda).toHaveTextContent("3 échéance(s) en retard");
+    mockedApi.get.mockResolvedValue(reponseParDefaut as never);
+  });
+
+  it("n'allume rien quand rien n'est en retard", async () => {
+    mockedApi.get.mockImplementation((async (url: string) =>
+      url === "/agenda/summary" ? { data: { overdue: 0, overdueOther: 0, soon: 4 } } : reponseParDefaut) as never);
+    renderManagerLayout("/dashboard");
+
+    const agenda = await screen.findByRole("link", { name: /Agenda/ });
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/agenda/summary"));
+    expect(within(agenda).queryByTestId("pastille-menu")).not.toBeInTheDocument();
+    mockedApi.get.mockResolvedValue(reponseParDefaut as never);
+  });
+});

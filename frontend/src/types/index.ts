@@ -641,6 +641,9 @@ export interface DashboardStats {
   lateInvoices: number;
   /** Congés en cours sur des baux en cours : les sorties à préparer. Absent sur une ancienne réponse. */
   upcomingExits?: number;
+  /** Échéances de l'agenda dépassées, hors loyers (les impayés ont leur propre compteur) et à venir sous 7 jours. */
+  agendaOverdueOther?: number;
+  agendaSoon?: number;
   // Mois (YYYY-MM) -> devise -> montant, même raison.
   revenueByMonth: Record<string, Record<string, number>>;
   expensesByMonth: Record<string, Record<string, number>>;

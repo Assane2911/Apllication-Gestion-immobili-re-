@@ -113,4 +113,38 @@ describe("GET /api/agenda", () => {
     expect(docs[0]).toMatchObject({ enRetard: true, propertyId: null, propertyTitle: null, tenantName: "Awa Sow" });
     expect(docs[1]).toMatchObject({ enRetard: false, propertyTitle: "Villa Baobab", tenantName: null });
   });
+  it("résume l'agenda : dépassées (avec et sans les loyers) et échéances de la semaine", async () => {
+    const { manager, property, contract } = await setup();
+    await createInvoice(contract.id, { dueDate: new Date(2026, 4, 5), periodMonth: 5, status: "LATE" }); // en retard (loyer)
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 5, 1) }); // échue, hors loyers
+    await createInsurancePolicy(property.id, { policyNumber: "BIENTOT", expiryDate: new Date(2026, 5, 18) }); // dans 3 jours
+    await createInvoice(contract.id, { dueDate: new Date(2026, 6, 20), periodMonth: 7 }); // dans 35 jours : hors fenêtre
+
+    const res = await request(app).get("/api/agenda/summary").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ overdue: 2, overdueOther: 1, soon: 1 });
+  });
+
+  it("alimente les statistiques du tableau de bord sans compter deux fois les loyers en retard", async () => {
+    const { manager, property, contract } = await setup();
+    await createInvoice(contract.id, { dueDate: new Date(2026, 4, 5), periodMonth: 5, status: "LATE" });
+    await createInsurancePolicy(property.id, { expiryDate: new Date(2026, 5, 1) });
+    await createInsurancePolicy(property.id, { policyNumber: "BIENTOT", expiryDate: new Date(2026, 5, 18) });
+
+    const res = await request(app).get("/api/dashboard/stats").set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ agendaOverdueOther: 1, agendaSoon: 1 });
+  });
+
+  it("ne résume que l'agence connectée", async () => {
+    const { manager } = await setup();
+    const autre = await setup();
+    await createInsurancePolicy(autre.property.id, { expiryDate: new Date(2026, 5, 1) });
+
+    const res = await request(app).get("/api/agenda/summary").set(authHeader(tokenFor(manager)));
+
+    expect(res.body).toEqual({ overdue: 0, overdueOther: 0, soon: 0 });
+  });
 });

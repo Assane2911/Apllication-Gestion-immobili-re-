@@ -453,6 +453,7 @@ const fr = {
 
   nav: {
     unread: "{{count}} message(s) non lu(s)",
+    overdue: "{{count}} échéance(s) en retard",
     tips: {
       dashboard: "Vue d'ensemble : loyers encaissés, impayés et échéances du mois.",
       properties: "Vos biens : créer une fiche, fixer le loyer, suivre l'occupation.",
@@ -1606,6 +1607,10 @@ const fr = {
         lateCta: "Relancer",
         issues: "{{count}} incident(s) ouvert(s)",
         issuesCta: "Traiter",
+        agendaOverdue: "{{count}} échéance(s) dépassée(s) (assurances, documents, baux…)",
+        agendaOverdueCta: "Ouvrir l'agenda",
+        agendaSoon: "{{count}} échéance(s) dans les 7 jours",
+        agendaSoonCta: "Voir l'agenda",
         remaining: "Reste à encaisser ce mois-ci : {{amount}}",
         remainingCta: "Voir les factures",
         vacant: "{{count}} bien(s) à louer",

@@ -455,6 +455,7 @@ const es: TranslationSchema = {
 
   nav: {
     unread: "{{count}} mensaje(s) sin leer",
+    overdue: "{{count}} vencimiento(s) atrasado(s)",
     tips: {
       dashboard: "Visión general: alquileres cobrados, impagos y vencimientos del mes.",
       properties: "Sus inmuebles: crear una ficha, fijar el alquiler, seguir la ocupación.",
@@ -1608,6 +1609,10 @@ const es: TranslationSchema = {
         lateCta: "Enviar recordatorios",
         issues: "{{count}} incidencia(s) abierta(s)",
         issuesCta: "Gestionar",
+        agendaOverdue: "{{count}} vencimiento(s) atrasado(s) (seguros, documentos, contratos…)",
+        agendaOverdueCta: "Abrir la agenda",
+        agendaSoon: "{{count}} vencimiento(s) en 7 días",
+        agendaSoonCta: "Ver la agenda",
         remaining: "Pendiente de cobrar este mes: {{amount}}",
         remainingCta: "Ver las facturas",
         vacant: "{{count}} inmueble(s) por alquilar",

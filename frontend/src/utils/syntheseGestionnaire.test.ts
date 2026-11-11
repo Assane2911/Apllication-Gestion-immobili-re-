@@ -49,6 +49,14 @@ describe("actionsATraiter", () => {
     expect(actionsATraiter(stats({ upcomingExits: 0 }))).toEqual([]);
   });
 
+  it("ajoute les échéances de l'agenda : les dépassées (urgentes, après les incidents) et celles de la semaine (information)", () => {
+    const actions = actionsATraiter(stats({ lateInvoices: 1, openIssues: 1, upcomingExits: 1, agendaOverdueOther: 2, agendaSoon: 4 }));
+    expect(actions.map((a) => a.cle)).toEqual(["late", "issues", "agendaOverdue", "exits", "agendaSoon"]);
+    expect(actions[2]).toEqual({ cle: "agendaOverdue", compte: 2, lien: "/agenda", urgent: true });
+    expect(actions[4]).toEqual({ cle: "agendaSoon", compte: 4, lien: "/agenda", urgent: false });
+    expect(actionsATraiter(stats({ agendaOverdueOther: 0, agendaSoon: 0 }))).toEqual([]);
+  });
+
   it("range les urgences avant les informations", () => {
     const actions = actionsATraiter(
       stats({

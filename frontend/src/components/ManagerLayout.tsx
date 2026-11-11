@@ -30,6 +30,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import CartouchePlan from "./CartouchePlan";
 import { NonLusContext } from "../context/nonLus";
 import { useNonLus } from "../hooks/useNonLus";
+import { useResumeAgenda } from "../hooks/useResumeAgenda";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 import { useAuth } from "../context/auth";
 import { peutVoirLeGuide } from "../utils/accesGuide";
@@ -114,6 +115,8 @@ export default function ManagerLayout() {
   const fermerMenuMobile = useCallback(() => setMobileNavOpen(false), []);
   // Messages non lus des locataires et des propriétaires : une pastille sur « Messagerie », et le détail pour ses onglets.
   const nonLus = useNonLus("/messages/unread-count");
+  // Échéances dépassées : une pastille sur « Agenda », pour les voir dès la connexion sans ouvrir la page.
+  const agenda = useResumeAgenda();
   // Titre d'onglet propre à la page (React 19 remonte ce <title> dans <head>) : sans lui, les vingt pages de
   // l'espace s'appelaient pareil, et un lecteur d'écran n'annonçait aucun changement de page. L'entrée de
   // navigation la plus précise gagne ; le compte-rendu de gestion d'un propriétaire a son propre libellé.
@@ -138,7 +141,8 @@ export default function ManagerLayout() {
         ouvertMobile={mobileNavOpen}
         onFermerMobile={fermerMenuMobile}
         onDeconnexion={demanderDeconnexion}
-        pastilles={{ "/messages": nonLus.count }}
+        pastilles={{ "/messages": nonLus.count, "/agenda": agenda.overdue }}
+        libellesPastilles={{ "/agenda": "nav.overdue" }}
         enPied={
           <>
             {sub?.isTrialActive && (

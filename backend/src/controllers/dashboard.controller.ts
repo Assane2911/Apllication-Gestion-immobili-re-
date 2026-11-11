@@ -2,6 +2,7 @@ import { and, eq, gt, gte, inArray, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { expenses, invoices, issueReports, leaseNotices, properties, contracts as contractsTable, tenants } from "../db/schema";
+import { resumeAgenda } from "../services/agenda.service";
 import { developperFactures } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
@@ -122,6 +123,9 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
         )[0].count
       : 0;
 
+  // Les échéances de l'agenda : dépassées (hors loyers, déjà comptés plus haut) et de la semaine qui vient.
+  const agenda = await resumeAgenda(managerId);
+
   // Même principe que ci-dessus : regroupé par devise (mois -> devise -> montant)
   // plutôt que sommé à travers des devises différentes.
   const revenueByMonth: Record<string, Record<string, number>> = {};
@@ -162,6 +166,8 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     openIssues,
     lateInvoices,
     upcomingExits,
+    agendaOverdueOther: agenda.overdueOther,
+    agendaSoon: agenda.soon,
     revenueByMonth,
     expensesByMonth,
   });
