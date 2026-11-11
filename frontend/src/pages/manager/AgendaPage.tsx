@@ -19,6 +19,7 @@ const FILET: Record<TypeEvenementAgenda, string> = {
   EXIT: "border-l-ink-900",
   RENT_REVISION: "border-l-slate-400",
   INSURANCE_EXPIRY: "border-l-orange-300",
+  DOCUMENT_EXPIRY: "border-l-slate-400",
 };
 
 /**
@@ -73,7 +74,7 @@ export default function AgendaPage() {
   const detail = (e: EvenementAgenda) => {
     if (e.type === "RENT_DUE" && e.amount !== null) return t("manager.agenda.detail.rentDue", { amount: formatMoney(e.amount, e.currency ?? undefined) });
     if (e.type === "RENT_REVISION" && e.amount !== null) return t("manager.agenda.detail.revision", { amount: formatMoney(e.amount, e.currency ?? undefined) });
-    if (e.type === "INSURANCE_EXPIRY" && e.label) return t("manager.agenda.detail.insurer", { label: e.label });
+    if ((e.type === "INSURANCE_EXPIRY" || e.type === "DOCUMENT_EXPIRY") && e.label) return t("manager.agenda.detail.insurer", { label: e.label });
     if (e.type === "EXIT" && e.label) return t("manager.agenda.detail.exitReason", { label: e.label });
     return null;
   };
@@ -83,8 +84,8 @@ export default function AgendaPage() {
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-x-2 text-sm">
           <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t(`manager.agenda.types.${e.type}`)}</span>
-          <span className="font-semibold text-slate-900">{e.propertyTitle}</span>
-          {e.tenantName && <span className="text-slate-600">— {e.tenantName}</span>}
+          {e.propertyTitle && <span className="font-semibold text-slate-900">{e.propertyTitle}</span>}
+          {e.tenantName && <span className={e.propertyTitle ? "text-slate-600" : "font-semibold text-slate-900"}>{e.propertyTitle ? "— " : ""}{e.tenantName}</span>}
         </p>
         <p className="mt-0.5 text-xs text-slate-600">
           <span className={e.enRetard ? "font-semibold text-orange-800" : ""}>

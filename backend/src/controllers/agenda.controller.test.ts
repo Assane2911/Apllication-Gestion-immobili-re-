@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { contracts, insurancePolicies, leaseNotices, rentRevisions } from "../db/schema";
+import { contracts, insurancePolicies, leaseNotices, rentRevisions, storedDocuments } from "../db/schema";
 import { authHeader, createContract, createInsurancePolicy, createInvoice, createManager, createProperty, createTenant, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
@@ -95,5 +95,22 @@ describe("GET /api/agenda", () => {
     const res = await lire(manager);
 
     expect(res.body.every((e: { propertyId: string }) => e.propertyId !== autre.property.id)).toBe(true);
+  });
+  it("signale les documents rangés qui expirent (avec leur rattachement) et écarte ceux sans date ou périmés depuis longtemps", async () => {
+    const { manager, property, tenant } = await setup();
+    const base = { managerId: manager.id, filePath: "documents/x.pdf", fileName: "x.pdf", mimeType: "application/pdf", sizeBytes: 1 };
+    await testDb.insert(storedDocuments).values([
+      { ...base, propertyId: property.id, title: "Diagnostic gaz", expiresAt: new Date(2026, 6, 15) },
+      { ...base, tenantId: tenant.id, title: "Titre de séjour", expiresAt: new Date(2026, 5, 1) }, // périmé il y a 14 jours
+      { ...base, propertyId: property.id, title: "Sans date" },
+      { ...base, propertyId: property.id, title: "Très ancien", expiresAt: new Date(2025, 0, 1) },
+    ]);
+
+    const res = await lire(manager);
+
+    const docs = res.body.filter((e: { type: string }) => e.type === "DOCUMENT_EXPIRY");
+    expect(docs.map((e: { label: string }) => e.label)).toEqual(["Titre de séjour", "Diagnostic gaz"]);
+    expect(docs[0]).toMatchObject({ enRetard: true, propertyId: null, propertyTitle: null, tenantName: "Awa Sow" });
+    expect(docs[1]).toMatchObject({ enRetard: false, propertyTitle: "Villa Baobab", tenantName: null });
   });
 });

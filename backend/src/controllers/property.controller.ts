@@ -8,6 +8,7 @@ import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
+import { cheminsDocumentsDuBien, supprimerFichiers } from "../services/storedDocument.service";
 import { assertOwnership, chargerCompteCourant } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
@@ -257,6 +258,8 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
     );
   }
 
+  // Ses documents rangés partent avec le bien (cascade en base) : on relève leurs fichiers avant.
+  const documentsRanges = await cheminsDocumentsDuBien(req.params.id);
   await db.delete(properties).where(eq(properties.id, req.params.id));
 
   // Le fichier doit partir avec la ligne qui le référence : une fois celle-ci
@@ -270,6 +273,7 @@ export const deleteProperty = asyncHandler(async (req: Request, res: Response) =
   // signifie que la suppression déjà enregistrée en base doit répondre
   // succès même si le stockage est indisponible.
   await deleteStorageObjectBestEffort(existing.imageUrl).catch(() => undefined);
+  await supprimerFichiers(documentsRanges);
 
   await logActivity({
     req,

@@ -111,6 +111,8 @@ describe("AGENT : exploitation courante, sans suppression ni encaissement", () =
     ["POST", "/api/invoices/send-monthly-reminders"],
     ["POST", "/api/import"],
     ["POST", "/api/import/preview"],
+    ["POST", "/api/stored-documents"],
+    ["PUT", "/api/stored-documents/d1"],
   ])("peut %s %s", (m, u) => expect(ok("AGENT", m, u)).toBe(true));
 
   it.each([
@@ -120,6 +122,7 @@ describe("AGENT : exploitation courante, sans suppression ni encaissement", () =
     ["DELETE", "/api/owners/o1"],
     ["DELETE", "/api/listings/l1"],
     ["DELETE", "/api/listings/leads/l1"],
+    ["DELETE", "/api/stored-documents/d1"],
     ["POST", "/api/tenants/t1/anonymiser"],
     ["POST", "/api/owners/o1/anonymiser"],
     ["PUT", "/api/agency"],

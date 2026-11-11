@@ -359,7 +359,27 @@ export interface ComparaisonEdl {
   summary: { degraded: number; improved: number; unchanged: number; added: number; removed: number; missingKeys: number };
 }
 
-export type TypeEvenementAgenda = "RENT_DUE" | "LEASE_END" | "EXIT" | "RENT_REVISION" | "INSURANCE_EXPIRY";
+export type CategorieDocument = "DIAGNOSTIC" | "INSURANCE" | "IDENTITY" | "INCOME" | "GUARANTEE" | "TAX" | "OTHER";
+
+/** Document rangé par bien et/ou par locataire — voir storedDocument.controller.ts. Le chemin du stockage n'est jamais exposé. */
+export interface StoredDocument {
+  id: string;
+  propertyId: string | null;
+  tenantId: string | null;
+  propertyTitle: string | null;
+  tenantName: string | null;
+  category: CategorieDocument;
+  title: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  expiresAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TypeEvenementAgenda = "RENT_DUE" | "LEASE_END" | "EXIT" | "RENT_REVISION" | "INSURANCE_EXPIRY" | "DOCUMENT_EXPIRY";
 
 /** Échéance de l'agenda du gestionnaire — voir agenda.service.ts. */
 export interface EvenementAgenda {
@@ -367,8 +387,9 @@ export interface EvenementAgenda {
   type: TypeEvenementAgenda;
   date: string;
   enRetard: boolean;
-  propertyId: string;
-  propertyTitle: string;
+  /** Null pour un document rangé au seul nom d'un locataire. */
+  propertyId: string | null;
+  propertyTitle: string | null;
   contractId: string | null;
   tenantName: string | null;
   amount: number | null;

@@ -55,7 +55,7 @@ export async function uploadPublicFile(file: Express.Multer.File, folder: "prope
  * stockage — PAS une URL — à conserver en base. Utilisez `getSignedUrl` pour
  * générer un lien d'accès temporaire à la demande.
  */
-export async function uploadPrivateFile(file: Express.Multer.File, folder: "tenants" | "issues" | "contracts" | "messages") {
+export async function uploadPrivateFile(file: Express.Multer.File, folder: "tenants" | "issues" | "contracts" | "messages" | "documents") {
   const objectPath = uniqueObjectPath(folder, file.mimetype);
 
   const { error } = await supabaseAdmin.storage

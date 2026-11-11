@@ -884,6 +884,37 @@ export const leaseNotices = pgTable(
 // Instantané figé à l'émission, comme une mise en demeure : le document reste celui qui a été remis, même si les factures ou le
 // dépôt changent ensuite. `balance` est signé : positif, la somme à restituer au locataire ; négatif, ce qu'il doit encore ;
 // nul, le compte est soldé. `details` (JSON) porte les lignes de loyer et les retenues sur le dépôt.
+// --- Documents rangés par bien et/ou par locataire ---
+// Fichiers privés (diagnostics, attestations d'assurance, pièces d'identité, justificatifs…) avec, quand il y en a une, leur
+// date d'expiration. `filePath` est un chemin d'objet du bucket privé, jamais une URL : le lien d'accès se génère à la demande.
+// Au moins un des deux rattachements (bien, locataire) est renseigné — contrainte CHECK en base, non modélisée ici.
+export const storedDocuments = pgTable(
+  "stored_documents",
+  {
+    id: id(),
+    managerId: text("manager_id").notNull(),
+    propertyId: text("property_id").references(() => properties.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
+    // DIAGNOSTIC | INSURANCE | IDENTITY | INCOME | GUARANTEE | TAX | OTHER — contrainte CHECK en base
+    category: text("category").notNull().default("OTHER"),
+    title: text("title").notNull(),
+    filePath: text("file_path").notNull(),
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    expiresAt: timestamp("expires_at", { mode: "date" }),
+    notes: text("notes"),
+    createdBy: text("created_by"),
+    ...timestamps,
+  },
+  (table) => ({
+    managerIdIdx: index("stored_documents_manager_id_idx").on(table.managerId),
+    propertyIdIdx: index("stored_documents_property_id_idx").on(table.propertyId),
+    tenantIdIdx: index("stored_documents_tenant_id_idx").on(table.tenantId),
+    expiresAtIdx: index("stored_documents_expires_at_idx").on(table.expiresAt),
+  })
+);
+
 export const leaseSettlements = pgTable(
   "lease_settlements",
   {

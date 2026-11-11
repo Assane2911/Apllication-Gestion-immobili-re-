@@ -18,8 +18,7 @@ import {
   contractCotenants,
   formalNotices,
   invoicePayments,
-  rentRevisions,
-} from "../db/schema";
+  rentRevisions, storedDocuments } from "../db/schema";
 import { lireFactures, referenceMiseEnDemeure } from "./miseEnDemeure.service";
 
 /**
@@ -136,6 +135,12 @@ export async function construireExportLocataire(tenantId: string) {
     ? await db.select().from(formalNotices).where(inArray(formalNotices.contractId, idsContrats))
     : [];
 
+  // Les documents rangés à son nom (pièces, justificatifs) : leur description est une donnée qui le concerne. Le chemin du
+  // fichier dans le stockage n'en fait pas partie, il n'a de sens que pour le serveur.
+  const documentsRanges = (await db.select().from(storedDocuments).where(eq(storedDocuments.tenantId, tenantId))).map(
+    ({ filePath: _chemin, managerId: _gestionnaire, ...document }: typeof storedDocuments.$inferSelect) => document
+  );
+
   return {
     exportGenereLe: new Date().toISOString(),
     aProposDeCetExport:
@@ -186,6 +191,7 @@ export async function construireExportLocataire(tenantId: string) {
     })),
     signalements,
     etatsDesLieux,
+    documentsRanges,
     // Un message vocal est signalé (date, durée, type) sans exposer le chemin de stockage de l'enregistrement.
     messages: conversations.map((m: typeof messages.$inferSelect) => {
       const { audioPath, ...reste } = m;
