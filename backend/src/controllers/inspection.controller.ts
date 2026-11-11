@@ -129,15 +129,22 @@ export const compareInspection = asyncHandler(async (req: Request, res: Response
     throw new ApiError(409, "L'état des lieux de sortie doit être finalisé avant d'être comparé", "INSPECTION_COMPARE_EXIT_NOT_FINALIZED");
   }
 
+  const comparaison = await comparaisonAvecEntree(sortie);
+  if (!comparaison) {
+    throw new ApiError(404, "Aucun état des lieux d'entrée finalisé pour ce bail : rien à comparer", "INSPECTION_COMPARE_NO_ENTRY");
+  }
+  res.json(comparaison);
+});
+
+/** Comparaison d'une sortie avec l'entrée finalisée la plus récente du même bail ; null s'il n'y a pas d'entrée. */
+async function comparaisonAvecEntree(sortie: typeof inspections.$inferSelect) {
   const [entree] = await db
     .select()
     .from(inspections)
     .where(and(eq(inspections.contractId, sortie.contractId), eq(inspections.type, "ENTRY"), eq(inspections.status, "COMPLETED")))
     .orderBy(desc(inspections.createdAt))
     .limit(1);
-  if (!entree) {
-    throw new ApiError(404, "Aucun état des lieux d'entrée finalisé pour ce bail : rien à comparer", "INSPECTION_COMPARE_NO_ENTRY");
-  }
+  if (!entree) return null;
 
   const [bien] = await db.select().from(properties).where(eq(properties.id, sortie.propertyId));
   const resume = (r: typeof inspections.$inferSelect) => ({
@@ -150,12 +157,32 @@ export const compareInspection = asyncHandler(async (req: Request, res: Response
   const e = parseInspection(entree);
   const s = parseInspection(sortie);
 
-  res.json({
+  return {
     property: bien ? { id: bien.id, title: bien.title } : null,
     entry: resume(entree),
     exit: resume(sortie),
     ...comparerEtatsDesLieux({ rooms: e.rooms, meters: e.meters, keys: e.keys }, { rooms: s.rooms, meters: s.meters, keys: s.keys }),
-  });
+  };
+}
+
+/**
+ * Comparaison de la sortie finalisée la plus récente d'un bail, pour rappeler le constat au moment de décider
+ * des retenues sur le dépôt. « Rien à comparer » (pas de sortie finalisée, pas d'entrée) n'est pas une erreur ici :
+ * la réponse est alors `null` et l'écran n'affiche simplement rien.
+ */
+export const exitComparisonOfContract = asyncHandler(async (req: Request, res: Response) => {
+  const [contrat] = await db.select().from(contracts).where(eq(contracts.id, req.params.id));
+  if (!contrat) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
+  const [bien] = await db.select().from(properties).where(eq(properties.id, contrat.propertyId));
+  assertOwnership(bien, (p) => p.managerId, req.user!.userId, "Contrat introuvable", 404, "CONTRACT_NOT_FOUND");
+
+  const [sortie] = await db
+    .select()
+    .from(inspections)
+    .where(and(eq(inspections.contractId, contrat.id), eq(inspections.type, "EXIT"), eq(inspections.status, "COMPLETED")))
+    .orderBy(desc(inspections.createdAt))
+    .limit(1);
+  res.json(sortie ? await comparaisonAvecEntree(sortie) : null);
 });
 
 /**

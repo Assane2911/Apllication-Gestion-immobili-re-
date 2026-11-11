@@ -12,6 +12,7 @@ import Pagination from "../../components/Pagination";
 import { TableRowSkeleton } from "../../components/Skeleton";
 import Bulle from "../../components/Bulle";
 import ComparaisonEdlModal from "../../components/ComparaisonEdlModal";
+import DepositRefundModal from "../../components/DepositRefundModal";
 import SignatureModal from "../../components/SignatureModal";
 import type {
   Contract,
@@ -73,6 +74,7 @@ export default function InspectionsPage() {
   const [signingInspection, setSigningInspection] = useState<Inspection | null>(null);
   const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
   const [comparingInspection, setComparingInspection] = useState<Inspection | null>(null);
+  const [refundContract, setRefundContract] = useState<Contract | null>(null);
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<Filtre>("all");
 
@@ -214,6 +216,7 @@ export default function InspectionsPage() {
     }
   }
 
+  const bailAComparer = comparingInspection ? contracts.find((c) => c.id === comparingInspection.contractId) : undefined;
   const synthese = syntheseEdl(inspections);
   const pieces = resumePieces(editForm.rooms);
   const visibles = inspections.filter((i) => (filtre === "all" || etatEdl(i) === filtre) && correspond(recherche, i.property?.title, i.tenant?.firstName, i.tenant?.lastName));
@@ -648,6 +651,22 @@ export default function InspectionsPage() {
           inspectionId={comparingInspection.id}
           titre={comparingInspection.property?.title || ""}
           onClose={() => setComparingInspection(null)}
+          onPrepareRefund={
+            bailAComparer && !bailAComparer.depositRefundedAt
+              ? () => {
+                  setRefundContract(bailAComparer);
+                  setComparingInspection(null);
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {refundContract && (
+        <DepositRefundModal
+          contract={refundContract}
+          onSuccess={() => setRefundContract(null)}
+          onClose={() => setRefundContract(null)}
         />
       )}
 

@@ -340,3 +340,53 @@ describe("GET /api/inspections/:id/comparison", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("GET /api/contracts/:id/exit-comparison", () => {
+  const entree = {
+    type: "ENTRY" as const,
+    status: "COMPLETED" as const,
+    roomsData: JSON.stringify([{ name: "Salon", condition: "BON", notes: "" }]),
+    keysData: JSON.stringify([{ label: "Porte", quantity: 2 }]),
+  };
+  const sortie = {
+    type: "EXIT" as const,
+    status: "COMPLETED" as const,
+    roomsData: JSON.stringify([{ name: "Salon", condition: "MAUVAIS", notes: "tache" }]),
+    keysData: JSON.stringify([{ label: "Porte", quantity: 1 }]),
+  };
+
+  it("renvoie la comparaison de la sortie finalisée la plus récente du bail", async () => {
+    const { manager, contract } = await setup();
+    await createInspection(contract, manager.id, entree);
+    await createInspection(contract, manager.id, sortie);
+
+    const res = await request(app).get(`/api/contracts/${contract.id}/exit-comparison`).set(authHeader(tokenFor(manager)));
+
+    expect(res.status).toBe(200);
+    expect(res.body.rooms[0]).toMatchObject({ name: "Salon", variation: "DEGRADE" });
+    expect(res.body.summary).toMatchObject({ degraded: 1, missingKeys: 1 });
+  });
+
+  it("renvoie null (et non une erreur) sans sortie finalisée ou sans entrée finalisée", async () => {
+    const { manager, contract } = await setup();
+    const a = await request(app).get(`/api/contracts/${contract.id}/exit-comparison`).set(authHeader(tokenFor(manager)));
+    await createInspection(contract, manager.id, { ...sortie, status: "DRAFT" });
+    const b = await request(app).get(`/api/contracts/${contract.id}/exit-comparison`).set(authHeader(tokenFor(manager)));
+    await createInspection(contract, manager.id, sortie);
+    const c = await request(app).get(`/api/contracts/${contract.id}/exit-comparison`).set(authHeader(tokenFor(manager)));
+
+    for (const r of [a, b, c]) {
+      expect(r.status).toBe(200);
+      expect(r.body).toBeNull();
+    }
+  });
+
+  it("refuse le bail d'un autre gestionnaire", async () => {
+    const { contract } = await setup();
+    const intrus = await createManager();
+
+    const res = await request(app).get(`/api/contracts/${contract.id}/exit-comparison`).set(authHeader(tokenFor(intrus)));
+
+    expect(res.status).toBe(404);
+  });
+});

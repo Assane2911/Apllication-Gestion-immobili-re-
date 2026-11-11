@@ -29,6 +29,7 @@ import {
 } from "../controllers/settlement.controller";
 import { addCotenant, listCotenants, removeCotenant } from "../controllers/cotenant.controller";
 import { createGuarantor, deleteGuarantor, listGuarantors, updateGuarantor } from "../controllers/guarantor.controller";
+import { exitComparisonOfContract } from "../controllers/inspection.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
 import { uploadContractScan, uploadLeaseNoticeDocument } from "../middleware/upload";
 
@@ -57,6 +58,7 @@ router.post("/:id/notices", createLeaseNotice);
 router.put("/:id/notices/:noticeId", updateLeaseNotice);
 router.post("/:id/notices/:noticeId/withdraw", withdrawLeaseNotice);
 router.post("/:id/notices/:noticeId/document", uploadLeaseNoticeDocument.single("document"), envoyerDocumentDuConge);
+router.get("/:id/exit-comparison", exitComparisonOfContract);
 router.get("/:id/settlement/preview", previewSettlement);
 router.get("/:id/settlements", listSettlements);
 router.post("/:id/settlements", createSettlement);

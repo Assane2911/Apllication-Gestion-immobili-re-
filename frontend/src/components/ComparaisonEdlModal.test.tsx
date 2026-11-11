@@ -62,4 +62,15 @@ describe("ComparaisonEdlModal", () => {
 
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Aucun état des lieux d'entrée finalisé"));
   });
+  it("propose la restitution du dépôt seulement quand un gestionnaire de page la fournit", async () => {
+    mockedApi.get.mockResolvedValue({ data: comparaison });
+    const onPrepareRefund = vi.fn();
+    const { rerender } = render(<ComparaisonEdlModal inspectionId="s1" titre="Studio" onClose={() => {}} />);
+    await screen.findByText("Salon");
+    expect(screen.queryByRole("button", { name: "Préparer la restitution du dépôt" })).not.toBeInTheDocument();
+
+    rerender(<ComparaisonEdlModal inspectionId="s1" titre="Studio" onClose={() => {}} onPrepareRefund={onPrepareRefund} />);
+    screen.getByRole("button", { name: "Préparer la restitution du dépôt" }).click();
+    expect(onPrepareRefund).toHaveBeenCalledOnce();
+  });
 });

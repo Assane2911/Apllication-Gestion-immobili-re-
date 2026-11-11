@@ -1,9 +1,9 @@
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../api/client";
 import { useCurrency } from "../context/currency";
-import type { Contract } from "../types";
+import type { ComparaisonEdl, Contract, RoomCondition } from "../types";
 import CadreModale from "./CadreModale";
 import { BOUTON_ANNULER, BOUTON_PLEIN, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
@@ -18,12 +18,34 @@ interface DeductionRow {
   amount: string;
 }
 
+const ETAT_CLE: Record<RoomCondition, string> = { BON: "conditionGood", MOYEN: "conditionFair", MAUVAIS: "conditionPoor" };
+
 export default function DepositRefundModal({ contract, onSuccess, onClose }: DepositRefundModalProps) {
   const { t } = useTranslation();
   const { formatMoney } = useCurrency();
   const [rows, setRows] = useState<DeductionRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Constat de sortie comparé à l'entrée : rappelé à côté de la saisie, sans jamais en tirer de montant.
+  const [constat, setConstat] = useState<ComparaisonEdl | null>(null);
+
+  useEffect(() => {
+    let annule = false;
+    (async () => {
+      try {
+        const { data } = await api.get<ComparaisonEdl | null>(`/contracts/${contract.id}/exit-comparison`);
+        if (!annule && data && Array.isArray(data.rooms) && Array.isArray(data.keys)) setConstat(data);
+      } catch {
+        // Le rappel est un plus : sans lui, la restitution se saisit comme avant.
+      }
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [contract.id]);
+
+  const piecesDegradees = constat?.rooms.filter((r) => r.variation === "DEGRADE") ?? [];
+  const clesManquantes = constat?.keys.filter((k) => k.missing > 0) ?? [];
 
   // Les lignes à moitié remplies (ajoutées puis abandonnées) ne comptent pas :
   // seules celles avec un motif ET un montant positif entrent dans le calcul
@@ -70,6 +92,49 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
     <CadreModale titre={t("components.depositRefundModal.title")} titreId="deposit-refund-title" sousTitre={contract.property?.title} onClose={onClose} fermable={!saving} largeur="lg">
       <p className="font-mono text-xs text-slate-700">{t("components.depositRefundModal.depositAmount", { amount: formatMoney(contract.deposit, contract.currency) })}</p>
 
+      {constat && (
+        <section aria-label={t("components.depositRefundModal.exitFindings.title")} className="mt-4 space-y-2 border border-slate-300 bg-slate-50 p-3">
+          <p className={ETIQUETTE}>{t("components.depositRefundModal.exitFindings.title")}</p>
+          {piecesDegradees.length === 0 && clesManquantes.length === 0 ? (
+            <p className="text-xs font-semibold text-ink-900">{t("components.depositRefundModal.exitFindings.none")}</p>
+          ) : (
+            <>
+              <p className="text-xs text-slate-600">{t("components.depositRefundModal.exitFindings.intro")}</p>
+              <ul className="divide-y divide-slate-200 border border-slate-200 bg-white">
+                {piecesDegradees.map((p) => (
+                  <li key={`piece-${p.name}`} className="flex flex-wrap items-center justify-between gap-2 p-2.5 text-xs">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">{p.name}</p>
+                      <p className="text-slate-600">
+                        {t("components.depositRefundModal.exitFindings.states", {
+                          from: t(`manager.inspections.${ETAT_CLE[p.entry!.condition]}`),
+                          to: t(`manager.inspections.${ETAT_CLE[p.exit!.condition]}`),
+                        })}{" "}
+                        — <span className="break-words">{p.exit!.notes.trim() || t("components.depositRefundModal.exitFindings.noNote")}</span>
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => addRow(t("components.depositRefundModal.exitFindings.roomLabel", { room: p.name }))} className="cursor-pointer border border-slate-400 bg-white px-2 py-1 font-semibold text-ink-900 hover:border-ink-900">
+                      {t("components.depositRefundModal.exitFindings.add")}
+                    </button>
+                  </li>
+                ))}
+                {clesManquantes.map((k) => (
+                  <li key={`cle-${k.label}`} className="flex flex-wrap items-center justify-between gap-2 p-2.5 text-xs">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">{k.label}</p>
+                      <p className="text-slate-600">{t("components.depositRefundModal.exitFindings.missing", { count: k.missing })}</p>
+                    </div>
+                    <button type="button" onClick={() => addRow(t("components.depositRefundModal.exitFindings.keyLabel", { label: k.label }))} className="cursor-pointer border border-slate-400 bg-white px-2 py-1 font-semibold text-ink-900 hover:border-ink-900">
+                      {t("components.depositRefundModal.exitFindings.add")}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
+
       <div className="mt-4 space-y-2">
         <p className={ETIQUETTE}>{t("components.depositRefundModal.deductionsTitle")}</p>
         {rows.length === 0 && <p className="text-xs font-semibold text-ink-900">{t("components.depositRefundModal.noDeductions")}</p>}
@@ -81,7 +146,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
               value={row.label}
               onChange={(e) => updateRow(index, "label", e.target.value)}
               placeholder={t("components.depositRefundModal.deductionLabel")}
-              className={`${CHAMP} flex-1 !py-1.5 !text-xs`}
+              className={`${CHAMP} min-w-0 flex-1 !py-1.5 !text-xs`}
             />
             <input
               aria-label={t("components.depositRefundModal.deductionAmount")}
@@ -91,7 +156,7 @@ export default function DepositRefundModal({ contract, onSuccess, onClose }: Dep
               value={row.amount}
               onChange={(e) => updateRow(index, "amount", e.target.value)}
               placeholder={t("components.depositRefundModal.deductionAmount")}
-              className={`${CHAMP} w-28 !py-1.5 !text-xs`}
+              className={`${CHAMP} !w-28 shrink-0 !py-1.5 !text-xs`}
             />
             <button type="button" onClick={() => removeRow(index)} aria-label={t("components.depositRefundModal.removeDeduction")} className="cursor-pointer p-1 text-rose-700 hover:text-rose-900">
               <Trash2 size={14} aria-hidden="true" />

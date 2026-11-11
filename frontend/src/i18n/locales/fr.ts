@@ -1097,6 +1097,17 @@ const fr = {
       errorRequired: "Veuillez apposer votre signature sur le cadre avant de valider.",
     },
     depositRefundModal: {
+      exitFindings: {
+        title: "Constat de sortie",
+        intro: "Pièces dont l'état s'est dégradé depuis l'état des lieux d'entrée, et clés manquantes. Le montant de chaque retenue reste à votre appréciation.",
+        none: "Aucune dégradation ni clé manquante entre l'entrée et la sortie.",
+        states: "{{from}} → {{to}}",
+        add: "Ajouter une retenue",
+        roomLabel: "Remise en état : {{room}}",
+        keyLabel: "Clé manquante : {{label}}",
+        missing: "{{count}} manquante(s)",
+        noNote: "aucune remarque",
+      },
       totalDeductions: "Retenues",
       retained: "{{percent}} % du dépôt retenu",
       quickLabel: "Motifs courants",
@@ -1930,6 +1941,7 @@ const fr = {
       finalize: "Finaliser",
       confirmFinalize: "Finaliser cet état des lieux ? Le contenu (pièces, compteurs, clés) ne pourra plus être modifié ensuite.",
       compare: {
+        prepareRefund: "Préparer la restitution du dépôt",
         button: "Comparer avec l'entrée",
         title: "Comparaison entrée / sortie",
         dates: "Entrée du {{entry}} · sortie du {{exit}}",

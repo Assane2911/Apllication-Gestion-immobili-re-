@@ -4,6 +4,7 @@ import { api, apiErrorMessage, isRequestCancelled } from "../api/client";
 import type { ComparaisonEdl, RoomCondition, VariationPiece } from "../types";
 import { formaterJour } from "../utils/jourCivil";
 import CadreModale from "./CadreModale";
+import { BOUTON_PLEIN } from "./styleFormulaire";
 
 const ETAT_CLE: Record<RoomCondition, string> = { BON: "conditionGood", MOYEN: "conditionFair", MAUVAIS: "conditionPoor" };
 
@@ -23,7 +24,18 @@ const TITRE_SECTION = "mb-2 font-mono text-[11px] font-semibold uppercase tracki
  * Lecture seule : le serveur met en regard les deux constats finalisés ; la retenue sur le dépôt reste saisie
  * à la main dans le solde de tout compte.
  */
-export default function ComparaisonEdlModal({ inspectionId, titre, onClose }: { inspectionId: string; titre: string; onClose: () => void }) {
+export default function ComparaisonEdlModal({
+  inspectionId,
+  titre,
+  onClose,
+  onPrepareRefund,
+}: {
+  inspectionId: string;
+  titre: string;
+  onClose: () => void;
+  /** Absent quand le dépôt est déjà restitué ou que le bail n'est pas disponible : le bouton n'est alors pas proposé. */
+  onPrepareRefund?: () => void;
+}) {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<ComparaisonEdl | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -160,6 +172,13 @@ export default function ComparaisonEdlModal({ inspectionId, titre, onClose }: { 
             </section>
 
             <p className="border-t border-slate-200 pt-4 text-xs text-slate-600">{t("manager.inspections.compare.disclaimer")}</p>
+            {onPrepareRefund && (
+              <div className="flex justify-end">
+                <button type="button" onClick={onPrepareRefund} className={BOUTON_PLEIN}>
+                  {t("manager.inspections.compare.prepareRefund")}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
