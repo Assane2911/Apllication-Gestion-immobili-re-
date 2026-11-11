@@ -187,6 +187,49 @@ describe("TenantDashboardPage", () => {
     expect(screen.queryByText(/Signé par vous le/)).not.toBeInTheDocument();
   });
 
+  describe("comparaison entrée / sortie", () => {
+    const edl = (type: "ENTRY" | "EXIT", status: "DRAFT" | "COMPLETED") => ({
+      id: `edl-${type}-${status}`, contractId: "c1", propertyId: "prop-1", tenantId: "ten-1", managerId: "m1", type, status,
+      inspectionDate: "2026-06-30T00:00:00.000Z", rooms: [], meters: { electricity: "", water: "", gas: "" }, keys: [], signedByTenantAt: null,
+      property: { id: "prop-1", title: "Studio Centre-ville", address: "1 rue de la Paix" },
+    });
+
+    it("propose la comparaison seulement sur un état des lieux de sortie finalisé", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+      mockedApi.get.mockResolvedValueOnce({ data: [edl("ENTRY", "COMPLETED"), edl("EXIT", "DRAFT")] });
+      renderPage();
+
+      await screen.findByText("Studio Centre-ville");
+      await screen.findAllByRole("button", { name: /Voir le rapport/ });
+      expect(screen.queryByRole("button", { name: "Comparer avec l'entrée" })).not.toBeInTheDocument();
+    });
+
+    it("ouvre la comparaison par la route du locataire, avec un texte qui lui est adressé", async () => {
+      mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
+      mockedApi.get.mockResolvedValueOnce({ data: [edl("EXIT", "COMPLETED")] });
+      renderPage();
+      const bouton = await screen.findByRole("button", { name: "Comparer avec l'entrée" });
+
+      mockedApi.get.mockResolvedValueOnce({
+        data: {
+          property: { id: "prop-1", title: "Studio Centre-ville" },
+          entry: { id: "e", inspectionDate: "2026-01-10T00:00:00.000Z" },
+          exit: { id: "edl-EXIT-COMPLETED", inspectionDate: "2026-06-30T00:00:00.000Z" },
+          rooms: [{ name: "Salon", variation: "DEGRADE", entry: { condition: "BON", notes: "" }, exit: { condition: "MAUVAIS", notes: "tache" } }],
+          meters: [],
+          keys: [],
+          summary: { degraded: 1, improved: 0, unchanged: 0, added: 0, removed: 0, missingKeys: 0 },
+        },
+      });
+      await userEvent.setup().click(bouton);
+
+      expect(await screen.findByText("Salon")).toBeInTheDocument();
+      expect(mockedApi.get).toHaveBeenLastCalledWith("/inspections/mine/edl-EXIT-COMPLETED/comparison", expect.anything());
+      expect(screen.getByText(/votre solde de tout compte/)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Préparer la restitution du dépôt" })).not.toBeInTheDocument();
+    });
+  });
+
   it("affiche la date de signature une fois le bail signé", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract({ signedByTenantAt: "2026-02-01T00:00:00.000Z" })] });
     mockedApi.get.mockResolvedValueOnce(emptyInspections());

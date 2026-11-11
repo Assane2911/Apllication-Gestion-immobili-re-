@@ -136,6 +136,33 @@ export const compareInspection = asyncHandler(async (req: Request, res: Response
   res.json(comparaison);
 });
 
+/**
+ * La même comparaison, pour le locataire (et ses colocataires) : de quoi relire, avant de signer l'état des lieux de sortie,
+ * ce qui a changé depuis l'entrée. Lecture seule, mêmes droits que sa liste d'états des lieux (myInspections) : seul un
+ * constat finalisé est lisible, et seulement sur un bail qui le concerne ; tout autre cas répond « introuvable ».
+ */
+export const compareMyInspection = asyncHandler(async (req: Request, res: Response) => {
+  const fiche = await chargerLocataireDuCompte(req);
+  const baux = await bauxDuLocataire(fiche.id);
+
+  const [sortie] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
+  if (!sortie || (sortie.tenantId !== fiche.id && !baux.has(sortie.contractId))) {
+    throw new ApiError(404, "État des lieux introuvable", "INSPECTION_NOT_FOUND");
+  }
+  if (sortie.type !== "EXIT") {
+    throw new ApiError(400, "La comparaison se fait à partir d'un état des lieux de sortie", "INSPECTION_COMPARE_NEEDS_EXIT");
+  }
+  if (sortie.status !== "COMPLETED") {
+    throw new ApiError(409, "L'état des lieux de sortie doit être finalisé avant d'être comparé", "INSPECTION_COMPARE_EXIT_NOT_FINALIZED");
+  }
+
+  const comparaison = await comparaisonAvecEntree(sortie);
+  if (!comparaison) {
+    throw new ApiError(404, "Aucun état des lieux d'entrée finalisé pour ce bail : rien à comparer", "INSPECTION_COMPARE_NO_ENTRY");
+  }
+  res.json(comparaison);
+});
+
 /** Comparaison d'une sortie avec l'entrée finalisée la plus récente du même bail ; null s'il n'y a pas d'entrée. */
 async function comparaisonAvecEntree(sortie: typeof inspections.$inferSelect) {
   const [entree] = await db

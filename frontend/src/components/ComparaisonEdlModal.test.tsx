@@ -73,4 +73,14 @@ describe("ComparaisonEdlModal", () => {
     screen.getByRole("button", { name: "Préparer la restitution du dépôt" }).click();
     expect(onPrepareRefund).toHaveBeenCalledOnce();
   });
+  it("en mode locataire : route dédiée, texte adressé au locataire, jamais de bouton de restitution du dépôt", async () => {
+    mockedApi.get.mockResolvedValue({ data: comparaison });
+    render(<ComparaisonEdlModal inspectionId="s1" titre="Studio" onClose={() => {}} pourLocataire onPrepareRefund={() => {}} />);
+
+    await screen.findByText("Salon");
+    expect(mockedApi.get).toHaveBeenCalledWith("/inspections/mine/s1/comparison", expect.anything());
+    expect(screen.getByText(/votre solde de tout compte/)).toBeInTheDocument();
+    expect(screen.queryByText(/ne les chiffre pas/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Préparer la restitution du dépôt" })).not.toBeInTheDocument();
+  });
 });

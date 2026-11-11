@@ -1,6 +1,8 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
+import { contractCotenants } from "../db/schema";
+import { testDb } from "../test/setupTestDb";
 import {
   authHeader,
   createContract,
@@ -10,6 +12,7 @@ import {
   createTenant,
   createTenantPortalUser,
   tokenFor,
+  tokenLocataire,
 } from "../test/authHelpers";
 
 async function setup() {
@@ -388,5 +391,75 @@ describe("GET /api/contracts/:id/exit-comparison", () => {
     const res = await request(app).get(`/api/contracts/${contract.id}/exit-comparison`).set(authHeader(tokenFor(intrus)));
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe("GET /api/inspections/mine/:id/comparison — comparaison lue par le locataire", () => {
+  const entree = {
+    type: "ENTRY" as const,
+    status: "COMPLETED" as const,
+    roomsData: JSON.stringify([{ name: "Salon", condition: "BON", notes: "" }]),
+    keysData: JSON.stringify([{ label: "Porte", quantity: 2 }]),
+  };
+  const sortie = {
+    type: "EXIT" as const,
+    status: "COMPLETED" as const,
+    roomsData: JSON.stringify([{ name: "Salon", condition: "MAUVAIS", notes: "tache" }]),
+    keysData: JSON.stringify([{ label: "Porte", quantity: 1 }]),
+  };
+  const lire = async (tenantId: string, id: string) => request(app).get(`/api/inspections/mine/${id}/comparison`).set(authHeader(await tokenLocataire(tenantId)));
+
+  it("montre au titulaire ce qui a changé entre l'entrée et la sortie", async () => {
+    const { manager, tenant, contract } = await setup();
+    await createInspection(contract, manager.id, entree);
+    const exit = await createInspection(contract, manager.id, sortie);
+
+    const res = await lire(tenant.id, exit.id);
+
+    expect(res.status).toBe(200);
+    expect(res.body.rooms[0]).toMatchObject({ name: "Salon", variation: "DEGRADE" });
+    expect(res.body.summary).toMatchObject({ degraded: 1, missingKeys: 1 });
+  });
+
+  it("le montre aussi à un colocataire du bail, mais pas à un locataire étranger au bail", async () => {
+    const { manager, contract } = await setup();
+    const coloc = await createTenant(manager.id);
+    await testDb.insert(contractCotenants).values({ contractId: contract.id, tenantId: coloc.id });
+    const etranger = await createTenant(manager.id);
+    await createInspection(contract, manager.id, entree);
+    const exit = await createInspection(contract, manager.id, sortie);
+
+    expect((await lire(coloc.id, exit.id)).status).toBe(200);
+    const refus = await lire(etranger.id, exit.id);
+    expect(refus.status).toBe(404);
+    expect(refus.body.code).toBe("INSPECTION_NOT_FOUND");
+  });
+
+  it("refuse un état des lieux d'entrée (400), un brouillon de sortie (409), et une sortie sans entrée finalisée (404)", async () => {
+    const { manager, tenant, contract } = await setup();
+    const ent = await createInspection(contract, manager.id, entree);
+    const brouillon = await createInspection(contract, manager.id, { ...sortie, status: "DRAFT" });
+    const autre = await setup();
+    const sortieSeule = await createInspection(autre.contract, autre.manager.id, sortie);
+
+    const a = await lire(tenant.id, ent.id);
+    const b = await lire(tenant.id, brouillon.id);
+    const c = await lire(autre.tenant.id, sortieSeule.id);
+
+    expect([a.status, a.body.code]).toEqual([400, "INSPECTION_COMPARE_NEEDS_EXIT"]);
+    expect([b.status, b.body.code]).toEqual([409, "INSPECTION_COMPARE_EXIT_NOT_FINALIZED"]);
+    expect([c.status, c.body.code]).toEqual([404, "INSPECTION_COMPARE_NO_ENTRY"]);
+  });
+
+  it("n'est pas ouverte au gestionnaire (il a sa propre route) ni sans compte", async () => {
+    const { manager, contract } = await setup();
+    await createInspection(contract, manager.id, entree);
+    const exit = await createInspection(contract, manager.id, sortie);
+
+    const gestionnaire = await request(app).get(`/api/inspections/mine/${exit.id}/comparison`).set(authHeader(tokenFor(manager)));
+    const anonyme = await request(app).get(`/api/inspections/mine/${exit.id}/comparison`);
+
+    expect(gestionnaire.status).toBe(403);
+    expect(anonyme.status).toBe(401);
   });
 });
