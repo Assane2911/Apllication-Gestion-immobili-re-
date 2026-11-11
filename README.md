@@ -24,7 +24,8 @@ Application complète de gestion immobilière : tableau de bord, biens, locatair
 
 - **Propriétaires** : fiche, espace dédié, **compte-rendu de gestion** (CRG) mensuel dans la langue du propriétaire, reversements enregistrés et annoncés par e-mail, bilan fiscal.
 - **Impayés** : relances graduées par e-mail et WhatsApp, mise en demeure, garants et colocataires prévenus, paiements partiels, quittances et reçus.
-- **Baux** : colocation, garants, révision de loyer, avenants, état des lieux d'entrée et de sortie, assurances, dépenses (dont récurrentes), prestataires.
+- **Baux** : colocation, garants, révision de loyer, avenants, état des lieux d'entrée et de sortie (avec **comparaison entrée/sortie** rappelée à la restitution du dépôt), congé et solde de tout compte, assurances, dépenses (dont récurrentes), prestataires.
+- **Agenda** : une seule vue des échéances à traiter (loyers, fins de bail, sorties, révisions, assurances), le retard en tête.
 - **Vitrine** : annonces publiques et demandes de visite reçues dans un CRM.
 - **Compte et sécurité** : double authentification (TOTP), collaborateurs avec rôles, journal d'activité, import de données, abonnement (Stripe, PayDunya), notifications dans la langue de l'interface.
 - **Administration de la plateforme** : rôle `ADMIN`, avec journal d'audit.

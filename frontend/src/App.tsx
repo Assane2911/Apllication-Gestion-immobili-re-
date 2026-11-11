@@ -49,6 +49,7 @@ const ReferralPage = lazyWithReload(() => import("./pages/manager/ReferralPage")
 const TenantsPage = lazyWithReload(() => import("./pages/manager/TenantsPage"));
 const OwnersPage = lazyWithReload(() => import("./pages/manager/OwnersPage"));
 const InspectionsPage = lazyWithReload(() => import("./pages/manager/InspectionsPage"));
+const AgendaPage = lazyWithReload(() => import("./pages/manager/AgendaPage"));
 const InsurancePage = lazyWithReload(() => import("./pages/manager/InsurancePage"));
 const TenantDashboardPage = lazyWithReload(() => import("./pages/tenant/TenantDashboardPage"));
 const TenantInvoicesPage = lazyWithReload(() => import("./pages/tenant/TenantInvoicesPage"));
@@ -123,6 +124,7 @@ function AppRoutes() {
           }
         >
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/tenants" element={<TenantsPage />} />
           <Route path="/proprietaires" element={<OwnersPage />} />

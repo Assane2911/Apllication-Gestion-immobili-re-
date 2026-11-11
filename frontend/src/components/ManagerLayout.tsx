@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Briefcase,
+  CalendarDays,
   Building2,
   Calculator,
   ClipboardCheck,
@@ -47,7 +48,13 @@ const pagesHorsMenu = [{ to: "/guide-demarrage", key: "guide" }];
 // Le menu est rangé par rubriques, comme le tableau de bord de Supabase : une icône par page, des intitulés de rubrique
 // discrets, et la possibilité de le replier en une colonne d'icônes pour laisser la place au travail.
 const groupes: ReadonlyArray<GroupeMenu> = [
-  { cle: "overview", items: [{ to: "/dashboard", key: "dashboard", icone: LayoutDashboard }] },
+  {
+    cle: "overview",
+    items: [
+      { to: "/dashboard", key: "dashboard", icone: LayoutDashboard },
+      { to: "/agenda", key: "agenda", icone: CalendarDays },
+    ],
+  },
   {
     cle: "portfolio",
     items: [
