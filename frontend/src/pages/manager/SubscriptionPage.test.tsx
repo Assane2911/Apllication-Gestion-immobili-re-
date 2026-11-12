@@ -672,7 +672,45 @@ describe("SubscriptionPage", () => {
     await waitFor(() => expect(screen.getByText("Historique de vos factures d'abonnement")).toBeInTheDocument());
     const table = screen.getByRole("table");
     expect(within(table).getByText("19 €")).toBeInTheDocument();
-    expect(within(table).getByText("PAID")).toBeInTheDocument();
+    // Le statut et le moyen de paiement s'affichent traduits, pas en codes techniques.
+    expect(within(table).getByText("Réglé")).toBeInTheDocument();
+    expect(within(table).getByText("Démo")).toBeInTheDocument();
+    expect(within(table).queryByText("PAID")).not.toBeInTheDocument();
+  });
+
+  /**
+   * Régression (vue sur l'écran) : cinq virements déclarés, tous « en attente », s'affichaient « 5 paiements, 105 000 FCFA
+   * réglés, dernier paiement aujourd'hui ». Rien n'avait été reçu : seuls les paiements validés comptent.
+   */
+  it("ne compte pas comme réglés les virements en attente de validation", async () => {
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    const virement = (id: string) => ({
+      id,
+      plan: "STARTER",
+      amount: 25000,
+      currency: "XOF",
+      billingCycle: "MONTHLY",
+      status: "PENDING",
+      paymentMethod: "BANK_TRANSFER",
+      paymentRef: `ref-${id}`,
+      startDate: "2026-11-12T00:00:00.000Z",
+      endDate: "2026-12-12T00:00:00.000Z",
+      createdAt: "2026-11-12T00:00:00.000Z",
+    });
+    queueGet({ data: { history: [virement("h1"), virement("h2"), virement("h3")] } });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Historique de vos factures d'abonnement")).toBeInTheDocument());
+    const synthese = screen.getByLabelText("Synthèse des paiements");
+    const valeurDe = (libelle: string) => within(synthese).getByText(libelle).parentElement!.querySelector("dd")!.textContent;
+    expect(valeurDe("Paiements")).toBe("0");
+    expect(valeurDe("Total réglé")).toMatch(/^0\s?F/);
+    expect(valeurDe("Dernier paiement")).toBe("—");
+    expect(valeurDe("En attente")).toBe("3");
+    expect(within(screen.getByRole("table")).getAllByText("En attente de validation")).toHaveLength(3);
+    expect(within(screen.getByRole("table")).getAllByText("Virement")).toHaveLength(3);
   });
 
   it("affiche chaque ligne d'historique dans SA PROPRE devise, jamais en euros par défaut", async () => {

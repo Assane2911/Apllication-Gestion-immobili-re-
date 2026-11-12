@@ -3060,7 +3060,8 @@ const pt: TranslationSchema = {
       },
     },
     subscription: {
-      historySummary: { label: "Resumo dos pagamentos", payments: "Pagamentos", total: "Total pago", last: "Último pagamento", lastNone: "—" },
+      historySummary: { label: "Resumo dos pagamentos", payments: "Pagamentos", total: "Total pago", last: "Último pagamento", lastNone: "—", pending: "Pendentes", pendingHint: "Registrados, aguardando validação" },
+      historyStatus: { PAID: "Pago", PENDING: "Aguardando validação" },
       exportHistory: "Exportar o histórico (CSV)",
       csv: { currency: "Moeda", reference: "Referência" },
       annualSaving: "Poupa {{amount}} por ano",

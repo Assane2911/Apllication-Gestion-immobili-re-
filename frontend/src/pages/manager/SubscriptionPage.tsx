@@ -684,6 +684,9 @@ export default function SubscriptionPage() {
                 libelle: t("manager.subscription.historySummary.last"),
                 valeur: synthesePaiements.dernier ? new Date(synthesePaiements.dernier).toLocaleDateString(i18n.language) : t("manager.subscription.historySummary.lastNone"),
               },
+              ...(synthesePaiements.enAttente > 0
+                ? [{ libelle: t("manager.subscription.historySummary.pending"), valeur: synthesePaiements.enAttente, aide: t("manager.subscription.historySummary.pendingHint"), ton: "alerte" as const }]
+                : []),
             ]}
           />
           <div className="overflow-x-auto border border-slate-300 bg-white">
@@ -708,10 +711,10 @@ export default function SubscriptionPage() {
                         côté backend) : un abonnement réglé en FCFA ne doit jamais s'afficher en
                         euros — c'est exactement le bug déjà corrigé sur AdminSubscriptionsPage. */}
                     <td className="px-4 py-3 font-bold tabular-nums">{formatMoney(h.amount, h.currency)}</td>
-                    <td className="px-4 py-3 font-mono text-[11px]">{h.paymentMethod}</td>
+                    <td className="px-4 py-3">{t(`common.paymentMethods.${h.paymentMethod}`, { defaultValue: h.paymentMethod })}</td>
                     <td className="px-4 py-3">
                       <span className="inline-block border border-ink-900 bg-slate-50 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
-                        {h.status}
+                        {t(`manager.subscription.historyStatus.${h.status}`, { defaultValue: h.status })}
                       </span>
                     </td>
                   </tr>

@@ -56,7 +56,7 @@ describe("formulaireModifie", () => {
 
 describe("historique d'abonnement", () => {
   const p = (o: Partial<Parameters<typeof syntheseHistorique>[0][number]>) => ({
-    plan: "PROFESSIONAL", amount: 100, currency: "EUR", billingCycle: "MONTHLY", status: "ACTIVE", paymentMethod: "STRIPE", createdAt: "2026-01-10T00:00:00.000Z", ...o,
+    plan: "PROFESSIONAL", amount: 100, currency: "EUR", billingCycle: "MONTHLY", status: "PAID", paymentMethod: "STRIPE", createdAt: "2026-01-10T00:00:00.000Z", ...o,
   });
 
   it("totalise par devise et retient le paiement le plus récent", () => {
@@ -64,7 +64,33 @@ describe("historique d'abonnement", () => {
     expect(r.paiements).toBe(3);
     expect(r.totaux).toEqual([{ devise: "EUR", montant: 150 }, { devise: "XOF", montant: 60000 }]);
     expect(r.dernier).toBe("2026-03-01T00:00:00.000Z");
-    expect(syntheseHistorique([])).toEqual({ paiements: 0, totaux: [], dernier: null });
+    expect(r.enAttente).toBe(0);
+    expect(syntheseHistorique([])).toEqual({ paiements: 0, totaux: [], dernier: null, enAttente: 0 });
+  });
+
+  /**
+   * Régression : un virement déclaré crée une ligne « PENDING » tant que la plateforme ne l'a pas validé. L'écran additionnait
+   * ces lignes : cinq virements en attente affichaient « 5 paiements, 105 000 FCFA réglés, dernier paiement aujourd'hui »
+   * alors que rien n'avait été reçu.
+   */
+  it("ne compte comme réglés que les paiements validés ; les virements en attente sont comptés à part", () => {
+    const r = syntheseHistorique([
+      p({ amount: 25000, currency: "XOF", status: "PENDING", createdAt: "2026-11-12T00:00:00.000Z" }),
+      p({ amount: 25000, currency: "XOF", status: "PENDING", createdAt: "2026-11-12T01:00:00.000Z" }),
+      p({ amount: 5000, currency: "XOF", status: "PAID", createdAt: "2026-10-01T00:00:00.000Z" }),
+    ]);
+    expect(r.paiements).toBe(1);
+    expect(r.totaux).toEqual([{ devise: "XOF", montant: 5000 }]);
+    expect(r.dernier).toBe("2026-10-01T00:00:00.000Z");
+    expect(r.enAttente).toBe(2);
+  });
+
+  it("n'affiche aucun paiement réglé quand tout est en attente : total à 0, pas de dernier paiement", () => {
+    const r = syntheseHistorique([p({ amount: 25000, currency: "XOF", status: "PENDING" }), p({ amount: 30, currency: "EUR", status: "PENDING" })]);
+    expect(r.paiements).toBe(0);
+    expect(r.totaux).toEqual([{ devise: "XOF", montant: 0 }, { devise: "EUR", montant: 0 }]);
+    expect(r.dernier).toBeNull();
+    expect(r.enAttente).toBe(2);
   });
 
   it("exporte en CSV avec montant à virgule et formule neutralisée", () => {
@@ -75,7 +101,7 @@ describe("historique d'abonnement", () => {
     );
     const lignes = csv.replace("﻿", "").split("\n");
     expect(lignes[0]).toBe('"Date";"Formule";"Cycle";"Montant";"Devise";"Moyen";"Référence";"Statut"');
-    expect(lignes[1]).toBe('"10/01/2026";"PROFESSIONAL";"MONTHLY";"19,50";"EUR";"STRIPE";"\'=CMD";"ACTIVE"');
+    expect(lignes[1]).toBe('"10/01/2026";"PROFESSIONAL";"MONTHLY";"19,50";"EUR";"STRIPE";"\'=CMD";"PAID"');
   });
 
   it("calcule l'économie de l'annuel, jamais négative", () => {
