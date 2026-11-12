@@ -52,7 +52,7 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
 
   const [tenantRows, propertyRows, contractRows, invoiceRows] = await Promise.all([
     db
-      .select()
+      .select({ id: tenants.id, firstName: tenants.firstName, lastName: tenants.lastName, email: tenants.email })
       .from(tenants)
       .where(
         and(
@@ -65,13 +65,17 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
       .orderBy(asc(tenants.lastName), asc(tenants.firstName), asc(tenants.id))
       .limit(5),
     db
-      .select()
+      .select({ id: properties.id, title: properties.title, address: properties.address })
       .from(properties)
       .where(and(eq(properties.managerId, managerId), or(ilike(properties.title, pattern), ilike(properties.address, pattern))))
       .orderBy(asc(properties.title), asc(properties.id))
       .limit(5),
     db
-      .select({ contract: contracts, property: properties, tenant: tenants })
+      .select({
+        contract: { id: contracts.id, status: contracts.status },
+        property: { title: properties.title },
+        tenant: { firstName: tenants.firstName, lastName: tenants.lastName },
+      })
       .from(contracts)
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
@@ -84,7 +88,11 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
       .orderBy(desc(contracts.startDate), desc(contracts.id))
       .limit(5),
     db
-      .select({ invoice: invoices, contract: contracts, property: properties, tenant: tenants })
+      .select({
+        invoice: { id: invoices.id, periodMonth: invoices.periodMonth, periodYear: invoices.periodYear, status: invoices.status },
+        property: { title: properties.title },
+        tenant: { firstName: tenants.firstName, lastName: tenants.lastName },
+      })
       .from(invoices)
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
@@ -99,10 +107,17 @@ export const globalSearch = asyncHandler(async (req: Request, res: Response) => 
       .limit(5),
   ]);
 
-  type TenantRow = typeof tenants.$inferSelect;
-  type PropertyRow = typeof properties.$inferSelect;
-  type ContractRow = { contract: typeof contracts.$inferSelect; property: PropertyRow; tenant: TenantRow };
-  type InvoiceRow = { invoice: typeof invoices.$inferSelect; contract: typeof contracts.$inferSelect; property: PropertyRow; tenant: TenantRow };
+  // Seules colonnes lues : la recherche part à chaque frappe, et un bail entier (clauses, deux images de signature) ou une
+  // fiche locataire complète pèsent des centaines de Ko pour afficher une ligne de résultat.
+  type TenantRow = Pick<typeof tenants.$inferSelect, "id" | "firstName" | "lastName" | "email">;
+  type PropertyRow = Pick<typeof properties.$inferSelect, "id" | "title" | "address">;
+  type NomLocataire = Pick<typeof tenants.$inferSelect, "firstName" | "lastName">;
+  type ContractRow = { contract: Pick<typeof contracts.$inferSelect, "id" | "status">; property: Pick<PropertyRow, "title">; tenant: NomLocataire };
+  type InvoiceRow = {
+    invoice: Pick<typeof invoices.$inferSelect, "id" | "periodMonth" | "periodYear" | "status">;
+    property: Pick<PropertyRow, "title">;
+    tenant: NomLocataire;
+  };
 
   const results: SearchResultItem[] = [
     ...(tenantRows as TenantRow[]).map((t) => ({

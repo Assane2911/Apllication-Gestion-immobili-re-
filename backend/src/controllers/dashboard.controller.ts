@@ -5,6 +5,7 @@ import { expenses, invoicePayments, invoices, issueReports, leaseNotices, proper
 import { resumeAgenda } from "../services/agenda.service";
 import { developperFactures } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { arrondir } from "../utils/montants";
 
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
   const managerId = req.user!.userId;
@@ -187,20 +188,25 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     expensesByMonth[key][currency] = (expensesByMonth[key][currency] ?? 0) + exp.amount;
   }
 
+  // Les sommes de montants décimaux en virgule flottante laissent du bruit (10,10 + 20,20 = 30.299999999999997) :
+  // on arrondit au centime les totaux avant de répondre (jamais les montants intermédiaires).
+  const arrondirParDevise = (totaux: Record<string, number>) => Object.fromEntries(Object.entries(totaux).map(([devise, montant]) => [devise, arrondir(montant)]));
+  const arrondirParMois = (parMois: Record<string, Record<string, number>>) => Object.fromEntries(Object.entries(parMois).map(([mois, totaux]) => [mois, arrondirParDevise(totaux)]));
+
   res.json({
     totalProperties,
     propertiesByStatus: statusCounts,
     totalTenants,
     activeContracts,
     occupancyRate,
-    monthlyRevenueByCurrency,
-    monthlyExpectedByCurrency,
+    monthlyRevenueByCurrency: arrondirParDevise(monthlyRevenueByCurrency),
+    monthlyExpectedByCurrency: arrondirParDevise(monthlyExpectedByCurrency),
     openIssues,
     lateInvoices,
     upcomingExits,
     agendaOverdueOther: agenda.overdueOther,
     agendaSoon: agenda.soon,
-    revenueByMonth,
-    expensesByMonth,
+    revenueByMonth: arrondirParMois(revenueByMonth),
+    expensesByMonth: arrondirParMois(expensesByMonth),
   });
 });
