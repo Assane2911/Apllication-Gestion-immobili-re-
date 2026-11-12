@@ -425,6 +425,8 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   // sans transaction, un échec du second insert laissait un abonnement actif
   // sans aucune trace d'audit/facturation correspondante.
   const { updatedUser, subscriptionRecord } = await db.transaction(async (tx: Transaction) => {
+    // Verrou de ligne sur le compte pour une demande non confirmée : deux déclarations simultanées ne peuvent ni lire
+    // « rien en attente » en même temps, ni créer chacune leur ligne (voir la recherche du doublon ci-dessous).
     const [updatedUser] = isConfirmed
       ? await tx
           .update(users)
@@ -436,7 +438,37 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
           })
           .where(eq(users.id, user.id))
           .returning()
-      : await tx.select().from(users).where(eq(users.id, user.id));
+      : await tx.select().from(users).where(eq(users.id, user.id)).for("update");
+
+    // Un virement déclaré de nouveau à l'identique (même formule, même cycle, même montant, même devise) alors qu'un
+    // précédent attend encore sa validation n'est PAS un second paiement : c'est le même virement, redéclaré (double clic,
+    // retour sur la page, référence corrigée). Créer une ligne de plus remplissait l'historique de lignes identiques, et
+    // chacune pouvait ensuite être validée par l'administration, prolongeant l'abonnement autant de fois. On réutilise donc
+    // la ligne en attente, dont la référence est mise à jour si une nouvelle est saisie.
+    if (!isConfirmed && body.paymentMethod === "BANK_TRANSFER") {
+      const [enAttente] = await tx
+        .select()
+        .from(platformSubscriptions)
+        .where(
+          and(
+            eq(platformSubscriptions.userId, user.id),
+            eq(platformSubscriptions.status, "PENDING"),
+            eq(platformSubscriptions.paymentMethod, "BANK_TRANSFER"),
+            eq(platformSubscriptions.plan, body.plan),
+            eq(platformSubscriptions.billingCycle, body.billingCycle),
+            eq(platformSubscriptions.currency, currency),
+            eq(platformSubscriptions.amount, amount)
+          )
+        )
+        .orderBy(desc(platformSubscriptions.createdAt))
+        .limit(1);
+      if (enAttente) {
+        const [majRef] = body.bankReference
+          ? await tx.update(platformSubscriptions).set({ paymentRef: paymentResult.reference }).where(eq(platformSubscriptions.id, enAttente.id)).returning()
+          : [enAttente];
+        return { updatedUser, subscriptionRecord: majRef };
+      }
+    }
 
     const [subscriptionRecord] = await tx
       .insert(platformSubscriptions)

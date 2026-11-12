@@ -3061,7 +3061,7 @@ const en: TranslationSchema = {
     },
     subscription: {
       historySummary: { label: "Payment summary", payments: "Payments", total: "Total paid", last: "Last payment", lastNone: "—", pending: "Pending", pendingHint: "Recorded, awaiting validation" },
-      historyStatus: { PAID: "Paid", PENDING: "Awaiting validation" },
+      historyStatus: { PAID: "Paid", PENDING: "Awaiting validation", REJECTED: "Rejected" },
       exportHistory: "Export history (CSV)",
       csv: { currency: "Currency", reference: "Reference" },
       annualSaving: "You save {{amount}} a year",
