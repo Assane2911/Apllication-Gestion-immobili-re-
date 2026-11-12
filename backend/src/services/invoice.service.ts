@@ -106,6 +106,9 @@ export async function generateInvoicesForContract(
   const debut = contract.billingFrom && new Date(contract.billingFrom) > start ? new Date(contract.billingFrom) : start;
   const cursor = new Date(debut.getFullYear(), debut.getMonth(), 1);
   const created: string[] = [];
+  // Les factures sont calculées dans la boucle, puis écrites PAR LOTS après elle : une insertion par facture coûtait un aller-retour
+  // à la base chacune, et un contrat importé avec plusieurs années d'historique en comptait des dizaines (voir importerContrats).
+  const aInserer: Array<typeof invoices.$inferInsert> = [];
 
   // Le mois déjà facturé par N'IMPORTE QUEL contrat de CE bien (pas
   // seulement celui-ci) ne doit jamais l'être une seconde fois. Un
@@ -222,32 +225,41 @@ export async function generateInvoicesForContract(
           ? contract.rent
           : Math.round(((contract.rent * notrePeriode.jours) / notrePeriode.joursDuMois) * 100) / 100;
 
-        const [invoice] = await dbClient
-          .insert(invoices)
-          .values({
-            contractId: contract.id,
-            periodMonth,
-            periodYear,
-            amount: montant,
-            currency: contract.currency ?? "EUR",
-            dueDate,
-            // Une facture due AUJOURD'HUI n'est pas en retard : le locataire a
-            // jusqu'à la fin de la journée. Comparer `dueDate` (minuit) à
-            // l'heure courante la faisait naître en LATE dès lors que la
-            // génération avait lieu après minuit — or le job planifié tourne à
-            // 8h, donc systématiquement.
-            status: dueDate < debutDeLaJournee(today) ? "LATE" : "PENDING",
-          })
-          .returning();
-        created.push(invoice.id);
+        aInserer.push({
+          contractId: contract.id,
+          periodMonth,
+          periodYear,
+          amount: montant,
+          currency: contract.currency ?? "EUR",
+          dueDate,
+          // Une facture due AUJOURD'HUI n'est pas en retard : le locataire a
+          // jusqu'à la fin de la journée. Comparer `dueDate` (minuit) à
+          // l'heure courante la faisait naître en LATE dès lors que la
+          // génération avait lieu après minuit — or le job planifié tourne à
+          // 8h, donc systématiquement.
+          status: dueDate < debutDeLaJournee(today) ? "LATE" : "PENDING",
+        });
       }
     }
 
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
+  // Par lots : un seul ordre par tranche de factures, bien en deçà du plafond de paramètres de PostgreSQL (65 535). Même ordre
+  // d'insertion qu'avant, donc mêmes identifiants renvoyés dans le même ordre ; une violation de l'index unique échoue comme avant.
+  for (let i = 0; i < aInserer.length; i += LOT_FACTURES) {
+    const lignes = await dbClient
+      .insert(invoices)
+      .values(aInserer.slice(i, i + LOT_FACTURES))
+      .returning({ id: invoices.id });
+    created.push(...lignes.map((l: { id: string }) => l.id));
+  }
+
   return created;
 }
+
+/** Factures écrites par ordre d'insertion : 500 lignes × une dizaine de colonnes, très en deçà de 65 535 paramètres. */
+const LOT_FACTURES = 500;
 
 /**
  * Repasse en LATE les factures PENDING dont la date d'échéance est dépassée.

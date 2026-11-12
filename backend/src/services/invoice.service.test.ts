@@ -521,4 +521,52 @@ describe("generateInvoicesForContract", () => {
     expect(facturesAvril).toHaveLength(1);
     expect(facturesAvril[0].status).toBe("CANCELLED");
   });
+
+  /**
+   * Les factures sont écrites par lots (une insertion par facture coûtait un aller-retour à la base chacune : un import de contrats avec
+   * plusieurs années d'historique en comptait des dizaines de milliers). Un lot en compte 500 : ce bail en dépasse un, pour prouver que
+   * rien n'est perdu ni doublé à la frontière, et que les identifiants rendus suivent l'ordre des mois.
+   */
+  it("écrit tous les mois d'un très long historique, au-delà d'un lot, sans perte ni doublon et dans l'ordre", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+
+    const [contract] = await testDb
+      .insert(contracts)
+      .values({ propertyId: property.id, tenantId: tenant.id, rent: 500, deposit: 0, startDate: new Date(1980, 0, 1), endDate: new Date(2100, 0, 1) })
+      .returning();
+
+    const ids = await generateInvoicesForContract(contract);
+
+    // De janvier 1980 à juin 2026 inclus : 46 ans et 6 mois.
+    const attendues = 46 * 12 + 6;
+    expect(attendues).toBeGreaterThan(500);
+    expect(ids).toHaveLength(attendues);
+    expect(new Set(ids).size).toBe(attendues);
+
+    const lignes = await testDb.select().from(invoices).where(eq(invoices.contractId, contract.id));
+    expect(lignes).toHaveLength(attendues);
+    const parId = new Map(lignes.map((l: typeof invoices.$inferSelect) => [l.id, l]));
+    const mois = ids.map((id: string) => {
+      const l = parId.get(id)!;
+      return l.periodYear * 12 + l.periodMonth;
+    });
+    expect(mois).toEqual([...mois].sort((a: number, b: number) => a - b));
+    expect(mois[0]).toBe(1980 * 12 + 1);
+    expect(mois[mois.length - 1]).toBe(2026 * 12 + 6);
+  });
+
+  it("n'insère rien quand aucun mois n'est à facturer", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    const [contract] = await testDb
+      .insert(contracts)
+      .values({ propertyId: property.id, tenantId: tenant.id, rent: 500, deposit: 0, startDate: new Date(2030, 0, 1), endDate: new Date(2031, 0, 1) })
+      .returning();
+
+    expect(await generateInvoicesForContract(contract)).toEqual([]);
+    expect(await testDb.select().from(invoices).where(eq(invoices.contractId, contract.id))).toHaveLength(0);
+  });
 });
