@@ -3,6 +3,7 @@ import { db, DbClient } from "../db/client";
 import { contracts, invoices } from "../db/schema";
 import { dernierMoisFacturable } from "./conge.service";
 import { debutDeLaJournee } from "../utils/dates";
+import { arrondirPourDevise } from "../utils/montants";
 import { echeanceDuMois, jourEcheanceDuContrat } from "../utils/jourEcheance";
 
 type Contract = typeof contracts.$inferSelect;
@@ -223,7 +224,7 @@ export async function generateInvoicesForContract(
         // quelques centimes par rapport au loyer inscrit au bail.
         const montant = notrePeriode.complet
           ? contract.rent
-          : Math.round(((contract.rent * notrePeriode.jours) / notrePeriode.joursDuMois) * 100) / 100;
+          : arrondirPourDevise((contract.rent * notrePeriode.jours) / notrePeriode.joursDuMois, contract.currency);
 
         aInserer.push({
           contractId: contract.id,

@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { agencySettings, contracts, invoices, leaseNotices, leaseSettlements, properties, tenants } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
-import { arrondir, montantRegle } from "../utils/montants";
+import { arrondir, arrondirPourDevise, montantRegle } from "../utils/montants";
 import { colocatairesActifs, nomsDesLocataires } from "./colocation.service";
 import { etapesDeSortie, indexDuMois } from "./conge.service";
 import { periodeCouverte } from "./invoice.service";
@@ -113,7 +113,7 @@ export async function calculerSolde(
       const avant = periodeCouverte(contract, f.periodMonth, f.periodYear);
       const finEffective = exitDate < new Date(contract.endDate) ? exitDate : new Date(contract.endDate);
       const apres = periodeCouverte({ startDate: contract.startDate, endDate: finEffective }, f.periodMonth, f.periodYear);
-      if (avant.jours > 0 && apres.jours < avant.jours) retenu = arrondir((f.amount * apres.jours) / avant.jours);
+      if (avant.jours > 0 && apres.jours < avant.jours) retenu = arrondirPourDevise((f.amount * apres.jours) / avant.jours, f.currency ?? contract.currency);
     }
     const paye = montantRegle(f);
     lignes.push({
