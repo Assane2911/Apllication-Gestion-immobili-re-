@@ -73,7 +73,7 @@ describe("READ_ONLY : consultation seulement", () => {
     ["DELETE", "/api/team/u1"],
   ])("ne peut pas %s %s", (m, u) => expect(ok("READ_ONLY", m, u)).toBe(false));
 
-  it.each(["/api/tenants/t1/export", "/api/owners/o1/export", "/api/activity-log", "/api/conservation/echeances", "/api/tenants/t1/id-document-url", "/api/fiscal/fec", "/api/expenses/export"])(
+  it.each(["/api/tenants/t1/export", "/api/owners/o1/export", "/api/personnes/export", "/api/activity-log", "/api/conservation/echeances", "/api/tenants/t1/id-document-url", "/api/fiscal/fec", "/api/expenses/export"])(
     "ne peut pas lire la donnée sensible %s",
     (u) => expect(ok("READ_ONLY", "GET", u)).toBe(false)
   );

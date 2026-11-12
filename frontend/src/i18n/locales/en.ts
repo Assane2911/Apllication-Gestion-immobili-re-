@@ -307,6 +307,8 @@ const en: TranslationSchema = {
       REQUETE_INVALIDE: "Invalid request.",
       CARACTERE_INTERDIT: "Invalid request: forbidden character.",
       PHONE_INVALID: "Invalid phone number: include the country code, for example +221 77 123 45 67.",
+      PERSON_DATA_NOT_FOUND: "No data held for this person.",
+      PERSON_CRITERIA_REQUIRED: "Enter the person's email address or phone number.",
       LEASE_DATE_OUT_OF_RANGE: "The date must be between {{min}} and {{max}}",
       PASSWORD_TOO_LONG: "The password cannot exceed {{max}} bytes (about {{max}} characters; accents and symbols count for more).",
       PASSWORD_TOO_COMMON: "This password is too common or too predictable: choose a more personal one, at least 8 characters long.",

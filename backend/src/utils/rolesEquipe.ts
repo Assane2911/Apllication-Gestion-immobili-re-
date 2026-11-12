@@ -126,6 +126,8 @@ const LECTURES_SENSIBLES: ReadonlyArray<{ chemin: RegExp; roles: readonly RoleEq
   { chemin: new RegExp(`^/tenants/${ID}/export$`), roles: [] },
   // Dossier complet d'un propriétaire (coordonnées, IBAN, notes internes, versements, discussion) : même sensibilité que celui d'un locataire.
   { chemin: new RegExp(`^/owners/${ID}/export$`), roles: [] },
+  // Dossier d'un garant ou d'un prospect (personne sans compte) : coordonnées, notes internes.
+  { chemin: /^\/personnes\/export$/, roles: [] },
   { chemin: /^\/activity-log(\/|$)/, roles: [] },
   { chemin: /^\/conservation(\/|$)/, roles: [] },
   // Pièce d'identité : exploitation courante seulement.

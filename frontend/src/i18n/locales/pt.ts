@@ -307,6 +307,8 @@ const pt: TranslationSchema = {
       REQUETE_INVALIDE: "Pedido inválido.",
       CARACTERE_INTERDIT: "Pedido inválido: carácter proibido.",
       PHONE_INVALID: "Número de telefone inválido: indique o indicativo do país, por exemplo +221 77 123 45 67.",
+      PERSON_DATA_NOT_FOUND: "Não há dados desta pessoa.",
+      PERSON_CRITERIA_REQUIRED: "Indique o e-mail ou o telefone da pessoa.",
       LEASE_DATE_OUT_OF_RANGE: "A data deve estar compreendida entre {{min}} e {{max}}",
       PASSWORD_TOO_LONG: "A palavra-passe não pode exceder {{max}} bytes (cerca de {{max}} caracteres; os acentos e símbolos contam mais).",
       PASSWORD_TOO_COMMON: "Esta palavra-passe é demasiado comum ou previsível: escolha uma mais pessoal, com pelo menos 8 caracteres.",

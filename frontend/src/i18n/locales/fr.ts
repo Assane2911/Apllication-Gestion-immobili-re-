@@ -305,6 +305,8 @@ const fr = {
       REQUETE_INVALIDE: "Requête invalide.",
       CARACTERE_INTERDIT: "Requête invalide : caractère interdit.",
       PHONE_INVALID: "Numéro de téléphone invalide : indiquez l'indicatif du pays, par exemple +221 77 123 45 67.",
+      PERSON_DATA_NOT_FOUND: "Aucune donnée détenue pour cette personne.",
+      PERSON_CRITERIA_REQUIRED: "Indiquez l'adresse email ou le téléphone de la personne.",
       LEASE_DATE_OUT_OF_RANGE: "La date doit être comprise entre {{min}} et {{max}}",
       PASSWORD_TOO_LONG: "Le mot de passe ne peut pas dépasser {{max}} octets (environ {{max}} caractères ; les accents et symboles en comptent davantage).",
       PASSWORD_TOO_COMMON: "Ce mot de passe est trop courant ou trop prévisible : choisissez-en un plus personnel, d'au moins 8 caractères.",

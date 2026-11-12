@@ -307,6 +307,8 @@ const es: TranslationSchema = {
       REQUETE_INVALIDE: "Solicitud no válida.",
       CARACTERE_INTERDIT: "Solicitud no válida: carácter prohibido.",
       PHONE_INVALID: "Número de teléfono no válido: indique el prefijo del país, por ejemplo +221 77 123 45 67.",
+      PERSON_DATA_NOT_FOUND: "No hay datos de esta persona.",
+      PERSON_CRITERIA_REQUIRED: "Indique el correo electrónico o el teléfono de la persona.",
       LEASE_DATE_OUT_OF_RANGE: "La fecha debe estar comprendida entre {{min}} y {{max}}",
       PASSWORD_TOO_LONG: "La contraseña no puede superar {{max}} bytes (unos {{max}} caracteres; los acentos y símbolos cuentan más).",
       PASSWORD_TOO_COMMON: "Esta contraseña es demasiado común o previsible: elija una más personal, de al menos 8 caracteres.",
