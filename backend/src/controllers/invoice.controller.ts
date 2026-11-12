@@ -311,13 +311,24 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
     );
   }
 
+  // « Aucun paiement enregistré » est redit dans la condition de l'écriture : un encaissement PARTIEL laisse la facture en
+  // attente (seul le cumul avance), donc le seul contrôle d'état ne le voit pas. Arrivé entre la lecture ci-dessus et cette
+  // écriture, il serait sinon annulé avec l'argent déjà perçu, et disparaîtrait des encaissements.
   const [updated] = await db
     .update(invoices)
     .set({ status: "CANCELLED" })
-    .where(and(eq(invoices.id, req.params.id), inArray(invoices.status, [...ETATS_MODIFIABLES])))
+    .where(and(eq(invoices.id, req.params.id), inArray(invoices.status, [...ETATS_MODIFIABLES]), eq(invoices.amountPaid, 0)))
     .returning();
 
   if (!updated) {
+    const [actuelle] = await db.select({ amountPaid: invoices.amountPaid }).from(invoices).where(eq(invoices.id, req.params.id));
+    if (actuelle && actuelle.amountPaid > 0) {
+      throw new ApiError(
+        409,
+        "Des paiements ont déjà été enregistrés sur cette facture : elle ne peut plus être annulée. Passez par un avoir ou un remboursement.",
+        "INVOICE_HAS_PAYMENTS"
+      );
+    }
     throw new ApiError(409, "Cette facture a changé d'état entre-temps. Rechargez la page.", "INVOICE_STATE_CHANGED");
   }
 
@@ -338,8 +349,22 @@ export const cancelInvoice = asyncHandler(async (req: Request, res: Response) =>
 export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
   const baux = await bauxDuLocataire((await chargerLocataireDuCompte(req)).id);
   if (baux.size === 0) return res.json([]);
+  // Colonnes lues : celles que l'écran affiche, pas les lignes entières répétées sur CHAQUE facture. Le bail porte les
+  // clauses, les mentions légales et deux images de signature (jusqu'à 500 000 caractères chacune), le bien sa description
+  // et ses notes : un locataire à 24 factures en recevait 24 exemplaires. L'écran ne lit que le titre et l'identifiant
+  // du bien (et le bail pour la devise et les dates).
+  const colonnesBail = {
+    id: contracts.id,
+    propertyId: contracts.propertyId,
+    currency: contracts.currency,
+    startDate: contracts.startDate,
+    endDate: contracts.endDate,
+    status: contracts.status,
+  };
+  const colonnesBien = { id: properties.id, title: properties.title, address: properties.address };
+
   const rows = await db
-    .select({ invoice: invoices, contract: contracts, property: properties })
+    .select({ invoice: invoices, contract: colonnesBail, property: colonnesBien })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
@@ -350,8 +375,8 @@ export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
     rows.map(
       (r: {
         invoice: typeof invoices.$inferSelect;
-        contract: typeof contracts.$inferSelect;
-        property: typeof properties.$inferSelect;
+        contract: { [K in keyof typeof colonnesBail]: unknown };
+        property: { [K in keyof typeof colonnesBien]: unknown };
       }) => ({
         ...r.invoice,
         montantRegle: montantRegle(r.invoice),
