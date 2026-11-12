@@ -943,6 +943,7 @@ describe("photos non signables : l'incident reste listé", () => {
 
   // Un fichier supprimé du stockage faisait échouer TOUTE la liste (locataire comme gestionnaire) : getSignedUrl levait,
   // et un seul incident suffisait à masquer tous les autres.
+  let enLot: ReturnType<typeof vi.spyOn>;
   async function monde() {
     const manager = await createManager();
     const property = await createProperty(manager.id);
@@ -950,10 +951,10 @@ describe("photos non signables : l'incident reste listé", () => {
     const contract = await createContract(property.id, tenant.id);
     const [sain] = await testDb.insert(issueReports).values({ contractId: contract.id, tenantId: tenant.id, title: "Incident sain", description: "d", photoUrl: "issues/ok.jpg", additionalPhotos: JSON.stringify(["issues/ok2.jpg"]) }).returning();
     const [casse] = await testDb.insert(issueReports).values({ contractId: contract.id, tenantId: tenant.id, title: "Photo manquante", description: "d", photoUrl: "issues/missing.jpg", additionalPhotos: JSON.stringify(["issues/ok3.jpg", "issues/missing2.jpg"]) }).returning();
-    vi.spyOn(storageService, "getSignedUrl").mockImplementation(async (chemin: string) => {
-      if (chemin.includes("missing")) throw new ApiError(500, "Object not found", "STORAGE_SIGNED_URL_FAILED");
-      return `https://signed.test/${chemin}`;
-    });
+    // La liste est signée en UN appel ; un fichier manquant y vaut `null` (le service consigne l'échec, voir storage.service.test).
+    enLot = vi
+      .spyOn(storageService, "getSignedUrls")
+      .mockImplementation(async (chemins: string[]) => new Map(chemins.map((c) => [c, c.includes("missing") ? null : `https://signed.test/${c}`] as const)));
     vi.spyOn(console, "error").mockImplementation(() => {});
     return { manager, tenant, sain, casse };
   }
@@ -980,9 +981,10 @@ describe("photos non signables : l'incident reste listé", () => {
     expect(manquante.photoUrl).toBe("");
   });
 
-  it("consigne l'échec au lieu de le taire", async () => {
+  it("demande la signature de TOUTES les photos de la liste en un seul appel, manquantes comprises", async () => {
     const { tenant } = await monde();
     await request(app).get("/api/issues/mine").set(await tenantToken(tenant.id));
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("issues/missing.jpg"), expect.any(String));
+    expect(enLot).toHaveBeenCalledTimes(1);
+    expect([...enLot.mock.calls[0][0]].sort()).toEqual(["issues/missing.jpg", "issues/missing2.jpg", "issues/ok.jpg", "issues/ok2.jpg", "issues/ok3.jpg"]);
   });
 });

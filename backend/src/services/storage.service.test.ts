@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../utils/asyncHandler";
-import { getSignedUrl, uploadPrivateFile, uploadPublicFile } from "./storage.service";
+import { getSignedUrl, getSignedUrls, uploadPrivateFile, uploadPublicFile } from "./storage.service";
 
 // setupTestDb.ts remplace globalement ../config/supabase par un stub "chemin
 // heureux" (upload toujours OK). On le remplace ici par un mock pilotable,
@@ -12,8 +12,9 @@ const mocks = vi.hoisted(() => {
   const upload = vi.fn();
   const getPublicUrl = vi.fn();
   const createSignedUrl = vi.fn();
-  const from = vi.fn(() => ({ upload, getPublicUrl, createSignedUrl }));
-  return { upload, getPublicUrl, createSignedUrl, from };
+  const createSignedUrls = vi.fn();
+  const from = vi.fn(() => ({ upload, getPublicUrl, createSignedUrl, createSignedUrls }));
+  return { upload, getPublicUrl, createSignedUrl, createSignedUrls, from };
 });
 
 vi.mock("../config/supabase", () => ({
@@ -169,5 +170,71 @@ describe("getSignedUrl", () => {
       statusCode: 500,
       message: expect.stringContaining("erreur inconnue"),
     });
+  });
+});
+
+describe("getSignedUrls (signature en lot)", () => {
+  const signerTout = (chemins: string[]) => ({ data: chemins.map((path) => ({ path, signedUrl: `https://cdn.test/signed/${path}`, error: null })), error: null });
+
+  it("signe tous les chemins en UN seul appel au stockage, depuis le bucket privé", async () => {
+    mocks.createSignedUrls.mockImplementation(async (chemins: string[]) => signerTout(chemins));
+
+    const urls = await getSignedUrls(["issues/a.jpg", "issues/b.jpg", "contracts/c.pdf"]);
+
+    expect(mocks.from).toHaveBeenCalledWith("private-uploads");
+    expect(mocks.createSignedUrls).toHaveBeenCalledTimes(1);
+    expect(mocks.createSignedUrls).toHaveBeenCalledWith(["issues/a.jpg", "issues/b.jpg", "contracts/c.pdf"], 3600);
+    expect(urls.get("issues/b.jpg")).toBe("https://cdn.test/signed/issues/b.jpg");
+    expect(mocks.createSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it("signe une fois les doublons, ignore les valeurs vides, et n'appelle pas le stockage pour une liste vide", async () => {
+    mocks.createSignedUrls.mockImplementation(async (chemins: string[]) => signerTout(chemins));
+
+    await getSignedUrls(["issues/a.jpg", "issues/a.jpg", ""]);
+    expect(mocks.createSignedUrls).toHaveBeenCalledWith(["issues/a.jpg"], 3600);
+
+    mocks.createSignedUrls.mockClear();
+    expect((await getSignedUrls([])).size).toBe(0);
+    expect(mocks.createSignedUrls).not.toHaveBeenCalled();
+  });
+
+  it("découpe par lots de 100 chemins", async () => {
+    mocks.createSignedUrls.mockImplementation(async (chemins: string[]) => signerTout(chemins));
+    const chemins = Array.from({ length: 250 }, (_, i) => `issues/${i}.jpg`);
+
+    const urls = await getSignedUrls(chemins);
+
+    expect(mocks.createSignedUrls).toHaveBeenCalledTimes(3);
+    expect(urls.size).toBe(250);
+    expect([...urls.values()].every((u) => u !== null)).toBe(true);
+  });
+
+  it("un fichier non signable vaut null sans empêcher les autres", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.createSignedUrls.mockResolvedValue({
+      data: [
+        { path: "issues/ok.jpg", signedUrl: "https://cdn.test/signed/ok", error: null },
+        { path: "issues/perdu.jpg", signedUrl: "", error: "Object not found" },
+      ],
+      error: null,
+    });
+
+    const urls = await getSignedUrls(["issues/ok.jpg", "issues/perdu.jpg", "issues/absent-de-la-reponse.jpg"]);
+
+    expect(urls.get("issues/ok.jpg")).toBe("https://cdn.test/signed/ok");
+    // L'échec est consigné avec le chemin concerné (de quoi retrouver le fichier manquant), jamais passé sous silence.
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("issues/perdu.jpg"), expect.any(String));
+    expect(urls.get("issues/perdu.jpg")).toBeNull();
+    expect(urls.get("issues/absent-de-la-reponse.jpg")).toBeNull();
+  });
+
+  it("une panne du stockage ne lève pas : tous les chemins valent null (la liste reste affichable)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.createSignedUrls.mockResolvedValue({ data: null, error: { message: "stockage indisponible" } });
+    expect([...(await getSignedUrls(["issues/a.jpg", "issues/b.jpg"])).values()]).toEqual([null, null]);
+
+    mocks.createSignedUrls.mockRejectedValue(new Error("réseau coupé"));
+    expect([...(await getSignedUrls(["issues/a.jpg"])).values()]).toEqual([null]);
   });
 });

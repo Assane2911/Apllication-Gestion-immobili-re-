@@ -7,7 +7,7 @@ import { contracts, issueReports, issueStatusEnum, properties, tenants, vendors 
 import { assertVendorOwnership } from "./vendor.controller";
 import { logActivity } from "../services/activity.service";
 import { issueStatusUpdateEmail, sendEmail } from "../services/email.service";
-import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
+import { getSignedUrls, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { dateSaisieSchema } from "../utils/dates";
 import { langueOuDefaut } from "../utils/langue";
@@ -19,55 +19,56 @@ function isIssueStatus(value: unknown): value is (typeof issueStatusEnum.enumVal
   return typeof value === "string" && (issueStatusEnum.enumValues as readonly string[]).includes(value);
 }
 
-/**
- * Remplace un chemin d'objet du bucket privé par une URL signée temporaire.
- * Compatibilité ascendante : les photos uploadées AVANT ce correctif sont
- * déjà des URLs publiques complètes (ancien bucket public-uploads) — on les
- * laisse telles quelles plutôt que de les casser, `getSignedUrl` n'ayant de
- * sens que pour un chemin d'objet du bucket privé.
- */
-async function resolvePhotoUrl(value: string | null | undefined): Promise<string | null | undefined> {
-  if (!value) return value;
-  if (/^https?:\/\//i.test(value)) return value;
-  return getSignedUrl(value);
-}
+/** Une photo uploadée AVANT le passage au bucket privé est déjà une URL publique complète : on la laisse telle quelle. */
+const estUrlComplete = (valeur: string) => /^https?:\/\//i.test(valeur);
 
-/**
- * Signe un chemin de photo, ou renvoie `null` si c'est impossible (objet supprimé du stockage, stockage indisponible).
- * Une photo qui ne se signe pas ne doit PAS faire échouer la liste entière : tous les incidents du locataire, ou de
- * l'agence, disparaîtraient derrière un seul fichier manquant. L'incident reste listé sans l'image, et l'échec est consigné.
- */
-async function signerSansEchec(value: string | null | undefined): Promise<string | null> {
+/** Chemins du tableau JSON `additionalPhotos`, ou `null` si le champ est vide ou illisible. */
+function lireAdditionalPhotos(valeur: string | null | undefined): string[] | null {
+  if (!valeur) return null;
   try {
-    return (await resolvePhotoUrl(value)) || null;
-  } catch (err) {
-    console.error(`[issues] Photo non signable, ignorée (${value}) :`, err instanceof Error ? err.message : err);
+    const paths = JSON.parse(valeur);
+    return Array.isArray(paths) ? paths : null;
+  } catch {
     return null;
   }
 }
 
 /**
- * Signe `photoUrl` et chaque entrée de `additionalPhotos` (JSON stringifié) avant de renvoyer un incident au client.
- * Une photo qui ne se signe pas est écartée : `photoUrl` devient une chaîne vide, et elle disparaît de `additionalPhotos`
- * (le site n'affiche alors qu'un message « photo indisponible » à sa place).
+ * Signe `photoUrl` et chaque entrée de `additionalPhotos` (JSON stringifié) de TOUS les incidents donnés, avant de les renvoyer
+ * au client, en UN SEUL appel au stockage (une page de 20 incidents à 10 photos en demandait 200, un par fichier).
+ *
+ * Une photo qui ne se signe pas (objet supprimé du stockage, stockage indisponible) ne fait PAS échouer la liste : tous les incidents
+ * du locataire, ou de l'agence, disparaîtraient derrière un seul fichier manquant. L'incident reste listé sans l'image : `photoUrl`
+ * devient une chaîne vide, et la photo disparaît de `additionalPhotos` (le site n'affiche alors qu'un message « photo indisponible »).
+ * Compatibilité ascendante : les URL complètes (anciennes photos du bucket public) restent telles quelles.
  */
-async function withSignedPhotos<T extends { photoUrl: string; additionalPhotos?: string | null }>(
-  issue: T
-): Promise<T> {
-  const photoUrl = (await signerSansEchec(issue.photoUrl)) ?? "";
+async function withSignedPhotos<T extends { photoUrl: string; additionalPhotos?: string | null }>(issues: T[]): Promise<T[]> {
+  const photosSupplementaires = issues.map((issue) => lireAdditionalPhotos(issue.additionalPhotos));
+  const aSigner: string[] = [];
+  issues.forEach((issue, i) => {
+    if (issue.photoUrl && !estUrlComplete(issue.photoUrl)) aSigner.push(issue.photoUrl);
+    for (const chemin of photosSupplementaires[i] ?? []) if (chemin && !estUrlComplete(chemin)) aSigner.push(chemin);
+  });
+  const signees = await getSignedUrls(aSigner);
+  const url = (valeur: string | null | undefined): string | null => {
+    if (!valeur) return null;
+    return estUrlComplete(valeur) ? valeur : (signees.get(valeur) ?? null);
+  };
 
-  let additionalPhotos = issue.additionalPhotos ?? null;
-  if (additionalPhotos) {
-    try {
-      const paths: string[] = JSON.parse(additionalPhotos);
-      const signed = (await Promise.all(paths.map((p) => signerSansEchec(p)))).filter((url): url is string => url !== null);
-      additionalPhotos = JSON.stringify(signed);
-    } catch {
+  return issues.map((issue, i) => {
+    const extras = photosSupplementaires[i];
+    return {
+      ...issue,
+      photoUrl: url(issue.photoUrl) ?? "",
       // Champ illisible : on le laisse tel quel plutôt que de faire échouer la réponse.
-    }
-  }
+      additionalPhotos: extras ? JSON.stringify(extras.map(url).filter((u): u is string => u !== null)) : (issue.additionalPhotos ?? null),
+    };
+  });
+}
 
-  return { ...issue, photoUrl, additionalPhotos };
+/** Un seul incident (création, ajout de photo, changement de statut). */
+async function withSignedPhoto<T extends { photoUrl: string; additionalPhotos?: string | null }>(issue: T): Promise<T> {
+  return (await withSignedPhotos([issue]))[0];
 }
 
 /** Le gestionnaire voit tous les signalements (avec photo) de tous les locataires. */
@@ -114,14 +115,13 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
       .where(whereClause),
   ]);
 
-  const signedIssues = await Promise.all(
-    rows.map(async (r: IssueRow) => ({
-      ...(await withSignedPhotos(r.issue)),
-      tenant: r.tenant,
-      contract: { ...r.contract, property: r.property },
-      vendor: r.vendor,
-    }))
-  );
+  const incidentsSignes = await withSignedPhotos(rows.map((r: IssueRow) => r.issue));
+  const signedIssues = rows.map((r: IssueRow, i: number) => ({
+    ...incidentsSignes[i],
+    tenant: r.tenant,
+    contract: { ...r.contract, property: r.property },
+    vendor: r.vendor,
+  }));
 
   res.json(buildPaginatedResult(signedIssues, count, pagination));
 });
@@ -175,7 +175,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
   const dateChange = body.scheduledAt !== undefined && !memeDate(body.scheduledAt, owned.issue.scheduledAt);
   if (!statutChange && !noteChange && !prestataireChange && !dateChange) {
     const vendorActuel = owned.issue.vendorId ? (await db.select().from(vendors).where(eq(vendors.id, owned.issue.vendorId)))[0] ?? null : null;
-    return res.json({ ...(await withSignedPhotos(owned.issue)), vendor: vendorActuel });
+    return res.json({ ...(await withSignedPhoto(owned.issue)), vendor: vendorActuel });
   }
 
   const [updated] = await db
@@ -230,7 +230,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
   });
 
   const vendor = updated.vendorId ? (await db.select().from(vendors).where(eq(vendors.id, updated.vendorId)))[0] ?? null : null;
-  res.json({ ...(await withSignedPhotos(updated)), vendor });
+  res.json({ ...(await withSignedPhoto(updated)), vendor });
 });
 
 /** Signalements du locataire connecté (portail locataire). */
@@ -255,16 +255,15 @@ export const myIssues = asyncHandler(async (req: Request, res: Response) => {
     vendor: typeof vendors.$inferSelect | null;
   };
 
-  const signed = await Promise.all(
-    rows.map(async (r: MyIssueRow) => ({
-      ...(await withSignedPhotos(r.issue)),
-      contract: { ...r.contract, property: r.property },
-      // Nom et métier seulement : les coordonnées directes du prestataire
-      // (téléphone, email) restent un contact professionnel du gestionnaire,
-      // pas quelque chose à exposer au locataire sans qu'il l'ait demandé.
-      vendor: r.vendor ? { name: r.vendor.name, trade: r.vendor.trade } : null,
-    }))
-  );
+  const incidentsSignes = await withSignedPhotos(rows.map((r: MyIssueRow) => r.issue));
+  const signed = rows.map((r: MyIssueRow, i: number) => ({
+    ...incidentsSignes[i],
+    contract: { ...r.contract, property: r.property },
+    // Nom et métier seulement : les coordonnées directes du prestataire
+    // (téléphone, email) restent un contact professionnel du gestionnaire,
+    // pas quelque chose à exposer au locataire sans qu'il l'ait demandé.
+    vendor: r.vendor ? { name: r.vendor.name, trade: r.vendor.trade } : null,
+  }));
   res.json(signed);
 });
 
@@ -302,7 +301,7 @@ export const createIssue = asyncHandler(async (req: Request, res: Response) => {
       photoUrl,
     })
     .returning();
-  res.status(201).json(await withSignedPhotos(issue));
+  res.status(201).json(await withSignedPhoto(issue));
 });
 
 /** Photos d'un même incident, la photo principale comprise : 1 à la création + 9 ajoutées après coup. */
@@ -366,6 +365,6 @@ export const addPhotoToIssue = asyncHandler(async (req: Request, res: Response) 
     .where(eq(issueReports.id, req.params.id))
     .returning();
 
-  res.json(await withSignedPhotos(updated));
+  res.json(await withSignedPhoto(updated));
 });
 

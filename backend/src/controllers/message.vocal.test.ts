@@ -14,11 +14,13 @@ const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a
 
 let upload: ReturnType<typeof vi.spyOn>;
 let signe: ReturnType<typeof vi.spyOn>;
+let signeEnLot: ReturnType<typeof vi.spyOn>;
 let suppression: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   upload = vi.spyOn(storageService, "uploadPrivateFile").mockResolvedValue("messages/123-456.webm");
   signe = vi.spyOn(storageService, "getSignedUrl").mockImplementation(async (chemin: string) => `https://stockage.test/signe/${chemin}`);
+  signeEnLot = vi.spyOn(storageService, "getSignedUrls").mockImplementation(async (chemins: string[]) => new Map(chemins.map((c) => [c, `https://stockage.test/signe/${c}`] as const)));
   suppression = vi.spyOn(storageService, "deleteStorageObjectBestEffort").mockResolvedValue(undefined);
 });
 afterEach(() => vi.restoreAllMocks());
@@ -126,6 +128,8 @@ describe("Lecture d'un fil contenant des vocaux", () => {
   it("n'échoue pas quand un lien signé est impossible : le message s'affiche sans lecteur", async () => {
     const { contract, tokenManager } = await bail();
     await envoyer(contract.id, tokenManager, WEBM);
+    // Le fil se lit par lot (un seul appel au stockage) : une panne y rend tous les liens nuls.
+    signeEnLot.mockImplementation(async (chemins: string[]) => new Map(chemins.map((c) => [c, null] as const)));
     signe.mockRejectedValue(new Error("stockage indisponible"));
     vi.spyOn(console, "error").mockImplementation(() => undefined);
 

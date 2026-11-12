@@ -18,6 +18,7 @@ let courriel: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   upload = vi.spyOn(storageService, "uploadPrivateFile").mockResolvedValue("messages/proprio-1.webm");
   vi.spyOn(storageService, "getSignedUrl").mockImplementation(async (chemin: string) => `https://stockage.test/signe/${chemin}`);
+  vi.spyOn(storageService, "getSignedUrls").mockImplementation(async (chemins: string[]) => new Map(chemins.map((c) => [c, `https://stockage.test/signe/${c}`] as const)));
   suppression = vi.spyOn(storageService, "deleteStorageObjectBestEffort").mockResolvedValue(undefined);
   courriel = vi.spyOn(emailService, "sendEmail").mockResolvedValue(undefined as never);
 });

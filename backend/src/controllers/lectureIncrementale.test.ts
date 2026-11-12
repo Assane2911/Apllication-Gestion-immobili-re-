@@ -8,9 +8,11 @@ import { authHeader, createContract, createManager, createOwner, createProperty,
 const WEBM = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(64, 1)]);
 
 let signe: ReturnType<typeof vi.spyOn>;
+let signeEnLot: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   vi.spyOn(storageService, "uploadPrivateFile").mockResolvedValue("messages/x.webm");
   signe = vi.spyOn(storageService, "getSignedUrl").mockImplementation(async (chemin: string) => `https://stockage.test/signe/${chemin}`);
+  signeEnLot = vi.spyOn(storageService, "getSignedUrls").mockImplementation(async (chemins: string[]) => new Map(chemins.map((c) => [c, `https://stockage.test/signe/${c}`] as const)));
   vi.spyOn(emailService, "sendEmail").mockResolvedValue(undefined as never);
 });
 afterEach(() => vi.restoreAllMocks());
@@ -67,10 +69,13 @@ describe("Lecture incrémentale d'un fil de locataire (?apresId=)", () => {
     await pause();
     await vocal();
     signe.mockClear();
+    signeEnLot.mockClear();
 
     const res = await lire(url, tokenTenant, repere.id);
     expect(res.body.messages).toHaveLength(1);
-    expect(signe).toHaveBeenCalledTimes(1);
+    // Un seul appel au stockage, et pour ce seul vocal : celui d'avant le repère n'est pas signé.
+    expect(signeEnLot).toHaveBeenCalledTimes(1);
+    expect(signeEnLot.mock.calls[0][0]).toHaveLength(1);
   });
 
   it("`luesIds` : mes messages que l'autre partie a lus depuis", async () => {
