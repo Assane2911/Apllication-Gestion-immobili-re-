@@ -249,8 +249,14 @@ export const uploadLeaseNoticeDocument = asyncHandler(async (req: Request, res: 
 
 /** Sorties à venir de l'agence : un congé en cours par bail, la plus proche d'abord, pour le tableau de bord. */
 export const listUpcomingExits = asyncHandler(async (req: Request, res: Response) => {
+  // Colonnes ciblées : un bail entier porte ses clauses et ses deux signatures en base64 ; la liste n'en montre rien.
   const lignes = await db
-    .select({ conge: leaseNotices, contrat: contracts, bien: properties, locataire: tenants })
+    .select({
+      conge: { id: leaseNotices.id, givenBy: leaseNotices.givenBy, exitDate: leaseNotices.exitDate },
+      contrat: { id: contracts.id, depositRefundedAt: contracts.depositRefundedAt },
+      bien: { title: properties.title },
+      locataire: { firstName: tenants.firstName, lastName: tenants.lastName },
+    })
     .from(leaseNotices)
     .innerJoin(contracts, eq(leaseNotices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
@@ -261,10 +267,10 @@ export const listUpcomingExits = asyncHandler(async (req: Request, res: Response
   const sorties = await Promise.all(
     lignes.map(
       async (l: {
-        conge: typeof leaseNotices.$inferSelect;
-        contrat: typeof contracts.$inferSelect;
-        bien: typeof properties.$inferSelect;
-        locataire: typeof tenants.$inferSelect;
+        conge: Pick<typeof leaseNotices.$inferSelect, "id" | "givenBy" | "exitDate">;
+        contrat: Pick<typeof contracts.$inferSelect, "id" | "depositRefundedAt">;
+        bien: Pick<typeof properties.$inferSelect, "title">;
+        locataire: Pick<typeof tenants.$inferSelect, "firstName" | "lastName">;
       }) => ({
         noticeId: l.conge.id,
         contractId: l.contrat.id,

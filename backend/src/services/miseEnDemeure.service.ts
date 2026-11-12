@@ -44,6 +44,8 @@ type Reglages = Pick<
   typeof agencySettings.$inferSelect,
   "overdueRemindersEnabled" | "overdueGraceDays" | "overdueIntervalDays"
 >;
+/** Réglages d'agence utiles à la liste des baux à mettre en demeure : jamais le logo ni le cachet (images en base64). */
+type ReglagesListe = Reglages & Pick<typeof agencySettings.$inferSelect, "phone" | "email">;
 
 /** Factures du bail échues et non soldées, de la plus ancienne à la plus récente. */
 export async function impayesDuBail(contractId: string, maintenant: Date = new Date()): Promise<Facture[]> {
@@ -112,9 +114,24 @@ export function lireFactures(snapshot: string): FactureReclamee[] {
  * n'a encore été réclamée par aucune. Les locataires anonymisés en sont exclus.
  */
 export async function bauxAMettreEnDemeure(managerId: string, maintenant: Date = new Date()) {
-  const [reglages] = await db.select().from(agencySettings).where(eq(agencySettings.userId, managerId));
+  const [reglages]: ReglagesListe[] = await db
+    .select({
+      overdueRemindersEnabled: agencySettings.overdueRemindersEnabled,
+      overdueGraceDays: agencySettings.overdueGraceDays,
+      overdueIntervalDays: agencySettings.overdueIntervalDays,
+      phone: agencySettings.phone,
+      email: agencySettings.email,
+    })
+    .from(agencySettings)
+    .where(eq(agencySettings.userId, managerId));
+  // Colonnes ciblées : un bail entier porte ses clauses (≤ 10 Ko) et ses deux signatures en base64, inutiles ici.
   const lignes = await db
-    .select({ invoice: invoices, contract: contracts, property: properties, tenant: tenants })
+    .select({
+      invoice: invoices,
+      contract: { id: contracts.id, currency: contracts.currency },
+      property: { title: properties.title },
+      tenant: { firstName: tenants.firstName, lastName: tenants.lastName },
+    })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
