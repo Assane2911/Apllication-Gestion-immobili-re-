@@ -499,7 +499,27 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
       await assertAucunChevauchementActif(tx, newPropertyId, newStartDate, newEndDate, existing.id);
     }
 
-    const [contract] = await tx.update(contracts).set(body).where(eq(contracts.id, req.params.id)).returning();
+    // Les verrous « bail signé » et « restitution du dépôt enregistrée » ont été contrôlés plus haut sur une LECTURE : entre
+    // elle et cette écriture, le locataire a pu signer ou le dépôt être restitué (autre onglet, autre collaborateur).
+    // Ils sont donc redits dans la condition de l'écriture elle-même, qui tranche de façon atomique : sinon un contenu
+    // modifié s'écrirait sous une signature qui ne l'a jamais couvert.
+    const depotChange = body.deposit !== undefined && body.deposit !== existing.deposit;
+    const conditions = [eq(contracts.id, req.params.id)];
+    if (toucheAuContenu) conditions.push(isNull(contracts.signedByTenantAt));
+    if (depotChange) conditions.push(isNull(contracts.depositRefundedAt));
+    const [contract] = await tx.update(contracts).set(body).where(and(...conditions)).returning();
+    if (!contract) {
+      const [actuel] = await tx.select().from(contracts).where(eq(contracts.id, req.params.id));
+      if (!actuel) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
+      if (toucheAuContenu && actuel.signedByTenantAt) {
+        throw new ApiError(
+          409,
+          "Ce bail a été signé par le locataire : son contenu ne peut plus être modifié. Résiliez-le et créez un avenant si nécessaire.",
+          "LEASE_SIGNED_LOCKED"
+        );
+      }
+      throw new ApiError(409, "La restitution du dépôt de garantie est déjà enregistrée : son montant ne peut plus changer.", "DEPOSIT_REFUND_LOCKED");
+    }
 
     // Resynchronise l'occupation de TOUS les biens concernés — l'ancien (si le
     // contrat en changeait) et le nouveau — dès que le bien ou le statut a pu
