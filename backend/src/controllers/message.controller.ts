@@ -280,10 +280,14 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
   // l'utilisateur courant : sinon un locataire qui ouvre sa propre
   // conversation marque son propre message comme lu, ce qui vide à tort le
   // badge "non lu" du gestionnaire avant qu'il ne l'ait vu.
+  //
+  // Seulement ceux qui sont encore « non lus » : le fil est relu en continu (rafraîchissement automatique), et PostgreSQL crée une
+  // nouvelle version de ligne à chaque UPDATE, même quand la valeur ne change pas. Sans ce filtre, chaque rafraîchissement réécrivait
+  // TOUS les messages déjà lus du fil (base alourdie, journal d'écriture gonflé). Même règle que le fil des propriétaires.
   await db
     .update(messages)
     .set({ isRead: true })
-    .where(and(condition, ne(messages.senderId, req.user.userId)));
+    .where(and(condition, ne(messages.senderId, req.user.userId), eq(messages.isRead, false)));
 
   // En lecture incrémentale : lesquels de MES messages ont été lus par l'autre partie (pour l'état « Lu » à l'écran).
   const luesIds = apresId
