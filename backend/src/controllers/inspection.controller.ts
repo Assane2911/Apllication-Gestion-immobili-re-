@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
@@ -54,10 +54,19 @@ const signInspectionSchema = z.object({
     .regex(/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+={0,2}$/, "Signature invalide"),
 });
 
-/** JSON stocké en `text` (voir schema.ts) : on parse ici plutôt que de renvoyer la chaîne brute au frontend. */
+/**
+ * JSON stocké en `text` (voir schema.ts) : on parse ici plutôt que de renvoyer la chaîne brute au frontend.
+ *
+ * Les IMAGES de signature (data URL jusqu'à 500 000 caractères chacune, deux par constat) ne font pas partie de
+ * la réponse : aucun écran ne les affiche (le document imprimable est fabriqué côté serveur) et elles pesaient
+ * à chaque chargement de la liste (mesuré : 2,4 Mo pour une page de 20 constats signés). Ce qui compte pour
+ * l'écran, c'est QUI a signé et QUAND : `signedByManagerAt` / `signedByTenantAt` restent renvoyés.
+ * L'export imprimable les relit en base via `loadInspectionForExport`.
+ */
 function parseInspection(row: typeof inspections.$inferSelect) {
+  const { managerSignatureUrl: _imageGestionnaire, tenantSignatureUrl: _imageLocataire, ...visible } = row;
   return {
-    ...row,
+    ...visible,
     rooms: row.roomsData ? JSON.parse(row.roomsData) : [],
     meters: row.metersData ? JSON.parse(row.metersData) : { electricity: "", water: "", gas: "" },
     keys: row.keysData ? JSON.parse(row.keysData) : [],
@@ -296,7 +305,27 @@ export const updateInspection = asyncHandler(async (req: Request, res: Response)
   if (body.generalComments !== undefined) values.generalComments = body.generalComments;
   if (body.status !== undefined) values.status = body.status;
 
-  const [updated] = await db.update(inspections).set(values).where(eq(inspections.id, req.params.id)).returning();
+  // Rien à modifier : pas d'écriture (un UPDATE sans colonne est une erreur SQL, donc un 500 pour un simple `{}`).
+  if (Object.keys(values).length === 0) return res.json(parseInspection(existing));
+
+  // Les deux verrous ci-dessus lisent l'état puis écrivent : entre les deux, une autre requête peut finaliser ou
+  // faire signer le constat. Ils sont donc redits dans la condition de l'écriture elle-même (atomique), sinon un
+  // contenu pourrait s'écrire sur un constat devenu finalisé, ou un constat signé repasser en brouillon.
+  const conditions = [eq(inspections.id, req.params.id)];
+  if (editsContent) conditions.push(ne(inspections.status, "COMPLETED"));
+  if (body.status === "DRAFT") {
+    conditions.push(or(ne(inspections.status, "COMPLETED"), and(isNull(inspections.signedByManagerAt), isNull(inspections.signedByTenantAt)))!);
+  }
+
+  const [updated] = await db.update(inspections).set(values).where(and(...conditions)).returning();
+  if (!updated) {
+    const [actuel] = await db.select().from(inspections).where(eq(inspections.id, req.params.id));
+    if (!actuel) throw new ApiError(404, "État des lieux introuvable", "INSPECTION_NOT_FOUND");
+    if (editsContent && actuel.status === "COMPLETED") {
+      throw new ApiError(409, "Impossible de modifier le contenu d'un état des lieux déjà finalisé", "INSPECTION_FINALIZED_LOCKED");
+    }
+    throw new ApiError(409, "Impossible de repasser en brouillon un état des lieux déjà signé", "INSPECTION_NO_REVERT");
+  }
 
   if (body.status === "COMPLETED" && existing.status !== "COMPLETED") {
     const [property] = await db.select().from(properties).where(eq(properties.id, updated.propertyId));
@@ -405,5 +434,12 @@ export async function loadInspectionForExport(inspectionId: string) {
     .innerJoin(tenants, eq(inspections.tenantId, tenants.id))
     .where(eq(inspections.id, inspectionId));
   if (!row) return null;
-  return { ...parseInspection(row.inspection), property: row.property, tenant: row.tenant };
+  // Seul endroit qui a besoin des images de signature : le document imprimable les intègre.
+  return {
+    ...parseInspection(row.inspection),
+    managerSignatureUrl: row.inspection.managerSignatureUrl,
+    tenantSignatureUrl: row.inspection.tenantSignatureUrl,
+    property: row.property,
+    tenant: row.tenant,
+  };
 }
