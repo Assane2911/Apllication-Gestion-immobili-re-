@@ -73,7 +73,7 @@ describe("connexion : cookie court, jeton du corps long", () => {
     expect(gest.status).toBe(200);
     expect(dureeSec(jetonDe(cookieDe(gest)))).toBe(30 * 60);
 
-    await createAdmin({ email: "admin-session@test.local" });
+    await createAdmin({ email: "admin-session@test.local", totpEnabledAt: null });
     const admin = await request(app).post("/api/auth/login").send({ email: "admin-session@test.local", password: "Password123!" });
     expect(admin.status).toBe(200);
     expect(dureeSec(jetonDe(cookieDe(admin)))).toBe(15 * 60);

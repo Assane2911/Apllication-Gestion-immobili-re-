@@ -50,6 +50,7 @@ const pt: TranslationSchema = {
       ACCESS_DENIED: "Acesso negado",
       INVALID_CREDENTIALS: "E-mail ou palavra-passe incorretos",
       TWO_FACTOR_CODE_INVALID: "Código inválido ou expirado.",
+      TWO_FACTOR_SETUP_REQUIRED: "A autenticação em dois passos é obrigatória para a administração: ative-a para continuar.",
       GOOGLE_NOT_CONFIGURED: "O início de sessão com o Google não está configurado neste servidor",
       GOOGLE_TOKEN_INVALID_OR_EXPIRED: "Token do Google inválido ou expirado",
       GOOGLE_TOKEN_INVALID: "Token do Google inválido",
@@ -1469,6 +1470,12 @@ const pt: TranslationSchema = {
     },
     adminLayout: {
       title: "Administração da plataforma",
+      activation: {
+        title: "Ative a autenticação em dois passos",
+        text: "A administração da plataforma exige um segundo fator de início de sessão.",
+        why: "Esta conta confirma transferências e suspende ou elimina agências: uma palavra-passe roubada não deve bastar. A ativação demora um minuto com uma aplicação de autenticação; guarde os seus códigos de recuperação.",
+        button: "Ativar a autenticação em dois passos",
+      },
     },
     exportCsv: {
       button: "Exportar para CSV",
@@ -3844,8 +3851,6 @@ const pt: TranslationSchema = {
       },
     },
     dashboard: {
-      twoFactorWarning: "A tua conta de administrador não tem verificação em duas etapas: confirma transferências e elimina agências, uma palavra-passe roubada bastaria para fazer tudo.",
-      twoFactorWarningLink: "Ativar agora",
       todo: {
         suggestions: "{{count}} sugestão(ões) por ler",
         title: "A tratar",

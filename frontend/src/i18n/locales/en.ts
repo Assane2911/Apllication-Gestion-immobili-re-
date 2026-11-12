@@ -50,6 +50,7 @@ const en: TranslationSchema = {
       ACCESS_DENIED: "Access denied",
       INVALID_CREDENTIALS: "Incorrect email or password",
       TWO_FACTOR_CODE_INVALID: "Invalid or expired code.",
+      TWO_FACTOR_SETUP_REQUIRED: "Two-factor authentication is required for administration: enable it to continue.",
       GOOGLE_NOT_CONFIGURED: "Google sign-in is not configured on this server",
       GOOGLE_TOKEN_INVALID_OR_EXPIRED: "Invalid or expired Google token",
       GOOGLE_TOKEN_INVALID: "Invalid Google token",
@@ -1469,6 +1470,12 @@ const en: TranslationSchema = {
     },
     adminLayout: {
       title: "Platform Administration",
+      activation: {
+        title: "Enable two-factor authentication",
+        text: "Platform administration requires a second sign-in factor.",
+        why: "This account confirms transfers and suspends or deletes agencies: a stolen password must not be enough. Activation takes a minute with an authenticator app; keep your backup codes.",
+        button: "Enable two-factor authentication",
+      },
     },
     exportCsv: {
       button: "Export as CSV",
@@ -3844,8 +3851,6 @@ const en: TranslationSchema = {
       },
     },
     dashboard: {
-      twoFactorWarning: "Your administrator account has no two-factor authentication: it confirms transfers and deletes agencies, so a stolen password would be enough to do anything.",
-      twoFactorWarningLink: "Enable now",
       todo: {
         suggestions: "{{count}} unread suggestion(s)",
         title: "To do",

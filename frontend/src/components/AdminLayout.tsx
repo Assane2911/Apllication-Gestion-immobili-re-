@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion";
+import ActivationDeuxFacteursAdmin from "./ActivationDeuxFacteursAdmin";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CartouchePlan from "./CartouchePlan";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
@@ -45,6 +46,8 @@ export default function AdminLayout() {
   const entree = [...navItems].sort((a, b) => b.to.length - a.to.length).find((item) => chemin === item.to || chemin.startsWith(`${item.to}/`));
   const libellePage = entree ? t(`admin.nav.${entree.key}`) : null;
   const groupeDeLaPage = groupes.find((g) => g.items.some((item) => item === entree));
+  // Le serveur refuse l'administration sans second facteur : plutôt qu'une page d'erreur sur chaque écran, un seul écran propose l'activation.
+  const doitActiverDeuxFacteurs = user?.twoFactorEnabled === false;
 
   return (
     <div className="min-h-screen flex">
@@ -87,8 +90,8 @@ export default function AdminLayout() {
               className="mb-4 font-mono text-[11px] uppercase tracking-wider text-slate-600 before:content-[attr(data-groupe)] after:font-bold after:text-ink-900 after:content-[attr(data-page)]"
             />
           )}
-          <Outlet />
-          {entree && (
+          {doitActiverDeuxFacteurs ? <ActivationDeuxFacteursAdmin /> : <Outlet />}
+          {entree && !doitActiverDeuxFacteurs && (
             <CartouchePlan espace={t("components.adminLayout.title")} page={t(`admin.nav.${entree.key}`)} rang={navItems.indexOf(entree) + 1} total={navItems.length} />
           )}
         </div>

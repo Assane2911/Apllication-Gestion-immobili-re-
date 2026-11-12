@@ -48,6 +48,7 @@ const fr = {
       ACCESS_DENIED: "Accès refusé",
       INVALID_CREDENTIALS: "Email ou mot de passe incorrect",
       TWO_FACTOR_CODE_INVALID: "Code invalide ou expiré.",
+      TWO_FACTOR_SETUP_REQUIRED: "La double authentification est obligatoire pour l'administration : activez-la pour continuer.",
       GOOGLE_NOT_CONFIGURED: "La connexion avec Google n'est pas configurée sur ce serveur",
       GOOGLE_TOKEN_INVALID_OR_EXPIRED: "Jeton Google invalide ou expiré",
       GOOGLE_TOKEN_INVALID: "Jeton Google invalide",
@@ -1467,6 +1468,12 @@ const fr = {
     },
     adminLayout: {
       title: "Administration de la plateforme",
+      activation: {
+        title: "Activez la double authentification",
+        text: "L'administration de la plateforme exige un second facteur de connexion.",
+        why: "Ce compte confirme les virements, suspend et supprime des agences : un mot de passe volé ne doit pas suffire. L'activation prend une minute, avec une application d'authentification ; gardez vos codes de secours.",
+        button: "Activer la double authentification",
+      },
     },
     exportCsv: {
       button: "Exporter en CSV",
@@ -3845,8 +3852,6 @@ const fr = {
       },
     },
     dashboard: {
-      twoFactorWarning: "Votre compte administrateur n'a pas de double authentification : il confirme les virements et supprime des agences, un mot de passe volé suffirait à tout faire.",
-      twoFactorWarningLink: "Activer maintenant",
       todo: {
         suggestions: "{{count}} suggestion(s) non lue(s)",
         title: "À traiter",

@@ -3,7 +3,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
 import { suggestions, users } from "../db/schema";
-import { authHeader, createManager, createPortalUser, tokenFor } from "../test/authHelpers";
+import { authHeader, createAdmin, createManager, createPortalUser, tokenFor } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
 /**
@@ -94,7 +94,7 @@ describe("Suggestions", () => {
 
 describe("Lecture des suggestions", () => {
   it("les livre à l'administration, la plus récente d'abord", async () => {
-    const admin = await createPortalUser("ADMIN");
+    const admin = await createAdmin();
     const manager = await createManager();
     for (const texte of ["Première idée.", "Deuxième idée."]) {
       await request(app).post("/api/suggestions").set(authHeader(tokenFor(manager))).send({ message: texte });

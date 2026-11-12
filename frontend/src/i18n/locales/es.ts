@@ -50,6 +50,7 @@ const es: TranslationSchema = {
       ACCESS_DENIED: "Acceso denegado",
       INVALID_CREDENTIALS: "Correo electrónico o contraseña incorrectos",
       TWO_FACTOR_CODE_INVALID: "Código no válido o caducado.",
+      TWO_FACTOR_SETUP_REQUIRED: "La autenticación en dos pasos es obligatoria para la administración: actívela para continuar.",
       GOOGLE_NOT_CONFIGURED: "El inicio de sesión con Google no está configurado en este servidor",
       GOOGLE_TOKEN_INVALID_OR_EXPIRED: "Token de Google no válido o caducado",
       GOOGLE_TOKEN_INVALID: "Token de Google no válido",
@@ -1469,6 +1470,12 @@ const es: TranslationSchema = {
     },
     adminLayout: {
       title: "Administración de la plataforma",
+      activation: {
+        title: "Active la autenticación en dos pasos",
+        text: "La administración de la plataforma exige un segundo factor de inicio de sesión.",
+        why: "Esta cuenta confirma transferencias y suspende o elimina agencias: una contraseña robada no debe bastar. La activación lleva un minuto con una aplicación de autenticación; guarde sus códigos de respaldo.",
+        button: "Activar la autenticación en dos pasos",
+      },
     },
     exportCsv: {
       button: "Exportar a CSV",
@@ -3846,8 +3853,6 @@ const es: TranslationSchema = {
       },
     },
     dashboard: {
-      twoFactorWarning: "Tu cuenta de administrador no tiene verificación en dos pasos: confirma transferencias y elimina agencias, una contraseña robada bastaría para hacerlo todo.",
-      twoFactorWarningLink: "Activar ahora",
       todo: {
         suggestions: "{{count}} sugerencia(s) sin leer",
         title: "Pendiente",

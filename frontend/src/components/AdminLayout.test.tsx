@@ -7,6 +7,16 @@ import type { AuthContextValue } from "../context/auth";
 import type { AuthUser } from "../types";
 import AdminLayout from "./AdminLayout";
 
+// L'enrôlement lui-même est testé dans TwoFactorSetupModal.test.tsx : ici, seule compte la façon dont le layout l'ouvre et en sort.
+vi.mock("./TwoFactorSetupModal", () => ({
+  default: ({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) => (
+    <div role="dialog" aria-label="enrôlement">
+      <button onClick={onSuccess}>enrôlement terminé</button>
+      <button onClick={onClose}>fermer l'enrôlement</button>
+    </div>
+  ),
+}));
+
 function noop(): never {
   throw new Error("not implemented in this test");
 }
@@ -122,5 +132,68 @@ describe("AdminLayout — titre de l'onglet", () => {
   it("la fiche d'un gestionnaire garde le libellé de sa section, pas celui du tableau de bord", () => {
     renderAdminLayout("/admin/gestionnaires/abc123");
     expect(document.title).toBe("Gestionnaires | ImmoPlatform Pro");
+  });
+});
+
+describe("AdminLayout — double authentification obligatoire", () => {
+  function renderSansDeuxFacteurs(refreshUser = vi.fn(async () => ({ ...admin, twoFactorEnabled: true }))) {
+    const utilisateur: AuthUser = { ...admin, twoFactorEnabled: false };
+    render(
+      <AuthContext.Provider value={{ ...authValue(utilisateur), refreshUser }}>
+        <MemoryRouter initialEntries={["/admin/journal"]}>
+          <Routes>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="journal" element={<div>Journal admin</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>
+    );
+    return refreshUser;
+  }
+
+  it("remplace la page par l'écran d'activation tant que la double authentification manque, quelle que soit l'adresse", () => {
+    renderSansDeuxFacteurs();
+
+    expect(screen.getByRole("heading", { name: "Activez la double authentification" })).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(/un mot de passe volé ne doit pas suffire/);
+    expect(screen.queryByText("Journal admin")).not.toBeInTheDocument();
+  });
+
+  it("ouvre l'enrôlement au clic, puis relit le profil quand il est terminé (sans nouvelle connexion)", async () => {
+    const refreshUser = renderSansDeuxFacteurs();
+
+    await userEvent.click(screen.getByRole("button", { name: "Activer la double authentification" }));
+    expect(screen.getByRole("dialog", { name: "enrôlement" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "enrôlement terminé" }));
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog", { name: "enrôlement" })).not.toBeInTheDocument();
+  });
+
+  it("referme l'enrôlement sans relire le profil quand on l'abandonne", async () => {
+    const refreshUser = renderSansDeuxFacteurs();
+
+    await userEvent.click(screen.getByRole("button", { name: "Activer la double authentification" }));
+    await userEvent.click(screen.getByRole("button", { name: "fermer l'enrôlement" }));
+
+    expect(refreshUser).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Activez la double authentification" })).toBeInTheDocument();
+  });
+
+  it("ne bloque pas un administrateur qui l'a activée, ni un profil dont l'état n'est pas encore connu", () => {
+    const { unmount } = render(
+      <AuthContext.Provider value={authValue({ ...admin, twoFactorEnabled: true })}>
+        <MemoryRouter initialEntries={["/admin/journal"]}>
+          <Routes>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="journal" element={<div>Journal admin</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>
+    );
+    expect(screen.getByText("Journal admin")).toBeInTheDocument();
+    unmount();
   });
 });
