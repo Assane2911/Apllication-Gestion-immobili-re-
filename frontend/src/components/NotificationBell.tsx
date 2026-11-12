@@ -63,19 +63,29 @@ export default function NotificationBell({
   // panneau ce que la personne vient d'en écarter.
   const marqueesLues = useRef<Set<string>>(new Set());
   const [afficherLues, setAfficherLues] = useState(false);
+  // Le serveur plafonne la liste (voir NOTIFICATIONS_MAX) mais compte tout : ce que le panneau ne montre pas, non vu ou à
+  // traiter, reste dans le badge et dans le décompte, et « Tout marquer comme lu » le couvre aussi.
+  const [masquees, setMasquees] = useState({ nonVues: 0, aTraiter: 0 });
 
   function load(signal?: AbortSignal) {
     api
-      .get<{ notifications: NotificationItem[] }>(endpoint, { signal })
-      .then((res) =>
-        setItems(
-          liste<NotificationItem>(res.data, "notifications").map((n) => {
-            const cle = n.key ?? n.id;
-            const lue = n.read || marqueesLues.current.has(cle);
-            return { ...n, seen: n.seen || lue || marqueesVues.current.has(cle), read: lue };
-          })
-        )
-      )
+      .get<{ notifications: NotificationItem[]; unseenCount?: number; unreadCount?: number }>(endpoint, { signal })
+      .then((res) => {
+        const recues = liste<NotificationItem>(res.data, "notifications").map((n) => {
+          const cle = n.key ?? n.id;
+          const lue = n.read || marqueesLues.current.has(cle);
+          return { ...n, seen: n.seen || lue || marqueesVues.current.has(cle), read: lue };
+        });
+        setItems(recues);
+        // Anciens serveurs : pas de totaux, donc rien de masqué.
+        const total = res.data;
+        const nonVuesTotal = typeof total.unseenCount === "number" ? total.unseenCount : null;
+        const aTraiterTotal = typeof total.unreadCount === "number" ? total.unreadCount : null;
+        setMasquees({
+          nonVues: nonVuesTotal === null ? 0 : Math.max(0, nonVuesTotal - recues.filter((n) => !n.seen).length),
+          aTraiter: aTraiterTotal === null ? 0 : Math.max(0, aTraiterTotal - recues.filter((n) => !n.read).length),
+        });
+      })
       .catch((err) => {
         if (isRequestCancelled(err)) return;
         // silencieux : la cloche ne doit jamais faire planter le reste de l'app
@@ -125,6 +135,7 @@ export default function NotificationBell({
   // Sans clé (ancien backend), l'identifiant fait office de clé.
   const cleDe = (n: NotificationItem) => n.key ?? n.id;
   const nonVues = items.filter((n) => !n.seen);
+  const nombreNonVues = nonVues.length + masquees.nonVues;
   const aTraiter = items.filter((n) => !n.read);
   const lues = items.filter((n) => n.read);
   const affichees = afficherLues ? items : aTraiter;
@@ -137,14 +148,17 @@ export default function NotificationBell({
 
   function toutMarquerLu() {
     const cles = aTraiter.map(cleDe);
-    if (cles.length === 0) return;
+    if (cles.length === 0 && masquees.aTraiter === 0) return;
     cles.forEach((c) => {
       marqueesVues.current.add(c);
       marqueesLues.current.add(c);
     });
     setNouvelles(new Set());
     setItems((courants) => courants.map((n) => ({ ...n, seen: true, read: true })));
-    api.post(`${endpoint}/read`, { keys: cles }).catch(() => {
+    // Une partie de la liste n'est pas affichée : sans clés, le serveur marque tout ce qui existe.
+    const corps = masquees.aTraiter > 0 ? {} : { keys: cles };
+    setMasquees({ nonVues: 0, aTraiter: 0 });
+    api.post(`${endpoint}/read`, corps).catch(() => {
       cles.forEach((c) => marqueesLues.current.delete(c));
       load();
     });
@@ -156,14 +170,17 @@ export default function NotificationBell({
       return;
     }
     setOpen(true);
-    if (nonVues.length === 0) return;
+    if (nombreNonVues === 0) return;
     setNouvelles(new Set(nonVues.map(cleDe)));
     // Optimiste : le badge retombe tout de suite. Si l'enregistrement échoue,
     // on relit l'état réel plutôt que de laisser un badge éteint à tort.
     const cles = items.map(cleDe);
     cles.forEach((c) => marqueesVues.current.add(c));
     setItems((courants) => courants.map((n) => ({ ...n, seen: true })));
-    api.post(`${endpoint}/seen`, { keys: cles }).catch(() => {
+    // Même principe : des non vues hors de la liste affichée → pas de clés, tout l'existant est marqué vu.
+    const corps = masquees.nonVues > 0 ? {} : { keys: cles };
+    setMasquees((m) => ({ ...m, nonVues: 0 }));
+    api.post(`${endpoint}/seen`, corps).catch(() => {
       cles.forEach((c) => marqueesVues.current.delete(c));
       load();
     });
@@ -190,9 +207,9 @@ export default function NotificationBell({
         aria-label={t(`${i18nPrefix}.ariaLabel`)}
       >
         <Bell size={18} />
-        {nonVues.length > 0 && (
+        {nombreNonVues > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center bg-orange-700 px-1 font-mono text-[10px] font-bold text-white">
-            {nonVues.length > 9 ? "9+" : nonVues.length}
+            {nombreNonVues > 9 ? "9+" : nombreNonVues}
           </span>
         )}
       </button>
@@ -203,9 +220,9 @@ export default function NotificationBell({
           <div className="flex items-start justify-between gap-3 border-b border-ink-900 bg-ink-900 px-4 py-3 text-white">
             <div className="min-w-0">
               <h4 className="font-mono text-xs font-semibold uppercase tracking-wider">{t(`${i18nPrefix}.title`)}</h4>
-              <p className="text-xs text-white/85">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length })}</p>
+              <p className="text-xs text-white/85">{t(`${i18nPrefix}.itemCount`, { count: aTraiter.length + masquees.aTraiter })}</p>
             </div>
-            {aTraiter.length > 0 && (
+            {aTraiter.length + masquees.aTraiter > 0 && (
               <button
                 type="button"
                 onClick={toutMarquerLu}
@@ -241,6 +258,11 @@ export default function NotificationBell({
                 );
               })}
             </ul>
+          )}
+          {masquees.aTraiter > 0 && (
+            <p className="border-t border-slate-300 px-4 py-2.5 text-center text-xs text-slate-600">
+              {t(`${i18nPrefix}.moreHidden`, { count: masquees.aTraiter })}
+            </p>
           )}
           {lues.length > 0 && (
             <button

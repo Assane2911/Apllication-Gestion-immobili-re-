@@ -518,3 +518,74 @@ describe("NotificationBell — changement de langue", () => {
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledTimes(2));
   });
 });
+
+/**
+ * Le serveur plafonne la liste mais renvoie les totaux exacts (`unseenCount`, `unreadCount`) : ce que le panneau ne
+ * montre pas doit rester dans le badge et le décompte, et « marquer vu / lu » doit le couvrir (requête SANS clés).
+ */
+describe("NotificationBell — liste plafonnée par le serveur", () => {
+  const bouton = () => screen.getByLabelText("Notifications");
+  beforeEach(() => {
+    mockedApi.get.mockReset();
+    mockedApi.post.mockReset();
+    mockedApi.post.mockResolvedValue({ data: { success: true } });
+  });
+
+  const recues = () => ({
+    data: {
+      notifications: [
+        notification({ id: "a", key: "a|1", seen: false, read: false, title: "Loyer en retard" }),
+        notification({ id: "b", key: "b|1", seen: false, read: false, title: "Autre loyer" }),
+      ],
+      count: 7,
+      unseenCount: 5,
+      unreadCount: 7,
+    },
+  });
+
+  it("compte dans le badge et le décompte ce que la liste ne montre pas", async () => {
+    mockedApi.get.mockResolvedValueOnce(recues());
+    renderBell();
+    await waitFor(() => expect(screen.getByText("5")).toBeInTheDocument());
+
+    fireEvent.click(bouton());
+    expect(screen.getByText(/7 élément/)).toBeInTheDocument();
+    expect(screen.getByText(/et 5 autre/)).toBeInTheDocument();
+  });
+
+  it("marque tout comme vu sans envoyer de clés quand la liste est tronquée", async () => {
+    mockedApi.get.mockResolvedValueOnce(recues());
+    renderBell();
+    await waitFor(() => expect(screen.getByText("5")).toBeInTheDocument());
+
+    fireEvent.click(bouton());
+
+    expect(mockedApi.post).toHaveBeenCalledWith("/notifications/seen", {});
+    expect(screen.queryByText("5")).not.toBeInTheDocument();
+  });
+
+  it("« Tout marquer comme lu » couvre aussi les éléments non affichés", async () => {
+    mockedApi.get.mockResolvedValueOnce(recues());
+    renderBell();
+    await waitFor(() => expect(screen.getByText("5")).toBeInTheDocument());
+    fireEvent.click(bouton());
+
+    fireEvent.click(screen.getByText("Tout marquer comme lu"));
+
+    expect(mockedApi.post).toHaveBeenCalledWith("/notifications/read", {});
+    expect(screen.queryByText(/et \d+ autre/)).not.toBeInTheDocument();
+  });
+
+  it("envoie toujours les clés quand rien n'est masqué (liste complète)", async () => {
+    mockedApi.get.mockResolvedValueOnce({
+      data: { notifications: [notification({ id: "a", key: "a|1", seen: false })], count: 1, unseenCount: 1, unreadCount: 1 },
+    });
+    renderBell();
+    await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
+
+    fireEvent.click(bouton());
+
+    expect(mockedApi.post).toHaveBeenCalledWith("/notifications/seen", { keys: ["a|1"] });
+    expect(screen.queryByText(/autre\(s\) plus ancien/)).not.toBeInTheDocument();
+  });
+});

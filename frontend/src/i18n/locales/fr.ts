@@ -1429,6 +1429,7 @@ const fr = {
       markAllRead: "Tout marquer comme lu",
       showRead: "Afficher les {{count}} élément(s) lu(s)",
       hideRead: "Masquer les éléments lus",
+      moreHidden: "… et {{count}} autre(s) plus ancien(s), non affichée(s)",
     },
     trialBanner: {
       progress: "Jours d'essai restants",
@@ -3201,6 +3202,7 @@ const fr = {
       markAllRead: "Tout marquer comme lu",
       showRead: "Afficher les {{count}} élément(s) lu(s)",
       hideRead: "Masquer les éléments lus",
+      moreHidden: "… et {{count}} autre(s) plus ancien(s), non affichée(s)",
     },
     dashboard: {
       todo: {

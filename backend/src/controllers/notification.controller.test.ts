@@ -495,11 +495,10 @@ describe("POST /api/notifications/seen et /read — beaucoup de notifications", 
     const { h } = await agenceAvecNotifications(250);
     const avant = await request(app).get("/api/notifications").set(h);
     expect(avant.body.unseenCount).toBe(250);
+    // La liste est plafonnée : la cloche, qui ne montre pas tout, n'envoie alors AUCUNE clé et marque tout l'existant.
+    expect(avant.body.notifications.length).toBeLessThan(avant.body.count);
 
-    const res = await request(app)
-      .post("/api/notifications/seen")
-      .set(h)
-      .send({ keys: avant.body.notifications.map((n: { key: string }) => n.key) });
+    const res = await request(app).post("/api/notifications/seen").set(h).send({});
 
     expect(res.status).toBe(200);
     const apres = await request(app).get("/api/notifications").set(h);
@@ -508,16 +507,21 @@ describe("POST /api/notifications/seen et /read — beaucoup de notifications", 
 
   it("marque comme lues plus de 200 notifications d'un coup (« Tout marquer comme lu »)", async () => {
     const { h } = await agenceAvecNotifications(250);
-    const avant = await request(app).get("/api/notifications").set(h);
 
-    const res = await request(app)
-      .post("/api/notifications/read")
-      .set(h)
-      .send({ keys: avant.body.notifications.map((n: { key: string }) => n.key) });
+    const res = await request(app).post("/api/notifications/read").set(h).send({});
 
     expect(res.status).toBe(200);
     const apres = await request(app).get("/api/notifications").set(h);
     expect(apres.body.unreadCount).toBe(0);
+  });
+
+  it("accepte plus de 200 clés dans une même requête (limite relevée à 5 000)", async () => {
+    const { h } = await agenceAvecNotifications(3);
+    const cles = Array.from({ length: 250 }, (_, i) => `inconnue-${i}|2026-01-01T00:00:00.000Z`);
+
+    const res = await request(app).post("/api/notifications/seen").set(h).send({ keys: cles });
+
+    expect(res.status).toBe(200);
   });
 });
 

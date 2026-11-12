@@ -1431,6 +1431,7 @@ const pt: TranslationSchema = {
       markAllRead: "Marcar tudo como lido",
       showRead: "Mostrar {{count}} elemento(s) lido(s)",
       hideRead: "Ocultar os elementos lidos",
+      moreHidden: "… e {{count}} item(ns) mais antigo(s) não exibido(s)",
     },
     trialBanner: {
       progress: "Dias de teste restantes",
@@ -3200,6 +3201,7 @@ const pt: TranslationSchema = {
       markAllRead: "Marcar tudo como lido",
       showRead: "Mostrar {{count}} elemento(s) lido(s)",
       hideRead: "Ocultar os elementos lidos",
+      moreHidden: "… e {{count}} item(ns) mais antigo(s) não exibido(s)",
     },
     dashboard: {
       todo: {

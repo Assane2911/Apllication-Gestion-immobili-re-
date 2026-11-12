@@ -382,6 +382,8 @@ async function calculerNotificationsLocataire(tenantId: string, langue: Langue):
  * sien — sans ça, un collaborateur qui ouvre la cloche la marquerait vue pour
  * tout le monde.
  */
+/** Nombre maximal de notifications renvoyées par appel (les compteurs, eux, portent sur l'ensemble). */
+export const NOTIFICATIONS_MAX = 100;
 const cleDe = (n: NotificationItem) => `${n.id}|${n.createdAt}`;
 const lecteurDe = (req: Request) => req.user!.collaboratorId ?? req.user!.userId;
 
@@ -405,11 +407,18 @@ async function repondreAvecEtatVu(req: Request, res: Response, notifications: No
     seen: vues.has(cleDe(n)),
     read: lues.has(cleDe(n)),
   }));
+  // Les totaux portent sur TOUTES les notifications ; la liste, elle, est plafonnée. Une agence de plusieurs milliers de
+  // biens peut avoir un millier de notifications (370 Ko), relues toutes les 30 s par chaque onglet ouvert, pour un panneau
+  // de 384 px de haut. Les éléments à traiter passent d'abord, les plus récents en tête ; les éléments lus ne comblent que
+  // la place restante. La personne voit « et N autres » : les compteurs, eux, restent exacts.
+  const aTraiter = items.filter((n) => !n.read);
+  const dejaLues = items.filter((n) => n.read);
+  const retenues = new Set([...aTraiter.slice(0, NOTIFICATIONS_MAX), ...dejaLues.slice(0, Math.max(0, NOTIFICATIONS_MAX - aTraiter.length))]);
   res.json({
-    notifications: items,
+    notifications: items.filter((n) => retenues.has(n)),
     count: items.length,
     unseenCount: items.filter((n) => !n.seen).length,
-    unreadCount: items.filter((n) => !n.read).length,
+    unreadCount: aTraiter.length,
   });
 }
 
