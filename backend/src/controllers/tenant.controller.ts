@@ -92,11 +92,16 @@ export const getTenant = asyncHandler(async (req: Request, res: Response) => {
   const fiabilite = (await fetchFiabiliteParLocataire([tenant.id])).get(tenant.id)!;
 
   const contractsWithScans = await Promise.all(
-    tenantContracts.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => ({
-      ...r.contract,
-      scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
-      property: r.property,
-    }))
+    tenantContracts.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect }) => {
+      // Les images de signature (data URL jusqu'à 500 000 caractères chacune, deux par bail) ne font pas partie de la réponse : aucun
+      // écran ne les affiche. Les dates de signature restent renvoyées.
+      const { managerSignatureUrl: _imageGestionnaire, tenantSignatureUrl: _imageLocataire, ...bail } = r.contract;
+      return {
+        ...bail,
+        scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
+        property: r.property,
+      };
+    })
   );
 
   res.json({

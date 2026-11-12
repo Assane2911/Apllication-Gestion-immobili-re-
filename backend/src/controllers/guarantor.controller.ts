@@ -1,11 +1,12 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { contractGuarantors, contracts, properties } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
+import { bailNonSigneSousVerrou } from "../utils/verrouBail";
 import { CIVILITES } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { avecCode } from "../utils/validationExplicite";
@@ -47,14 +48,16 @@ async function contratDuGestionnaire(req: Request) {
   return { contrat, bien };
 }
 
+const refusBailSigne = () =>
+  new ApiError(
+    409,
+    "Ce bail a été signé par le locataire : ses garants font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail ou un avenant.",
+    "LEASE_SIGNED_GUARANTORS_LOCKED"
+  );
+
+/** Refus rapide sur la lecture du début de requête ; l'écriture, elle, relit le bail sous verrou (voir bailNonSigneSousVerrou). */
 function assertBailNonSigne(contrat: typeof contracts.$inferSelect) {
-  if (contrat.signedByTenantAt) {
-    throw new ApiError(
-      409,
-      "Ce bail a été signé par le locataire : ses garants font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail ou un avenant.",
-      "LEASE_SIGNED_GUARANTORS_LOCKED"
-    );
-  }
+  if (contrat.signedByTenantAt) throw refusBailSigne();
 }
 
 const nomGarant = (g: { firstName: string; lastName: string }) => `${g.firstName} ${g.lastName}`;
@@ -70,16 +73,20 @@ export const createGuarantor = asyncHandler(async (req: Request, res: Response) 
   const body = garantSchema.parse(req.body);
   assertBailNonSigne(contrat);
 
-  const [{ nombre }] = await db
-    .select({ nombre: sql<number>`count(*)::int` })
-    .from(contractGuarantors)
-    .where(eq(contractGuarantors.contractId, contrat.id));
-  if (nombre >= MAX_GARANTS_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_GARANTS_PAR_BAIL} garants.`, "GUARANTOR_LIMIT", { max: MAX_GARANTS_PAR_BAIL });
+  const garant = await db.transaction(async (tx: Transaction) => {
+    await bailNonSigneSousVerrou(tx, contrat.id, refusBailSigne);
+    const [{ nombre }] = await tx
+      .select({ nombre: sql<number>`count(*)::int` })
+      .from(contractGuarantors)
+      .where(eq(contractGuarantors.contractId, contrat.id));
+    if (nombre >= MAX_GARANTS_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_GARANTS_PAR_BAIL} garants.`, "GUARANTOR_LIMIT", { max: MAX_GARANTS_PAR_BAIL });
 
-  const [garant] = await db
-    .insert(contractGuarantors)
-    .values({ contractId: contrat.id, ...body, civility: body.civility ?? null, maxAmount: body.maxAmount ?? null })
-    .returning();
+    const [cree] = await tx
+      .insert(contractGuarantors)
+      .values({ contractId: contrat.id, ...body, civility: body.civility ?? null, maxAmount: body.maxAmount ?? null })
+      .returning();
+    return cree;
+  });
 
   await logActivity({
     req,
@@ -102,11 +109,15 @@ export const updateGuarantor = asyncHandler(async (req: Request, res: Response) 
   if (Object.keys(body).length === 0) throw new ApiError(400, "Aucune modification fournie.", "NOTHING_TO_UPDATE");
   assertBailNonSigne(contrat);
 
-  const [garant] = await db
-    .update(contractGuarantors)
-    .set(body)
-    .where(and(eq(contractGuarantors.id, req.params.guarantorId), eq(contractGuarantors.contractId, contrat.id)))
-    .returning();
+  const garant = await db.transaction(async (tx: Transaction) => {
+    await bailNonSigneSousVerrou(tx, contrat.id, refusBailSigne);
+    const [maj] = await tx
+      .update(contractGuarantors)
+      .set(body)
+      .where(and(eq(contractGuarantors.id, req.params.guarantorId), eq(contractGuarantors.contractId, contrat.id)))
+      .returning();
+    return maj;
+  });
   if (!garant) throw new ApiError(404, "Garant introuvable", "GUARANTOR_NOT_FOUND");
 
   await logActivity({
@@ -125,10 +136,14 @@ export const deleteGuarantor = asyncHandler(async (req: Request, res: Response) 
   const { contrat, bien } = await contratDuGestionnaire(req);
   assertBailNonSigne(contrat);
 
-  const [garant] = await db
-    .delete(contractGuarantors)
-    .where(and(eq(contractGuarantors.id, req.params.guarantorId), eq(contractGuarantors.contractId, contrat.id)))
-    .returning();
+  const garant = await db.transaction(async (tx: Transaction) => {
+    await bailNonSigneSousVerrou(tx, contrat.id, refusBailSigne);
+    const [retire] = await tx
+      .delete(contractGuarantors)
+      .where(and(eq(contractGuarantors.id, req.params.guarantorId), eq(contractGuarantors.contractId, contrat.id)))
+      .returning();
+    return retire;
+  });
   if (!garant) throw new ApiError(404, "Garant introuvable", "GUARANTOR_NOT_FOUND");
 
   await logActivity({

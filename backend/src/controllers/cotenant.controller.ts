@@ -1,11 +1,12 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { contractCotenants, contracts, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
+import { bailNonSigneSousVerrou } from "../utils/verrouBail";
 
 /**
  * Colocataires d'un bail : des locataires de l'agence qui partagent le bail avec
@@ -26,14 +27,16 @@ async function contratDuGestionnaire(req: Request) {
   return { contrat, bien };
 }
 
+const refusBailSigne = () =>
+  new ApiError(
+    409,
+    "Ce bail a été signé par le locataire : ses colocataires font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail.",
+    "LEASE_SIGNED_COTENANTS_LOCKED"
+  );
+
+/** Refus rapide sur la lecture du début de requête ; l'écriture, elle, relit le bail sous verrou (voir bailNonSigneSousVerrou). */
 function assertBailNonSigne(contrat: typeof contracts.$inferSelect) {
-  if (contrat.signedByTenantAt) {
-    throw new ApiError(
-      409,
-      "Ce bail a été signé par le locataire : ses colocataires font partie du contenu signé et ne peuvent plus changer. Établissez un nouveau bail.",
-      "LEASE_SIGNED_COTENANTS_LOCKED"
-    );
-  }
+  if (contrat.signedByTenantAt) throw refusBailSigne();
 }
 
 /** Colocataires d'un bail, avec leur fiche (pour l'écran et le bail imprimé). */
@@ -62,14 +65,18 @@ export const addCotenant = asyncHandler(async (req: Request, res: Response) => {
   if (locataire.anonymizedAt) throw new ApiError(409, "Ce locataire a été anonymisé : il ne peut pas rejoindre un bail.", "TENANT_ANONYMIZED_NO_COTENANT");
   if (locataire.id === contrat.tenantId) throw new ApiError(409, "Ce locataire est déjà le titulaire du bail.", "TENANT_IS_HOLDER");
 
-  const [{ nombre }] = await db
-    .select({ nombre: sql<number>`count(*)::int` })
-    .from(contractCotenants)
-    .where(eq(contractCotenants.contractId, contrat.id));
-  if (nombre >= MAX_COLOCATAIRES_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_COLOCATAIRES_PAR_BAIL} colocataires en plus du titulaire.`, "COTENANT_LIMIT", { max: MAX_COLOCATAIRES_PAR_BAIL });
+  const lien = await db.transaction(async (tx: Transaction) => {
+    await bailNonSigneSousVerrou(tx, contrat.id, refusBailSigne);
+    const [{ nombre }] = await tx
+      .select({ nombre: sql<number>`count(*)::int` })
+      .from(contractCotenants)
+      .where(eq(contractCotenants.contractId, contrat.id));
+    if (nombre >= MAX_COLOCATAIRES_PAR_BAIL) throw new ApiError(409, `Un bail compte au plus ${MAX_COLOCATAIRES_PAR_BAIL} colocataires en plus du titulaire.`, "COTENANT_LIMIT", { max: MAX_COLOCATAIRES_PAR_BAIL });
 
-  // L'index unique (bail, locataire) tranche une double saisie simultanée.
-  const [lien] = await db.insert(contractCotenants).values({ contractId: contrat.id, tenantId: locataire.id }).onConflictDoNothing().returning();
+    // L'index unique (bail, locataire) tranche une double saisie simultanée.
+    const [cree] = await tx.insert(contractCotenants).values({ contractId: contrat.id, tenantId: locataire.id }).onConflictDoNothing().returning();
+    return cree;
+  });
   if (!lien) throw new ApiError(409, "Ce locataire est déjà colocataire de ce bail.", "TENANT_ALREADY_COTENANT");
 
   await logActivity({
@@ -88,10 +95,14 @@ export const removeCotenant = asyncHandler(async (req: Request, res: Response) =
   const { contrat, bien } = await contratDuGestionnaire(req);
   assertBailNonSigne(contrat);
 
-  const [lien] = await db
-    .delete(contractCotenants)
-    .where(and(eq(contractCotenants.id, req.params.cotenantId), eq(contractCotenants.contractId, contrat.id)))
-    .returning();
+  const lien = await db.transaction(async (tx: Transaction) => {
+    await bailNonSigneSousVerrou(tx, contrat.id, refusBailSigne);
+    const [retire] = await tx
+      .delete(contractCotenants)
+      .where(and(eq(contractCotenants.id, req.params.cotenantId), eq(contractCotenants.contractId, contrat.id)))
+      .returning();
+    return retire;
+  });
   if (!lien) throw new ApiError(404, "Colocataire introuvable", "COTENANT_NOT_FOUND");
   const [locataire] = await db.select().from(tenants).where(eq(tenants.id, lien.tenantId));
 
