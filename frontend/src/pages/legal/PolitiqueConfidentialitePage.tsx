@@ -42,6 +42,17 @@ export default function PolitiqueConfidentialitePage() {
               email, pièce d'identité (image ou PDF).
             </>,
             <>
+              <strong className="text-slate-900">Données de garants</strong> : nom, civilité, téléphone, adresse
+              e-mail, adresse postale, montant maximal garanti et notes, saisis par le Gestionnaire pour les
+              personnes qui se portent caution d'un bail. Un garant n'a pas de compte sur le Service.
+            </>,
+            <>
+              <strong className="text-slate-900">Demandes de prospects</strong> : nom, adresse e-mail, téléphone,
+              type de demande (visite ou information), date souhaitée et message, transmis par toute personne qui
+              écrit depuis une annonce publiée sur la vitrine du Service, ainsi que les notes de suivi du
+              Gestionnaire. Un prospect n'a pas de compte sur le Service.
+            </>,
+            <>
               <strong className="text-slate-900">Données contractuelles et financières</strong> : contrats de
               bail, montants de loyer et dépôts de garantie, historique des paiements, dépenses.
             </>,
@@ -173,6 +184,8 @@ export default function PolitiqueConfidentialitePage() {
             "Données de compte et données locatives (biens, locataires, baux, paiements, dépenses) : conservées pendant toute la durée de la relation contractuelle avec le Gestionnaire, et jusqu'à ce qu'il les supprime ou qu'il clôture son compte.",
             "Pièces d'identité des locataires et photographies (biens, annonces, incidents, baux scannés) : le fichier est supprimé du stockage en même temps que la fiche qui le référence — suppression du locataire, du bien, de l'annonce ou du contrat — et, en tout état de cause, à la clôture du compte du Gestionnaire.",
             "Messages de la messagerie intégrée : conservés tant que le compte du Gestionnaire reste ouvert. Les messages écrits ne sont pas effacés par l'anonymisation d'un locataire, leur contenu appartenant à l'échange entre les deux parties. Les messages vocaux d'un locataire, dont la voix l'identifie, sont en revanche effacés du stockage lors de son anonymisation ; leurs fichiers sont aussi supprimés avec le compte du Gestionnaire. La discussion d'un Propriétaire avec son agence (messages écrits et vocaux) est, elle, entièrement effacée lors de l'anonymisation ou de la suppression de sa fiche.",
+            "Garants d'un bail : conservés avec le bail qui les mentionne, dont le contenu est figé une fois le bail signé. Le Gestionnaire peut anonymiser les données identifiantes d'un garant (voir section 8) ; le montant garanti et le rattachement au bail demeurent.",
+            "Demandes de prospects reçues depuis une annonce : le Service signale au Gestionnaire, dans son espace, celles de plus de trois ans, durée de conservation recommandée pour la prospection ; le Gestionnaire peut les supprimer ou les anonymiser à tout moment.",
             "Journal d'activité de l'agence (traçabilité des actions) : conservé un an, puis effacé automatiquement — et en tout état de cause supprimé avec le compte.",
             "Données d'abonnement et de facturation : conservées pendant la durée requise par les obligations comptables et fiscales applicables, y compris après la clôture du compte.",
           ]}
@@ -181,7 +194,10 @@ export default function PolitiqueConfidentialitePage() {
           La clôture d'un compte Gestionnaire, que le Gestionnaire peut déclencher lui-même depuis son espace
           de gestion, entraîne la suppression définitive des données associées (biens, locataires, contrats,
           paiements, messages, journal d'activité) et des fichiers correspondants, sous réserve des données
-          qu'une obligation légale impose de conserver. Il incombe au Gestionnaire, responsable du traitement
+          qu'une obligation légale impose de conserver. Les comptes de connexion des Locataires et des
+          Propriétaires que cette agence était seule à rattacher (adresse email et mot de passe haché) sont
+          supprimés avec elle ; un compte encore rattaché à une fiche d'une autre agence est conservé. Il
+          incombe au Gestionnaire, responsable du traitement
           pour les données de ses propres Locataires, de définir et d'appliquer ses propres durées de
           conservation en supprimant les éléments devenus inutiles.
         </p>
@@ -200,6 +216,12 @@ export default function PolitiqueConfidentialitePage() {
           l'interface de programmation publique de l'hébergeur est refusé au niveau de la base elle-même, pour
           toutes les tables sans exception. Une requête qui tenterait de contourner le Service pour lire
           directement une table n'obtiendrait aucune donnée, quel que soit son auteur.
+        </p>
+        <p>
+          L'accès à l'espace d'administration du Service, qui permet notamment de confirmer des virements et de
+          suspendre ou supprimer des agences, exige une double authentification. Les mots de passe choisis
+          lors de l'inscription ou d'une réinitialisation sont refusés lorsqu'ils figurent parmi les plus
+          courants ou reprennent l'adresse email du compte.
         </p>
         <p>
           Les documents sensibles (pièces d'identité des locataires, baux scannés, photographies d'incidents)
@@ -239,6 +261,17 @@ export default function PolitiqueConfidentialitePage() {
           versements, discussion avec votre agence), dans un format lisible par machine. En tant que <strong className="text-slate-900">Gestionnaire</strong>,
           vous pouvez rectifier vos données à tout moment depuis votre espace, et supprimer définitivement votre
           compte et l'ensemble des données associées depuis les paramètres du Service.
+        </p>
+        <p>
+          Un <strong className="text-slate-900">garant</strong> ou un <strong className="text-slate-900">prospect</strong> n'a
+          pas de compte sur le Service : il adresse sa demande d'accès, de rectification ou d'effacement au
+          Gestionnaire qui détient ses données, responsable de leur traitement. Le Gestionnaire peut, depuis les
+          paramètres de son agence, retrouver la personne par son adresse email ou son téléphone, lui remettre un
+          fichier lisible par machine contenant tout ce que son agence détient à son sujet, et anonymiser ses
+          données identifiantes (nom, téléphone, adresse email, adresse postale, message et notes). Le bail
+          signé, dont le contenu est figé, reste conservé avec le montant garanti, rattaché à une fiche
+          anonyme ; la demande d'un prospect reste comptée, sans son identité. Ces opérations sont consignées dans
+          le journal d'activité de l'agence, sans y recopier l'identité de la personne.
         </p>
         <p>
           Pour toute autre demande — limitation du traitement, opposition, ou toute question qui ne trouve pas
