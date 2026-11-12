@@ -14,6 +14,7 @@ import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
 import { cheminsDocumentsDuLocataire, documentsDuLocataire, supprimerFichiers } from "../services/storedDocument.service";
 import { assertOwnership } from "../utils/authorization";
+import { motDePasseSchema, refuserMotDePasseDeLAdresse } from "../utils/motDePasse";
 import { remplacerDansTexte } from "../utils/effacementTexte";
 import { LANGUES, langueDeLaRequete } from "../utils/langue";
 import { CIVILITES } from "../utils/nom";
@@ -541,7 +542,7 @@ export const getTenantIdDocumentUrl = asyncHandler(async (req: Request, res: Res
 });
 
 const createPortalAccountSchema = z.object({
-  password: z.string().min(8),
+  password: motDePasseSchema,
 });
 
 /** Le gestionnaire crée l'accès au portail (email/mot de passe) d'un locataire. */
@@ -551,6 +552,7 @@ export const createTenantPortalAccount = asyncHandler(async (req: Request, res: 
   // Corps validé après l'appartenance : un corps mal formé visant la ressource d'une autre agence répond 404, comme un identifiant inventé.
   const body = createPortalAccountSchema.parse(req.body);
   assertNonAnonymise(tenant);
+  refuserMotDePasseDeLAdresse(body.password, tenant.email);
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, tenant.email));
   const passwordHash = await bcrypt.hash(body.password, 10);
