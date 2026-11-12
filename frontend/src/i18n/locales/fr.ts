@@ -1468,6 +1468,12 @@ const fr = {
     },
     adminLayout: {
       title: "Administration de la plateforme",
+      activation: {
+        title: "Activez la double authentification",
+        text: "L'administration de la plateforme exige un second facteur de connexion.",
+        why: "Ce compte confirme les virements, suspend et supprime des agences : un mot de passe volé ne doit pas suffire. L'activation prend une minute, avec une application d'authentification ; gardez vos codes de secours.",
+        button: "Activer la double authentification",
+      },
     },
     exportCsv: {
       button: "Exporter en CSV",
@@ -3846,8 +3852,6 @@ const fr = {
       },
     },
     dashboard: {
-      twoFactorWarning: "Votre compte administrateur n'a pas de double authentification : il confirme les virements et supprime des agences, un mot de passe volé suffirait à tout faire.",
-      twoFactorWarningLink: "Activer maintenant",
       todo: {
         suggestions: "{{count}} suggestion(s) non lue(s)",
         title: "À traiter",

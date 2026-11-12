@@ -1470,6 +1470,12 @@ const pt: TranslationSchema = {
     },
     adminLayout: {
       title: "Administração da plataforma",
+      activation: {
+        title: "Ative a autenticação em dois passos",
+        text: "A administração da plataforma exige um segundo fator de início de sessão.",
+        why: "Esta conta confirma transferências e suspende ou elimina agências: uma palavra-passe roubada não deve bastar. A ativação demora um minuto com uma aplicação de autenticação; guarde os seus códigos de recuperação.",
+        button: "Ativar a autenticação em dois passos",
+      },
     },
     exportCsv: {
       button: "Exportar para CSV",
@@ -3845,8 +3851,6 @@ const pt: TranslationSchema = {
       },
     },
     dashboard: {
-      twoFactorWarning: "A tua conta de administrador não tem verificação em duas etapas: confirma transferências e elimina agências, uma palavra-passe roubada bastaria para fazer tudo.",
-      twoFactorWarningLink: "Ativar agora",
       todo: {
         suggestions: "{{count}} sugestão(ões) por ler",
         title: "A tratar",

@@ -1470,6 +1470,12 @@ const en: TranslationSchema = {
     },
     adminLayout: {
       title: "Platform Administration",
+      activation: {
+        title: "Enable two-factor authentication",
+        text: "Platform administration requires a second sign-in factor.",
+        why: "This account confirms transfers and suspends or deletes agencies: a stolen password must not be enough. Activation takes a minute with an authenticator app; keep your backup codes.",
+        button: "Enable two-factor authentication",
+      },
     },
     exportCsv: {
       button: "Export as CSV",
@@ -3845,8 +3851,6 @@ const en: TranslationSchema = {
       },
     },
     dashboard: {
-      twoFactorWarning: "Your administrator account has no two-factor authentication: it confirms transfers and deletes agencies, so a stolen password would be enough to do anything.",
-      twoFactorWarningLink: "Enable now",
       todo: {
         suggestions: "{{count}} unread suggestion(s)",
         title: "To do",
