@@ -136,7 +136,7 @@ En résumé :
 ## Sécurité
 
 - Les mots de passe sont hashés avec bcrypt.
-- Les routes sont protégées par JWT et un contrôle de rôle (`MANAGER`, `TENANT`, `OWNER`, `ADMIN`), avec double authentification (TOTP) pour les gestionnaires qui l'activent.
+- Les routes sont protégées par JWT et un contrôle de rôle (`MANAGER`, `TENANT`, `OWNER`, `ADMIN`), avec double authentification (TOTP) pour les gestionnaires qui l'activent, et **obligatoire** pour l'administration (récupération en cas de perte du téléphone : voir [`DEPLOYMENT.md`](./DEPLOYMENT.md#administrateur--retrouver-laccès-après-la-perte-du-téléphone)).
 - Un locataire ne peut voir/payer que ses propres factures et signaler des incidents que sur ses propres contrats.
 - Note de dépendance : `drizzle-kit` (outil CLI utilisé uniquement en développement local pour appliquer le schéma) dépend d'une version d'`esbuild` avec un avis de sécurité concernant son serveur de développement. Cet outil n'est jamais exécuté en production ni exposé publiquement — le risque ne s'applique donc pas à l'application déployée.
 

@@ -163,6 +163,19 @@ Le secret TOTP de chaque compte (`users.totp_secret`) est chiffré en base (AES-
 
 Tant que la clé est absente, les secrets restent en clair et le démarrage le signale en production (journal et Sentry : « TOTP_ENCRYPTION_KEY est absente »). Les secrets déjà en clair restent lisibles, et sont chiffrés à la première connexion réussie du compte après la pose de la clé. Ne changez pas la clé une fois posée : les secrets déjà chiffrés ne seraient plus lisibles.
 
+## Administrateur : retrouver l'accès après la perte du téléphone
+
+L'espace d'administration **exige la double authentification** : un compte administrateur qui ne l'a pas activée se connecte, mais voit un seul écran qui lui demande de l'activer. Sur le site, la désactiver exige un code ; un administrateur qui a perdu son téléphone **et** ses codes de secours ne peut donc pas se rattraper seul. Il n'existe volontairement **aucune route web** pour cela (elle deviendrait la porte dérobée d'une protection censée résister à un mot de passe volé) : la remise à zéro se fait en ligne de commande, avec l'accès à la base de production.
+
+```
+cd backend
+DATABASE_URL="<chaîne de connexion de production>" npm run reset-admin-2fa -- admin@immoplatformpro.com
+```
+
+Elle efface le secret et les codes de secours du compte, **révoque ses sessions ouvertes**, et inscrit l'action au journal d'audit de l'administration (`admin.two_factor_reset`). Le mot de passe est conservé : à sa prochaine connexion, l'administrateur doit réactiver la double authentification, et reçoit de nouveaux codes de secours — à ranger, cette fois, dans un gestionnaire de mots de passe. La commande refuse un compte qui n'est pas administrateur (celle d'un gestionnaire se remet à zéro à la main, voir ci-dessus).
+
+Si le mot de passe est lui aussi perdu, `npm run create-admin -- <email> "<nouveau mot de passe>"` le remplace, puis `reset-admin-2fa` remet la double authentification à zéro.
+
 ## Sauvegarde et restauration
 
 Le plan gratuit de Supabase **ne fait aucune sauvegarde automatique** : après une fausse manipulation (un `DROP`, un `UPDATE` sans `WHERE`) ou une panne, il n'y aurait aucun moyen de revenir en arrière. Le workflow `.github/workflows/sauvegarde.yml` y supplée : chaque nuit (02 h 43 UTC), il copie la base (schéma `public`, celui de l'application), **chiffre** la copie, **prouve qu'elle se restaure** (dans un PostgreSQL jetable, avec le nombre de lignes de chaque table dans le résumé du run), puis la dépose comme artefact du run, conservé 30 jours. Un échec ouvre un ticket.
