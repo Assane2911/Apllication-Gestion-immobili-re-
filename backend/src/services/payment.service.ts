@@ -141,6 +141,18 @@ export function depuisPlusPetiteUnite(amount: number, currency: string): number 
   return amount / 100;
 }
 
+/**
+ * Montant tel que le prestataire l'ENCAISSE, relu dans l'unité d'affichage : le montant dû, ramené à la plus petite unité de
+ * la devise (voir versPlusPetiteUnite), puis reconverti. Un loyer au prorata en francs CFA vaut 54 838,71 en base (arrondi au
+ * centime à la génération des factures), mais le franc CFA n'a pas de centimes : la session de paiement part à 54 839, et
+ * c'est 54 839 que le webhook relit. Comparer ce montant confirmé au reste dû brut (54 838,71) refusait le rapprochement alors
+ * que le locataire avait payé exactement ce qui lui était demandé : l'argent était encaissé, la facture restait due. Pour les
+ * devises à centimes (euro) l'aller-retour est sans effet : le centime reste exigé.
+ */
+export function montantEncaisseParLePrestataire(montant: number, devise: string): number {
+  return depuisPlusPetiteUnite(versPlusPetiteUnite(montant, devise), devise);
+}
+
 const MESSAGE_NEUTRE =
   "Ce moyen de paiement est momentanément indisponible. Merci d'en choisir un autre ou de réessayer plus tard.";
 

@@ -11,7 +11,7 @@ import { signalerAbonnementNonRapproche, signalerPaiementNonRapproche } from "..
 import { sendPaymentReceiptEmail } from "../services/receipt.service";
 import { signalerRemboursementOuLitige } from "../services/remboursementPaiement.service";
 import { resteDu } from "../utils/montants";
-import { depuisPlusPetiteUnite } from "../services/payment.service";
+import { depuisPlusPetiteUnite, montantEncaisseParLePrestataire } from "../services/payment.service";
 import {
   activateSubscriptionRecord,
   expireStripeSubscription,
@@ -265,9 +265,9 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
         `[stripe] Facture ${facture.id} dans un état non modifiable (${facture.status}) : confirmation de paiement ignorée.`
       );
       await signaler("la facture a été annulée");
-    } else if (!montantCorrespond(montantPaye, resteDu(facture))) {
+    } else if (!montantCorrespond(montantPaye, montantEncaisseParLePrestataire(resteDu(facture), devise))) {
       console.warn(
-        `[stripe] Webhook rejeté pour la facture ${facture.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${resteDu(facture)}).`
+        `[stripe] Webhook rejeté pour la facture ${facture.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${montantEncaisseParLePrestataire(resteDu(facture), devise)}).`
       );
       await signaler("le montant payé ne correspond plus au reste dû, qui a changé depuis le début du paiement");
     } else {

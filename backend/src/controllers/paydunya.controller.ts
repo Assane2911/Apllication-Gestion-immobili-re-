@@ -256,9 +256,11 @@ async function traiterIpnPaydunya(req: Request, res: Response, portee: PorteeIpn
         `[paydunya] Facture ${invoiceRow.id} dans un état non modifiable (${invoiceRow.status}) : IPN ignorée.`
       );
       await signaler("la facture a été annulée");
-    } else if (!amountMatches(paidAmount, resteDu(invoiceRow))) {
+    } else if (!amountMatches(paidAmount, Math.round(resteDu(invoiceRow)))) {
+      // PayDunya encaisse des francs entiers (`total_amount: Math.round(amount)` à la création de la facture de paiement) :
+      // le reste dû d'un loyer au prorata (54 838,71) est attendu arrondi (54 839), comme il a été demandé.
       console.warn(
-        `[paydunya] IPN rejetée pour la facture ${invoiceRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${resteDu(invoiceRow)}).`
+        `[paydunya] IPN rejetée pour la facture ${invoiceRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${Math.round(resteDu(invoiceRow))}).`
       );
       await signaler("le montant payé ne correspond plus au reste dû, qui a changé depuis le début du paiement");
     } else {
