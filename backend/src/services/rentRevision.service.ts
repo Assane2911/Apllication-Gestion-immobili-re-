@@ -355,21 +355,29 @@ function anniversaireEn(debut: Date, annee: number): Date {
  * qu'un loyer DOIT être révisé : elle rappelle seulement l'échéance au gestionnaire.
  */
 export async function bauxAReviser(managerId: string, maintenant: Date = new Date()): Promise<BailAReviser[]> {
-  const lignes: Array<{ contrat: Contrat; titre: string; prenom: string; nom: string }> = await db
-    .select({ contrat: contracts, titre: properties.title, prenom: tenants.firstName, nom: tenants.lastName })
+  // Colonnes lues par le calcul : ni les clauses ni les images de signature du bail (plusieurs centaines de Ko par bail actif).
+  const lignes: Array<{ contrat: Pick<Contrat, "id" | "rent" | "currency" | "startDate" | "endDate">; titre: string; prenom: string; nom: string }> = await db
+    .select({
+      contrat: { id: contracts.id, rent: contracts.rent, currency: contracts.currency, startDate: contracts.startDate, endDate: contracts.endDate },
+      titre: properties.title,
+      prenom: tenants.firstName,
+      nom: tenants.lastName,
+    })
     .from(contracts)
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
     .where(and(eq(properties.managerId, managerId), eq(contracts.status, "ACTIVE")));
   if (lignes.length === 0) return [];
 
+  // Les jointures servent au filtre par agence : seules les colonnes de la révision sont lues (un select() nu ramenait aussi
+  // chaque bail et chaque bien en entier, une fois par révision).
   const revisions: Revision[] = await db
-    .select()
+    .select({ revision: rentRevisions })
     .from(rentRevisions)
     .innerJoin(contracts, eq(rentRevisions.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(and(eq(properties.managerId, managerId), sql`${rentRevisions.status} <> 'CANCELLED'`))
-    .then((r: Array<{ rent_revisions: Revision }>) => r.map((x) => x.rent_revisions));
+    .then((r: Array<{ revision: Revision }>) => r.map((x) => x.revision));
 
   const debutFenetre = maintenant.getTime() - JOURS_APRES_ANNIVERSAIRE * JOUR_MS;
   const finFenetre = maintenant.getTime() + JOURS_AVANT_ANNIVERSAIRE * JOUR_MS;

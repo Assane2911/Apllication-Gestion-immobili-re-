@@ -254,6 +254,7 @@ const fr = {
       PAYOUT_DATE_FUTURE: "La date du versement ne peut pas être dans le futur.",
       PAYOUT_NO_ACTIVITY_IN_CURRENCY: "Aucun bien de ce propriétaire n'a d'activité en {{currency}} pour ce mois.",
       PAYOUT_NOTHING_LEFT: "Il ne reste rien à reverser pour ce mois dans cette devise.",
+      PAYOUT_AMOUNT_POSITIVE: "Le montant du reversement doit être supérieur à zéro.",
       PAYOUT_EXCEEDS_REMAINING: "Le montant dépasse ce qui reste à reverser pour ce mois ({{amount}}).",
       INVITATION_ALREADY_ACCEPTED: "Cette invitation a déjà été acceptée.",
       TWO_FACTOR_RECONFIGURE_FIRST_DISABLE: "La double authentification est déjà activée sur ce compte. Désactivez-la avant d'en reconfigurer une.",
