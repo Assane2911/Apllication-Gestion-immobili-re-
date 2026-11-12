@@ -250,7 +250,7 @@ describe("Fiche locataire anonymisée — plus de modification, d'accès au port
 
     const modif = await request(app).put(`/api/tenants/${tenant.id}`).set(h).send({ firstName: "Awa", email: "awa@example.com" });
     expect(modif.status).toBe(409);
-    const acces = await request(app).post(`/api/tenants/${tenant.id}/portal-account`).set(h).send({ password: "motdepasse123" });
+    const acces = await request(app).post(`/api/tenants/${tenant.id}/portal-account`).set(h).send({ password: "Un-secret-solide-42" });
     expect(acces.status).toBe(409);
 
     const [apres] = await testDb.select().from(tenants).where(eq(tenants.id, tenant.id));
