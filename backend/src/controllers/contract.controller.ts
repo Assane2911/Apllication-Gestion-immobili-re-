@@ -91,17 +91,23 @@ export async function resolveScannedUrl(value: string | null | undefined): Promi
  * convention que `parseInspection` pour `roomsData`/`metersData`/`keysData`
  * (inspection.controller.ts).
  */
-function parseDepositDeductions<T extends { depositDeductions: string | null; housingMentions: string | null }>(
+function parseDepositDeductions<T extends { depositDeductions: string | null; housingMentions: string | null; managerSignatureUrl: string | null; tenantSignatureUrl: string | null }>(
   contract: T
-): Omit<T, "depositDeductions" | "housingMentions"> & {
+): Omit<T, "depositDeductions" | "housingMentions" | "managerSignatureUrl" | "tenantSignatureUrl"> & {
   depositDeductions: Array<{ label: string; amount: number }> | null;
   housingMentions: ReturnType<typeof lireMentions>;
 } {
+  // Les IMAGES de signature (data URL jusqu'à 500 000 caractères chacune) ne font pas partie de la réponse : aucun
+  // écran ne les affiche (le bail imprimable est fabriqué côté serveur, qui les relit en base) et elles alourdissaient
+  // chaque chargement de la liste des baux. Ce qui compte pour l'écran, c'est qui a signé et quand :
+  // `signedByManagerAt` / `signedByTenantAt` restent renvoyés.
+  const { managerSignatureUrl: _imageGestionnaire, tenantSignatureUrl: _imageLocataire, ...visible } = contract;
   return {
-    ...contract,
+    ...visible,
     depositDeductions: contract.depositDeductions ? JSON.parse(contract.depositDeductions) : null,
     housingMentions: lireMentions(contract.housingMentions),
-  };
+    // TypeScript ne sait pas réduire `Omit` d'un type générique après le retrait des deux images.
+  } as ReturnType<typeof parseDepositDeductions<T>>;
 }
 
 /**
@@ -535,7 +541,7 @@ export const updateContract = asyncHandler(async (req: Request, res: Response) =
   });
 
   // Les mentions du logement sont stockées en JSON : la réponse les rend en objet, comme toutes les lectures du contrat.
-  res.json({ ...contract, housingMentions: lireMentions(contract.housingMentions) });
+  res.json({ ...parseDepositDeductions(contract) });
 });
 
 export const deleteContract = asyncHandler(async (req: Request, res: Response) => {
