@@ -13,6 +13,7 @@ import {
   genererOtpauthUrl,
   genererQrCodeDataUrl,
   genererSecretTotp,
+  consommerCodeSecours,
   consommerPasTotp,
   verifierCodeTotp,
   verifierCodeTotpAvecPas,
@@ -116,12 +117,15 @@ const disableTwoFactorSchema = z.object({
   // n'a jamais eu de vrai mot de passe à ressaisir (voir hasPassword).
   password: z.string().min(1).max(1024).optional(),
   googleCredential: z.string().min(1).max(8192).optional(),
+  // Un code du second facteur (application d'authentification, ou code de secours), en plus de la preuve ci-dessus. Vérifié dans le
+  // contrôleur, après le mot de passe : une réponse « mot de passe incorrect » ne dépend pas de la présence du code.
+  code: z.string().trim().max(12).optional(),
 });
 
 /**
  * Désactive la 2FA — ressaisie du mot de passe (ou reconnexion Google fraîche
- * pour un compte Google-only) exigée avant un geste qui, sinon, suffirait à
- * annuler toute la protection avec un jeton déjà en poche.
+ * pour un compte Google-only) ET code du second facteur exigés avant un geste qui,
+ * sinon, suffirait à annuler toute la protection avec un jeton déjà en poche.
  */
 export const disableTwoFactor = asyncHandler(async (req: Request, res: Response) => {
   const body = disableTwoFactorSchema.parse(req.body);
@@ -151,6 +155,19 @@ export const disableTwoFactor = asyncHandler(async (req: Request, res: Response)
     if (!payload || !payload.email_verified || payload.sub !== user.googleId) {
       throw new ApiError(401, "Jeton Google invalide", "GOOGLE_TOKEN_INVALID");
     }
+  }
+
+  // Le mot de passe (ou Google) seul ne suffit pas : c'est le second facteur lui-même qu'on retire. Un jeton de session volé et un mot
+  // de passe connu ne doivent pas permettre d'annuler la protection que le téléphone du titulaire apporte. Le code sert une fois
+  // (même règle qu'à la connexion) ; un code de secours est accepté si le téléphone n'est plus disponible.
+  if (!body.code) {
+    throw new ApiError(400, "Code de vérification requis", "TWO_FACTOR_CODE_INVALID");
+  }
+  const pas = user.totpSecret ? await verifierCodeTotpAvecPas(dechiffrerSecretTotp(user.totpSecret), body.code) : null;
+  const codeAccepte =
+    pas !== null ? await consommerPasTotp(user.id, pas) : (await consommerCodeSecours(body.code, user.totpBackupCodesHash)) !== null;
+  if (!codeAccepte) {
+    throw new ApiError(401, "Code invalide ou expiré.", "TWO_FACTOR_CODE_INVALID");
   }
 
   await db

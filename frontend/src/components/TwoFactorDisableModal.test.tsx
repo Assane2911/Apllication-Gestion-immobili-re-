@@ -66,9 +66,10 @@ describe("TwoFactorDisableModal", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Ressaisissez votre mot de passe actuel"), "mon-mot-de-passe");
+    await user.type(screen.getByLabelText("Code de vérification"), "123456");
     await user.click(screen.getByRole("button", { name: "Désactiver" }));
 
-    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/auth/2fa/disable", { password: "mon-mot-de-passe" }));
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/auth/2fa/disable", { password: "mon-mot-de-passe", code: "123456" }));
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
   });
 
@@ -78,10 +79,11 @@ describe("TwoFactorDisableModal", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Simuler connexion Google" }));
+    await user.type(screen.getByLabelText("Code de vérification"), "a1b2c3d4e5");
     await user.click(screen.getByRole("button", { name: "Désactiver" }));
 
     await waitFor(() =>
-      expect(mockedApi.post).toHaveBeenCalledWith("/auth/2fa/disable", { googleCredential: "fake-google-credential" })
+      expect(mockedApi.post).toHaveBeenCalledWith("/auth/2fa/disable", { googleCredential: "fake-google-credential", code: "a1b2c3d4e5" })
     );
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
   });
@@ -92,6 +94,7 @@ describe("TwoFactorDisableModal", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Ressaisissez votre mot de passe actuel"), "mauvais");
+    await user.type(screen.getByLabelText("Code de vérification"), "123456");
     await user.click(screen.getByRole("button", { name: "Désactiver" }));
 
     expect(await screen.findByText("Mot de passe incorrect")).toBeInTheDocument();
@@ -101,5 +104,21 @@ describe("TwoFactorDisableModal", () => {
   it("le bouton de confirmation reste désactivé tant qu'aucun mot de passe n'est saisi", () => {
     renderModal({ id: "mgr-1", email: "manager@test.local", role: "MANAGER", hasPassword: true });
     expect(screen.getByRole("button", { name: "Désactiver" })).toBeDisabled();
+  });
+
+  /** Le mot de passe seul ne suffit plus : sans code du second facteur, la désactivation n'est pas proposée. */
+  it("ne propose pas de désactiver tant que le code du second facteur n'est pas saisi", async () => {
+    renderModal({ id: "mgr-1", email: "manager@test.local", role: "MANAGER", hasPassword: true });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Ressaisissez votre mot de passe actuel"), "mon-mot-de-passe");
+    expect(screen.getByRole("button", { name: "Désactiver" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Code de vérification"), "12345");
+    expect(screen.getByRole("button", { name: "Désactiver" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Code de vérification"), "6");
+    expect(screen.getByRole("button", { name: "Désactiver" })).toBeEnabled();
+    expect(mockedApi.post).not.toHaveBeenCalled();
   });
 });

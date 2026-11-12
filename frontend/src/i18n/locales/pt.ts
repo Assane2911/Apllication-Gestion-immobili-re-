@@ -1405,7 +1405,9 @@ const pt: TranslationSchema = {
     },
     twoFactorDisable: {
       title: "Desativar a verificação em duas etapas",
-      subtitle: "Confirma a tua identidade para desativar esta proteção.",
+      subtitle: "Confirma a tua identidade e introduz um código de verificação para desativar esta proteção.",
+      codeLabel: "Código de verificação",
+      codeHint: "O código mostrado pela tua aplicação de autenticação, ou um dos teus códigos de segurança.",
       disabling: "A desativar...",
       confirmButton: "Desativar",
     },
@@ -3839,6 +3841,8 @@ const pt: TranslationSchema = {
       },
     },
     dashboard: {
+      twoFactorWarning: "A tua conta de administrador não tem verificação em duas etapas: confirma transferências e elimina agências, uma palavra-passe roubada bastaria para fazer tudo.",
+      twoFactorWarningLink: "Ativar agora",
       todo: {
         suggestions: "{{count}} sugestão(ões) por ler",
         title: "A tratar",

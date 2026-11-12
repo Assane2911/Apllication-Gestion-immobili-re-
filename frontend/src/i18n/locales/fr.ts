@@ -1403,7 +1403,9 @@ const fr = {
     },
     twoFactorDisable: {
       title: "Désactiver la double authentification",
-      subtitle: "Confirmez votre identité pour désactiver cette protection.",
+      subtitle: "Confirmez votre identité et saisissez un code de vérification pour désactiver cette protection.",
+      codeLabel: "Code de vérification",
+      codeHint: "Le code affiché par votre application d'authentification, ou l'un de vos codes de secours.",
       disabling: "Désactivation...",
       confirmButton: "Désactiver",
     },
@@ -3840,6 +3842,8 @@ const fr = {
       },
     },
     dashboard: {
+      twoFactorWarning: "Votre compte administrateur n'a pas de double authentification : il confirme les virements et supprime des agences, un mot de passe volé suffirait à tout faire.",
+      twoFactorWarningLink: "Activer maintenant",
       todo: {
         suggestions: "{{count}} suggestion(s) non lue(s)",
         title: "À traiter",

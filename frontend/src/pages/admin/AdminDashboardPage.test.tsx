@@ -50,6 +50,30 @@ function stats(overrides: Record<string, unknown> = {}) {
 describe("AdminDashboardPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
+    localStorage.clear();
+  });
+
+  /**
+   * Ce compte confirme les virements et supprime des agences : sans second facteur, un mot de passe volé suffit. L'avis est visible
+   * et mène aux réglages, sans bloquer l'accès (un administrateur unique ne doit jamais se retrouver enfermé dehors).
+   */
+  it("avertit l'administrateur dont la double authentification est inactive, avec un lien vers les réglages", async () => {
+    localStorage.setItem("user", JSON.stringify({ id: "adm-1", email: "admin@test.local", role: "ADMIN", twoFactorEnabled: false }));
+    mockedApi.get.mockResolvedValueOnce({ data: stats() });
+    renderPage();
+
+    const avis = await screen.findByRole("note");
+    expect(avis).toHaveTextContent(/n'a pas de double authentification/);
+    expect(within(avis).getByRole("link", { name: "Activer maintenant" })).toHaveAttribute("href", "/admin/parametres#securite");
+  });
+
+  it("n'avertit pas quand la double authentification est active", async () => {
+    localStorage.setItem("user", JSON.stringify({ id: "adm-1", email: "admin@test.local", role: "ADMIN", twoFactorEnabled: true }));
+    mockedApi.get.mockResolvedValueOnce({ data: stats() });
+    renderPage();
+
+    await screen.findByRole("region", { name: "WhatsApp" });
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 
   it("signale les comptes suspendus dans la vignette des gestionnaires, et seulement s'il y en a", async () => {

@@ -1405,7 +1405,9 @@ const en: TranslationSchema = {
     },
     twoFactorDisable: {
       title: "Disable two-factor authentication",
-      subtitle: "Confirm your identity to disable this protection.",
+      subtitle: "Confirm your identity and enter a verification code to disable this protection.",
+      codeLabel: "Verification code",
+      codeHint: "The code shown by your authenticator app, or one of your backup codes.",
       disabling: "Disabling...",
       confirmButton: "Disable",
     },
@@ -3839,6 +3841,8 @@ const en: TranslationSchema = {
       },
     },
     dashboard: {
+      twoFactorWarning: "Your administrator account has no two-factor authentication: it confirms transfers and deletes agencies, so a stolen password would be enough to do anything.",
+      twoFactorWarningLink: "Enable now",
       todo: {
         suggestions: "{{count}} unread suggestion(s)",
         title: "To do",

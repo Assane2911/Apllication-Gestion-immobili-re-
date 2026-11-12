@@ -47,17 +47,17 @@ describe("double authentification du compte administrateur", () => {
     expect(panneau.status).toBe(200);
   });
 
-  it("permet à l'administrateur de la désactiver avec son mot de passe", async () => {
+  it("permet à l'administrateur de la désactiver avec son mot de passe et un code de secours", async () => {
     const admin = await createAdmin();
     const token = tokenFor(admin);
     const setup = await request(app).post("/api/auth/2fa/setup").set(authHeader(token));
-    await request(app)
+    const confirmation = await request(app)
       .post("/api/auth/2fa/confirm")
       .set(authHeader(token))
       .send({ code: await genererCodeTotp(setup.body.secret) })
       .expect(200);
 
-    const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(token)).send({ password: "Password123!" });
+    const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(token)).send({ password: "Password123!", code: confirmation.body.backupCodes[0] });
 
     expect(res.status).toBe(200);
     const [row] = await testDb.select().from(users).where(eq(users.id, admin.id));
