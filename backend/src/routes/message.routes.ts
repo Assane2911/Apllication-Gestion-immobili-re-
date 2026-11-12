@@ -7,6 +7,7 @@ import {
   sendVoiceMessage,
 } from "../controllers/message.controller";
 import { authenticate, requireActiveSubscription } from "../middleware/auth";
+import { messagerieEnvoiLimiter } from "../middleware/rateLimit";
 import { uploadMessageAudio } from "../middleware/upload";
 
 const router = Router();
@@ -20,7 +21,7 @@ router.get("/conversations", listConversations);
 // Avant /:contractId, qui l'avalerait.
 router.get("/unread-count", nonLusMessagerie);
 router.get("/:contractId", getMessagesByContract);
-router.post("/:contractId", sendMessage);
-router.post("/:contractId/audio", uploadMessageAudio.single("audio"), sendVoiceMessage);
+router.post("/:contractId", messagerieEnvoiLimiter, sendMessage);
+router.post("/:contractId/audio", messagerieEnvoiLimiter, uploadMessageAudio.single("audio"), sendVoiceMessage);
 
 export default router;

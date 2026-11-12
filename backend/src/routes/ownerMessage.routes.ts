@@ -10,6 +10,7 @@ import {
   sendOwnerVoice,
 } from "../controllers/ownerMessage.controller";
 import { authenticate, requireActiveSubscription, requireRole } from "../middleware/auth";
+import { messagerieEnvoiLimiter } from "../middleware/rateLimit";
 import { uploadMessageAudio } from "../middleware/upload";
 
 const router = Router();
@@ -18,15 +19,15 @@ const router = Router();
 // gestionnaire ; un propriétaire garde l'accès quel que soit l'abonnement de son agence (comme un locataire).
 router.get("/unread-count", authenticate, requireRole("OWNER"), countMyUnreadOwnerMessages);
 router.get("/mine", authenticate, requireRole("OWNER"), getMyOwnerThread);
-router.post("/mine", authenticate, requireRole("OWNER"), sendMyOwnerMessage);
-router.post("/mine/audio", authenticate, requireRole("OWNER"), uploadMessageAudio.single("audio"), sendMyOwnerVoice);
+router.post("/mine", authenticate, requireRole("OWNER"), messagerieEnvoiLimiter, sendMyOwnerMessage);
+router.post("/mine/audio", authenticate, requireRole("OWNER"), messagerieEnvoiLimiter, uploadMessageAudio.single("audio"), sendMyOwnerVoice);
 
 // Côté gestionnaire : les fils des propriétaires de son agence.
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 
 router.get("/conversations", listOwnerConversations);
 router.get("/:ownerId", getOwnerThread);
-router.post("/:ownerId", sendOwnerMessage);
-router.post("/:ownerId/audio", uploadMessageAudio.single("audio"), sendOwnerVoice);
+router.post("/:ownerId", messagerieEnvoiLimiter, sendOwnerMessage);
+router.post("/:ownerId/audio", messagerieEnvoiLimiter, uploadMessageAudio.single("audio"), sendOwnerVoice);
 
 export default router;

@@ -307,6 +307,7 @@ const en: TranslationSchema = {
       REQUETE_INVALIDE: "Invalid request.",
       CARACTERE_INTERDIT: "Invalid request: forbidden character.",
       PHONE_INVALID: "Invalid phone number: include the country code, for example +221 77 123 45 67.",
+      MESSAGE_RATE_LIMITED: "Too many messages sent in a short time. Try again in a few minutes.",
       PERSON_DATA_NOT_FOUND: "No data held for this person.",
       PERSON_CRITERIA_REQUIRED: "Enter the person's email address or phone number.",
       LEASE_DATE_OUT_OF_RANGE: "The date must be between {{min}} and {{max}}",

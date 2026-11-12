@@ -83,6 +83,24 @@ export const authSecondFacteurLimiter = rateLimit({
 });
 
 /**
+ * Limite par COMPTE sur l'ENVOI de messages (texte et vocal, côté locataire, gestionnaire et propriétaire) : 60 envois par fenêtre de
+ * 15 minutes. Chaque message d'un gestionnaire déclenche un e-mail au locataire (le même SMTP que les rappels et la vérification des
+ * comptes : un envoi en boucle abîme sa réputation) et chaque vocal dépose un fichier dans le stockage privé : sans plafond, un compte
+ * (ou un script) pouvait inonder une boîte de réception et remplir le stockage. La limite est très au-dessus d'un usage réel (quatre
+ * messages par minute, en continu), et par collaborateur plutôt que par agence. Compteur en base, partagé entre les instances. Doit
+ * se placer APRÈS `authenticate` (il lit `req.user`) et AVANT le lecteur de fichiers, pour que le dépôt refusé ne soit même pas reçu.
+ */
+export const messagerieEnvoiLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 60,
+  store: new PostgresRateLimitStore("messagerie-envoi"),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => (req.user ? `msg:${req.user.collaboratorId ?? req.user.userId}` : ipKeyGenerator(req.ip ?? "unknown")),
+  message: { error: "Trop de messages envoyés en peu de temps. Réessayez dans quelques minutes.", code: "MESSAGE_RATE_LIMITED" },
+});
+
+/**
  * Limite par adresse IP sur les routes /api/cron/* : leur seule protection
  * est la comparaison en temps constant du secret (cron.controller.ts::
  * secretValide), qui empêche une attaque par mesure de TIMING mais pas un

@@ -305,6 +305,7 @@ const fr = {
       REQUETE_INVALIDE: "Requête invalide.",
       CARACTERE_INTERDIT: "Requête invalide : caractère interdit.",
       PHONE_INVALID: "Numéro de téléphone invalide : indiquez l'indicatif du pays, par exemple +221 77 123 45 67.",
+      MESSAGE_RATE_LIMITED: "Trop de messages envoyés en peu de temps. Réessayez dans quelques minutes.",
       PERSON_DATA_NOT_FOUND: "Aucune donnée détenue pour cette personne.",
       PERSON_CRITERIA_REQUIRED: "Indiquez l'adresse email ou le téléphone de la personne.",
       LEASE_DATE_OUT_OF_RANGE: "La date doit être comprise entre {{min}} et {{max}}",
