@@ -193,6 +193,26 @@ export function requireRole(...roles: Array<AuthPayload["role"]>) {
 }
 
 /**
+ * L'espace d'administration exige la double authentification : ce compte confirme les virements, suspend et supprime des
+ * agences, change les paramètres de la plateforme ; un mot de passe volé ne doit pas suffire à tout cela.
+ *
+ * Un administrateur qui ne l'a pas encore activée n'est pas enfermé dehors : il se connecte, et seules les routes de
+ * l'espace d'administration lui sont refusées. L'activation (/auth/2fa/setup puis /auth/2fa/confirm, ouvertes aux
+ * administrateurs) reste accessible avec sa session, ce qui lui permet de s'enrôler lui-même sans qu'un autre
+ * administrateur ait à intervenir. Se place APRÈS authenticate et requireRole("ADMIN") : il lit req.compteCourant.
+ */
+export function exigerDeuxFacteursAdmin(req: Request, _res: Response, next: NextFunction) {
+  if (!req.compteCourant?.totpEnabledAt) {
+    throw new ApiError(
+      403,
+      "La double authentification est obligatoire pour l'administration : activez-la pour continuer.",
+      "TWO_FACTOR_SETUP_REQUIRED"
+    );
+  }
+  next();
+}
+
+/**
  * Le compte a-t-il aujourd'hui un droit d'accès : essai en cours, abonnement actif, ou abonnement résilié dont la période déjà
  * payée n'est pas échue ? Seule règle, partagée par le middleware ci-dessous et par le flux de calendrier (sans session).
  */

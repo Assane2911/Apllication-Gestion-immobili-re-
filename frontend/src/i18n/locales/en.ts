@@ -50,6 +50,7 @@ const en: TranslationSchema = {
       ACCESS_DENIED: "Access denied",
       INVALID_CREDENTIALS: "Incorrect email or password",
       TWO_FACTOR_CODE_INVALID: "Invalid or expired code.",
+      TWO_FACTOR_SETUP_REQUIRED: "Two-factor authentication is required for administration: enable it to continue.",
       GOOGLE_NOT_CONFIGURED: "Google sign-in is not configured on this server",
       GOOGLE_TOKEN_INVALID_OR_EXPIRED: "Invalid or expired Google token",
       GOOGLE_TOKEN_INVALID: "Invalid Google token",

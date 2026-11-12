@@ -16,7 +16,7 @@ import { testDb } from "../test/setupTestDb";
  */
 describe("double authentification du compte administrateur", () => {
   it("permet à l'administrateur de l'activer, puis lui impose le code à la connexion", async () => {
-    const admin = await createAdmin();
+    const admin = await createAdmin({ totpEnabledAt: null });
     const token = tokenFor(admin);
 
     const setup = await request(app).post("/api/auth/2fa/setup").set(authHeader(token));
@@ -48,7 +48,7 @@ describe("double authentification du compte administrateur", () => {
   });
 
   it("permet à l'administrateur de la désactiver avec son mot de passe et un code de secours", async () => {
-    const admin = await createAdmin();
+    const admin = await createAdmin({ totpEnabledAt: null });
     const token = tokenFor(admin);
     const setup = await request(app).post("/api/auth/2fa/setup").set(authHeader(token));
     const confirmation = await request(app)

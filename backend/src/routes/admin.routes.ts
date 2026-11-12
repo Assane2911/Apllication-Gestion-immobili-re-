@@ -18,13 +18,13 @@ import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeU
 import { annulerMaintenance, etatMaintenance, programmerMaintenance } from "../controllers/maintenance.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
-import { authenticate, requireRole } from "../middleware/auth";
+import { authenticate, exigerDeuxFacteursAdmin, requireRole } from "../middleware/auth";
 
 const router = Router();
 
 // Toutes les routes admin sont réservées au rôle ADMIN — aucune inscription
 // publique ne mène à ce rôle, il est attribué manuellement en base.
-router.use(authenticate, requireRole("ADMIN"));
+router.use(authenticate, requireRole("ADMIN"), exigerDeuxFacteursAdmin);
 
 router.get("/dashboard/stats", getPlatformDashboardStats);
 router.get("/subscriptions/pending-bank-transfers", listPendingBankTransfers);

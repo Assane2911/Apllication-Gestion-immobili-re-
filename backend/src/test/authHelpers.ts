@@ -63,6 +63,9 @@ export async function createAdmin(overrides: Partial<typeof users.$inferInsert> 
       passwordHash,
       role: "ADMIN" as const,
       emailVerifiedAt: new Date(),
+      // L'administration exige la double authentification (voir exigerDeuxFacteursAdmin) : par défaut, l'administrateur de test
+      // l'a activée, sans secret réel (aucun test ne se connecte avec). Un test de la règle passe `totpEnabledAt: null`.
+      totpEnabledAt: new Date(),
       ...overrides,
     })
     .returning();

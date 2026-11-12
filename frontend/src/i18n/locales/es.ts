@@ -50,6 +50,7 @@ const es: TranslationSchema = {
       ACCESS_DENIED: "Acceso denegado",
       INVALID_CREDENTIALS: "Correo electrónico o contraseña incorrectos",
       TWO_FACTOR_CODE_INVALID: "Código no válido o caducado.",
+      TWO_FACTOR_SETUP_REQUIRED: "La autenticación en dos pasos es obligatoria para la administración: actívela para continuar.",
       GOOGLE_NOT_CONFIGURED: "El inicio de sesión con Google no está configurado en este servidor",
       GOOGLE_TOKEN_INVALID_OR_EXPIRED: "Token de Google no válido o caducado",
       GOOGLE_TOKEN_INVALID: "Token de Google no válido",
