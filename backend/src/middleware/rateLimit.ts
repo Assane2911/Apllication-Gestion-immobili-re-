@@ -199,10 +199,15 @@ export const cspLimiter = rateLimit({
  * libres). Fenêtre plus généreuse que les limites d'authentification : un
  * même visiteur légitime peut vouloir demander une info puis une visite sur
  * plusieurs annonces différentes en peu de temps.
+ *
+ * Compteur en base, partagé entre les instances : en mémoire, chaque instance serverless comptait pour elle seule et
+ * repartait de zéro à chaque démarrage à froid, si bien que la limite de 10 ne bornait presque rien sur la seule route
+ * publique qui écrit en base.
  */
 export const listingLeadLimiter = rateLimit({
   windowMs: WINDOW_MS,
   limit: 10,
+  store: new PostgresRateLimitStore("listing-lead"),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Trop de demandes envoyées depuis cette adresse. Réessayez dans quelques minutes." },
