@@ -101,6 +101,24 @@ export const messagerieEnvoiLimiter = rateLimit({
 });
 
 /**
+ * Limite par COMPTE sur le DÉPÔT de photos d'incident (signalement d'un locataire, ajout d'une photo par le locataire ou le
+ * gestionnaire) : 30 dépôts par fenêtre de 15 minutes. Chaque dépôt écrit un fichier (jusqu'à 4 Mo) dans le stockage privé ; le
+ * plafond de 10 photos par incident ne borne pas le nombre d'incidents, donc un compte (ou un script) pouvait remplir le stockage
+ * en créant des signalements en boucle, chacun visible du gestionnaire. 30 laisse la place à trois incidents complets (10 photos
+ * chacun) dans le même quart d'heure, très au-dessus d'un usage réel. Compteur en base, partagé entre les instances ; la lecture
+ * des listes n'est jamais limitée. Doit se placer APRÈS `authenticate` (il lit `req.user`) et AVANT le lecteur de fichiers.
+ */
+export const incidentPhotoLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 30,
+  store: new PostgresRateLimitStore("incident-photo"),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => (req.user ? `inc:${req.user.collaboratorId ?? req.user.userId}` : ipKeyGenerator(req.ip ?? "unknown")),
+  message: { error: "Trop de photos envoyées en peu de temps. Réessayez dans quelques minutes.", code: "ISSUE_RATE_LIMITED" },
+});
+
+/**
  * Limite par adresse IP sur les routes /api/cron/* : leur seule protection
  * est la comparaison en temps constant du secret (cron.controller.ts::
  * secretValide), qui empêche une attaque par mesure de TIMING mais pas un
