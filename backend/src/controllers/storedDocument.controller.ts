@@ -7,7 +7,8 @@ import { logActivity } from "../services/activity.service";
 import { deleteStorageObjectBestEffort, getSignedUrl, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
-import { CATEGORIES_DOCUMENT, MAX_DOCUMENTS_PAR_RATTACHEMENT } from "../utils/categoriesDocument";
+import { CATEGORIES_DOCUMENT, CATEGORIES_DOCUMENT_SENSIBLES, MAX_DOCUMENTS_PAR_RATTACHEMENT } from "../utils/categoriesDocument";
+import { messageRefusRole, peutOuvrirPieceSensible } from "../utils/rolesEquipe";
 import { dateSaisieSchema } from "../utils/dates";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
@@ -180,6 +181,11 @@ export const updateStoredDocument = asyncHandler(async (req: Request, res: Respo
 /** Lien temporaire d'ouverture du fichier : le chemin du stockage ne sort jamais du serveur. */
 export const getStoredDocumentLink = asyncHandler(async (req: Request, res: Response) => {
   const doc = await documentDuGestionnaire(req);
+  // Les pièces personnelles (identité, revenus, garanties) suivent la règle de la pièce d'identité du locataire : le contrôle
+  // central des rôles d'équipe ne voit que le chemin, pas la catégorie du document, donc ce refus se fait ici.
+  if (CATEGORIES_DOCUMENT_SENSIBLES.includes(doc.category as (typeof CATEGORIES_DOCUMENT)[number]) && !peutOuvrirPieceSensible(req.roleEquipe)) {
+    throw new ApiError(403, messageRefusRole(req.roleEquipe!), "ROLE_EQUIPE_INSUFFISANT");
+  }
   res.json({ url: await getSignedUrl(doc.filePath, DUREE_LIEN_SECONDES), fileName: doc.fileName, mimeType: doc.mimeType });
 });
 

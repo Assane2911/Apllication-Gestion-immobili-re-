@@ -40,10 +40,27 @@ export function shouldReportToSentry(error: {
   return true;
 }
 
+/**
+ * Le lien d'abonnement au calendrier porte son jeton dans l'adresse (`/api/agenda/ics/<jeton>.ics`) : c'est le secret qui tient lieu
+ * de session aux calendriers externes. Une erreur ou une trace envoyée à Sentry contient l'adresse de la requête, ses fils d'Ariane
+ * et le nom des opérations : sans ce masquage, le jeton s'y retrouvait en clair, lisible par quiconque consulte Sentry.
+ * Le masquage s'applique à l'événement entier (texte JSON) plutôt qu'à des champs choisis, pour n'en oublier aucun.
+ */
+const JETON_AGENDA_DANS_ADRESSE = /(\/agenda\/ics\/)[A-Za-z0-9_%-]{16,}/g;
+
+export function masquerJetonsAgenda<T>(evenement: T): T {
+  const texte = JSON.stringify(evenement);
+  if (texte === undefined || !JETON_AGENDA_DANS_ADRESSE.test(texte)) return evenement;
+  JETON_AGENDA_DANS_ADRESSE.lastIndex = 0;
+  return JSON.parse(texte.replace(JETON_AGENDA_DANS_ADRESSE, "$1[masqué]")) as T;
+}
+
 if (env.sentryDsn) {
   Sentry.init({
     dsn: env.sentryDsn,
     environment: env.nodeEnv,
+    beforeSend: (evenement) => masquerJetonsAgenda(evenement),
+    beforeSendTransaction: (evenement) => masquerJetonsAgenda(evenement),
     integrations: [Sentry.expressIntegration({ shouldHandleError: shouldReportToSentry })],
     // Pourcentage de requêtes tracées en plus des erreurs (0 à 1). 0.1 = 10%,
     // suffisant pour repérer les lenteurs sans consommer tout le quota gratuit.
