@@ -2,7 +2,7 @@ import multer from "multer";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { ApiError } from "./utils/asyncHandler";
-import { shouldReportToSentry } from "./instrument";
+import { masquerJetonsAgenda, shouldReportToSentry } from "./instrument";
 
 // Ce prédicat décide de ce qui atteint Sentry. Il est branché sur
 // expressIntegration() et s'applique donc AVANT errorHandler : c'est le seul
@@ -64,5 +64,49 @@ describe("shouldReportToSentry", () => {
 
   it("préfère statusCode à status quand les deux sont présents", () => {
     expect(shouldReportToSentry({ name: "Error", statusCode: 404, status: 500 })).toBe(false);
+  });
+});
+
+/**
+ * Audit de sécurité : le jeton du lien de calendrier est dans l'adresse. Sentry reçoit l'adresse de la requête, ses fils d'Ariane et le
+ * nom des opérations : le jeton ne doit figurer dans aucun de ces champs.
+ */
+describe("masquerJetonsAgenda", () => {
+  const JETON = "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde".slice(0, 43);
+
+  it("masque le jeton partout dans l'événement : adresse, fil d'Ariane, nom de transaction, tags", () => {
+    const evenement = {
+      request: { url: `https://api.example.test/api/agenda/ics/${JETON}.ics`, method: "GET" },
+      transaction: `GET /api/agenda/ics/${JETON}.ics`,
+      breadcrumbs: [{ category: "http", data: { url: `https://api.example.test/api/agenda/ics/${JETON}.ics?x=1` } }],
+      tags: { chemin: `/agenda/ics/${JETON}.ics` },
+    };
+
+    const sortie = masquerJetonsAgenda(evenement);
+
+    expect(JSON.stringify(sortie)).not.toContain(JETON);
+    expect(sortie.request.url).toBe("https://api.example.test/api/agenda/ics/[masqué].ics");
+    expect(sortie.breadcrumbs[0].data.url).toBe("https://api.example.test/api/agenda/ics/[masqué].ics?x=1");
+    expect(sortie.request.method).toBe("GET");
+  });
+
+  it("masque plusieurs jetons dans le même événement", () => {
+    const autre = JETON.split("").reverse().join("");
+    const sortie = masquerJetonsAgenda({ a: `/agenda/ics/${JETON}.ics`, b: `/agenda/ics/${autre}.ics` });
+
+    expect(JSON.stringify(sortie)).not.toContain(JETON);
+    expect(JSON.stringify(sortie)).not.toContain(autre);
+  });
+
+  it("ne touche pas un événement sans jeton (même objet rendu)", () => {
+    const evenement = { request: { url: "https://api.example.test/api/agenda/summary" }, message: "Erreur ordinaire" };
+
+    expect(masquerJetonsAgenda(evenement)).toBe(evenement);
+  });
+
+  it("ne masque pas les autres routes de l'agenda", () => {
+    const evenement = { request: { url: "https://api.example.test/api/agenda/feed" } };
+
+    expect(masquerJetonsAgenda(evenement).request.url).toBe("https://api.example.test/api/agenda/feed");
   });
 });

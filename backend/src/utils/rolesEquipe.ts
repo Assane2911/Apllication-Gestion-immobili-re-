@@ -148,10 +148,23 @@ export function normaliserChemin(urlOriginale: string): string {
   return chemin === "" ? "/" : chemin;
 }
 
+/** Le message de refus d'une action que le rôle `role` ne permet pas (le même que celui du contrôle central). */
+export function messageRefusRole(role: RoleEquipe): string {
+  return `Votre rôle dans l'équipe (${LIBELLES_ROLES_EQUIPE[role]}) ne permet pas cette action. Demandez au gestionnaire propriétaire de l'agence de modifier votre rôle.`;
+}
+
+/**
+ * Le collaborateur de rôle `role` peut-il ouvrir une pièce personnelle (identité, revenus, garanties) ? Réservé au rôle complet
+ * et à l'agent, comme la pièce d'identité du locataire. Le propriétaire de l'agence (aucun rôle d'équipe) n'est jamais concerné.
+ */
+export function peutOuvrirPieceSensible(role: RoleEquipe | undefined): boolean {
+  return role === undefined || role === "FULL" || role === "AGENT";
+}
+
 function refus(role: RoleEquipe): VerdictEquipe {
   return {
     autorise: false,
-    message: `Votre rôle dans l'équipe (${LIBELLES_ROLES_EQUIPE[role]}) ne permet pas cette action. Demandez au gestionnaire propriétaire de l'agence de modifier votre rôle.`,
+    message: messageRefusRole(role),
   };
 }
 
