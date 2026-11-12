@@ -48,14 +48,15 @@ const booleanField = z
 const listingSchema = z.object({
   type: z.enum(LISTING_TYPES).optional(),
   // Une annonce est lue par des visiteurs sans compte : tout est borné (et « 1e999 » devient Infinity après coercition).
-  title: z.string().min(2).max(200, "Le titre ne peut pas dépasser 200 caractères"),
-  description: z.string().min(2).max(5000, "La description ne peut pas dépasser 5 000 caractères"),
+  // trim() : une annonce faite d'espaces passait min(2) et s'affichait vide sur la vitrine publique.
+  title: z.string().trim().min(2).max(200, "Le titre ne peut pas dépasser 200 caractères"),
+  description: z.string().trim().min(2).max(5000, "La description ne peut pas dépasser 5 000 caractères"),
   price: z.coerce.number().finite().positive().max(MONTANT_MAXIMUM, "Le prix est trop élevé"),
   currency: deviseSchema.optional(),
   pricePeriod: z.enum(PRICE_PERIODS).optional(),
   surface: z.coerce.number().finite().positive().max(SURFACE_MAXIMUM, "La surface est trop élevée").optional(),
   rooms: z.coerce.number().int().positive().max(1000, "Le nombre de pièces est trop élevé").optional(),
-  location: z.string().min(2).max(200, "La localisation ne peut pas dépasser 200 caractères"),
+  location: z.string().trim().min(2).max(200, "La localisation ne peut pas dépasser 200 caractères"),
   contactPhone: z.string().max(40, "Le numéro est trop long").optional(),
   contactWhatsapp: z.string().max(40, "Le numéro est trop long").optional(),
   contactEmail: z.string().max(254, "L'adresse email est trop longue").email().optional(),
@@ -78,7 +79,7 @@ const publicFilterSchema = z.object({
 
 const leadSchema = z.object({
   // Route publique, sans authentification : des plafonds évitent d'y stocker des textes démesurés.
-  prospectName: z.string().min(2).max(120),
+  prospectName: z.string().trim().min(2).max(120),
   prospectEmail: z.string().email().max(254),
   // Un simple min(6) laissait passer n'importe quel texte ("bonjour", six
   // lettres) — un formulaire public, sans le sélecteur d'indicatif pays
@@ -90,7 +91,8 @@ const leadSchema = z.object({
   prospectPhone: z.string().max(40, "Numéro de téléphone invalide").regex(/^[+\d][\d\s().-]{5,}$/, "Numéro de téléphone invalide"),
   requestType: z.enum(LEAD_REQUEST_TYPES).optional(),
   preferredDate: dateSaisieSchema.optional(),
-  message: z.string().max(2000).optional(),
+  // Un message fait d'espaces n'est pas un message : il n'est pas enregistré.
+  message: z.string().trim().max(2000).optional().transform((v) => v || undefined),
 });
 
 const leadUpdateSchema = z.object({
@@ -318,6 +320,8 @@ export const createListing = asyncHandler(async (req: Request, res: Response) =>
 export const updateListing = asyncHandler(async (req: Request, res: Response) => {
   const body = listingSchema.partial().parse(req.body);
   const existing = await loadListingForManager(req.params.id, req.user!.userId);
+  // Rien à enregistrer : un corps vide sans image produisait « No values to set » côté base, soit une erreur 500.
+  if (Object.keys(body).length === 0 && !req.file) throw new ApiError(400, "Aucune modification à enregistrer.", "NOTHING_TO_UPDATE");
 
   // La vérification de propriété (loadListingForManager, ci-dessus) doit
   // précéder l'upload — même garde-fou que updateProperty
@@ -399,7 +403,8 @@ export const listListingLeads = asyncHandler(async (req: Request, res: Response)
 
   const [rows, [{ count }]] = await Promise.all([
     db
-      .select({ lead: listingLeads, listing: listings })
+      // Seul le titre de l'annonce est lu (pas sa description de 5 000 caractères, répétée pour chaque demande).
+      .select({ lead: listingLeads, listingTitle: listings.title })
       .from(listingLeads)
       .innerJoin(listings, eq(listingLeads.listingId, listings.id))
       .where(whereClause)
@@ -409,9 +414,9 @@ export const listListingLeads = asyncHandler(async (req: Request, res: Response)
     db.select({ count: sql<number>`count(*)::int` }).from(listingLeads).where(whereClause),
   ]);
 
-  const items = rows.map((r: { lead: typeof listingLeads.$inferSelect; listing: typeof listings.$inferSelect }) => ({
+  const items = rows.map((r: { lead: typeof listingLeads.$inferSelect; listingTitle: string }) => ({
     ...r.lead,
-    listingTitle: r.listing.title,
+    listingTitle: r.listingTitle,
   }));
 
   res.json(buildPaginatedResult(items, count, pagination));
@@ -422,6 +427,7 @@ export const updateListingLead = asyncHandler(async (req: Request, res: Response
 
   const [existing] = await db.select().from(listingLeads).where(eq(listingLeads.id, req.params.id));
   assertOwnership(existing, (e) => e.managerId, req.user!.userId, "Demande introuvable", 404, "REQUEST_NOT_FOUND");
+  if (Object.keys(body).length === 0) throw new ApiError(400, "Aucune modification à enregistrer.", "NOTHING_TO_UPDATE");
 
   const [lead] = await db.update(listingLeads).set(body).where(eq(listingLeads.id, existing.id)).returning();
 
