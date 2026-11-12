@@ -123,6 +123,38 @@ describe("POST /api/auth/google", () => {
    * passer par le second facteur. Google atteste l'adresse email, pas le
    * second facteur propre à ce Service.
    */
+  /**
+   * Audit de sécurité : un compte déjà lié à un compte Google ne doit pas être repris par un AUTRE compte Google portant la même
+   * adresse (adresse d'entreprise réattribuée, compte Google recréé). Google atteste l'adresse, pas que son détenteur actuel est
+   * le titulaire du compte d'ici.
+   */
+  it("refuse un autre compte Google (autre sub) portant l'adresse d'un compte déjà lié, sans écraser la liaison", async () => {
+    const manager = await createManager({ email: "recycle@test.local" });
+    await testDb.update(users).set({ googleId: "google-sub-titulaire" }).where(eq(users.id, manager.id));
+    mockGooglePayload({ sub: "google-sub-nouveau-detenteur", email: "recycle@test.local", email_verified: true });
+
+    const res = await request(app).post("/api/auth/google").send({ credential: "jeton-google" });
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("GOOGLE_TOKEN_INVALID");
+    expect(res.headers["set-cookie"]).toBeUndefined();
+    const [apres] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(apres.googleId).toBe("google-sub-titulaire");
+  });
+
+  it("laisse le titulaire (même sub) se reconnecter, et lie un compte jamais lié", async () => {
+    const lie = await createManager({ email: "lie@test.local" });
+    await testDb.update(users).set({ googleId: "google-sub-lie" }).where(eq(users.id, lie.id));
+    mockGooglePayload({ sub: "google-sub-lie", email: "lie@test.local", email_verified: true });
+    expect((await request(app).post("/api/auth/google").send({ credential: "jeton-google" })).status).toBe(200);
+
+    const neuf = await createManager({ email: "jamais-lie@test.local" });
+    mockGooglePayload({ sub: "google-sub-premiere-liaison", email: "jamais-lie@test.local", email_verified: true });
+    expect((await request(app).post("/api/auth/google").send({ credential: "jeton-google" })).status).toBe(200);
+    const [apres] = await testDb.select().from(users).where(eq(users.id, neuf.id));
+    expect(apres.googleId).toBe("google-sub-premiere-liaison");
+  });
+
   it("exige la 2FA même en passant par Google, pour un compte qui l'a activée", async () => {
     const manager = await createManager({ email: "google-2fa@test.local", googleId: "google-sub-2fa" });
 
