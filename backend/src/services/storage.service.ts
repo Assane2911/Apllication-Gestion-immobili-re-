@@ -82,6 +82,41 @@ export async function getSignedUrl(objectPath: string, expiresInSeconds = 3600) 
   return data.signedUrl;
 }
 
+/** Nombre de chemins signés par appel au stockage : une liste d'une page tient dans un seul appel, au-delà on découpe. */
+const TAILLE_LOT_SIGNATURES = 100;
+
+/**
+ * Signe PLUSIEURS fichiers du bucket privé en un seul appel au stockage (au lieu d'un appel par fichier : une page de 20 incidents
+ * à 10 photos en demandait 200). Renvoie, pour chaque chemin demandé, son URL signée ou `null` s'il n'a pas pu l'être (objet
+ * supprimé du stockage, stockage indisponible) : une photo introuvable ne doit pas faire échouer toute la liste, c'est à l'appelant de
+ * décider quoi afficher à sa place. Les doublons sont signés une fois, les valeurs vides ignorées.
+ */
+export async function getSignedUrls(objectPaths: string[], expiresInSeconds = 3600): Promise<Map<string, string | null>> {
+  const resultat = new Map<string, string | null>();
+  const uniques = [...new Set(objectPaths.filter((chemin) => Boolean(chemin)))];
+
+  for (let debut = 0; debut < uniques.length; debut += TAILLE_LOT_SIGNATURES) {
+    const lot = uniques.slice(debut, debut + TAILLE_LOT_SIGNATURES);
+    try {
+      const { data, error } = await supabaseAdmin.storage.from(STORAGE_BUCKETS.private).createSignedUrls(lot, expiresInSeconds);
+      if (error || !data) {
+        console.error(`[storage] Signature en lot impossible (${lot.length} fichier(s)) :`, error?.message ?? "erreur inconnue");
+        continue;
+      }
+      for (const element of data) {
+        if (element.path && !element.error && element.signedUrl) resultat.set(element.path, element.signedUrl);
+        else console.error(`[storage] Fichier non signable, ignoré (${element.path ?? "chemin inconnu"}) :`, element.error ?? "erreur inconnue");
+      }
+    } catch (err) {
+      console.error(`[storage] Signature en lot impossible (${lot.length} fichier(s)) :`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  // Tout chemin absent de la réponse (erreur, objet manquant) reste « non signable ».
+  for (const chemin of uniques) if (!resultat.has(chemin)) resultat.set(chemin, null);
+  return resultat;
+}
+
 /**
  * Extrait le chemin d'objet à partir d'une URL PUBLIQUE générée par
  * `getPublicUrl` (bucket public) — introuvable pour toute autre URL (domaine

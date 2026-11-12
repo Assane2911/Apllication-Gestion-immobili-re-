@@ -63,6 +63,10 @@ vi.mock("../config/supabase", () => ({
           data: { signedUrl: `http://test.local/signed/${objectPath}` },
           error: null,
         }),
+        createSignedUrls: async (objectPaths: string[]) => ({
+          data: objectPaths.map((path) => ({ path, signedUrl: `http://test.local/signed/${path}`, error: null })),
+          error: null,
+        }),
       }),
     },
   },

@@ -13,7 +13,7 @@ import { langueOuDefaut } from "../utils/langue";
 import { libelleMessageVocal } from "../utils/messageVocal";
 import { nomAvecCivilite } from "../utils/nom";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { apercuMessage, apresMessage, messagePublic, sendMessageSchema, sendVoiceSchema } from "./message.controller";
+import { apercuMessage, apresMessage, messagePublic, messagesPublics, sendMessageSchema, sendVoiceSchema } from "./message.controller";
 
 /**
  * Discussion agence ↔ propriétaire. Un fil unique par propriétaire (voir la table `owner_messages`) : le propriétaire
@@ -71,13 +71,10 @@ async function lireFil(owner: Fiche, lecteurId: string, voitLesAuteurs: boolean,
       ).map((m: { id: string }) => m.id)
     : undefined;
 
-  const messages = await Promise.all(
-    lignes.map(async (l: { message: typeof ownerMessages.$inferSelect; sender: { id: string; email: string; role: string } }) => {
-      const message = await messagePublic(l.message);
-      // Comme la messagerie des locataires : l'adresse de connexion de l'auteur ne sort pas de l'espace gestionnaire.
-      return voitLesAuteurs ? { ...message, sender: l.sender } : { ...message, senderId: undefined };
-    })
-  );
+  type LigneFil = { message: typeof ownerMessages.$inferSelect; sender: { id: string; email: string; role: string } };
+  const publics = await messagesPublics(lignes.map((l: LigneFil) => l.message));
+  // Comme la messagerie des locataires : l'adresse de connexion de l'auteur ne sort pas de l'espace gestionnaire.
+  const messages = lignes.map((l: LigneFil, i: number) => (voitLesAuteurs ? { ...publics[i], sender: l.sender } : { ...publics[i], senderId: undefined }));
   return { messages, luesIds };
 }
 

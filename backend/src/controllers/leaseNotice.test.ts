@@ -21,6 +21,8 @@ import { testDb } from "../test/setupTestDb";
 vi.mock("../services/storage.service", () => ({
   uploadPrivateFile: vi.fn(),
   getSignedUrl: vi.fn().mockResolvedValue("http://test.local/signed/conge.pdf"),
+  // La liste des baux signe les scans en lot.
+  getSignedUrls: vi.fn().mockResolvedValue(new Map()),
   deleteStorageObjectBestEffort: vi.fn().mockResolvedValue(undefined),
 }));
 

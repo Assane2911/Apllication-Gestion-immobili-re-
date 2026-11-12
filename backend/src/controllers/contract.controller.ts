@@ -12,7 +12,7 @@ import { generateInvoicesForContract } from "../services/invoice.service";
 import { colocatairesDuBail } from "./cotenant.controller";
 import { bauxDuLocataire } from "../services/colocation.service";
 import { referenceSolde } from "../services/soldeDeToutCompte.service";
-import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
+import { getSignedUrl, getSignedUrls, uploadPrivateFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort } from "../services/storage.service";
@@ -83,6 +83,21 @@ export async function resolveScannedUrl(value: string | null | undefined): Promi
   } catch {
     return value;
   }
+}
+
+/**
+ * Les scans de plusieurs baux (une page de la liste) signés en UN SEUL appel au stockage, au lieu d'un appel par bail. Même règles que
+ * `resolveScannedUrl` : une URL complète reste telle quelle, un scan qui ne se signe pas est renvoyé tel quel (le chemin), sans faire
+ * échouer la liste. Renvoie une fonction qui donne la valeur à afficher pour un scan de la liste.
+ */
+export async function resolveScannedUrls(values: Array<string | null | undefined>): Promise<(value: string | null | undefined) => string | null | undefined> {
+  const aSigner = values.filter((v): v is string => Boolean(v) && !/^https?:\/\//i.test(v as string));
+  const signees = await getSignedUrls(aSigner);
+  return (value) => {
+    if (!value) return value;
+    if (/^https?:\/\//i.test(value)) return value;
+    return signees.get(value) ?? value;
+  };
 }
 
 /**
@@ -225,17 +240,17 @@ export const listContracts = asyncHandler(async (req: Request, res: Response) =>
 
   const congesParContrat = await congesActifsParBail(ids);
 
-  const items = await Promise.all(
-    rows.map(async (r: { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({
-      ...parseDepositDeductions(r.contract),
-      activeNotice: congesParContrat.get(r.contract.id) ?? null,
-      scannedContractUrl: await resolveScannedUrl(r.contract.scannedContractUrl),
-      property: r.property,
-      tenant: r.tenant,
-      guarantorsCount: garantsParContrat.get(r.contract.id) ?? 0,
-      cotenantNames: colocs.filter((c) => c.contractId === r.contract.id).map((c) => `${c.firstName} ${c.lastName}`),
-    }))
-  );
+  type LigneBail = { contract: typeof contracts.$inferSelect; property: typeof properties.$inferSelect; tenant: typeof tenants.$inferSelect };
+  const urlDuScan = await resolveScannedUrls(rows.map((r: LigneBail) => r.contract.scannedContractUrl));
+  const items = rows.map((r: LigneBail) => ({
+    ...parseDepositDeductions(r.contract),
+    activeNotice: congesParContrat.get(r.contract.id) ?? null,
+    scannedContractUrl: urlDuScan(r.contract.scannedContractUrl),
+    property: r.property,
+    tenant: r.tenant,
+    guarantorsCount: garantsParContrat.get(r.contract.id) ?? 0,
+    cotenantNames: colocs.filter((c) => c.contractId === r.contract.id).map((c) => `${c.firstName} ${c.lastName}`),
+  }));
 
   res.json(buildPaginatedResult(items, count, pagination));
 });
@@ -706,17 +721,16 @@ export const myContracts = asyncHandler(async (req: Request, res: Response) => {
     else soldesParBail.set(solde.contractId, [resume]);
   }
 
-  const result = await Promise.all(
-    rows.map(async (row) => ({
-      ...parseDepositDeductions(row.contract),
-      scannedContractUrl: await resolveScannedUrl(row.contract.scannedContractUrl),
-      property: row.property,
-      invoices: invoicesByContract.get(row.contract.id) ?? [],
-      settlements: soldesParBail.get(row.contract.id) ?? [],
-      // Le portail n'offre la signature électronique qu'au titulaire.
-      qualite: baux.get(row.contract.id) ?? "TITULAIRE",
-    }))
-  );
+  const urlDuScan = await resolveScannedUrls(rows.map((r) => r.contract.scannedContractUrl));
+  const result = rows.map((row) => ({
+    ...parseDepositDeductions(row.contract),
+    scannedContractUrl: urlDuScan(row.contract.scannedContractUrl),
+    property: row.property,
+    invoices: invoicesByContract.get(row.contract.id) ?? [],
+    settlements: soldesParBail.get(row.contract.id) ?? [],
+    // Le portail n'offre la signature électronique qu'au titulaire.
+    qualite: baux.get(row.contract.id) ?? "TITULAIRE",
+  }));
 
   res.json(result);
 });

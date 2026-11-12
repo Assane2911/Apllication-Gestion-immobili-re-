@@ -12,7 +12,7 @@ import { assertPlanAtLeast } from "../middleware/auth";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { langueOuDefaut } from "../utils/langue";
 import { assertAudioContentMatchesDeclaredType } from "../middleware/upload";
-import { getSignedUrl, uploadPrivateFile } from "../services/storage.service";
+import { getSignedUrl, getSignedUrls, uploadPrivateFile } from "../services/storage.service";
 import { DUREE_MAX_MESSAGE_VOCAL_SEC, libelleMessageVocal, TOLERANCE_DUREE_SEC } from "../utils/messageVocal";
 
 type Qualite = "TITULAIRE" | "COLOCATAIRE";
@@ -48,6 +48,18 @@ export async function messagePublic<T extends { audioPath: string | null }>(mess
     });
   }
   return { ...reste, audioUrl };
+}
+
+/**
+ * Les messages d'un fil tels que le client les reçoit, avec les liens des vocaux signés en UN SEUL appel au stockage (au lieu d'un
+ * par vocal). Même règle que `messagePublic` : un lien qu'on ne sait pas générer laisse le message sans lecteur (`audioUrl` nul).
+ */
+export async function messagesPublics<T extends { audioPath: string | null }>(liste: T[]): Promise<Array<Omit<T, "audioPath"> & { audioUrl: string | null }>> {
+  const liens = await getSignedUrls(liste.map((m) => m.audioPath).filter((chemin): chemin is string => Boolean(chemin)));
+  return liste.map((message) => {
+    const { audioPath, ...reste } = message;
+    return { ...reste, audioUrl: audioPath ? (liens.get(audioPath) ?? null) : null };
+  });
 }
 
 /** Pour un aperçu (dernier message d'un fil) : pas de lien signé, seulement l'indication qu'il s'agit d'un vocal. */
@@ -309,12 +321,11 @@ export const getMessagesByContract = asyncHandler(async (req: Request, res: Resp
     // L'auteur (id et adresse de connexion) n'est renvoyé qu'au gestionnaire : l'écran du locataire ne s'appuie que sur
     // `senderRole`, et l'adresse de connexion du gestionnaire — ou du propriétaire de l'agence, pour un message écrit
     // par un collaborateur — n'a pas à quitter l'espace gestionnaire.
-    messages: await Promise.all(
-      msgList.map(async (m: { message: typeof messages.$inferSelect; sender: { id: string; email: string; role: string } }) => {
-        const message = await messagePublic(m.message);
-        return req.user!.role === "MANAGER" ? { ...message, sender: m.sender } : { ...message, senderId: undefined };
-      })
-    ),
+    messages: await (async () => {
+      type LigneFil = { message: typeof messages.$inferSelect; sender: { id: string; email: string; role: string } };
+      const publics = await messagesPublics(msgList.map((m: LigneFil) => m.message));
+      return msgList.map((m: LigneFil, i: number) => (req.user!.role === "MANAGER" ? { ...publics[i], sender: m.sender } : { ...publics[i], senderId: undefined }));
+    })(),
   });
 });
 
