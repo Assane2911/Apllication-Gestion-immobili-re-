@@ -1102,9 +1102,9 @@ const deleteAccountSchema = z.object({
  * cette plateforme pour le compte de sa propre agence.
  *
  * Les comptes de connexion "portail" d'un locataire/propriétaire (users liés
- * via tenants.userId / owners.userId) ne sont volontairement PAS supprimés :
- * ce sont des identités qui appartiennent à ces personnes, pas à l'agence qui
- * les gérait — seule la fiche locataire/propriétaire de CETTE agence disparaît.
+ * via tenants.userId / owners.userId) que cette agence était seule à rattacher
+ * partent avec elle (voir supprimerCompteGestionnaire) ; un compte encore
+ * rattaché à une fiche d'une autre agence est conservé.
  *
  * Confirmation par ressaisie du mot de passe actuel : une action irréversible
  * ne doit pas se contenter d'une simple confirmation textuelle. L'utilisateur

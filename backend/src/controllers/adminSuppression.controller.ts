@@ -16,7 +16,8 @@ const deleteManagerSchema = z.object({
  * Suppression DÉFINITIVE et irréversible d'un compte gestionnaire par
  * l'administration, avec tout ce qui appartient à son agence (voir
  * supprimerCompteGestionnaire : même règle que la suppression à la demande du
- * gestionnaire). Les comptes portail des locataires et bailleurs sont conservés.
+ * gestionnaire). Les comptes portail des locataires et bailleurs que cette agence était
+ * seule à rattacher partent avec elle ; ceux qu'une autre agence rattache encore sont conservés.
  *
  * Trois garde-fous, dans cet ordre :
  *  1. le compte doit être SUSPENDU : un délai de réflexion, et la facturation

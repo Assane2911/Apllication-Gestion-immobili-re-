@@ -1,8 +1,34 @@
-import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, notExists, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
-import { agencySettings, contracts, invoices, issueReports, leaseNotices, listings, messages, ownerMessages, properties, storedDocuments, tenants, users } from "../db/schema";
+import { agencySettings, contracts, invoices, issueReports, leaseNotices, listings, messages, owners, ownerMessages, properties, storedDocuments, tenants, users } from "../db/schema";
 import { cancelStripeSubscriptionNow } from "./payment.service";
 import { deleteStorageObjectBestEffort } from "./storage.service";
+
+const TAILLE_LOT_COMPTES = 1000;
+
+/** Comptes de connexion « portail » (locataire ou propriétaire) que les fiches de cette agence rattachent. */
+async function comptesPortailDeLAgence(managerId: string): Promise<string[]> {
+  const [locataires, proprietaires] = await Promise.all([
+    db.select({ userId: tenants.userId }).from(tenants).where(and(eq(tenants.managerId, managerId), isNotNull(tenants.userId))),
+    db.select({ userId: owners.userId }).from(owners).where(and(eq(owners.managerId, managerId), isNotNull(owners.userId))),
+  ]);
+  const identifiants = new Set<string>();
+  for (const ligne of [...locataires, ...proprietaires]) if (ligne.userId) identifiants.add(ligne.userId);
+  return [...identifiants];
+}
+
+/**
+ * Condition de suppression d'un lot de comptes portail : de rôle locataire ou propriétaire (jamais un gestionnaire,
+ * un administrateur ou un collaborateur), et qu'AUCUNE fiche — de cette agence ou d'une autre — ne rattache plus.
+ */
+function comptesPortailOrphelins(identifiants: string[]) {
+  return and(
+    inArray(users.id, identifiants),
+    inArray(users.role, ["TENANT", "OWNER"]),
+    notExists(db.select({ un: sql`1` }).from(tenants).where(eq(tenants.userId, users.id))),
+    notExists(db.select({ un: sql`1` }).from(owners).where(eq(owners.userId, users.id)))
+  );
+}
 
 /**
  * Suppression définitive d'un compte gestionnaire propriétaire et de TOUT ce
@@ -15,10 +41,15 @@ import { deleteStorageObjectBestEffort } from "./storage.service";
  * factures, signalements, annonces (+ leurs demandes), états des lieux,
  * messages, journal d'activité, paramètres d'agence, historique des
  * abonnements SaaS et comptes des collaborateurs invités sont supprimés sans
- * anonymisation ni conservation. Les comptes de connexion « portail » d'un
- * locataire/propriétaire (users liés via tenants.userId / owners.userId) ne
- * sont volontairement PAS supprimés : ce sont des identités qui appartiennent
- * à ces personnes, pas à l'agence qui les gérait.
+ * anonymisation ni conservation.
+ *
+ * Les comptes de connexion « portail » d'un locataire/propriétaire (users liés
+ * via tenants.userId / owners.userId) que CETTE agence était seule à rattacher
+ * partent avec elle : une fois toutes les fiches de l'agence effacées, ces
+ * comptes (adresse e-mail, empreinte du mot de passe) ne serviraient plus à rien
+ * et personne n'aurait plus de moyen d'en demander l'effacement. Un compte
+ * encore rattaché à une fiche d'une autre agence est conservé, ainsi que tout
+ * compte d'un autre rôle (jamais « portail »). Voir comptesPortailOrphelins.
  *
  * Ordre, et pourquoi :
  *  1. Stripe — résiliation IMMÉDIATE de l'abonnement à renouvellement
@@ -80,6 +111,8 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
     .select({ collaborateurs: sql<number>`count(*)::int` })
     .from(users)
     .where(eq(users.teamOwnerId, user.id));
+  // Lus AVANT la transaction : les fiches qui les référencent disparaissent avec le compte de l'agence.
+  const comptesPortail = await comptesPortailDeLAgence(user.id);
 
   await db.transaction(async (tx: Transaction) => {
     // contracts.propertyId / contracts.tenantId n'ont PAS de ON DELETE
@@ -116,6 +149,12 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
     // historique des abonnements SaaS, collaborateurs) est nettoyé par les
     // contraintes ON DELETE CASCADE déjà déclarées sur users.id.
     await tx.delete(users).where(eq(users.id, user.id));
+
+    // Les fiches de l'agence ont disparu avec elle (cascade) : un compte portail qu'aucune autre fiche ne rattache
+    // est désormais orphelin. Par lots, pour qu'un grand portefeuille ne dépasse pas le plafond de paramètres.
+    for (let i = 0; i < comptesPortail.length; i += TAILLE_LOT_COMPTES) {
+      await tx.delete(users).where(comptesPortailOrphelins(comptesPortail.slice(i, i + TAILLE_LOT_COMPTES)));
+    }
   });
 
   const cibles: Array<string | null | undefined> = [
